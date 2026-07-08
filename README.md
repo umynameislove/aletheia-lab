@@ -72,14 +72,14 @@ Nếu chưa muốn cài package, vẫn có thể đọc docs và chỉnh config 
 
 ## Phase chính
 
-| Phase | Mục tiêu | Output bắt buộc | Mức đóng góp nếu làm xong |
-|---|---|---|---|
-| P1 | Eval-first vertical slice | 15 cases data_drift chạy end-to-end | 5.5/10 |
-| P2 | Benchmark + evidence layer | 120-200 cases có schema sạch | 6.5-7/10 |
-| P3 | Memory + lineage | failure object, run lineage, reproducibility | ~7/10 |
-| P4 | Diagnosis variants | 4 variants chạy trên benchmark | 7-7.5/10 |
-| P5 | Meta-faithfulness evaluation | faithfulness/correctness/abstention + ablation | 8-8.5/10 |
-| P6 | Human study + release | Cohen's kappa, report, artifact release | 8.5-9/10 |
+| Phase | Mục tiêu | Output bắt buộc |
+|---|---|---|
+| P1 | Eval-first vertical slice | 15 cases data_drift chạy end-to-end |
+| P2 | Benchmark + evidence layer | 120-200 cases có schema sạch |
+| P3 | Memory + lineage | failure object, run lineage, reproducibility |
+| P4 | Diagnosis variants | 4 variants chạy trên benchmark |
+| P5 | Meta-faithfulness evaluation | faithfulness/correctness/abstention + ablation |
+| P6 | Human study + release | Cohen's kappa, report, artifact release |
 
 ## Tư tưởng thiết kế
 

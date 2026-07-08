@@ -62,6 +62,7 @@ CONTENT_RED_FLAGS = [
     re.compile(r"score\s*k[yỳ]\s*v[oọ]ng", re.IGNORECASE),
     re.compile(r"paper\s*potential", re.IGNORECASE),
     re.compile(r"defense\s*readiness", re.IGNORECASE),
+    re.compile(r"\b\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?\s*/\s*10\b"),  # self-grade N/10
     re.compile(r"generated\s+by\s+(ai|claude|gpt)\b", re.IGNORECASE),
     re.compile(r"co-authored-by:\s*(claude|assistant|gpt)", re.IGNORECASE),
 ]
