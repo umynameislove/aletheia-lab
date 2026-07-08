@@ -33,26 +33,41 @@ Cách dùng:
     python scripts/check_repo_hygiene.py --root . --strict
     python scripts/check_repo_hygiene.py --all
 """
+
 from __future__ import annotations
 
 import argparse
 import re
 import subprocess
-import sys
 from pathlib import Path
 
-JUNK_DIR_NAMES = {"__pycache__", ".pytest_cache", ".ruff_cache", ".mypy_cache",
-                  ".ipynb_checkpoints"}
+JUNK_DIR_NAMES = {
+    "__pycache__",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".mypy_cache",
+    ".ipynb_checkpoints",
+}
 JUNK_FILE_NAMES = {".DS_Store", "Thumbs.db"}
 JUNK_SUFFIXES = {".pyc", ".pyo"}
 FORBIDDEN_SUFFIXES = {".docx", ".doc", ".pptx", ".ppt", ".xlsx", ".xls"}
 FORBIDDEN_DIR_NAMES = {"tracking"}
 
 TRACKING_NAME_PATTERNS = [
-    r"master[_-]?plan", r"phase[_-]?tracking", r"phase[_-]?roadmap", r"roadmap",
-    r"micro[_-]?task", r"scorecard", r"risk[_-]?register", r"decision[_-]?log",
-    r"experiment[_-]?log", r"paper[_-]?plan", r"defense[_-]?notes",
-    r"project[_-]?brief", r"implementation[_-]?order", r"reuse[_-]?map",
+    r"master[_-]?plan",
+    r"phase[_-]?tracking",
+    r"phase[_-]?roadmap",
+    r"roadmap",
+    r"micro[_-]?task",
+    r"scorecard",
+    r"risk[_-]?register",
+    r"decision[_-]?log",
+    r"experiment[_-]?log",
+    r"paper[_-]?plan",
+    r"defense[_-]?notes",
+    r"project[_-]?brief",
+    r"implementation[_-]?order",
+    r"reuse[_-]?map",
     r"do[_-]?an[_-]?tot[_-]?nghiep",
 ]
 TRACKING_RE = re.compile("|".join(TRACKING_NAME_PATTERNS), re.IGNORECASE)
@@ -78,8 +93,9 @@ ALLOW_RELATIVE = {
 
 def git_tracked(root: Path) -> list[Path] | None:
     try:
-        out = subprocess.run(["git", "-C", str(root), "ls-files"],
-                             capture_output=True, text=True, check=True)
+        out = subprocess.run(
+            ["git", "-C", str(root), "ls-files"], capture_output=True, text=True, check=True
+        )
     except (OSError, subprocess.CalledProcessError):
         return None
     files = [root / line for line in out.stdout.splitlines() if line.strip()]
@@ -168,9 +184,11 @@ def main() -> int:
             msg += f" ({len(warns)} warning không chặn — junk đã bị .gitignore)"
         print(f"\nOK: repo hygiene {msg}.")
         return 0
-    print(f"\nFAIL: {len(errors)} error"
-          + (f", {len(warns)} warning (strict)" if args.strict else "")
-          + ". Code ở repo, tracking/planning/docx ở folder tracking riêng.")
+    print(
+        f"\nFAIL: {len(errors)} error"
+        + (f", {len(warns)} warning (strict)" if args.strict else "")
+        + ". Code ở repo, tracking/planning/docx ở folder tracking riêng."
+    )
     return 1
 
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-
 ABSTENTION_MARKERS = (
     "insufficient evidence",
     "not enough evidence",

@@ -20,7 +20,9 @@ def cohens_kappa(rater_a: Sequence[str], rater_b: Sequence[str]) -> float:
     labels = set(rater_a) | set(rater_b)
     counts_a = Counter(rater_a)
     counts_b = Counter(rater_b)
-    expected = sum((counts_a[label] / len(rater_a)) * (counts_b[label] / len(rater_b)) for label in labels)
+    expected = sum(
+        (counts_a[label] / len(rater_a)) * (counts_b[label] / len(rater_b)) for label in labels
+    )
 
     if expected == 1.0:
         return 1.0

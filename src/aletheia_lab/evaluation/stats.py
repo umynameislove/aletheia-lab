@@ -7,7 +7,9 @@ from collections.abc import Sequence
 import numpy as np
 
 
-def bootstrap_mean_ci(values: Sequence[float], seed: int = 0, n_bootstrap: int = 1000) -> tuple[float, float]:
+def bootstrap_mean_ci(
+    values: Sequence[float], seed: int = 0, n_bootstrap: int = 1000
+) -> tuple[float, float]:
     """Return a simple 95% bootstrap CI for the mean."""
 
     if not values:

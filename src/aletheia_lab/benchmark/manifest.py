@@ -8,7 +8,6 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-
 Split = Literal["dev", "main", "human_audit", "organic_validity"]
 
 

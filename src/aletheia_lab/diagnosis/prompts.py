@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-
 EVIDENCE_BOUND_PROMPT = """\
 You are diagnosing a machine learning system failure.
 
