@@ -1,0 +1,15 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.7
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+  - repo: local
+    hooks:
+      - id: repo-hygiene
+        name: repo hygiene guard (no tracking/office/junk in repo)
+        entry: python scripts/check_repo_hygiene.py
+        language: system
+        pass_filenames: false
+        always_run: true

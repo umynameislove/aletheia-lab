@@ -1,0 +1,42 @@
+metrics:
+  correctness:
+    description: Whether diagnosis identifies the true dominant cause.
+    scale: [0, 1]
+    primary_source: hidden_ground_truth
+    judge_policy: rule_first_then_human_or_llm_for_borderline
+
+  faithfulness:
+    description: Whether every causal claim is supported by allowed evidence.
+    scale: [0, 1]
+    primary_source: evidence_bundle
+    judge_policy: atomic_claim_evidence_alignment
+
+  abstention:
+    description: Whether model refuses or hedges appropriately when evidence is insufficient.
+    scale: [0, 1]
+    primary_source: evidence_condition
+    judge_policy: rule_plus_human_spot_check
+
+  divergence:
+    description: Difference between evidence-groundedness and factual correctness.
+    examples:
+      - faithful_but_wrong
+      - correct_but_unfaithful
+      - faithful_and_correct
+      - unfaithful_and_wrong
+
+human_audit:
+  subset_policy: stratified_by_fault_type_and_variant
+  minimum_cases: 30
+  agreement_metric: cohens_kappa
+  report_confidence_interval: true
+
+statistics:
+  paired_tests:
+    - bootstrap_confidence_interval
+    - mcnemar_for_binary_correctness
+  required_tables:
+    - per_variant_main_metrics
+    - per_fault_type_breakdown
+    - evidence_condition_ablation
+    - divergence_matrix

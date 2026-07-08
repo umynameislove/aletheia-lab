@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets/
+
+# OS/editor
+.DS_Store
+.idea/
+.vscode/
+
+# Large/generated data
+data/raw/*
+data/interim/*
+data/processed/*
+data/benchmark_cases/*
+data/evidence_store/*
+data/organic_failures/*
+!data/**/.gitkeep
+!data/**/README.md
+
+# Experiments and reports generated locally
+experiments/**/runs/
+experiments/**/outputs/
+reports/figures/*
+reports/tables/*
+reports/paper/*.pdf
+reports/defense/*.pdf
+!reports/**/.gitkeep
+!reports/**/README.md
+
+# Local databases/artifacts
+*.sqlite
+*.sqlite3
+*.db
+.pmem/
+mlruns/
+wandb/
+
+# Jupyter
+.ipynb_checkpoints/

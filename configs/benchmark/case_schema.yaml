@@ -1,0 +1,43 @@
+case_schema:
+  required_fields:
+    - case_id
+    - fault_type
+    - dataset_id
+    - injection_id
+    - ground_truth
+    - evidence_bundle_id
+    - split
+    - created_at
+
+  ground_truth:
+    required_fields:
+      - cause_label
+      - causal_mechanism
+      - injected_change
+      - affected_components
+      - expected_symptoms
+    hidden_from_diagnosis: true
+
+  evidence_bundle:
+    required_fields:
+      - evidence_bundle_id
+      - allowed_evidence
+      - withheld_evidence
+      - counterfactual_evidence
+      - leakage_check
+
+  splits:
+    - dev
+    - main
+    - human_audit
+    - organic_validity
+
+  leakage_policy:
+    forbidden_terms:
+      - ground_truth
+      - injected_cause
+      - answer_key
+    require_manual_review_for:
+      - exact_cause_label_in_evidence
+      - injection_script_visible_to_diagnoser
+      - synthetic_case_name_reveals_cause

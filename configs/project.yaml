@@ -1,0 +1,53 @@
+project:
+  name: aletheia-lab
+  version: 0.1.0
+  mode: eval_first
+  owner: Quoc Bao Tran
+
+paths:
+  raw_data: data/raw
+  interim_data: data/interim
+  processed_data: data/processed
+  benchmark_cases: data/benchmark_cases
+  evidence_store: data/evidence_store
+  organic_failures: data/organic_failures
+  reports: reports
+  experiments: experiments
+
+scope:
+  official_case_goal: 200
+  organic_failure_goal_min: 10
+  organic_failure_goal_max: 20
+  stretch_case_goal_min: 240
+  stretch_case_goal_max: 300
+  stretch_policy: only_after_main_eval_and_human_audit
+
+vertical_slice:
+  phase: P1
+  fault_type: data_drift
+  target_cases: 15
+  dataset_family: tabular_classification
+  deadline_policy: run_eval_loop_before_expanding_platform
+
+diagnosis_variants:
+  - plain_llm
+  - rag_baseline
+  - evidence_bound
+  - full_aletheia
+
+evaluation:
+  primary_metrics:
+    - correctness
+    - faithfulness
+    - abstention
+    - divergence
+  human_audit:
+    enabled: true
+    target_subset_ratio: 0.2
+    agreement_metric: cohens_kappa
+
+guardrails:
+  forbid_ground_truth_leakage_in_evidence: true
+  require_reproducible_case_manifest: true
+  require_counterfactual_evidence_condition: true
+  require_error_analysis_for_publishable_claim: true

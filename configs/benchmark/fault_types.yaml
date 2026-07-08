@@ -1,0 +1,62 @@
+fault_types:
+  data_drift:
+    phase: P1
+    priority: core
+    description: Distribution shift between training and evaluation data.
+    ground_truth_kind: dominant_cause
+    expected_evidence:
+      - dataset_profile_before
+      - dataset_profile_after
+      - metric_regression
+      - feature_distribution_shift
+      - run_config
+    negative_controls:
+      - unchanged_training_code
+      - unchanged_model_architecture
+
+  label_noise:
+    phase: P2
+    priority: core
+    description: Incorrect labels injected into a controlled subset.
+    ground_truth_kind: dominant_cause
+    expected_evidence:
+      - label_flip_manifest
+      - class_confusion_change
+      - metric_regression
+      - sample_audit
+    negative_controls:
+      - unchanged_feature_distribution
+
+  preprocessing_bug:
+    phase: P2
+    priority: core
+    description: Feature scaling, encoding, normalization, or tokenization bug.
+    ground_truth_kind: dominant_cause
+    expected_evidence:
+      - preprocessing_config_diff
+      - feature_stats_before_after
+      - downstream_metric_regression
+    negative_controls:
+      - unchanged_labels
+
+  train_eval_mismatch:
+    phase: P2
+    priority: core
+    description: Difference between training pipeline and inference/evaluation pipeline.
+    ground_truth_kind: dominant_cause
+    expected_evidence:
+      - train_pipeline_signature
+      - eval_pipeline_signature
+      - config_diff
+      - metric_regression
+
+  prompt_regression:
+    phase: stretch
+    priority: optional
+    description: Prompt/template change causing LLM task performance regression.
+    ground_truth_kind: dominant_cause
+    expected_evidence:
+      - prompt_diff
+      - output_quality_change
+      - regression_examples
+      - judge_notes

@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aletheia-lab"
+version = "0.1.0"
+description = "Evidence-grounded failure diagnosis and meta-faithfulness evaluation for ML/LLM systems."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+  { name = "Quoc Bao Tran" }
+]
+dependencies = [
+  "numpy>=1.26",
+  "pandas>=2.2",
+  "pydantic>=2.7",
+  "pyyaml>=6.0",
+  "rich>=13.7",
+  "scikit-learn>=1.5",
+  "scipy>=1.13",
+  "typer>=0.12"
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy>=1.10",
+  "pre-commit>=3.7",
+  "pytest>=8.2",
+  "pytest-cov>=5.0",
+  "ruff>=0.5"
+]
+llm = [
+  "litellm>=1.40",
+  "openai>=1.40"
+]
+dashboard = [
+  "plotly>=5.22",
+  "streamlit>=1.36"
+]
+
+[project.scripts]
+aletheia = "aletheia_lab.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_ignores = true
+warn_return_any = true
+disallow_untyped_defs = true

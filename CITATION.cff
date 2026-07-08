@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use Aletheia Lab, please cite it as below."
+title: "Aletheia Lab: Evidence-Grounded Failure Diagnosis and Meta-Faithfulness Evaluation for ML/LLM Systems"
+authors:
+  - family-names: "Tran"
+    given-names: "Quoc Bao"
+version: 0.1.0
+date-released: "2026-07-07"
+license: MIT
+repository-code: "https://github.com/umynameislove/aletheia-lab"
+keywords:
+  - failure-diagnosis
+  - faithfulness
+  - evaluation
+  - ml-systems
+  - llm

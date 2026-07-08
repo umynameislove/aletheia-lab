@@ -1,0 +1,49 @@
+variants:
+  plain_llm:
+    description: LLM receives only a short failure description.
+    purpose: Lower-bound baseline.
+    allowed_inputs:
+      - failure_summary
+    forbidden_inputs:
+      - structured_evidence_bundle
+      - ground_truth
+
+  rag_baseline:
+    description: LLM receives retrieved notes/log snippets without strict evidence binding.
+    purpose: Compare against generic retrieval augmentation.
+    allowed_inputs:
+      - failure_summary
+      - retrieved_context
+    forbidden_inputs:
+      - ground_truth
+
+  evidence_bound:
+    description: LLM must cite evidence item IDs for every causal claim.
+    purpose: Test evidence-grounded diagnosis.
+    allowed_inputs:
+      - failure_summary
+      - structured_evidence_bundle
+    output_contract:
+      - root_cause_hypothesis
+      - supporting_evidence_ids
+      - missing_evidence
+      - confidence
+      - abstention_if_needed
+
+  full_aletheia:
+    description: Evidence-bound diagnosis plus memory/lineage/counterfactual checks.
+    purpose: Main system variant.
+    allowed_inputs:
+      - failure_summary
+      - structured_evidence_bundle
+      - run_lineage
+      - prior_failure_patterns
+      - counterfactual_evidence
+    output_contract:
+      - root_cause_hypothesis
+      - causal_chain
+      - supporting_evidence_ids
+      - counterevidence_ids
+      - missing_evidence
+      - confidence
+      - abstention_if_needed
