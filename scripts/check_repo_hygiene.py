@@ -85,8 +85,6 @@ CONTENT_RED_FLAGS = [
 SKIP_WALK_DIRS = {".git", ".venv", "venv", "node_modules"} | JUNK_DIR_NAMES
 ALLOW_RELATIVE = {
     "scripts/check_repo_hygiene.py",
-    "scripts/export_report_tables.py",
-    "scripts/run_benchmark.py",
     "src/aletheia_lab/reporting/tables.py",
 }
 
