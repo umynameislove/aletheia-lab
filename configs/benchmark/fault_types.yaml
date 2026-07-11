@@ -4,6 +4,27 @@ fault_types:
     priority: core
     description: Distribution shift between training and evaluation data.
     ground_truth_kind: dominant_cause
+    injector: aletheia_lab.benchmark.injectors.CategoricalDriftInjector
+    injection:
+      feature: Contract
+      # 5 settings x 3 evidence conditions (full/missing_key/noisy) = 15 P1 cases.
+      # Each setting shifts one feature only (one-factor); seed makes it reproducible.
+      settings:
+        - injection_id: drift_contract_s1
+          seed: 1
+          target_distribution: {month-to-month: 0.80, one year: 0.12, two year: 0.08}
+        - injection_id: drift_contract_s2
+          seed: 2
+          target_distribution: {month-to-month: 0.70, one year: 0.18, two year: 0.12}
+        - injection_id: drift_contract_s3
+          seed: 3
+          target_distribution: {month-to-month: 0.90, one year: 0.06, two year: 0.04}
+        - injection_id: drift_contract_s4
+          seed: 4
+          target_distribution: {month-to-month: 0.40, one year: 0.30, two year: 0.30}
+        - injection_id: drift_contract_s5
+          seed: 5
+          target_distribution: {month-to-month: 0.60, one year: 0.20, two year: 0.20}
     expected_evidence:
       - dataset_profile_before
       - dataset_profile_after

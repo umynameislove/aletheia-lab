@@ -4,6 +4,24 @@ project:
   mode: eval_first
   owner: Quoc Bao Tran
 
+# Primary dataset for P1 (finalized). The data_drift injector is dataset-agnostic;
+# switching dataset only changes this block. Exact source URL + SHA-256 are pinned
+# by the reproducible download script (task P1-C-01), not hardcoded here.
+dataset:
+  id: telco_customer_churn
+  version: v1
+  source: IBM sample "Telco Customer Churn"
+  license: IBM sample data, academic/educational use (confirm with advisor)
+  license_alternative: UCI Bank Marketing (CC BY 4.0) if a formally open license is required
+  target: Churn
+  positive_class: "Yes"
+  n_rows_approx: 7043
+  drift_feature: Contract           # categories: month-to-month / one year / two year
+  rationale: >
+    Small, fast, license-clear-enough for coursework, rich in categorical features
+    (Contract, PaymentMethod, InternetService...) ideal for categorical distribution
+    drift. Matches the running example in docs and the P1 injector.
+
 paths:
   raw_data: data/raw
   interim_data: data/interim
