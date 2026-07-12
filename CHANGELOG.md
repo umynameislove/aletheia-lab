@@ -7,6 +7,14 @@ phiên bản theo [SemVer](https://semver.org/lang/vi/).
 ## [Unreleased]
 
 ### Added
+- P1-C-01 tải + prep dataset tái lập: `src/aletheia_lab/data/`
+  (`sources.py` pin URL + SHA-256, `download.py` tải atomic + verify checksum,
+  `prep.py` prep xác định) + `scripts/download_dataset.py`
+  (`download`/`prep`/`all`/`verify`, có `--offline`), `make data`,
+  `docs/05_DATASET_CARD.md`, và `tests/unit/test_dataset_download.py`.
+  Telco Customer Churn được pin ở SHA-256
+  `16320c9c…3055e91` (7043 dòng, 21 cột); prep coerce 11 ô `TotalCharges`
+  trống (khách `tenure=0`) về `0.0`.
 - `scripts/check_repo_hygiene.py`: guard tách bạch code với tracking/
   planning/office/junk; wire vào `make hygiene`, pre-commit và CI.
 - Skeleton repo git-ready: `LICENSE` (MIT), `CONTRIBUTING.md`,

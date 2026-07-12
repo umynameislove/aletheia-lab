@@ -1,4 +1,4 @@
-.PHONY: install test lint format hygiene check slice tree clean
+.PHONY: install test lint format hygiene check data slice tree clean
 
 install:
 	python -m pip install -e ".[dev]"
@@ -16,6 +16,9 @@ format:
 	ruff format src tests scripts
 
 check: lint hygiene test
+
+data:
+	python scripts/download_dataset.py all --config configs/project.yaml
 
 slice:
 	python scripts/run_vertical_slice.py --config configs/project.yaml
