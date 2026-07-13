@@ -69,3 +69,18 @@ guardrails:
   require_reproducible_case_manifest: true
   require_counterfactual_evidence_condition: true
   require_error_analysis_for_publishable_claim: true
+
+baseline:
+  seed: 42
+  split:
+    train: 0.70
+    validation: 0.15
+    test: 0.15
+    stratify: true
+  model:
+    type: logistic_regression
+    max_iter: 1000
+    C: 1.0
+    class_weight: null
+  output_dir: experiments/baseline/runs
+  tolerance: 1.0e-9

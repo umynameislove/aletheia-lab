@@ -61,6 +61,7 @@ ignore = ["E501"]
 [tool.ruff.lint.per-file-ignores]
 # typer dùng Option()/Argument() làm default là idiom chuẩn của thư viện
 "src/aletheia_lab/cli.py" = ["B008"]
+"src/aletheia_lab/baseline/cli.py" = ["B008"]
 
 [tool.mypy]
 python_version = "3.11"

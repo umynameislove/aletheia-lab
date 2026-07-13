@@ -8,6 +8,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from aletheia_lab.baseline.cli import baseline_app
 from aletheia_lab.benchmark.manifest import load_case
 from aletheia_lab.config import load_yaml
 from aletheia_lab.evaluation.metrics import binary_score
@@ -15,6 +16,8 @@ from aletheia_lab.evidence.leakage import find_forbidden_terms
 
 app = typer.Typer(help="Aletheia Lab research/evaluation toolkit.")
 console = Console()
+
+app.add_typer(baseline_app, name="baseline")
 
 
 @app.command()

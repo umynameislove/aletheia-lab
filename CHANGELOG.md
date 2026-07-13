@@ -7,6 +7,16 @@ phiên bản theo [SemVer](https://semver.org/lang/vi/).
 ## [Unreleased]
 
 ### Added
+- P1-C-02 seeded loader + deterministic baseline: `src/aletheia_lab/baseline/`
+  (`loader.py` stratified train/val/test split khoá theo seed + stable
+  `customerID` id + leakage guards; `preprocess.py` ColumnTransformer chỉ fit
+  trên train; `model.py` Pipeline + LogisticRegression seeded; `evaluate.py`
+  metrics đầy đủ; `run.py` train + verify hai lần; `baseline/cli.py`), lệnh
+  `aletheia baseline train|evaluate|verify` (+ `python -m aletheia_lab`),
+  `make baseline` / `make baseline-verify`, block `baseline` trong
+  `configs/project.yaml`, và tests. Artifact ghi ở `experiments/baseline/runs/`
+  (gitignored): model, metrics, split manifest, predictions, provenance,
+  checksums; JSON deterministic (sorted keys, không timestamp trong manifest).
 - P1-C-01 tải + prep dataset tái lập: `src/aletheia_lab/data/`
   (`sources.py` pin URL + SHA-256, `download.py` tải atomic + verify checksum,
   `prep.py` prep xác định) + `scripts/download_dataset.py`
