@@ -96,3 +96,44 @@ def test_five_targets_produce_distinct_psi():
             round(float(CategoricalDriftInjector(spec).inject(_source()).signals["psi"]), 6)
         )
     assert len(set(psis)) == 5
+
+
+def test_negative_weight_fails_closed():
+    spec = DriftSpec(
+        injection_id="s",
+        feature="Contract",
+        target_distribution={"Month-to-month": 1.2, "One year": -0.2},
+        seed=1,
+    )
+    with pytest.raises(ValueError):
+        CategoricalDriftInjector(spec).inject(_source())
+
+
+def test_empty_distribution_fails_closed():
+    spec = DriftSpec(injection_id="s", feature="Contract", target_distribution={}, seed=1)
+    with pytest.raises(ValueError):
+        CategoricalDriftInjector(spec).inject(_source())
+
+
+def test_non_finite_weight_fails_closed():
+    for bad in (float("inf"), float("nan")):
+        spec = DriftSpec(
+            injection_id="s",
+            feature="Contract",
+            target_distribution={"Month-to-month": bad},
+            seed=1,
+        )
+        with pytest.raises(ValueError):
+            CategoricalDriftInjector(spec).inject(_source())
+
+
+def test_non_positive_output_size_fails_closed():
+    spec = DriftSpec(
+        injection_id="s",
+        feature="Contract",
+        target_distribution={"Month-to-month": 1.0},
+        output_size=0,
+        seed=1,
+    )
+    with pytest.raises(ValueError):
+        CategoricalDriftInjector(spec).inject(_source())

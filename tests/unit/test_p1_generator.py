@@ -93,3 +93,75 @@ def test_cli_generate_and_validate(p1_generator_config, tmp_path):
     assert summary["case_count"] == 15 and summary["leakage_total"] == 0
     val = runner.invoke(app, ["benchmark", "validate-p1", "--cases-dir", str(out)])
     assert val.exit_code == 0, val.output
+
+
+def test_full_has_measured_metric_and_missing_key_withholds_it(p1_generator_config, tmp_path):
+    from aletheia_lab.benchmark.case_writer import load_case_dir
+
+    out = tmp_path / "cases"
+    generate_p1(p1_generator_config, out)
+    full = load_case_dir(out / "p1-data-drift-01-full").manifest.observable_signals
+    missing = load_case_dir(out / "p1-data-drift-01-missing-key").manifest.observable_signals
+    assert full.baseline_metric_reference is not None
+    assert full.baseline_metric_reference.metric == "accuracy"
+    assert full.baseline_metric_reference.reference == pytest.approx(
+        full.baseline_metric_reference.observed - full.baseline_metric_reference.delta
+    )
+    # missing_key withholds the decisive comparison
+    assert missing.baseline_metric_reference is None
+    assert missing.psi is None
+    assert missing.distribution_reference is None
+
+
+def test_tampered_ground_truth_is_caught_even_with_updated_checksum(p1_generator_config, tmp_path):
+    import json
+
+    from aletheia_lab.benchmark.case_writer import dumps_deterministic, sha256_file
+
+    out = tmp_path / "cases"
+    generate_p1(p1_generator_config, out)
+    assert validate_p1_cases(out).passed  # clean set passes
+
+    case_dir = out / "p1-data-drift-01-full"
+    gt_path = case_dir / "ground_truth.json"
+    gt = json.loads(gt_path.read_text())
+    gt["cause_label"] = "label_noise"  # swap the answer key
+    gt_path.write_text(dumps_deterministic(gt), encoding="utf-8")
+    # Attacker also updates the checksum so integrity alone would pass.
+    checks = json.loads((case_dir / "checksums.json").read_text())
+    checks["ground_truth.json"] = sha256_file(gt_path)
+    (case_dir / "checksums.json").write_text(dumps_deterministic(checks), encoding="utf-8")
+
+    report = validate_p1_cases(out)
+    assert not report.passed
+    assert report.checks["cross_artifact_consistent"] is False
+
+
+def test_wrong_number_of_settings_fails_closed(p1_generator_config, tmp_path):
+    fault = p1_generator_config.parent / "benchmark" / "fault_types.yaml"
+    fault.write_text(
+        "fault_types:\n  data_drift:\n    injection:\n      feature: Contract\n"
+        "      settings:\n"
+        "        - injection_id: only_one\n          seed: 1\n"
+        "          target_distribution: {Month-to-month: 1.0}\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(GeneratorConfigError):
+        generate_p1(p1_generator_config, tmp_path / "cases")
+
+
+def test_duplicate_injection_id_fails_closed(p1_generator_config, tmp_path):
+    fault = p1_generator_config.parent / "benchmark" / "fault_types.yaml"
+    dup = "\n".join(
+        f"        - injection_id: same\n          seed: {i}\n"
+        f"          target_distribution: {{Month-to-month: 0.8, One year: 0.12, Two year: 0.08}}"
+        for i in range(1, 6)
+    )
+    fault.write_text(
+        "fault_types:\n  data_drift:\n    injection:\n      feature: Contract\n      settings:\n"
+        + dup
+        + "\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(GeneratorConfigError):
+        generate_p1(p1_generator_config, tmp_path / "cases")

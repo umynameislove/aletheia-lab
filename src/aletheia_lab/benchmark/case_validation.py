@@ -11,8 +11,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from aletheia_lab.benchmark.case_schema import EVIDENCE_CONDITIONS
+from aletheia_lab.benchmark.case_schema import EVIDENCE_CONDITIONS, project_diagnosis_input
 from aletheia_lab.benchmark.case_writer import (
+    LoadedCase,
     diagnosis_input_leakage,
     load_case_dir,
     sha256_file,
@@ -50,6 +51,59 @@ class ValidationReport:
 
 def _case_dirs(cases_dir: Path) -> list[Path]:
     return sorted(p for p in cases_dir.iterdir() if p.is_dir() and (p / "manifest.json").exists())
+
+
+REQUIRED_ARTIFACTS = frozenset(
+    {"manifest.json", "diagnosis_input.json", "ground_truth.json", "injection.json"}
+)
+
+
+def _cross_artifact_errors(case: LoadedCase, case_dir: Path) -> list[str]:
+    """Return consistency errors between the four payloads of one case."""
+
+    m, inj, gt, di = case.manifest, case.injection, case.ground_truth, case.diagnosis_input
+    errors: list[str] = []
+    cid = m.case_id
+
+    if m.injection_id != inj.injection_id:
+        errors.append(f"{cid}: manifest.injection_id != injection.injection_id")
+    if m.injection_seed != inj.seed:
+        errors.append(f"{cid}: manifest.injection_seed != injection.seed")
+    if m.dataset_sha256 != inj.dataset_sha256:
+        errors.append(f"{cid}: dataset_sha256 mismatch manifest vs injection")
+    if m.dataset_id != inj.dataset_id:
+        errors.append(f"{cid}: dataset_id mismatch manifest vs injection")
+
+    params = m.injection_parameters
+    if params.get("feature") != inj.feature:
+        errors.append(f"{cid}: injection feature mismatch")
+    if params.get("seed") != inj.seed:
+        errors.append(f"{cid}: injection seed param mismatch")
+    if params.get("target_distribution") != inj.target_distribution:
+        errors.append(f"{cid}: target_distribution mismatch manifest vs injection")
+    if params.get("output_size") != inj.output_size:
+        errors.append(f"{cid}: output_size mismatch manifest vs injection")
+
+    if gt.injection_parameters != params:
+        errors.append(f"{cid}: ground_truth.injection_parameters != manifest.injection_parameters")
+    if gt.cause_label != m.fault_type:
+        errors.append(f"{cid}: ground_truth.cause_label != fault_type")
+
+    if di.model_dump() != project_diagnosis_input(m).model_dump():
+        errors.append(f"{cid}: diagnosis_input.json is not the manifest projection")
+
+    if m.ground_truth_ref != "ground_truth.json" or not (case_dir / m.ground_truth_ref).exists():
+        errors.append(f"{cid}: ground_truth_ref missing or wrong")
+    for ref in m.artifacts.values():
+        if not (case_dir / ref).exists():
+            errors.append(f"{cid}: artifact reference missing: {ref}")
+
+    import json
+
+    recorded = json.loads((case_dir / "checksums.json").read_text("utf-8"))
+    if set(recorded) != REQUIRED_ARTIFACTS:
+        errors.append(f"{cid}: checksums do not cover exactly the four required artifacts")
+    return errors
 
 
 def validate_p1_cases(cases_dir: str | Path) -> ValidationReport:
@@ -137,6 +191,15 @@ def validate_p1_cases(cases_dir: str | Path) -> ValidationReport:
             if sha256_file(case_dir / name) != digest:
                 integrity_ok = False
     report._record("artifact_checksums_match", integrity_ok, "an artifact checksum mismatch")
+
+    cross_errors: list[str] = []
+    for case, case_dir in zip(loaded, dirs, strict=True):
+        cross_errors.extend(_cross_artifact_errors(case, case_dir))
+    report._record(
+        "cross_artifact_consistent",
+        not cross_errors,
+        "; ".join(cross_errors[:5]) if cross_errors else None,
+    )
 
     # Observable drift signal present for each of the 5 settings (via full/noisy).
     setting_has_signal: dict[str, bool] = {}

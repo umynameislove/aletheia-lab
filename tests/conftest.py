@@ -147,3 +147,82 @@ def p1_generator_config(tmp_path: Path, make_frame) -> Path:
         encoding="utf-8",
     )
     return config
+
+
+@pytest.fixture
+def p1_manifest_factory():
+    """Factory for a valid P1 case manifest dict (override id/public_id/condition)."""
+
+    def build(
+        case_id: str = "p1-data-drift-01-full",
+        public_id: str = "p1-case-01-full",
+        condition: str = "full",
+    ) -> dict:
+        return {
+            "case_id": case_id,
+            "public_id": public_id,
+            "fault_type": "data_drift",
+            "dataset_id": "telco_customer_churn",
+            "dataset_sha256": "a" * 64,
+            "split_manifest_sha256": "b" * 64,
+            "injection_id": "drift_contract_s1",
+            "injection_seed": 1,
+            "injection_parameters": {"feature": "Contract", "seed": 1},
+            "injection_setting": "drift_contract_s1",
+            "severity_rank": 1,
+            "evidence_condition": condition,
+            "evidence_bundle_id": f"eb-{public_id}",
+            "expected_diagnosis_behavior": "cite or abstain",
+            "observable_signals": {
+                "candidate_feature": "Contract",
+                "psi": 0.5,
+                "distribution_reference": {"Month-to-month": 1.0},
+            },
+            "artifacts": {"manifest": "manifest.json"},
+            "reproduction": {"command": "python -m aletheia_lab benchmark generate-p1"},
+            "ground_truth_ref": "ground_truth.json",
+            "split": "dev",
+            "tag": "P1",
+        }
+
+    return build
+
+
+@pytest.fixture
+def p1_ground_truth_factory():
+    """Factory for a valid P1 ground-truth dict."""
+
+    def build() -> dict:
+        return {
+            "cause_label": "data_drift",
+            "causal_mechanism": "categorical_distribution_shift",
+            "injected_change": "Contract shifted",
+            "affected_components": ["Contract"],
+            "expected_symptoms": ["metric_regression"],
+            "injection_parameters": {"feature": "Contract", "seed": 1},
+        }
+
+    return build
+
+
+@pytest.fixture
+def p1_injection_factory():
+    """Factory for a valid P1 injection-provenance dict."""
+
+    def build() -> dict:
+        return {
+            "injection_id": "drift_contract_s1",
+            "injector": "X",
+            "fault_type": "data_drift",
+            "feature": "Contract",
+            "seed": 1,
+            "target_distribution": {"Month-to-month": 0.8},
+            "achieved_distribution": {"Month-to-month": 0.8},
+            "reference_distribution": {"Month-to-month": 0.5},
+            "psi": 0.5,
+            "output_size": 100,
+            "dataset_id": "telco_customer_churn",
+            "dataset_sha256": "a" * 64,
+        }
+
+    return build

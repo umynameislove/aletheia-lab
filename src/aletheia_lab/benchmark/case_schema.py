@@ -63,6 +63,21 @@ EXPECTED_BEHAVIOR: dict[str, str] = {
 }
 
 
+class MetricComparison(BaseModel):
+    """A measured baseline metric on a clean vs a drifted evaluation split.
+
+    These numbers are produced by actually training the P1 baseline on the train
+    split and scoring it on the clean and the drifted test split, so a
+    "metric change" claim is evidence, not an assumption.
+    """
+
+    metric: str
+    reference_split: str
+    reference: float
+    observed: float
+    delta: float
+
+
 class ObservableSignals(BaseModel):
     """Evidence-safe signals a diagnoser may see. Never names the cause."""
 
@@ -71,7 +86,7 @@ class ObservableSignals(BaseModel):
     distribution_observed: dict[str, float] | None = None
     psi: float | None = None
     sample_size: int | None = None
-    baseline_metric_reference: dict[str, float] | None = None
+    baseline_metric_reference: MetricComparison | None = None
     distractor_signals: dict[str, object] = Field(default_factory=dict)
     notes: list[str] = Field(default_factory=list)
 

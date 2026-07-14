@@ -19,6 +19,7 @@ contract.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -100,6 +101,9 @@ class CategoricalDriftInjector:
         target_dist = _normalize(spec.target_distribution)
 
         n_out = spec.output_size if spec.output_size is not None else len(source)
+        if n_out <= 0:
+            msg = f"output_size must be positive, got {n_out}"
+            raise ValueError(msg)
         rng = np.random.default_rng(spec.seed)
 
         # Largest-remainder apportionment: counts sum to exactly n_out, so the
@@ -168,6 +172,16 @@ def _apportion(target_distribution: dict[str, float], n_out: int) -> dict[str, i
 def _normalize(distribution: dict[str, float]) -> dict[str, float]:
     """Normalize a proportion map to sum to 1.0."""
 
+    if not distribution:
+        msg = "target_distribution must not be empty"
+        raise ValueError(msg)
+    for category, weight in distribution.items():
+        if not math.isfinite(weight):
+            msg = f"target_distribution weight for {category!r} is not finite: {weight}"
+            raise ValueError(msg)
+        if weight < 0:
+            msg = f"target_distribution weight for {category!r} is negative: {weight}"
+            raise ValueError(msg)
     total = sum(distribution.values())
     if total <= 0:
         msg = "target_distribution must have a positive total"

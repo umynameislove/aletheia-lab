@@ -1,10 +1,14 @@
 """Deterministic generator for the 15 P1 data-drift benchmark cases.
 
 Matrix: 5 injection settings (from ``configs/benchmark/fault_types.yaml``) x 3
-evidence conditions (full / missing_key / noisy) = 15 cases. Each case is written
-with a hard ground-truth boundary (see ``case_schema``/``case_writer``). The full
-injected dataset is never persisted; only the observable signals, provenance and
-checksums are written, so no large artifact enters the tree.
+evidence conditions (full / missing_key / noisy) = 15 cases.
+
+Construct validity: the P1-C-02 baseline is trained on the train split and scored
+on the clean test split (reference) and on each drifted test split (observed), so
+the "metric change" recorded as evidence is measured, not assumed. Drift is scored
+by PSI between the training distribution and the drifted evaluation batch. The full
+injected dataset is never persisted; only signals, provenance and checksums are
+written, so no large artifact enters the tree.
 """
 
 from __future__ import annotations
@@ -14,12 +18,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
+import pandas as pd
+
 from aletheia_lab.baseline.loader import load_processed, split_dataset
+from aletheia_lab.baseline.model import build_pipeline
 from aletheia_lab.baseline.run import resolve_settings
+from aletheia_lab.baseline.schema import FEATURE_COLUMNS
 from aletheia_lab.benchmark.case_schema import (
     EVIDENCE_CONDITIONS,
     EXPECTED_BEHAVIOR,
     SCHEMA_VERSION,
+    MetricComparison,
     ObservableSignals,
 )
 from aletheia_lab.benchmark.case_writer import (
@@ -30,13 +39,13 @@ from aletheia_lab.benchmark.case_writer import (
     write_case,
 )
 from aletheia_lab.benchmark.injectors import CategoricalDriftInjector, DriftSpec
-from aletheia_lab.benchmark.manifest import GroundTruth
-from aletheia_lab.benchmark.signals import categorical_distribution
+from aletheia_lab.benchmark.signals import categorical_distribution, population_stability_index
 from aletheia_lab.config import load_yaml
 
 _CONDITION_SLUG = {"full": "full", "missing_key": "missing-key", "noisy": "noisy"}
-# Stable, evidence-safe distractor features for the 'noisy' condition.
 _DISTRACTOR_FEATURES = ("gender", "PaymentMethod")
+_EXPECTED_SETTINGS = 5
+_TARGET_COLUMN = "__target__"
 
 
 class GeneratorConfigError(RuntimeError):
@@ -59,7 +68,8 @@ class _Injected:
     setting: _Setting
     observed: dict[str, float]
     psi: float
-    ground_truth: GroundTruth
+    metric: MetricComparison
+    injected_change: str
 
 
 def _load_settings(config_path: Path) -> tuple[str, list[_Setting]]:
@@ -85,6 +95,13 @@ def _load_settings(config_path: Path) -> tuple[str, list[_Setting]]:
         )
         for item in raw_settings
     ]
+    ids = [s.injection_id for s in settings]
+    if len(set(ids)) != len(ids):
+        raise GeneratorConfigError(f"duplicate injection_id in settings: {ids}")
+    if len(settings) != _EXPECTED_SETTINGS:
+        raise GeneratorConfigError(
+            f"P1 requires exactly {_EXPECTED_SETTINGS} injection settings, got {len(settings)}"
+        )
     return feature, settings
 
 
@@ -96,10 +113,16 @@ def _observable_signals(
     observed: dict[str, float],
     psi: float,
     sample_size: int,
+    metric: MetricComparison,
     distractors: dict[str, Any],
 ) -> ObservableSignals:
     """Transform the base evidence per condition (full / missing_key / noisy)."""
 
+    change_note = (
+        f"Baseline {metric.metric} on the {metric.reference_split} split changed from "
+        f"{metric.reference:.4f} to {metric.observed:.4f} (delta {metric.delta:+.4f}) "
+        "for this evaluation batch."
+    )
     if condition == "full":
         return ObservableSignals(
             candidate_feature=feature,
@@ -107,16 +130,20 @@ def _observable_signals(
             distribution_observed=observed,
             psi=psi,
             sample_size=sample_size,
-            notes=["A metric regression was observed against the baseline split reference."],
+            baseline_metric_reference=metric,
+            notes=[change_note],
         )
     if condition == "missing_key":
-        # Withhold the decisive before/after comparison and the PSI: the observed
-        # snapshot alone cannot establish a shift, so a grounded diagnosis abstains.
+        # Withhold the decisive comparison: reference distribution, PSI and the
+        # reference/observed metric. The current snapshot alone cannot establish a
+        # shift, so a grounded diagnosis abstains.
         return ObservableSignals(
             candidate_feature=feature,
             distribution_observed=observed,
             sample_size=sample_size,
-            notes=["Reference (pre-change) distribution and PSI are unavailable."],
+            notes=[
+                "Reference distribution, PSI and the baseline metric comparison are unavailable."
+            ],
         )
     if condition == "noisy":
         return ObservableSignals(
@@ -125,9 +152,10 @@ def _observable_signals(
             distribution_observed=observed,
             psi=psi,
             sample_size=sample_size,
+            baseline_metric_reference=metric,
             distractor_signals=distractors,
             notes=[
-                "A metric regression was observed against the baseline split reference.",
+                change_note,
                 "Unrelated stable feature distributions are included as distractors.",
             ],
         )
@@ -157,15 +185,28 @@ def generate_p1(
     )
     split_manifest_sha = _sha256_text(dumps_deterministic(splits.manifest.model_dump()))
 
-    reference = categorical_distribution(frame[feature].astype(str).tolist())
-    distractors = {
-        col: categorical_distribution(frame[col].astype(str).tolist())
-        for col in _DISTRACTOR_FEATURES
-        if col in frame.columns
-    }
-    output_size = int(len(frame))
+    # Train the P1-C-02 baseline on the train split; measure clean-vs-drifted
+    # accuracy on the held-out test split (never on training rows).
+    pipeline = build_pipeline(resolved.model)
+    pipeline.fit(splits.train.features, splits.train.target)
 
-    # First pass: run the 5 injections and rank severity by PSI.
+    def _accuracy(features: pd.DataFrame, target: pd.Series) -> float:
+        predictions = pipeline.predict(features)
+        return float((predictions == target.to_numpy()).mean())
+
+    reference_metric = _accuracy(splits.test.features, splits.test.target)
+    reference = categorical_distribution(splits.train.features[feature].astype(str).tolist())
+
+    test_frame = splits.test.features.copy()
+    test_frame[_TARGET_COLUMN] = splits.test.target.to_numpy()
+    output_size = int(len(test_frame))
+
+    distractors = {
+        col: categorical_distribution(splits.test.features[col].astype(str).tolist())
+        for col in _DISTRACTOR_FEATURES
+        if col in splits.test.features.columns
+    }
+
     injected: list[_Injected] = []
     for setting in settings:
         result = CategoricalDriftInjector(
@@ -176,13 +217,27 @@ def generate_p1(
                 output_size=output_size,
                 seed=setting.seed,
             )
-        ).inject(frame)
+        ).inject(test_frame)
+        drifted = result.injected
+        observed = categorical_distribution(drifted[feature].astype(str).tolist())
+        psi = population_stability_index(reference, observed)
+        observed_metric = _accuracy(
+            drifted[list(FEATURE_COLUMNS)], cast("pd.Series", drifted[_TARGET_COLUMN])
+        )
+        metric = MetricComparison(
+            metric="accuracy",
+            reference_split="test",
+            reference=reference_metric,
+            observed=observed_metric,
+            delta=observed_metric - reference_metric,
+        )
         injected.append(
             _Injected(
                 setting=setting,
-                observed=cast("dict[str, float]", result.signals["distribution_after"]),
-                psi=float(cast(float, result.signals["psi"])),
-                ground_truth=result.ground_truth,
+                observed=observed,
+                psi=psi,
+                metric=metric,
+                injected_change=f"{feature}: {reference} -> {observed}",
             )
         )
     severity = {
@@ -198,15 +253,13 @@ def generate_p1(
 
     for index, item in enumerate(injected, start=1):
         setting = item.setting
-        observed = item.observed
-        psi = item.psi
-        gt = item.ground_truth
         settings_table.append(
             {
                 "index": index,
                 "injection_id": setting.injection_id,
                 "seed": setting.seed,
-                "psi": psi,
+                "psi": item.psi,
+                "metric_delta": item.metric.delta,
                 "severity_rank": severity[setting.injection_id],
             }
         )
@@ -224,9 +277,10 @@ def generate_p1(
                 condition,
                 feature=feature,
                 reference=reference,
-                observed=observed,
-                psi=psi,
+                observed=item.observed,
+                psi=item.psi,
                 sample_size=output_size,
+                metric=item.metric,
                 distractors=distractors,
             )
             manifest = {
@@ -266,11 +320,11 @@ def generate_p1(
                 "tag": "P1",
             }
             ground_truth = {
-                "cause_label": gt.cause_label,
-                "causal_mechanism": gt.causal_mechanism,
-                "injected_change": gt.injected_change,
-                "affected_components": gt.affected_components,
-                "expected_symptoms": gt.expected_symptoms,
+                "cause_label": "data_drift",
+                "causal_mechanism": "categorical_distribution_shift",
+                "injected_change": item.injected_change,
+                "affected_components": [feature],
+                "expected_symptoms": ["metric_regression", f"distribution_shift:{feature}"],
                 "injection_parameters": injection_parameters,
             }
             injection = {
@@ -280,24 +334,20 @@ def generate_p1(
                 "feature": feature,
                 "seed": setting.seed,
                 "target_distribution": setting.target_distribution,
-                "achieved_distribution": observed,
+                "achieved_distribution": item.observed,
                 "reference_distribution": reference,
-                "psi": psi,
+                "psi": item.psi,
                 "output_size": output_size,
                 "dataset_id": resolved.dataset_id,
                 "dataset_sha256": dataset_sha,
             }
-            written = write_case(
-                output_dir / case_id, manifest, ground_truth, injection, overwrite=overwrite
-            )
+            write_case(output_dir / case_id, manifest, ground_truth, injection, overwrite=overwrite)
             loaded = load_case_dir(output_dir / case_id)
-            leaks = diagnosis_input_leakage(loaded.diagnosis_input)
-            leakage_total += len(leaks)
+            leakage_total += len(diagnosis_input_leakage(loaded.diagnosis_input))
             case_ids.append(case_id)
             condition_counts[condition] += 1
-            _ = written
 
-    summary = {
+    return {
         "case_count": len(case_ids),
         "case_ids": case_ids,
         "settings": settings_table,
@@ -305,7 +355,7 @@ def generate_p1(
         "dataset_id": resolved.dataset_id,
         "dataset_sha256": dataset_sha,
         "split_manifest_sha256": split_manifest_sha,
+        "reference_metric": {"metric": "accuracy", "split": "test", "value": reference_metric},
         "leakage_total": leakage_total,
         "output_dir": str(output_dir),
     }
-    return summary
