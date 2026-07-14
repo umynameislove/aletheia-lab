@@ -1,14 +1,15 @@
 """Deterministic generator for the 15 P1 data-drift benchmark cases.
 
-Matrix: 5 injection settings (from ``configs/benchmark/fault_types.yaml``) x 3
-evidence conditions (full / missing_key / noisy) = 15 cases.
+Matrix: 5 injection settings x 3 evidence conditions (full / missing_key / noisy).
 
-Construct validity: the P1-C-02 baseline is trained on the train split and scored
-on the clean test split (reference) and on each drifted test split (observed), so
-the "metric change" recorded as evidence is measured, not assumed. Drift is scored
-by PSI between the training distribution and the drifted evaluation batch. The full
-injected dataset is never persisted; only signals, provenance and checksums are
-written, so no large artifact enters the tree.
+Reference window is a single, consistent one: the clean held-out test split. The
+P1-C-02 baseline is trained on the train split, then scored on the clean test
+split (reference) and on each drifted test split (observed). The measured
+accuracy delta is classified honestly (regression / improvement / stable) at a
+fixed threshold; the injection is always data_drift but its effect is not forced
+to be a regression, so improvement/stable control cases exist. The noisy
+condition carries a measured distractor comparison (gender), never an unmeasured
+"stable" claim. No large artifact is persisted.
 """
 
 from __future__ import annotations
@@ -25,11 +26,16 @@ from aletheia_lab.baseline.model import build_pipeline
 from aletheia_lab.baseline.run import resolve_settings
 from aletheia_lab.baseline.schema import FEATURE_COLUMNS
 from aletheia_lab.benchmark.case_schema import (
+    DISTRACTOR_STABLE_PSI_MAX,
     EVIDENCE_CONDITIONS,
     EXPECTED_BEHAVIOR,
     SCHEMA_VERSION,
+    DistractorComparison,
     MetricComparison,
     ObservableSignals,
+    case_role_for,
+    classify_outcome,
+    expected_symptom_for,
 )
 from aletheia_lab.benchmark.case_writer import (
     diagnosis_input_leakage,
@@ -43,7 +49,9 @@ from aletheia_lab.benchmark.signals import categorical_distribution, population_
 from aletheia_lab.config import load_yaml
 
 _CONDITION_SLUG = {"full": "full", "missing_key": "missing-key", "noisy": "noisy"}
-_DISTRACTOR_FEATURES = ("gender", "PaymentMethod")
+# Distractor feature for P1: gender is independent of Contract. PaymentMethod is
+# intentionally not used because it can co-move with Contract.
+_DISTRACTOR_FEATURE = "gender"
 _EXPECTED_SETTINGS = 5
 _TARGET_COLUMN = "__target__"
 
@@ -69,7 +77,9 @@ class _Injected:
     observed: dict[str, float]
     psi: float
     metric: MetricComparison
+    outcome: str
     injected_change: str
+    distractor: DistractorComparison
 
 
 def _load_settings(config_path: Path) -> tuple[str, list[_Setting]]:
@@ -114,14 +124,15 @@ def _observable_signals(
     psi: float,
     sample_size: int,
     metric: MetricComparison,
-    distractors: dict[str, Any],
+    outcome: str,
+    distractor: DistractorComparison,
 ) -> ObservableSignals:
     """Transform the base evidence per condition (full / missing_key / noisy)."""
 
     change_note = (
-        f"Baseline {metric.metric} on the {metric.reference_split} split changed from "
-        f"{metric.reference:.4f} to {metric.observed:.4f} (delta {metric.delta:+.4f}) "
-        "for this evaluation batch."
+        f"Baseline {metric.metric} on the {metric.reference_split} split moved from "
+        f"{metric.reference:.4f} to {metric.observed:.4f} (delta {metric.delta:+.4f}); "
+        f"measured outcome: {outcome}."
     )
     if condition == "full":
         return ObservableSignals(
@@ -134,9 +145,6 @@ def _observable_signals(
             notes=[change_note],
         )
     if condition == "missing_key":
-        # Withhold the decisive comparison: reference distribution, PSI and the
-        # reference/observed metric. The current snapshot alone cannot establish a
-        # shift, so a grounded diagnosis abstains.
         return ObservableSignals(
             candidate_feature=feature,
             distribution_observed=observed,
@@ -146,6 +154,10 @@ def _observable_signals(
             ],
         )
     if condition == "noisy":
+        distractor_note = (
+            f"Distractor feature {distractor.feature!r} PSI {distractor.psi:.4f} "
+            "(measured, unrelated to the candidate feature)."
+        )
         return ObservableSignals(
             candidate_feature=feature,
             distribution_reference=reference,
@@ -153,11 +165,8 @@ def _observable_signals(
             psi=psi,
             sample_size=sample_size,
             baseline_metric_reference=metric,
-            distractor_signals=distractors,
-            notes=[
-                change_note,
-                "Unrelated stable feature distributions are included as distractors.",
-            ],
+            distractor_comparisons=[distractor],
+            notes=[change_note, distractor_note],
         )
     msg = f"unknown evidence condition: {condition}"
     raise GeneratorConfigError(msg)
@@ -185,8 +194,8 @@ def generate_p1(
     )
     split_manifest_sha = _sha256_text(dumps_deterministic(splits.manifest.model_dump()))
 
-    # Train the P1-C-02 baseline on the train split; measure clean-vs-drifted
-    # accuracy on the held-out test split (never on training rows).
+    # Baseline trained on train split only; all comparisons use the clean test
+    # split as the single reference window.
     pipeline = build_pipeline(resolved.model)
     pipeline.fit(splits.train.features, splits.train.target)
 
@@ -195,17 +204,14 @@ def generate_p1(
         return float((predictions == target.to_numpy()).mean())
 
     reference_metric = _accuracy(splits.test.features, splits.test.target)
-    reference = categorical_distribution(splits.train.features[feature].astype(str).tolist())
+    reference = categorical_distribution(splits.test.features[feature].astype(str).tolist())
+    distractor_reference = categorical_distribution(
+        splits.test.features[_DISTRACTOR_FEATURE].astype(str).tolist()
+    )
 
     test_frame = splits.test.features.copy()
     test_frame[_TARGET_COLUMN] = splits.test.target.to_numpy()
     output_size = int(len(test_frame))
-
-    distractors = {
-        col: categorical_distribution(splits.test.features[col].astype(str).tolist())
-        for col in _DISTRACTOR_FEATURES
-        if col in splits.test.features.columns
-    }
 
     injected: list[_Injected] = []
     for setting in settings:
@@ -224,12 +230,29 @@ def generate_p1(
         observed_metric = _accuracy(
             drifted[list(FEATURE_COLUMNS)], cast("pd.Series", drifted[_TARGET_COLUMN])
         )
+        delta = observed_metric - reference_metric
         metric = MetricComparison(
             metric="accuracy",
             reference_split="test",
             reference=reference_metric,
             observed=observed_metric,
-            delta=observed_metric - reference_metric,
+            delta=delta,
+        )
+        distractor_observed = categorical_distribution(
+            drifted[_DISTRACTOR_FEATURE].astype(str).tolist()
+        )
+        distractor_psi = population_stability_index(distractor_reference, distractor_observed)
+        if distractor_psi > DISTRACTOR_STABLE_PSI_MAX:
+            msg = (
+                f"distractor {_DISTRACTOR_FEATURE!r} is not stable for "
+                f"{setting.injection_id} (PSI {distractor_psi:.4f} > {DISTRACTOR_STABLE_PSI_MAX})"
+            )
+            raise GeneratorConfigError(msg)
+        distractor = DistractorComparison(
+            feature=_DISTRACTOR_FEATURE,
+            distribution_reference=distractor_reference,
+            distribution_observed=distractor_observed,
+            psi=distractor_psi,
         )
         injected.append(
             _Injected(
@@ -237,7 +260,9 @@ def generate_p1(
                 observed=observed,
                 psi=psi,
                 metric=metric,
+                outcome=classify_outcome(delta),
                 injected_change=f"{feature}: {reference} -> {observed}",
+                distractor=distractor,
             )
         )
     severity = {
@@ -248,18 +273,26 @@ def generate_p1(
     output_dir = Path(output_dir)
     case_ids: list[str] = []
     condition_counts: dict[str, int] = {c: 0 for c in EVIDENCE_CONDITIONS}
+    outcome_counts: dict[str, int] = {"regression": 0, "improvement": 0, "stable": 0}
     leakage_total = 0
     settings_table: list[dict[str, Any]] = []
 
     for index, item in enumerate(injected, start=1):
         setting = item.setting
+        role = case_role_for(item.outcome)  # type: ignore[arg-type]
+        outcome_counts[item.outcome] += 1
         settings_table.append(
             {
                 "index": index,
                 "injection_id": setting.injection_id,
                 "seed": setting.seed,
                 "psi": item.psi,
+                "reference_accuracy": item.metric.reference,
+                "observed_accuracy": item.metric.observed,
                 "metric_delta": item.metric.delta,
+                "outcome": item.outcome,
+                "case_role": role,
+                "distractor_psi": item.distractor.psi,
                 "severity_rank": severity[setting.injection_id],
             }
         )
@@ -269,6 +302,7 @@ def generate_p1(
             "output_size": output_size,
             "seed": setting.seed,
         }
+        expected_symptoms = [expected_symptom_for(item.outcome), f"distribution_shift:{feature}"]  # type: ignore[arg-type]
         for condition in EVIDENCE_CONDITIONS:
             slug = _CONDITION_SLUG[condition]
             case_id = f"p1-data-drift-{index:02d}-{slug}"
@@ -281,7 +315,8 @@ def generate_p1(
                 psi=item.psi,
                 sample_size=output_size,
                 metric=item.metric,
-                distractors=distractors,
+                outcome=item.outcome,
+                distractor=item.distractor,
             )
             manifest = {
                 "schema_version": SCHEMA_VERSION,
@@ -324,8 +359,11 @@ def generate_p1(
                 "causal_mechanism": "categorical_distribution_shift",
                 "injected_change": item.injected_change,
                 "affected_components": [feature],
-                "expected_symptoms": ["metric_regression", f"distribution_shift:{feature}"],
+                "expected_symptoms": expected_symptoms,
                 "injection_parameters": injection_parameters,
+                "metric_outcome": item.outcome,
+                "metric_delta": item.metric.delta,
+                "case_role": role,
             }
             injection = {
                 "injection_id": setting.injection_id,
@@ -352,6 +390,7 @@ def generate_p1(
         "case_ids": case_ids,
         "settings": settings_table,
         "condition_counts": condition_counts,
+        "outcome_counts": outcome_counts,
         "dataset_id": resolved.dataset_id,
         "dataset_sha256": dataset_sha,
         "split_manifest_sha256": split_manifest_sha,

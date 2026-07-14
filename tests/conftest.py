@@ -109,7 +109,7 @@ def p1_generator_config(tmp_path: Path, make_frame) -> Path:
 
     processed_dir = tmp_path / "data" / "processed"
     processed_dir.mkdir(parents=True)
-    make_frame(n=300, seed=0).to_csv(
+    make_frame(n=4000, seed=0).to_csv(
         processed_dir / "telco_customer_churn.csv", index=False, lineterminator="\n"
     )
     config = tmp_path / "project.yaml"
@@ -200,6 +200,9 @@ def p1_ground_truth_factory():
             "affected_components": ["Contract"],
             "expected_symptoms": ["metric_regression"],
             "injection_parameters": {"feature": "Contract", "seed": 1},
+            "metric_outcome": "regression",
+            "metric_delta": -0.05,
+            "case_role": "failure",
         }
 
     return build
