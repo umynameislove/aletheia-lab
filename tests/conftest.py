@@ -101,3 +101,49 @@ def project_config(tmp_path: Path, make_frame) -> Path:
         encoding="utf-8",
     )
     return config
+
+
+@pytest.fixture
+def p1_generator_config(tmp_path: Path, make_frame) -> Path:
+    """Write a synthetic processed dataset + project config + fault_types config."""
+
+    processed_dir = tmp_path / "data" / "processed"
+    processed_dir.mkdir(parents=True)
+    make_frame(n=300, seed=0).to_csv(
+        processed_dir / "telco_customer_churn.csv", index=False, lineterminator="\n"
+    )
+    config = tmp_path / "project.yaml"
+    config.write_text(
+        "dataset:\n  id: telco_customer_churn\n"
+        "paths:\n"
+        f"  processed_data: {processed_dir.as_posix()}\n"
+        "baseline:\n  seed: 42\n"
+        "  split:\n    train: 0.70\n    validation: 0.15\n    test: 0.15\n    stratify: true\n",
+        encoding="utf-8",
+    )
+    bench_dir = tmp_path / "benchmark"
+    bench_dir.mkdir()
+    (bench_dir / "fault_types.yaml").write_text(
+        "fault_types:\n"
+        "  data_drift:\n"
+        "    injection:\n"
+        "      feature: Contract\n"
+        "      settings:\n"
+        "        - injection_id: drift_contract_s1\n"
+        "          seed: 1\n"
+        "          target_distribution: {Month-to-month: 0.80, One year: 0.12, Two year: 0.08}\n"
+        "        - injection_id: drift_contract_s2\n"
+        "          seed: 2\n"
+        "          target_distribution: {Month-to-month: 0.70, One year: 0.18, Two year: 0.12}\n"
+        "        - injection_id: drift_contract_s3\n"
+        "          seed: 3\n"
+        "          target_distribution: {Month-to-month: 0.90, One year: 0.06, Two year: 0.04}\n"
+        "        - injection_id: drift_contract_s4\n"
+        "          seed: 4\n"
+        "          target_distribution: {Month-to-month: 0.40, One year: 0.30, Two year: 0.30}\n"
+        "        - injection_id: drift_contract_s5\n"
+        "          seed: 5\n"
+        "          target_distribution: {Month-to-month: 0.60, One year: 0.20, Two year: 0.20}\n",
+        encoding="utf-8",
+    )
+    return config

@@ -12,19 +12,19 @@ fault_types:
       settings:
         - injection_id: drift_contract_s1
           seed: 1
-          target_distribution: {month-to-month: 0.80, one year: 0.12, two year: 0.08}
+          target_distribution: {Month-to-month: 0.80, One year: 0.12, Two year: 0.08}
         - injection_id: drift_contract_s2
           seed: 2
-          target_distribution: {month-to-month: 0.70, one year: 0.18, two year: 0.12}
+          target_distribution: {Month-to-month: 0.70, One year: 0.18, Two year: 0.12}
         - injection_id: drift_contract_s3
           seed: 3
-          target_distribution: {month-to-month: 0.90, one year: 0.06, two year: 0.04}
+          target_distribution: {Month-to-month: 0.90, One year: 0.06, Two year: 0.04}
         - injection_id: drift_contract_s4
           seed: 4
-          target_distribution: {month-to-month: 0.40, one year: 0.30, two year: 0.30}
+          target_distribution: {Month-to-month: 0.40, One year: 0.30, Two year: 0.30}
         - injection_id: drift_contract_s5
           seed: 5
-          target_distribution: {month-to-month: 0.60, one year: 0.20, two year: 0.20}
+          target_distribution: {Month-to-month: 0.60, One year: 0.20, Two year: 0.20}
     expected_evidence:
       - dataset_profile_before
       - dataset_profile_after

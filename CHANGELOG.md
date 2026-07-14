@@ -7,6 +7,17 @@ phiên bản theo [SemVer](https://semver.org/lang/vi/).
 ## [Unreleased]
 
 ### Added
+- P1 benchmark cases (manifest + hidden ground truth + 15 data-drift cases):
+  `benchmark/case_schema.py` (schema + enforced diagnosis-visible projection +
+  forbidden-term set), `case_writer.py` (deterministic/atomic JSON + checksums +
+  loader), `generator.py` (5 settings x 3 evidence conditions = 15 cases),
+  `case_validation.py` (5x3 matrix, uniqueness, checksum integrity, zero
+  diagnosis leakage), `benchmark/cli.py` (`aletheia benchmark generate-p1 /
+  validate-p1`). Injector: deterministic largest-remainder apportionment (exact
+  output size) and an honest one-factor docstring (correlated marginals shift as
+  a conditional-resampling consequence). Cases write to `experiments/p1/cases/`
+  (gitignored); ground truth is kept out of the diagnosis-visible payload by a
+  whitelist projection enforced with tests.
 - P1-C-02 seeded loader + deterministic baseline: `src/aletheia_lab/baseline/`
   (`loader.py` stratified train/val/test split khoá theo seed + stable
   `customerID` id + leakage guards; `preprocess.py` ColumnTransformer chỉ fit

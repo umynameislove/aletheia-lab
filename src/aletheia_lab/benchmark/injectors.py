@@ -73,10 +73,15 @@ class DriftSpec:
 class CategoricalDriftInjector:
     """Shift the marginal distribution of one categorical feature.
 
-    The injector resamples rows per category so that ``feature`` follows
-    ``spec.target_distribution`` while every other column, and the within-category
-    conditional structure, is preserved. This keeps a single dominant cause:
-    a distribution shift on exactly one feature.
+    The injector resamples rows within each category of ``feature`` so that
+    ``feature`` follows ``spec.target_distribution``. The controlled cause is a
+    single one: the marginal of ``feature``. Rows are drawn from their own
+    category, so the within-category conditional structure of the other columns
+    is preserved; however, because the category mix changes, the *marginal*
+    distribution of any column correlated with ``feature`` will shift as a
+    downstream consequence of the resampling. This is a property of conditional
+    resampling, not a second injected cause, and the guarantee is deliberately
+    scoped to the one controlled feature rather than to "all other columns".
     """
 
     fault_type = "data_drift"
@@ -97,13 +102,18 @@ class CategoricalDriftInjector:
         n_out = spec.output_size if spec.output_size is not None else len(source)
         rng = np.random.default_rng(spec.seed)
 
+        # Largest-remainder apportionment: counts sum to exactly n_out, so the
+        # injected batch size matches the request instead of drifting with
+        # per-category rounding. Deterministic given the (sorted) categories.
+        counts = _apportion(target_dist, n_out)
+
         parts: list[pd.DataFrame] = []
-        for category, proportion in sorted(target_dist.items()):
+        for category in sorted(target_dist):
             pool = source.loc[feature_values == category]
             if pool.empty:
                 msg = f"category {category!r} absent from source; cannot inject drift"
                 raise ValueError(msg)
-            count = round(proportion * n_out)
+            count = counts[category]
             if count == 0:
                 continue
             picks = rng.integers(0, len(pool), size=count)
@@ -113,9 +123,7 @@ class CategoricalDriftInjector:
         order = rng.permutation(len(injected))
         injected = injected.iloc[order].reset_index(drop=True)
 
-        achieved_dist = categorical_distribution(
-            injected[spec.feature].astype(str).tolist()
-        )
+        achieved_dist = categorical_distribution(injected[spec.feature].astype(str).tolist())
         psi = population_stability_index(source_dist, achieved_dist)
 
         ground_truth = GroundTruth(
@@ -136,6 +144,25 @@ class CategoricalDriftInjector:
         }
 
         return InjectionResult(injected=injected, ground_truth=ground_truth, signals=signals)
+
+
+def _apportion(target_distribution: dict[str, float], n_out: int) -> dict[str, int]:
+    """Split ``n_out`` across categories by proportion, summing to exactly n_out.
+
+    Uses the largest-remainder method over the normalized proportions; ties are
+    broken by category name so the result is deterministic.
+    """
+
+    normalized = _normalize(target_distribution)
+    raw = {category: proportion * n_out for category, proportion in normalized.items()}
+    floors = {category: int(value) for category, value in raw.items()}
+    assigned = sum(floors.values())
+    remainder = n_out - assigned
+    # Hand out the remaining units to the largest fractional parts (name tiebreak).
+    order = sorted(raw, key=lambda c: (raw[c] - floors[c], c), reverse=True)
+    for category in order[:remainder]:
+        floors[category] += 1
+    return floors
 
 
 def _normalize(distribution: dict[str, float]) -> dict[str, float]:
