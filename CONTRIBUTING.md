@@ -1,60 +1,187 @@
 # Contributing to Aletheia Lab
 
-Cảm ơn bạn đã đóng góp. Repo này theo nguyên tắc **eval-first** và
-**evidence-first**: mọi thay đổi phải bám vào bằng chứng (test, log, output),
-không over-claim, và không thực hiện hành động public/destructive khi chưa được
-duyệt.
+Thank you for helping improve Aletheia Lab. Contributions are welcome across
+code, tests, documentation, benchmark design, reproducibility, and research
+methodology.
 
-## 1. Nguyên tắc cốt lõi
+Aletheia is an evidence-grounded evaluation project. Changes should be small
+enough to review, explicit about their assumptions, and supported by tests or
+reproducible artifacts.
 
-- Ưu tiên thay đổi nhỏ, an toàn, có test.
-- Không commit dữ liệu thật, secret, `.env`, file lớn, hoặc output sinh tự động.
-- Không đánh dấu task `Done` khi chưa có bằng chứng (test/commit/doc).
-- Không đẩy (push), tag, release khi chưa có người review đồng ý.
+## Ways to contribute
 
-## 2. Quy trình làm việc
+You can help by:
 
-1. Nhận một micro-task từ GitHub Issues (label `task`) hoặc bảng công việc
-   nội bộ của nhóm; mỗi task có ID và acceptance criteria rõ ràng.
-2. Tạo branch theo quy ước: `feat/<taskid>-<slug>`, `fix/<taskid>-<slug>`,
-   `docs/<taskid>-<slug>`, `exp/<taskid>-<slug>`.
-3. Làm đúng scope của task, không trộn nhiều concern.
-4. Chạy kiểm thử cục bộ trước khi mở PR:
-   ```bash
-   make lint
-   make hygiene   # chặn tracking/docx/junk lọt vào repo
-   make test
-   ```
-5. Mở Pull Request, điền đầy đủ `PULL_REQUEST_TEMPLATE`.
-6. Chờ ít nhất 1 reviewer duyệt. Không tự merge PR của chính mình.
+- fixing bugs or improving error messages;
+- adding tests for leakage, determinism, and failure boundaries;
+- improving documentation and examples;
+- proposing benchmark cases or evidence conditions;
+- strengthening evaluation metrics and statistical reporting;
+- reporting security, privacy, licensing, or reproducibility concerns.
 
-## 3. Quy ước commit (Conventional Commits)
+For substantial changes, open an issue before implementation so the scope and
+evaluation criteria can be agreed upon early.
 
-Định dạng: `<type>(<scope>): <mô tả ngắn, thức mệnh lệnh>`
+## Development setup
 
-Các type: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`, `exp`, `ci`.
+Fork and clone the repository, then create an isolated environment:
 
-Ví dụ tốt:
-
-```
-feat(benchmark): add data_drift injector for tabular cases
-fix(evaluation): correct abstention rate when evidence is empty
-docs(protocol): clarify P1 quality gate checklist
+```bash
+git clone https://github.com/<your-username>/aletheia-lab.git
+cd aletheia-lab
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
+pre-commit install
 ```
 
-Nguyên tắc message: viết như con người, mô tả *cái gì thay đổi và tại sao*,
-không dán nguyên văn prompt, không ghi chú kiểu do AI sinh ra, không kể lể quá trình.
+Run the quality checks before making changes:
 
-## 4. Định nghĩa Done
+```bash
+make check
+```
 
-Một task chỉ Done khi: artifact yêu cầu tồn tại, đúng scope, có test hoặc lý do
-bỏ qua rõ ràng, đã cân nhắc security/privacy, và bằng chứng khớp với claim.
+## Branches and commits
 
-## 5. Cấu trúc thư mục
+Create a focused branch from the latest `main`:
 
-Xem `README.md` mục "Repo tree". Tài liệu kỹ thuật ở `docs/`; kế hoạch/tracking
-nằm ở folder tracking riêng của nhóm, KHÔNG đưa vào repo.
+```bash
+git switch main
+git pull --ff-only
+git switch -c feat/short-description
+```
 
-## 6. Báo lỗi / đề xuất thí nghiệm
+Use a clear prefix that reflects the change:
 
-Dùng issue template trong `.github/ISSUE_TEMPLATE/`.
+- `feat/` for new capabilities;
+- `fix/` for bug fixes;
+- `docs/` for documentation;
+- `test/` for test-only changes;
+- `refactor/` for behavior-preserving restructuring;
+- `exp/` for bounded research experiments.
+
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```text
+feat(benchmark): add a deterministic drift case
+fix(evidence): reject answer-key leakage in visible notes
+test(baseline): verify split membership across repeated runs
+docs: clarify dataset provenance
+```
+
+Keep commits coherent. A commit should explain one meaningful change and remain
+safe to review or revert independently.
+
+## Engineering standards
+
+### Reproducibility
+
+- Pass random seeds explicitly; do not rely on global random state.
+- Record relevant configuration, package versions, checksums, and provenance.
+- Demonstrate reproducibility with independent runs where practical.
+- Keep generated artifacts out of Git unless they are intentionally small,
+  reviewed fixtures.
+
+### Benchmark integrity
+
+- Keep hidden ground truth separate from diagnosis-visible evidence.
+- Treat leakage as a blocking defect.
+- Validate manifests and cross-artifact references before evaluation.
+- Do not label an outcome as a regression, improvement, or stable result without
+  a measured comparison and a documented threshold.
+- Preserve negative and null results; do not select cases only because they
+  support a preferred claim.
+
+### Tests
+
+- Add a regression test for every bug fix.
+- Cover success paths, fail-closed behavior, and important boundary conditions.
+- Do not make unit tests depend on network access.
+- Avoid importing helper functions from another test module; place shared
+  fixtures in `tests/conftest.py`.
+- Keep assertions focused on behavior rather than implementation details.
+
+### Code quality
+
+- Target Python 3.11 or newer.
+- Add type annotations to public interfaces.
+- Keep modules focused and prefer existing project abstractions.
+- Do not suppress lint or type errors without a documented reason.
+- Avoid unrelated formatting or refactoring in a functional change.
+
+## Local verification
+
+Run the same checks used by CI:
+
+```bash
+make lint
+make hygiene
+make test
+```
+
+Before committing, also run:
+
+```bash
+git diff --check
+git status --short
+```
+
+If your change affects deterministic data, baseline, or benchmark generation,
+include the exact reproduction command and a concise result summary in the pull
+request.
+
+## Pull requests
+
+A pull request should include:
+
+- the problem and why it matters;
+- the chosen approach and relevant trade-offs;
+- the files or components affected;
+- test and reproduction evidence;
+- known limitations or follow-up work;
+- confirmation that no secrets, private data, or generated artifacts were added.
+
+Keep a pull request focused on one concern. Draft pull requests are encouraged
+for early design feedback. Do not merge while required CI checks or review
+threads are unresolved.
+
+## Data, privacy, and secrets
+
+Never commit:
+
+- `.env` files, API keys, tokens, or credentials;
+- raw or derived datasets that the repository is not authorized to redistribute;
+- personal, confidential, or proprietary records;
+- generated models, experiment runs, caches, or large binary outputs.
+
+Use `.env.example` for configuration names without real values. Respect the
+license and usage terms of every external dataset, model, and dependency.
+
+If you discover a sensitive-data exposure or credential leak, do not open a
+public issue containing the affected material. Contact the repository owner
+privately and rotate exposed credentials immediately.
+
+## Documentation
+
+Public documentation should describe current behavior, supported commands, and
+verified limitations. Keep internal schedules, private notes, task assignments,
+and administrative tracking outside the repository.
+
+When behavior changes, update the relevant documentation in the same pull
+request. Examples must be runnable and must not claim results that have not been
+measured.
+
+## Review principles
+
+Reviews prioritize, in order:
+
+1. ground-truth and data integrity;
+2. correctness and fail-closed behavior;
+3. reproducibility and test evidence;
+4. privacy, licensing, and security;
+5. maintainability and clarity.
+
+A green CI run is necessary but does not by itself prove that a research claim
+or benchmark design is valid. Reviewers may request additional evidence when a
+change affects experimental conclusions.
