@@ -37,13 +37,15 @@ def test_real_generation_is_reproducible(tmp_path):
 
 
 def test_real_outcome_composition_and_measured_distractor(tmp_path):
-    from aletheia_lab.benchmark.case_writer import load_case_dir
+    from aletheia_lab.benchmark.case_writer import load_case_dir_schema_only
 
     summary = generate_p1(_CONFIG, tmp_path / "cases")
     # Honest composition on the real dataset: 3 regression + 1 improvement + 1 stable.
     assert summary["outcome_counts"] == {"regression": 3, "improvement": 1, "stable": 1}
     # Noisy carries a measured gender distractor with a real PSI.
-    noisy = load_case_dir(tmp_path / "cases" / "p1-data-drift-01-noisy").manifest.observable_signals
+    noisy = load_case_dir_schema_only(
+        tmp_path / "cases" / "p1-data-drift-01-noisy"
+    ).manifest.observable_signals
     assert len(noisy.distractor_comparisons) == 1
     assert noisy.distractor_comparisons[0].feature == "gender"
     assert noisy.distractor_comparisons[0].psi is not None

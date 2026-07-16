@@ -9,7 +9,11 @@ from aletheia_lab.benchmark.case_schema import (
     ObservableSignals,
     project_diagnosis_input,
 )
-from aletheia_lab.benchmark.case_writer import diagnosis_input_leakage, load_case_dir, write_case
+from aletheia_lab.benchmark.case_writer import (
+    diagnosis_input_leakage,
+    load_case_dir_schema_only,
+    write_case,
+)
 
 _GROUND_TRUTH_FIELDS = {"cause_label", "causal_mechanism", "injected_change", "expected_symptoms"}
 
@@ -45,7 +49,7 @@ def test_hidden_ground_truth_readable_by_evaluator_path(
 ):
     case_dir = tmp_path / "case"
     write_case(case_dir, p1_manifest_factory(), p1_ground_truth_factory(), p1_injection_factory())
-    loaded = load_case_dir(case_dir)
+    loaded = load_case_dir_schema_only(case_dir)
     assert loaded.ground_truth.cause_label == "data_drift"
     assert loaded.ground_truth.injection_parameters["feature"] == "Contract"
 

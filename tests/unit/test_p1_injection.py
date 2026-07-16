@@ -137,3 +137,15 @@ def test_non_positive_output_size_fails_closed():
     )
     with pytest.raises(ValueError):
         CategoricalDriftInjector(spec).inject(_source())
+
+
+def test_psi_is_category_order_invariant():
+    # PSI must not depend on dict/set iteration order, so generation stays
+    # byte-identical across processes (PYTHONHASHSEED).
+    from aletheia_lab.benchmark.signals import population_stability_index
+
+    ref = {"a": 0.5, "b": 0.3, "c": 0.2}
+    obs = {"c": 0.4, "a": 0.4, "b": 0.2}
+    ref_rev = dict(reversed(list(ref.items())))
+    obs_rev = dict(reversed(list(obs.items())))
+    assert population_stability_index(ref, obs) == population_stability_index(ref_rev, obs_rev)

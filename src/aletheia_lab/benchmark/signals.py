@@ -43,7 +43,9 @@ def population_stability_index(
     0.1-0.25 moderate shift, > 0.25 significant shift.
     """
 
-    categories = set(expected) | set(actual)
+    # Sorted so the summation order (and thus the float result) is identical
+    # across processes, regardless of PYTHONHASHSEED set-iteration ordering.
+    categories = sorted(set(expected) | set(actual))
     psi = 0.0
     for category in categories:
         e = max(expected.get(category, 0.0), _EPSILON)

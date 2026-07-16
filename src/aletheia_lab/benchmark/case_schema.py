@@ -19,7 +19,9 @@ from __future__ import annotations
 import math
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from aletheia_lab.benchmark.signals import population_stability_index
 
 SCHEMA_VERSION = "p1-cases/2"
 
@@ -39,6 +41,7 @@ _OUTCOME_SYMPTOM: dict[str, str] = {
     "improvement": "metric_improvement",
     "stable": "metric_stable",
 }
+_METRIC_SYMPTOMS: frozenset[str] = frozenset(_OUTCOME_SYMPTOM.values())
 
 FORBIDDEN_TERMS: tuple[str, ...] = (
     "data_drift",
@@ -65,7 +68,7 @@ EXPECTED_BEHAVIOR: dict[str, str] = {
         "must abstain or name the missing evidence, not assert a cause confidently."
     ),
     "noisy": (
-        "Decisive evidence is present alongside a measured, unrelated distractor: "
+        "Decisive evidence is present alongside a measured, operationally low-shift distractor: "
         "the diagnoser must rely on the supporting signals and not be led astray."
     ),
 }
@@ -93,7 +96,13 @@ def expected_symptom_for(outcome: MetricOutcome) -> str:
     return _OUTCOME_SYMPTOM[outcome]
 
 
-class MetricComparison(BaseModel):
+class _StrictModel(BaseModel):
+    """Base for case artifacts: reject unknown fields and implicit type coercion."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+
+class MetricComparison(_StrictModel):
     """A measured baseline metric on a clean vs a drifted evaluation split.
 
     Fails closed: only supported metric/split, probabilities in [0, 1], all
@@ -128,16 +137,61 @@ class MetricComparison(BaseModel):
         return self
 
 
-class DistractorComparison(BaseModel):
-    """A measured before/after comparison for an unrelated distractor feature."""
+class DistractorComparison(_StrictModel):
+    """A measured before/after comparison for a low-shift distractor feature.
+
+    Fails closed: non-empty feature and distributions, finite non-negative weights
+    that sum to ~1, finite PSI, and PSI within [0, DISTRACTOR_STABLE_PSI_MAX] so a
+    feature can only be recorded here when it is operationally low-shift under the
+    injection.
+    """
 
     feature: str
     distribution_reference: dict[str, float]
     distribution_observed: dict[str, float]
     psi: float
 
+    @field_validator("feature")
+    @classmethod
+    def _feature_nonempty(cls, value: str) -> str:
+        if not value.strip():
+            msg = "distractor feature must not be empty"
+            raise ValueError(msg)
+        return value
 
-class ObservableSignals(BaseModel):
+    @field_validator("distribution_reference", "distribution_observed")
+    @classmethod
+    def _valid_distribution(cls, dist: dict[str, float]) -> dict[str, float]:
+        if not dist:
+            msg = "distractor distribution must not be empty"
+            raise ValueError(msg)
+        for category, weight in dist.items():
+            if not math.isfinite(weight) or weight < 0:
+                msg = f"distractor weight for {category!r} must be finite and non-negative"
+                raise ValueError(msg)
+        if abs(sum(dist.values()) - 1.0) > 1e-6:
+            msg = "distractor distribution must sum to ~1.0"
+            raise ValueError(msg)
+        return dist
+
+    @model_validator(mode="after")
+    def _valid_psi(self) -> DistractorComparison:
+        if not math.isfinite(self.psi):
+            msg = "distractor psi must be finite"
+            raise ValueError(msg)
+        if not 0.0 <= self.psi <= DISTRACTOR_STABLE_PSI_MAX:
+            msg = f"distractor psi {self.psi} out of [0, {DISTRACTOR_STABLE_PSI_MAX}]"
+            raise ValueError(msg)
+        computed = population_stability_index(
+            self.distribution_reference, self.distribution_observed
+        )
+        if abs(self.psi - computed) > 1e-9:
+            msg = f"distractor psi {self.psi} inconsistent with its distributions ({computed})"
+            raise ValueError(msg)
+        return self
+
+
+class ObservableSignals(_StrictModel):
     """Evidence-safe signals a diagnoser may see. Never names the cause."""
 
     candidate_feature: str | None = None
@@ -149,11 +203,28 @@ class ObservableSignals(BaseModel):
     distractor_comparisons: list[DistractorComparison] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
 
+    @field_validator("sample_size")
+    @classmethod
+    def _positive_sample_size(cls, value: int | None) -> int | None:
+        if value is not None and value <= 0:
+            msg = f"sample_size must be positive, got {value}"
+            raise ValueError(msg)
+        return value
 
-class DiagnosisInput(BaseModel):
+
+class DiagnosisInput(_StrictModel):
     """The diagnosis-visible payload. Must contain no ground truth."""
 
     schema_version: str = SCHEMA_VERSION
+
+    @field_validator("schema_version")
+    @classmethod
+    def _locked_schema_version(cls, value: str) -> str:
+        if value != SCHEMA_VERSION:
+            msg = f"unexpected schema_version {value!r}; expected {SCHEMA_VERSION!r}"
+            raise ValueError(msg)
+        return value
+
     public_id: str
     evidence_condition: EvidenceCondition
     dataset_id: str
@@ -163,8 +234,14 @@ class DiagnosisInput(BaseModel):
     observable_signals: ObservableSignals
 
 
-class CaseGroundTruth(BaseModel):
-    """Hidden answer key plus the injection parameters an evaluator needs."""
+class CaseGroundTruth(_StrictModel):
+    """Hidden answer key plus the injection parameters an evaluator needs.
+
+    Fails closed on internal inconsistency: ``metric_delta`` must be finite,
+    ``metric_outcome`` must be its threshold classification, ``case_role`` must
+    follow the outcome, and ``expected_symptoms`` must contain the outcome's
+    symptom and no conflicting metric symptom.
+    """
 
     cause_label: str
     causal_mechanism: str
@@ -176,9 +253,36 @@ class CaseGroundTruth(BaseModel):
     metric_delta: float
     case_role: CaseRole
 
+    @model_validator(mode="after")
+    def _consistent(self) -> CaseGroundTruth:
+        if not math.isfinite(self.metric_delta):
+            msg = "metric_delta must be finite"
+            raise ValueError(msg)
+        if self.metric_outcome != classify_outcome(self.metric_delta):
+            msg = "metric_outcome does not match classify_outcome(metric_delta)"
+            raise ValueError(msg)
+        if self.case_role != case_role_for(self.metric_outcome):
+            msg = "case_role does not match metric_outcome"
+            raise ValueError(msg)
+        right = expected_symptom_for(self.metric_outcome)
+        if right not in self.expected_symptoms:
+            msg = "expected_symptoms is missing the outcome symptom"
+            raise ValueError(msg)
+        conflicting = (_METRIC_SYMPTOMS - {right}) & set(self.expected_symptoms)
+        if conflicting:
+            msg = f"expected_symptoms contains conflicting metric symptom(s): {sorted(conflicting)}"
+            raise ValueError(msg)
+        return self
 
-class InjectionProvenance(BaseModel):
-    """Provenance for one injection (reproduction, not diagnosis-visible)."""
+
+class InjectionProvenance(_StrictModel):
+    """Provenance for one injection (reproduction, not diagnosis-visible).
+
+    Fails closed: reference/achieved distributions must be non-empty, finite,
+    non-negative and sum to ~1; PSI must be finite, non-negative and equal to the
+    PSI recomputed from the two distributions; and ``output_size`` must be
+    positive. This means a fabricated PSI cannot pass even if synced everywhere.
+    """
 
     injection_id: str
     injector: str
@@ -193,11 +297,70 @@ class InjectionProvenance(BaseModel):
     dataset_id: str
     dataset_sha256: str
 
+    @field_validator("target_distribution")
+    @classmethod
+    def _valid_target(cls, dist: dict[str, float]) -> dict[str, float]:
+        if not dist:
+            msg = "target_distribution must not be empty"
+            raise ValueError(msg)
+        for category, weight in dist.items():
+            if not math.isfinite(weight) or weight < 0:
+                msg = f"target_distribution weight for {category!r} must be finite and non-negative"
+                raise ValueError(msg)
+        if sum(dist.values()) <= 0:
+            msg = "target_distribution total must be positive (raw weights are normalized)"
+            raise ValueError(msg)
+        return dist
 
-class CaseManifest(BaseModel):
+    @field_validator("reference_distribution", "achieved_distribution")
+    @classmethod
+    def _valid_distribution(cls, dist: dict[str, float]) -> dict[str, float]:
+        if not dist:
+            msg = "distribution must not be empty"
+            raise ValueError(msg)
+        for category, weight in dist.items():
+            if not math.isfinite(weight) or weight < 0:
+                msg = f"distribution weight for {category!r} must be finite and non-negative"
+                raise ValueError(msg)
+        if abs(sum(dist.values()) - 1.0) > 1e-6:
+            msg = "distribution must sum to ~1.0"
+            raise ValueError(msg)
+        return dist
+
+    @model_validator(mode="after")
+    def _valid_psi_and_size(self) -> InjectionProvenance:
+        if self.output_size <= 0:
+            msg = f"output_size must be positive, got {self.output_size}"
+            raise ValueError(msg)
+        if not math.isfinite(self.psi) or self.psi < 0:
+            msg = f"psi must be finite and non-negative, got {self.psi}"
+            raise ValueError(msg)
+        computed = population_stability_index(
+            self.reference_distribution, self.achieved_distribution
+        )
+        if abs(self.psi - computed) > 1e-9:
+            msg = f"recorded psi {self.psi} does not match recomputed psi {computed}"
+            raise ValueError(msg)
+        unknown = set(self.target_distribution) - set(self.reference_distribution)
+        if unknown:
+            msg = f"target categories not present in the reference distribution: {sorted(unknown)}"
+            raise ValueError(msg)
+        return self
+
+
+class CaseManifest(_StrictModel):
     """Internal manifest for one case (not shown to the diagnoser)."""
 
     schema_version: str = SCHEMA_VERSION
+
+    @field_validator("schema_version")
+    @classmethod
+    def _locked_schema_version(cls, value: str) -> str:
+        if value != SCHEMA_VERSION:
+            msg = f"unexpected schema_version {value!r}; expected {SCHEMA_VERSION!r}"
+            raise ValueError(msg)
+        return value
+
     case_id: str
     public_id: str
     fault_type: str

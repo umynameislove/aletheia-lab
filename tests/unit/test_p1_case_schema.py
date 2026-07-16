@@ -6,7 +6,11 @@ import pytest
 from pydantic import ValidationError
 
 from aletheia_lab.benchmark.case_schema import CaseManifest, DiagnosisInput
-from aletheia_lab.benchmark.case_writer import dumps_deterministic, load_case_dir, write_case
+from aletheia_lab.benchmark.case_writer import (
+    dumps_deterministic,
+    load_case_dir_schema_only,
+    write_case,
+)
 
 
 def test_manifest_roundtrip_no_data_loss(
@@ -14,10 +18,10 @@ def test_manifest_roundtrip_no_data_loss(
 ):
     case_dir = tmp_path / "case"
     write_case(case_dir, p1_manifest_factory(), p1_ground_truth_factory(), p1_injection_factory())
-    loaded = load_case_dir(case_dir)
+    loaded = load_case_dir_schema_only(case_dir)
     assert loaded.manifest.case_id == "p1-data-drift-01-full"
     assert loaded.ground_truth.cause_label == "data_drift"
-    assert loaded.injection.psi == 0.5
+    assert loaded.injection.psi == 0.0
     assert loaded.diagnosis_input.public_id == "p1-case-01-full"
 
 

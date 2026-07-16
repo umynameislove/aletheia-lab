@@ -119,8 +119,14 @@ def write_case(
     return {"case_dir": str(case_path), "checksums": checksums, "case_id": manifest.case_id}
 
 
-def load_case_dir(case_dir: str | Path) -> LoadedCase:
-    """Load and validate one case directory."""
+def load_case_dir_schema_only(case_dir: str | Path) -> LoadedCase:
+    """Parse one case directory and validate each payload schema only.
+
+    This function deliberately does not verify checksums or relationships across
+    payloads. Use ``validate_p1_cases`` as the integrity gate before consuming a
+    generated P1 case set. The explicit name prevents callers from mistaking a
+    schema parse for full case-integrity validation.
+    """
 
     base = Path(case_dir)
     for name in _CASE_FILES:

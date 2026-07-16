@@ -40,7 +40,7 @@ from aletheia_lab.benchmark.case_schema import (
 from aletheia_lab.benchmark.case_writer import (
     diagnosis_input_leakage,
     dumps_deterministic,
-    load_case_dir,
+    load_case_dir_schema_only,
     sha256_file,
     write_case,
 )
@@ -49,8 +49,9 @@ from aletheia_lab.benchmark.signals import categorical_distribution, population_
 from aletheia_lab.config import load_yaml
 
 _CONDITION_SLUG = {"full": "full", "missing_key": "missing-key", "noisy": "noisy"}
-# Distractor feature for P1: gender is independent of Contract. PaymentMethod is
-# intentionally not used because it can co-move with Contract.
+# Distractor feature for P1: gender is an operationally low-shift distractor under
+# these Contract injections (its marginal barely moves). PaymentMethod is avoided
+# because it can co-move with Contract.
 _DISTRACTOR_FEATURE = "gender"
 _EXPECTED_SETTINGS = 5
 _TARGET_COLUMN = "__target__"
@@ -156,7 +157,7 @@ def _observable_signals(
     if condition == "noisy":
         distractor_note = (
             f"Distractor feature {distractor.feature!r} PSI {distractor.psi:.4f} "
-            "(measured, unrelated to the candidate feature)."
+            "(measured; operationally low-shift across the two evaluation windows)."
         )
         return ObservableSignals(
             candidate_feature=feature,
@@ -265,10 +266,10 @@ def generate_p1(
                 distractor=distractor,
             )
         )
-    severity = {
-        item.setting.injection_id: rank
-        for rank, item in enumerate(sorted(injected, key=lambda x: x.psi, reverse=True), start=1)
-    }
+    # Deterministic severity ordering shared with the validator: highest PSI is
+    # rank 1, ties broken by injection_id.
+    ordered = sorted(injected, key=lambda x: (-x.psi, x.setting.injection_id))
+    severity = {item.setting.injection_id: rank for rank, item in enumerate(ordered, start=1)}
 
     output_dir = Path(output_dir)
     case_ids: list[str] = []
@@ -380,7 +381,7 @@ def generate_p1(
                 "dataset_sha256": dataset_sha,
             }
             write_case(output_dir / case_id, manifest, ground_truth, injection, overwrite=overwrite)
-            loaded = load_case_dir(output_dir / case_id)
+            loaded = load_case_dir_schema_only(output_dir / case_id)
             leakage_total += len(diagnosis_input_leakage(loaded.diagnosis_input))
             case_ids.append(case_id)
             condition_counts[condition] += 1

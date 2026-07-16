@@ -96,12 +96,14 @@ def test_cli_generate_and_validate(p1_generator_config, tmp_path):
 
 
 def test_full_has_measured_metric_and_missing_key_withholds_it(p1_generator_config, tmp_path):
-    from aletheia_lab.benchmark.case_writer import load_case_dir
+    from aletheia_lab.benchmark.case_writer import load_case_dir_schema_only
 
     out = tmp_path / "cases"
     generate_p1(p1_generator_config, out)
-    full = load_case_dir(out / "p1-data-drift-01-full").manifest.observable_signals
-    missing = load_case_dir(out / "p1-data-drift-01-missing-key").manifest.observable_signals
+    full = load_case_dir_schema_only(out / "p1-data-drift-01-full").manifest.observable_signals
+    missing = load_case_dir_schema_only(
+        out / "p1-data-drift-01-missing-key"
+    ).manifest.observable_signals
     assert full.baseline_metric_reference is not None
     assert full.baseline_metric_reference.metric == "accuracy"
     assert full.baseline_metric_reference.reference == pytest.approx(

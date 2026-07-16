@@ -16,6 +16,7 @@ from typing import Any
 
 from aletheia_lab.benchmark.case_schema import (
     EVIDENCE_CONDITIONS,
+    EXPECTED_BEHAVIOR,
     case_role_for,
     classify_outcome,
     expected_symptom_for,
@@ -24,7 +25,7 @@ from aletheia_lab.benchmark.case_schema import (
 from aletheia_lab.benchmark.case_writer import (
     LoadedCase,
     diagnosis_input_leakage,
-    load_case_dir,
+    load_case_dir_schema_only,
     sha256_file,
 )
 
@@ -114,6 +115,13 @@ def _cross_artifact_errors(case: LoadedCase, case_dir: Path) -> list[str]:
     if di.model_dump() != project_diagnosis_input(m).model_dump():
         errors.append(f"{cid}: diagnosis_input is not the manifest projection")
 
+    if m.observable_signals.candidate_feature != inj.feature:
+        errors.append(f"{cid}: candidate_feature != injection.feature")
+    if m.observable_signals.sample_size != inj.output_size:
+        errors.append(f"{cid}: sample_size != injection.output_size")
+    if m.expected_diagnosis_behavior != EXPECTED_BEHAVIOR.get(m.evidence_condition):
+        errors.append(f"{cid}: expected_diagnosis_behavior does not match the condition contract")
+
     if m.ground_truth_ref != "ground_truth.json" or not (case_dir / m.ground_truth_ref).exists():
         errors.append(f"{cid}: ground_truth_ref missing or wrong")
     for ref in m.artifacts.values():
@@ -156,8 +164,11 @@ def _cross_artifact_errors(case: LoadedCase, case_dir: Path) -> list[str]:
 def _cross_condition_errors(by_setting: dict[str, list[tuple[Path, LoadedCase]]]) -> list[str]:
     errors: list[str] = []
     for injection_id, items in by_setting.items():
-        if len(items) != len(EVIDENCE_CONDITIONS):
-            errors.append(f"{injection_id}: expected {len(EVIDENCE_CONDITIONS)} conditions")
+        conditions = [c.manifest.evidence_condition for _, c in items]
+        if set(conditions) != set(EVIDENCE_CONDITIONS) or len(conditions) != len(
+            EVIDENCE_CONDITIONS
+        ):
+            errors.append(f"{injection_id}: conditions are not exactly {set(EVIDENCE_CONDITIONS)}")
             continue
         inj_bytes = {(d / "injection.json").read_bytes() for d, _ in items}
         gt_bytes = {(d / "ground_truth.json").read_bytes() for d, _ in items}
@@ -165,9 +176,10 @@ def _cross_condition_errors(by_setting: dict[str, list[tuple[Path, LoadedCase]]]
             errors.append(f"{injection_id}: injection.json differs across conditions")
         if len(gt_bytes) != 1:
             errors.append(f"{injection_id}: ground_truth.json differs across conditions")
-        outcomes = {c.ground_truth.metric_outcome for _, c in items}
-        if len(outcomes) != 1:
+        if len({c.ground_truth.metric_outcome for _, c in items}) != 1:
             errors.append(f"{injection_id}: metric_outcome differs across conditions")
+        if len({c.manifest.severity_rank for _, c in items}) != 1:
+            errors.append(f"{injection_id}: severity_rank differs across conditions")
     return errors
 
 
@@ -184,7 +196,7 @@ def validate_p1_cases(cases_dir: str | Path) -> ValidationReport:
     loaded: list[LoadedCase] = []
     for case_dir in dirs:
         try:
-            loaded.append(load_case_dir(case_dir))
+            loaded.append(load_case_dir_schema_only(case_dir))
         except Exception as exc:  # noqa: BLE001 - report any invalid case
             report.record(f"load:{case_dir.name}", False, f"invalid case {case_dir.name}: {exc}")
     if not report.passed:
@@ -242,9 +254,12 @@ def validate_p1_cases(cases_dir: str | Path) -> ValidationReport:
         f"expected {EXPECTED_SETTINGS} settings, got {len(by_setting)}",
     )
     report.record(
-        "three_conditions_per_setting",
-        all(len(v) == len(EVIDENCE_CONDITIONS) for v in by_setting.values()),
-        "a setting lacks exactly three conditions",
+        "exact_conditions_per_setting",
+        all(
+            {c.manifest.evidence_condition for _, c in v} == set(EVIDENCE_CONDITIONS)
+            for v in by_setting.values()
+        ),
+        "a setting does not have exactly {full, missing_key, noisy}",
     )
 
     per_condition = {c: 0 for c in EVIDENCE_CONDITIONS}
@@ -270,6 +285,16 @@ def validate_p1_cases(cases_dir: str | Path) -> ValidationReport:
         "severity_ranks_are_1_to_5",
         {c.manifest.severity_rank for c in loaded} == EXPECTED_SEVERITY_RANKS,
         "severity ranks are not exactly {1..5}",
+    )
+
+    setting_psi = {iid: items[0][1].injection.psi for iid, items in by_setting.items()}
+    setting_rank = {iid: items[0][1].manifest.severity_rank for iid, items in by_setting.items()}
+    expected_order = sorted(setting_psi, key=lambda iid: (-setting_psi[iid], iid))
+    expected_rank = {iid: rank for rank, iid in enumerate(expected_order, start=1)}
+    report.record(
+        "severity_ranks_match_psi_order",
+        setting_rank == expected_rank,
+        f"severity ranks do not follow PSI order: {setting_rank} vs {expected_rank}",
     )
 
     setting_outcome = {
