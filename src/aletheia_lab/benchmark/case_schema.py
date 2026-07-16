@@ -25,13 +25,21 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from aletheia_lab.benchmark.signals import population_stability_index
+from aletheia_lab.evidence.rubric import (
+    EVIDENCE_CONDITIONS as _RUBRIC_EVIDENCE_CONDITIONS,
+)
+from aletheia_lab.evidence.rubric import (
+    EvidenceCondition,
+    ExpectedDiagnosisBehavior,
+    expected_behavior_for,
+)
 
-SCHEMA_VERSION = "p1-cases/3"
+EVIDENCE_CONDITIONS: tuple[EvidenceCondition, ...] = _RUBRIC_EVIDENCE_CONDITIONS
+
+SCHEMA_VERSION = "p1-cases/4"
 CASE_FAMILY_ID_VERSION = "p1-case-family/v1"
+DIAGNOSIS_CONTEXT_ID_VERSION = "p1-diagnosis-context/v1"
 ELIGIBILITY_POLICY_VERSION = "accuracy-regression/v1"
-
-EvidenceCondition = Literal["full", "missing_key", "noisy"]
-EVIDENCE_CONDITIONS: tuple[EvidenceCondition, ...] = ("full", "missing_key", "noisy")
 
 MetricOutcome = Literal["regression", "improvement", "stable"]
 FailureEligibilityClass = Literal["eligible_failure", "stable_control", "improvement_control"]
@@ -63,19 +71,8 @@ FORBIDDEN_TERMS: tuple[str, ...] = (
     "cause_label",
 )
 
-EXPECTED_BEHAVIOR: dict[str, str] = {
-    "full": (
-        "Sufficient evidence: the diagnoser may state a root-cause hypothesis and "
-        "must cite the distribution/PSI/metric signals it relies on."
-    ),
-    "missing_key": (
-        "The decisive before/after comparison is withheld: a grounded diagnosis "
-        "must abstain or name the missing evidence, not assert a cause confidently."
-    ),
-    "noisy": (
-        "Decisive evidence is present alongside a measured, operationally low-shift distractor: "
-        "the diagnoser must rely on the supporting signals and not be led astray."
-    ),
+EXPECTED_BEHAVIOR: dict[EvidenceCondition, ExpectedDiagnosisBehavior] = {
+    condition: expected_behavior_for(condition) for condition in EVIDENCE_CONDITIONS
 }
 
 
@@ -301,7 +298,7 @@ class ObservableSignals(_StrictModel):
 
 
 class DiagnosisInput(_StrictModel):
-    """The diagnosis-visible payload. Must contain no ground truth."""
+    """The diagnosis-visible payload. Must contain no ground truth or condition label."""
 
     schema_version: str = SCHEMA_VERSION
 
@@ -313,8 +310,7 @@ class DiagnosisInput(_StrictModel):
             raise ValueError(msg)
         return value
 
-    public_id: str
-    evidence_condition: EvidenceCondition
+    diagnosis_context_id: str = Field(pattern=r"^p1-context-[0-9a-f]{64}$")
     dataset_id: str
     dataset_sha256: str
     split_manifest_sha256: str
@@ -474,7 +470,7 @@ class CaseManifest(_StrictModel):
     severity_rank: int
     evidence_condition: EvidenceCondition
     evidence_bundle_id: str
-    expected_diagnosis_behavior: str
+    expected_diagnosis_behavior: ExpectedDiagnosisBehavior
     observable_signals: ObservableSignals
     artifacts: dict[str, str]
     reproduction: dict[str, str]
@@ -522,13 +518,33 @@ def case_family_id_for(
     return f"p1-family-{hashlib.sha256(canonical.encode('utf-8')).hexdigest()}"
 
 
+def diagnosis_context_id_for(*, case_id: str, case_family_id: str) -> str:
+    """Return an opaque, deterministic ID for a diagnosis-visible context.
+
+    Internal case IDs contain evidence-condition slugs.  Hashing the canonical
+    internal identity gives the diagnoser a stable citation namespace without
+    exposing whether the context is ``full``, ``missing_key`` or ``noisy``.
+    """
+
+    identity = {
+        "version": DIAGNOSIS_CONTEXT_ID_VERSION,
+        "case_id": case_id,
+        "case_family_id": case_family_id,
+    }
+    canonical = json.dumps(
+        identity, sort_keys=True, separators=(",", ":"), ensure_ascii=True, allow_nan=False
+    )
+    return f"p1-context-{hashlib.sha256(canonical.encode('utf-8')).hexdigest()}"
+
+
 def project_diagnosis_input(manifest: CaseManifest) -> DiagnosisInput:
     """Build the diagnosis-visible payload by whitelisting safe fields only."""
 
     return DiagnosisInput(
         schema_version=manifest.schema_version,
-        public_id=manifest.public_id,
-        evidence_condition=manifest.evidence_condition,
+        diagnosis_context_id=diagnosis_context_id_for(
+            case_id=manifest.case_id, case_family_id=manifest.case_family_id
+        ),
         dataset_id=manifest.dataset_id,
         dataset_sha256=manifest.dataset_sha256,
         split_manifest_sha256=manifest.split_manifest_sha256,

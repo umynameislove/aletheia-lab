@@ -309,7 +309,7 @@ def test_tampered_expected_diagnosis_behavior_is_caught(p1_generator_config, tmp
         "manifest.json",
         lambda d: d.__setitem__("expected_diagnosis_behavior", "confidently guess"),
     )
-    _assert_rejected_for(out, "expected_diagnosis_behavior does not match")
+    _assert_rejected_for(out, "expected_diagnosis_behavior")
 
 
 def test_behavior_from_another_condition_is_caught(p1_generator_config, tmp_path):

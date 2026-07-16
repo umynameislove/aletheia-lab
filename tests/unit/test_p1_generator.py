@@ -37,6 +37,7 @@ def test_five_families_share_id_only_across_their_three_contexts(p1_generator_co
     family_ids = set()
     case_ids = set()
     public_ids = set()
+    diagnosis_context_ids = set()
     for index in range(1, 6):
         siblings = [
             load_case_dir_schema_only(out / f"p1-data-drift-{index:02d}-{slug}")
@@ -47,9 +48,14 @@ def test_five_families_share_id_only_across_their_three_contexts(p1_generator_co
         family_ids.update(sibling_family_ids)
         case_ids.update(case.manifest.case_id for case in siblings)
         public_ids.update(case.manifest.public_id for case in siblings)
+        diagnosis_context_ids.update(
+            case.diagnosis_input.diagnosis_context_id for case in siblings
+        )
     assert len(family_ids) == 5
     assert len(case_ids) == 15
     assert len(public_ids) == 15
+    assert len(diagnosis_context_ids) == 15
+    assert all(value.startswith("p1-context-") for value in diagnosis_context_ids)
 
 
 def test_case_ids_are_deterministic(p1_generator_config, tmp_path):

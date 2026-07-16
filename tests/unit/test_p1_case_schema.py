@@ -23,7 +23,9 @@ def test_manifest_roundtrip_no_data_loss(
     assert loaded.ground_truth.hidden_failure_cause is not None
     assert loaded.ground_truth.hidden_failure_cause.cause_label == "data_drift"
     assert loaded.injection.psi == 0.0
-    assert loaded.diagnosis_input.public_id == "p1-case-01-full"
+    assert loaded.diagnosis_input.diagnosis_context_id.startswith("p1-context-")
+    assert "evidence_condition" not in loaded.diagnosis_input.model_dump()
+    assert "public_id" not in loaded.diagnosis_input.model_dump()
 
 
 def test_invalid_manifest_fails_closed_without_partial_artifact(
@@ -37,13 +39,16 @@ def test_invalid_manifest_fails_closed_without_partial_artifact(
     assert not case_dir.exists() or list(case_dir.glob("*.json")) == []
 
 
-def test_unknown_evidence_condition_rejected(p1_manifest_factory):
+def test_unknown_manifest_evidence_condition_rejected(p1_manifest_factory):
     with pytest.raises(ValidationError):
         CaseManifest.model_validate(p1_manifest_factory(condition="totally_unknown"))
+
+
+def test_diagnosis_input_rejects_evaluator_condition_label():
     with pytest.raises(ValidationError):
         DiagnosisInput.model_validate(
             {
-                "public_id": "x",
+                "diagnosis_context_id": "p1-context-" + "0" * 64,
                 "evidence_condition": "weird",
                 "dataset_id": "d",
                 "dataset_sha256": "a",

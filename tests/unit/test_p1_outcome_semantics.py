@@ -333,8 +333,7 @@ def test_case_models_reject_unknown_fields():
     with pytest.raises(ValidationError):
         DiagnosisInput.model_validate(
             {
-                "public_id": "x",
-                "evidence_condition": "full",
+                "diagnosis_context_id": "p1-context-" + "0" * 64,
                 "dataset_id": "d",
                 "dataset_sha256": "a",
                 "split_manifest_sha256": "b",

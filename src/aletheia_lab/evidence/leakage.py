@@ -28,11 +28,9 @@ def find_forbidden_terms(text: str, forbidden_terms: Iterable[str]) -> list[str]
 def bundle_text(bundle: EvidenceBundle) -> str:
     """Flatten visible evidence into text."""
 
-    items = [
-        *bundle.allowed_evidence,
-        *bundle.counterfactual_evidence,
-    ]
-    return "\n".join(f"{item.title}\n{item.content}" for item in items if item.visible_to_diagnoser)
+    return "\n".join(
+        f"{item.title}\n{item.content}" for item in bundle.diagnosis_visible_items
+    )
 
 
 def bundle_has_leakage(bundle: EvidenceBundle, forbidden_terms: Iterable[str]) -> bool:

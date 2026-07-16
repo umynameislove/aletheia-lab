@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 from aletheia_lab.evidence.leakage import bundle_has_leakage, find_forbidden_terms
@@ -12,7 +11,8 @@ def test_find_forbidden_terms() -> None:
 
 
 def test_sample_evidence_has_no_ground_truth_leakage() -> None:
-    data = json.loads(Path("tests/fixtures/sample_evidence.json").read_text(encoding="utf-8"))
-    bundle = EvidenceBundle.model_validate(data)
+    bundle = EvidenceBundle.model_validate_json(
+        Path("tests/fixtures/sample_evidence.json").read_text(encoding="utf-8")
+    )
 
     assert bundle_has_leakage(bundle, ["injected_change", "answer key"]) is False
