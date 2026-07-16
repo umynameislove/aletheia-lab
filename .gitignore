@@ -44,6 +44,7 @@ data/organic_failures/*
 # Experiments and reports generated locally
 experiments/**/runs/
 experiments/**/outputs/
+experiments/**/cases/
 reports/figures/*
 reports/tables/*
 reports/paper/*.pdf
