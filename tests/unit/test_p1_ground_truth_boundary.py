@@ -7,6 +7,7 @@ from aletheia_lab.benchmark.case_schema import (
     CaseManifest,
     DiagnosisInput,
     ObservableSignals,
+    diagnosis_context_id_for,
     project_diagnosis_input,
 )
 from aletheia_lab.benchmark.case_writer import (
@@ -39,8 +40,7 @@ def test_diagnosis_input_has_no_forbidden_terms(p1_manifest_factory):
 
 def test_leakage_guard_fires_when_ground_truth_injected():
     poisoned = DiagnosisInput(
-        public_id="p1-case-01-full",
-        evidence_condition="full",
+        diagnosis_context_id="p1-context-" + "0" * 64,
         dataset_id="d",
         dataset_sha256="a",
         split_manifest_sha256="b",
@@ -49,6 +49,20 @@ def test_leakage_guard_fires_when_ground_truth_injected():
     )
     leaks = diagnosis_input_leakage(poisoned)
     assert "data_drift" in leaks and "ground_truth" in leaks
+
+
+def test_diagnosis_identity_is_opaque_and_condition_blind(p1_manifest_factory):
+    manifest = CaseManifest.model_validate(p1_manifest_factory())
+    diagnosis_input = project_diagnosis_input(manifest)
+
+    expected = diagnosis_context_id_for(
+        case_id=manifest.case_id, case_family_id=manifest.case_family_id
+    )
+    payload = diagnosis_input.model_dump()
+    assert diagnosis_input.diagnosis_context_id == expected
+    assert "evidence_condition" not in payload
+    assert "public_id" not in payload
+    assert manifest.evidence_condition not in diagnosis_input.diagnosis_context_id
 
 
 def test_hidden_ground_truth_readable_by_evaluator_path(

@@ -1,5 +1,5 @@
 case_schema:
-  schema_version: p1-cases/3
+  schema_version: p1-cases/4
   required_fields:
     - case_id
     - case_family_id
@@ -35,6 +35,17 @@ case_schema:
     family_id_algorithm: p1-case-family/v1
     family_id_excludes: evidence_condition
     contexts_per_family: [full, missing_key, noisy]
+
+  diagnosis_projection:
+    context_id_algorithm: p1-diagnosis-context/v1
+    opaque_context_id: true
+    forbidden_fields:
+      - public_id
+      - evidence_condition
+      - expected_diagnosis_behavior
+      - causal_claim_sufficiency
+      - allowed_claim_levels
+      - forbidden_claim_levels
 
   splits:
     - dev

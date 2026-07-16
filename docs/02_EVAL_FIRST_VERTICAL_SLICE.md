@@ -42,7 +42,9 @@ Không qua P1 nếu thiếu một trong các mục:
 - Mỗi context có injected change và measured outcome.
 - Chỉ eligible regression mới có hidden failure cause; stable/improvement là controls.
 - Ba evidence contexts cùng family dùng chung `case_family_id`, injection provenance và evaluator truth.
-- Evidence không leak ground-truth.
+- Evidence dùng contract v2; version/source/role là bắt buộc; `full/noisy` đủ
+  decisive evidence; `missing_key` materialize các withheld counterpart evaluator-side.
+- Diagnosis projection condition-blind cả field lẫn ID và không leak ground-truth.
 - Có ít nhất 2 variants chạy thật.
 - Có metric output dạng bảng.
 - Có 5-10 lỗi được phân tích thủ công.
@@ -58,3 +60,6 @@ Không được đồng nhất “đã inject data drift” với “data drift 
 > Aletheia tốt hơn baseline.
 
 Muốn nói tốt hơn baseline phải đợi P4/P5.
+
+P1-G5A chỉ khóa schema/rubric. Collector thật, persistence gate và semantic leakage
+audit vẫn phải hoàn thành trước khi coi evidence contract gate đã đóng.

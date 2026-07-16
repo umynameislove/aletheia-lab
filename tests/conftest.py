@@ -15,6 +15,7 @@ from aletheia_lab.baseline.schema import (
     TARGET_COLUMN,
 )
 from aletheia_lab.benchmark.case_schema import case_family_id_for
+from aletheia_lab.evidence.rubric import expected_behavior_for
 
 _CATEGORY_VALUES: dict[str, list[str]] = {
     "gender": ["Male", "Female"],
@@ -190,7 +191,11 @@ def p1_manifest_factory():
             "severity_rank": 1,
             "evidence_condition": condition,
             "evidence_bundle_id": f"eb-{public_id}",
-            "expected_diagnosis_behavior": "cite or abstain",
+            "expected_diagnosis_behavior": (
+                expected_behavior_for(condition)
+                if condition in {"full", "missing_key", "noisy"}
+                else "diagnose_with_citations"
+            ),
             "observable_signals": {
                 "candidate_feature": "Contract",
                 "psi": 0.5,

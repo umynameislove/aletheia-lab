@@ -13,16 +13,22 @@ from aletheia_lab.evidence.schema import EvidenceBundle
 
 
 def save_bundle(bundle: EvidenceBundle, path: str | Path) -> None:
-    """Save an evidence bundle as JSON."""
+    """Save a bundle deterministically (full store contract remains P1-G5B)."""
 
     bundle_path = Path(path)
     bundle_path.parent.mkdir(parents=True, exist_ok=True)
-    bundle_path.write_text(bundle.model_dump_json(indent=2), encoding="utf-8")
+    payload = json.dumps(
+        bundle.model_dump(mode="json"),
+        indent=2,
+        sort_keys=True,
+        ensure_ascii=False,
+        allow_nan=False,
+    )
+    bundle_path.write_text(payload + "\n", encoding="utf-8")
 
 
 def load_bundle(path: str | Path) -> EvidenceBundle:
     """Load an evidence bundle from JSON."""
 
     bundle_path = Path(path)
-    data = json.loads(bundle_path.read_text(encoding="utf-8"))
-    return EvidenceBundle.model_validate(data)
+    return EvidenceBundle.model_validate_json(bundle_path.read_text(encoding="utf-8"))

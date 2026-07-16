@@ -1,27 +1,62 @@
 {
-  "evidence_bundle_id": "ev-p1-data-drift-0001",
+  "schema_version": "evidence-bundle/2",
+  "validation_state": "schema_validated",
+  "evidence_bundle_id": "ev-p1-example",
   "case_id": "p1-data-drift-0001",
-  "allowed_evidence": [
+  "case_family_id": "p1-family-1111111111111111111111111111111111111111111111111111111111111111",
+  "diagnosis_context_id": "p1-context-b5dd921a68841e6c038001ea982434f49e8ce783065363d8f47ee26489e722fe",
+  "evidence_condition": "full",
+  "dataset_id": "telco_customer_churn",
+  "dataset_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "split_manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "items": [
     {
+      "schema_version": "evidence-item/2",
       "evidence_id": "metric-001",
       "kind": "metric",
-      "title": "Evaluation metric regression",
-      "content": "Accuracy dropped from 0.91 to 0.72 on the evaluation split.",
-      "source_path": "data/interim/metrics/p1-data-drift-0001.json",
-      "created_at": "2026-07-07",
-      "visible_to_diagnoser": true
+      "evidence_roles": ["symptom", "metric_comparison"],
+      "title": "Evaluation metric comparison",
+      "content": "Accuracy moved from 0.91 to 0.72 on the evaluation split.",
+      "source_path": "metrics/p1-example.json",
+      "content_sha256": "9cd438f2df963641520d4f46fa0ac0f0c5913050f460de49c038c829f311a178",
+      "collector_version": "fixture/1",
+      "collected_at": "2026-07-07T00:00:00+00:00",
+      "visibility": "diagnosis",
+      "redaction_state": "none",
+      "metadata": [
+        {"key": "observed", "value": 0.72},
+        {"key": "reference", "value": 0.91}
+      ],
+      "provenance_links": []
     },
     {
+      "schema_version": "evidence-item/2",
       "evidence_id": "profile-001",
       "kind": "dataset_profile",
+      "evidence_roles": [
+        "candidate_distribution_reference",
+        "candidate_distribution_observed",
+        "candidate_psi"
+      ],
       "title": "Feature profile comparison",
-      "content": "Feature x1 has a shifted evaluation distribution relative to the training split.",
-      "source_path": "data/interim/profiles/p1-data-drift-0001.json",
-      "created_at": "2026-07-07",
-      "visible_to_diagnoser": true
+      "content": "Feature x1 changed from {A: 0.50, B: 0.50} to {A: 0.80, B: 0.20}; PSI is 0.42.",
+      "source_path": "profiles/p1-example.json",
+      "content_sha256": "3ae76fa7b03ce90a978a513a61a97a66298b136379abbb8454751597dfb70bb4",
+      "collector_version": "fixture/1",
+      "collected_at": "2026-07-07T00:00:00+00:00",
+      "visibility": "diagnosis",
+      "redaction_state": "none",
+      "metadata": [{"key": "psi", "value": 0.42}],
+      "provenance_links": []
     }
   ],
-  "withheld_evidence": [],
-  "counterfactual_evidence": [],
-  "leakage_check_passed": true
+  "required_evidence_roles": [
+    "symptom",
+    "candidate_distribution_reference",
+    "candidate_distribution_observed",
+    "candidate_psi",
+    "metric_comparison"
+  ],
+  "missing_required_evidence_roles": [],
+  "intentionally_withheld_evidence_roles": []
 }
