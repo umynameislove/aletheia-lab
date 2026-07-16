@@ -7,7 +7,7 @@ Rủi ro lớn nhất của Aletheia là xây platform quá rộng nhưng eval y
 ## Scope P1
 
 - Fault type: `data_drift`
-- Case count: 15
+- Case kernel: 5 injection families × 3 evidence contexts = 15 contexts
 - Dataset: 1 dataset tabular classification nhỏ/dễ reproduce
 - Variants:
   - Plain LLM
@@ -26,6 +26,8 @@ Rủi ro lớn nhất của Aletheia là xây platform quá rộng nhưng eval y
 base dataset
   -> inject data_drift
   -> train/evaluate
+  -> classify measured outcome
+  -> apply versioned failure-eligibility policy
   -> collect evidence
   -> run 4 diagnosis variants
   -> score diagnosis
@@ -37,7 +39,9 @@ base dataset
 Không qua P1 nếu thiếu một trong các mục:
 
 - Có case manifest.
-- Có hidden ground-truth cause.
+- Mỗi context có injected change và measured outcome.
+- Chỉ eligible regression mới có hidden failure cause; stable/improvement là controls.
+- Ba evidence contexts cùng family dùng chung `case_family_id`, injection provenance và evaluator truth.
 - Evidence không leak ground-truth.
 - Có ít nhất 2 variants chạy thật.
 - Có metric output dạng bảng.
@@ -49,7 +53,7 @@ Không qua P1 nếu thiếu một trong các mục:
 
 > Đã có vertical slice chứng minh pipeline đánh giá chạy được.
 
-Chưa được nói:
+Không được đồng nhất “đã inject data drift” với “data drift đã gây failure”. Chưa được nói:
 
 > Aletheia tốt hơn baseline.
 

@@ -3,14 +3,11 @@
 Design contract for every injector:
 
 1. Deterministic given a seed, so cases reproduce exactly.
-2. One-factor: change a single controllable cause, leave everything else fixed,
-   so the case has one dominant ground-truth cause.
-3. Separation of concerns:
-   - ``ground_truth`` holds the hidden answer key (cause label + mechanism) and
-     must never be shown to the diagnosis model.
-   - ``signals`` holds only observable, evidence-safe facts (distributions,
-     PSI). They describe what the data looks like; they do not name the cause.
-   The diagnosis model must *infer* the cause from ``signals`` alone.
+2. One-factor: apply one controlled intervention. Whether it caused a model
+   failure is decided only after measuring the downstream outcome.
+3. Separation of concerns: the injector records only the intervention and
+   observable signals. Failure eligibility and any hidden cause assertion are
+   derived later, after measuring the model outcome; signals never name a cause.
 
 P1 implements ``data_drift`` (categorical distribution shift). Other fault types
 are added when their phase starts (see 02_TASKS.csv), each following this
@@ -26,7 +23,7 @@ from typing import Protocol
 import numpy as np
 import pandas as pd
 
-from aletheia_lab.benchmark.manifest import GroundTruth
+from aletheia_lab.benchmark.case_schema import InjectedChange
 from aletheia_lab.benchmark.signals import (
     categorical_distribution,
     population_stability_index,
@@ -37,12 +34,13 @@ from aletheia_lab.benchmark.signals import (
 class InjectionResult:
     """Output of a fault injector.
 
-    ``injected`` is the transformed dataset. ``ground_truth`` is hidden from the
-    diagnoser. ``signals`` is the evidence-safe view (no answer key).
+    ``injected`` is the transformed dataset. ``injected_change`` describes only
+    the intervention; it does not claim that the model failed. ``signals`` is
+    the evidence-safe view (no answer key).
     """
 
     injected: pd.DataFrame
-    ground_truth: GroundTruth
+    injected_change: InjectedChange
     signals: dict[str, object]
 
 
@@ -130,12 +128,11 @@ class CategoricalDriftInjector:
         achieved_dist = categorical_distribution(injected[spec.feature].astype(str).tolist())
         psi = population_stability_index(source_dist, achieved_dist)
 
-        ground_truth = GroundTruth(
-            cause_label=self.fault_type,
-            causal_mechanism="categorical_distribution_shift",
-            injected_change=f"{spec.feature}: {source_dist} -> {achieved_dist}",
-            affected_components=[spec.feature],
-            expected_symptoms=["metric_regression", f"distribution_shift:{spec.feature}"],
+        injected_change = InjectedChange(
+            intervention_type="categorical_distribution_shift",
+            feature=spec.feature,
+            distribution_reference=source_dist,
+            distribution_achieved=achieved_dist,
         )
 
         # Evidence-safe: describes the data, never names the cause.
@@ -147,7 +144,7 @@ class CategoricalDriftInjector:
             "sample_size": n_out,
         }
 
-        return InjectionResult(injected=injected, ground_truth=ground_truth, signals=signals)
+        return InjectionResult(injected=injected, injected_change=injected_change, signals=signals)
 
 
 def _apportion(target_distribution: dict[str, float], n_out: int) -> dict[str, int]:

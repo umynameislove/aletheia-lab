@@ -5,9 +5,10 @@ Matrix: 5 injection settings x 3 evidence conditions (full / missing_key / noisy
 Reference window is a single, consistent one: the clean held-out test split. The
 P1-C-02 baseline is trained on the train split, then scored on the clean test
 split (reference) and on each drifted test split (observed). The measured
-accuracy delta is classified honestly (regression / improvement / stable) at a
-fixed threshold; the injection is always data_drift but its effect is not forced
-to be a regression, so improvement/stable control cases exist. The noisy
+accuracy delta is classified honestly and passed through a versioned failure-
+eligibility policy; the injection is always data_drift but its effect is not
+forced to be a failure, so improvement/stable control cases have no asserted
+failure cause. The noisy
 condition carries a measured distractor comparison (gender), never an unmeasured
 "stable" claim. No large artifact is persisted.
 """
@@ -31,11 +32,13 @@ from aletheia_lab.benchmark.case_schema import (
     EXPECTED_BEHAVIOR,
     SCHEMA_VERSION,
     DistractorComparison,
-    MetricComparison,
+    FailureEligibility,
+    InjectedChange,
     ObservableSignals,
-    case_role_for,
+    ObservedOutcome,
+    case_family_id_for,
     classify_outcome,
-    expected_symptom_for,
+    failure_eligibility_for,
 )
 from aletheia_lab.benchmark.case_writer import (
     diagnosis_input_leakage,
@@ -77,9 +80,9 @@ class _Injected:
     setting: _Setting
     observed: dict[str, float]
     psi: float
-    metric: MetricComparison
-    outcome: str
-    injected_change: str
+    observed_outcome: ObservedOutcome
+    failure_eligibility: FailureEligibility
+    injected_change: InjectedChange
     distractor: DistractorComparison
 
 
@@ -124,15 +127,16 @@ def _observable_signals(
     observed: dict[str, float],
     psi: float,
     sample_size: int,
-    metric: MetricComparison,
+    observed_outcome: ObservedOutcome,
     outcome: str,
     distractor: DistractorComparison,
 ) -> ObservableSignals:
     """Transform the base evidence per condition (full / missing_key / noisy)."""
 
     change_note = (
-        f"Baseline {metric.metric} on the {metric.reference_split} split moved from "
-        f"{metric.reference:.4f} to {metric.observed:.4f} (delta {metric.delta:+.4f}); "
+        f"Baseline {observed_outcome.metric} on the {observed_outcome.reference_split} "
+        f"split moved from {observed_outcome.reference:.4f} to "
+        f"{observed_outcome.observed:.4f} (delta {observed_outcome.delta:+.4f}); "
         f"measured outcome: {outcome}."
     )
     if condition == "full":
@@ -142,7 +146,7 @@ def _observable_signals(
             distribution_observed=observed,
             psi=psi,
             sample_size=sample_size,
-            baseline_metric_reference=metric,
+            baseline_metric_reference=observed_outcome,
             notes=[change_note],
         )
     if condition == "missing_key":
@@ -165,7 +169,7 @@ def _observable_signals(
             distribution_observed=observed,
             psi=psi,
             sample_size=sample_size,
-            baseline_metric_reference=metric,
+            baseline_metric_reference=observed_outcome,
             distractor_comparisons=[distractor],
             notes=[change_note, distractor_note],
         )
@@ -232,13 +236,16 @@ def generate_p1(
             drifted[list(FEATURE_COLUMNS)], cast("pd.Series", drifted[_TARGET_COLUMN])
         )
         delta = observed_metric - reference_metric
-        metric = MetricComparison(
+        outcome_class = classify_outcome(delta)
+        observed_outcome = ObservedOutcome(
             metric="accuracy",
             reference_split="test",
             reference=reference_metric,
             observed=observed_metric,
             delta=delta,
+            classification=outcome_class,
         )
+        failure_eligibility = FailureEligibility(classification=failure_eligibility_for(delta))
         distractor_observed = categorical_distribution(
             drifted[_DISTRACTOR_FEATURE].astype(str).tolist()
         )
@@ -260,9 +267,9 @@ def generate_p1(
                 setting=setting,
                 observed=observed,
                 psi=psi,
-                metric=metric,
-                outcome=classify_outcome(delta),
-                injected_change=f"{feature}: {reference} -> {observed}",
+                observed_outcome=observed_outcome,
+                failure_eligibility=failure_eligibility,
+                injected_change=result.injected_change,
                 distractor=distractor,
             )
         )
@@ -275,24 +282,31 @@ def generate_p1(
     case_ids: list[str] = []
     condition_counts: dict[str, int] = {c: 0 for c in EVIDENCE_CONDITIONS}
     outcome_counts: dict[str, int] = {"regression": 0, "improvement": 0, "stable": 0}
+    eligibility_counts: dict[str, int] = {
+        "eligible_failure": 0,
+        "stable_control": 0,
+        "improvement_control": 0,
+    }
     leakage_total = 0
     settings_table: list[dict[str, Any]] = []
 
     for index, item in enumerate(injected, start=1):
         setting = item.setting
-        role = case_role_for(item.outcome)  # type: ignore[arg-type]
-        outcome_counts[item.outcome] += 1
+        outcome = item.observed_outcome.classification
+        eligibility = item.failure_eligibility.classification
+        outcome_counts[outcome] += 1
+        eligibility_counts[eligibility] += 1
         settings_table.append(
             {
                 "index": index,
                 "injection_id": setting.injection_id,
                 "seed": setting.seed,
                 "psi": item.psi,
-                "reference_accuracy": item.metric.reference,
-                "observed_accuracy": item.metric.observed,
-                "metric_delta": item.metric.delta,
-                "outcome": item.outcome,
-                "case_role": role,
+                "reference_accuracy": item.observed_outcome.reference,
+                "observed_accuracy": item.observed_outcome.observed,
+                "metric_delta": item.observed_outcome.delta,
+                "outcome": outcome,
+                "failure_eligibility": eligibility,
                 "distractor_psi": item.distractor.psi,
                 "severity_rank": severity[setting.injection_id],
             }
@@ -303,7 +317,27 @@ def generate_p1(
             "output_size": output_size,
             "seed": setting.seed,
         }
-        expected_symptoms = [expected_symptom_for(item.outcome), f"distribution_shift:{feature}"]  # type: ignore[arg-type]
+        injector_name = "aletheia_lab.benchmark.injectors.CategoricalDriftInjector"
+        family_id = case_family_id_for(
+            fault_type="data_drift",
+            dataset_id=resolved.dataset_id,
+            dataset_sha256=dataset_sha,
+            split_manifest_sha256=split_manifest_sha,
+            injection_id=setting.injection_id,
+            injector=injector_name,
+            feature=feature,
+            seed=setting.seed,
+            target_distribution=setting.target_distribution,
+            output_size=output_size,
+        )
+        hidden_failure_cause = None
+        if eligibility == "eligible_failure":
+            hidden_failure_cause = {
+                "cause_label": "data_drift",
+                "causal_mechanism": "categorical_distribution_shift",
+                "affected_components": [feature],
+                "expected_symptoms": ["metric_regression", f"distribution_shift:{feature}"],
+            }
         for condition in EVIDENCE_CONDITIONS:
             slug = _CONDITION_SLUG[condition]
             case_id = f"p1-data-drift-{index:02d}-{slug}"
@@ -315,13 +349,14 @@ def generate_p1(
                 observed=item.observed,
                 psi=item.psi,
                 sample_size=output_size,
-                metric=item.metric,
-                outcome=item.outcome,
+                observed_outcome=item.observed_outcome,
+                outcome=outcome,
                 distractor=item.distractor,
             )
             manifest = {
                 "schema_version": SCHEMA_VERSION,
                 "case_id": case_id,
+                "case_family_id": family_id,
                 "public_id": public_id,
                 "fault_type": "data_drift",
                 "dataset_id": resolved.dataset_id,
@@ -356,19 +391,15 @@ def generate_p1(
                 "tag": "P1",
             }
             ground_truth = {
-                "cause_label": "data_drift",
-                "causal_mechanism": "categorical_distribution_shift",
-                "injected_change": item.injected_change,
-                "affected_components": [feature],
-                "expected_symptoms": expected_symptoms,
+                "injected_change": item.injected_change.model_dump(),
                 "injection_parameters": injection_parameters,
-                "metric_outcome": item.outcome,
-                "metric_delta": item.metric.delta,
-                "case_role": role,
+                "observed_outcome": item.observed_outcome.model_dump(),
+                "failure_eligibility": item.failure_eligibility.model_dump(),
+                "hidden_failure_cause": hidden_failure_cause,
             }
             injection = {
                 "injection_id": setting.injection_id,
-                "injector": "aletheia_lab.benchmark.injectors.CategoricalDriftInjector",
+                "injector": injector_name,
                 "fault_type": "data_drift",
                 "feature": feature,
                 "seed": setting.seed,
@@ -392,6 +423,7 @@ def generate_p1(
         "settings": settings_table,
         "condition_counts": condition_counts,
         "outcome_counts": outcome_counts,
+        "eligibility_counts": eligibility_counts,
         "dataset_id": resolved.dataset_id,
         "dataset_sha256": dataset_sha,
         "split_manifest_sha256": split_manifest_sha,

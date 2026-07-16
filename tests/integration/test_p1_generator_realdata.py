@@ -42,6 +42,19 @@ def test_real_outcome_composition_and_measured_distractor(tmp_path):
     summary = generate_p1(_CONFIG, tmp_path / "cases")
     # Honest composition on the real dataset: 3 regression + 1 improvement + 1 stable.
     assert summary["outcome_counts"] == {"regression": 3, "improvement": 1, "stable": 1}
+    assert summary["eligibility_counts"] == {
+        "eligible_failure": 3,
+        "improvement_control": 1,
+        "stable_control": 1,
+    }
+    for index in range(1, 6):
+        gt = load_case_dir_schema_only(
+            tmp_path / "cases" / f"p1-data-drift-{index:02d}-full"
+        ).ground_truth
+        if gt.failure_eligibility.classification == "eligible_failure":
+            assert gt.hidden_failure_cause is not None
+        else:
+            assert gt.hidden_failure_cause is None
     # Noisy carries a measured gender distractor with a real PSI.
     noisy = load_case_dir_schema_only(
         tmp_path / "cases" / "p1-data-drift-01-noisy"

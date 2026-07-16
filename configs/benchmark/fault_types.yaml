@@ -2,12 +2,12 @@ fault_types:
   data_drift:
     phase: P1
     priority: core
-    description: Distribution shift between training and evaluation data.
+    description: Controlled distribution shift between reference and injected evaluation data.
     ground_truth_kind: dominant_cause
     injector: aletheia_lab.benchmark.injectors.CategoricalDriftInjector
     injection:
       feature: Contract
-      # 5 settings x 3 evidence conditions (full/missing_key/noisy) = 15 P1 cases.
+      # 5 families x 3 evidence contexts (full/missing_key/noisy) = 15 P1 contexts.
       # Each setting shifts one feature only (one-factor); seed makes it reproducible.
       settings:
         - injection_id: drift_contract_s1
@@ -28,7 +28,7 @@ fault_types:
     expected_evidence:
       - dataset_profile_before
       - dataset_profile_after
-      - metric_regression
+      - measured_model_outcome
       - feature_distribution_shift
       - run_config
     negative_controls:

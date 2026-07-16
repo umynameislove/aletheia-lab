@@ -2,9 +2,9 @@
 
 Beyond schema and checksum integrity, this cross-checks the four payloads of each
 case against one another, checks observable signals against the injection
-provenance, requires the three conditions of a setting to share identical
-injection/ground-truth, and checks the whole 15-case set (single dataset/split
-hash, severity ranks, condition counts, and the honest outcome composition).
+provenance, recomputes family IDs and failure eligibility, requires the three
+conditions of a family to share identical injection/ground-truth, and checks the
+whole 15-context set (five unique families, IDs, severity, and eligibility mix).
 """
 
 from __future__ import annotations
@@ -17,9 +17,9 @@ from typing import Any
 from aletheia_lab.benchmark.case_schema import (
     EVIDENCE_CONDITIONS,
     EXPECTED_BEHAVIOR,
-    case_role_for,
+    case_family_id_for,
     classify_outcome,
-    expected_symptom_for,
+    failure_eligibility_for,
     project_diagnosis_input,
 )
 from aletheia_lab.benchmark.case_writer import (
@@ -41,8 +41,6 @@ EXPECTED_SEVERITY_RANKS = {1, 2, 3, 4, 5}
 REQUIRED_ARTIFACTS = frozenset(
     {"manifest.json", "diagnosis_input.json", "ground_truth.json", "injection.json"}
 )
-_ALL_METRIC_SYMPTOMS = {"metric_regression", "metric_improvement", "metric_stable"}
-_TOL = 1e-12
 
 
 @dataclass
@@ -99,18 +97,52 @@ def _cross_artifact_errors(case: LoadedCase, case_dir: Path) -> list[str]:
         errors.append(f"{cid}: injection parameters mismatch manifest vs injection")
     if gt.injection_parameters != params:
         errors.append(f"{cid}: ground_truth params != manifest params")
-    if gt.cause_label != m.fault_type:
-        errors.append(f"{cid}: ground_truth.cause_label != fault_type")
+    change = gt.injected_change
+    if (
+        change.intervention_type != "categorical_distribution_shift"
+        or change.feature != inj.feature
+        or change.distribution_reference != inj.reference_distribution
+        or change.distribution_achieved != inj.achieved_distribution
+    ):
+        errors.append(f"{cid}: injected_change does not match injection provenance")
+    expected_family_id = case_family_id_for(
+        fault_type=m.fault_type,
+        dataset_id=m.dataset_id,
+        dataset_sha256=m.dataset_sha256,
+        split_manifest_sha256=m.split_manifest_sha256,
+        injection_id=inj.injection_id,
+        injector=inj.injector,
+        feature=inj.feature,
+        seed=inj.seed,
+        target_distribution=inj.target_distribution,
+        output_size=inj.output_size,
+    )
+    if m.case_family_id != expected_family_id:
+        errors.append(f"{cid}: case_family_id does not match canonical injection identity")
 
-    # Outcome / role / symptom must be consistent with the measured delta.
-    if gt.metric_outcome != classify_outcome(gt.metric_delta):
-        errors.append(f"{cid}: metric_outcome does not match metric_delta")
-    if gt.case_role != case_role_for(gt.metric_outcome):
-        errors.append(f"{cid}: case_role does not match metric_outcome")
-    right_symptom = expected_symptom_for(gt.metric_outcome)
-    wrong_symptoms = (_ALL_METRIC_SYMPTOMS - {right_symptom}) & set(gt.expected_symptoms)
-    if right_symptom not in gt.expected_symptoms or wrong_symptoms:
-        errors.append(f"{cid}: expected_symptoms inconsistent with outcome")
+    # Derived semantics are independently recomputed by the validator. Schema
+    # checks the same invariants, but this explicit gate documents the trust
+    # boundary and prevents a future relaxed schema from becoming a bypass.
+    outcome = gt.observed_outcome
+    if outcome.classification != classify_outcome(outcome.delta):
+        errors.append(f"{cid}: observed outcome classification does not match measured delta")
+    expected_eligibility = failure_eligibility_for(outcome.delta)
+    if gt.failure_eligibility.classification != expected_eligibility:
+        errors.append(f"{cid}: failure eligibility does not match measured outcome")
+    if expected_eligibility == "eligible_failure":
+        if gt.hidden_failure_cause is None:
+            errors.append(f"{cid}: eligible failure is missing hidden_failure_cause")
+        else:
+            expected_cause = {
+                "cause_label": m.fault_type,
+                "causal_mechanism": change.intervention_type,
+                "affected_components": [inj.feature],
+                "expected_symptoms": ["metric_regression", f"distribution_shift:{inj.feature}"],
+            }
+            if gt.hidden_failure_cause.model_dump() != expected_cause:
+                errors.append(f"{cid}: hidden failure cause does not match measured intervention")
+    elif gt.hidden_failure_cause is not None:
+        errors.append(f"{cid}: control outcome asserts hidden_failure_cause")
 
     if di.model_dump() != project_diagnosis_input(m).model_dump():
         errors.append(f"{cid}: diagnosis_input is not the manifest projection")
@@ -143,8 +175,8 @@ def _cross_artifact_errors(case: LoadedCase, case_dir: Path) -> list[str]:
             errors.append(f"{cid}: distribution_observed != injection.achieved_distribution")
         if sig.baseline_metric_reference is None:
             errors.append(f"{cid}: {m.evidence_condition} is missing the metric comparison")
-        elif abs(sig.baseline_metric_reference.delta - gt.metric_delta) > _TOL:
-            errors.append(f"{cid}: metric delta != ground_truth.metric_delta")
+        elif sig.baseline_metric_reference.model_dump() != outcome.model_dump():
+            errors.append(f"{cid}: visible observed outcome != hidden measured outcome")
     if m.evidence_condition == "missing_key" and (
         sig.distribution_reference is not None
         or sig.psi is not None
@@ -176,8 +208,12 @@ def _cross_condition_errors(by_setting: dict[str, list[tuple[Path, LoadedCase]]]
             errors.append(f"{injection_id}: injection.json differs across conditions")
         if len(gt_bytes) != 1:
             errors.append(f"{injection_id}: ground_truth.json differs across conditions")
-        if len({c.ground_truth.metric_outcome for _, c in items}) != 1:
-            errors.append(f"{injection_id}: metric_outcome differs across conditions")
+        if len({c.manifest.case_family_id for _, c in items}) != 1:
+            errors.append(f"{injection_id}: case_family_id differs across conditions")
+        if len({c.ground_truth.observed_outcome.classification for _, c in items}) != 1:
+            errors.append(f"{injection_id}: observed outcome differs across conditions")
+        if len({c.ground_truth.failure_eligibility.classification for _, c in items}) != 1:
+            errors.append(f"{injection_id}: failure eligibility differs across conditions")
         if len({c.manifest.severity_rank for _, c in items}) != 1:
             errors.append(f"{injection_id}: severity_rank differs across conditions")
     return errors
@@ -210,6 +246,11 @@ def validate_p1_cases(cases_dir: str | Path) -> ValidationReport:
     )
     report.record(
         "unique_case_ids", len(set(report.case_ids)) == len(report.case_ids), "duplicate case_id"
+    )
+    report.record(
+        "unique_public_ids",
+        len({c.manifest.public_id for c in loaded}) == len(loaded),
+        "duplicate public_id",
     )
     report.record(
         "only_data_drift",
@@ -252,6 +293,21 @@ def validate_p1_cases(cases_dir: str | Path) -> ValidationReport:
         "exactly_5_settings",
         len(by_setting) == EXPECTED_SETTINGS,
         f"expected {EXPECTED_SETTINGS} settings, got {len(by_setting)}",
+    )
+    family_by_setting = {
+        iid: {case.manifest.case_family_id for _, case in items}
+        for iid, items in by_setting.items()
+    }
+    report.record(
+        "one_family_id_per_setting",
+        all(len(ids) == 1 for ids in family_by_setting.values()),
+        f"a setting has multiple case_family_id values: {family_by_setting}",
+    )
+    unique_family_ids = {next(iter(ids)) for ids in family_by_setting.values() if len(ids) == 1}
+    report.record(
+        "exactly_5_unique_families",
+        len(unique_family_ids) == EXPECTED_SETTINGS,
+        f"expected {EXPECTED_SETTINGS} unique families, got {len(unique_family_ids)}",
     )
     report.record(
         "exact_conditions_per_setting",
@@ -297,17 +353,21 @@ def validate_p1_cases(cases_dir: str | Path) -> ValidationReport:
         f"severity ranks do not follow PSI order: {setting_rank} vs {expected_rank}",
     )
 
-    setting_outcome = {
-        iid: items[0][1].ground_truth.metric_outcome for iid, items in by_setting.items()
+    setting_eligibility = {
+        iid: items[0][1].ground_truth.failure_eligibility.classification
+        for iid, items in by_setting.items()
     }
-    counts = {"regression": 0, "improvement": 0, "stable": 0}
-    for outcome in setting_outcome.values():
-        counts[outcome] += 1
-    has_mix = counts["regression"] >= 1 and (counts["improvement"] + counts["stable"]) >= 1
+    counts = {"eligible_failure": 0, "improvement_control": 0, "stable_control": 0}
+    for eligibility in setting_eligibility.values():
+        counts[eligibility] += 1
+    has_mix = (
+        counts["eligible_failure"] >= 1
+        and (counts["improvement_control"] + counts["stable_control"]) >= 1
+    )
     report.record(
-        "outcome_mix_has_failures_and_controls",
+        "eligibility_mix_has_failures_and_controls",
         has_mix,
-        f"outcome composition {counts} lacks a failure/control mix",
+        f"failure eligibility composition {counts} lacks a failure/control mix",
     )
 
     leakage = sum(len(diagnosis_input_leakage(c.diagnosis_input)) for c in loaded)

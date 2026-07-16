@@ -1,30 +1,40 @@
 case_schema:
+  schema_version: p1-cases/3
   required_fields:
     - case_id
+    - case_family_id
     - fault_type
     - dataset_id
     - injection_id
-    - ground_truth
     - evidence_bundle_id
     - split
-    - created_at
 
   ground_truth:
     required_fields:
-      - cause_label
-      - causal_mechanism
       - injected_change
-      - affected_components
-      - expected_symptoms
+      - injection_parameters
+      - observed_outcome
+      - failure_eligibility
+      - hidden_failure_cause
     hidden_from_diagnosis: true
+    hidden_failure_cause:
+      required_when: failure_eligibility.classification == eligible_failure
+      forbidden_when:
+        - failure_eligibility.classification == stable_control
+        - failure_eligibility.classification == improvement_control
 
-  evidence_bundle:
-    required_fields:
-      - evidence_bundle_id
-      - allowed_evidence
-      - withheld_evidence
-      - counterfactual_evidence
-      - leakage_check
+  failure_eligibility:
+    policy_version: accuracy-regression/v1
+    metric: accuracy
+    threshold: 0.01
+    eligible_failure: delta <= -0.01
+    stable_control: -0.01 < delta < 0.01
+    improvement_control: delta >= 0.01
+
+  identity:
+    family_id_algorithm: p1-case-family/v1
+    family_id_excludes: evidence_condition
+    contexts_per_family: [full, missing_key, noisy]
 
   splits:
     - dev
@@ -37,6 +47,7 @@ case_schema:
       - ground_truth
       - injected_cause
       - answer_key
+      - hidden_failure_cause
     require_manual_review_for:
       - exact_cause_label_in_evidence
       - injection_script_visible_to_diagnoser

@@ -14,6 +14,7 @@ from aletheia_lab.baseline.schema import (
     NUMERIC_FEATURES,
     TARGET_COLUMN,
 )
+from aletheia_lab.benchmark.case_schema import case_family_id_for
 
 _CATEGORY_VALUES: dict[str, list[str]] = {
     "gender": ["Male", "Female"],
@@ -158,8 +159,25 @@ def p1_manifest_factory():
         public_id: str = "p1-case-01-full",
         condition: str = "full",
     ) -> dict:
+        family_id = case_family_id_for(
+            fault_type="data_drift",
+            dataset_id="telco_customer_churn",
+            dataset_sha256="a" * 64,
+            split_manifest_sha256="b" * 64,
+            injection_id="drift_contract_s1",
+            injector="X",
+            feature="Contract",
+            seed=1,
+            target_distribution={
+                "Month-to-month": 0.8,
+                "One year": 0.12,
+                "Two year": 0.08,
+            },
+            output_size=100,
+        )
         return {
             "case_id": case_id,
+            "case_family_id": family_id,
             "public_id": public_id,
             "fault_type": "data_drift",
             "dataset_id": "telco_customer_churn",
@@ -194,15 +212,32 @@ def p1_ground_truth_factory():
 
     def build() -> dict:
         return {
-            "cause_label": "data_drift",
-            "causal_mechanism": "categorical_distribution_shift",
-            "injected_change": "Contract shifted",
-            "affected_components": ["Contract"],
-            "expected_symptoms": ["metric_regression"],
+            "injected_change": {
+                "intervention_type": "categorical_distribution_shift",
+                "feature": "Contract",
+                "distribution_reference": {"Month-to-month": 1.0},
+                "distribution_achieved": {"Month-to-month": 1.0},
+            },
             "injection_parameters": {"feature": "Contract", "seed": 1},
-            "metric_outcome": "regression",
-            "metric_delta": -0.05,
-            "case_role": "failure",
+            "observed_outcome": {
+                "metric": "accuracy",
+                "reference_split": "test",
+                "reference": 0.8,
+                "observed": 0.75,
+                "delta": -0.05,
+                "classification": "regression",
+            },
+            "failure_eligibility": {
+                "policy_version": "accuracy-regression/v1",
+                "metric_change_threshold": 0.01,
+                "classification": "eligible_failure",
+            },
+            "hidden_failure_cause": {
+                "cause_label": "data_drift",
+                "causal_mechanism": "categorical_distribution_shift",
+                "affected_components": ["Contract"],
+                "expected_symptoms": ["metric_regression", "distribution_shift:Contract"],
+            },
         }
 
     return build
