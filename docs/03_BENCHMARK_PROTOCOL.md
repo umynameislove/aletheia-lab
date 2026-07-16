@@ -2,7 +2,25 @@
 
 ## Mục tiêu benchmark
 
-Tạo các failure cases có ground-truth cause rõ ràng để đo khả năng chẩn đoán lỗi của AI.
+Tạo các controlled injection families để đo khả năng chẩn đoán lỗi của AI mà
+không gán nhãn failure trước khi quan sát tác động thật lên model.
+
+## Semantics của một case family
+
+```text
+injected_change
+  -> observed_outcome
+  -> failure_eligibility (accuracy-regression/v1, threshold = 0.01)
+  -> hidden_failure_cause (chỉ khi eligible_failure)
+```
+
+- `case_family_id`: SHA-256 canonical của dataset/split và injection identity;
+  không chứa evidence condition. Ba context `full`, `missing_key`, `noisy` dùng chung ID này.
+- `case_id` và `public_id`: định danh context, phải duy nhất trong toàn bộ 15 contexts.
+- Accuracy delta `<= -0.01`: `eligible_failure`.
+- Accuracy delta `>= +0.01`: `improvement_control`.
+- Khoảng còn lại: `stable_control`.
+- Controls vẫn giữ injection provenance và measured outcome nhưng không được có hidden failure cause.
 
 ## Case chính thức
 
@@ -11,7 +29,7 @@ Mục tiêu chính: 200 controlled cases.
 Đề xuất phân bổ:
 
 ```text
-4 fault types × 10 injection settings × 5 evidence conditions = 200 cases
+4 fault types × 10 injection settings × 5 evidence conditions = 200 contexts
 ```
 
 ## Organic validity cases
@@ -41,7 +59,8 @@ Evidence visible to diagnoser không được chứa:
 
 Phải báo cáo thẳng:
 
-- Injected faults là dominant cause, không đại diện toàn bộ real-world multi-cause failures.
+- Injected changes chỉ trở thành asserted failure cause khi measured outcome qua eligibility gate.
+- Eligible injected failures là dominant-cause cases, không đại diện toàn bộ real-world multi-cause failures.
 - Organic cases chỉ là validity check, không phải main benchmark.
 - Evidence collection do người làm thiết kế nên có risk “evidence được dọn sẵn”.
 

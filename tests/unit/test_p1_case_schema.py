@@ -20,7 +20,8 @@ def test_manifest_roundtrip_no_data_loss(
     write_case(case_dir, p1_manifest_factory(), p1_ground_truth_factory(), p1_injection_factory())
     loaded = load_case_dir_schema_only(case_dir)
     assert loaded.manifest.case_id == "p1-data-drift-01-full"
-    assert loaded.ground_truth.cause_label == "data_drift"
+    assert loaded.ground_truth.hidden_failure_cause is not None
+    assert loaded.ground_truth.hidden_failure_cause.cause_label == "data_drift"
     assert loaded.injection.psi == 0.0
     assert loaded.diagnosis_input.public_id == "p1-case-01-full"
 

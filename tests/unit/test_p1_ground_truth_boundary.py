@@ -15,7 +15,14 @@ from aletheia_lab.benchmark.case_writer import (
     write_case,
 )
 
-_GROUND_TRUTH_FIELDS = {"cause_label", "causal_mechanism", "injected_change", "expected_symptoms"}
+_GROUND_TRUTH_FIELDS = {
+    "cause_label",
+    "causal_mechanism",
+    "injected_change",
+    "expected_symptoms",
+    "failure_eligibility",
+    "hidden_failure_cause",
+}
 
 
 def test_projection_excludes_ground_truth_fields(p1_manifest_factory):
@@ -50,7 +57,8 @@ def test_hidden_ground_truth_readable_by_evaluator_path(
     case_dir = tmp_path / "case"
     write_case(case_dir, p1_manifest_factory(), p1_ground_truth_factory(), p1_injection_factory())
     loaded = load_case_dir_schema_only(case_dir)
-    assert loaded.ground_truth.cause_label == "data_drift"
+    assert loaded.ground_truth.hidden_failure_cause is not None
+    assert loaded.ground_truth.hidden_failure_cause.cause_label == "data_drift"
     assert loaded.ground_truth.injection_parameters["feature"] == "Contract"
 
 

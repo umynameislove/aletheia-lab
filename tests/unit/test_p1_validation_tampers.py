@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 
 import pytest
 
@@ -76,7 +77,7 @@ def test_tamper_metric_delta_breaks_schema_or_validator(p1_generator_config, tmp
         data["observable_signals"]["baseline_metric_reference"]["delta"] += 0.05
 
     _retamper(case_dir, "manifest.json", _bad_delta)
-    # MetricComparison requires delta == observed - reference, so this fails to load.
+    # ObservedOutcome requires delta == observed - reference, so this fails to load.
     assert not validate_p1_cases(out).passed
 
 
@@ -189,7 +190,7 @@ def test_nonfinite_ground_truth_delta_on_all_conditions_is_caught(p1_generator_c
         _retamper(
             out / f"p1-data-drift-01-{slug}",
             "ground_truth.json",
-            lambda d: d.__setitem__("metric_delta", float("inf")),
+            lambda d: d["observed_outcome"].__setitem__("delta", float("inf")),
         )
     assert not validate_p1_cases(out).passed
 
@@ -331,3 +332,150 @@ def test_missing_expected_diagnosis_behavior_is_caught(p1_generator_config, tmp_
         lambda d: d.pop("expected_diagnosis_behavior"),
     )
     _assert_rejected_for(out, "expected_diagnosis_behavior")
+
+
+# --- Commit 3: family identity and derived failure semantics ---
+
+
+def _case_for_eligibility(out, classification):
+    from aletheia_lab.benchmark.case_writer import load_case_dir_schema_only
+
+    for index in range(1, 6):
+        case_dir = out / f"p1-data-drift-{index:02d}-full"
+        gt = load_case_dir_schema_only(case_dir).ground_truth
+        if gt.failure_eligibility.classification == classification:
+            return index
+    raise AssertionError(f"no case with eligibility {classification}")
+
+
+def test_one_sibling_family_id_change_is_caught(p1_generator_config, tmp_path):
+    out = _generate(p1_generator_config, tmp_path / "c")
+    _retamper(
+        out / "p1-data-drift-01-full",
+        "manifest.json",
+        lambda d: d.__setitem__("case_family_id", "p1-family-" + "f" * 64),
+    )
+    _assert_rejected_for(out, "case_family_id does not match canonical injection identity")
+
+
+def test_two_families_forced_to_same_family_id_are_caught(p1_generator_config, tmp_path):
+    out = _generate(p1_generator_config, tmp_path / "c")
+    family_one = json.loads((out / "p1-data-drift-01-full" / "manifest.json").read_text("utf-8"))[
+        "case_family_id"
+    ]
+    for slug in ("full", "missing-key", "noisy"):
+        _retamper(
+            out / f"p1-data-drift-02-{slug}",
+            "manifest.json",
+            lambda d: d.__setitem__("case_family_id", family_one),
+        )
+    _assert_rejected_for(out, "case_family_id does not match canonical injection identity")
+
+
+def test_sibling_injection_provenance_difference_is_caught(p1_generator_config, tmp_path):
+    out = _generate(p1_generator_config, tmp_path / "c")
+    _retamper(
+        out / "p1-data-drift-01-full",
+        "injection.json",
+        lambda d: d.__setitem__("injector", "tampered.Injector"),
+    )
+    report = validate_p1_cases(out)
+    assert not report.passed
+    assert report.checks["conditions_share_injection_and_ground_truth"] is False
+
+
+def test_outcome_class_changed_without_values_is_caught(p1_generator_config, tmp_path):
+    out = _generate(p1_generator_config, tmp_path / "c")
+    _retamper(
+        out / "p1-data-drift-01-full",
+        "ground_truth.json",
+        lambda d: d["observed_outcome"].__setitem__("classification", "stable"),
+    )
+    _assert_rejected_for(out, "classification must be derived from delta")
+
+
+def test_injected_change_cannot_be_relabelled_as_failure_claim(p1_generator_config, tmp_path):
+    out = _generate(p1_generator_config, tmp_path / "c")
+    _retamper(
+        out / "p1-data-drift-01-full",
+        "ground_truth.json",
+        lambda d: d["injected_change"].__setitem__("feature", "PaymentMethod"),
+    )
+    _assert_rejected_for(out, "injected_change does not match injection provenance")
+
+
+def test_synced_fake_eligibility_is_recomputed_and_caught(p1_generator_config, tmp_path):
+    out = _generate(p1_generator_config, tmp_path / "c")
+    eligible_index = _case_for_eligibility(out, "eligible_failure")
+
+    def _fake_control(data):
+        data["failure_eligibility"]["classification"] = "stable_control"
+        data["hidden_failure_cause"] = None
+
+    for slug in ("full", "missing-key", "noisy"):
+        _retamper(
+            out / f"p1-data-drift-{eligible_index:02d}-{slug}",
+            "ground_truth.json",
+            _fake_control,
+        )
+    _assert_rejected_for(out, "failure eligibility must be recomputed")
+
+
+@pytest.mark.parametrize("classification", ["stable_control", "improvement_control"])
+def test_control_with_hidden_failure_cause_is_caught(p1_generator_config, tmp_path, classification):
+    out = _generate(p1_generator_config, tmp_path / "c")
+    index = _case_for_eligibility(out, classification)
+
+    def _add_cause(data):
+        data["hidden_failure_cause"] = {
+            "cause_label": "data_drift",
+            "causal_mechanism": "categorical_distribution_shift",
+            "affected_components": ["Contract"],
+            "expected_symptoms": ["metric_regression", "distribution_shift:Contract"],
+        }
+
+    _retamper(out / f"p1-data-drift-{index:02d}-full", "ground_truth.json", _add_cause)
+    _assert_rejected_for(out, "control outcome must not assert hidden_failure_cause")
+
+
+def test_eligible_regression_without_hidden_cause_is_caught(p1_generator_config, tmp_path):
+    out = _generate(p1_generator_config, tmp_path / "c")
+    index = _case_for_eligibility(out, "eligible_failure")
+    _retamper(
+        out / f"p1-data-drift-{index:02d}-full",
+        "ground_truth.json",
+        lambda d: d.__setitem__("hidden_failure_cause", None),
+    )
+    _assert_rejected_for(out, "eligible failure requires hidden_failure_cause")
+
+
+def test_hidden_failure_cause_must_match_measured_intervention(p1_generator_config, tmp_path):
+    out = _generate(p1_generator_config, tmp_path / "c")
+    index = _case_for_eligibility(out, "eligible_failure")
+    _retamper(
+        out / f"p1-data-drift-{index:02d}-full",
+        "ground_truth.json",
+        lambda d: d["hidden_failure_cause"].__setitem__("causal_mechanism", "label_corruption"),
+    )
+    _assert_rejected_for(out, "hidden failure cause does not match measured intervention")
+
+
+def test_eligibility_policy_version_mismatch_is_caught(p1_generator_config, tmp_path):
+    out = _generate(p1_generator_config, tmp_path / "c")
+    _retamper(
+        out / "p1-data-drift-01-full",
+        "ground_truth.json",
+        lambda d: d["failure_eligibility"].__setitem__(
+            "policy_version", "accuracy-regression/v999"
+        ),
+    )
+    _assert_rejected_for(out, "unexpected eligibility policy")
+
+
+def test_duplicate_context_directory_is_caught(p1_generator_config, tmp_path):
+    out = _generate(p1_generator_config, tmp_path / "c")
+    shutil.copytree(out / "p1-data-drift-01-full", out / "duplicate-full-context")
+    report = validate_p1_cases(out)
+    assert not report.passed
+    assert report.checks["exactly_15_cases"] is False
+    assert report.checks["unique_case_ids"] is False

@@ -24,9 +24,7 @@ def make_source(n: int = 1000) -> pd.DataFrame:
     """Synthetic source: 'contract' drifts; 'region' is independent of it."""
 
     rng = np.random.default_rng(0)
-    contract = rng.choice(
-        ["month_to_month", "one_year", "two_year"], size=n, p=[0.55, 0.25, 0.20]
-    )
+    contract = rng.choice(["month_to_month", "one_year", "two_year"], size=n, p=[0.55, 0.25, 0.20])
     region = rng.choice(["north", "south"], size=n, p=[0.5, 0.5])
     return pd.DataFrame({"contract": contract, "region": region})
 
@@ -74,13 +72,15 @@ def test_change_is_one_factor() -> None:
     assert result.signals["psi"] > region_psi * 5
 
 
-def test_ground_truth_is_isolated_from_evidence_signals() -> None:
+def test_injector_records_intervention_without_claiming_failure() -> None:
     source = make_source()
     result = CategoricalDriftInjector(make_spec()).inject(source)
 
-    # The hidden answer key names the cause...
-    assert result.ground_truth.cause_label == "data_drift"
-    assert result.ground_truth.affected_components == ["contract"]
+    # The raw injector describes what it changed, before any model outcome is
+    # measured; it cannot yet assert a failure or hidden failure cause.
+    assert result.injected_change.feature == "contract"
+    assert result.injected_change.intervention_type == "categorical_distribution_shift"
+    assert not hasattr(result, "ground_truth")
 
     # ...but the evidence-safe signals never leak answer-key terms.
     signals_text = json.dumps(result.signals).lower()
