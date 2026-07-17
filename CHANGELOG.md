@@ -7,6 +7,14 @@ phiên bản theo [SemVer](https://semver.org/lang/vi/).
 ## [Unreleased]
 
 ### Added
+- P1-G6A matched-pilot runtime: strict provider-agnostic request/output/attempt
+  schemas; `B1` plain-text and `A3` structured-evidence renderers over the same
+  hash-bound observable facts; frozen prompt, model identity, token/retry
+  budget and output contract; raw-before-parse persistence; immutable run
+  manifests; source-evidence binding; deterministic mock adapter; bounded retry
+  and unresolved-output accounting; CLI `run-p1-pilot-mock` /
+  `validate-p1-pilot`. Mock results prove execution integrity only and are not
+  reported as LLM-quality evidence.
 - P1-G5B evidence runtime: deterministic collector for all 15 validated P1
   contexts, evaluator-held counterparts for `missing_key`, immutable atomic
   evidence-store persistence, exact-file/file-SHA/bundle-SHA/projection-SHA

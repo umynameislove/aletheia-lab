@@ -58,14 +58,18 @@ Aletheia currently provides:
 - typed contracts for benchmark cases, evidence, diagnoses, and evaluations;
 - deterministic collection and immutable persistence of the 15-context P1
   evidence matrix, with canonical hashes and structural/semantic leakage gates;
+- an executable 15-context x 2-variant matched-pilot contract with identical
+  observable facts, frozen budgets, raw-before-parse records, bounded retries,
+  immutable manifests, and an offline deterministic adapter;
 - CLI commands for data preparation, baseline training, verification, and
   contract validation;
 - automated linting, repository-hygiene checks, and tests in CI.
 
 The project is in **active alpha development**. The implementation-facing V3.2 related-work amendment is documented in [`docs/06_RELATED_WORK_ALIGNMENT_V3_2.md`](docs/06_RELATED_WORK_ALIGNMENT_V3_2.md). Dataset preparation, baseline
-training, and data-drift injection are operational. The complete diagnosis and
-meta-faithfulness runtime is being integrated and should not yet be treated as a
-production incident-response system.
+training, data-drift injection, evidence collection, and the offline matched
+diagnosis contract are operational. External-model experiments and the
+meta-faithfulness evaluator are still being integrated; the project should not
+yet be treated as a production incident-response system.
 
 ## Installation
 
@@ -122,6 +126,21 @@ PYTHONPATH=src python -m aletheia_lab benchmark validate-p1-evidence \
 
 The machine gate intentionally reports human review as pending until an
 independent reviewer supplies an attested, hash-complete review record.
+
+Exercise and validate the matched diagnosis runtime without making an external
+API call:
+
+```bash
+PYTHONPATH=src python -m aletheia_lab benchmark run-p1-pilot-mock \
+  --store-dir experiments/p1/evidence-store \
+  --output-dir experiments/p1/outputs/matched-pilot-mock
+PYTHONPATH=src python -m aletheia_lab benchmark validate-p1-pilot \
+  --store-dir experiments/p1/evidence-store \
+  --output-dir experiments/p1/outputs/matched-pilot-mock
+```
+
+The deterministic mock verifies contracts, persistence, retry behavior, and
+reproducibility. It is deliberately not an empirical model baseline.
 
 Run the complete local quality check:
 

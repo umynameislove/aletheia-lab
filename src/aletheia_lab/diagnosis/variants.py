@@ -1,14 +1,7 @@
-"""Diagnosis variant labels."""
+"""Compatibility import for the active P1 diagnosis variants."""
 
-from __future__ import annotations
+from aletheia_lab.diagnosis.schema import PilotVariant
 
-from enum import StrEnum
+DiagnosisVariant = PilotVariant
 
-
-class DiagnosisVariant(StrEnum):
-    """Variants compared in the main evaluation."""
-
-    PLAIN_LLM = "plain_llm"
-    RAG_BASELINE = "rag_baseline"
-    EVIDENCE_BOUND = "evidence_bound"
-    FULL_ALETHEIA = "full_aletheia"
+__all__ = ["DiagnosisVariant", "PilotVariant"]
