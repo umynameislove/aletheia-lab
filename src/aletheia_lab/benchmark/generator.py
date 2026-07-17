@@ -31,7 +31,7 @@ from aletheia_lab.benchmark.case_schema import (
     EVIDENCE_CONDITIONS,
     EXPECTED_BEHAVIOR,
     SCHEMA_VERSION,
-    DistractorComparison,
+    AdditionalComparison,
     FailureEligibility,
     InjectedChange,
     ObservableSignals,
@@ -83,7 +83,7 @@ class _Injected:
     observed_outcome: ObservedOutcome
     failure_eligibility: FailureEligibility
     injected_change: InjectedChange
-    distractor: DistractorComparison
+    distractor: AdditionalComparison
 
 
 def _load_settings(config_path: Path) -> tuple[str, list[_Setting]]:
@@ -129,7 +129,7 @@ def _observable_signals(
     sample_size: int,
     observed_outcome: ObservedOutcome,
     outcome: str,
-    distractor: DistractorComparison,
+    distractor: AdditionalComparison,
 ) -> ObservableSignals:
     """Transform the base evidence per condition (full / missing_key / noisy)."""
 
@@ -159,9 +159,9 @@ def _observable_signals(
             ],
         )
     if condition == "noisy":
-        distractor_note = (
-            f"Distractor feature {distractor.feature!r} PSI {distractor.psi:.4f} "
-            "(measured; operationally low-shift across the two evaluation windows)."
+        additional_note = (
+            f"Additional comparison feature {distractor.feature!r} has measured "
+            f"PSI {distractor.psi:.4f} across the same two evaluation windows."
         )
         return ObservableSignals(
             candidate_feature=feature,
@@ -170,8 +170,8 @@ def _observable_signals(
             psi=psi,
             sample_size=sample_size,
             baseline_metric_reference=observed_outcome,
-            distractor_comparisons=[distractor],
-            notes=[change_note, distractor_note],
+            additional_comparisons=[distractor],
+            notes=[change_note, additional_note],
         )
     msg = f"unknown evidence condition: {condition}"
     raise GeneratorConfigError(msg)
@@ -256,7 +256,7 @@ def generate_p1(
                 f"{setting.injection_id} (PSI {distractor_psi:.4f} > {DISTRACTOR_STABLE_PSI_MAX})"
             )
             raise GeneratorConfigError(msg)
-        distractor = DistractorComparison(
+        distractor = AdditionalComparison(
             feature=_DISTRACTOR_FEATURE,
             distribution_reference=distractor_reference,
             distribution_observed=distractor_observed,

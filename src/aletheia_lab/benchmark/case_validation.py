@@ -181,14 +181,14 @@ def _cross_artifact_errors(case: LoadedCase, case_dir: Path) -> list[str]:
         sig.distribution_reference is not None
         or sig.psi is not None
         or sig.baseline_metric_reference is not None
-        or sig.distractor_comparisons
+        or sig.additional_comparisons
     ):
         errors.append(f"{cid}: missing_key does not withhold the decisive evidence")
     if m.evidence_condition == "noisy" and (
-        not sig.distractor_comparisons or any(d.psi is None for d in sig.distractor_comparisons)
+        not sig.additional_comparisons or any(d.psi is None for d in sig.additional_comparisons)
     ):
         errors.append(f"{cid}: noisy lacks a measured distractor comparison")
-    if m.evidence_condition != "noisy" and sig.distractor_comparisons:
+    if m.evidence_condition != "noisy" and sig.additional_comparisons:
         errors.append(f"{cid}: distractor comparison present outside noisy")
     return errors
 

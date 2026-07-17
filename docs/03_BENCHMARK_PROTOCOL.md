@@ -67,7 +67,9 @@ Ba condition P1 là controlled evidence interventions trên cùng family:
 - `full`: toàn bộ decisive roles phải diagnosis-visible;
 - `missing_key`: chính xác canonical decisive roles bị ẩn khỏi model, nhưng phải
   được materialize trong internal bundle dưới dạng evaluator-only withheld items;
-- `noisy`: toàn bộ decisive roles vẫn hiện diện và có thêm distractor evidence.
+- `noisy`: toàn bộ decisive roles vẫn hiện diện và có thêm một
+  secondary comparison trung lập. Việc item này được thiết kế làm nhiễu
+  chỉ được ghi trong evaluator-side metadata, không lộ cho model.
 
 Quy tắc này biến `missing_key` thành phép ablation có thể audit, thay vì một
 nhãn do caller tự khai.

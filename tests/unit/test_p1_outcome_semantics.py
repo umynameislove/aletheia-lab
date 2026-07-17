@@ -156,15 +156,15 @@ def test_condition_evidence_shapes(p1_generator_config, tmp_path):
     noisy = load_case_dir_schema_only(out / "p1-data-drift-01-noisy").manifest.observable_signals
 
     assert full.baseline_metric_reference is not None
-    assert full.psi is not None and not full.distractor_comparisons
+    assert full.psi is not None and not full.additional_comparisons
 
     assert miss.baseline_metric_reference is None
     assert miss.psi is None and miss.distribution_reference is None
-    assert not miss.distractor_comparisons
+    assert not miss.additional_comparisons
 
     assert noisy.baseline_metric_reference is not None
-    assert len(noisy.distractor_comparisons) == 1
-    distractor = noisy.distractor_comparisons[0]
+    assert len(noisy.additional_comparisons) == 1
+    distractor = noisy.additional_comparisons[0]
     assert distractor.feature == "gender"
     assert distractor.distribution_reference and distractor.distribution_observed
     assert distractor.psi is not None
@@ -235,29 +235,29 @@ def test_ground_truth_rejects_conflicting_failure_symptom():
         CaseGroundTruth.model_validate(_gt(hidden_failure_cause=cause))
 
 
-def test_distractor_rejects_bad_psi():
-    from aletheia_lab.benchmark.case_schema import DistractorComparison
+def test_additional_comparison_rejects_bad_psi():
+    from aletheia_lab.benchmark.case_schema import AdditionalComparison
 
     for bad in (0.5, -0.1, float("nan"), float("inf")):
         with pytest.raises(ValidationError):
-            DistractorComparison.model_validate(_distractor(psi=bad))
+            AdditionalComparison.model_validate(_distractor(psi=bad))
 
 
-def test_distractor_rejects_bad_distribution():
-    from aletheia_lab.benchmark.case_schema import DistractorComparison
+def test_additional_comparison_rejects_bad_distribution():
+    from aletheia_lab.benchmark.case_schema import AdditionalComparison
 
     with pytest.raises(ValidationError):
-        DistractorComparison.model_validate(_distractor(distribution_observed={}))
+        AdditionalComparison.model_validate(_distractor(distribution_observed={}))
     with pytest.raises(ValidationError):
-        DistractorComparison.model_validate(
+        AdditionalComparison.model_validate(
             _distractor(distribution_observed={"Male": -0.1, "Female": 1.1})
         )
     with pytest.raises(ValidationError):
-        DistractorComparison.model_validate(
+        AdditionalComparison.model_validate(
             _distractor(distribution_observed={"Male": 0.3, "Female": 0.3})
         )
     with pytest.raises(ValidationError):
-        DistractorComparison.model_validate(_distractor(feature="  "))
+        AdditionalComparison.model_validate(_distractor(feature="  "))
 
 
 # --- Commit 2 v2: InjectionProvenance fail-closed ---

@@ -56,11 +56,13 @@ Aletheia currently provides:
 - a reproducible scikit-learn baseline packaged with preprocessing;
 - deterministic categorical data-drift injection and PSI measurement;
 - typed contracts for benchmark cases, evidence, diagnoses, and evaluations;
+- deterministic collection and immutable persistence of the 15-context P1
+  evidence matrix, with canonical hashes and structural/semantic leakage gates;
 - CLI commands for data preparation, baseline training, verification, and
   contract validation;
 - automated linting, repository-hygiene checks, and tests in CI.
 
-The project is in **active alpha development**. Dataset preparation, baseline
+The project is in **active alpha development**. The implementation-facing V3.2 related-work amendment is documented in [`docs/06_RELATED_WORK_ALIGNMENT_V3_2.md`](docs/06_RELATED_WORK_ALIGNMENT_V3_2.md). Dataset preparation, baseline
 training, and data-drift injection are operational. The complete diagnosis and
 meta-faithfulness runtime is being integrated and should not yet be treated as a
 production incident-response system.
@@ -105,6 +107,21 @@ Train the deterministic baseline and verify that two independent runs agree:
 make baseline
 make baseline-verify
 ```
+
+Generate the P1 case matrix, then collect and independently verify its evidence
+store:
+
+```bash
+PYTHONPATH=src python -m aletheia_lab benchmark generate-p1 \
+  --config configs/project.yaml --output-dir experiments/p1/cases
+PYTHONPATH=src python -m aletheia_lab benchmark generate-p1-evidence \
+  --cases-dir experiments/p1/cases --output-dir experiments/p1/evidence-store
+PYTHONPATH=src python -m aletheia_lab benchmark validate-p1-evidence \
+  --cases-dir experiments/p1/cases --store-dir experiments/p1/evidence-store
+```
+
+The machine gate intentionally reports human review as pending until an
+independent reviewer supplies an attested, hash-complete review record.
 
 Run the complete local quality check:
 

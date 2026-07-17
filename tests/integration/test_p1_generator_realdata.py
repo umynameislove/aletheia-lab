@@ -8,6 +8,10 @@ import pytest
 
 from aletheia_lab.benchmark.case_validation import validate_p1_cases
 from aletheia_lab.benchmark.generator import generate_p1
+from aletheia_lab.evidence.p1 import (
+    generate_p1_evidence_store,
+    validate_p1_evidence_store,
+)
 
 _CONFIG = Path("configs/project.yaml")
 _PROCESSED = Path("data/processed/telco_customer_churn.csv")
@@ -59,6 +63,22 @@ def test_real_outcome_composition_and_measured_distractor(tmp_path):
     noisy = load_case_dir_schema_only(
         tmp_path / "cases" / "p1-data-drift-01-noisy"
     ).manifest.observable_signals
-    assert len(noisy.distractor_comparisons) == 1
-    assert noisy.distractor_comparisons[0].feature == "gender"
-    assert noisy.distractor_comparisons[0].psi is not None
+    assert len(noisy.additional_comparisons) == 1
+    assert noisy.additional_comparisons[0].feature == "gender"
+    assert noisy.additional_comparisons[0].psi is not None
+
+
+def test_real_15_context_evidence_store_roundtrip_and_machine_audit(tmp_path):
+    cases = tmp_path / "cases"
+    store = tmp_path / "evidence-store"
+    generate_p1(_CONFIG, cases)
+
+    manifest = generate_p1_evidence_store(cases, store)
+    report = validate_p1_evidence_store(store, cases)
+
+    assert manifest.bundle_count == 15
+    assert report.passed, report.as_dict()
+    assert report.bundle_count == 15
+    assert report.machine_leakage_findings == 0
+    # The machine must not fabricate an independent human sign-off.
+    assert report.human_review_status == "pending"

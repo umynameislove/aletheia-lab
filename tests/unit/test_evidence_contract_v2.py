@@ -1,4 +1,4 @@
-"""EvidenceBundle v2 and condition-rubric regression tests."""
+"""EvidenceBundle and condition-rubric regression tests."""
 
 from __future__ import annotations
 
@@ -100,7 +100,7 @@ def _items_for(condition: EvidenceCondition) -> tuple[EvidenceItem, ...]:
     else:
         visible.extend(decisive)
     if condition == "noisy":
-        visible.append(_item("distractor-001", ("distractor_comparison",)))
+        visible.append(_item("secondary-001", ("secondary_distribution_comparison",)))
     return tuple(visible)
 
 
@@ -146,15 +146,19 @@ def test_condition_rubrics_encode_claim_relative_sufficiency() -> None:
     missing = condition_rubric_for("missing_key")
     noisy = condition_rubric_for("noisy")
 
-    assert full.causal_claim_sufficiency == "sufficient"
-    assert noisy.causal_claim_sufficiency == "sufficient"
-    assert missing.causal_claim_sufficiency == "insufficient"
+    assert full.causal_claim_sufficiency == "bounded_hypothesis_supported"
+    assert noisy.causal_claim_sufficiency == "bounded_hypothesis_supported"
+    assert missing.causal_claim_sufficiency == "bounded_hypothesis_tentative_only"
     assert "observation" in missing.allowed_claim_levels
     assert "bounded_causal_hypothesis" in missing.allowed_claim_levels
     assert "causal_conclusion" in missing.forbidden_claim_levels
     assert "strong_causal_conclusion" in missing.forbidden_claim_levels
-    assert "causal_conclusion" in full.allowed_claim_levels
-    assert "causal_conclusion" in noisy.allowed_claim_levels
+    assert "causal_conclusion" in full.forbidden_claim_levels
+    assert "causal_conclusion" in noisy.forbidden_claim_levels
+    assert "strong_causal_conclusion" in full.forbidden_claim_levels
+    assert "strong_causal_conclusion" in noisy.forbidden_claim_levels
+    assert "bounded_causal_hypothesis" in full.allowed_claim_levels
+    assert "bounded_causal_hypothesis" in noisy.allowed_claim_levels
     assert "reject_unsupported_distractors" in noisy.required_behaviors
 
 
@@ -164,7 +168,7 @@ def test_canonical_condition_rubric_set_passes() -> None:
 
 def test_tampered_expected_behavior_is_rejected() -> None:
     data = condition_rubric_for("full").model_dump()
-    data["expected_diagnosis_behavior"] = "abstain_on_cause_and_request_evidence"
+    data["expected_diagnosis_behavior"] = "report_tentative_hypothesis_and_request_evidence"
     tampered = ConditionRubric.model_validate(data)
 
     with pytest.raises(ValueError, match="canonical contract"):
@@ -177,10 +181,22 @@ def test_tampered_allowed_claims_are_rejected() -> None:
     data["forbidden_claim_levels"] = tuple(
         level for level in data["forbidden_claim_levels"] if level != "causal_conclusion"
     )
-    tampered = ConditionRubric.model_validate(data)
+    with pytest.raises(ValidationError, match="must forbid causal conclusions"):
+        ConditionRubric.model_validate(data)
 
-    with pytest.raises(ValueError, match="canonical contract"):
-        validate_condition_rubric(tampered)
+
+@pytest.mark.parametrize("condition", ["full", "noisy"])
+def test_full_and_noisy_reject_unsupported_causal_conclusion(
+    condition: EvidenceCondition,
+) -> None:
+    data = condition_rubric_for(condition).model_dump()
+    data["allowed_claim_levels"] = (*data["allowed_claim_levels"], "causal_conclusion")
+    data["forbidden_claim_levels"] = tuple(
+        level for level in data["forbidden_claim_levels"] if level != "causal_conclusion"
+    )
+
+    with pytest.raises(ValidationError, match="must forbid causal conclusions"):
+        ConditionRubric.model_validate(data)
 
 
 def test_swapped_sibling_rubric_is_rejected() -> None:
@@ -267,8 +283,7 @@ def test_projection_and_rubric_schema_versions_cannot_be_omitted(
 
     assert condition_rubric_for("full").schema_version == RUBRIC_SCHEMA_VERSION
     assert (
-        project_diagnosis_evidence(bundle).schema_version
-        == DIAGNOSIS_EVIDENCE_VIEW_SCHEMA_VERSION
+        project_diagnosis_evidence(bundle).schema_version == DIAGNOSIS_EVIDENCE_VIEW_SCHEMA_VERSION
     )
 
 
@@ -285,7 +300,7 @@ def test_v1_bundle_is_not_silently_accepted() -> None:
         EvidenceBundle.model_validate(legacy)
 
 
-def test_documented_example_is_valid_v2() -> None:
+def test_documented_example_is_valid_v3() -> None:
     bundle = EvidenceBundle.model_validate_json(
         Path("examples/data_drift_case/evidence_bundle.example.json").read_text(encoding="utf-8")
     )
@@ -306,16 +321,19 @@ def test_text_log_collector_confines_source_and_derives_checksum(tmp_path: Path)
         source_root=root,
     )
     assert item.source_path == "logs/service.log"
-    assert item.content_sha256 == EvidenceItem.from_content(
-        evidence_id="same-content",
-        kind="log",
-        evidence_roles=("symptom",),
-        title="same",
-        content="Observed timeout count: 3.\n",
-        source_path="observations/same-content.log",
-        collector_version="test/1",
-        visibility="diagnosis",
-    ).content_sha256
+    assert (
+        item.content_sha256
+        == EvidenceItem.from_content(
+            evidence_id="same-content",
+            kind="log",
+            evidence_roles=("symptom",),
+            title="same",
+            content="Observed timeout count: 3.\n",
+            source_path="observations/same-content.log",
+            collector_version="test/1",
+            visibility="diagnosis",
+        ).content_sha256
+    )
 
     outside = tmp_path / "outside.log"
     outside.write_text("Observed value.", encoding="utf-8")
@@ -323,7 +341,9 @@ def test_text_log_collector_confines_source_and_derives_checksum(tmp_path: Path)
         collect_text_log(outside, "log-002", "Outside", source_root=root)
 
 
-def test_bundle_store_roundtrip_preserves_canonical_hash(p1_manifest_factory, tmp_path: Path) -> None:
+def test_bundle_store_roundtrip_preserves_canonical_hash(
+    p1_manifest_factory, tmp_path: Path
+) -> None:
     bundle = _bundle_for_manifest(_full_manifest(p1_manifest_factory))
     path = tmp_path / "bundle.json"
     save_bundle(bundle, path)
@@ -453,7 +473,7 @@ def test_unknown_provenance_link_is_rejected(p1_manifest_factory) -> None:
 
 
 @pytest.mark.parametrize("condition", ["full", "noisy"])
-def test_sufficient_condition_cannot_sync_away_missing_decisive_evidence(
+def test_bounded_supported_condition_cannot_sync_away_missing_decisive_evidence(
     p1_manifest_factory, condition: EvidenceCondition
 ) -> None:
     slug = "full" if condition == "full" else "noisy"
@@ -517,11 +537,39 @@ def test_diagnosis_visible_id_cannot_encode_evidence_condition(
 
     assert contains_condition_or_rubric_label(
         {
-            "schema_version": "diagnosis-evidence-view/1",
+            "schema_version": "diagnosis-evidence-view/2",
             "diagnosis_context_id": "p1-context-" + "a" * 64,
             "items": [{"evidence_id": "missing_key-001"}],
         }
     )
+
+
+@pytest.mark.parametrize(
+    "visible_cue",
+    (
+        "This is the distractor comparison.",
+        "This is the noisy condition.",
+        "Expected behavior: reject this item.",
+    ),
+)
+def test_diagnosis_projection_rejects_evaluator_intent_cues(
+    p1_manifest_factory, visible_cue: str
+) -> None:
+    manifest = _full_manifest(p1_manifest_factory)
+    unsafe = _item(
+        "observable-001",
+        (
+            "symptom",
+            "candidate_distribution_reference",
+            "candidate_distribution_observed",
+            "candidate_psi",
+            "metric_comparison",
+        ),
+        content=visible_cue,
+    )
+
+    with pytest.raises(ValidationError, match="exposes evaluator intent"):
+        _bundle_for_manifest(manifest, items=(unsafe,))
 
 
 def test_evaluator_and_withheld_items_do_not_enter_diagnosis_projection(
@@ -586,9 +634,10 @@ def test_same_payload_hash_is_order_invariant(p1_manifest_factory) -> None:
 
     assert first.model_dump(mode="json") == second.model_dump(mode="json")
     assert first.canonical_sha256() == second.canonical_sha256()
-    assert project_diagnosis_evidence(first).canonical_sha256() == project_diagnosis_evidence(
-        second
-    ).canonical_sha256()
+    assert (
+        project_diagnosis_evidence(first).canonical_sha256()
+        == project_diagnosis_evidence(second).canonical_sha256()
+    )
 
 
 def test_bundle_identity_cross_checks_case_artifacts(p1_manifest_factory) -> None:
@@ -613,7 +662,7 @@ def test_bundle_identity_cross_checks_case_artifacts(p1_manifest_factory) -> Non
             data["missing_required_evidence_roles"] = ()
             data["items"] = (
                 *data["items"],
-                _item("distractor-001", ("distractor_comparison",)).model_dump(),
+                _item("secondary-001", ("secondary_distribution_comparison",)).model_dump(),
             )
         tampered = EvidenceBundle.model_validate(data)
         with pytest.raises(ValueError, match="does not match case"):
@@ -642,7 +691,7 @@ def test_sibling_bundles_share_family_but_have_unique_contexts(p1_manifest_facto
 
 
 def test_bundle_hash_is_stable_across_python_hash_seeds() -> None:
-    script = r'''
+    script = r"""
 from aletheia_lab.evidence.schema import EvidenceBundle, EvidenceItem
 
 roles = tuple({"metric_comparison", "candidate_psi", "candidate_distribution_reference",
@@ -654,7 +703,7 @@ item = EvidenceItem.from_content(
     visibility="diagnosis", metadata={"z": 1, "a": 2},
 )
 bundle = EvidenceBundle(
-    schema_version="evidence-bundle/2",
+    schema_version="evidence-bundle/3",
     evidence_bundle_id="bundle-001", case_id="case-001",
     case_family_id="p1-family-" + "1" * 64,
     diagnosis_context_id="p1-context-" + "2" * 64,
@@ -664,7 +713,7 @@ bundle = EvidenceBundle(
     missing_required_evidence_roles=(), intentionally_withheld_evidence_roles=(),
 )
 print(bundle.canonical_sha256())
-'''
+"""
     outputs = []
     for seed in ("1", "999"):
         env = os.environ.copy()

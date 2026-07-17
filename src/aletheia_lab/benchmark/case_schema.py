@@ -36,7 +36,7 @@ from aletheia_lab.evidence.rubric import (
 
 EVIDENCE_CONDITIONS: tuple[EvidenceCondition, ...] = _RUBRIC_EVIDENCE_CONDITIONS
 
-SCHEMA_VERSION = "p1-cases/4"
+SCHEMA_VERSION = "p1-cases/5"
 CASE_FAMILY_ID_VERSION = "p1-case-family/v1"
 DIAGNOSIS_CONTEXT_ID_VERSION = "p1-diagnosis-context/v1"
 ELIGIBILITY_POLICY_VERSION = "accuracy-regression/v1"
@@ -222,13 +222,14 @@ class FailureEligibility(_StrictModel):
         return self
 
 
-class DistractorComparison(_StrictModel):
-    """A measured before/after comparison for a low-shift distractor feature.
+class AdditionalComparison(_StrictModel):
+    """A neutral measured before/after comparison for an additional feature.
 
     Fails closed: non-empty feature and distributions, finite non-negative weights
     that sum to ~1, finite PSI, and PSI within [0, DISTRACTOR_STABLE_PSI_MAX] so a
-    feature can only be recorded here when it is operationally low-shift under the
-    injection.
+    feature can only be recorded here when it is operationally low-shift. The
+    serialized diagnosis payload deliberately does not label the item a distractor;
+    that experimental role is evaluator-only metadata.
     """
 
     feature: str
@@ -240,7 +241,7 @@ class DistractorComparison(_StrictModel):
     @classmethod
     def _feature_nonempty(cls, value: str) -> str:
         if not value.strip():
-            msg = "distractor feature must not be empty"
+            msg = "additional comparison feature must not be empty"
             raise ValueError(msg)
         return value
 
@@ -248,30 +249,35 @@ class DistractorComparison(_StrictModel):
     @classmethod
     def _valid_distribution(cls, dist: dict[str, float]) -> dict[str, float]:
         if not dist:
-            msg = "distractor distribution must not be empty"
+            msg = "additional comparison distribution must not be empty"
             raise ValueError(msg)
         for category, weight in dist.items():
             if not math.isfinite(weight) or weight < 0:
-                msg = f"distractor weight for {category!r} must be finite and non-negative"
+                msg = (
+                    f"additional comparison weight for {category!r} must be finite and non-negative"
+                )
                 raise ValueError(msg)
         if abs(sum(dist.values()) - 1.0) > 1e-6:
-            msg = "distractor distribution must sum to ~1.0"
+            msg = "additional comparison distribution must sum to ~1.0"
             raise ValueError(msg)
         return dist
 
     @model_validator(mode="after")
-    def _valid_psi(self) -> DistractorComparison:
+    def _valid_psi(self) -> AdditionalComparison:
         if not math.isfinite(self.psi):
-            msg = "distractor psi must be finite"
+            msg = "additional comparison psi must be finite"
             raise ValueError(msg)
         if not 0.0 <= self.psi <= DISTRACTOR_STABLE_PSI_MAX:
-            msg = f"distractor psi {self.psi} out of [0, {DISTRACTOR_STABLE_PSI_MAX}]"
+            msg = f"additional comparison psi {self.psi} out of [0, {DISTRACTOR_STABLE_PSI_MAX}]"
             raise ValueError(msg)
         computed = population_stability_index(
             self.distribution_reference, self.distribution_observed
         )
         if abs(self.psi - computed) > 1e-9:
-            msg = f"distractor psi {self.psi} inconsistent with its distributions ({computed})"
+            msg = (
+                f"additional comparison psi {self.psi} inconsistent with "
+                f"its distributions ({computed})"
+            )
             raise ValueError(msg)
         return self
 
@@ -285,7 +291,7 @@ class ObservableSignals(_StrictModel):
     psi: float | None = None
     sample_size: int | None = None
     baseline_metric_reference: ObservedOutcome | None = None
-    distractor_comparisons: list[DistractorComparison] = Field(default_factory=list)
+    additional_comparisons: list[AdditionalComparison] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
 
     @field_validator("sample_size")

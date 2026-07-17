@@ -61,5 +61,9 @@ Không được đồng nhất “đã inject data drift” với “data drift 
 
 Muốn nói tốt hơn baseline phải đợi P4/P5.
 
-P1-G5A chỉ khóa schema/rubric. Collector thật, persistence gate và semantic leakage
-audit vẫn phải hoàn thành trước khi coi evidence contract gate đã đóng.
+P1-G5A khóa schema/rubric. P1-G5B bổ sung collector cho đủ 15 context,
+immutable evidence store, round-trip/hash/recollection gate, machine semantic-leakage
+audit và hai packet review blind/mapping có hash binding. Evidence contract gate chỉ
+đóng hoàn toàn sau khi có attested sign-off từ người review độc lập;
+mã không được tự
+claim human review là PASS.
