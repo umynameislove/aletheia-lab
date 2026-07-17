@@ -7,6 +7,18 @@ phiên bản theo [SemVer](https://semver.org/lang/vi/).
 ## [Unreleased]
 
 ### Added
+- P1-G5B evidence runtime: deterministic collector for all 15 validated P1
+  contexts, evaluator-held counterparts for `missing_key`, immutable atomic
+  evidence-store persistence, exact-file/file-SHA/bundle-SHA/projection-SHA
+  verification, canonical recollection chống coordinated rehash, machine
+  structural/semantic leakage audit, bound 15-context blind/mapping review
+  packets và CLI
+  `generate-p1-evidence` / `validate-p1-evidence`. Human sign-off vẫn là gate
+  độc lập, không được machine tự claim PASS.
+- Diagnosis-facing noisy evidence is neutral (`secondary-comparison` /
+  `secondary_distribution_comparison`); evaluator noise intent is hidden from
+  the model. P1 claim policy now caps every condition at a qualified bounded
+  causal hypothesis, with explicit uncertainty required for `missing_key`.
 - P1 benchmark cases (manifest + hidden ground truth + 15 data-drift cases):
   `benchmark/case_schema.py` (schema + enforced diagnosis-visible projection +
   forbidden-term set), `case_writer.py` (deterministic/atomic JSON + checksums +

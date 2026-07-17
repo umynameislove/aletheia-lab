@@ -48,9 +48,7 @@ def test_five_families_share_id_only_across_their_three_contexts(p1_generator_co
         family_ids.update(sibling_family_ids)
         case_ids.update(case.manifest.case_id for case in siblings)
         public_ids.update(case.manifest.public_id for case in siblings)
-        diagnosis_context_ids.update(
-            case.diagnosis_input.diagnosis_context_id for case in siblings
-        )
+        diagnosis_context_ids.update(case.diagnosis_input.diagnosis_context_id for case in siblings)
     assert len(family_ids) == 5
     assert len(case_ids) == 15
     assert len(public_ids) == 15

@@ -1,5 +1,5 @@
 case_schema:
-  schema_version: p1-cases/4
+  schema_version: p1-cases/5
   required_fields:
     - case_id
     - case_family_id

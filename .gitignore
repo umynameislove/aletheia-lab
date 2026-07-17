@@ -45,6 +45,7 @@ data/organic_failures/*
 experiments/**/runs/
 experiments/**/outputs/
 experiments/**/cases/
+experiments/**/evidence-store/
 reports/figures/*
 reports/tables/*
 reports/paper/*.pdf

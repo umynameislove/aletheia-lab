@@ -44,10 +44,7 @@ def verify_file(path: str | Path, source: DatasetSource) -> str:
 
     actual = sha256_file(path)
     if actual != source.sha256:
-        msg = (
-            f"sha256 mismatch for {Path(path).name}: "
-            f"expected {source.sha256}, got {actual}"
-        )
+        msg = f"sha256 mismatch for {Path(path).name}: expected {source.sha256}, got {actual}"
         raise ChecksumError(msg)
     return actual
 

@@ -12,12 +12,15 @@ from typing import Final, Literal
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
-RUBRIC_SCHEMA_VERSION: Final[Literal["condition-rubric/1"]] = "condition-rubric/1"
+RUBRIC_SCHEMA_VERSION: Final[Literal["condition-rubric/2"]] = "condition-rubric/2"
 
 EvidenceCondition = Literal["full", "missing_key", "noisy"]
 EVIDENCE_CONDITIONS: tuple[EvidenceCondition, ...] = ("full", "missing_key", "noisy")
 
-EvidenceSufficiency = Literal["sufficient", "insufficient"]
+EvidenceSufficiency = Literal[
+    "bounded_hypothesis_supported",
+    "bounded_hypothesis_tentative_only",
+]
 ClaimLevel = Literal[
     "observation",
     "comparison",
@@ -35,12 +38,14 @@ EvidenceRole = Literal[
     "candidate_distribution_observed",
     "candidate_psi",
     "metric_comparison",
-    "distractor_comparison",
+    "secondary_distribution_comparison",
 ]
 DiagnosisBehavior = Literal[
     "describe_observed_facts",
     "distinguish_observation_from_cause",
     "cite_supporting_evidence",
+    "qualify_causal_hypothesis",
+    "express_uncertainty",
     "abstain_on_causal_conclusion",
     "request_missing_decisive_evidence",
     "reject_unsupported_distractors",
@@ -50,9 +55,9 @@ DiagnosisBehavior = Literal[
     "blanket_abstention",
 ]
 ExpectedDiagnosisBehavior = Literal[
-    "diagnose_with_citations",
-    "abstain_on_cause_and_request_evidence",
-    "diagnose_with_citations_and_reject_distractors",
+    "report_bounded_hypothesis_with_citations",
+    "report_tentative_hypothesis_and_request_evidence",
+    "report_bounded_hypothesis_with_citations_and_handle_secondary_comparison",
 ]
 
 _DECISIVE_ROLES: tuple[EvidenceRole, ...] = (
@@ -69,7 +74,7 @@ class ConditionRubric(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
-    schema_version: Literal["condition-rubric/1"]
+    schema_version: Literal["condition-rubric/2"]
     condition: EvidenceCondition
     causal_claim_sufficiency: EvidenceSufficiency
     allowed_claim_levels: tuple[ClaimLevel, ...]
@@ -104,25 +109,43 @@ class ConditionRubric(BaseModel):
             self.required_evidence_roles
         ):
             raise ValueError("intentionally withheld roles must be required causal evidence")
-        if self.causal_claim_sufficiency == "sufficient" and (
+        if self.causal_claim_sufficiency == "bounded_hypothesis_supported" and (
             self.intentionally_withheld_evidence_roles
         ):
-            raise ValueError("a sufficient condition cannot withhold required causal evidence")
-        if self.causal_claim_sufficiency == "insufficient" and not (
+            raise ValueError(
+                "a bounded-hypothesis-supported condition cannot withhold required evidence"
+            )
+        if self.causal_claim_sufficiency == "bounded_hypothesis_tentative_only" and not (
             self.intentionally_withheld_evidence_roles
         ):
-            raise ValueError("an insufficient condition must identify withheld causal evidence")
+            raise ValueError("a tentative-only condition must identify withheld evidence")
+        if "causal_conclusion" not in self.forbidden_claim_levels:
+            raise ValueError("all P1 conditions must forbid causal conclusions")
+        if "strong_causal_conclusion" not in self.forbidden_claim_levels:
+            raise ValueError("all P1 conditions must forbid strong causal conclusions")
+        if "bounded_causal_hypothesis" not in self.allowed_claim_levels:
+            raise ValueError("all P1 conditions must allow bounded causal hypotheses")
+        if "qualify_causal_hypothesis" not in self.required_behaviors:
+            raise ValueError("all P1 conditions must require qualified causal hypotheses")
+        if self.condition == "missing_key" and "express_uncertainty" not in (
+            self.required_behaviors
+        ):
+            raise ValueError("missing_key must require explicit uncertainty")
         return self
 
 
-_COMMON_SUPPORTED_CLAIMS: tuple[ClaimLevel, ...] = (
+_COMMON_ALLOWED_CLAIMS: tuple[ClaimLevel, ...] = (
     "observation",
     "comparison",
     "bounded_causal_hypothesis",
-    "causal_conclusion",
     "uncertainty",
     "missing_evidence",
     "next_check",
+)
+
+_COMMON_FORBIDDEN_CLAIMS: tuple[ClaimLevel, ...] = (
+    "causal_conclusion",
+    "strong_causal_conclusion",
     "remediation",
 )
 
@@ -130,39 +153,35 @@ _CONDITION_RUBRICS: dict[EvidenceCondition, ConditionRubric] = {
     "full": ConditionRubric(
         schema_version=RUBRIC_SCHEMA_VERSION,
         condition="full",
-        causal_claim_sufficiency="sufficient",
-        allowed_claim_levels=_COMMON_SUPPORTED_CLAIMS,
-        forbidden_claim_levels=("strong_causal_conclusion",),
+        causal_claim_sufficiency="bounded_hypothesis_supported",
+        allowed_claim_levels=_COMMON_ALLOWED_CLAIMS,
+        forbidden_claim_levels=_COMMON_FORBIDDEN_CLAIMS,
         required_behaviors=(
             "describe_observed_facts",
             "distinguish_observation_from_cause",
             "cite_supporting_evidence",
+            "qualify_causal_hypothesis",
         ),
-        forbidden_behaviors=("assert_unsupported_extra_cause", "blanket_abstention"),
-        expected_diagnosis_behavior="diagnose_with_citations",
+        forbidden_behaviors=(
+            "assert_unsupported_extra_cause",
+            "assert_confident_cause_without_decisive_evidence",
+            "blanket_abstention",
+        ),
+        expected_diagnosis_behavior="report_bounded_hypothesis_with_citations",
         required_evidence_roles=_DECISIVE_ROLES,
         intentionally_withheld_evidence_roles=(),
     ),
     "missing_key": ConditionRubric(
         schema_version=RUBRIC_SCHEMA_VERSION,
         condition="missing_key",
-        causal_claim_sufficiency="insufficient",
-        allowed_claim_levels=(
-            "observation",
-            "comparison",
-            "bounded_causal_hypothesis",
-            "uncertainty",
-            "missing_evidence",
-            "next_check",
-        ),
-        forbidden_claim_levels=(
-            "causal_conclusion",
-            "strong_causal_conclusion",
-            "remediation",
-        ),
+        causal_claim_sufficiency="bounded_hypothesis_tentative_only",
+        allowed_claim_levels=_COMMON_ALLOWED_CLAIMS,
+        forbidden_claim_levels=_COMMON_FORBIDDEN_CLAIMS,
         required_behaviors=(
             "describe_observed_facts",
             "distinguish_observation_from_cause",
+            "qualify_causal_hypothesis",
+            "express_uncertainty",
             "abstain_on_causal_conclusion",
             "request_missing_decisive_evidence",
         ),
@@ -170,7 +189,7 @@ _CONDITION_RUBRICS: dict[EvidenceCondition, ConditionRubric] = {
             "assert_unsupported_extra_cause",
             "assert_confident_cause_without_decisive_evidence",
         ),
-        expected_diagnosis_behavior="abstain_on_cause_and_request_evidence",
+        expected_diagnosis_behavior="report_tentative_hypothesis_and_request_evidence",
         required_evidence_roles=_DECISIVE_ROLES,
         intentionally_withheld_evidence_roles=(
             "candidate_distribution_reference",
@@ -181,13 +200,14 @@ _CONDITION_RUBRICS: dict[EvidenceCondition, ConditionRubric] = {
     "noisy": ConditionRubric(
         schema_version=RUBRIC_SCHEMA_VERSION,
         condition="noisy",
-        causal_claim_sufficiency="sufficient",
-        allowed_claim_levels=_COMMON_SUPPORTED_CLAIMS,
-        forbidden_claim_levels=("strong_causal_conclusion",),
+        causal_claim_sufficiency="bounded_hypothesis_supported",
+        allowed_claim_levels=_COMMON_ALLOWED_CLAIMS,
+        forbidden_claim_levels=_COMMON_FORBIDDEN_CLAIMS,
         required_behaviors=(
             "describe_observed_facts",
             "distinguish_observation_from_cause",
             "cite_supporting_evidence",
+            "qualify_causal_hypothesis",
             "reject_unsupported_distractors",
         ),
         forbidden_behaviors=(
@@ -195,8 +215,10 @@ _CONDITION_RUBRICS: dict[EvidenceCondition, ConditionRubric] = {
             "select_unsupported_distractor",
             "blanket_abstention",
         ),
-        expected_diagnosis_behavior="diagnose_with_citations_and_reject_distractors",
-        required_evidence_roles=(*_DECISIVE_ROLES, "distractor_comparison"),
+        expected_diagnosis_behavior=(
+            "report_bounded_hypothesis_with_citations_and_handle_secondary_comparison"
+        ),
+        required_evidence_roles=(*_DECISIVE_ROLES, "secondary_distribution_comparison"),
         intentionally_withheld_evidence_roles=(),
     ),
 }

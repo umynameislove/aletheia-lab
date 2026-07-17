@@ -175,7 +175,7 @@ def test_tamper_distractor_psi_is_caught(p1_generator_config, tmp_path):
     case_dir = out / "p1-data-drift-01-noisy"
 
     def _bump(data):
-        data["observable_signals"]["distractor_comparisons"][0]["psi"] = 0.009
+        data["observable_signals"]["additional_comparisons"][0]["psi"] = 0.009
 
     # Tamper the distractor PSI in both the manifest and the diagnosis input.
     _retamper(case_dir, "manifest.json", _bump)

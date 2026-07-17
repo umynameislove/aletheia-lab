@@ -1,5 +1,5 @@
 {
-  "schema_version": "evidence-bundle/2",
+  "schema_version": "evidence-bundle/3",
   "validation_state": "schema_validated",
   "evidence_bundle_id": "ev-p1-example",
   "case_id": "p1-data-drift-0001",
@@ -11,7 +11,7 @@
   "split_manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
   "items": [
     {
-      "schema_version": "evidence-item/2",
+      "schema_version": "evidence-item/3",
       "evidence_id": "metric-001",
       "kind": "metric",
       "evidence_roles": ["symptom", "metric_comparison"],
@@ -30,7 +30,7 @@
       "provenance_links": []
     },
     {
-      "schema_version": "evidence-item/2",
+      "schema_version": "evidence-item/3",
       "evidence_id": "profile-001",
       "kind": "dataset_profile",
       "evidence_roles": [

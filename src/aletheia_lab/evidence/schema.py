@@ -1,4 +1,4 @@
-"""Strict, deterministic EvidenceBundle v2 contract.
+"""Strict, deterministic EvidenceBundle v3 contract.
 
 The internal bundle records provenance and evaluator-only evidence.  A separate
 whitelist projection is the only representation a diagnoser may receive.
@@ -24,11 +24,11 @@ from aletheia_lab.evidence.rubric import (
     condition_rubric_for,
 )
 
-EVIDENCE_ITEM_SCHEMA_VERSION: Final[Literal["evidence-item/2"]] = "evidence-item/2"
-EVIDENCE_BUNDLE_SCHEMA_VERSION: Final[Literal["evidence-bundle/2"]] = "evidence-bundle/2"
-DIAGNOSIS_EVIDENCE_VIEW_SCHEMA_VERSION: Final[
-    Literal["diagnosis-evidence-view/1"]
-] = "diagnosis-evidence-view/1"
+EVIDENCE_ITEM_SCHEMA_VERSION: Final[Literal["evidence-item/3"]] = "evidence-item/3"
+EVIDENCE_BUNDLE_SCHEMA_VERSION: Final[Literal["evidence-bundle/3"]] = "evidence-bundle/3"
+DIAGNOSIS_EVIDENCE_VIEW_SCHEMA_VERSION: Final[Literal["diagnosis-evidence-view/2"]] = (
+    "diagnosis-evidence-view/2"
+)
 
 EvidenceKind = Literal[
     "metric",
@@ -49,6 +49,15 @@ _ID_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
 _DIAGNOSIS_VISIBLE = frozenset({"public", "diagnosis"})
 _CONDITION_LABEL_IN_IDENTIFIER = re.compile(
     r"(?:^|[._:-])(?:full|noisy|missing[._:-]?key)(?:$|[._:-])",
+    flags=re.IGNORECASE,
+)
+_CONDITION_LABEL_IN_VISIBLE_TEXT = re.compile(
+    r"\b(?:full|noisy|missing[ _-]?key)\b",
+    flags=re.IGNORECASE,
+)
+_EVALUATOR_INTENT_LABEL = re.compile(
+    r"\b(?:distractor|decisive|sufficient|insufficient|"
+    r"expected[._:\-\s]+behavior)\b",
     flags=re.IGNORECASE,
 )
 
@@ -103,9 +112,7 @@ def _normalize_for_scan(value: str) -> str:
 def _structural_marker_matches(payload: object) -> tuple[str, ...]:
     text = _normalize_for_scan(canonical_json(payload))
     return tuple(
-        marker
-        for marker in HIDDEN_GROUND_TRUTH_MARKERS
-        if _normalize_for_scan(marker) in text
+        marker for marker in HIDDEN_GROUND_TRUTH_MARKERS if _normalize_for_scan(marker) in text
     )
 
 
@@ -117,7 +124,11 @@ def _validate_relative_posix_path(value: str) -> str:
     path = PurePosixPath(value)
     if path.is_absolute():
         raise ValueError("source_path must be relative")
-    if value != path.as_posix() or value in {".", ".."} or any(part in {".", ".."} for part in path.parts):
+    if (
+        value != path.as_posix()
+        or value in {".", ".."}
+        or any(part in {".", ".."} for part in path.parts)
+    ):
         raise ValueError("source_path must be normalized and cannot traverse parents")
     return value
 
@@ -160,7 +171,7 @@ class EvidenceMetadataEntry(_StrictFrozenModel):
 class EvidenceItem(_StrictFrozenModel):
     """One immutable evidence item with content integrity and provenance metadata."""
 
-    schema_version: Literal["evidence-item/2"]
+    schema_version: Literal["evidence-item/3"]
     evidence_id: str = Field(pattern=_ID_PATTERN)
     kind: EvidenceKind
     evidence_roles: tuple[EvidenceRole, ...]
@@ -279,7 +290,7 @@ class EvidenceItem(_StrictFrozenModel):
 class EvidenceBundle(_StrictFrozenModel):
     """Internal EvidenceBundle v2 for exactly one benchmark context."""
 
-    schema_version: Literal["evidence-bundle/2"]
+    schema_version: Literal["evidence-bundle/3"]
     validation_state: Literal["schema_validated"] = "schema_validated"
     evidence_bundle_id: str = Field(pattern=_ID_PATTERN)
     case_id: str = Field(pattern=_ID_PATTERN)
@@ -363,13 +374,12 @@ class EvidenceBundle(_StrictFrozenModel):
 
         by_id = {item.evidence_id: item for item in self.items}
         unknown_links = {
-            link
-            for item in self.items
-            for link in item.provenance_links
-            if link not in by_id
+            link for item in self.items for link in item.provenance_links if link not in by_id
         }
         if unknown_links:
-            raise ValueError(f"provenance links reference unknown evidence IDs: {sorted(unknown_links)}")
+            raise ValueError(
+                f"provenance links reference unknown evidence IDs: {sorted(unknown_links)}"
+            )
 
         for item in self.diagnosis_visible_items:
             if _identifier_contains_condition_label(item.evidence_id):
@@ -381,6 +391,22 @@ class EvidenceBundle(_StrictFrozenModel):
                 raise ValueError(
                     f"diagnosis-visible evidence {item.evidence_id!r} contains hidden marker(s): "
                     f"{list(matches)}"
+                )
+            projected_text = canonical_json(
+                {
+                    "evidence_id": item.evidence_id,
+                    "evidence_roles": item.evidence_roles,
+                    "title": item.title,
+                    "content": item.content,
+                }
+            )
+            if (
+                _CONDITION_LABEL_IN_VISIBLE_TEXT.search(projected_text)
+                or "distractor" in projected_text.casefold()
+                or _EVALUATOR_INTENT_LABEL.search(projected_text)
+            ):
+                raise ValueError(
+                    f"diagnosis-visible evidence {item.evidence_id!r} exposes evaluator intent"
                 )
         return self
 
@@ -404,7 +430,7 @@ class DiagnosisEvidenceItem(_StrictFrozenModel):
 class DiagnosisEvidenceView(_StrictFrozenModel):
     """Condition-blind evidence projection safe to render into a prompt."""
 
-    schema_version: Literal["diagnosis-evidence-view/1"]
+    schema_version: Literal["diagnosis-evidence-view/2"]
     diagnosis_context_id: str = Field(pattern=r"^p1-context-[0-9a-f]{64}$")
     items: tuple[DiagnosisEvidenceItem, ...]
 
@@ -452,7 +478,7 @@ def contains_condition_or_rubric_label(payload: object) -> bool:
         "missing_required_evidence_roles",
     }
 
-    def _contains(value: object) -> bool:
+    def _contains(value: object, *, parent_key: str | None = None) -> bool:
         if isinstance(value, dict):
             for key, nested in value.items():
                 if key in forbidden_keys:
@@ -463,11 +489,24 @@ def contains_condition_or_rubric_label(payload: object) -> bool:
                     and _identifier_contains_condition_label(nested)
                 ):
                     return True
-                if _contains(nested):
+                if key in {"evidence_id", "evidence_roles", "title"} and _contains(
+                    nested, parent_key=key
+                ):
+                    return True
+                if isinstance(nested, str) and "distractor" in nested.casefold():
+                    return True
+                if _contains(nested, parent_key=key):
                     return True
             return False
         if isinstance(value, (list, tuple)):
-            return any(_contains(item) for item in value)
+            return any(_contains(item, parent_key=parent_key) for item in value)
+        if isinstance(value, str):
+            if _CONDITION_LABEL_IN_VISIBLE_TEXT.search(value):
+                return True
+            if "distractor" in value.casefold():
+                return True
+            if parent_key in {"evidence_id", "evidence_roles", "title"}:
+                return _EVALUATOR_INTENT_LABEL.search(value) is not None
         return False
 
     return _contains(payload)

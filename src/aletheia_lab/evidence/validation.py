@@ -64,9 +64,7 @@ def validate_sibling_bundles(bundles: Iterable[EvidenceBundle]) -> None:
 
     materialized = tuple(bundles)
     conditions = tuple(bundle.evidence_condition for bundle in materialized)
-    if len(materialized) != len(EVIDENCE_CONDITIONS) or set(conditions) != set(
-        EVIDENCE_CONDITIONS
-    ):
+    if len(materialized) != len(EVIDENCE_CONDITIONS) or set(conditions) != set(EVIDENCE_CONDITIONS):
         raise ValueError("siblings must contain exactly one full, missing_key and noisy bundle")
 
     shared_fields = (
