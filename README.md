@@ -158,8 +158,11 @@ PYTHONPATH=src python -m aletheia_lab benchmark preflight-p1-openai \
 
 The preflight locks `gpt-4.1-2025-04-14`, proves 15 matched pairs / 30 requests,
 selects the eight-request smoke subset, scans the exact outbound payloads for
-secrets and evaluator metadata, and estimates the maximum cost. It does not
-construct an API client or authorize an external send.
+secrets and evaluator metadata, and reports four separate cost projections:
+smoke one-attempt, smoke retry-ceiling, full one-attempt, and full retry-ceiling.
+These are conservative token estimates under the frozen price/config contract,
+not provider billing guarantees. Preflight does not construct an API client or
+authorize an external send.
 
 After inspecting the preflight artifact and its printed confirmation digest,
 run only the frozen eight-request smoke subset. The API key is read from the

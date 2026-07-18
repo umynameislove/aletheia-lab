@@ -17,6 +17,7 @@ from aletheia_lab.diagnosis.openai_preflight import (
     build_openai_preflight,
     load_openai_preflight,
     openai_preflight_sha256,
+    preflight_matches_recomputed,
 )
 from aletheia_lab.diagnosis.pilot import (
     build_matched_requests,
@@ -119,23 +120,26 @@ def authorize_openai_smoke(
     confirmed_preflight_sha256: str,
 ) -> tuple[OpenAIPreflightReport, ExternalSmokeAuthorization]:
     recomputed = build_openai_preflight(evidence_store_dir, config)
-    if persisted_preflight != recomputed:
+    if not preflight_matches_recomputed(persisted_preflight, recomputed):
         raise ValueError("persisted preflight differs from the independently recomputed plan")
     if not recomputed.passed:
         raise ValueError("external execution requires a passing preflight")
-    digest = openai_preflight_sha256(recomputed)
+    # Confirmation binds the exact artifact the human inspected. A genuine
+    # legacy artifact may omit only the additive cost block while matching the
+    # independently recomputed execution plan.
+    digest = openai_preflight_sha256(persisted_preflight)
     if confirmed_preflight_sha256 != digest:
         raise ValueError("human confirmation does not match the exact preflight SHA-256")
     authorization = ExternalSmokeAuthorization(
         schema_version=AUTHORIZATION_SCHEMA_VERSION,
         preflight_sha256=digest,
-        source_evidence_store_sha256=recomputed.source_evidence_store_sha256,
-        config_sha256=recomputed.config_sha256,
-        request_set_sha256=recomputed.request_set_sha256,
-        outbound_payload_set_sha256=recomputed.outbound_payload_set_sha256,
-        smoke_request_ids=recomputed.smoke_request_ids,
+        source_evidence_store_sha256=persisted_preflight.source_evidence_store_sha256,
+        config_sha256=persisted_preflight.config_sha256,
+        request_set_sha256=persisted_preflight.request_set_sha256,
+        outbound_payload_set_sha256=persisted_preflight.outbound_payload_set_sha256,
+        smoke_request_ids=persisted_preflight.smoke_request_ids,
     )
-    return recomputed, authorization
+    return persisted_preflight, authorization
 
 
 def run_openai_smoke(
@@ -235,7 +239,7 @@ def validate_openai_smoke(
         raise FileNotFoundError(f"smoke output is not a real directory: {root}")
     report = load_openai_preflight(preflight_path)
     recomputed = build_openai_preflight(evidence_store_dir, config)
-    if report != recomputed:
+    if not preflight_matches_recomputed(report, recomputed):
         raise ValueError("preflight artifact no longer matches the recomputed plan")
     authorization = ExternalSmokeAuthorization.model_validate_json(
         _confined_file(root, "execution-authorization.json").read_text("utf-8")

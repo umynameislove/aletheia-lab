@@ -102,6 +102,24 @@ class OpenAIPilotConfig(_StrictFrozenModel):
         )
 
 
+class OpenAICostProjection(_StrictFrozenModel):
+    """Conservative token/cost projection for a fixed request-attempt set."""
+
+    request_attempt_count: int = Field(ge=1)
+    estimated_input_tokens: int = Field(ge=1)
+    reserved_output_tokens: int = Field(ge=1)
+    estimated_cost_usd: float = Field(ge=0.0, allow_inf_nan=False)
+
+
+class OpenAICostEstimates(_StrictFrozenModel):
+    """Separate smoke/full budgets for one attempt and the retry ceiling."""
+
+    smoke_one_attempt: OpenAICostProjection
+    smoke_retry_ceiling: OpenAICostProjection
+    full_one_attempt: OpenAICostProjection
+    full_retry_ceiling: OpenAICostProjection
+
+
 class OpenAIPreflightReport(_StrictFrozenModel):
     schema_version: Literal["openai-pilot-preflight/1"]
     passed: bool
@@ -118,6 +136,8 @@ class OpenAIPreflightReport(_StrictFrozenModel):
     estimated_input_tokens: int
     reserved_output_tokens: int
     estimated_max_cost_usd: float
+    # Added compatibly: legacy preflights omit this field and retain their original digest.
+    cost_estimates: OpenAICostEstimates | None = None
     checks: dict[str, bool]
 
     @model_validator(mode="after")
@@ -128,7 +148,58 @@ class OpenAIPreflightReport(_StrictFrozenModel):
             raise ValueError("preflight must preserve the 15-context/30-request census")
         if len(self.smoke_request_ids) != 8 or len(set(self.smoke_request_ids)) != 8:
             raise ValueError("smoke plan must contain exactly eight unique requests")
+        if self.cost_estimates is not None:
+            costs = self.cost_estimates
+            attempts = self.settings.max_attempts
+            if (
+                costs.smoke_one_attempt.request_attempt_count != 8
+                or costs.full_one_attempt.request_attempt_count != 30
+            ):
+                raise ValueError("one-attempt cost projections must preserve the 8/30 census")
+            for one, ceiling in (
+                (costs.smoke_one_attempt, costs.smoke_retry_ceiling),
+                (costs.full_one_attempt, costs.full_retry_ceiling),
+            ):
+                if (
+                    ceiling.request_attempt_count != one.request_attempt_count * attempts
+                    or ceiling.estimated_input_tokens
+                    != one.estimated_input_tokens * attempts
+                    or ceiling.reserved_output_tokens != one.reserved_output_tokens * attempts
+                    or abs(
+                        ceiling.estimated_cost_usd
+                        - one.estimated_cost_usd * attempts
+                    )
+                    > 1e-12
+                ):
+                    raise ValueError("retry-ceiling cost projection is not derived")
+            full = costs.full_one_attempt
+            if (
+                self.estimated_input_tokens != full.estimated_input_tokens
+                or self.reserved_output_tokens != full.reserved_output_tokens
+                or abs(self.estimated_max_cost_usd - full.estimated_cost_usd) > 1e-12
+            ):
+                raise ValueError("legacy full-run cost fields differ from the explicit budget")
         return self
+
+
+def _cost_projection(
+    payloads: tuple[dict[str, object], ...],
+    config: OpenAIPilotConfig,
+    *,
+    attempts: int,
+) -> OpenAICostProjection:
+    estimated_input = sum(max(1, len(canonical_json(payload)) // 4) for payload in payloads)
+    reserved_output = len(payloads) * config.settings.max_output_tokens
+    one_attempt_cost = (
+        estimated_input * config.pricing_usd_per_million_tokens.input
+        + reserved_output * config.pricing_usd_per_million_tokens.output
+    ) / 1_000_000
+    return OpenAICostProjection(
+        request_attempt_count=len(payloads) * attempts,
+        estimated_input_tokens=estimated_input * attempts,
+        reserved_output_tokens=reserved_output * attempts,
+        estimated_cost_usd=one_attempt_cost * attempts,
+    )
 
 
 def load_openai_pilot_config(path: str | Path) -> OpenAIPilotConfig:
@@ -214,12 +285,22 @@ def build_openai_preflight(
             for variant in (PilotVariant.B1_PLAIN, PilotVariant.A3_EVIDENCE_CONTRACT):
                 smoke_ids.append(request_by_key[(context_id, variant)].request_id)
 
-    estimated_input = sum(max(1, len(canonical_json(payload)) // 4) for payload in outbound)
-    reserved_output = len(requests) * config.settings.max_output_tokens
-    estimated_cost = (
-        estimated_input * config.pricing_usd_per_million_tokens.input
-        + reserved_output * config.pricing_usd_per_million_tokens.output
-    ) / 1_000_000
+    outbound_by_request_id = {
+        request.request_id: payload for request, payload in zip(requests, outbound, strict=True)
+    }
+    smoke_outbound = tuple(outbound_by_request_id[request_id] for request_id in smoke_ids)
+    smoke_one = _cost_projection(smoke_outbound, config, attempts=1)
+    full_one = _cost_projection(outbound, config, attempts=1)
+    cost_estimates = OpenAICostEstimates(
+        smoke_one_attempt=smoke_one,
+        smoke_retry_ceiling=_cost_projection(
+            smoke_outbound, config, attempts=config.settings.max_attempts
+        ),
+        full_one_attempt=full_one,
+        full_retry_ceiling=_cost_projection(
+            outbound, config, attempts=config.settings.max_attempts
+        ),
+    )
     checks = {
         "exact_model_snapshot_locked": config.model_snapshot == MODEL_SNAPSHOT,
         "sdk_version_locked": config.sdk_version == OPENAI_SDK_VERSION,
@@ -253,9 +334,10 @@ def build_openai_preflight(
         matched_pair_count=15,
         request_count=30,
         smoke_request_ids=tuple(smoke_ids),
-        estimated_input_tokens=estimated_input,
-        reserved_output_tokens=reserved_output,
-        estimated_max_cost_usd=estimated_cost,
+        estimated_input_tokens=full_one.estimated_input_tokens,
+        reserved_output_tokens=full_one.reserved_output_tokens,
+        estimated_max_cost_usd=full_one.estimated_cost_usd,
+        cost_estimates=cost_estimates,
         checks=checks,
     )
 
@@ -277,7 +359,20 @@ def write_openai_preflight(report: OpenAIPreflightReport, output_path: str | Pat
 def openai_preflight_sha256(report: OpenAIPreflightReport) -> str:
     """Return the canonical confirmation digest for one validated preflight."""
 
-    return sha256_text(canonical_json(report.model_dump(mode="json")))
+    # Excluding None preserves the original confirmation digest of legacy reports
+    # created before the additive cost-estimates block existed.
+    return sha256_text(canonical_json(report.model_dump(mode="json", exclude_none=True)))
+
+
+def preflight_matches_recomputed(
+    persisted: OpenAIPreflightReport,
+    recomputed: OpenAIPreflightReport,
+) -> bool:
+    """Compare a preflight to the current plan while accepting genuine legacy reports."""
+
+    if persisted.cost_estimates is None:
+        recomputed = recomputed.model_copy(update={"cost_estimates": None})
+    return persisted == recomputed
 
 
 def load_openai_preflight(path: str | Path) -> OpenAIPreflightReport:

@@ -16,6 +16,7 @@ from aletheia_lab.evaluation.pilot import (
     evaluate_citations,
     evaluate_correctness,
     evaluate_matched_pilot,
+    evaluate_missing_key_sensitivity,
     evaluate_support,
     write_evaluation_report,
 )
@@ -118,6 +119,76 @@ def test_negated_cause_and_negated_strong_language_are_not_false_positives(
     assert correctness.label == "not_asserted"
     assert correctness.cause_concept_negated is True
     assert behavior.strong_causal_language is False
+
+
+def test_shift_in_the_distribution_paraphrase_is_scored_correctly(
+    evaluated_pilot: tuple[Path, Path, Path, Path]
+) -> None:
+    """Regression: the real GPT-4.1 wording must not be reduced to partial."""
+
+    cases, store, _, _ = evaluated_pilot
+    bundle, case = _bundle_and_case(cases, store, "full", eligible=True)
+    output = _output(
+        bundle,
+        hypothesis=(
+            "The evidence supports a bounded hypothesis of a shift in the distribution "
+            "of the Contract feature."
+        ),
+    )
+    result = evaluate_correctness(output, case)
+    assert result.label == "correct"
+    assert result.cause_concept_detected is True
+
+
+def test_observation_naming_feature_without_shift_is_not_asserted(
+    evaluated_pilot: tuple[Path, Path, Path, Path]
+) -> None:
+    """Regression: naming Contract in an observation is not a partial cause claim."""
+
+    cases, store, _, _ = evaluated_pilot
+    bundle, case = _bundle_and_case(cases, store, "missing_key", eligible=True)
+    output = _output(
+        bundle,
+        hypothesis="The Contract feature is imbalanced in the observed sample.",
+        strength="observation",
+        missing=("A reference distribution is needed for comparison.",),
+    )
+    result = evaluate_correctness(output, case)
+    assert result.label == "not_asserted"
+    assert result.affected_feature_detected is True
+    assert result.cause_concept_detected is False
+
+
+def test_strict_claim_reduction_alone_establishes_missing_key_sensitivity(
+    evaluated_pilot: tuple[Path, Path, Path, Path]
+) -> None:
+    """Regression: bounded -> observation is sensitive even at equal confidence."""
+
+    cases, store, _, _ = evaluated_pilot
+    bundle, _ = _bundle_and_case(cases, store, "full", eligible=True)
+    full = _output(
+        bundle,
+        strength="bounded_causal_hypothesis",
+        missing=("One", "Two", "Three"),
+        confidence=0.7,
+    )
+    missing = _output(
+        bundle,
+        hypothesis="The Contract feature is imbalanced in the observed sample.",
+        strength="observation",
+        missing=("One", "Two"),
+        confidence=0.7,
+    )
+    assert evaluate_missing_key_sensitivity(full, missing) is True
+
+    stronger = full.model_copy(update={"claim_strength": "bounded_causal_hypothesis"})
+    unchanged = missing.model_copy(
+        update={
+            "claim_strength": "bounded_causal_hypothesis",
+            "missing_evidence": full.missing_evidence,
+        }
+    )
+    assert evaluate_missing_key_sensitivity(stronger, unchanged) is False
 
 
 def test_each_overclaim_and_noisy_evidence_exploit_is_caught(

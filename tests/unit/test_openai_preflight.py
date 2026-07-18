@@ -105,6 +105,21 @@ def test_preflight_proves_complete_matched_plan_without_network(
     assert report.reserved_output_tokens == 30 * 600
     assert report.estimated_input_tokens > 0
     assert 0.0 < report.estimated_max_cost_usd < 1.0
+    assert report.cost_estimates is not None
+    costs = report.cost_estimates
+    assert costs.smoke_one_attempt.request_attempt_count == 8
+    assert costs.smoke_one_attempt.reserved_output_tokens == 8 * 600
+    assert costs.smoke_retry_ceiling.request_attempt_count == 16
+    assert costs.smoke_retry_ceiling.estimated_cost_usd == pytest.approx(
+        costs.smoke_one_attempt.estimated_cost_usd * 2
+    )
+    assert costs.full_one_attempt.request_attempt_count == 30
+    assert costs.full_one_attempt.reserved_output_tokens == 30 * 600
+    assert costs.full_retry_ceiling.request_attempt_count == 60
+    assert costs.full_retry_ceiling.estimated_cost_usd == pytest.approx(
+        costs.full_one_attempt.estimated_cost_usd * 2
+    )
+    assert report.estimated_max_cost_usd == costs.full_one_attempt.estimated_cost_usd
     assert all(report.checks.values())
 
 

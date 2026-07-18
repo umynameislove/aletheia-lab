@@ -79,9 +79,10 @@ correct-but-unsupported guesses visible rather than counting them as faithful.
 For each injection family and prompt variant, the evaluator compares the full,
 missing-evidence, and noisy siblings:
 
-- missing-evidence sensitivity requires the claim not to become stronger and at
-  least one observable qualification: abstention, lower confidence, or a larger
-  missing-evidence request;
+- missing-evidence sensitivity is satisfied by a strict reduction in claim
+  strength; when claim strength is unchanged, it instead requires an observable
+  qualification: abstention, lower confidence, or a larger missing-evidence
+  request; a stronger missing-evidence claim always fails;
 - noisy robustness requires the same claim-strength level and correctness label
   as the full sibling, without selecting the secondary comparison as support.
 

@@ -41,7 +41,8 @@ EVALUATION_SCHEMA_VERSION: Final[Literal["matched-pilot-evaluation/1"]] = (
 SCORER_VERSION: Final[Literal["p1-structural-lexical/1"]] = "p1-structural-lexical/1"
 _SHA256_PATTERN = r"^[0-9a-f]{64}$"
 _SHIFT_PATTERN = re.compile(
-    r"\b(?:data[ -]?drift|distribution(?:al)?[ -]?(?:shift|change|drift)|profile[ -]?shift)\b",
+    r"\b(?:data[ -]?drift|distribution(?:al)?[ -]?(?:shift|change|drift)|"
+    r"profile[ -]?shift|shift(?:s|ed)?\s+in\s+(?:the\s+)?distribution(?:\s+of)?)\b",
     re.IGNORECASE,
 )
 _STRONG_CAUSAL_PATTERN = re.compile(
@@ -51,7 +52,8 @@ _STRONG_CAUSAL_PATTERN = re.compile(
 )
 _NEGATED_SHIFT_PATTERN = re.compile(
     r"\b(?:no|not|cannot|can't|does not|doesn't|insufficient evidence (?:of|for|to support))"
-    r"\b.{0,48}\b(?:data[ -]?drift|distribution(?:al)?[ -]?(?:shift|change|drift))\b",
+    r"\b.{0,48}\b(?:data[ -]?drift|distribution(?:al)?[ -]?(?:shift|change|drift)|"
+    r"shift(?:s|ed)?\s+in\s+(?:the\s+)?distribution(?:\s+of)?)\b",
     re.IGNORECASE,
 )
 _NEGATION_PREFIX_PATTERN = re.compile(
@@ -382,9 +384,15 @@ def evaluate_correctness(output: DiagnosisOutput, case: LoadedCase) -> Correctne
     feature = case.injection.feature.casefold() in text.casefold()
     eligible = case.ground_truth.failure_eligibility.classification == "eligible_failure"
     if eligible:
-        if negated_shift or (output.abstain and not shift):
+        if negated_shift or (
+            not shift
+            and (
+                output.abstain
+                or output.claim_strength in {"observation", "comparison"}
+            )
+        ):
             label: CorrectnessLabel = "not_asserted"
-            rationale = "The output abstains without asserting the hidden failure-cause concept."
+            rationale = "The output does not assert the hidden failure-cause concept."
         elif shift and feature:
             label = "correct"
             rationale = "The output identifies the P1 shift concept and affected feature."
@@ -575,6 +583,30 @@ def _claim_rank(output: DiagnosisOutput) -> int:
     ]
 
 
+def evaluate_missing_key_sensitivity(
+    full_output: DiagnosisOutput,
+    missing_output: DiagnosisOutput,
+) -> bool:
+    """Return whether withheld evidence causes a strict or explicit qualification.
+
+    A strictly weaker claim is sufficient on its own. If claim strength is
+    unchanged, the output must instead abstain, lower confidence, or request
+    more missing evidence. A stronger missing-key claim always fails.
+    """
+
+    full_rank = _claim_rank(full_output)
+    missing_rank = _claim_rank(missing_output)
+    if missing_rank < full_rank:
+        return True
+    if missing_rank > full_rank:
+        return False
+    return (
+        missing_output.abstain
+        or missing_output.confidence < full_output.confidence
+        or len(missing_output.missing_evidence) > len(full_output.missing_evidence)
+    )
+
+
 def _paired_sensitivity(
     evaluations: tuple[DiagnosisEvaluation, ...],
     outputs: dict[str, DiagnosisOutput],
@@ -595,13 +627,8 @@ def _paired_sensitivity(
             if full.request_id in outputs and missing.request_id in outputs:
                 full_output = outputs[full.request_id]
                 missing_output = outputs[missing.request_id]
-                missing_sensitive = (
-                    _claim_rank(missing_output) <= _claim_rank(full_output)
-                    and (
-                        missing_output.abstain
-                        or missing_output.confidence < full_output.confidence
-                        or len(missing_output.missing_evidence) > len(full_output.missing_evidence)
-                    )
+                missing_sensitive = evaluate_missing_key_sensitivity(
+                    full_output, missing_output
                 )
                 if not missing_sensitive:
                     issues.append("missing_key_did_not_reduce_or_qualify_claim")

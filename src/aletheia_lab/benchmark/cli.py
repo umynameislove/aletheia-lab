@@ -183,11 +183,18 @@ def preflight_p1_openai_cmd(
         console.print(f"[red]FAIL[/red] {exc}")
         raise typer.Exit(code=1) from exc
     console.print_json(json.dumps(report.model_dump(mode="json")))
+    if report.cost_estimates is None:  # pragma: no cover - newly built reports always include it
+        raise typer.Exit(code=1)
+    costs = report.cost_estimates
     console.print(
         "[green]OpenAI preflight PASS[/green]: "
         f"{report.matched_pair_count} matched pairs / {report.request_count} requests; "
-        f"eight-request smoke plan frozen; estimated maximum cost "
-        f"${report.estimated_max_cost_usd:.4f}. No external request was sent. "
+        "eight-request smoke plan frozen. Estimated costs: "
+        f"smoke one attempt ${costs.smoke_one_attempt.estimated_cost_usd:.4f}; "
+        f"smoke retry ceiling ${costs.smoke_retry_ceiling.estimated_cost_usd:.4f}; "
+        f"full one attempt ${costs.full_one_attempt.estimated_cost_usd:.4f}; "
+        f"full retry ceiling ${costs.full_retry_ceiling.estimated_cost_usd:.4f}. "
+        "No external request was sent. "
         f"Confirmation SHA-256: {openai_preflight_sha256(report)}"
     )
 

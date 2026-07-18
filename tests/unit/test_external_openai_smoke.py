@@ -12,6 +12,7 @@ from aletheia_lab.diagnosis.external_pilot import run_openai_smoke, validate_ope
 from aletheia_lab.diagnosis.openai_preflight import (
     build_openai_preflight,
     load_openai_pilot_config,
+    load_openai_preflight,
     openai_preflight_sha256,
     write_openai_preflight,
 )
@@ -148,7 +149,7 @@ def test_tampered_preflight_and_raw_artifact_fail_closed(
     config = load_openai_pilot_config(CONFIG_PATH)
     report = build_openai_preflight(store, config)
     tampered = json.loads(preflight.read_text("utf-8"))
-    tampered["estimated_input_tokens"] += 1
+    tampered["request_set_sha256"] = "0" * 64
     tampered_path = tmp_path / "tampered-preflight.json"
     tampered_path.write_text(json.dumps(tampered), encoding="utf-8")
     adapter = _BoundAdapter(config.provider_identity)
@@ -176,6 +177,47 @@ def test_tampered_preflight_and_raw_artifact_fail_closed(
     raw.write_text("tampered", encoding="utf-8")
     with pytest.raises(ValueError, match="raw response hash mismatch"):
         validate_openai_smoke(output, store, config, preflight)
+
+
+def test_tampered_cost_budget_fails_closed_and_legacy_preflight_still_validates(
+    smoke_inputs: tuple[Path, Path, Path], tmp_path: Path
+) -> None:
+    """New budgets are bound, while a genuine pre-budget artifact remains usable."""
+
+    _, store, preflight = smoke_inputs
+    config = load_openai_pilot_config(CONFIG_PATH)
+    report = build_openai_preflight(store, config)
+    payload = json.loads(preflight.read_text("utf-8"))
+    payload["cost_estimates"]["smoke_retry_ceiling"]["estimated_cost_usd"] += 0.01
+    tampered = tmp_path / "tampered-cost.json"
+    tampered.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="retry-ceiling cost projection is not derived"):
+        run_openai_smoke(
+            store,
+            config,
+            tampered,
+            tmp_path / "tampered-not-created",
+            confirmed_preflight_sha256=openai_preflight_sha256(report),
+            adapter=_BoundAdapter(config.provider_identity),
+        )
+
+    legacy_payload = report.model_dump(mode="json")
+    legacy_payload.pop("cost_estimates")
+    legacy = tmp_path / "legacy-preflight.json"
+    legacy.write_text(json.dumps(legacy_payload), encoding="utf-8")
+    legacy_report = load_openai_preflight(legacy)
+    adapter = _BoundAdapter(config.provider_identity)
+    output = tmp_path / "legacy-smoke"
+    manifest = run_openai_smoke(
+        store,
+        config,
+        legacy,
+        output,
+        confirmed_preflight_sha256=openai_preflight_sha256(legacy_report),
+        adapter=adapter,
+    )
+    assert manifest.success_count == 8
+    assert validate_openai_smoke(output, store, config, legacy) == manifest
 
 
 def test_incomplete_execution_directory_cannot_validate(
