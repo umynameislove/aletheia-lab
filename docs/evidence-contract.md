@@ -212,7 +212,7 @@ cũng đều bị từ chối.
 
 ## 9. Output contract cho evidence-bound diagnosis
 
-Diagnosis runner sau này phải ghi tối thiểu:
+Diagnosis runner ghi tối thiểu:
 
 - incident summary dựa trên facts nhìn thấy;
 - ranked hypotheses;
@@ -223,9 +223,9 @@ Diagnosis runner sau này phải ghi tối thiểu:
 - abstention status và reason;
 - proposed next checks nhưng không tự thực thi.
 
-## 10. P1-G5B collector, store và audit gate
+## 10. Collector, store và audit gate
 
-P1-G5B tạo `EvidenceBundle` thật cho đủ ma trận 5 family × 3 condition:
+Collector tạo `EvidenceBundle` cho đủ ma trận 5 family × 3 condition:
 
 1. toàn bộ source cases phải qua `validate_p1_cases` trước khi collect;
 2. diagnosis-visible item chỉ được dựng từ `DiagnosisInput` đã validate;
@@ -279,5 +279,5 @@ review có hai stage bắt buộc:
 signature và cam kết không dùng AI. Thiếu entry/field, hash bị sửa hoặc tráo,
 `UNCERTAIN`, hay bất kỳ blocker nào đều fail; không được promote thành PASS.
 
-Diagnosis runner, LLM outputs và evaluator metrics thuộc các gate tiếp theo; G5B
-không cho phép claim chất lượng chẩn đoán.
+Evidence validation không tự claim chất lượng chẩn đoán. Kết luận về model phải
+dựa trên diagnosis outputs và evaluator artifacts riêng.

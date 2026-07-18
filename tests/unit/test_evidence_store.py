@@ -1,4 +1,4 @@
-"""P1-G5B real collector, immutable store and leakage-review regression tests."""
+"""Real collector, immutable store and leakage-review regression tests."""
 
 from __future__ import annotations
 
@@ -432,7 +432,7 @@ def test_uncertain_or_blocking_review_cannot_be_promoted_to_pass(
 def test_generate_and_validate_g5b_store_marks_only_human_step_pending(
     p1_cases: Path, tmp_path: Path
 ) -> None:
-    store = tmp_path / "g5b-store"
+    store = tmp_path / "evidence-store"
     manifest = generate_p1_evidence_store(p1_cases, store)
     report = validate_p1_evidence_store(store, p1_cases)
 

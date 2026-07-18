@@ -1,4 +1,4 @@
-schema_version: p1-g6b-openai-config/1
+schema_version: openai-pilot-config/1
 decision_status: frozen_before_external_results
 provider: openai
 api: chat_completions

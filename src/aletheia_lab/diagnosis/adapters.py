@@ -1,4 +1,4 @@
-"""Provider boundary and deterministic offline adapter for P1-G6."""
+"""Provider boundary and deterministic offline adapter for diagnosis pilots."""
 
 from __future__ import annotations
 

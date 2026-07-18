@@ -62,7 +62,7 @@ _EVALUATOR_INTENT_LABEL = re.compile(
 )
 
 # Structural answer-key markers only.  This is deliberately not called a full
-# semantic audit: human review remains required before P1-G5 can close.
+# Semantic audit: machine validation never substitutes for an attested human review.
 HIDDEN_GROUND_TRUTH_MARKERS: tuple[str, ...] = (
     "ground_truth",
     "ground truth",

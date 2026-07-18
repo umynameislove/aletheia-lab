@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Download and deterministically prepare the benchmark dataset (task P1-C-01).
+"""Download and deterministically prepare the benchmark dataset.
 
 The source URL and SHA-256 are pinned in ``aletheia_lab.data.sources``. A
 download is accepted only when its checksum matches the pin, so the raw dataset

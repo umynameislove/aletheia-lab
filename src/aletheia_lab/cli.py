@@ -23,22 +23,22 @@ app.add_typer(benchmark_app, name="benchmark")
 
 
 @app.command()
-def plan(config: Path = Path("configs/project.yaml")) -> None:
-    """Print the active project plan summary."""
+def info(config: Path = Path("configs/project.yaml")) -> None:
+    """Print the active benchmark configuration."""
 
     data = load_yaml(config)
     project = data.get("project", {})
-    vertical_slice = data.get("vertical_slice", {})
-    scope = data.get("scope", {})
+    dataset = data.get("dataset", {})
+    benchmark = data.get("benchmark", {})
 
-    table = Table(title="Aletheia Lab Plan")
+    table = Table(title="Aletheia Lab Configuration")
     table.add_column("Field")
     table.add_column("Value")
     table.add_row("Project", str(project.get("name", "unknown")))
-    table.add_row("Mode", str(project.get("mode", "unknown")))
-    table.add_row("P1 fault type", str(vertical_slice.get("fault_type", "unknown")))
-    table.add_row("P1 cases", str(vertical_slice.get("target_cases", "unknown")))
-    table.add_row("Official case goal", str(scope.get("official_case_goal", "unknown")))
+    table.add_row("Version", str(project.get("version", "unknown")))
+    table.add_row("Dataset", str(dataset.get("id", "unknown")))
+    table.add_row("Fault type", str(benchmark.get("fault_type", "unknown")))
+    table.add_row("Benchmark cases", str(benchmark.get("target_cases", "unknown")))
     console.print(table)
 
 

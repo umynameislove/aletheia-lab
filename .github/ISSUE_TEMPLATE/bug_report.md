@@ -1,24 +1,24 @@
 ---
 name: Bug report
-about: Báo lỗi trong code/pipeline/eval
+about: Report a reproducible defect in code, data, or evaluation
 title: "[BUG] "
 labels: bug
 ---
 
-## Mô tả lỗi
-<!-- Ngắn gọn lỗi là gì. -->
+## Description
+<!-- Describe the defect and its impact. -->
 
-## Bước tái hiện
+## Steps to reproduce
 1.
 2.
 
-## Kỳ vọng vs Thực tế
-- Kỳ vọng:
-- Thực tế:
+## Expected and actual behavior
+- Expected:
+- Actual:
 
-## Bằng chứng
-<!-- Log/traceback/output. KHÔNG dán secret hoặc dữ liệu thật. -->
+## Evidence
+<!-- Include minimal logs or output. Never include secrets or private data. -->
 
-## Môi trường
+## Environment
 - OS / Python:
 - Commit / branch:

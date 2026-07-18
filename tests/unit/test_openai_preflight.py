@@ -1,4 +1,4 @@
-"""G6B exact-model lock, OpenAI adapter and offline-preflight regression tests."""
+"""Exact-model lock, OpenAI adapter and offline-preflight regression tests."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from aletheia_lab.diagnosis.adapters import (
     OpenAIChatCompletionsAdapter,
     openai_output_json_schema,
 )
-from aletheia_lab.diagnosis.g6b import (
+from aletheia_lab.diagnosis.openai_preflight import (
     MODEL_SNAPSHOT,
     OpenAIPilotConfig,
     build_openai_preflight,
@@ -30,7 +30,7 @@ from aletheia_lab.evidence.p1 import generate_p1_evidence_store
 from aletheia_lab.evidence.schema import canonical_json, project_diagnosis_evidence
 from aletheia_lab.evidence.store import load_bundle_store
 
-CONFIG_PATH = Path("configs/evaluation/p1_g6b_openai.yaml")
+CONFIG_PATH = Path("configs/evaluation/openai_pilot.yaml")
 
 
 @pytest.fixture

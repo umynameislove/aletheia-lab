@@ -1,4 +1,4 @@
-"""Executable, immutable P1-G6 matched-pilot runner and validator."""
+"""Executable, immutable matched-pilot runner and validator."""
 
 from __future__ import annotations
 
@@ -301,7 +301,7 @@ def run_p1_matched_pilot(
         raise ValueError("P1 matched pilot requires the canonical 15-bundle evidence store")
     if adapter.identity != DeterministicMockAdapter().identity:
         raise ValueError(
-            "G6A only authorizes the deterministic mock; external sends require explicit confirmation"
+            "the offline runner only authorizes the deterministic mock"
         )
     views = tuple(project_diagnosis_evidence(bundle) for bundle in evidence_store.bundles)
     if len({view.diagnosis_context_id for view in views}) != 15:
@@ -312,7 +312,7 @@ def run_p1_matched_pilot(
         settings=settings,
     )
     if settings != DEFAULT_SETTINGS:
-        raise ValueError("G6A settings differ from the frozen mock-pilot contract")
+        raise ValueError("settings differ from the frozen mock-pilot contract")
     validate_source_binding(requests, views)
 
     output = Path(output_dir)
@@ -388,9 +388,9 @@ def validate_p1_matched_pilot(
     if manifest.source_evidence_store_sha256 != evidence_store.manifest.store_sha256:
         raise ValueError("pilot is not bound to the supplied evidence store")
     if manifest.provider_identity != DeterministicMockAdapter().identity:
-        raise ValueError("G6A manifest changes the frozen mock provider identity")
+        raise ValueError("manifest changes the frozen mock provider identity")
     if manifest.settings != DEFAULT_SETTINGS:
-        raise ValueError("G6A manifest changes the frozen generation settings")
+        raise ValueError("manifest changes the frozen generation settings")
 
     expected_paths = {"pilot-manifest.json"}
     records: list[DiagnosisRunRecord] = []
