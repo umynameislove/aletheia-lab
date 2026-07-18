@@ -24,9 +24,12 @@ store and all of its manifests can fabricate a new internally consistent store;
 provider-signed receipts or an external transparency log would be required to
 defend against that stronger threat model.
 
-External smoke outputs additionally require the original OpenAI config and
-preflight artifact. The evaluator reruns external authorization validation; the
-presence of an authorization marker without those inputs fails closed.
+External outputs additionally require the original OpenAI config and preflight
+artifact. The evaluator distinguishes the eight-request smoke authorization
+from the 30-request full authorization and reruns the matching validator. Full
+authorization binds the exact request set, preflight digest, and explicitly
+confirmed estimated retry-ceiling cost. The presence of an authorization marker
+without the required inputs, or with an unknown schema, fails closed.
 
 ## Per-diagnosis layers
 
@@ -96,3 +99,8 @@ Mock-adapter results validate infrastructure only. External smoke results are a
 small operational check, not a final performance claim. Final empirical claims
 require the complete matched matrix, an attested human semantic review, reported
 unresolved runs, and uncertainty appropriate to the sample size.
+
+The preflight cost values are conservative planning estimates derived from the
+frozen request payloads, output-token caps, retry count, and recorded prices.
+They are not provider billing guarantees; final reports use provider-returned
+usage for observed cost and retain every paid attempt, including failures.

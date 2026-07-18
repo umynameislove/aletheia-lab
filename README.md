@@ -188,6 +188,31 @@ store, changed config, changed request set, or changed provider identity fails
 closed before an output can be accepted. Interrupted runs retain received raw
 artifacts but remain invalid until a new output directory is used.
 
+Only after the smoke output has passed validation may the complete 30-request
+matrix be considered. Full execution requires both the exact preflight digest
+and the displayed **estimated** full retry-ceiling cost; it rejects legacy
+preflights that do not contain the four-budget block. The estimate is an
+authorization checkpoint, not a provider billing guarantee:
+
+```bash
+PYTHONPATH=src python -m aletheia_lab benchmark run-p1-openai-full \
+  --store-dir experiments/p1/evidence-store \
+  --config configs/evaluation/openai_pilot.yaml \
+  --preflight experiments/p1/outputs/openai-preflight.json \
+  --output-dir experiments/p1/outputs/openai-full \
+  --confirm-preflight-sha256 <digest-printed-by-preflight> \
+  --confirm-estimated-full-retry-ceiling-usd <estimate-printed-by-preflight>
+PYTHONPATH=src python -m aletheia_lab benchmark validate-p1-openai-full \
+  --output-dir experiments/p1/outputs/openai-full \
+  --store-dir experiments/p1/evidence-store \
+  --config configs/evaluation/openai_pilot.yaml \
+  --preflight experiments/p1/outputs/openai-preflight.json
+```
+
+The full runner preserves all attempts, allows no more than the frozen retry
+budget, writes an authorization record before the first provider request, and
+accepts only the complete 15-context x 2-variant request census.
+
 Evaluate a validated pilot without collapsing correctness and groundedness into
 one score:
 
@@ -199,8 +224,9 @@ PYTHONPATH=src python -m aletheia_lab benchmark evaluate-p1-pilot \
   --output experiments/p1/outputs/matched-pilot-mock-evaluation.json
 ```
 
-For an external smoke output, also pass `--openai-config` and `--preflight` so
-the evaluator revalidates its execution authorization. The deterministic cause
+For any external output, also pass `--openai-config` and `--preflight` so the
+evaluator identifies and revalidates its smoke or full execution authorization.
+The deterministic cause
 matcher is an auditable P1 baseline and explicitly requires final human semantic
 review; it is not presented as a general-purpose semantic judge.
 

@@ -18,7 +18,12 @@ from typing import Final, Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from aletheia_lab.benchmark.case_writer import LoadedCase, load_case_dir_schema_only
-from aletheia_lab.diagnosis.external_pilot import validate_openai_smoke
+from aletheia_lab.diagnosis.external_pilot import (
+    AUTHORIZATION_SCHEMA_VERSION,
+    FULL_AUTHORIZATION_SCHEMA_VERSION,
+    validate_openai_full,
+    validate_openai_smoke,
+)
 from aletheia_lab.diagnosis.openai_preflight import load_openai_pilot_config
 from aletheia_lab.diagnosis.pilot import (
     validate_matched_requests,
@@ -166,10 +171,10 @@ class MatchedPilotEvaluationReport(_StrictFrozenModel):
         expected_evaluable = sum(item.run_status == "success" for item in self.diagnosis_evaluations)
         if self.summary.evaluable_count != expected_evaluable:
             raise ValueError("evaluation summary evaluable_count is not derived")
-        correctness_counts = dict(
+        correctness_counts: dict[str, int] = dict(
             sorted(Counter(item.correctness.label for item in self.diagnosis_evaluations).items())
         )
-        support_counts = dict(
+        support_counts: dict[str, int] = dict(
             sorted(Counter(item.support.label for item in self.diagnosis_evaluations).items())
         )
         expected = EvaluationSummary(
@@ -256,12 +261,17 @@ def _load_validated_pilot_records(
             raise ValueError(
                 "external pilot evaluation requires its OpenAI config and preflight artifact"
             )
-        validate_openai_smoke(
-            root,
-            evidence_store_dir,
-            load_openai_pilot_config(openai_config_path),
-            preflight_path,
-        )
+        authorization_payload = json.loads(authorization.read_text("utf-8"))
+        if not isinstance(authorization_payload, dict):
+            raise ValueError("external authorization must be a JSON object")
+        schema_version = authorization_payload.get("schema_version")
+        config = load_openai_pilot_config(openai_config_path)
+        if schema_version == AUTHORIZATION_SCHEMA_VERSION:
+            validate_openai_smoke(root, evidence_store_dir, config, preflight_path)
+        elif schema_version == FULL_AUTHORIZATION_SCHEMA_VERSION:
+            validate_openai_full(root, evidence_store_dir, config, preflight_path)
+        else:
+            raise ValueError("external pilot has an unknown authorization schema")
         expected_paths.add("execution-authorization.json")
     records: list[DiagnosisRunRecord] = []
     for entry in manifest.entries:

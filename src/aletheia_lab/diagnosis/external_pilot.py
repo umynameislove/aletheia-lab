@@ -1,9 +1,10 @@
-"""Fail-closed execution of the frozen eight-request OpenAI smoke plan."""
+"""Fail-closed execution of frozen OpenAI smoke and full matched plans."""
 
 from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Final, Literal, Self
@@ -38,7 +39,11 @@ from aletheia_lab.evidence.store import load_bundle_store
 AUTHORIZATION_SCHEMA_VERSION: Final[Literal["external-smoke-authorization/1"]] = (
     "external-smoke-authorization/1"
 )
+FULL_AUTHORIZATION_SCHEMA_VERSION: Final[
+    Literal["external-full-authorization/1"]
+] = "external-full-authorization/1"
 SMOKE_REQUEST_COUNT: Final[int] = 8
+FULL_REQUEST_COUNT: Final[int] = 30
 _SHA256_PATTERN = r"^[0-9a-f]{64}$"
 
 
@@ -66,6 +71,29 @@ class ExternalSmokeAuthorization(_StrictFrozenModel):
         return self
 
 
+class ExternalFullAuthorization(_StrictFrozenModel):
+    """Immutable proof of explicit approval for the complete 30-request run."""
+
+    schema_version: Literal["external-full-authorization/1"]
+    preflight_sha256: str = Field(pattern=_SHA256_PATTERN)
+    source_evidence_store_sha256: str = Field(pattern=_SHA256_PATTERN)
+    config_sha256: str = Field(pattern=_SHA256_PATTERN)
+    request_set_sha256: str = Field(pattern=_SHA256_PATTERN)
+    outbound_payload_set_sha256: str = Field(pattern=_SHA256_PATTERN)
+    confirmed_estimated_full_retry_ceiling_usd: float = Field(
+        ge=0.0, allow_inf_nan=False
+    )
+    full_request_ids: tuple[str, ...]
+
+    @model_validator(mode="after")
+    def _exact_full_set(self) -> Self:
+        if len(self.full_request_ids) != FULL_REQUEST_COUNT:
+            raise ValueError("full authorization must bind exactly 30 requests")
+        if len(set(self.full_request_ids)) != FULL_REQUEST_COUNT:
+            raise ValueError("full authorization contains duplicate request IDs")
+        return self
+
+
 def _json_bytes(payload: object) -> bytes:
     return (
         json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False, allow_nan=False) + "\n"
@@ -78,7 +106,7 @@ def _sha256_bytes(payload: bytes) -> str:
 
 def _safe_relative_path(value: str) -> str:
     if not value or value != value.strip() or "\\" in value or ":" in value:
-        raise ValueError("smoke paths must be canonical relative POSIX paths")
+        raise ValueError("external paths must be canonical relative POSIX paths")
     path = PurePosixPath(value)
     if (
         path.is_absolute()
@@ -86,7 +114,7 @@ def _safe_relative_path(value: str) -> str:
         or value != path.as_posix()
         or any(part in {"", ".", ".."} for part in path.parts)
     ):
-        raise ValueError("smoke path is absolute, non-canonical or traverses parents")
+        raise ValueError("external path is absolute, non-canonical or traverses parents")
     return value
 
 
@@ -103,13 +131,13 @@ def _write_bytes(root: Path, relative_path: str, payload: bytes) -> str:
 def _confined_file(root: Path, relative_path: str) -> Path:
     path = root / _safe_relative_path(relative_path)
     if path.is_symlink():
-        raise ValueError(f"smoke artifact must not be a symlink: {relative_path}")
+        raise ValueError(f"external artifact must not be a symlink: {relative_path}")
     try:
         path.resolve().relative_to(root.resolve())
     except ValueError as exc:
-        raise ValueError(f"smoke artifact escapes output root: {relative_path}") from exc
+        raise ValueError(f"external artifact escapes output root: {relative_path}") from exc
     if not path.is_file():
-        raise FileNotFoundError(f"smoke artifact missing: {relative_path}")
+        raise FileNotFoundError(f"external artifact missing: {relative_path}")
     return path
 
 
@@ -138,6 +166,55 @@ def authorize_openai_smoke(
         request_set_sha256=persisted_preflight.request_set_sha256,
         outbound_payload_set_sha256=persisted_preflight.outbound_payload_set_sha256,
         smoke_request_ids=persisted_preflight.smoke_request_ids,
+    )
+    return persisted_preflight, authorization
+
+
+def authorize_openai_full(
+    evidence_store_dir: str | Path,
+    config: OpenAIPilotConfig,
+    persisted_preflight: OpenAIPreflightReport,
+    confirmed_preflight_sha256: str,
+    confirmed_estimated_full_retry_ceiling_usd: float,
+) -> tuple[OpenAIPreflightReport, ExternalFullAuthorization]:
+    """Authorize all 30 requests only after exact plan and cost confirmation."""
+
+    recomputed = build_openai_preflight(evidence_store_dir, config)
+    if not preflight_matches_recomputed(persisted_preflight, recomputed):
+        raise ValueError("persisted preflight differs from the independently recomputed plan")
+    if not recomputed.passed:
+        raise ValueError("external execution requires a passing preflight")
+    if persisted_preflight.cost_estimates is None:
+        raise ValueError("full execution requires an explicit four-budget preflight")
+    digest = openai_preflight_sha256(persisted_preflight)
+    if confirmed_preflight_sha256 != digest:
+        raise ValueError("human confirmation does not match the exact preflight SHA-256")
+    expected_ceiling = (
+        persisted_preflight.cost_estimates.full_retry_ceiling.estimated_cost_usd
+    )
+    if not math.isfinite(confirmed_estimated_full_retry_ceiling_usd) or abs(
+        confirmed_estimated_full_retry_ceiling_usd - expected_ceiling
+    ) > 1e-12:
+        raise ValueError("human cost confirmation does not match the full retry ceiling")
+
+    store = load_bundle_store(evidence_store_dir)
+    views = tuple(project_diagnosis_evidence(bundle) for bundle in store.bundles)
+    requests = build_matched_requests(
+        views, provider_identity=config.provider_identity, settings=config.settings
+    )
+    validate_matched_requests(requests)
+    validate_source_binding(requests, views)
+    if len(views) != 15 or len(requests) != FULL_REQUEST_COUNT:
+        raise ValueError("full execution requires the canonical 15-context/30-request plan")
+    authorization = ExternalFullAuthorization(
+        schema_version=FULL_AUTHORIZATION_SCHEMA_VERSION,
+        preflight_sha256=digest,
+        source_evidence_store_sha256=persisted_preflight.source_evidence_store_sha256,
+        config_sha256=persisted_preflight.config_sha256,
+        request_set_sha256=persisted_preflight.request_set_sha256,
+        outbound_payload_set_sha256=persisted_preflight.outbound_payload_set_sha256,
+        confirmed_estimated_full_retry_ceiling_usd=expected_ceiling,
+        full_request_ids=tuple(request.request_id for request in requests),
     )
     return persisted_preflight, authorization
 
@@ -226,48 +303,162 @@ def run_openai_smoke(
     return manifest
 
 
-def validate_openai_smoke(
+def run_openai_full(
+    evidence_store_dir: str | Path,
+    config: OpenAIPilotConfig,
+    preflight_path: str | Path,
+    output_dir: str | Path,
+    *,
+    confirmed_preflight_sha256: str,
+    confirmed_estimated_full_retry_ceiling_usd: float,
+    adapter: DiagnosisAdapter,
+) -> PilotManifest:
+    """Execute the exact 15-context x 2-variant plan after dual confirmation.
+
+    As with smoke execution, the immutable output directory is created before
+    the first provider call and an interrupted directory intentionally fails
+    validation while retaining every response already received.
+    """
+
+    persisted = load_openai_preflight(preflight_path)
+    _, authorization = authorize_openai_full(
+        evidence_store_dir,
+        config,
+        persisted,
+        confirmed_preflight_sha256,
+        confirmed_estimated_full_retry_ceiling_usd,
+    )
+    if adapter.identity != config.provider_identity:
+        raise ValueError("adapter identity differs from the frozen preflight identity")
+
+    store = load_bundle_store(evidence_store_dir)
+    views = tuple(project_diagnosis_evidence(bundle) for bundle in store.bundles)
+    requests = build_matched_requests(
+        views, provider_identity=config.provider_identity, settings=config.settings
+    )
+    validate_matched_requests(requests)
+    validate_source_binding(requests, views)
+    if tuple(request.request_id for request in requests) != authorization.full_request_ids:
+        raise ValueError("full execution request order differs from authorization")
+
+    output = Path(output_dir)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.mkdir()
+    _write_bytes(
+        output,
+        "execution-authorization.json",
+        _json_bytes(authorization.model_dump(mode="json")),
+    )
+
+    entries: list[PilotRunEntry] = []
+    for request in requests:
+        record = execute_diagnosis_request(request, adapter, output)
+        relative_path = f"runs/{request.request_id}.json"
+        record_sha = _write_bytes(
+            output, relative_path, _json_bytes(record.model_dump(mode="json"))
+        )
+        entries.append(
+            PilotRunEntry(
+                request_id=request.request_id,
+                diagnosis_context_id=request.diagnosis_view.diagnosis_context_id,
+                variant=request.variant,
+                final_status=record.final_status,
+                relative_path=relative_path,
+                file_sha256=record_sha,
+            )
+        )
+
+    success_count = sum(entry.final_status == "success" for entry in entries)
+    manifest = PilotManifest(
+        schema_version=PILOT_SCHEMA_VERSION,
+        source_evidence_store_sha256=store.manifest.store_sha256,
+        provider_identity=config.provider_identity,
+        settings=config.settings,
+        context_count=15,
+        variant_count=2,
+        run_count=FULL_REQUEST_COUNT,
+        success_count=success_count,
+        unresolved_count=FULL_REQUEST_COUNT - success_count,
+        entries=tuple(sorted(entries, key=lambda item: item.request_id)),
+    )
+    _write_bytes(output, "pilot-manifest.json", _json_bytes(manifest.model_dump(mode="json")))
+    validate_openai_full(output, evidence_store_dir, config, preflight_path)
+    return manifest
+
+
+def _validate_openai_execution(
     output_dir: str | Path,
     evidence_store_dir: str | Path,
     config: OpenAIPilotConfig,
     preflight_path: str | Path,
+    *,
+    full: bool,
 ) -> PilotManifest:
     """Recompute authorization, source binding and every external artifact hash."""
 
     root = Path(output_dir)
     if root.is_symlink() or not root.is_dir():
-        raise FileNotFoundError(f"smoke output is not a real directory: {root}")
+        raise FileNotFoundError(f"external output is not a real directory: {root}")
     report = load_openai_preflight(preflight_path)
     recomputed = build_openai_preflight(evidence_store_dir, config)
     if not preflight_matches_recomputed(report, recomputed):
         raise ValueError("preflight artifact no longer matches the recomputed plan")
-    authorization = ExternalSmokeAuthorization.model_validate_json(
-        _confined_file(root, "execution-authorization.json").read_text("utf-8")
+    store = load_bundle_store(evidence_store_dir)
+    views = tuple(project_diagnosis_evidence(bundle) for bundle in store.bundles)
+    all_requests = build_matched_requests(
+        views, provider_identity=config.provider_identity, settings=config.settings
     )
-    expected_authorization = ExternalSmokeAuthorization(
-        schema_version=AUTHORIZATION_SCHEMA_VERSION,
-        preflight_sha256=openai_preflight_sha256(report),
-        source_evidence_store_sha256=report.source_evidence_store_sha256,
-        config_sha256=report.config_sha256,
-        request_set_sha256=report.request_set_sha256,
-        outbound_payload_set_sha256=report.outbound_payload_set_sha256,
-        smoke_request_ids=report.smoke_request_ids,
-    )
-    if authorization != expected_authorization:
-        raise ValueError("execution authorization differs from the frozen preflight")
+    if full:
+        if report.cost_estimates is None:
+            raise ValueError("full execution requires an explicit four-budget preflight")
+        full_authorization = ExternalFullAuthorization.model_validate_json(
+            _confined_file(root, "execution-authorization.json").read_text("utf-8")
+        )
+        expected_full_authorization = ExternalFullAuthorization(
+            schema_version=FULL_AUTHORIZATION_SCHEMA_VERSION,
+            preflight_sha256=openai_preflight_sha256(report),
+            source_evidence_store_sha256=report.source_evidence_store_sha256,
+            config_sha256=report.config_sha256,
+            request_set_sha256=report.request_set_sha256,
+            outbound_payload_set_sha256=report.outbound_payload_set_sha256,
+            confirmed_estimated_full_retry_ceiling_usd=(
+                report.cost_estimates.full_retry_ceiling.estimated_cost_usd
+            ),
+            full_request_ids=tuple(request.request_id for request in all_requests),
+        )
+        if full_authorization != expected_full_authorization:
+            raise ValueError("execution authorization differs from the frozen preflight")
+        expected_census = (15, 2, FULL_REQUEST_COUNT)
+        expected_request_ids = set(expected_full_authorization.full_request_ids)
+    else:
+        smoke_authorization = ExternalSmokeAuthorization.model_validate_json(
+            _confined_file(root, "execution-authorization.json").read_text("utf-8")
+        )
+        expected_smoke_authorization = ExternalSmokeAuthorization(
+            schema_version=AUTHORIZATION_SCHEMA_VERSION,
+            preflight_sha256=openai_preflight_sha256(report),
+            source_evidence_store_sha256=report.source_evidence_store_sha256,
+            config_sha256=report.config_sha256,
+            request_set_sha256=report.request_set_sha256,
+            outbound_payload_set_sha256=report.outbound_payload_set_sha256,
+            smoke_request_ids=report.smoke_request_ids,
+        )
+        if smoke_authorization != expected_smoke_authorization:
+            raise ValueError("execution authorization differs from the frozen preflight")
+        expected_census = (4, 2, SMOKE_REQUEST_COUNT)
+        expected_request_ids = set(expected_smoke_authorization.smoke_request_ids)
 
     manifest = PilotManifest.model_validate_json(
         _confined_file(root, "pilot-manifest.json").read_text("utf-8")
     )
-    store = load_bundle_store(evidence_store_dir)
     if manifest.source_evidence_store_sha256 != store.manifest.store_sha256:
-        raise ValueError("smoke output is not bound to the supplied evidence store")
+        raise ValueError("external output is not bound to the supplied evidence store")
     if manifest.provider_identity != config.provider_identity or manifest.settings != config.settings:
-        raise ValueError("smoke output changes the frozen provider or generation settings")
-    if (manifest.context_count, manifest.variant_count, manifest.run_count) != (4, 2, 8):
-        raise ValueError("smoke manifest does not preserve the frozen 4x2 census")
-    if {entry.request_id for entry in manifest.entries} != set(report.smoke_request_ids):
-        raise ValueError("smoke manifest request set differs from preflight")
+        raise ValueError("external output changes the frozen provider or generation settings")
+    if (manifest.context_count, manifest.variant_count, manifest.run_count) != expected_census:
+        raise ValueError("external manifest does not preserve its frozen census")
+    if {entry.request_id for entry in manifest.entries} != expected_request_ids:
+        raise ValueError("external manifest request set differs from authorization")
 
     expected_paths = {"execution-authorization.json", "pilot-manifest.json"}
     records: list[DiagnosisRunRecord] = []
@@ -332,23 +523,49 @@ def validate_openai_smoke(
 
     requests = tuple(record.request for record in records)
     validate_matched_requests(requests)
-    views = tuple(
+    selected_views = tuple(
         project_diagnosis_evidence(bundle)
         for bundle in store.bundles
         if bundle.diagnosis_context_id in {entry.diagnosis_context_id for entry in manifest.entries}
     )
-    validate_source_binding(requests, views)
+    validate_source_binding(requests, selected_views)
     actual_paths = {
         path.relative_to(root).as_posix()
         for path in root.rglob("*")
         if path.is_file() and not path.is_symlink()
     }
     if any(path.is_symlink() for path in root.rglob("*")):
-        raise ValueError("smoke output contains a symlink")
+        raise ValueError("external output contains a symlink")
     if actual_paths != expected_paths:
         raise ValueError(
-            "smoke output file set differs from manifest: "
+            "external output file set differs from manifest: "
             f"missing={sorted(expected_paths - actual_paths)}, "
             f"unexpected={sorted(actual_paths - expected_paths)}"
         )
     return manifest
+
+
+def validate_openai_smoke(
+    output_dir: str | Path,
+    evidence_store_dir: str | Path,
+    config: OpenAIPilotConfig,
+    preflight_path: str | Path,
+) -> PilotManifest:
+    """Validate the exact eight-request external smoke execution."""
+
+    return _validate_openai_execution(
+        output_dir, evidence_store_dir, config, preflight_path, full=False
+    )
+
+
+def validate_openai_full(
+    output_dir: str | Path,
+    evidence_store_dir: str | Path,
+    config: OpenAIPilotConfig,
+    preflight_path: str | Path,
+) -> PilotManifest:
+    """Validate the exact 15-context x 2-variant external execution."""
+
+    return _validate_openai_execution(
+        output_dir, evidence_store_dir, config, preflight_path, full=True
+    )

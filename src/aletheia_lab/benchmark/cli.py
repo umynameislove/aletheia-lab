@@ -17,8 +17,11 @@ from aletheia_lab.diagnosis.adapters import (
     OpenAIChatCompletionsAdapter,
 )
 from aletheia_lab.diagnosis.external_pilot import (
+    authorize_openai_full,
     authorize_openai_smoke,
+    run_openai_full,
     run_openai_smoke,
+    validate_openai_full,
     validate_openai_smoke,
 )
 from aletheia_lab.diagnosis.openai_preflight import (
@@ -265,6 +268,81 @@ def validate_p1_openai_smoke_cmd(
         raise typer.Exit(code=1) from exc
     console.print_json(json.dumps(manifest.model_dump(mode="json")))
     console.print("[green]OpenAI smoke validation PASS[/green]")
+
+
+@benchmark_app.command("run-p1-openai-full")
+def run_p1_openai_full_cmd(
+    store_dir: Path = typer.Option(Path("experiments/p1/evidence-store"), "--store-dir"),
+    config: Path = typer.Option(Path("configs/evaluation/openai_pilot.yaml"), "--config"),
+    preflight: Path = typer.Option(
+        Path("experiments/p1/outputs/openai-preflight.json"), "--preflight"
+    ),
+    output_dir: Path = typer.Option(
+        Path("experiments/p1/outputs/openai-full"), "--output-dir"
+    ),
+    confirm_preflight_sha256: str = typer.Option(..., "--confirm-preflight-sha256"),
+    confirm_estimated_full_retry_ceiling_usd: float = typer.Option(
+        ..., "--confirm-estimated-full-retry-ceiling-usd"
+    ),
+) -> None:
+    """Run all 30 billed requests after exact plan and cost confirmation."""
+
+    try:
+        frozen_config = load_openai_pilot_config(config)
+        persisted = load_openai_preflight(preflight)
+        # Finish every no-network gate before the API key is read.
+        authorize_openai_full(
+            store_dir,
+            frozen_config,
+            persisted,
+            confirm_preflight_sha256,
+            confirm_estimated_full_retry_ceiling_usd,
+        )
+        adapter = OpenAIChatCompletionsAdapter.from_environment()
+        manifest = run_openai_full(
+            store_dir,
+            frozen_config,
+            preflight,
+            output_dir,
+            confirmed_preflight_sha256=confirm_preflight_sha256,
+            confirmed_estimated_full_retry_ceiling_usd=(
+                confirm_estimated_full_retry_ceiling_usd
+            ),
+            adapter=adapter,
+        )
+    except (AdapterError, FileExistsError, FileNotFoundError, OSError, ValueError) as exc:
+        console.print(f"[red]FAIL[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    console.print_json(json.dumps(manifest.model_dump(mode="json")))
+    console.print(
+        "[green]OpenAI full execution recorded[/green]: "
+        f"{manifest.run_count} requests, {manifest.success_count} parsed, "
+        f"{manifest.unresolved_count} unresolved."
+    )
+
+
+@benchmark_app.command("validate-p1-openai-full")
+def validate_p1_openai_full_cmd(
+    output_dir: Path = typer.Option(
+        Path("experiments/p1/outputs/openai-full"), "--output-dir"
+    ),
+    store_dir: Path = typer.Option(Path("experiments/p1/evidence-store"), "--store-dir"),
+    config: Path = typer.Option(Path("configs/evaluation/openai_pilot.yaml"), "--config"),
+    preflight: Path = typer.Option(
+        Path("experiments/p1/outputs/openai-preflight.json"), "--preflight"
+    ),
+) -> None:
+    """Verify full authorization, 30-request census and immutable artifacts."""
+
+    try:
+        manifest = validate_openai_full(
+            output_dir, store_dir, load_openai_pilot_config(config), preflight
+        )
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        console.print(f"[red]FAIL[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    console.print_json(json.dumps(manifest.model_dump(mode="json")))
+    console.print("[green]OpenAI full validation PASS[/green]")
 
 
 @benchmark_app.command("evaluate-p1-pilot")
