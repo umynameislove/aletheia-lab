@@ -7,9 +7,9 @@ from typing import Final
 from aletheia_lab.diagnosis.schema import PilotVariant, observable_facts_payload
 from aletheia_lab.evidence.schema import DiagnosisEvidenceView, canonical_json
 
-PROMPT_VERSION: Final[str] = "p1-g6/1"
-PLAIN_RENDERER_VERSION: Final[str] = "p1-plain-facts/1"
-STRUCTURED_RENDERER_VERSION: Final[str] = "p1-structured-evidence/1"
+PROMPT_VERSION: Final[str] = "matched-diagnosis/1"
+PLAIN_RENDERER_VERSION: Final[str] = "plain-evidence/1"
+STRUCTURED_RENDERER_VERSION: Final[str] = "structured-evidence/1"
 
 _SHARED_SECURITY = """\
 You diagnose an ML pipeline from the evidence payload supplied by the user.

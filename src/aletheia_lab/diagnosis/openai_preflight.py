@@ -1,4 +1,4 @@
-"""Frozen OpenAI G6B decision and no-network preflight for the matched pilot."""
+"""Frozen OpenAI configuration and no-network preflight for the matched pilot."""
 
 from __future__ import annotations
 
@@ -33,11 +33,11 @@ from aletheia_lab.diagnosis.schema import (
 from aletheia_lab.evidence.schema import canonical_json, project_diagnosis_evidence, sha256_text
 from aletheia_lab.evidence.store import load_bundle_store
 
-CONFIG_SCHEMA_VERSION: Final[Literal["p1-g6b-openai-config/1"]] = (
-    "p1-g6b-openai-config/1"
+CONFIG_SCHEMA_VERSION: Final[Literal["openai-pilot-config/1"]] = (
+    "openai-pilot-config/1"
 )
-PREFLIGHT_SCHEMA_VERSION: Final[Literal["p1-g6b-openai-preflight/1"]] = (
-    "p1-g6b-openai-preflight/1"
+PREFLIGHT_SCHEMA_VERSION: Final[Literal["openai-pilot-preflight/1"]] = (
+    "openai-pilot-preflight/1"
 )
 MODEL_SNAPSHOT: Final[str] = OPENAI_MODEL_SNAPSHOT
 MODEL_VERSION: Final[str] = OPENAI_MODEL_VERSION
@@ -68,7 +68,7 @@ class OpenAIExecutionPolicy(_StrictFrozenModel):
 
 
 class OpenAIPilotConfig(_StrictFrozenModel):
-    schema_version: Literal["p1-g6b-openai-config/1"]
+    schema_version: Literal["openai-pilot-config/1"]
     decision_status: Literal["frozen_before_external_results"]
     provider: Literal["openai"]
     api: Literal["chat_completions"]
@@ -82,14 +82,14 @@ class OpenAIPilotConfig(_StrictFrozenModel):
     @model_validator(mode="after")
     def _frozen_settings(self) -> Self:
         if self.settings != DEFAULT_SETTINGS:
-            raise ValueError("G6B settings differ from the frozen matched-pilot contract")
+            raise ValueError("settings differ from the frozen matched-pilot contract")
         if self.sdk_version != OPENAI_SDK_VERSION:
-            raise ValueError("G6B SDK version differs from the adapter lock")
+            raise ValueError("SDK version differs from the adapter lock")
         if (
             self.pricing_usd_per_million_tokens.input != OPENAI_INPUT_PRICE_PER_MILLION
             or self.pricing_usd_per_million_tokens.output != OPENAI_OUTPUT_PRICE_PER_MILLION
         ):
-            raise ValueError("G6B pricing differs from the adapter lock")
+            raise ValueError("pricing differs from the adapter lock")
         return self
 
     @property
@@ -102,7 +102,7 @@ class OpenAIPilotConfig(_StrictFrozenModel):
 
 
 class OpenAIPreflightReport(_StrictFrozenModel):
-    schema_version: Literal["p1-g6b-openai-preflight/1"]
+    schema_version: Literal["openai-pilot-preflight/1"]
     passed: bool
     source_evidence_store_sha256: str = Field(pattern=_SHA256_PATTERN)
     config_sha256: str = Field(pattern=_SHA256_PATTERN)
@@ -124,16 +124,16 @@ class OpenAIPreflightReport(_StrictFrozenModel):
         if self.passed != all(self.checks.values()):
             raise ValueError("preflight PASS must be derived from all checks")
         if (self.context_count, self.matched_pair_count, self.request_count) != (15, 15, 30):
-            raise ValueError("G6B preflight must preserve the 15-context/30-request census")
+            raise ValueError("preflight must preserve the 15-context/30-request census")
         if len(self.smoke_request_ids) != 8 or len(set(self.smoke_request_ids)) != 8:
-            raise ValueError("G6B smoke plan must contain exactly eight unique requests")
+            raise ValueError("smoke plan must contain exactly eight unique requests")
         return self
 
 
 def load_openai_pilot_config(path: str | Path) -> OpenAIPilotConfig:
     payload = yaml.safe_load(Path(path).read_text("utf-8"))
     if not isinstance(payload, dict):
-        raise ValueError("G6B config must be a YAML mapping")
+        raise ValueError("OpenAI pilot config must be a YAML mapping")
     return OpenAIPilotConfig.model_validate(payload)
 
 
@@ -185,7 +185,7 @@ def build_openai_preflight(
 
     store = load_bundle_store(evidence_store_dir)
     if len(store.bundles) != 15:
-        raise ValueError("G6B preflight requires the canonical 15-bundle evidence store")
+        raise ValueError("OpenAI preflight requires the canonical 15-bundle evidence store")
     views = tuple(project_diagnosis_evidence(bundle) for bundle in store.bundles)
     requests = build_matched_requests(
         views,

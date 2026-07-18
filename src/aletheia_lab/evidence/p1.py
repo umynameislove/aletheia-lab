@@ -1,4 +1,4 @@
-"""End-to-end P1-G5B evidence collection and independent validation."""
+"""End-to-end benchmark evidence collection and independent validation."""
 
 from __future__ import annotations
 
@@ -115,7 +115,7 @@ def validate_p1_evidence_store(
     *,
     human_review_path: str | Path | None = None,
 ) -> P1EvidenceValidationReport:
-    """Recompute the full G5B technical gate and optionally verify human sign-off."""
+    """Recompute the full evidence gate and optionally verify human sign-off."""
 
     report = P1EvidenceValidationReport()
     cases_root = Path(cases_dir)

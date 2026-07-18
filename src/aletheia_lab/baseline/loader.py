@@ -1,6 +1,6 @@
 """Seeded, order-independent loading and splitting of the processed dataset.
 
-The loader reads the processed table written by P1-C-01, validates its schema,
+The loader reads the deterministically processed table, validates its schema,
 and produces a deterministic stratified train/validation/test partition. It
 sorts rows by a stable record identifier before splitting and passes an explicit
 random state, so the partition depends only on the data, the seed and the

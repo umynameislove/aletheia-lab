@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
-# The processed Telco schema is fixed by P1-C-01; these roles are derived from it.
+# These column roles are derived from the pinned processed Telco schema.
 ID_COLUMN = "customerID"
 TARGET_COLUMN = "Churn"
 POSITIVE_LABEL = "Yes"

@@ -141,7 +141,7 @@ def test_download_reuses_valid_existing_file(tmp_path) -> None:
     assert download_dataset(source, target, offline=True) == target
 
 
-# --- download failure-path regression tests (the P1-C-01 atomic-verify fix) ---
+# --- download failure-path regression tests for atomic verification ---
 
 
 def test_download_success_replaces_only_after_verification(tmp_path, monkeypatch) -> None:

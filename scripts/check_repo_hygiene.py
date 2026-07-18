@@ -8,7 +8,7 @@ nằm ở folder tracking cá nhân/nhóm bên ngoài.
 Cây thư mục repo nên gồm:
     src/  tests/  configs/  docs/ (chỉ spec kỹ thuật + adr)  scripts/
     data/**/.gitkeep  reports/  experiments/  examples/  notebooks/
-    pyproject.toml  Makefile  LICENSE  README  CONTRIBUTING  CHANGELOG  .github/
+    pyproject.toml  Makefile  LICENSE  README  CONTRIBUTING  CITATION  .github/
 
 KHÔNG chứa:
     - tracking/planning: roadmap, phase scorecard, risk register, decision/
@@ -68,6 +68,7 @@ TRACKING_NAME_PATTERNS = [
     r"project[_-]?brief",
     r"implementation[_-]?order",
     r"reuse[_-]?map",
+    r"related[_-]?work[_-]?(alignment|amendment)",
     r"do[_-]?an[_-]?tot[_-]?nghiep",
 ]
 TRACKING_RE = re.compile("|".join(TRACKING_NAME_PATTERNS), re.IGNORECASE)
@@ -80,6 +81,10 @@ CONTENT_RED_FLAGS = [
     re.compile(r"\b\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?\s*/\s*10\b"),  # self-grade N/10
     re.compile(r"generated\s+by\s+(ai|claude|gpt)\b", re.IGNORECASE),
     re.compile(r"co-authored-by:\s*(claude|assistant|gpt)", re.IGNORECASE),
+    re.compile(r"\bplanned_after[_a-z0-9-]*\s*:", re.IGNORECASE),
+    re.compile(r"\b(deadline_policy|official_case_goal|next_step)\s*:", re.IGNORECASE),
+    re.compile(r"^##\s*(task id|phase\s*/\s*module)\s*$", re.IGNORECASE | re.MULTILINE),
+    re.compile(r"implementation-facing\s+v\d", re.IGNORECASE),
 ]
 
 SKIP_WALK_DIRS = {".git", ".venv", "venv", "node_modules"} | JUNK_DIR_NAMES
@@ -108,7 +113,7 @@ def fs_paths(root: Path):
 
 
 def scan_content(p: Path) -> str | None:
-    if p.suffix.lower() != ".md" or not p.is_file():
+    if p.suffix.lower() not in {".md", ".yaml", ".yml", ".py"} or not p.is_file():
         return None
     try:
         text = p.read_text(encoding="utf-8", errors="ignore")
@@ -148,7 +153,9 @@ def check(root: Path, use_git: bool):
         if p.suffix.lower() in FORBIDDEN_SUFFIXES:
             errors.append(f"[OFFICE FILE]   {rel}  -> .docx/.pptx/.xlsx không thuộc code repo")
             continue
-        if rel not in ALLOW_RELATIVE and "adr/" not in rel and TRACKING_RE.search(name):
+        if rel in ALLOW_RELATIVE:
+            continue
+        if "adr/" not in rel and TRACKING_RE.search(name):
             errors.append(f"[TRACKING FILE] {rel}  -> chuyển sang folder tracking ngoài repo")
             continue
         flag = scan_content(p)

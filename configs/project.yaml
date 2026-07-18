@@ -1,24 +1,21 @@
 project:
   name: aletheia-lab
   version: 0.1.0
-  mode: eval_first
-  owner: Quoc Bao Tran
 
-# Primary dataset for P1 (finalized). The data_drift injector is dataset-agnostic;
+# Primary benchmark dataset. The data_drift injector is dataset-agnostic;
 # switching dataset only changes this block. Exact source URL + SHA-256 are pinned
-# by the reproducible download script (task P1-C-01), not hardcoded here.
+# by the reproducible download script, not hardcoded here.
 dataset:
   id: telco_customer_churn
   version: v1
   source: IBM sample "Telco Customer Churn"
-  license: IBM sample data, academic/educational use (confirm with advisor)
-  license_alternative: UCI Bank Marketing (CC BY 4.0) if a formally open license is required
+  license: See upstream IBM sample-data terms
   target: Churn
   positive_class: "Yes"
   n_rows_approx: 7043
   drift_feature: Contract           # categories: month-to-month / one year / two year
   rationale: >
-    Small, fast, license-clear-enough for coursework, rich in categorical features
+    Small, fast, and rich in categorical features
     (Contract, PaymentMethod, InternetService...) ideal for categorical distribution
     drift. Matches the running example in docs and the P1 injector.
 
@@ -28,24 +25,13 @@ paths:
   processed_data: data/processed
   benchmark_cases: data/benchmark_cases
   evidence_store: data/evidence_store
-  organic_failures: data/organic_failures
   reports: reports
   experiments: experiments
 
-scope:
-  official_case_goal: 200
-  organic_failure_goal_min: 10
-  organic_failure_goal_max: 20
-  stretch_case_goal_min: 240
-  stretch_case_goal_max: 300
-  stretch_policy: only_after_main_eval_and_human_audit
-
-vertical_slice:
-  phase: P1
+benchmark:
   fault_type: data_drift
   target_cases: 15
   dataset_family: tabular_classification
-  deadline_policy: run_eval_loop_before_expanding_platform
 
 diagnosis_variants:
   - b1_plain
@@ -59,13 +45,13 @@ evaluation:
     - divergence
   human_audit:
     enabled: true
-    target_subset_ratio: 0.2
+    sampling_strategy: census_all_contexts
     agreement_metric: cohens_kappa
 
 guardrails:
   forbid_ground_truth_leakage_in_evidence: true
   require_reproducible_case_manifest: true
-  require_counterfactual_evidence_condition: true
+  require_controlled_evidence_conditions: true
   require_error_analysis_for_publishable_claim: true
 
 baseline:

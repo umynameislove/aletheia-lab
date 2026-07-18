@@ -1,6 +1,6 @@
 ---
-name: Experiment run
-about: Track one benchmark/evaluation experiment
+name: Experiment report
+about: Document a reproducible benchmark or evaluation run
 title: "[EXP] "
 labels: experiment
 assignees: ""
@@ -26,6 +26,6 @@ What question does this experiment answer?
 - [ ] Metrics exported
 - [ ] Error analysis written
 
-## Notes
+## Results and limitations
 
-Key observations, failures, and decisions.
+Summarize observed results, failures, and limitations without overstating claims.

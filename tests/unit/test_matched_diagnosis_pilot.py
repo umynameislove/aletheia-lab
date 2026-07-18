@@ -1,4 +1,4 @@
-"""P1-G6A matched request, persistence and retry-boundary regression tests."""
+"""Matched request, persistence and retry-boundary regression tests."""
 
 from __future__ import annotations
 
@@ -397,16 +397,16 @@ class _ExternalAdapter(_InvalidJsonAdapter):
         return super().complete(request)
 
 
-def test_g6a_refuses_external_send_without_explicit_confirmation(
+def test_offline_runner_refuses_external_adapter(
     p1_store: Path, tmp_path: Path
 ) -> None:
     adapter = _ExternalAdapter()
-    with pytest.raises(ValueError, match="explicit confirmation"):
+    with pytest.raises(ValueError, match="only authorizes the deterministic mock"):
         run_p1_matched_pilot(p1_store, tmp_path / "external", adapter=adapter)
     assert adapter.called is False
 
 
-def test_g6a_refuses_unfrozen_settings(p1_store: Path, tmp_path: Path) -> None:
+def test_offline_runner_refuses_unfrozen_settings(p1_store: Path, tmp_path: Path) -> None:
     settings = GenerationSettings(
         temperature=0.1,
         top_p=1.0,

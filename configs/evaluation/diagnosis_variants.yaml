@@ -1,6 +1,6 @@
-schema_version: p1-diagnosis-variants/1
+schema_version: diagnosis-variants/1
 
-active_p1_pilot:
+active_variants:
   - b1_plain
   - a3_evidence_contract
 
@@ -17,13 +17,13 @@ shared_contract:
   raw_response_saved_before_parse: true
   silent_provider_or_model_switch: forbidden
 
-g6b_external_contract:
+external_provider_contract:
   decision_status: frozen_before_external_results
   provider: openai
   api: chat_completions
   model_snapshot: gpt-4.1-2025-04-14
   sdk_version: 2.46.0
-  config_path: configs/evaluation/p1_g6b_openai.yaml
+  config_path: configs/evaluation/openai_pilot.yaml
   authorization_state: preflight_only_no_external_send
   smoke_request_count: 8
   full_request_count: 30
@@ -31,8 +31,8 @@ g6b_external_contract:
 variants:
   b1_plain:
     role: matched_plain_llm_baseline
-    prompt_version: p1-g6/1
-    renderer_version: p1-plain-facts/1
+    prompt_version: matched-diagnosis/1
+    renderer_version: plain-evidence/1
     intervention: plain_text_rendering_without_citation_or_abstention_requirements
     forbidden_inputs:
       - ground_truth
@@ -43,8 +43,8 @@ variants:
 
   a3_evidence_contract:
     role: aletheia_citation_and_abstention_ablation
-    prompt_version: p1-g6/1
-    renderer_version: p1-structured-evidence/1
+    prompt_version: matched-diagnosis/1
+    renderer_version: structured-evidence/1
     intervention: structured_evidence_with_citation_and_abstention_requirements
     forbidden_inputs:
       - ground_truth
@@ -52,11 +52,3 @@ variants:
       - case_family_id
       - evidence_condition
       - expected_diagnosis_behavior
-
-planned_after_p1_g6a:
-  - b0_deterministic_reference
-  - b2_generic_multiturn_rag
-  - b3_logdx_ci_transfer
-  - a1_structured_evidence
-  - a2_evidence_with_citations
-  - full_aletheia

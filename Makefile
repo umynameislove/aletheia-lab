@@ -1,4 +1,4 @@
-.PHONY: install test lint format hygiene check data baseline baseline-verify slice tree clean
+.PHONY: install test lint format hygiene check data baseline baseline-verify tree clean
 
 install:
 	python -m pip install -e ".[dev]"
@@ -26,9 +26,6 @@ baseline:
 
 baseline-verify:
 	PYTHONPATH=src python -m aletheia_lab baseline verify --config configs/project.yaml
-
-slice:
-	python scripts/run_vertical_slice.py --config configs/project.yaml
 
 tree:
 	find . -maxdepth 4 -print

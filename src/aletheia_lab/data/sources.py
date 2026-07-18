@@ -72,7 +72,7 @@ TELCO_CUSTOMER_CHURN = DatasetSource(
     columns=_TELCO_COLUMNS,
     target="Churn",
     drift_feature="Contract",
-    license="IBM sample data, academic/educational use (confirm with advisor)",
+        license="See upstream IBM sample-data terms",
     filename="telco_customer_churn_raw.csv",
 )
 

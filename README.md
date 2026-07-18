@@ -56,7 +56,7 @@ Aletheia currently provides:
 - a reproducible scikit-learn baseline packaged with preprocessing;
 - deterministic categorical data-drift injection and PSI measurement;
 - typed contracts for benchmark cases, evidence, diagnoses, and evaluations;
-- deterministic collection and immutable persistence of the 15-context P1
+- deterministic collection and immutable persistence of a 15-context
   evidence matrix, with canonical hashes and structural/semantic leakage gates;
 - an executable 15-context x 2-variant matched-pilot contract with identical
   observable facts, frozen budgets, raw-before-parse records, bounded retries,
@@ -65,11 +65,10 @@ Aletheia currently provides:
   contract validation;
 - automated linting, repository-hygiene checks, and tests in CI.
 
-The project is in **active alpha development**. The implementation-facing V3.2 related-work amendment is documented in [`docs/06_RELATED_WORK_ALIGNMENT_V3_2.md`](docs/06_RELATED_WORK_ALIGNMENT_V3_2.md). Dataset preparation, baseline
-training, data-drift injection, evidence collection, and the offline matched
-diagnosis contract are operational. External-model experiments and the
-meta-faithfulness evaluator are still being integrated; the project should not
-yet be treated as a production incident-response system.
+Aletheia Lab is research software, not a production incident-response system.
+The repository includes the complete deterministic benchmark, evidence-store,
+matched-diagnosis, and provider-preflight workflows described below. Generated
+experiment artifacts remain local and are independently validated before use.
 
 ## Installation
 
@@ -96,7 +95,7 @@ Inspect the CLI and active configuration:
 
 ```bash
 aletheia --help
-aletheia plan --config configs/project.yaml
+aletheia info --config configs/project.yaml
 ```
 
 Download, verify, and preprocess the configured dataset:
@@ -112,7 +111,7 @@ make baseline
 make baseline-verify
 ```
 
-Generate the P1 case matrix, then collect and independently verify its evidence
+Generate the benchmark case matrix, then collect and independently verify its evidence
 store:
 
 ```bash
@@ -142,14 +141,14 @@ PYTHONPATH=src python -m aletheia_lab benchmark validate-p1-pilot \
 The deterministic mock verifies contracts, persistence, retry behavior, and
 reproducibility. It is deliberately not an empirical model baseline.
 
-Freeze and audit the G6B external request plan without sending data to a
+Freeze and audit the OpenAI external request set without sending data to a
 provider:
 
 ```bash
 PYTHONPATH=src python -m aletheia_lab benchmark preflight-p1-openai \
   --store-dir experiments/p1/evidence-store \
-  --config configs/evaluation/p1_g6b_openai.yaml \
-  --output experiments/p1/outputs/g6b-openai-preflight.json
+  --config configs/evaluation/openai_pilot.yaml \
+  --output experiments/p1/outputs/openai-preflight.json
 ```
 
 The preflight locks `gpt-4.1-2025-04-14`, proves 15 matched pairs / 30 requests,
@@ -164,7 +163,7 @@ make check
 ```
 
 Generated datasets, models, predictions, and experiment runs are intentionally
-excluded from Git. See [`docs/05_DATASET_CARD.md`](docs/05_DATASET_CARD.md) for
+excluded from Git. See [`docs/dataset-card.md`](docs/dataset-card.md) for
 the dataset source, checksums, transformations, and usage constraints.
 
 ## Architecture
@@ -184,6 +183,13 @@ Configuration lives in `configs/`, technical specifications in `docs/`, and
 tests in `tests/`. Research tracking and private planning material are kept
 outside the repository so the public project remains focused on usable code,
 documentation, and reproducible artifacts.
+
+## Documentation
+
+- [Benchmark protocol](docs/benchmark-protocol.md)
+- [Evidence contract](docs/evidence-contract.md)
+- [Dataset card](docs/dataset-card.md)
+- [Architecture decisions](docs/adr/)
 
 ## Evidence and safety model
 

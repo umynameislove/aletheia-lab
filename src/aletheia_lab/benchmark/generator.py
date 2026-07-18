@@ -3,7 +3,7 @@
 Matrix: 5 injection settings x 3 evidence conditions (full / missing_key / noisy).
 
 Reference window is a single, consistent one: the clean held-out test split. The
-P1-C-02 baseline is trained on the train split, then scored on the clean test
+The baseline is trained on the train split, then scored on the clean test
 split (reference) and on each drifted test split (observed). The measured
 accuracy delta is classified honestly and passed through a versioned failure-
 eligibility policy; the injection is always data_drift but its effect is not
