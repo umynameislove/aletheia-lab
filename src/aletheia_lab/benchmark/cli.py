@@ -11,13 +11,25 @@ from rich.console import Console
 from aletheia_lab.baseline.loader import DatasetSchemaError
 from aletheia_lab.benchmark.case_validation import validate_p1_cases
 from aletheia_lab.benchmark.generator import GeneratorConfigError, generate_p1
-from aletheia_lab.diagnosis.adapters import DeterministicMockAdapter
+from aletheia_lab.diagnosis.adapters import (
+    AdapterError,
+    DeterministicMockAdapter,
+    OpenAIChatCompletionsAdapter,
+)
+from aletheia_lab.diagnosis.external_pilot import (
+    authorize_openai_smoke,
+    run_openai_smoke,
+    validate_openai_smoke,
+)
 from aletheia_lab.diagnosis.openai_preflight import (
     build_openai_preflight,
     load_openai_pilot_config,
+    load_openai_preflight,
+    openai_preflight_sha256,
     write_openai_preflight,
 )
 from aletheia_lab.diagnosis.pilot import run_p1_matched_pilot, validate_p1_matched_pilot
+from aletheia_lab.evaluation.pilot import evaluate_matched_pilot, write_evaluation_report
 from aletheia_lab.evidence.collectors import EvidenceCollectionError
 from aletheia_lab.evidence.p1 import (
     generate_p1_evidence_store,
@@ -175,5 +187,104 @@ def preflight_p1_openai_cmd(
         "[green]OpenAI preflight PASS[/green]: "
         f"{report.matched_pair_count} matched pairs / {report.request_count} requests; "
         f"eight-request smoke plan frozen; estimated maximum cost "
-        f"${report.estimated_max_cost_usd:.4f}. No external request was sent."
+        f"${report.estimated_max_cost_usd:.4f}. No external request was sent. "
+        f"Confirmation SHA-256: {openai_preflight_sha256(report)}"
+    )
+
+
+@benchmark_app.command("run-p1-openai-smoke")
+def run_p1_openai_smoke_cmd(
+    store_dir: Path = typer.Option(Path("experiments/p1/evidence-store"), "--store-dir"),
+    config: Path = typer.Option(Path("configs/evaluation/openai_pilot.yaml"), "--config"),
+    preflight: Path = typer.Option(
+        Path("experiments/p1/outputs/openai-preflight.json"), "--preflight"
+    ),
+    output_dir: Path = typer.Option(
+        Path("experiments/p1/outputs/openai-smoke"), "--output-dir"
+    ),
+    confirm_preflight_sha256: str = typer.Option(..., "--confirm-preflight-sha256"),
+) -> None:
+    """Run exactly eight externally billed requests after exact SHA confirmation."""
+
+    try:
+        frozen_config = load_openai_pilot_config(config)
+        persisted = load_openai_preflight(preflight)
+        # Complete all no-network authorization checks before even reading the API key.
+        authorize_openai_smoke(
+            store_dir,
+            frozen_config,
+            persisted,
+            confirm_preflight_sha256,
+        )
+        adapter = OpenAIChatCompletionsAdapter.from_environment()
+        manifest = run_openai_smoke(
+            store_dir,
+            frozen_config,
+            preflight,
+            output_dir,
+            confirmed_preflight_sha256=confirm_preflight_sha256,
+            adapter=adapter,
+        )
+    except (AdapterError, FileExistsError, FileNotFoundError, OSError, ValueError) as exc:
+        console.print(f"[red]FAIL[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    console.print_json(json.dumps(manifest.model_dump(mode="json")))
+    console.print(
+        "[green]OpenAI smoke execution recorded[/green]: "
+        f"{manifest.run_count} requests, {manifest.success_count} parsed, "
+        f"{manifest.unresolved_count} unresolved."
+    )
+
+
+@benchmark_app.command("validate-p1-openai-smoke")
+def validate_p1_openai_smoke_cmd(
+    output_dir: Path = typer.Option(
+        Path("experiments/p1/outputs/openai-smoke"), "--output-dir"
+    ),
+    store_dir: Path = typer.Option(Path("experiments/p1/evidence-store"), "--store-dir"),
+    config: Path = typer.Option(Path("configs/evaluation/openai_pilot.yaml"), "--config"),
+    preflight: Path = typer.Option(
+        Path("experiments/p1/outputs/openai-preflight.json"), "--preflight"
+    ),
+) -> None:
+    """Verify external smoke authorization, source binding and immutable artifacts."""
+
+    try:
+        manifest = validate_openai_smoke(
+            output_dir, store_dir, load_openai_pilot_config(config), preflight
+        )
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        console.print(f"[red]FAIL[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    console.print_json(json.dumps(manifest.model_dump(mode="json")))
+    console.print("[green]OpenAI smoke validation PASS[/green]")
+
+
+@benchmark_app.command("evaluate-p1-pilot")
+def evaluate_p1_pilot_cmd(
+    pilot_dir: Path = typer.Option(..., "--pilot-dir"),
+    store_dir: Path = typer.Option(Path("experiments/p1/evidence-store"), "--store-dir"),
+    cases_dir: Path = typer.Option(Path("experiments/p1/cases"), "--cases-dir"),
+    output: Path = typer.Option(..., "--output"),
+    openai_config: Path | None = typer.Option(None, "--openai-config"),
+    preflight: Path | None = typer.Option(None, "--preflight"),
+) -> None:
+    """Score correctness, evidence support, behavior and paired sensitivity."""
+
+    try:
+        report = evaluate_matched_pilot(
+            pilot_dir,
+            store_dir,
+            cases_dir,
+            openai_config_path=openai_config,
+            preflight_path=preflight,
+        )
+        write_evaluation_report(report, output)
+    except (FileExistsError, FileNotFoundError, OSError, ValueError) as exc:
+        console.print(f"[red]FAIL[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    console.print_json(json.dumps(report.summary.model_dump(mode="json")))
+    console.print(
+        "[green]Pilot evaluation written[/green]. "
+        "The locked lexical correctness score still requires final human semantic review."
     )

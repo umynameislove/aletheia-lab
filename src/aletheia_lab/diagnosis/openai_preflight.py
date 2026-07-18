@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
 from typing import Final, Literal, Self
@@ -267,4 +268,30 @@ def write_openai_preflight(report: OpenAIPreflightReport, output_path: str | Pat
     payload = json.dumps(
         report.model_dump(mode="json"), sort_keys=True, indent=2, ensure_ascii=False
     ) + "\n"
-    output.write_text(payload, encoding="utf-8")
+    with output.open("x", encoding="utf-8") as handle:
+        handle.write(payload)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def openai_preflight_sha256(report: OpenAIPreflightReport) -> str:
+    """Return the canonical confirmation digest for one validated preflight."""
+
+    return sha256_text(canonical_json(report.model_dump(mode="json")))
+
+
+def load_openai_preflight(path: str | Path) -> OpenAIPreflightReport:
+    """Strictly load a persisted preflight report without trusting its filename."""
+
+    raw = Path(path).read_text("utf-8")
+
+    def reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
+        result: dict[str, object] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"preflight contains duplicate JSON key: {key}")
+            result[key] = value
+        return result
+
+    json.loads(raw, object_pairs_hook=reject_duplicate_keys)
+    return OpenAIPreflightReport.model_validate_json(raw)

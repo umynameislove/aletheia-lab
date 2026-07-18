@@ -61,6 +61,11 @@ Aletheia currently provides:
 - an executable 15-context x 2-variant matched-pilot contract with identical
   observable facts, frozen budgets, raw-before-parse records, bounded retries,
   immutable manifests, and an offline deterministic adapter;
+- an explicitly authorized eight-request OpenAI smoke runner, cryptographically
+  bound to a recomputed no-network preflight and exact model snapshot;
+- a deterministic evaluator that reports cause correctness, citation validity,
+  evidence-role support, abstention/overclaim behavior, and paired-condition
+  sensitivity as separate results;
 - CLI commands for data preparation, baseline training, verification, and
   contract validation;
 - automated linting, repository-hygiene checks, and tests in CI.
@@ -156,6 +161,46 @@ selects the eight-request smoke subset, scans the exact outbound payloads for
 secrets and evaluator metadata, and estimates the maximum cost. It does not
 construct an API client or authorize an external send.
 
+After inspecting the preflight artifact and its printed confirmation digest,
+run only the frozen eight-request smoke subset. The API key is read from the
+process environment after all local authorization checks and is never written
+to an artifact:
+
+```bash
+PYTHONPATH=src python -m aletheia_lab benchmark run-p1-openai-smoke \
+  --store-dir experiments/p1/evidence-store \
+  --config configs/evaluation/openai_pilot.yaml \
+  --preflight experiments/p1/outputs/openai-preflight.json \
+  --output-dir experiments/p1/outputs/openai-smoke \
+  --confirm-preflight-sha256 <digest-printed-by-preflight>
+PYTHONPATH=src python -m aletheia_lab benchmark validate-p1-openai-smoke \
+  --output-dir experiments/p1/outputs/openai-smoke \
+  --store-dir experiments/p1/evidence-store \
+  --config configs/evaluation/openai_pilot.yaml \
+  --preflight experiments/p1/outputs/openai-preflight.json
+```
+
+This command makes externally billed requests. A wrong digest, changed source
+store, changed config, changed request set, or changed provider identity fails
+closed before an output can be accepted. Interrupted runs retain received raw
+artifacts but remain invalid until a new output directory is used.
+
+Evaluate a validated pilot without collapsing correctness and groundedness into
+one score:
+
+```bash
+PYTHONPATH=src python -m aletheia_lab benchmark evaluate-p1-pilot \
+  --pilot-dir experiments/p1/outputs/matched-pilot-mock \
+  --store-dir experiments/p1/evidence-store \
+  --cases-dir experiments/p1/cases \
+  --output experiments/p1/outputs/matched-pilot-mock-evaluation.json
+```
+
+For an external smoke output, also pass `--openai-config` and `--preflight` so
+the evaluator revalidates its execution authorization. The deterministic cause
+matcher is an auditable P1 baseline and explicitly requires final human semantic
+review; it is not presented as a general-purpose semantic judge.
+
 Run the complete local quality check:
 
 ```bash
@@ -188,6 +233,7 @@ documentation, and reproducible artifacts.
 
 - [Benchmark protocol](docs/benchmark-protocol.md)
 - [Evidence contract](docs/evidence-contract.md)
+- [Evaluation protocol](docs/evaluation-protocol.md)
 - [Dataset card](docs/dataset-card.md)
 - [Architecture decisions](docs/adr/)
 
