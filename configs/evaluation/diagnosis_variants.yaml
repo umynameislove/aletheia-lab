@@ -1,49 +1,51 @@
+schema_version: p1-diagnosis-variants/1
+
+active_p1_pilot:
+  - b1_plain
+  - a3_evidence_contract
+
+shared_contract:
+  observable_facts: identical_semantic_item_ledger
+  provider_model_version: deterministic-mock/p1-contract-fixture/1
+  temperature: 0.0
+  top_p: 1.0
+  seed: 17
+  max_output_tokens: 600
+  timeout_seconds: 60.0
+  max_attempts: 2
+  response_schema: diagnosis-output/1
+  raw_response_saved_before_parse: true
+  silent_provider_or_model_switch: forbidden
+
 variants:
-  plain_llm:
-    description: LLM receives only a short failure description.
-    purpose: Lower-bound baseline.
-    allowed_inputs:
-      - failure_summary
-    forbidden_inputs:
-      - structured_evidence_bundle
-      - ground_truth
-
-  rag_baseline:
-    description: LLM receives retrieved notes/log snippets without strict evidence binding.
-    purpose: Compare against generic retrieval augmentation.
-    allowed_inputs:
-      - failure_summary
-      - retrieved_context
+  b1_plain:
+    role: matched_plain_llm_baseline
+    prompt_version: p1-g6/1
+    renderer_version: p1-plain-facts/1
+    intervention: plain_text_rendering_without_citation_or_abstention_requirements
     forbidden_inputs:
       - ground_truth
+      - case_id
+      - case_family_id
+      - evidence_condition
+      - expected_diagnosis_behavior
 
-  evidence_bound:
-    description: LLM must cite evidence item IDs for every causal claim.
-    purpose: Test evidence-grounded diagnosis.
-    allowed_inputs:
-      - failure_summary
-      - structured_evidence_bundle
-    output_contract:
-      - root_cause_hypothesis
-      - supporting_evidence_ids
-      - missing_evidence
-      - confidence
-      - abstention_if_needed
+  a3_evidence_contract:
+    role: aletheia_citation_and_abstention_ablation
+    prompt_version: p1-g6/1
+    renderer_version: p1-structured-evidence/1
+    intervention: structured_evidence_with_citation_and_abstention_requirements
+    forbidden_inputs:
+      - ground_truth
+      - case_id
+      - case_family_id
+      - evidence_condition
+      - expected_diagnosis_behavior
 
-  full_aletheia:
-    description: Evidence-bound diagnosis plus memory/lineage/counterfactual checks.
-    purpose: Main system variant.
-    allowed_inputs:
-      - failure_summary
-      - structured_evidence_bundle
-      - run_lineage
-      - prior_failure_patterns
-      - counterfactual_evidence
-    output_contract:
-      - root_cause_hypothesis
-      - causal_chain
-      - supporting_evidence_ids
-      - counterevidence_ids
-      - missing_evidence
-      - confidence
-      - abstention_if_needed
+planned_after_p1_g6a:
+  - b0_deterministic_reference
+  - b2_generic_multiturn_rag
+  - b3_logdx_ci_transfer
+  - a1_structured_evidence
+  - a2_evidence_with_citations
+  - full_aletheia

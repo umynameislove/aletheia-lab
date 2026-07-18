@@ -11,6 +11,8 @@ from rich.console import Console
 from aletheia_lab.baseline.loader import DatasetSchemaError
 from aletheia_lab.benchmark.case_validation import validate_p1_cases
 from aletheia_lab.benchmark.generator import GeneratorConfigError, generate_p1
+from aletheia_lab.diagnosis.adapters import DeterministicMockAdapter
+from aletheia_lab.diagnosis.pilot import run_p1_matched_pilot, validate_p1_matched_pilot
 from aletheia_lab.evidence.collectors import EvidenceCollectionError
 from aletheia_lab.evidence.p1 import (
     generate_p1_evidence_store,
@@ -97,3 +99,48 @@ def validate_p1_evidence_cmd(
         "[green]Evidence technical validation PASS[/green]; "
         f"human review status: {report.human_review_status}."
     )
+
+
+@benchmark_app.command("run-p1-pilot-mock")
+def run_p1_pilot_mock_cmd(
+    store_dir: Path = typer.Option(Path("experiments/p1/evidence-store"), "--store-dir"),
+    output_dir: Path = typer.Option(
+        Path("experiments/p1/outputs/matched-pilot-mock"), "--output-dir"
+    ),
+) -> None:
+    """Run the 15-context x 2-variant G6 contract pilot without an external send."""
+
+    try:
+        manifest = run_p1_matched_pilot(
+            store_dir,
+            output_dir,
+            adapter=DeterministicMockAdapter(),
+        )
+    except (FileExistsError, OSError, ValueError) as exc:
+        console.print(f"[red]FAIL[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    console.print_json(json.dumps(manifest.model_dump(mode="json")))
+    console.print(
+        "[green]Matched pilot contract PASS[/green]: "
+        f"{manifest.run_count} runs, {manifest.success_count} parsed, "
+        f"{manifest.unresolved_count} unresolved. "
+        "Mock outputs are infrastructure evidence, not model-quality results."
+    )
+
+
+@benchmark_app.command("validate-p1-pilot")
+def validate_p1_pilot_cmd(
+    output_dir: Path = typer.Option(
+        Path("experiments/p1/outputs/matched-pilot-mock"), "--output-dir"
+    ),
+    store_dir: Path = typer.Option(Path("experiments/p1/evidence-store"), "--store-dir"),
+) -> None:
+    """Recompute source binding, matchedness and all P1 pilot artifact hashes."""
+
+    try:
+        manifest = validate_p1_matched_pilot(output_dir, store_dir)
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        console.print(f"[red]FAIL[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    console.print_json(json.dumps(manifest.model_dump(mode="json")))
+    console.print("[green]P1 matched pilot validation PASS[/green]")

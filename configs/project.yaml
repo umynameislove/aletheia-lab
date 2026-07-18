@@ -48,10 +48,8 @@ vertical_slice:
   deadline_policy: run_eval_loop_before_expanding_platform
 
 diagnosis_variants:
-  - plain_llm
-  - rag_baseline
-  - evidence_bound
-  - full_aletheia
+  - b1_plain
+  - a3_evidence_contract
 
 evaluation:
   primary_metrics:

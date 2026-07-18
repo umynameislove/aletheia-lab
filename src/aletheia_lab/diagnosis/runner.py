@@ -1,39 +1,23 @@
-"""Diagnosis runner interfaces."""
+"""Public execution API for the P1 matched diagnosis pilot."""
 
-from __future__ import annotations
+from aletheia_lab.diagnosis.adapters import DeterministicMockAdapter, DiagnosisAdapter
+from aletheia_lab.diagnosis.pilot import (
+    DEFAULT_SETTINGS,
+    build_matched_requests,
+    run_p1_matched_pilot,
+    validate_matched_requests,
+    validate_p1_matched_pilot,
+)
+from aletheia_lab.diagnosis.schema import DiagnosisOutput, DiagnosisRunRecord
 
-from pydantic import BaseModel, Field
-
-from aletheia_lab.diagnosis.variants import DiagnosisVariant
-
-
-class DiagnosisOutput(BaseModel):
-    """Structured diagnosis output."""
-
-    case_id: str
-    variant: DiagnosisVariant
-    root_cause_hypothesis: str
-    supporting_evidence_ids: list[str] = Field(default_factory=list)
-    counterevidence_ids: list[str] = Field(default_factory=list)
-    missing_evidence: list[str] = Field(default_factory=list)
-    confidence: float = Field(ge=0.0, le=1.0)
-    abstention_if_needed: bool = False
-
-
-class DiagnosisRunner:
-    """Placeholder runner.
-
-    Replace this with concrete LLM/local-model integrations after the benchmark
-    and evaluator are stable.
-    """
-
-    def run(self, case_id: str, variant: DiagnosisVariant, failure_summary: str) -> DiagnosisOutput:
-        """Return a conservative placeholder diagnosis."""
-
-        return DiagnosisOutput(
-            case_id=case_id,
-            variant=variant,
-            root_cause_hypothesis=f"Insufficient evidence to diagnose: {failure_summary}",
-            confidence=0.0,
-            abstention_if_needed=True,
-        )
+__all__ = [
+    "DEFAULT_SETTINGS",
+    "DeterministicMockAdapter",
+    "DiagnosisAdapter",
+    "DiagnosisOutput",
+    "DiagnosisRunRecord",
+    "build_matched_requests",
+    "run_p1_matched_pilot",
+    "validate_matched_requests",
+    "validate_p1_matched_pilot",
+]
