@@ -1,0 +1,30 @@
+schema_version: p1-g6b-openai-config/1
+decision_status: frozen_before_external_results
+provider: openai
+api: chat_completions
+model_snapshot: gpt-4.1-2025-04-14
+sdk_version: 2.46.0
+
+settings:
+  temperature: 0.0
+  top_p: 1.0
+  seed: 17
+  max_output_tokens: 600
+  timeout_seconds: 60.0
+  max_attempts: 2
+
+capabilities:
+  structured_output: true
+  tools: false
+  web_search: false
+  retrieval: false
+
+pricing_usd_per_million_tokens:
+  input: 2.0
+  output: 8.0
+
+execution:
+  preflight_only: true
+  smoke_request_count: 8
+  full_request_count: 30
+  explicit_human_confirmation_required: true

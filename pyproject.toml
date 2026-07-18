@@ -32,7 +32,7 @@ dev = [
 ]
 llm = [
   "litellm>=1.40",
-  "openai>=1.40"
+  "openai==2.46.0"
 ]
 dashboard = [
   "plotly>=5.22",
