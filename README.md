@@ -142,6 +142,21 @@ PYTHONPATH=src python -m aletheia_lab benchmark validate-p1-pilot \
 The deterministic mock verifies contracts, persistence, retry behavior, and
 reproducibility. It is deliberately not an empirical model baseline.
 
+Freeze and audit the G6B external request plan without sending data to a
+provider:
+
+```bash
+PYTHONPATH=src python -m aletheia_lab benchmark preflight-p1-openai \
+  --store-dir experiments/p1/evidence-store \
+  --config configs/evaluation/p1_g6b_openai.yaml \
+  --output experiments/p1/outputs/g6b-openai-preflight.json
+```
+
+The preflight locks `gpt-4.1-2025-04-14`, proves 15 matched pairs / 30 requests,
+selects the eight-request smoke subset, scans the exact outbound payloads for
+secrets and evaluator metadata, and estimates the maximum cost. It does not
+construct an API client or authorize an external send.
+
 Run the complete local quality check:
 
 ```bash

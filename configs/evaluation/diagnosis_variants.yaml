@@ -17,6 +17,17 @@ shared_contract:
   raw_response_saved_before_parse: true
   silent_provider_or_model_switch: forbidden
 
+g6b_external_contract:
+  decision_status: frozen_before_external_results
+  provider: openai
+  api: chat_completions
+  model_snapshot: gpt-4.1-2025-04-14
+  sdk_version: 2.46.0
+  config_path: configs/evaluation/p1_g6b_openai.yaml
+  authorization_state: preflight_only_no_external_send
+  smoke_request_count: 8
+  full_request_count: 30
+
 variants:
   b1_plain:
     role: matched_plain_llm_baseline

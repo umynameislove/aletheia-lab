@@ -12,6 +12,11 @@ from aletheia_lab.baseline.loader import DatasetSchemaError
 from aletheia_lab.benchmark.case_validation import validate_p1_cases
 from aletheia_lab.benchmark.generator import GeneratorConfigError, generate_p1
 from aletheia_lab.diagnosis.adapters import DeterministicMockAdapter
+from aletheia_lab.diagnosis.g6b import (
+    build_openai_preflight,
+    load_openai_pilot_config,
+    write_openai_preflight,
+)
 from aletheia_lab.diagnosis.pilot import run_p1_matched_pilot, validate_p1_matched_pilot
 from aletheia_lab.evidence.collectors import EvidenceCollectionError
 from aletheia_lab.evidence.p1 import (
@@ -144,3 +149,31 @@ def validate_p1_pilot_cmd(
         raise typer.Exit(code=1) from exc
     console.print_json(json.dumps(manifest.model_dump(mode="json")))
     console.print("[green]P1 matched pilot validation PASS[/green]")
+
+
+@benchmark_app.command("preflight-p1-openai")
+def preflight_p1_openai_cmd(
+    store_dir: Path = typer.Option(Path("experiments/p1/evidence-store"), "--store-dir"),
+    config: Path = typer.Option(
+        Path("configs/evaluation/p1_g6b_openai.yaml"), "--config"
+    ),
+    output: Path = typer.Option(
+        Path("experiments/p1/outputs/g6b-openai-preflight.json"), "--output"
+    ),
+) -> None:
+    """Build and persist the complete G6B request plan without an external send."""
+
+    try:
+        frozen_config = load_openai_pilot_config(config)
+        report = build_openai_preflight(store_dir, frozen_config)
+        write_openai_preflight(report, output)
+    except (FileExistsError, FileNotFoundError, OSError, ValueError) as exc:
+        console.print(f"[red]FAIL[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    console.print_json(json.dumps(report.model_dump(mode="json")))
+    console.print(
+        "[green]G6B OpenAI preflight PASS[/green]: "
+        f"{report.matched_pair_count} matched pairs / {report.request_count} requests; "
+        f"eight-request smoke plan frozen; estimated maximum cost "
+        f"${report.estimated_max_cost_usd:.4f}. No external request was sent."
+    )

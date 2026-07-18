@@ -7,6 +7,13 @@ phiên bản theo [SemVer](https://semver.org/lang/vi/).
 ## [Unreleased]
 
 ### Added
+- P1-G6B external-pilot preflight: exact OpenAI
+  `gpt-4.1-2025-04-14` and `openai==2.46.0` lock, shared strict JSON response
+  schema, no-tools/web/retrieval capability boundary, secret-free outbound
+  payload hashing, 15-pair/30-request census, frozen eight-request smoke subset,
+  cost ceiling, fail-closed model/usage checks and CLI `preflight-p1-openai`.
+  G6B-1 performs no external request; smoke execution remains separately gated
+  by explicit human confirmation.
 - P1-G6A matched-pilot runtime: strict provider-agnostic request/output/attempt
   schemas; `B1` plain-text and `A3` structured-evidence renderers over the same
   hash-bound observable facts; frozen prompt, model identity, token/retry
