@@ -221,6 +221,28 @@ def test_each_overclaim_and_noisy_evidence_exploit_is_caught(
     assert noisy_result.secondary_comparison_used_as_support is True
 
 
+def test_neutral_secondary_comparison_is_not_required_as_positive_support(
+    evaluated_pilot: tuple[Path, Path, Path, Path]
+) -> None:
+    """Regression: ignoring the noisy item must not lower support coverage."""
+
+    cases, store, _, _ = evaluated_pilot
+    bundle, case = _bundle_and_case(cases, store, "noisy", eligible=True)
+    decisive_ids = tuple(
+        item.evidence_id
+        for item in bundle.diagnosis_visible_items
+        if "secondary_distribution_comparison" not in item.evidence_roles
+    )
+    output = _output(bundle, support=decisive_ids)
+
+    support = evaluate_support(output, bundle)
+    behavior = evaluate_behavior(output, bundle, case)
+    assert support.label == "fully_supported"
+    assert "secondary_distribution_comparison" not in support.required_roles
+    assert behavior.secondary_comparison_used_as_support is False
+    assert behavior.rubric_compliant is True
+
+
 def test_control_cannot_be_promoted_to_a_failure_cause(
     evaluated_pilot: tuple[Path, Path, Path, Path]
 ) -> None:

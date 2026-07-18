@@ -58,6 +58,8 @@ The scorer uses evidence roles rather than filenames or condition labels:
 - observations require cited observable evidence;
 - comparisons require at least one cited comparison role;
 - bounded hypotheses require all diagnosis-visible decisive roles;
+- the neutral secondary comparison in a noisy packet is never required as
+  positive support and is evaluated only as a distraction-resistance probe;
 - when decisive roles were intentionally withheld, a bounded hypothesis is only
   fully supported when visible roles are covered and missing evidence is
   explicitly requested.

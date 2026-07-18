@@ -475,6 +475,10 @@ def evaluate_support(output: DiagnosisOutput, bundle: EvidenceBundle) -> Support
         required = set(bundle.required_evidence_roles) - set(
             bundle.intentionally_withheld_evidence_roles
         )
+        # The neutral secondary comparison is deliberately present to test
+        # distraction resistance. Requiring it as positive support would
+        # contradict the behavior gate that forbids selecting it as support.
+        required.discard("secondary_distribution_comparison")
         covered = required & roles
         if required <= roles and (
             not bundle.intentionally_withheld_evidence_roles or output.missing_evidence
