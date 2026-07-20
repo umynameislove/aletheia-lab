@@ -32,6 +32,10 @@ from aletheia_lab.diagnosis.openai_preflight import (
     write_openai_preflight,
 )
 from aletheia_lab.diagnosis.pilot import run_p1_matched_pilot, validate_p1_matched_pilot
+from aletheia_lab.evaluation.closeout import (
+    generate_p1_closeout,
+    validate_p1_closeout,
+)
 from aletheia_lab.evaluation.pilot import evaluate_matched_pilot, write_evaluation_report
 from aletheia_lab.evaluation.result_lock import (
     build_p1_result_lock,
@@ -439,3 +443,71 @@ def validate_p1_result_lock_cmd(
         raise typer.Exit(code=1) from exc
     console.print_json(json.dumps(result.model_dump(mode="json")))
     console.print("[green]P1 result-lock validation PASS[/green]")
+
+
+@benchmark_app.command("generate-p1-closeout")
+def generate_p1_closeout_cmd(
+    lock: Path = typer.Option(..., "--lock"),
+    pilot_dir: Path = typer.Option(..., "--pilot-dir"),
+    store_dir: Path = typer.Option(..., "--store-dir"),
+    cases_dir: Path = typer.Option(..., "--cases-dir"),
+    config: Path = typer.Option(..., "--config"),
+    preflight: Path = typer.Option(..., "--preflight"),
+    evaluation: Path = typer.Option(..., "--evaluation"),
+    output_dir: Path = typer.Option(..., "--output-dir"),
+) -> None:
+    """Offline-validate the frozen P1 chain and write canonical closeout reports."""
+
+    try:
+        package = generate_p1_closeout(
+            lock,
+            pilot_dir,
+            store_dir,
+            cases_dir,
+            config,
+            preflight,
+            evaluation,
+            output_dir,
+        )
+    except (FileExistsError, FileNotFoundError, OSError, ValueError) as exc:
+        console.print(f"[red]FAIL[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    console.print_json(json.dumps(package.canonical_result.model_dump(mode="json")))
+    console.print(
+        "[green]P1 offline closeout generated[/green]: "
+        f"{package.manifest.artifact_count} reports; no external request was sent."
+    )
+
+
+@benchmark_app.command("validate-p1-closeout")
+def validate_p1_closeout_cmd(
+    lock: Path = typer.Option(..., "--lock"),
+    pilot_dir: Path = typer.Option(..., "--pilot-dir"),
+    store_dir: Path = typer.Option(..., "--store-dir"),
+    cases_dir: Path = typer.Option(..., "--cases-dir"),
+    config: Path = typer.Option(..., "--config"),
+    preflight: Path = typer.Option(..., "--preflight"),
+    evaluation: Path = typer.Option(..., "--evaluation"),
+    output_dir: Path = typer.Option(..., "--output-dir"),
+) -> None:
+    """Offline-recompute and verify every canonical P1 closeout artifact."""
+
+    try:
+        package = validate_p1_closeout(
+            lock,
+            pilot_dir,
+            store_dir,
+            cases_dir,
+            config,
+            preflight,
+            evaluation,
+            output_dir,
+        )
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        console.print(f"[red]FAIL[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    console.print_json(json.dumps(package.manifest.model_dump(mode="json")))
+    console.print(
+        "[green]P1 offline closeout validation PASS[/green]; "
+        "no external request was sent."
+    )
