@@ -1,8 +1,5 @@
-# CODEOWNERS — tự động gán reviewer theo vùng code.
-# Thay <github-user> bằng username thật của thành viên/leader.
-
-# Mặc định: leader review toàn repo
-*                       @umynameislove
+# Default repository owner
+*                                @umynameislove
 
 # Research kernel & benchmark
 /src/aletheia_lab/benchmark/    @umynameislove
@@ -10,6 +7,8 @@
 /src/aletheia_lab/diagnosis/    @umynameislove
 /src/aletheia_lab/evaluation/   @umynameislove
 
-# Tài liệu nghiên cứu & tracking
-/docs/          @umynameislove
-/tracking/      @umynameislove
+# Quality, configuration, documentation, and automation
+/tests/                         @umynameislove
+/configs/                       @umynameislove
+/docs/                          @umynameislove
+/.github/                       @umynameislove
