@@ -1,8 +1,21 @@
 """Tests for the public-repository hygiene boundary."""
 
+import importlib.util
 from pathlib import Path
+from types import ModuleType
 
-from scripts.check_repo_hygiene import check
+
+def _load_hygiene_module() -> ModuleType:
+    script = Path(__file__).resolve().parents[2] / "scripts" / "check_repo_hygiene.py"
+    spec = importlib.util.spec_from_file_location("aletheia_repo_hygiene", script)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load repository-hygiene script: {script}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+check = _load_hygiene_module().check
 
 
 def test_filesystem_scan_rejects_tracking_and_reports_cache_once(tmp_path: Path) -> None:
