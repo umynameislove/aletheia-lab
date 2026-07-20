@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from collections import Counter
 from pathlib import Path
 
@@ -31,7 +32,14 @@ from aletheia_lab.diagnosis.schema import (
     ProviderResponse,
     UsageRecord,
 )
-from aletheia_lab.evaluation.pilot import evaluate_matched_pilot
+from aletheia_lab.evaluation.pilot import evaluate_matched_pilot, write_evaluation_report
+from aletheia_lab.evaluation.result_lock import (
+    ArtifactDigest,
+    P1ResultLock,
+    build_p1_result_lock,
+    validate_p1_result_lock,
+    write_p1_result_lock,
+)
 from aletheia_lab.evidence.p1 import generate_p1_evidence_store
 from aletheia_lab.evidence.schema import canonical_json
 
@@ -343,3 +351,149 @@ def test_tampered_full_authorization_and_artifact_fail_closed(
     raw.write_text("tampered", encoding="utf-8")
     with pytest.raises(ValueError, match="raw response hash mismatch"):
         validate_openai_full(output, store, config, preflight)
+
+
+def test_result_lock_binds_full_artifacts_evaluation_and_operational_totals(
+    full_inputs: tuple[Path, Path, Path], tmp_path: Path
+) -> None:
+    cases, store, preflight = full_inputs
+    config, _, digest, ceiling = _confirmations(store)
+    output = tmp_path / "full"
+    run_openai_full(
+        store,
+        config,
+        preflight,
+        output,
+        confirmed_preflight_sha256=digest,
+        confirmed_estimated_full_retry_ceiling_usd=ceiling,
+        adapter=_FullAdapter(config.provider_identity),
+    )
+    evaluation = tmp_path / "evaluation.json"
+    write_evaluation_report(
+        evaluate_matched_pilot(
+            output,
+            store,
+            cases,
+            openai_config_path=CONFIG_PATH,
+            preflight_path=preflight,
+        ),
+        evaluation,
+    )
+    lock_path = tmp_path / "result-lock.json"
+    execution_sha = "a" * 40
+    evaluation_sha = "b" * 40
+    lock = build_p1_result_lock(
+        output,
+        store,
+        cases,
+        CONFIG_PATH,
+        preflight,
+        evaluation,
+        execution_commit_sha=execution_sha,
+        evaluation_commit_sha=evaluation_sha,
+    )
+    write_p1_result_lock(lock, lock_path)
+
+    assert validate_p1_result_lock(
+        lock_path, output, store, cases, CONFIG_PATH, preflight, evaluation
+    ) == lock
+    assert lock.operational_totals.run_count == 30
+    assert lock.operational_totals.attempt_count == 30
+    assert lock.operational_totals.retry_count == 0
+    assert lock.operational_totals.input_tokens == 600
+    assert lock.operational_totals.output_tokens == 300
+    assert lock.operational_totals.estimated_cost_usd == pytest.approx(0.0036)
+    assert len(lock.pilot_artifacts) == 92
+    with pytest.raises(FileExistsError):
+        write_p1_result_lock(lock, lock_path)
+
+    lock_payload = json.loads(lock_path.read_text("utf-8"))
+    lock_payload["operational_totals"]["input_tokens"] += 1
+    lock_path.write_text(json.dumps(lock_payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="differs from independently recomputed"):
+        validate_p1_result_lock(
+            lock_path, output, store, cases, CONFIG_PATH, preflight, evaluation
+        )
+
+    write_p1_result_lock(lock, tmp_path / "clean-lock.json")
+    stale_evaluation = tmp_path / "stale-evaluation.json"
+    stale_payload = json.loads(evaluation.read_text("utf-8"))
+    stale_payload["diagnosis_evaluations"][0]["correctness"]["rationale"] = "stale"
+    stale_evaluation.write_text(json.dumps(stale_payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="independent recomputation"):
+        build_p1_result_lock(
+            output,
+            store,
+            cases,
+            CONFIG_PATH,
+            preflight,
+            stale_evaluation,
+            execution_commit_sha=execution_sha,
+            evaluation_commit_sha=evaluation_sha,
+        )
+
+    tampered_output = tmp_path / "tampered-full"
+    shutil.copytree(output, tampered_output)
+    raw = next((tampered_output / "raw").rglob("*.txt"))
+    raw.write_text("tampered", encoding="utf-8")
+    with pytest.raises(ValueError, match="raw response hash mismatch"):
+        build_p1_result_lock(
+            tampered_output,
+            store,
+            cases,
+            CONFIG_PATH,
+            preflight,
+            evaluation,
+            execution_commit_sha=execution_sha,
+            evaluation_commit_sha=evaluation_sha,
+        )
+
+
+def test_result_lock_schema_rejects_bad_commit_and_artifact_paths() -> None:
+    with pytest.raises(ValueError):
+        ArtifactDigest(relative_path="../escape.json", sha256="0" * 64)
+    with pytest.raises(ValueError):
+        P1ResultLock.model_validate(
+            {
+                "schema_version": "p1-result-lock/1",
+                "execution_commit_sha": "short",
+                "evaluation_commit_sha": "b" * 40,
+                "provider_identity": {
+                    "provider": "openai",
+                    "model": "gpt-4.1-2025-04-14",
+                    "version": "2025-04-14",
+                },
+                "source_cases_tree_sha256": "0" * 64,
+                "source_evidence_store_sha256": "0" * 64,
+                "config_sha256": "0" * 64,
+                "config_file_sha256": "0" * 64,
+                "preflight_sha256": "0" * 64,
+                "preflight_file_sha256": "0" * 64,
+                "pilot_manifest_sha256": "0" * 64,
+                "evaluation_report_sha256": "0" * 64,
+                "pilot_artifact_set_sha256": "0" * 64,
+                "pilot_artifacts": [],
+                "operational_totals": {
+                    "run_count": 0,
+                    "success_count": 0,
+                    "unresolved_count": 0,
+                    "attempt_count": 0,
+                    "retry_count": 0,
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "estimated_cost_usd": 0.0,
+                    "latency_ms": 0.0,
+                },
+                "evaluation_summary": {
+                    "run_count": 0,
+                    "evaluable_count": 0,
+                    "correctness_counts": {},
+                    "support_counts": {},
+                    "behavior_compliant_count": 0,
+                    "evidence_aligned_count": 0,
+                    "complete_paired_family_count": 0,
+                    "missing_key_sensitive_count": 0,
+                    "noisy_robust_count": 0,
+                },
+            }
+        )

@@ -33,6 +33,11 @@ from aletheia_lab.diagnosis.openai_preflight import (
 )
 from aletheia_lab.diagnosis.pilot import run_p1_matched_pilot, validate_p1_matched_pilot
 from aletheia_lab.evaluation.pilot import evaluate_matched_pilot, write_evaluation_report
+from aletheia_lab.evaluation.result_lock import (
+    build_p1_result_lock,
+    validate_p1_result_lock,
+    write_p1_result_lock,
+)
 from aletheia_lab.evidence.collectors import EvidenceCollectionError
 from aletheia_lab.evidence.p1 import (
     generate_p1_evidence_store,
@@ -373,3 +378,64 @@ def evaluate_p1_pilot_cmd(
         "[green]Pilot evaluation written[/green]. "
         "The locked lexical correctness score still requires final human semantic review."
     )
+
+
+@benchmark_app.command("freeze-p1-result")
+def freeze_p1_result_cmd(
+    pilot_dir: Path = typer.Option(..., "--pilot-dir"),
+    store_dir: Path = typer.Option(..., "--store-dir"),
+    cases_dir: Path = typer.Option(..., "--cases-dir"),
+    config: Path = typer.Option(..., "--config"),
+    preflight: Path = typer.Option(..., "--preflight"),
+    evaluation: Path = typer.Option(..., "--evaluation"),
+    output: Path = typer.Option(..., "--output"),
+    execution_commit_sha: str = typer.Option(..., "--execution-commit-sha"),
+    evaluation_commit_sha: str = typer.Option(..., "--evaluation-commit-sha"),
+) -> None:
+    """Freeze hashes, operational totals and evaluation for one full P1 result."""
+
+    try:
+        lock = build_p1_result_lock(
+            pilot_dir,
+            store_dir,
+            cases_dir,
+            config,
+            preflight,
+            evaluation,
+            execution_commit_sha=execution_commit_sha,
+            evaluation_commit_sha=evaluation_commit_sha,
+        )
+        write_p1_result_lock(lock, output)
+    except (FileExistsError, FileNotFoundError, OSError, ValueError) as exc:
+        console.print(f"[red]FAIL[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    console.print_json(json.dumps(lock.model_dump(mode="json")))
+    console.print(
+        "[green]P1 canonical result frozen[/green]: "
+        f"{lock.operational_totals.run_count} runs, "
+        f"{lock.operational_totals.retry_count} retries, "
+        f"${lock.operational_totals.estimated_cost_usd:.6f}."
+    )
+
+
+@benchmark_app.command("validate-p1-result-lock")
+def validate_p1_result_lock_cmd(
+    lock: Path = typer.Option(..., "--lock"),
+    pilot_dir: Path = typer.Option(..., "--pilot-dir"),
+    store_dir: Path = typer.Option(..., "--store-dir"),
+    cases_dir: Path = typer.Option(..., "--cases-dir"),
+    config: Path = typer.Option(..., "--config"),
+    preflight: Path = typer.Option(..., "--preflight"),
+    evaluation: Path = typer.Option(..., "--evaluation"),
+) -> None:
+    """Recompute and verify every field in a frozen P1 result lock."""
+
+    try:
+        result = validate_p1_result_lock(
+            lock, pilot_dir, store_dir, cases_dir, config, preflight, evaluation
+        )
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        console.print(f"[red]FAIL[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    console.print_json(json.dumps(result.model_dump(mode="json")))
+    console.print("[green]P1 result-lock validation PASS[/green]")
