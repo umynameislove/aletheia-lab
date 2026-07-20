@@ -63,9 +63,14 @@ Aletheia currently provides:
   immutable manifests, and an offline deterministic adapter;
 - an explicitly authorized eight-request OpenAI smoke runner, cryptographically
   bound to a recomputed no-network preflight and exact model snapshot;
+- an explicitly cost-confirmed 30-request external runner with immutable raw,
+  parsed, retry, usage, and latency records;
 - a deterministic evaluator that reports cause correctness, citation validity,
   evidence-role support, abstention/overclaim behavior, and paired-condition
   sensitivity as separate results;
+- a deterministic result lock and offline closeout generator that bind the
+  source cases, evidence store, preflight, provider artifacts, evaluation,
+  operational ledger, canonical tables, and machine-scored error draft;
 - CLI commands for data preparation, baseline training, verification, and
   contract validation;
 - automated linting, repository-hygiene checks, and tests in CI.
@@ -229,6 +234,53 @@ evaluator identifies and revalidates its smoke or full execution authorization.
 The deterministic cause
 matcher is an auditable P1 baseline and explicitly requires final human semantic
 review; it is not presented as a general-purpose semantic judge.
+
+After evaluating a complete external matrix, freeze its exact source and result
+chain. The two commit arguments record which code produced the provider run and
+which code produced the evaluation; use full 40-character Git SHAs:
+
+```bash
+PYTHONPATH=src python -m aletheia_lab benchmark freeze-p1-result \
+  --pilot-dir experiments/p1/outputs/openai-full \
+  --store-dir experiments/p1/evidence-store \
+  --cases-dir experiments/p1/cases \
+  --config configs/evaluation/openai_pilot.yaml \
+  --preflight experiments/p1/outputs/openai-preflight.json \
+  --evaluation experiments/p1/outputs/openai-full-evaluation.json \
+  --output experiments/p1/outputs/openai-full-result-lock.json \
+  --execution-commit-sha FULL_EXECUTION_COMMIT_SHA \
+  --evaluation-commit-sha FULL_EVALUATION_COMMIT_SHA
+```
+
+Generate and subsequently revalidate canonical result, operational, and
+machine-scored error reports entirely offline:
+
+```bash
+PYTHONPATH=src python -m aletheia_lab benchmark generate-p1-closeout \
+  --lock experiments/p1/outputs/openai-full-result-lock.json \
+  --pilot-dir experiments/p1/outputs/openai-full \
+  --store-dir experiments/p1/evidence-store \
+  --cases-dir experiments/p1/cases \
+  --config configs/evaluation/openai_pilot.yaml \
+  --preflight experiments/p1/outputs/openai-preflight.json \
+  --evaluation experiments/p1/outputs/openai-full-evaluation.json \
+  --output-dir experiments/p1/outputs/closeout
+
+PYTHONPATH=src python -m aletheia_lab benchmark validate-p1-closeout \
+  --lock experiments/p1/outputs/openai-full-result-lock.json \
+  --pilot-dir experiments/p1/outputs/openai-full \
+  --store-dir experiments/p1/evidence-store \
+  --cases-dir experiments/p1/cases \
+  --config configs/evaluation/openai_pilot.yaml \
+  --preflight experiments/p1/outputs/openai-preflight.json \
+  --evaluation experiments/p1/outputs/openai-full-evaluation.json \
+  --output-dir experiments/p1/outputs/closeout
+```
+
+These closeout commands never construct a provider client or read an API key.
+They fail closed for stale, missing, extra, symlinked, or byte-modified source
+and report artifacts. The error analysis remains explicitly machine-scored and
+pending independent human semantic review.
 
 Run the complete local quality check:
 

@@ -106,3 +106,33 @@ The preflight cost values are conservative planning estimates derived from the
 frozen request payloads, output-token caps, retry count, and recorded prices.
 They are not provider billing guarantees; final reports use provider-returned
 usage for observed cost and retain every paid attempt, including failures.
+
+## Canonical result lock and offline closeout
+
+A complete external result can be frozen only after the full execution and its
+evaluation both pass independent recomputation. The result lock binds:
+
+- the source case-tree and evidence-store digests;
+- the exact config and preflight;
+- the provider/model snapshot and execution/evaluation commit identifiers;
+- every authorization, manifest, run, raw, and parsed artifact;
+- provider-returned token, cost, latency, attempt, retry, and unresolved totals;
+- the canonical evaluation report and its derived summary.
+
+The lock provides internal tamper evidence and source binding. It is not a
+provider signature or an external transparency proof.
+
+Offline closeout reporting validates that complete chain before deriving three
+separate products: a canonical machine-scored result, an operational/cost
+report, and a machine-scored error-analysis draft. JSON and Markdown forms are
+written immutably and bound by a closeout manifest. Revalidation independently
+derives every byte and rejects stale, missing, additional, symlinked, or altered
+files.
+
+The closeout path does not construct a provider adapter, read an API key, or
+send a network request. It cannot recreate the original provider response. A
+new external execution must use a new versioned output directory and cannot
+replace an already frozen result.
+
+Machine and human judgments remain distinct artifacts. Human disagreement is
+recorded and adjudicated rather than used to rewrite the locked machine report.
