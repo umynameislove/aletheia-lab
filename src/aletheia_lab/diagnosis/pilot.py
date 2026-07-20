@@ -191,7 +191,7 @@ def validate_source_binding(
             raise ValueError("pilot diagnosis view differs from its source evidence projection")
 
 
-def _execute_request(
+def execute_diagnosis_request(
     request: DiagnosisRequest,
     adapter: DiagnosisAdapter,
     stage: Path,
@@ -323,7 +323,7 @@ def run_p1_matched_pilot(
     try:
         entries: list[PilotRunEntry] = []
         for request in requests:
-            record = _execute_request(request, adapter, stage)
+            record = execute_diagnosis_request(request, adapter, stage)
             relative_path = f"runs/{request.request_id}.json"
             record_sha = _write_bytes(
                 stage, relative_path, _json_bytes(record.model_dump(mode="json"))

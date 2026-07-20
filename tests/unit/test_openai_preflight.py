@@ -21,6 +21,7 @@ from aletheia_lab.diagnosis.openai_preflight import (
     OpenAIPilotConfig,
     build_openai_preflight,
     load_openai_pilot_config,
+    load_openai_preflight,
     openai_outbound_payload,
     write_openai_preflight,
 )
@@ -104,6 +105,21 @@ def test_preflight_proves_complete_matched_plan_without_network(
     assert report.reserved_output_tokens == 30 * 600
     assert report.estimated_input_tokens > 0
     assert 0.0 < report.estimated_max_cost_usd < 1.0
+    assert report.cost_estimates is not None
+    costs = report.cost_estimates
+    assert costs.smoke_one_attempt.request_attempt_count == 8
+    assert costs.smoke_one_attempt.reserved_output_tokens == 8 * 600
+    assert costs.smoke_retry_ceiling.request_attempt_count == 16
+    assert costs.smoke_retry_ceiling.estimated_cost_usd == pytest.approx(
+        costs.smoke_one_attempt.estimated_cost_usd * 2
+    )
+    assert costs.full_one_attempt.request_attempt_count == 30
+    assert costs.full_one_attempt.reserved_output_tokens == 30 * 600
+    assert costs.full_retry_ceiling.request_attempt_count == 60
+    assert costs.full_retry_ceiling.estimated_cost_usd == pytest.approx(
+        costs.full_one_attempt.estimated_cost_usd * 2
+    )
+    assert report.estimated_max_cost_usd == costs.full_one_attempt.estimated_cost_usd
     assert all(report.checks.values())
 
 
@@ -122,6 +138,18 @@ def test_preflight_report_is_secret_free_immutable_and_non_overwriting(
     assert "evidence_condition" not in serialized
     with pytest.raises(FileExistsError, match="refusing to replace"):
         write_openai_preflight(report, output)
+
+
+def test_preflight_loader_rejects_duplicate_json_keys(
+    p1_store: Path, tmp_path: Path
+) -> None:
+    report = build_openai_preflight(p1_store, load_openai_pilot_config(CONFIG_PATH))
+    raw = json.dumps(report.model_dump(mode="json"))
+    duplicate = raw[:-1] + ',"passed":true}'
+    path = tmp_path / "duplicate.json"
+    path.write_text(duplicate, encoding="utf-8")
+    with pytest.raises(ValueError, match="duplicate JSON key"):
+        load_openai_preflight(path)
 
 
 class _CapturingCompletions:

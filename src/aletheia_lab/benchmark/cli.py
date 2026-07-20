@@ -11,13 +11,33 @@ from rich.console import Console
 from aletheia_lab.baseline.loader import DatasetSchemaError
 from aletheia_lab.benchmark.case_validation import validate_p1_cases
 from aletheia_lab.benchmark.generator import GeneratorConfigError, generate_p1
-from aletheia_lab.diagnosis.adapters import DeterministicMockAdapter
+from aletheia_lab.diagnosis.adapters import (
+    AdapterError,
+    DeterministicMockAdapter,
+    OpenAIChatCompletionsAdapter,
+)
+from aletheia_lab.diagnosis.external_pilot import (
+    authorize_openai_full,
+    authorize_openai_smoke,
+    run_openai_full,
+    run_openai_smoke,
+    validate_openai_full,
+    validate_openai_smoke,
+)
 from aletheia_lab.diagnosis.openai_preflight import (
     build_openai_preflight,
     load_openai_pilot_config,
+    load_openai_preflight,
+    openai_preflight_sha256,
     write_openai_preflight,
 )
 from aletheia_lab.diagnosis.pilot import run_p1_matched_pilot, validate_p1_matched_pilot
+from aletheia_lab.evaluation.pilot import evaluate_matched_pilot, write_evaluation_report
+from aletheia_lab.evaluation.result_lock import (
+    build_p1_result_lock,
+    validate_p1_result_lock,
+    write_p1_result_lock,
+)
 from aletheia_lab.evidence.collectors import EvidenceCollectionError
 from aletheia_lab.evidence.p1 import (
     generate_p1_evidence_store,
@@ -171,9 +191,251 @@ def preflight_p1_openai_cmd(
         console.print(f"[red]FAIL[/red] {exc}")
         raise typer.Exit(code=1) from exc
     console.print_json(json.dumps(report.model_dump(mode="json")))
+    if report.cost_estimates is None:  # pragma: no cover - newly built reports always include it
+        raise typer.Exit(code=1)
+    costs = report.cost_estimates
     console.print(
         "[green]OpenAI preflight PASS[/green]: "
         f"{report.matched_pair_count} matched pairs / {report.request_count} requests; "
-        f"eight-request smoke plan frozen; estimated maximum cost "
-        f"${report.estimated_max_cost_usd:.4f}. No external request was sent."
+        "eight-request smoke plan frozen. Estimated costs: "
+        f"smoke one attempt ${costs.smoke_one_attempt.estimated_cost_usd:.4f}; "
+        f"smoke retry ceiling ${costs.smoke_retry_ceiling.estimated_cost_usd:.4f}; "
+        f"full one attempt ${costs.full_one_attempt.estimated_cost_usd:.4f}; "
+        f"full retry ceiling ${costs.full_retry_ceiling.estimated_cost_usd:.4f}. "
+        "No external request was sent. "
+        f"Confirmation SHA-256: {openai_preflight_sha256(report)}"
     )
+
+
+@benchmark_app.command("run-p1-openai-smoke")
+def run_p1_openai_smoke_cmd(
+    store_dir: Path = typer.Option(Path("experiments/p1/evidence-store"), "--store-dir"),
+    config: Path = typer.Option(Path("configs/evaluation/openai_pilot.yaml"), "--config"),
+    preflight: Path = typer.Option(
+        Path("experiments/p1/outputs/openai-preflight.json"), "--preflight"
+    ),
+    output_dir: Path = typer.Option(
+        Path("experiments/p1/outputs/openai-smoke"), "--output-dir"
+    ),
+    confirm_preflight_sha256: str = typer.Option(..., "--confirm-preflight-sha256"),
+) -> None:
+    """Run exactly eight externally billed requests after exact SHA confirmation."""
+
+    try:
+        frozen_config = load_openai_pilot_config(config)
+        persisted = load_openai_preflight(preflight)
+        # Complete all no-network authorization checks before even reading the API key.
+        authorize_openai_smoke(
+            store_dir,
+            frozen_config,
+            persisted,
+            confirm_preflight_sha256,
+        )
+        adapter = OpenAIChatCompletionsAdapter.from_environment()
+        manifest = run_openai_smoke(
+            store_dir,
+            frozen_config,
+            preflight,
+            output_dir,
+            confirmed_preflight_sha256=confirm_preflight_sha256,
+            adapter=adapter,
+        )
+    except (AdapterError, FileExistsError, FileNotFoundError, OSError, ValueError) as exc:
+        console.print(f"[red]FAIL[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    console.print_json(json.dumps(manifest.model_dump(mode="json")))
+    console.print(
+        "[green]OpenAI smoke execution recorded[/green]: "
+        f"{manifest.run_count} requests, {manifest.success_count} parsed, "
+        f"{manifest.unresolved_count} unresolved."
+    )
+
+
+@benchmark_app.command("validate-p1-openai-smoke")
+def validate_p1_openai_smoke_cmd(
+    output_dir: Path = typer.Option(
+        Path("experiments/p1/outputs/openai-smoke"), "--output-dir"
+    ),
+    store_dir: Path = typer.Option(Path("experiments/p1/evidence-store"), "--store-dir"),
+    config: Path = typer.Option(Path("configs/evaluation/openai_pilot.yaml"), "--config"),
+    preflight: Path = typer.Option(
+        Path("experiments/p1/outputs/openai-preflight.json"), "--preflight"
+    ),
+) -> None:
+    """Verify external smoke authorization, source binding and immutable artifacts."""
+
+    try:
+        manifest = validate_openai_smoke(
+            output_dir, store_dir, load_openai_pilot_config(config), preflight
+        )
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        console.print(f"[red]FAIL[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    console.print_json(json.dumps(manifest.model_dump(mode="json")))
+    console.print("[green]OpenAI smoke validation PASS[/green]")
+
+
+@benchmark_app.command("run-p1-openai-full")
+def run_p1_openai_full_cmd(
+    store_dir: Path = typer.Option(Path("experiments/p1/evidence-store"), "--store-dir"),
+    config: Path = typer.Option(Path("configs/evaluation/openai_pilot.yaml"), "--config"),
+    preflight: Path = typer.Option(
+        Path("experiments/p1/outputs/openai-preflight.json"), "--preflight"
+    ),
+    output_dir: Path = typer.Option(
+        Path("experiments/p1/outputs/openai-full"), "--output-dir"
+    ),
+    confirm_preflight_sha256: str = typer.Option(..., "--confirm-preflight-sha256"),
+    confirm_estimated_full_retry_ceiling_usd: float = typer.Option(
+        ..., "--confirm-estimated-full-retry-ceiling-usd"
+    ),
+) -> None:
+    """Run all 30 billed requests after exact plan and cost confirmation."""
+
+    try:
+        frozen_config = load_openai_pilot_config(config)
+        persisted = load_openai_preflight(preflight)
+        # Finish every no-network gate before the API key is read.
+        authorize_openai_full(
+            store_dir,
+            frozen_config,
+            persisted,
+            confirm_preflight_sha256,
+            confirm_estimated_full_retry_ceiling_usd,
+        )
+        adapter = OpenAIChatCompletionsAdapter.from_environment()
+        manifest = run_openai_full(
+            store_dir,
+            frozen_config,
+            preflight,
+            output_dir,
+            confirmed_preflight_sha256=confirm_preflight_sha256,
+            confirmed_estimated_full_retry_ceiling_usd=(
+                confirm_estimated_full_retry_ceiling_usd
+            ),
+            adapter=adapter,
+        )
+    except (AdapterError, FileExistsError, FileNotFoundError, OSError, ValueError) as exc:
+        console.print(f"[red]FAIL[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    console.print_json(json.dumps(manifest.model_dump(mode="json")))
+    console.print(
+        "[green]OpenAI full execution recorded[/green]: "
+        f"{manifest.run_count} requests, {manifest.success_count} parsed, "
+        f"{manifest.unresolved_count} unresolved."
+    )
+
+
+@benchmark_app.command("validate-p1-openai-full")
+def validate_p1_openai_full_cmd(
+    output_dir: Path = typer.Option(
+        Path("experiments/p1/outputs/openai-full"), "--output-dir"
+    ),
+    store_dir: Path = typer.Option(Path("experiments/p1/evidence-store"), "--store-dir"),
+    config: Path = typer.Option(Path("configs/evaluation/openai_pilot.yaml"), "--config"),
+    preflight: Path = typer.Option(
+        Path("experiments/p1/outputs/openai-preflight.json"), "--preflight"
+    ),
+) -> None:
+    """Verify full authorization, 30-request census and immutable artifacts."""
+
+    try:
+        manifest = validate_openai_full(
+            output_dir, store_dir, load_openai_pilot_config(config), preflight
+        )
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        console.print(f"[red]FAIL[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    console.print_json(json.dumps(manifest.model_dump(mode="json")))
+    console.print("[green]OpenAI full validation PASS[/green]")
+
+
+@benchmark_app.command("evaluate-p1-pilot")
+def evaluate_p1_pilot_cmd(
+    pilot_dir: Path = typer.Option(..., "--pilot-dir"),
+    store_dir: Path = typer.Option(Path("experiments/p1/evidence-store"), "--store-dir"),
+    cases_dir: Path = typer.Option(Path("experiments/p1/cases"), "--cases-dir"),
+    output: Path = typer.Option(..., "--output"),
+    openai_config: Path | None = typer.Option(None, "--openai-config"),
+    preflight: Path | None = typer.Option(None, "--preflight"),
+) -> None:
+    """Score correctness, evidence support, behavior and paired sensitivity."""
+
+    try:
+        report = evaluate_matched_pilot(
+            pilot_dir,
+            store_dir,
+            cases_dir,
+            openai_config_path=openai_config,
+            preflight_path=preflight,
+        )
+        write_evaluation_report(report, output)
+    except (FileExistsError, FileNotFoundError, OSError, ValueError) as exc:
+        console.print(f"[red]FAIL[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    console.print_json(json.dumps(report.summary.model_dump(mode="json")))
+    console.print(
+        "[green]Pilot evaluation written[/green]. "
+        "The locked lexical correctness score still requires final human semantic review."
+    )
+
+
+@benchmark_app.command("freeze-p1-result")
+def freeze_p1_result_cmd(
+    pilot_dir: Path = typer.Option(..., "--pilot-dir"),
+    store_dir: Path = typer.Option(..., "--store-dir"),
+    cases_dir: Path = typer.Option(..., "--cases-dir"),
+    config: Path = typer.Option(..., "--config"),
+    preflight: Path = typer.Option(..., "--preflight"),
+    evaluation: Path = typer.Option(..., "--evaluation"),
+    output: Path = typer.Option(..., "--output"),
+    execution_commit_sha: str = typer.Option(..., "--execution-commit-sha"),
+    evaluation_commit_sha: str = typer.Option(..., "--evaluation-commit-sha"),
+) -> None:
+    """Freeze hashes, operational totals and evaluation for one full P1 result."""
+
+    try:
+        lock = build_p1_result_lock(
+            pilot_dir,
+            store_dir,
+            cases_dir,
+            config,
+            preflight,
+            evaluation,
+            execution_commit_sha=execution_commit_sha,
+            evaluation_commit_sha=evaluation_commit_sha,
+        )
+        write_p1_result_lock(lock, output)
+    except (FileExistsError, FileNotFoundError, OSError, ValueError) as exc:
+        console.print(f"[red]FAIL[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    console.print_json(json.dumps(lock.model_dump(mode="json")))
+    console.print(
+        "[green]P1 canonical result frozen[/green]: "
+        f"{lock.operational_totals.run_count} runs, "
+        f"{lock.operational_totals.retry_count} retries, "
+        f"${lock.operational_totals.estimated_cost_usd:.6f}."
+    )
+
+
+@benchmark_app.command("validate-p1-result-lock")
+def validate_p1_result_lock_cmd(
+    lock: Path = typer.Option(..., "--lock"),
+    pilot_dir: Path = typer.Option(..., "--pilot-dir"),
+    store_dir: Path = typer.Option(..., "--store-dir"),
+    cases_dir: Path = typer.Option(..., "--cases-dir"),
+    config: Path = typer.Option(..., "--config"),
+    preflight: Path = typer.Option(..., "--preflight"),
+    evaluation: Path = typer.Option(..., "--evaluation"),
+) -> None:
+    """Recompute and verify every field in a frozen P1 result lock."""
+
+    try:
+        result = validate_p1_result_lock(
+            lock, pilot_dir, store_dir, cases_dir, config, preflight, evaluation
+        )
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        console.print(f"[red]FAIL[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    console.print_json(json.dumps(result.model_dump(mode="json")))
+    console.print("[green]P1 result-lock validation PASS[/green]")
