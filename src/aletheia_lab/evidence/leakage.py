@@ -5,7 +5,6 @@ from __future__ import annotations
 import re
 from collections import Counter, defaultdict
 from collections.abc import Iterable
-from datetime import datetime
 from typing import Final, Literal
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
@@ -34,8 +33,8 @@ BLIND_REVIEW_PACKET_SCHEMA_VERSION: Final[Literal["human-evidence-blind-packet/2
 REVIEW_MAPPING_PACKET_SCHEMA_VERSION: Final[Literal["human-evidence-review-mapping/2"]] = (
     "human-evidence-review-mapping/2"
 )
-HUMAN_REVIEW_RECORD_SCHEMA_VERSION: Final[Literal["human-evidence-review/2"]] = (
-    "human-evidence-review/2"
+HUMAN_REVIEW_RECORD_SCHEMA_VERSION: Final[Literal["human-evidence-review/3"]] = (
+    "human-evidence-review/3"
 )
 HUMAN_REVIEW_ATTESTATION: Final = (
     "I completed rounds A-C without the mapping packet, opened the mapping only for "
@@ -535,13 +534,11 @@ class HumanFamilyDecision(_StrictFrozenModel):
 
 
 class HumanReviewRecord(_StrictFrozenModel):
-    """Strict, signed review bound to both immutable packet hashes."""
+    """Minimal named review bound to both immutable packet hashes."""
 
-    schema_version: Literal["human-evidence-review/2"]
+    schema_version: Literal["human-evidence-review/3"]
     reviewer_kind: Literal["human"]
     reviewer_id: str
-    started_at: str
-    completed_at: str
     independent_from_implementation: Literal[True]
     prohibited_sources_consulted: Literal[False]
     ai_assistance_used: Literal[False]
@@ -550,28 +547,16 @@ class HumanReviewRecord(_StrictFrozenModel):
         "I completed rounds A-C without the mapping packet, opened the mapping only for "
         "round D and paired-family audit, and personally recorded every decision."
     ]
-    signature: str
     blind_packet_sha256: str
     mapping_packet_sha256: str
     decisions: tuple[HumanReviewDecision, ...]
     family_decisions: tuple[HumanFamilyDecision, ...]
 
-    @field_validator("reviewer_id", "signature")
+    @field_validator("reviewer_id")
     @classmethod
     def _identity_present(cls, value: str) -> str:
         if not value.strip():
-            raise ValueError("reviewer identity and signature must not be blank")
-        return value
-
-    @field_validator("started_at", "completed_at")
-    @classmethod
-    def _timezone_aware(cls, value: str) -> str:
-        try:
-            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError as exc:
-            raise ValueError("review timestamps must be ISO-8601") from exc
-        if parsed.tzinfo is None or parsed.utcoffset() is None:
-            raise ValueError("review timestamps must include a timezone")
+            raise ValueError("reviewer identity must not be blank")
         return value
 
     @field_validator("blind_packet_sha256", "mapping_packet_sha256")
@@ -603,21 +588,12 @@ class HumanReviewRecord(_StrictFrozenModel):
             raise ValueError("human family decisions must be unique")
         return ordered
 
-    @model_validator(mode="after")
-    def _valid_review_interval(self) -> HumanReviewRecord:
-        started = datetime.fromisoformat(self.started_at.replace("Z", "+00:00"))
-        completed = datetime.fromisoformat(self.completed_at.replace("Z", "+00:00"))
-        if completed <= started:
-            raise ValueError("human review completion must be after its start")
-        return self
-
-
 def validate_human_review(
     blind_packet: BlindReviewPacket,
     mapping_packet: ReviewMappingPacket,
     record: HumanReviewRecord,
 ) -> None:
-    """Require exact signed coverage; UNCERTAIN is never silently promoted to PASS."""
+    """Require exact named coverage; UNCERTAIN is never silently promoted to PASS."""
 
     validate_review_packets(blind_packet, mapping_packet)
     record = HumanReviewRecord.model_validate(record.model_dump())

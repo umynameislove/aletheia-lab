@@ -29,7 +29,7 @@ minh quan hệ nhân quả.
 | Machine leakage audit | `evidence-leakage-audit/2` |
 | Blind review packet | `human-evidence-blind-packet/2` |
 | Review mapping packet | `human-evidence-review-mapping/2` |
-| Human review record | `human-evidence-review/2` |
+| Human review record | `human-evidence-review/3` |
 
 Các model dùng Pydantic strict, `extra="forbid"` và frozen. `EvidenceItem`,
 `EvidenceBundle`, `DiagnosisEvidenceView` và `ConditionRubric` phải khai báo
@@ -275,8 +275,9 @@ review có hai stage bắt buộc:
    binding của review ID, view hash, bundle, family, condition và rubric.
 
 `HumanReviewRecord` phải bind cả hai packet hash, bao phủ chính xác 15 entry và
-5 family, có rationale cho mọi decision, attestation, reviewer identity, timestamp,
-signature và cam kết không dùng AI. Thiếu entry/field, hash bị sửa hoặc tráo,
+5 family, có rationale cho mọi decision, attestation, reviewer ID và cam kết
+không dùng AI. Timestamp và chữ ký tự do không nằm trong public record; lịch sử
+Git và packet hash giữ provenance kỹ thuật. Thiếu entry/field, hash bị sửa hoặc tráo,
 `UNCERTAIN`, hay bất kỳ blocker nào đều fail; không được promote thành PASS.
 
 Evidence validation không tự claim chất lượng chẩn đoán. Kết luận về model phải
