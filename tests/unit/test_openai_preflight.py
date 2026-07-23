@@ -83,7 +83,7 @@ def test_config_rejects_every_unfrozen_capability_or_setting(
 
 def test_config_rejects_embedded_api_key() -> None:
     payload = _config_payload()
-    payload["api_key"] = "sk-this-secret-must-never-be-serialized"
+    payload["api_key"] = "test-secret-must-never-be-serialized"
     with pytest.raises(ValidationError, match="extra_forbidden"):
         OpenAIPilotConfig.model_validate(payload)
 

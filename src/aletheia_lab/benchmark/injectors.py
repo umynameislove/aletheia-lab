@@ -9,9 +9,8 @@ Design contract for every injector:
    observable signals. Failure eligibility and any hidden cause assertion are
    derived later, after measuring the model outcome; signals never name a cause.
 
-P1 implements ``data_drift`` (categorical distribution shift). Other fault types
-are added when their phase starts (see 02_TASKS.csv), each following this
-contract.
+The current implementation covers ``data_drift`` (categorical distribution
+shift). Additional injectors must satisfy the same contract.
 """
 
 from __future__ import annotations
