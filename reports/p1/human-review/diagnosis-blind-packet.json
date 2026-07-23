@@ -1,0 +1,1837 @@
+{
+  "entries": [
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5998107852412489,\"One year\":0.19962157048249762,\"Two year\":0.20056764427625354},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "1cd242987f7177b97e4eec2fd333b09af61a07a3da3a90d5300a45e03a5037af",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "54f8877306d1d03e808511083686eeffbd26e6b5346fa52be9672917c6479cb1",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "observation",
+        "confidence": 0.2,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Reference or baseline distribution for 'Contract' feature (e.g., training or production window)",
+          "Information about model performance or downstream impact"
+        ],
+        "root_cause_hypothesis": "The candidate window shows the distribution of the 'Contract' feature, but without a reference or baseline distribution, it is not possible to determine if this distribution is anomalous or problematic.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-observed"
+        ]
+      },
+      "review_id": "dxreview-04d7bdddf53bbea72cb0d1e20bffddfd2575a1ea5af6ff106a7cf265b28d2517"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5998107852412489,\"One year\":0.19962157048249762,\"Two year\":0.20056764427625354},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "1cd242987f7177b97e4eec2fd333b09af61a07a3da3a90d5300a45e03a5037af",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          },
+          {
+            "content": "{\"comparison\":\"reference_to_candidate\",\"feature\":\"Contract\",\"psi\":0.008457204765204339,\"sample_size\":1057}",
+            "content_sha256": "41503b3cfb6145eeaf7643ff067b7357497d67615b1fe43eeee99d56e9d0b346",
+            "evidence_id": "candidate-psi",
+            "evidence_roles": [
+              "candidate_psi"
+            ],
+            "kind": "metric",
+            "title": "Categorical profile comparison statistic"
+          },
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5638599810785241,\"One year\":0.1986754966887417,\"Two year\":0.23746452223273415},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"reference\"}",
+            "content_sha256": "7c6919fe9602bb263881fd404c04314eba83f87c687678c509cf2c8445ace21b",
+            "evidence_id": "candidate-reference",
+            "evidence_roles": [
+              "candidate_distribution_reference"
+            ],
+            "kind": "dataset_profile",
+            "title": "Reference-window categorical profile"
+          },
+          {
+            "content": "{\"classification\":\"stable\",\"delta\":0.0056764427625355385,\"metric\":\"accuracy\",\"observed\":0.7994323557237465,\"reference\":0.793755912961211,\"reference_split\":\"test\"}",
+            "content_sha256": "6a7c9e31bc9ce4f3c2b6ca12e835b5b5ed5469807d0883ac06e110c7e7e21b92",
+            "evidence_id": "metric-comparison",
+            "evidence_roles": [
+              "metric_comparison"
+            ],
+            "kind": "metric",
+            "title": "Evaluation metric comparison"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "cb25d987025bbf29e176b9ed75ee7466cb772251112eb76032c79f62b4271518",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "observation",
+        "confidence": 0.95,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Evidence of other feature distributions or metrics to rule out shifts elsewhere",
+          "Evidence of model input/output drift beyond 'Contract' feature"
+        ],
+        "root_cause_hypothesis": "There is no significant distribution shift in the 'Contract' feature between the reference and candidate windows, as indicated by the low PSI value and similar categorical distributions.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-observed",
+          "candidate-reference",
+          "candidate-psi"
+        ]
+      },
+      "review_id": "dxreview-11ca9f6dc52427bb5295e4ef3089536536ddc280e880a21bfc992265def48630"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.8997161778618732,\"One year\":0.06054872280037843,\"Two year\":0.039735099337748346},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "43b73710d84159359f6062806e4494d970d8f5f9ac4819a6ef8568d49b45015f",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          },
+          {
+            "content": "{\"comparison\":\"reference_to_candidate\",\"feature\":\"Contract\",\"psi\":0.6745596393254225,\"sample_size\":1057}",
+            "content_sha256": "1264cd2e867c2c344d66432404f8a8b6f5d76ddb8dc9f6543f496980f9989fb7",
+            "evidence_id": "candidate-psi",
+            "evidence_roles": [
+              "candidate_psi"
+            ],
+            "kind": "metric",
+            "title": "Categorical profile comparison statistic"
+          },
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5638599810785241,\"One year\":0.1986754966887417,\"Two year\":0.23746452223273415},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"reference\"}",
+            "content_sha256": "7c6919fe9602bb263881fd404c04314eba83f87c687678c509cf2c8445ace21b",
+            "evidence_id": "candidate-reference",
+            "evidence_roles": [
+              "candidate_distribution_reference"
+            ],
+            "kind": "dataset_profile",
+            "title": "Reference-window categorical profile"
+          },
+          {
+            "content": "{\"classification\":\"regression\",\"delta\":-0.08514664143803219,\"metric\":\"accuracy\",\"observed\":0.7086092715231788,\"reference\":0.793755912961211,\"reference_split\":\"test\"}",
+            "content_sha256": "5fa8afcdd8fc0554c8f3994f349fc4d4917b19c391a17bb9dba3a2a0a8ead675",
+            "evidence_id": "metric-comparison",
+            "evidence_roles": [
+              "metric_comparison"
+            ],
+            "kind": "metric",
+            "title": "Evaluation metric comparison"
+          },
+          {
+            "content": "{\"distribution_observed\":{\"Female\":0.510879848628193,\"Male\":0.489120151371807},\"distribution_reference\":{\"Female\":0.5099337748344371,\"Male\":0.4900662251655629},\"feature\":\"gender\",\"psi\":3.581775213223156e-06}",
+            "content_sha256": "872b1f4f1137afca40480a4c09893a2ab80e7851f08de1c13b47f37b50201fab",
+            "evidence_id": "secondary-comparison",
+            "evidence_roles": [
+              "secondary_distribution_comparison"
+            ],
+            "kind": "dataset_profile",
+            "title": "Additional categorical profile comparison"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "72187bcb221e9c4ce030f0d9374b9b3f58dca094b8bedb70793d0b8ee464a0ec",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "bounded_causal_hypothesis",
+        "confidence": 0.8,
+        "counterevidence_ids": [
+          "secondary-comparison"
+        ],
+        "missing_evidence": [
+          "Feature importance or model sensitivity to 'Contract'",
+          "Performance metrics stratified by 'Contract' type",
+          "Other feature distribution shifts"
+        ],
+        "root_cause_hypothesis": "A substantial distribution shift in the 'Contract' feature between the reference and candidate windows (high PSI = 0.67) is likely contributing to the observed drop in model accuracy.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-psi",
+          "candidate-observed",
+          "candidate-reference",
+          "metric-comparison"
+        ]
+      },
+      "review_id": "dxreview-128f42920ce5d97302fba858ab5dfe599e3b532a95c4fd8cd20af8a06e3c2d18"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5998107852412489,\"One year\":0.19962157048249762,\"Two year\":0.20056764427625354},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "1cd242987f7177b97e4eec2fd333b09af61a07a3da3a90d5300a45e03a5037af",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "38728c4d6e5be267c1ee937bcfcb7d3667a161fc33144765f85fac0b8a5bd603",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "observation",
+        "confidence": 0.7,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Reference or baseline distribution for 'Contract' feature (e.g., training or production window) to assess drift or anomaly"
+        ],
+        "root_cause_hypothesis": "The 'Contract' feature in the candidate window is heavily skewed towards 'Month-to-month' contracts, with nearly 60% of samples, while 'One year' and 'Two year' contracts are each around 20%.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-observed"
+        ]
+      },
+      "review_id": "dxreview-12d5fa304bbe3770416c3dc37c247f713e5fe283f897b11e29ae29fa8c39a07f"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.8997161778618732,\"One year\":0.06054872280037843,\"Two year\":0.039735099337748346},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "43b73710d84159359f6062806e4494d970d8f5f9ac4819a6ef8568d49b45015f",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "5d4556e5237d8e1cd4c43ff0f4b1b62c5be6c06f3b2fdaf9c643e6f5419fcfb5",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "observation",
+        "confidence": 0.7,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Reference or baseline distribution for 'Contract' feature in other windows (e.g., training, production)",
+          "Information about model performance or errors related to this imbalance"
+        ],
+        "root_cause_hypothesis": "The candidate window shows a strong class imbalance in the 'Contract' feature, with 'Month-to-month' contracts comprising nearly 90% of the data.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-observed"
+        ]
+      },
+      "review_id": "dxreview-1585fefa8dc52a488cc8e0e60db962592ccdd228c32712ae5f71bae6b1b7e73d"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.8997161778618732,\"One year\":0.06054872280037843,\"Two year\":0.039735099337748346},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "43b73710d84159359f6062806e4494d970d8f5f9ac4819a6ef8568d49b45015f",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          },
+          {
+            "content": "{\"comparison\":\"reference_to_candidate\",\"feature\":\"Contract\",\"psi\":0.6745596393254225,\"sample_size\":1057}",
+            "content_sha256": "1264cd2e867c2c344d66432404f8a8b6f5d76ddb8dc9f6543f496980f9989fb7",
+            "evidence_id": "candidate-psi",
+            "evidence_roles": [
+              "candidate_psi"
+            ],
+            "kind": "metric",
+            "title": "Categorical profile comparison statistic"
+          },
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5638599810785241,\"One year\":0.1986754966887417,\"Two year\":0.23746452223273415},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"reference\"}",
+            "content_sha256": "7c6919fe9602bb263881fd404c04314eba83f87c687678c509cf2c8445ace21b",
+            "evidence_id": "candidate-reference",
+            "evidence_roles": [
+              "candidate_distribution_reference"
+            ],
+            "kind": "dataset_profile",
+            "title": "Reference-window categorical profile"
+          },
+          {
+            "content": "{\"classification\":\"regression\",\"delta\":-0.08514664143803219,\"metric\":\"accuracy\",\"observed\":0.7086092715231788,\"reference\":0.793755912961211,\"reference_split\":\"test\"}",
+            "content_sha256": "5fa8afcdd8fc0554c8f3994f349fc4d4917b19c391a17bb9dba3a2a0a8ead675",
+            "evidence_id": "metric-comparison",
+            "evidence_roles": [
+              "metric_comparison"
+            ],
+            "kind": "metric",
+            "title": "Evaluation metric comparison"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "9d380632049af53ce6c88c4d1bd41205eed92ecba56e036dc6ad5390ba962af3",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "bounded_causal_hypothesis",
+        "confidence": 0.8,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Direct evidence linking 'Contract' feature shift to model prediction errors (e.g., feature importance or error analysis by contract type)",
+          "Information about other features' distribution shifts or stability",
+          "Model sensitivity analysis to 'Contract' feature"
+        ],
+        "root_cause_hypothesis": "There is a substantial distribution shift in the 'Contract' feature between the reference and candidate datasets, as indicated by a high PSI value (0.67), which may be contributing to the observed drop in model accuracy.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-psi",
+          "candidate-observed",
+          "candidate-reference",
+          "metric-comparison"
+        ]
+      },
+      "review_id": "dxreview-272db2df1a737e5ca540878b58daf9cadf592317994eac1149220e62a9150fca"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.7000946073793756,\"One year\":0.17975402081362346,\"Two year\":0.12015137180700095},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "c729635fb95e371fcda5f1b6f671434b7f675694e35e94ad3da2c8a2b8f0250f",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          },
+          {
+            "content": "{\"comparison\":\"reference_to_candidate\",\"feature\":\"Contract\",\"psi\":0.11129764016816293,\"sample_size\":1057}",
+            "content_sha256": "3474b06f8bde6c49cdb4a7421ce0c7db77ed1aea4bfbd5a9fd8b55884da8d00d",
+            "evidence_id": "candidate-psi",
+            "evidence_roles": [
+              "candidate_psi"
+            ],
+            "kind": "metric",
+            "title": "Categorical profile comparison statistic"
+          },
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5638599810785241,\"One year\":0.1986754966887417,\"Two year\":0.23746452223273415},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"reference\"}",
+            "content_sha256": "7c6919fe9602bb263881fd404c04314eba83f87c687678c509cf2c8445ace21b",
+            "evidence_id": "candidate-reference",
+            "evidence_roles": [
+              "candidate_distribution_reference"
+            ],
+            "kind": "dataset_profile",
+            "title": "Reference-window categorical profile"
+          },
+          {
+            "content": "{\"classification\":\"regression\",\"delta\":-0.03595080416272467,\"metric\":\"accuracy\",\"observed\":0.7578051087984863,\"reference\":0.793755912961211,\"reference_split\":\"test\"}",
+            "content_sha256": "5e7ce654773d504de541ea923ed8b9181c1cc54ef502573a6a50dfba4878e5f0",
+            "evidence_id": "metric-comparison",
+            "evidence_roles": [
+              "metric_comparison"
+            ],
+            "kind": "metric",
+            "title": "Evaluation metric comparison"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "697a9b2df6ad7acc2df0ef7d2792652af4036cb1ff7d210106e76b118dc8b9ae",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "bounded_causal_hypothesis",
+        "confidence": 0.7,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Evidence of other feature shifts or confounding factors",
+          "Model sensitivity analysis to 'Contract' feature",
+          "Performance metrics for other features or segments"
+        ],
+        "root_cause_hypothesis": "There is a moderate shift in the distribution of the 'Contract' feature between the reference and candidate windows (PSI=0.11), which may be contributing to the observed decrease in model accuracy (-0.036).",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-psi",
+          "metric-comparison",
+          "candidate-observed",
+          "candidate-reference"
+        ]
+      },
+      "review_id": "dxreview-3bab53db5acb17f480699ace107a1b20bb3190e02bf718fc03074c7cb9e52274"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.7000946073793756,\"One year\":0.17975402081362346,\"Two year\":0.12015137180700095},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "c729635fb95e371fcda5f1b6f671434b7f675694e35e94ad3da2c8a2b8f0250f",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "f4ce86493961da2e81182431378e0d510a6c907bb7cc65e25a655f68c607c0c9",
+      "model_output": {
+        "abstain": true,
+        "claim_strength": "observation",
+        "confidence": 0.3,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Reference distribution for 'Contract' feature (e.g., baseline or production window) to enable comparison"
+        ],
+        "root_cause_hypothesis": "The distribution of the 'Contract' feature in the candidate window is heavily skewed towards 'Month-to-month' contracts, but without a reference distribution (e.g., baseline or production), it is not possible to determine if this is anomalous or problematic.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-observed"
+        ]
+      },
+      "review_id": "dxreview-48467cf365f4ac4c3732822edd52ca4aee0e59bf2a6d2cf8a4829a2fc28c3f1c"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.8003784295175024,\"One year\":0.12015137180700095,\"Two year\":0.07947019867549669},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "fea393629cc16ad16db9e10b4cd16300b0720b1423c88df7fbeaa338772d4370",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          },
+          {
+            "content": "{\"comparison\":\"reference_to_candidate\",\"feature\":\"Contract\",\"psi\":0.2952850571777481,\"sample_size\":1057}",
+            "content_sha256": "fb2d350f42bad4ca81f317cf26fb2228693564823850d136c062d6fbdbf87936",
+            "evidence_id": "candidate-psi",
+            "evidence_roles": [
+              "candidate_psi"
+            ],
+            "kind": "metric",
+            "title": "Categorical profile comparison statistic"
+          },
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5638599810785241,\"One year\":0.1986754966887417,\"Two year\":0.23746452223273415},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"reference\"}",
+            "content_sha256": "7c6919fe9602bb263881fd404c04314eba83f87c687678c509cf2c8445ace21b",
+            "evidence_id": "candidate-reference",
+            "evidence_roles": [
+              "candidate_distribution_reference"
+            ],
+            "kind": "dataset_profile",
+            "title": "Reference-window categorical profile"
+          },
+          {
+            "content": "{\"classification\":\"regression\",\"delta\":-0.05676442762535472,\"metric\":\"accuracy\",\"observed\":0.7369914853358562,\"reference\":0.793755912961211,\"reference_split\":\"test\"}",
+            "content_sha256": "a611f7fbd2017f2ac6f91e494eecde3245f926eb8f96b3a7dec5c0a8633259ac",
+            "evidence_id": "metric-comparison",
+            "evidence_roles": [
+              "metric_comparison"
+            ],
+            "kind": "metric",
+            "title": "Evaluation metric comparison"
+          },
+          {
+            "content": "{\"distribution_observed\":{\"Female\":0.4938505203405866,\"Male\":0.5061494796594135},\"distribution_reference\":{\"Female\":0.5099337748344371,\"Male\":0.4900662251655629},\"feature\":\"gender\",\"psi\":0.0010347883540860912}",
+            "content_sha256": "3f88b6ab3b5a7ca796dd130b7e5caf8ef69e91b49afd281736cfc300f53845a6",
+            "evidence_id": "secondary-comparison",
+            "evidence_roles": [
+              "secondary_distribution_comparison"
+            ],
+            "kind": "dataset_profile",
+            "title": "Additional categorical profile comparison"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "5df14e16489aebd01bdb7c16987e779bc198b7b4ab6ffd11cfaf70d1c439205b",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "bounded_causal_hypothesis",
+        "confidence": 0.8,
+        "counterevidence_ids": [
+          "secondary-comparison"
+        ],
+        "missing_evidence": [
+          "Direct evidence of model sensitivity to 'Contract' feature",
+          "Analysis of other features for drift",
+          "Model performance breakdown by 'Contract' category"
+        ],
+        "root_cause_hypothesis": "A substantial shift in the distribution of the 'Contract' feature (high PSI = 0.295) between reference and candidate windows is a plausible contributor to the observed drop in model accuracy.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-psi",
+          "candidate-observed",
+          "candidate-reference",
+          "metric-comparison"
+        ]
+      },
+      "review_id": "dxreview-4b2bcf31db3c54441f2970208b6c013e87e735596fe23ea54048f6d3bccd8387"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.4001892147587512,\"One year\":0.29990539262062443,\"Two year\":0.29990539262062443},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "c6e9129058ec75b97a2655d7404c513a933deb8ccf6a4a3a937fcad0c226d275",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          },
+          {
+            "content": "{\"comparison\":\"reference_to_candidate\",\"feature\":\"Contract\",\"psi\":0.11238018499394713,\"sample_size\":1057}",
+            "content_sha256": "f00f8c3cbefa5ad0cb2885f111148a73a7851415636f91060599f3bb4cf0a062",
+            "evidence_id": "candidate-psi",
+            "evidence_roles": [
+              "candidate_psi"
+            ],
+            "kind": "metric",
+            "title": "Categorical profile comparison statistic"
+          },
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5638599810785241,\"One year\":0.1986754966887417,\"Two year\":0.23746452223273415},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"reference\"}",
+            "content_sha256": "7c6919fe9602bb263881fd404c04314eba83f87c687678c509cf2c8445ace21b",
+            "evidence_id": "candidate-reference",
+            "evidence_roles": [
+              "candidate_distribution_reference"
+            ],
+            "kind": "dataset_profile",
+            "title": "Reference-window categorical profile"
+          },
+          {
+            "content": "{\"classification\":\"improvement\",\"delta\":0.03878902554399244,\"metric\":\"accuracy\",\"observed\":0.8325449385052034,\"reference\":0.793755912961211,\"reference_split\":\"test\"}",
+            "content_sha256": "51be410236ebd0fd82137fdd7a5b3408981741b9c920512b2447198b806d7683",
+            "evidence_id": "metric-comparison",
+            "evidence_roles": [
+              "metric_comparison"
+            ],
+            "kind": "metric",
+            "title": "Evaluation metric comparison"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "7e3523e5ddc139230cc8c5b58c6fe413c9d3d93b9e7dfd74042f438cf1d286d2",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "observation",
+        "confidence": 0.7,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Evidence of model performance impact specifically attributable to this shift (e.g., feature importance, per-group performance metrics)"
+        ],
+        "root_cause_hypothesis": "There is a moderate distribution shift in the 'Contract' feature between the reference and candidate windows (PSI=0.11), with 'Month-to-month' contracts decreasing and 'One year' and 'Two year' contracts increasing in the candidate window.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-observed",
+          "candidate-reference",
+          "candidate-psi"
+        ]
+      },
+      "review_id": "dxreview-504346544f9d0dee203f7f43243eb205cb7124fa79cae173a1a02e627b84164f"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.4001892147587512,\"One year\":0.29990539262062443,\"Two year\":0.29990539262062443},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "c6e9129058ec75b97a2655d7404c513a933deb8ccf6a4a3a937fcad0c226d275",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          },
+          {
+            "content": "{\"comparison\":\"reference_to_candidate\",\"feature\":\"Contract\",\"psi\":0.11238018499394713,\"sample_size\":1057}",
+            "content_sha256": "f00f8c3cbefa5ad0cb2885f111148a73a7851415636f91060599f3bb4cf0a062",
+            "evidence_id": "candidate-psi",
+            "evidence_roles": [
+              "candidate_psi"
+            ],
+            "kind": "metric",
+            "title": "Categorical profile comparison statistic"
+          },
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5638599810785241,\"One year\":0.1986754966887417,\"Two year\":0.23746452223273415},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"reference\"}",
+            "content_sha256": "7c6919fe9602bb263881fd404c04314eba83f87c687678c509cf2c8445ace21b",
+            "evidence_id": "candidate-reference",
+            "evidence_roles": [
+              "candidate_distribution_reference"
+            ],
+            "kind": "dataset_profile",
+            "title": "Reference-window categorical profile"
+          },
+          {
+            "content": "{\"classification\":\"improvement\",\"delta\":0.03878902554399244,\"metric\":\"accuracy\",\"observed\":0.8325449385052034,\"reference\":0.793755912961211,\"reference_split\":\"test\"}",
+            "content_sha256": "51be410236ebd0fd82137fdd7a5b3408981741b9c920512b2447198b806d7683",
+            "evidence_id": "metric-comparison",
+            "evidence_roles": [
+              "metric_comparison"
+            ],
+            "kind": "metric",
+            "title": "Evaluation metric comparison"
+          },
+          {
+            "content": "{\"distribution_observed\":{\"Female\":0.5193945127719962,\"Male\":0.4806054872280038},\"distribution_reference\":{\"Female\":0.5099337748344371,\"Male\":0.4900662251655629},\"feature\":\"gender\",\"psi\":0.0003583412041772424}",
+            "content_sha256": "d4cfe9db618e8fe962c174bbf37f05dc909bf4d345be072a82708a622f651e1f",
+            "evidence_id": "secondary-comparison",
+            "evidence_roles": [
+              "secondary_distribution_comparison"
+            ],
+            "kind": "dataset_profile",
+            "title": "Additional categorical profile comparison"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "14b6ca342cb439d5a6651322d7ab6be09b13c5f290c8cd8a60e997049ed71bda",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "bounded_causal_hypothesis",
+        "confidence": 0.7,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "evidence of model calibration or fairness impact",
+          "other feature shifts",
+          "downstream business metric impact"
+        ],
+        "root_cause_hypothesis": "There is a moderate shift in the distribution of the 'Contract' feature between the reference and candidate windows (PSI=0.11), but this shift is not associated with a degradation in model accuracy; in fact, accuracy improved slightly.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-psi",
+          "candidate-observed",
+          "candidate-reference",
+          "metric-comparison"
+        ]
+      },
+      "review_id": "dxreview-54533353a6a00ee37c9b191e6b6801a82b18f8befcc2e2d89e52ba7b68c35a80"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.7000946073793756,\"One year\":0.17975402081362346,\"Two year\":0.12015137180700095},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "c729635fb95e371fcda5f1b6f671434b7f675694e35e94ad3da2c8a2b8f0250f",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          },
+          {
+            "content": "{\"comparison\":\"reference_to_candidate\",\"feature\":\"Contract\",\"psi\":0.11129764016816293,\"sample_size\":1057}",
+            "content_sha256": "3474b06f8bde6c49cdb4a7421ce0c7db77ed1aea4bfbd5a9fd8b55884da8d00d",
+            "evidence_id": "candidate-psi",
+            "evidence_roles": [
+              "candidate_psi"
+            ],
+            "kind": "metric",
+            "title": "Categorical profile comparison statistic"
+          },
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5638599810785241,\"One year\":0.1986754966887417,\"Two year\":0.23746452223273415},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"reference\"}",
+            "content_sha256": "7c6919fe9602bb263881fd404c04314eba83f87c687678c509cf2c8445ace21b",
+            "evidence_id": "candidate-reference",
+            "evidence_roles": [
+              "candidate_distribution_reference"
+            ],
+            "kind": "dataset_profile",
+            "title": "Reference-window categorical profile"
+          },
+          {
+            "content": "{\"classification\":\"regression\",\"delta\":-0.03595080416272467,\"metric\":\"accuracy\",\"observed\":0.7578051087984863,\"reference\":0.793755912961211,\"reference_split\":\"test\"}",
+            "content_sha256": "5e7ce654773d504de541ea923ed8b9181c1cc54ef502573a6a50dfba4878e5f0",
+            "evidence_id": "metric-comparison",
+            "evidence_roles": [
+              "metric_comparison"
+            ],
+            "kind": "metric",
+            "title": "Evaluation metric comparison"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "f2444d99ea8e2236625c245218fb99ab39fa33668fa24371049bdbe7c71fd217",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "bounded_causal_hypothesis",
+        "confidence": 0.7,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Feature importance or model sensitivity to 'Contract' feature",
+          "Performance metrics stratified by 'Contract' type",
+          "Other feature distribution shifts or confounders"
+        ],
+        "root_cause_hypothesis": "There is a moderate shift in the distribution of the 'Contract' feature between the reference and candidate windows (PSI=0.11), with a notable increase in 'Month-to-month' contracts and a decrease in 'Two year' contracts in the candidate window. This shift may be contributing to the observed decrease in model accuracy (-0.036).",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-observed",
+          "candidate-reference",
+          "candidate-psi",
+          "metric-comparison"
+        ]
+      },
+      "review_id": "dxreview-5ad6605c77e586b7c6c84b6a09a289c51da545e02784c451620878ca61545bbb"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.7000946073793756,\"One year\":0.17975402081362346,\"Two year\":0.12015137180700095},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "c729635fb95e371fcda5f1b6f671434b7f675694e35e94ad3da2c8a2b8f0250f",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          },
+          {
+            "content": "{\"comparison\":\"reference_to_candidate\",\"feature\":\"Contract\",\"psi\":0.11129764016816293,\"sample_size\":1057}",
+            "content_sha256": "3474b06f8bde6c49cdb4a7421ce0c7db77ed1aea4bfbd5a9fd8b55884da8d00d",
+            "evidence_id": "candidate-psi",
+            "evidence_roles": [
+              "candidate_psi"
+            ],
+            "kind": "metric",
+            "title": "Categorical profile comparison statistic"
+          },
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5638599810785241,\"One year\":0.1986754966887417,\"Two year\":0.23746452223273415},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"reference\"}",
+            "content_sha256": "7c6919fe9602bb263881fd404c04314eba83f87c687678c509cf2c8445ace21b",
+            "evidence_id": "candidate-reference",
+            "evidence_roles": [
+              "candidate_distribution_reference"
+            ],
+            "kind": "dataset_profile",
+            "title": "Reference-window categorical profile"
+          },
+          {
+            "content": "{\"classification\":\"regression\",\"delta\":-0.03595080416272467,\"metric\":\"accuracy\",\"observed\":0.7578051087984863,\"reference\":0.793755912961211,\"reference_split\":\"test\"}",
+            "content_sha256": "5e7ce654773d504de541ea923ed8b9181c1cc54ef502573a6a50dfba4878e5f0",
+            "evidence_id": "metric-comparison",
+            "evidence_roles": [
+              "metric_comparison"
+            ],
+            "kind": "metric",
+            "title": "Evaluation metric comparison"
+          },
+          {
+            "content": "{\"distribution_observed\":{\"Female\":0.4881740775780511,\"Male\":0.5118259224219489},\"distribution_reference\":{\"Female\":0.5099337748344371,\"Male\":0.4900662251655629},\"feature\":\"gender\",\"psi\":0.001894243487542063}",
+            "content_sha256": "38de9b3e9b9469beae407fc1a3c210451e4c1e578f783229fa3b989642594f87",
+            "evidence_id": "secondary-comparison",
+            "evidence_roles": [
+              "secondary_distribution_comparison"
+            ],
+            "kind": "dataset_profile",
+            "title": "Additional categorical profile comparison"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "c5bf6c4e2e3e672e2920b66af1c2508aa5e23c7475f1c875b0f1aaf5c74470b9",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "bounded_causal_hypothesis",
+        "confidence": 0.7,
+        "counterevidence_ids": [
+          "secondary-comparison"
+        ],
+        "missing_evidence": [
+          "Evidence of changes in other features' distributions",
+          "Feature importance for 'Contract' in the model",
+          "Model calibration or error analysis by segment"
+        ],
+        "root_cause_hypothesis": "There is a moderate shift in the distribution of the 'Contract' feature between the reference and candidate windows (PSI=0.11), which may be contributing to the observed decrease in model accuracy (-0.036).",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-psi",
+          "metric-comparison",
+          "candidate-observed",
+          "candidate-reference"
+        ]
+      },
+      "review_id": "dxreview-5e2d25c5860d18fddb8d77a9a37328a0b087813a41c21a6ff28cc81904f1666f"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.8003784295175024,\"One year\":0.12015137180700095,\"Two year\":0.07947019867549669},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "fea393629cc16ad16db9e10b4cd16300b0720b1423c88df7fbeaa338772d4370",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "bcf53640705486adaea6d013c6a4135445e49b9dd9fc380a805e7aa01cd7e4ed",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "observation",
+        "confidence": 0.7,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Reference or baseline distribution for 'Contract' feature in other windows (e.g., training, production)",
+          "Performance metrics or error analysis by contract type",
+          "Information on model performance or fairness concerns"
+        ],
+        "root_cause_hypothesis": "The candidate window shows a strong class imbalance in the 'Contract' feature, with 'Month-to-month' contracts comprising over 80% of the data.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-observed"
+        ]
+      },
+      "review_id": "dxreview-639ecca1e81bfc171beeab84d551371e5211dd193744fb7d4851078c6eca5794"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.4001892147587512,\"One year\":0.29990539262062443,\"Two year\":0.29990539262062443},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "c6e9129058ec75b97a2655d7404c513a933deb8ccf6a4a3a937fcad0c226d275",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "1600cf07b9b445394d55052fba4ea81389f63d7dc8d8a80555562931895d6f50",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "observation",
+        "confidence": 0.2,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Reference or baseline distribution for 'Contract' feature (e.g., training or production window)",
+          "Information about expected or desired distribution for 'Contract'"
+        ],
+        "root_cause_hypothesis": "The candidate window shows the distribution of the 'Contract' feature, but without a reference or baseline distribution, it is not possible to determine if this distribution is anomalous or problematic.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-observed"
+        ]
+      },
+      "review_id": "dxreview-65e8f1f01af3bdc5020fc4a24f9b7ce4f2a0dbdc78035abfbe67ff553f2c8c98"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.4001892147587512,\"One year\":0.29990539262062443,\"Two year\":0.29990539262062443},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "c6e9129058ec75b97a2655d7404c513a933deb8ccf6a4a3a937fcad0c226d275",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "ece582b31e256301c940fcd9091f27d8ce45e96bf049e320e8b891da1cb5c1bd",
+      "model_output": {
+        "abstain": true,
+        "claim_strength": "observation",
+        "confidence": 0.5,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Reference or baseline distribution for 'Contract' feature (e.g., training or production window) to enable comparison."
+        ],
+        "root_cause_hypothesis": "The distribution of the 'Contract' feature in the candidate window is approximately 40% 'Month-to-month', 30% 'One year', and 30% 'Two year'.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-observed"
+        ]
+      },
+      "review_id": "dxreview-73c39866d55f5c1908baeca81f4801d52422151af39b662d57bd333ccb0608f2"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.7000946073793756,\"One year\":0.17975402081362346,\"Two year\":0.12015137180700095},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "c729635fb95e371fcda5f1b6f671434b7f675694e35e94ad3da2c8a2b8f0250f",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          },
+          {
+            "content": "{\"comparison\":\"reference_to_candidate\",\"feature\":\"Contract\",\"psi\":0.11129764016816293,\"sample_size\":1057}",
+            "content_sha256": "3474b06f8bde6c49cdb4a7421ce0c7db77ed1aea4bfbd5a9fd8b55884da8d00d",
+            "evidence_id": "candidate-psi",
+            "evidence_roles": [
+              "candidate_psi"
+            ],
+            "kind": "metric",
+            "title": "Categorical profile comparison statistic"
+          },
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5638599810785241,\"One year\":0.1986754966887417,\"Two year\":0.23746452223273415},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"reference\"}",
+            "content_sha256": "7c6919fe9602bb263881fd404c04314eba83f87c687678c509cf2c8445ace21b",
+            "evidence_id": "candidate-reference",
+            "evidence_roles": [
+              "candidate_distribution_reference"
+            ],
+            "kind": "dataset_profile",
+            "title": "Reference-window categorical profile"
+          },
+          {
+            "content": "{\"classification\":\"regression\",\"delta\":-0.03595080416272467,\"metric\":\"accuracy\",\"observed\":0.7578051087984863,\"reference\":0.793755912961211,\"reference_split\":\"test\"}",
+            "content_sha256": "5e7ce654773d504de541ea923ed8b9181c1cc54ef502573a6a50dfba4878e5f0",
+            "evidence_id": "metric-comparison",
+            "evidence_roles": [
+              "metric_comparison"
+            ],
+            "kind": "metric",
+            "title": "Evaluation metric comparison"
+          },
+          {
+            "content": "{\"distribution_observed\":{\"Female\":0.4881740775780511,\"Male\":0.5118259224219489},\"distribution_reference\":{\"Female\":0.5099337748344371,\"Male\":0.4900662251655629},\"feature\":\"gender\",\"psi\":0.001894243487542063}",
+            "content_sha256": "38de9b3e9b9469beae407fc1a3c210451e4c1e578f783229fa3b989642594f87",
+            "evidence_id": "secondary-comparison",
+            "evidence_roles": [
+              "secondary_distribution_comparison"
+            ],
+            "kind": "dataset_profile",
+            "title": "Additional categorical profile comparison"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "8f62a1fea68f2478ad1bc64e7c879d1f9b28e294c24fa9e1f34549ad3dffe8b2",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "bounded_causal_hypothesis",
+        "confidence": 0.7,
+        "counterevidence_ids": [
+          "secondary-comparison"
+        ],
+        "missing_evidence": [
+          "Feature importance or model sensitivity to 'Contract'",
+          "Performance breakdown by 'Contract' type",
+          "Other feature distribution shifts"
+        ],
+        "root_cause_hypothesis": "There is a moderate shift in the distribution of the 'Contract' feature between the reference and candidate windows (PSI=0.11), with a notable increase in 'Month-to-month' contracts and a decrease in 'Two year' contracts in the candidate window. This shift may be contributing to the observed decrease in model accuracy (-0.036).",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-observed",
+          "candidate-reference",
+          "candidate-psi",
+          "metric-comparison"
+        ]
+      },
+      "review_id": "dxreview-89fbff0af1299c19aee9d2fe254ad22c43af42108fe99a6bfd5bc6a8df711d17"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.8997161778618732,\"One year\":0.06054872280037843,\"Two year\":0.039735099337748346},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "43b73710d84159359f6062806e4494d970d8f5f9ac4819a6ef8568d49b45015f",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          },
+          {
+            "content": "{\"comparison\":\"reference_to_candidate\",\"feature\":\"Contract\",\"psi\":0.6745596393254225,\"sample_size\":1057}",
+            "content_sha256": "1264cd2e867c2c344d66432404f8a8b6f5d76ddb8dc9f6543f496980f9989fb7",
+            "evidence_id": "candidate-psi",
+            "evidence_roles": [
+              "candidate_psi"
+            ],
+            "kind": "metric",
+            "title": "Categorical profile comparison statistic"
+          },
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5638599810785241,\"One year\":0.1986754966887417,\"Two year\":0.23746452223273415},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"reference\"}",
+            "content_sha256": "7c6919fe9602bb263881fd404c04314eba83f87c687678c509cf2c8445ace21b",
+            "evidence_id": "candidate-reference",
+            "evidence_roles": [
+              "candidate_distribution_reference"
+            ],
+            "kind": "dataset_profile",
+            "title": "Reference-window categorical profile"
+          },
+          {
+            "content": "{\"classification\":\"regression\",\"delta\":-0.08514664143803219,\"metric\":\"accuracy\",\"observed\":0.7086092715231788,\"reference\":0.793755912961211,\"reference_split\":\"test\"}",
+            "content_sha256": "5fa8afcdd8fc0554c8f3994f349fc4d4917b19c391a17bb9dba3a2a0a8ead675",
+            "evidence_id": "metric-comparison",
+            "evidence_roles": [
+              "metric_comparison"
+            ],
+            "kind": "metric",
+            "title": "Evaluation metric comparison"
+          },
+          {
+            "content": "{\"distribution_observed\":{\"Female\":0.510879848628193,\"Male\":0.489120151371807},\"distribution_reference\":{\"Female\":0.5099337748344371,\"Male\":0.4900662251655629},\"feature\":\"gender\",\"psi\":3.581775213223156e-06}",
+            "content_sha256": "872b1f4f1137afca40480a4c09893a2ab80e7851f08de1c13b47f37b50201fab",
+            "evidence_id": "secondary-comparison",
+            "evidence_roles": [
+              "secondary_distribution_comparison"
+            ],
+            "kind": "dataset_profile",
+            "title": "Additional categorical profile comparison"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "b15bcfe644c1f158db57d3098938db3f6b8939dfaf2fbcb9040a132ad2024918",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "bounded_causal_hypothesis",
+        "confidence": 0.8,
+        "counterevidence_ids": [
+          "secondary-comparison"
+        ],
+        "missing_evidence": [
+          "Model feature importance for 'Contract'",
+          "Performance breakdown by 'Contract' category",
+          "Other feature drift statistics"
+        ],
+        "root_cause_hypothesis": "A substantial distribution shift in the 'Contract' feature (high PSI=0.67) between reference and candidate windows is a plausible contributor to the observed drop in model accuracy.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-psi",
+          "candidate-reference",
+          "candidate-observed",
+          "metric-comparison"
+        ]
+      },
+      "review_id": "dxreview-9f1f79f4bccd29332a27fe5051e70fa66ff518f1a8a08943816537e05bd18b16"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.7000946073793756,\"One year\":0.17975402081362346,\"Two year\":0.12015137180700095},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "c729635fb95e371fcda5f1b6f671434b7f675694e35e94ad3da2c8a2b8f0250f",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "17967c24e821a7cd4517bbe5ad74d71d35f03bd05a3826066e49d6254529053e",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "observation",
+        "confidence": 0.7,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Reference or baseline distribution for 'Contract' feature (e.g., training or production window)",
+          "Information about model performance or errors related to this imbalance"
+        ],
+        "root_cause_hypothesis": "The candidate window shows a strong class imbalance in the 'Contract' feature, with 'Month-to-month' contracts comprising approximately 70% of the data.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-observed"
+        ]
+      },
+      "review_id": "dxreview-a7828c37819685ad189f65fe7981db23c5f36df7cc82424878ee0d304ff34259"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5998107852412489,\"One year\":0.19962157048249762,\"Two year\":0.20056764427625354},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "1cd242987f7177b97e4eec2fd333b09af61a07a3da3a90d5300a45e03a5037af",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          },
+          {
+            "content": "{\"comparison\":\"reference_to_candidate\",\"feature\":\"Contract\",\"psi\":0.008457204765204339,\"sample_size\":1057}",
+            "content_sha256": "41503b3cfb6145eeaf7643ff067b7357497d67615b1fe43eeee99d56e9d0b346",
+            "evidence_id": "candidate-psi",
+            "evidence_roles": [
+              "candidate_psi"
+            ],
+            "kind": "metric",
+            "title": "Categorical profile comparison statistic"
+          },
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5638599810785241,\"One year\":0.1986754966887417,\"Two year\":0.23746452223273415},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"reference\"}",
+            "content_sha256": "7c6919fe9602bb263881fd404c04314eba83f87c687678c509cf2c8445ace21b",
+            "evidence_id": "candidate-reference",
+            "evidence_roles": [
+              "candidate_distribution_reference"
+            ],
+            "kind": "dataset_profile",
+            "title": "Reference-window categorical profile"
+          },
+          {
+            "content": "{\"classification\":\"stable\",\"delta\":0.0056764427625355385,\"metric\":\"accuracy\",\"observed\":0.7994323557237465,\"reference\":0.793755912961211,\"reference_split\":\"test\"}",
+            "content_sha256": "6a7c9e31bc9ce4f3c2b6ca12e835b5b5ed5469807d0883ac06e110c7e7e21b92",
+            "evidence_id": "metric-comparison",
+            "evidence_roles": [
+              "metric_comparison"
+            ],
+            "kind": "metric",
+            "title": "Evaluation metric comparison"
+          },
+          {
+            "content": "{\"distribution_observed\":{\"Female\":0.521286660359508,\"Male\":0.47871333964049195},\"distribution_reference\":{\"Female\":0.5099337748344371,\"Male\":0.4900662251655629},\"feature\":\"gender\",\"psi\":0.0005160773269547905}",
+            "content_sha256": "22f8cb520123b92b42252ee075ab14db78b5ef046101157e8e575ea4cb7b7c80",
+            "evidence_id": "secondary-comparison",
+            "evidence_roles": [
+              "secondary_distribution_comparison"
+            ],
+            "kind": "dataset_profile",
+            "title": "Additional categorical profile comparison"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "c81729e64c36f08740183132210b3958c3ff9ad9c69c99fc0d42d829d2dab409",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "comparison",
+        "confidence": 0.95,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "evidence of other features' distribution shifts",
+          "evidence of model performance on additional metrics (e.g., precision, recall)",
+          "evidence of data quality issues"
+        ],
+        "root_cause_hypothesis": "There is no significant distribution shift in the 'Contract' feature between the reference and candidate windows, as indicated by the low PSI value, and the model's accuracy remains stable.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-psi",
+          "metric-comparison"
+        ]
+      },
+      "review_id": "dxreview-aa3d2d2bedb088e261f2ea79f3d233857457176c2441394d2339489654359872"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.4001892147587512,\"One year\":0.29990539262062443,\"Two year\":0.29990539262062443},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "c6e9129058ec75b97a2655d7404c513a933deb8ccf6a4a3a937fcad0c226d275",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          },
+          {
+            "content": "{\"comparison\":\"reference_to_candidate\",\"feature\":\"Contract\",\"psi\":0.11238018499394713,\"sample_size\":1057}",
+            "content_sha256": "f00f8c3cbefa5ad0cb2885f111148a73a7851415636f91060599f3bb4cf0a062",
+            "evidence_id": "candidate-psi",
+            "evidence_roles": [
+              "candidate_psi"
+            ],
+            "kind": "metric",
+            "title": "Categorical profile comparison statistic"
+          },
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5638599810785241,\"One year\":0.1986754966887417,\"Two year\":0.23746452223273415},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"reference\"}",
+            "content_sha256": "7c6919fe9602bb263881fd404c04314eba83f87c687678c509cf2c8445ace21b",
+            "evidence_id": "candidate-reference",
+            "evidence_roles": [
+              "candidate_distribution_reference"
+            ],
+            "kind": "dataset_profile",
+            "title": "Reference-window categorical profile"
+          },
+          {
+            "content": "{\"classification\":\"improvement\",\"delta\":0.03878902554399244,\"metric\":\"accuracy\",\"observed\":0.8325449385052034,\"reference\":0.793755912961211,\"reference_split\":\"test\"}",
+            "content_sha256": "51be410236ebd0fd82137fdd7a5b3408981741b9c920512b2447198b806d7683",
+            "evidence_id": "metric-comparison",
+            "evidence_roles": [
+              "metric_comparison"
+            ],
+            "kind": "metric",
+            "title": "Evaluation metric comparison"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "da26b562b9e21cf4a4ec92970421f2ef5f90d09a3157133a3b67c789ab57d7d5",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "comparison",
+        "confidence": 0.7,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Evidence about other features' distribution shifts",
+          "Information on model calibration or fairness metrics",
+          "Details on potential confounding variables"
+        ],
+        "root_cause_hypothesis": "There is a moderate shift in the distribution of the 'Contract' feature between the reference and candidate windows (PSI=0.11), but this shift coincides with an improvement in model accuracy.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-psi",
+          "candidate-observed",
+          "candidate-reference",
+          "metric-comparison"
+        ]
+      },
+      "review_id": "dxreview-ac74139467dbe68aaa89c6c94d94b54eb0387d8f2147a68b3e1182f6a0589bbc"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.8003784295175024,\"One year\":0.12015137180700095,\"Two year\":0.07947019867549669},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "fea393629cc16ad16db9e10b4cd16300b0720b1423c88df7fbeaa338772d4370",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          },
+          {
+            "content": "{\"comparison\":\"reference_to_candidate\",\"feature\":\"Contract\",\"psi\":0.2952850571777481,\"sample_size\":1057}",
+            "content_sha256": "fb2d350f42bad4ca81f317cf26fb2228693564823850d136c062d6fbdbf87936",
+            "evidence_id": "candidate-psi",
+            "evidence_roles": [
+              "candidate_psi"
+            ],
+            "kind": "metric",
+            "title": "Categorical profile comparison statistic"
+          },
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5638599810785241,\"One year\":0.1986754966887417,\"Two year\":0.23746452223273415},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"reference\"}",
+            "content_sha256": "7c6919fe9602bb263881fd404c04314eba83f87c687678c509cf2c8445ace21b",
+            "evidence_id": "candidate-reference",
+            "evidence_roles": [
+              "candidate_distribution_reference"
+            ],
+            "kind": "dataset_profile",
+            "title": "Reference-window categorical profile"
+          },
+          {
+            "content": "{\"classification\":\"regression\",\"delta\":-0.05676442762535472,\"metric\":\"accuracy\",\"observed\":0.7369914853358562,\"reference\":0.793755912961211,\"reference_split\":\"test\"}",
+            "content_sha256": "a611f7fbd2017f2ac6f91e494eecde3245f926eb8f96b3a7dec5c0a8633259ac",
+            "evidence_id": "metric-comparison",
+            "evidence_roles": [
+              "metric_comparison"
+            ],
+            "kind": "metric",
+            "title": "Evaluation metric comparison"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "d58569236a2436740ea3d75bbc9d0a360f87f7eb1a0f821725d59dc40514e030",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "bounded_causal_hypothesis",
+        "confidence": 0.7,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Direct evidence linking 'Contract' feature shift to model prediction errors (e.g., feature importance or error analysis by 'Contract' category)",
+          "Information about other features' distribution shifts or stability",
+          "Details on model sensitivity to 'Contract' feature"
+        ],
+        "root_cause_hypothesis": "There is a substantial distribution shift in the 'Contract' feature between the reference and candidate windows, as indicated by the PSI value and the observed categorical distributions. This shift may be contributing to the observed decrease in model accuracy.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-observed",
+          "candidate-reference",
+          "candidate-psi",
+          "metric-comparison"
+        ]
+      },
+      "review_id": "dxreview-adee14426ecc08003e5ac344e2f111c21bbb38feae7cd8524a44fe2ddeac07ec"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.8003784295175024,\"One year\":0.12015137180700095,\"Two year\":0.07947019867549669},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "fea393629cc16ad16db9e10b4cd16300b0720b1423c88df7fbeaa338772d4370",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          },
+          {
+            "content": "{\"comparison\":\"reference_to_candidate\",\"feature\":\"Contract\",\"psi\":0.2952850571777481,\"sample_size\":1057}",
+            "content_sha256": "fb2d350f42bad4ca81f317cf26fb2228693564823850d136c062d6fbdbf87936",
+            "evidence_id": "candidate-psi",
+            "evidence_roles": [
+              "candidate_psi"
+            ],
+            "kind": "metric",
+            "title": "Categorical profile comparison statistic"
+          },
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5638599810785241,\"One year\":0.1986754966887417,\"Two year\":0.23746452223273415},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"reference\"}",
+            "content_sha256": "7c6919fe9602bb263881fd404c04314eba83f87c687678c509cf2c8445ace21b",
+            "evidence_id": "candidate-reference",
+            "evidence_roles": [
+              "candidate_distribution_reference"
+            ],
+            "kind": "dataset_profile",
+            "title": "Reference-window categorical profile"
+          },
+          {
+            "content": "{\"classification\":\"regression\",\"delta\":-0.05676442762535472,\"metric\":\"accuracy\",\"observed\":0.7369914853358562,\"reference\":0.793755912961211,\"reference_split\":\"test\"}",
+            "content_sha256": "a611f7fbd2017f2ac6f91e494eecde3245f926eb8f96b3a7dec5c0a8633259ac",
+            "evidence_id": "metric-comparison",
+            "evidence_roles": [
+              "metric_comparison"
+            ],
+            "kind": "metric",
+            "title": "Evaluation metric comparison"
+          },
+          {
+            "content": "{\"distribution_observed\":{\"Female\":0.4938505203405866,\"Male\":0.5061494796594135},\"distribution_reference\":{\"Female\":0.5099337748344371,\"Male\":0.4900662251655629},\"feature\":\"gender\",\"psi\":0.0010347883540860912}",
+            "content_sha256": "3f88b6ab3b5a7ca796dd130b7e5caf8ef69e91b49afd281736cfc300f53845a6",
+            "evidence_id": "secondary-comparison",
+            "evidence_roles": [
+              "secondary_distribution_comparison"
+            ],
+            "kind": "dataset_profile",
+            "title": "Additional categorical profile comparison"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "fb24d550a775c68feea9c8431e7193451d4094a8a8476bb071cb2aa2f8f893b3",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "bounded_causal_hypothesis",
+        "confidence": 0.7,
+        "counterevidence_ids": [
+          "secondary-comparison"
+        ],
+        "missing_evidence": [
+          "Direct evidence linking 'Contract' feature shift to model prediction errors (e.g., feature importance or error analysis by 'Contract' type)",
+          "Information on other features' distribution shifts and their PSI values",
+          "Model sensitivity analysis to 'Contract' feature"
+        ],
+        "root_cause_hypothesis": "There is a substantial distribution shift in the 'Contract' feature between the reference and candidate windows (PSI=0.295), which may be contributing to the observed decrease in model accuracy.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-psi",
+          "candidate-observed",
+          "candidate-reference",
+          "metric-comparison"
+        ]
+      },
+      "review_id": "dxreview-c139c78db0ddecaf60aeea6fe3473192f7c54ebecb62e7e030aaba9ffa5384cc"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.4001892147587512,\"One year\":0.29990539262062443,\"Two year\":0.29990539262062443},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "c6e9129058ec75b97a2655d7404c513a933deb8ccf6a4a3a937fcad0c226d275",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          },
+          {
+            "content": "{\"comparison\":\"reference_to_candidate\",\"feature\":\"Contract\",\"psi\":0.11238018499394713,\"sample_size\":1057}",
+            "content_sha256": "f00f8c3cbefa5ad0cb2885f111148a73a7851415636f91060599f3bb4cf0a062",
+            "evidence_id": "candidate-psi",
+            "evidence_roles": [
+              "candidate_psi"
+            ],
+            "kind": "metric",
+            "title": "Categorical profile comparison statistic"
+          },
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5638599810785241,\"One year\":0.1986754966887417,\"Two year\":0.23746452223273415},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"reference\"}",
+            "content_sha256": "7c6919fe9602bb263881fd404c04314eba83f87c687678c509cf2c8445ace21b",
+            "evidence_id": "candidate-reference",
+            "evidence_roles": [
+              "candidate_distribution_reference"
+            ],
+            "kind": "dataset_profile",
+            "title": "Reference-window categorical profile"
+          },
+          {
+            "content": "{\"classification\":\"improvement\",\"delta\":0.03878902554399244,\"metric\":\"accuracy\",\"observed\":0.8325449385052034,\"reference\":0.793755912961211,\"reference_split\":\"test\"}",
+            "content_sha256": "51be410236ebd0fd82137fdd7a5b3408981741b9c920512b2447198b806d7683",
+            "evidence_id": "metric-comparison",
+            "evidence_roles": [
+              "metric_comparison"
+            ],
+            "kind": "metric",
+            "title": "Evaluation metric comparison"
+          },
+          {
+            "content": "{\"distribution_observed\":{\"Female\":0.5193945127719962,\"Male\":0.4806054872280038},\"distribution_reference\":{\"Female\":0.5099337748344371,\"Male\":0.4900662251655629},\"feature\":\"gender\",\"psi\":0.0003583412041772424}",
+            "content_sha256": "d4cfe9db618e8fe962c174bbf37f05dc909bf4d345be072a82708a622f651e1f",
+            "evidence_id": "secondary-comparison",
+            "evidence_roles": [
+              "secondary_distribution_comparison"
+            ],
+            "kind": "dataset_profile",
+            "title": "Additional categorical profile comparison"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "882dd21d866b48bcdf782c28dc5b9d010b0ee0a29b96235651b8aef68e2a3ac9",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "comparison",
+        "confidence": 0.7,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Feature importance or model sensitivity to 'Contract'",
+          "Other feature distribution shifts",
+          "Downstream impact on fairness or subgroup performance"
+        ],
+        "root_cause_hypothesis": "There is a moderate distribution shift in the 'Contract' feature between the reference and candidate windows, as indicated by the observed distributions and a PSI of 0.11, but this shift does not appear to have negatively impacted model accuracy, which has improved.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-observed",
+          "candidate-reference",
+          "candidate-psi",
+          "metric-comparison"
+        ]
+      },
+      "review_id": "dxreview-c6971e02faac10b8be04b175e1644662fa315066ba7e9087ad091a580d60d33f"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5998107852412489,\"One year\":0.19962157048249762,\"Two year\":0.20056764427625354},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "1cd242987f7177b97e4eec2fd333b09af61a07a3da3a90d5300a45e03a5037af",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          },
+          {
+            "content": "{\"comparison\":\"reference_to_candidate\",\"feature\":\"Contract\",\"psi\":0.008457204765204339,\"sample_size\":1057}",
+            "content_sha256": "41503b3cfb6145eeaf7643ff067b7357497d67615b1fe43eeee99d56e9d0b346",
+            "evidence_id": "candidate-psi",
+            "evidence_roles": [
+              "candidate_psi"
+            ],
+            "kind": "metric",
+            "title": "Categorical profile comparison statistic"
+          },
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5638599810785241,\"One year\":0.1986754966887417,\"Two year\":0.23746452223273415},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"reference\"}",
+            "content_sha256": "7c6919fe9602bb263881fd404c04314eba83f87c687678c509cf2c8445ace21b",
+            "evidence_id": "candidate-reference",
+            "evidence_roles": [
+              "candidate_distribution_reference"
+            ],
+            "kind": "dataset_profile",
+            "title": "Reference-window categorical profile"
+          },
+          {
+            "content": "{\"classification\":\"stable\",\"delta\":0.0056764427625355385,\"metric\":\"accuracy\",\"observed\":0.7994323557237465,\"reference\":0.793755912961211,\"reference_split\":\"test\"}",
+            "content_sha256": "6a7c9e31bc9ce4f3c2b6ca12e835b5b5ed5469807d0883ac06e110c7e7e21b92",
+            "evidence_id": "metric-comparison",
+            "evidence_roles": [
+              "metric_comparison"
+            ],
+            "kind": "metric",
+            "title": "Evaluation metric comparison"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "1bb5af679db2aa3285db1f6aa0d1404ccf336608cbde98388a54f50c423f04fc",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "comparison",
+        "confidence": 0.95,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Other features' distribution and PSI values",
+          "Additional performance metrics (e.g., precision, recall)",
+          "Information about data quality or label distribution"
+        ],
+        "root_cause_hypothesis": "There is no significant distribution shift in the 'Contract' feature between the reference and candidate windows, and model accuracy remains stable.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-psi",
+          "metric-comparison"
+        ]
+      },
+      "review_id": "dxreview-cc92a47657aae8fb9be18ffc58b296d54d911adb4a6d5121eb9ca9d12b5b7679"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.8003784295175024,\"One year\":0.12015137180700095,\"Two year\":0.07947019867549669},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "fea393629cc16ad16db9e10b4cd16300b0720b1423c88df7fbeaa338772d4370",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          },
+          {
+            "content": "{\"comparison\":\"reference_to_candidate\",\"feature\":\"Contract\",\"psi\":0.2952850571777481,\"sample_size\":1057}",
+            "content_sha256": "fb2d350f42bad4ca81f317cf26fb2228693564823850d136c062d6fbdbf87936",
+            "evidence_id": "candidate-psi",
+            "evidence_roles": [
+              "candidate_psi"
+            ],
+            "kind": "metric",
+            "title": "Categorical profile comparison statistic"
+          },
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5638599810785241,\"One year\":0.1986754966887417,\"Two year\":0.23746452223273415},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"reference\"}",
+            "content_sha256": "7c6919fe9602bb263881fd404c04314eba83f87c687678c509cf2c8445ace21b",
+            "evidence_id": "candidate-reference",
+            "evidence_roles": [
+              "candidate_distribution_reference"
+            ],
+            "kind": "dataset_profile",
+            "title": "Reference-window categorical profile"
+          },
+          {
+            "content": "{\"classification\":\"regression\",\"delta\":-0.05676442762535472,\"metric\":\"accuracy\",\"observed\":0.7369914853358562,\"reference\":0.793755912961211,\"reference_split\":\"test\"}",
+            "content_sha256": "a611f7fbd2017f2ac6f91e494eecde3245f926eb8f96b3a7dec5c0a8633259ac",
+            "evidence_id": "metric-comparison",
+            "evidence_roles": [
+              "metric_comparison"
+            ],
+            "kind": "metric",
+            "title": "Evaluation metric comparison"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "eb0e0fc96852868d9898001fdc3f2f87456187f383c4a9adfa2ec839b120bd3f",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "bounded_causal_hypothesis",
+        "confidence": 0.7,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Evidence of other feature shifts or stability",
+          "Information about model retraining or adaptation to new distribution",
+          "Analysis of feature importance for 'Contract' in the model",
+          "Other potential causes for accuracy drop (e.g., label distribution shift, data quality issues)"
+        ],
+        "root_cause_hypothesis": "A substantial shift in the distribution of the 'Contract' feature between the reference and candidate windows (as indicated by a PSI of 0.295) is a plausible contributor to the observed drop in model accuracy (-0.057).",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-psi",
+          "candidate-observed",
+          "candidate-reference",
+          "metric-comparison"
+        ]
+      },
+      "review_id": "dxreview-d8aca48fa40fea99fd749066ba8d2a5a219480fa77fab6888aca78e2c77b6698"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.8003784295175024,\"One year\":0.12015137180700095,\"Two year\":0.07947019867549669},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "fea393629cc16ad16db9e10b4cd16300b0720b1423c88df7fbeaa338772d4370",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "3ad8c79677375f67dd8e0f7b6fd9b8078ffab429d16def3e402c1f2db1cc63c8",
+      "model_output": {
+        "abstain": true,
+        "claim_strength": "observation",
+        "confidence": 0.5,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Reference or baseline distribution for 'Contract' feature (e.g., training or production window) to assess if this skew is anomalous or problematic.",
+          "Performance metrics or error analysis to determine if this skew correlates with model issues."
+        ],
+        "root_cause_hypothesis": "The 'Contract' feature in the candidate window is heavily skewed towards the 'Month-to-month' category (80%), with much lower representation of 'One year' and 'Two year' contracts.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-observed"
+        ]
+      },
+      "review_id": "dxreview-e7b1966d2dad86ef2fe5bb9d1ab157014f8b1c9aa3f6ed03d05c8ad355223dd4"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5998107852412489,\"One year\":0.19962157048249762,\"Two year\":0.20056764427625354},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "1cd242987f7177b97e4eec2fd333b09af61a07a3da3a90d5300a45e03a5037af",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          },
+          {
+            "content": "{\"comparison\":\"reference_to_candidate\",\"feature\":\"Contract\",\"psi\":0.008457204765204339,\"sample_size\":1057}",
+            "content_sha256": "41503b3cfb6145eeaf7643ff067b7357497d67615b1fe43eeee99d56e9d0b346",
+            "evidence_id": "candidate-psi",
+            "evidence_roles": [
+              "candidate_psi"
+            ],
+            "kind": "metric",
+            "title": "Categorical profile comparison statistic"
+          },
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5638599810785241,\"One year\":0.1986754966887417,\"Two year\":0.23746452223273415},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"reference\"}",
+            "content_sha256": "7c6919fe9602bb263881fd404c04314eba83f87c687678c509cf2c8445ace21b",
+            "evidence_id": "candidate-reference",
+            "evidence_roles": [
+              "candidate_distribution_reference"
+            ],
+            "kind": "dataset_profile",
+            "title": "Reference-window categorical profile"
+          },
+          {
+            "content": "{\"classification\":\"stable\",\"delta\":0.0056764427625355385,\"metric\":\"accuracy\",\"observed\":0.7994323557237465,\"reference\":0.793755912961211,\"reference_split\":\"test\"}",
+            "content_sha256": "6a7c9e31bc9ce4f3c2b6ca12e835b5b5ed5469807d0883ac06e110c7e7e21b92",
+            "evidence_id": "metric-comparison",
+            "evidence_roles": [
+              "metric_comparison"
+            ],
+            "kind": "metric",
+            "title": "Evaluation metric comparison"
+          },
+          {
+            "content": "{\"distribution_observed\":{\"Female\":0.521286660359508,\"Male\":0.47871333964049195},\"distribution_reference\":{\"Female\":0.5099337748344371,\"Male\":0.4900662251655629},\"feature\":\"gender\",\"psi\":0.0005160773269547905}",
+            "content_sha256": "22f8cb520123b92b42252ee075ab14db78b5ef046101157e8e575ea4cb7b7c80",
+            "evidence_id": "secondary-comparison",
+            "evidence_roles": [
+              "secondary_distribution_comparison"
+            ],
+            "kind": "dataset_profile",
+            "title": "Additional categorical profile comparison"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "4cd7af218720123705d493ea7cda83ec8c9ed4d4769f35f20faeca6e971683c4",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "observation",
+        "confidence": 0.95,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "evidence of other feature shifts",
+          "evidence of label distribution shift",
+          "evidence of data quality issues"
+        ],
+        "root_cause_hypothesis": "There is no significant distribution shift in the 'Contract' feature between the reference and candidate windows, as indicated by a low PSI value (0.0085), and model accuracy remains stable across these windows.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-psi",
+          "metric-comparison"
+        ]
+      },
+      "review_id": "dxreview-e837dc9bd54f5e511215aadb32e2d3f2d9d6847b0c0ca8532bb60b74ff11d79b"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.8997161778618732,\"One year\":0.06054872280037843,\"Two year\":0.039735099337748346},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "43b73710d84159359f6062806e4494d970d8f5f9ac4819a6ef8568d49b45015f",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "6d17dd0594553ca8da8f05427c91024f3a7640a1f6949e6e247395695dc556e5",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "observation",
+        "confidence": 0.7,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Reference distribution for 'Contract' in training or production windows to assess shift or drift",
+          "Performance metrics stratified by 'Contract' type to evaluate impact"
+        ],
+        "root_cause_hypothesis": "The 'Contract' feature in the candidate window is highly imbalanced, with nearly 90% of samples labeled as 'Month-to-month'.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-observed"
+        ]
+      },
+      "review_id": "dxreview-f029be64f60dea0124d0448a17a874ae3da41a2469b8b418240f28514964774a"
+    },
+    {
+      "diagnosis_evidence": {
+        "items": [
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.8997161778618732,\"One year\":0.06054872280037843,\"Two year\":0.039735099337748346},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"candidate\"}",
+            "content_sha256": "43b73710d84159359f6062806e4494d970d8f5f9ac4819a6ef8568d49b45015f",
+            "evidence_id": "candidate-observed",
+            "evidence_roles": [
+              "candidate_distribution_observed",
+              "symptom"
+            ],
+            "kind": "dataset_profile",
+            "title": "Candidate-window categorical profile"
+          },
+          {
+            "content": "{\"comparison\":\"reference_to_candidate\",\"feature\":\"Contract\",\"psi\":0.6745596393254225,\"sample_size\":1057}",
+            "content_sha256": "1264cd2e867c2c344d66432404f8a8b6f5d76ddb8dc9f6543f496980f9989fb7",
+            "evidence_id": "candidate-psi",
+            "evidence_roles": [
+              "candidate_psi"
+            ],
+            "kind": "metric",
+            "title": "Categorical profile comparison statistic"
+          },
+          {
+            "content": "{\"distribution\":{\"Month-to-month\":0.5638599810785241,\"One year\":0.1986754966887417,\"Two year\":0.23746452223273415},\"feature\":\"Contract\",\"sample_size\":1057,\"window\":\"reference\"}",
+            "content_sha256": "7c6919fe9602bb263881fd404c04314eba83f87c687678c509cf2c8445ace21b",
+            "evidence_id": "candidate-reference",
+            "evidence_roles": [
+              "candidate_distribution_reference"
+            ],
+            "kind": "dataset_profile",
+            "title": "Reference-window categorical profile"
+          },
+          {
+            "content": "{\"classification\":\"regression\",\"delta\":-0.08514664143803219,\"metric\":\"accuracy\",\"observed\":0.7086092715231788,\"reference\":0.793755912961211,\"reference_split\":\"test\"}",
+            "content_sha256": "5fa8afcdd8fc0554c8f3994f349fc4d4917b19c391a17bb9dba3a2a0a8ead675",
+            "evidence_id": "metric-comparison",
+            "evidence_roles": [
+              "metric_comparison"
+            ],
+            "kind": "metric",
+            "title": "Evaluation metric comparison"
+          }
+        ],
+        "schema_version": "blind-diagnosis-evidence/1"
+      },
+      "entry_binding_sha256": "2213720eed69821664ec0fc495ed36f3a2a269c66598199ea26513a8019e70d2",
+      "model_output": {
+        "abstain": false,
+        "claim_strength": "bounded_causal_hypothesis",
+        "confidence": 0.8,
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Evidence about other features' distribution shifts",
+          "Evidence about model retraining or adaptation to new distribution",
+          "Evidence about other potential causes for accuracy drop (e.g., label distribution shift, data quality issues)"
+        ],
+        "root_cause_hypothesis": "A substantial shift in the distribution of the 'Contract' feature (high PSI of 0.67) between the reference and candidate windows is a plausible contributor to the observed drop in model accuracy.",
+        "schema_version": "diagnosis-output/1",
+        "supporting_evidence_ids": [
+          "candidate-psi",
+          "candidate-reference",
+          "candidate-observed",
+          "metric-comparison"
+        ]
+      },
+      "review_id": "dxreview-f29be336350761a5adb5c24f1ee46091c0a4e28f76fb4e457a1bc8f07fd91c1e"
+    }
+  ],
+  "entry_count": 30,
+  "schema_version": "diagnosis-human-review-blind-packet/1",
+  "source_result_lock_sha256": "8050de78966315be6f5df5c60bb9b1fcff163513b3621a78f5d78c41fa20c815"
+}

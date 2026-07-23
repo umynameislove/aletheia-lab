@@ -55,6 +55,11 @@ TRACKING_NAME_PATTERNS = [
     r"project[_-]?brief",
     r"implementation[_-]?order",
     r"reuse[_-]?map",
+    r"^job(?:[_-][^.]+)?(?:\.md|\.txt)$",
+    r"review[_-]?to[_-]?fix",
+    r"addendum[_-]?(final|review)",
+    r"\d{2}[_-]?tasks",
+    r"meeting[_-]?notes",
     r"related[_-]?work[_-]?(alignment|amendment)",
     r"do[_-]?an[_-]?tot[_-]?nghiep",
 ]
@@ -65,9 +70,17 @@ CONTENT_RED_FLAGS = [
     re.compile(r"score\s*k[yỳ]\s*v[oọ]ng", re.IGNORECASE),
     re.compile(r"paper\s*potential", re.IGNORECASE),
     re.compile(r"defense\s*readiness", re.IGNORECASE),
-    re.compile(r"\b\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?\s*/\s*10\b"),  # self-grade N/10
+    re.compile(
+        r"\b(score|rating|readiness|đánh\s*giá)\b[^\n]{0,40}"
+        r"\b\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?\s*/\s*10\b",
+        re.IGNORECASE,
+    ),
     re.compile(r"generated\s+by\s+(ai|claude|gpt)\b", re.IGNORECASE),
     re.compile(r"co-authored-by:\s*(claude|assistant|gpt)", re.IGNORECASE),
+    re.compile(r"\bauditor\s+đ[uú]ng\b", re.IGNORECASE),
+    re.compile(r"\bcorrection\s+addendum\b", re.IGNORECASE),
+    re.compile(r"\bauthorized\s+novelty\s+statement\b", re.IGNORECASE),
+    re.compile(r"\bstrongest\s+novelty\s+claim\b", re.IGNORECASE),
     re.compile(r"\bplanned_after[_a-z0-9-]*\s*:", re.IGNORECASE),
     re.compile(r"\b(deadline_policy|official_case_goal|next_step)\s*:", re.IGNORECASE),
     re.compile(r"^##\s*(task id|phase\s*/\s*module)\s*$", re.IGNORECASE | re.MULTILINE),
@@ -81,11 +94,11 @@ WALK_EXCLUDED_DIRS = {
     "node_modules",
     "data",
     "experiments",
-    "reports",
 }
 ALLOW_RELATIVE = {
     "scripts/check_repo_hygiene.py",
     "src/aletheia_lab/reporting/tables.py",
+    "tests/unit/test_repo_hygiene.py",
 }
 
 

@@ -1,0 +1,71 @@
+{
+  "claim_boundary": "Feasibility and directional pilot evidence only; human semantic review is pending and five independent families do not support a statistical superiority or generalization claim.",
+  "diagnosis_context_count": 15,
+  "evaluation_report_sha256": "10b48323afb9009d2498dffb18339d7023d0a4b157194dfb03622e956fcf4da2",
+  "evaluation_summary": {
+    "behavior_compliant_count": 29,
+    "complete_paired_family_count": 10,
+    "correctness_counts": {
+      "correct": 23,
+      "incorrect": 1,
+      "not_asserted": 6
+    },
+    "evaluable_count": 30,
+    "evidence_aligned_count": 29,
+    "missing_key_sensitive_count": 10,
+    "noisy_robust_count": 8,
+    "run_count": 30,
+    "support_counts": {
+      "fully_supported": 30
+    }
+  },
+  "independent_family_count": 5,
+  "provider_identity": {
+    "model": "gpt-4.1-2025-04-14",
+    "provider": "openai",
+    "version": "2025-04-14"
+  },
+  "result_lock_sha256": "8050de78966315be6f5df5c60bb9b1fcff163513b3621a78f5d78c41fa20c815",
+  "result_status": "machine_scored_pending_human_review",
+  "run_count": 30,
+  "schema_version": "p1-canonical-result/1",
+  "source_evidence_store_sha256": "9956befcef9cef31c15813268f6bb5f54783f4699fe6f7b09e0c1ab55fcc967a",
+  "variant_count": 2,
+  "variant_summaries": [
+    {
+      "behavior_compliant_count": 15,
+      "correctness_counts": {
+        "correct": 12,
+        "not_asserted": 3
+      },
+      "evaluable_count": 15,
+      "evidence_aligned_count": 15,
+      "missing_key_sensitive_count": 5,
+      "noisy_robust_count": 4,
+      "paired_group_count": 5,
+      "run_count": 15,
+      "support_counts": {
+        "fully_supported": 15
+      },
+      "variant": "a3_evidence_contract"
+    },
+    {
+      "behavior_compliant_count": 14,
+      "correctness_counts": {
+        "correct": 11,
+        "incorrect": 1,
+        "not_asserted": 3
+      },
+      "evaluable_count": 15,
+      "evidence_aligned_count": 14,
+      "missing_key_sensitive_count": 5,
+      "noisy_robust_count": 4,
+      "paired_group_count": 5,
+      "run_count": 15,
+      "support_counts": {
+        "fully_supported": 15
+      },
+      "variant": "b1_plain"
+    }
+  ]
+}

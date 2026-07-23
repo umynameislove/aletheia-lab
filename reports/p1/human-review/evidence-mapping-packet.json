@@ -1,0 +1,179 @@
+{
+  "blind_packet_sha256": "956c98e9619434d10aa594c39cf90c5c46afefa9a5c54ab02681d58c3fe60511",
+  "entries": [
+    {
+      "binding_sha256": "53bf4796b0aac745a85c827c063c25e8f168a1bf4fe5b3c00978833723d75a47",
+      "case_family_id": "p1-family-626dd94ace11e6d668ef277c32a04680c9819c1fc42fcdb4edf95677bf60673b",
+      "diagnosis_view_sha256": "50a05492daa3b77a02f73cffc2aeda0a0b9489dedb7abb4c1e2350b5947d968a",
+      "evidence_bundle_id": "eb-p1-case-03-missing-key",
+      "evidence_condition": "missing_key",
+      "expected_diagnosis_behavior": "report_tentative_hypothesis_and_request_evidence",
+      "expected_sufficiency": "bounded_hypothesis_tentative_only",
+      "family_review_id": "family-review-0c4fad718bd3155ece8635a1c10f96fa83d2537c1020e5ad00d3f950bd154d48",
+      "review_id": "review-1c87bb4d8d7eebdef55a0cd3beedbeaa80484d3b00e90de967f2810ea44b56ad"
+    },
+    {
+      "binding_sha256": "8735fff0f49bcd8cfd98c2efe2103c695a9e667e175f8f03c3ab9daa51230839",
+      "case_family_id": "p1-family-9456255ca8887cfc717457b3879b448e5e396de6f5ef29560a808ad767481f6c",
+      "diagnosis_view_sha256": "0913a4f5c64aef223373c51047c7ebef740513a6795e8b76f1f541e19a81e0f7",
+      "evidence_bundle_id": "eb-p1-case-05-noisy",
+      "evidence_condition": "noisy",
+      "expected_diagnosis_behavior": "report_bounded_hypothesis_with_citations_and_handle_secondary_comparison",
+      "expected_sufficiency": "bounded_hypothesis_supported",
+      "family_review_id": "family-review-eea11c0cbe231bf5f0bc0b3604bd28a4c5b6783c3020c1023bae8a3c289d2d3d",
+      "review_id": "review-44a815aab6054ae307a6c0609913ca9eef9d08e9d10719831eea88241488a288"
+    },
+    {
+      "binding_sha256": "3888cafb587d6116eb3e84b96dd384697b216f3e53d04a92f0a8970253dfbc3f",
+      "case_family_id": "p1-family-8e207fea89dfa353b28315bc3c4050fff0b16245f00455de1f78b53580ccb4b5",
+      "diagnosis_view_sha256": "0d96f8856d68990a1812ce11892b756c626f48c131507124c0bf36fbecbb0108",
+      "evidence_bundle_id": "eb-p1-case-04-noisy",
+      "evidence_condition": "noisy",
+      "expected_diagnosis_behavior": "report_bounded_hypothesis_with_citations_and_handle_secondary_comparison",
+      "expected_sufficiency": "bounded_hypothesis_supported",
+      "family_review_id": "family-review-ea5c7259ca1e0fcea2a34f26a14d1808110b0e06c2704a73c802e5a0fd00b097",
+      "review_id": "review-4bf7734a3d06bc2de0b1d2dbdecd8f6e2f9c73321293de429ee190ed4f0bb3be"
+    },
+    {
+      "binding_sha256": "9e29bf29f86d3fefd3e8384b002cda0bfbab3adeb3d35544675b05d79d36eabe",
+      "case_family_id": "p1-family-1bf39d487e89b6dc1da77331550395df78358eaa8b2ecdd413432e64a7b9f0ae",
+      "diagnosis_view_sha256": "f54328557b220e05bdbe2af869d3b5938deeabdef5adaf5e5ddb9fdcb8a12dba",
+      "evidence_bundle_id": "eb-p1-case-02-missing-key",
+      "evidence_condition": "missing_key",
+      "expected_diagnosis_behavior": "report_tentative_hypothesis_and_request_evidence",
+      "expected_sufficiency": "bounded_hypothesis_tentative_only",
+      "family_review_id": "family-review-778942401d3764919e10208ce1a1b3fdabf3c83d9b388cb8d1be461eb884d920",
+      "review_id": "review-70add5499bb54a647a089fea27a62654294096f397355f5f98a49c01ccb23db4"
+    },
+    {
+      "binding_sha256": "0a6cb1852d6780c70e82cf8edbcce8eb87307ba2807a2477310072c738cd697e",
+      "case_family_id": "p1-family-1bf39d487e89b6dc1da77331550395df78358eaa8b2ecdd413432e64a7b9f0ae",
+      "diagnosis_view_sha256": "26c8d1f71fd3ccca8d2fedc50b655b380a7e6b0759ec3ebfbe8c3f8a228c6649",
+      "evidence_bundle_id": "eb-p1-case-02-full",
+      "evidence_condition": "full",
+      "expected_diagnosis_behavior": "report_bounded_hypothesis_with_citations",
+      "expected_sufficiency": "bounded_hypothesis_supported",
+      "family_review_id": "family-review-778942401d3764919e10208ce1a1b3fdabf3c83d9b388cb8d1be461eb884d920",
+      "review_id": "review-864a524cb3d471af28df2faefd06a71f274075195faa21a98349c6c0298d4790"
+    },
+    {
+      "binding_sha256": "1c2ec0a43bb5ec84906fed32e814c5160d0cfc7a36115f06b63b3a380ebfc8c6",
+      "case_family_id": "p1-family-72137535a8a990f0d8c05cd467ed17830effd3ee2e8a10bf38426064ea3ebc49",
+      "diagnosis_view_sha256": "b6a5657baefe49542f7084883b8094609e161762e0b0d52a184b832459a546ad",
+      "evidence_bundle_id": "eb-p1-case-01-full",
+      "evidence_condition": "full",
+      "expected_diagnosis_behavior": "report_bounded_hypothesis_with_citations",
+      "expected_sufficiency": "bounded_hypothesis_supported",
+      "family_review_id": "family-review-923632e938d859d33492fb048e51c3f16e59e5b1817d8b8348368b324e734061",
+      "review_id": "review-a22dc5cd2a74ce002fd0ca1098989020de7ebf0963a251d566e6cce512a56d58"
+    },
+    {
+      "binding_sha256": "0101ce490f421875d6a39179ac971451d1bfa4336febc70a86871c9b22366202",
+      "case_family_id": "p1-family-8e207fea89dfa353b28315bc3c4050fff0b16245f00455de1f78b53580ccb4b5",
+      "diagnosis_view_sha256": "38c2822950835c1d25b08df8f56f7ba736b1d8b48aa3542eda5a8732cd186086",
+      "evidence_bundle_id": "eb-p1-case-04-full",
+      "evidence_condition": "full",
+      "expected_diagnosis_behavior": "report_bounded_hypothesis_with_citations",
+      "expected_sufficiency": "bounded_hypothesis_supported",
+      "family_review_id": "family-review-ea5c7259ca1e0fcea2a34f26a14d1808110b0e06c2704a73c802e5a0fd00b097",
+      "review_id": "review-a829cda794c1b621b24f1175da81cdda0931d70d78caf00aeca86e7b57fd0e5c"
+    },
+    {
+      "binding_sha256": "ba369531ad3e9f11d3e68d0e86b3c08688d873abf9991f8e62c5c4102a6a0373",
+      "case_family_id": "p1-family-72137535a8a990f0d8c05cd467ed17830effd3ee2e8a10bf38426064ea3ebc49",
+      "diagnosis_view_sha256": "659c9b428853fd691ece44a628e530d187af06b4645555f33d2fbb4100386eae",
+      "evidence_bundle_id": "eb-p1-case-01-missing-key",
+      "evidence_condition": "missing_key",
+      "expected_diagnosis_behavior": "report_tentative_hypothesis_and_request_evidence",
+      "expected_sufficiency": "bounded_hypothesis_tentative_only",
+      "family_review_id": "family-review-923632e938d859d33492fb048e51c3f16e59e5b1817d8b8348368b324e734061",
+      "review_id": "review-a9b3ff18e147d8a5630a54a94be4a4da523f75303e6fbc7e21fe40140f38c8e9"
+    },
+    {
+      "binding_sha256": "3a47df02cc7761f725485c7a8b74fcd9cdd9ff607c587194b27f3c681431f025",
+      "case_family_id": "p1-family-1bf39d487e89b6dc1da77331550395df78358eaa8b2ecdd413432e64a7b9f0ae",
+      "diagnosis_view_sha256": "f99c20c8e78e7d355354fc9a0adad6f8549351711c9d63bac3ab8f921121963a",
+      "evidence_bundle_id": "eb-p1-case-02-noisy",
+      "evidence_condition": "noisy",
+      "expected_diagnosis_behavior": "report_bounded_hypothesis_with_citations_and_handle_secondary_comparison",
+      "expected_sufficiency": "bounded_hypothesis_supported",
+      "family_review_id": "family-review-778942401d3764919e10208ce1a1b3fdabf3c83d9b388cb8d1be461eb884d920",
+      "review_id": "review-b407713c7752cda7dc4daf8b59a59e5e34bb8f96da025067bb4547e54d953764"
+    },
+    {
+      "binding_sha256": "d979a90a271e52ea3539d2f02cb1291749c7be10fb62dba879b6f2393aadf27c",
+      "case_family_id": "p1-family-72137535a8a990f0d8c05cd467ed17830effd3ee2e8a10bf38426064ea3ebc49",
+      "diagnosis_view_sha256": "d7f9f18c99cae30cfb0d8fd46c90a7a6a9336e83f62e0265907a11c9c1af0357",
+      "evidence_bundle_id": "eb-p1-case-01-noisy",
+      "evidence_condition": "noisy",
+      "expected_diagnosis_behavior": "report_bounded_hypothesis_with_citations_and_handle_secondary_comparison",
+      "expected_sufficiency": "bounded_hypothesis_supported",
+      "family_review_id": "family-review-923632e938d859d33492fb048e51c3f16e59e5b1817d8b8348368b324e734061",
+      "review_id": "review-bd4fe35b4f09f744ae5b540de073ec66f4b9568583981eb30561dc097fe88806"
+    },
+    {
+      "binding_sha256": "347f11cb4f65c4ebf1d52901d1887d7b9b0adca04ba7c1ec71d9df08eeb464ae",
+      "case_family_id": "p1-family-8e207fea89dfa353b28315bc3c4050fff0b16245f00455de1f78b53580ccb4b5",
+      "diagnosis_view_sha256": "de5c7058241d3e8c394b584257578a6c6cc43cb02360627a71fd4f5a9d4e0d2c",
+      "evidence_bundle_id": "eb-p1-case-04-missing-key",
+      "evidence_condition": "missing_key",
+      "expected_diagnosis_behavior": "report_tentative_hypothesis_and_request_evidence",
+      "expected_sufficiency": "bounded_hypothesis_tentative_only",
+      "family_review_id": "family-review-ea5c7259ca1e0fcea2a34f26a14d1808110b0e06c2704a73c802e5a0fd00b097",
+      "review_id": "review-bd88ae556a46793689e4531c83f5c65ada9d1d2f25b23354138237c1fc0f4a01"
+    },
+    {
+      "binding_sha256": "98f9014f981acbbc0638334e1303e32e8e35ec8425c4c9493d9ff9cfbbaccba4",
+      "case_family_id": "p1-family-626dd94ace11e6d668ef277c32a04680c9819c1fc42fcdb4edf95677bf60673b",
+      "diagnosis_view_sha256": "5d76aad2bdd52ed433215b8f5369f31fd90b75342c57ea214211feabbb8bec1b",
+      "evidence_bundle_id": "eb-p1-case-03-noisy",
+      "evidence_condition": "noisy",
+      "expected_diagnosis_behavior": "report_bounded_hypothesis_with_citations_and_handle_secondary_comparison",
+      "expected_sufficiency": "bounded_hypothesis_supported",
+      "family_review_id": "family-review-0c4fad718bd3155ece8635a1c10f96fa83d2537c1020e5ad00d3f950bd154d48",
+      "review_id": "review-cadc2aae424e65e6aa952727c9caba03dd67c39dd9afcf949c6e217d2482ef26"
+    },
+    {
+      "binding_sha256": "7438a1580f249bbdd801584d7ed25d4f01456c80a0e95507e8c85b5dff72b1ad",
+      "case_family_id": "p1-family-626dd94ace11e6d668ef277c32a04680c9819c1fc42fcdb4edf95677bf60673b",
+      "diagnosis_view_sha256": "2e3774764be81c9675b772cb54fe529f85b9e83e81b82a796a4c693b6dc96f89",
+      "evidence_bundle_id": "eb-p1-case-03-full",
+      "evidence_condition": "full",
+      "expected_diagnosis_behavior": "report_bounded_hypothesis_with_citations",
+      "expected_sufficiency": "bounded_hypothesis_supported",
+      "family_review_id": "family-review-0c4fad718bd3155ece8635a1c10f96fa83d2537c1020e5ad00d3f950bd154d48",
+      "review_id": "review-ef4c153bbfc4a5c34f8a92ad1890c0a49810c50445ba4c5ca8389c1917af208d"
+    },
+    {
+      "binding_sha256": "a7f763ea7fd660c33b0325529a8f2049d75ac61e48cbc424ab4304c7910ba2de",
+      "case_family_id": "p1-family-9456255ca8887cfc717457b3879b448e5e396de6f5ef29560a808ad767481f6c",
+      "diagnosis_view_sha256": "95704cb3bc6ddc09964fe22d599eceb31f7fe575c0f5b83cd6f909b41a3885d5",
+      "evidence_bundle_id": "eb-p1-case-05-full",
+      "evidence_condition": "full",
+      "expected_diagnosis_behavior": "report_bounded_hypothesis_with_citations",
+      "expected_sufficiency": "bounded_hypothesis_supported",
+      "family_review_id": "family-review-eea11c0cbe231bf5f0bc0b3604bd28a4c5b6783c3020c1023bae8a3c289d2d3d",
+      "review_id": "review-f0d502a67b043aa6ec74dcf7b4064084a38b72495dc9628acd48abeb489bbf94"
+    },
+    {
+      "binding_sha256": "825ca94109fd8cc86c56bead4204ee2139f7ac51321753dc18ee30843780bbec",
+      "case_family_id": "p1-family-9456255ca8887cfc717457b3879b448e5e396de6f5ef29560a808ad767481f6c",
+      "diagnosis_view_sha256": "b91de2c1d55251142ba8499812fac50ee26f33d595488e7c20ed7ebe051d6543",
+      "evidence_bundle_id": "eb-p1-case-05-missing-key",
+      "evidence_condition": "missing_key",
+      "expected_diagnosis_behavior": "report_tentative_hypothesis_and_request_evidence",
+      "expected_sufficiency": "bounded_hypothesis_tentative_only",
+      "family_review_id": "family-review-eea11c0cbe231bf5f0bc0b3604bd28a4c5b6783c3020c1023bae8a3c289d2d3d",
+      "review_id": "review-f92d57ed6a341ddcdc719d7ac4b84d7b5cec5080eecaad224602ed4325983df9"
+    }
+  ],
+  "paired_family_questions": [
+    "Are the core observations identical between the first and third mapped conditions?",
+    "Does the second mapped condition omit exactly the declared evidence roles?",
+    "Does the third mapped condition add only the neutral secondary comparison?",
+    "Does any diagnosis-facing wording reveal which comparison is evaluator-designed noise?",
+    "Are all three family entries mapped to their original diagnosis-view hashes?"
+  ],
+  "round_d_question": "D. After opening this mapping, does the visible evidence support exactly the bounded claim policy and expected behavior in the evaluator rubric?",
+  "schema_version": "human-evidence-review-mapping/2"
+}

@@ -33,7 +33,7 @@ class _StrictFrozenModel(BaseModel):
 
 
 class PilotVariant(StrEnum):
-    """The minimal P1 matched comparison frozen for G6."""
+    """The minimal P1 matched comparison used by the diagnosis pilot."""
 
     B1_PLAIN = "b1_plain"
     A3_EVIDENCE_CONTRACT = "a3_evidence_contract"

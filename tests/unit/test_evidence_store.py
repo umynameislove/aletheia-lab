@@ -323,14 +323,11 @@ def _passing_review_record(
         schema_version=HUMAN_REVIEW_RECORD_SCHEMA_VERSION,
         reviewer_kind="human",
         reviewer_id="independent-reviewer",
-        started_at="2026-07-17T12:00:00+07:00",
-        completed_at="2026-07-17T13:00:00+07:00",
         independent_from_implementation=True,
         prohibited_sources_consulted=False,
         ai_assistance_used=False,
         blind_stage_completed_before_mapping_opened=True,
         attestation=HUMAN_REVIEW_ATTESTATION,
-        signature="Independent Reviewer",
         blind_packet_sha256=blind_packet.canonical_sha256(),
         mapping_packet_sha256=mapping_packet.canonical_sha256(),
         decisions=decisions,
@@ -386,7 +383,7 @@ def test_mapping_hash_tamper_and_coordinated_entry_swap_fail(
         validate_review_packets(blind_packet, coordinated_swap)
 
 
-def test_human_review_requires_complete_signed_attested_rationalized_record(
+def test_human_review_requires_complete_named_attested_rationalized_record(
     p1_cases: Path,
 ) -> None:
     blind_packet, mapping_packet = build_human_review_packets(collect_p1_bundles(p1_cases))
@@ -397,10 +394,16 @@ def test_human_review_requires_complete_signed_attested_rationalized_record(
     with pytest.raises(ValueError, match="exactly cover"):
         validate_human_review(blind_packet, mapping_packet, incomplete)
 
-    for field in ("attestation", "signature"):
+    for field in ("attestation", "reviewer_id"):
         invalid = record.model_dump(mode="json")
         invalid.pop(field)
         with pytest.raises(ValidationError):
+            HumanReviewRecord.model_validate_json(json.dumps(invalid))
+
+    for retired_field in ("started_at", "completed_at", "signature"):
+        invalid = record.model_dump(mode="json")
+        invalid[retired_field] = "not accepted"
+        with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
             HumanReviewRecord.model_validate_json(json.dumps(invalid))
 
     missing_rationale = record.model_dump(mode="json")
@@ -429,7 +432,7 @@ def test_uncertain_or_blocking_review_cannot_be_promoted_to_pass(
         validate_human_review(blind_packet, mapping_packet, blocked_record)
 
 
-def test_generate_and_validate_g5b_store_marks_only_human_step_pending(
+def test_generate_and_validate_evidence_store_marks_only_human_step_pending(
     p1_cases: Path, tmp_path: Path
 ) -> None:
     store = tmp_path / "evidence-store"
