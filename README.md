@@ -71,6 +71,9 @@ Aletheia currently provides:
 - a deterministic result lock and offline closeout generator that bind the
   source cases, evidence store, preflight, provider artifacts, evaluation,
   operational ledger, canonical tables, and machine-scored error draft;
+- a separately bound final-closeout layer that preserves the frozen machine
+  result, two independently produced human reviews, and disclosed disagreements
+  without rewriting either source;
 - CLI commands for data preparation, baseline training, verification, and
   contract validation;
 - automated linting, repository-hygiene checks, and tests in CI.
@@ -133,8 +136,9 @@ PYTHONPATH=src python -m aletheia_lab benchmark validate-p1-evidence \
   --cases-dir experiments/p1/cases --store-dir experiments/p1/evidence-store
 ```
 
-The machine gate intentionally reports human review as pending until an
-independent reviewer supplies an attested, hash-complete review record.
+The evidence-store machine gate intentionally reports human review separately.
+The completed P1 decision is recorded in the final-closeout layer rather than
+rewriting the earlier machine-only artifact.
 
 Exercise and validate the matched diagnosis runtime without making an external
 API call:
@@ -279,8 +283,25 @@ PYTHONPATH=src python -m aletheia_lab benchmark validate-p1-closeout \
 
 These closeout commands never construct a provider client or read an API key.
 They fail closed for stale, missing, extra, symlinked, or byte-modified source
-and report artifacts. The error analysis remains explicitly machine-scored and
-pending independent human semantic review.
+and report artifacts.
+
+Validate the completed P1 decision, including both bound human reviews:
+
+```bash
+PYTHONPATH=src python -m aletheia_lab benchmark validate-p1-final \
+  --record reports/p1/p1-final-closeout.json \
+  --machine-result reports/p1/p1-machine-result.json \
+  --result-lock reports/p1/p1-result-lock.json \
+  --evidence-review reports/p1/human-review/evidence-review.json \
+  --evidence-blind-packet reports/p1/human-review/evidence-blind-packet.json \
+  --evidence-mapping-packet reports/p1/human-review/evidence-mapping-packet.json \
+  --diagnosis-review reports/p1/human-review/diagnosis-review.json \
+  --diagnosis-blind-packet reports/p1/human-review/diagnosis-blind-packet.json \
+  --diagnosis-mapping-packet reports/p1/human-review/diagnosis-mapping-packet.json
+```
+
+This command is also offline. It verifies the 5/15/30 census, packet bindings,
+review-file hashes, disclosed machine–human disagreement, and final P1 decision.
 
 Run the complete local quality check:
 
@@ -316,6 +337,9 @@ documentation, and reproducible artifacts.
 - [Evidence contract](docs/evidence-contract.md)
 - [Evaluation protocol](docs/evaluation-protocol.md)
 - [Dataset card](docs/dataset-card.md)
+- [Phase 1 feasibility report](docs/p1-feasibility-report.md)
+- [Phase 1 frozen closeout package](reports/p1/README.md)
+- [Related work and research positioning](docs/related-work.md)
 - [Architecture decisions](docs/adr/)
 
 ## Evidence and safety model

@@ -36,6 +36,7 @@ from aletheia_lab.evaluation.closeout import (
     generate_p1_closeout,
     validate_p1_closeout,
 )
+from aletheia_lab.evaluation.final_closeout import validate_p1_final_closeout
 from aletheia_lab.evaluation.pilot import evaluate_matched_pilot, write_evaluation_report
 from aletheia_lab.evaluation.result_lock import (
     build_p1_result_lock,
@@ -137,7 +138,7 @@ def run_p1_pilot_mock_cmd(
         Path("experiments/p1/outputs/matched-pilot-mock"), "--output-dir"
     ),
 ) -> None:
-    """Run the 15-context x 2-variant G6 contract pilot without an external send."""
+    """Run the 15-context x 2-variant contract pilot without an external send."""
 
     try:
         manifest = run_p1_matched_pilot(
@@ -510,4 +511,40 @@ def validate_p1_closeout_cmd(
     console.print(
         "[green]P1 offline closeout validation PASS[/green]; "
         "no external request was sent."
+    )
+
+
+@benchmark_app.command("validate-p1-final")
+def validate_p1_final_cmd(
+    record: Path = typer.Option(..., "--record"),
+    machine_result: Path = typer.Option(..., "--machine-result"),
+    result_lock: Path = typer.Option(..., "--result-lock"),
+    evidence_review: Path = typer.Option(..., "--evidence-review"),
+    evidence_blind_packet: Path = typer.Option(..., "--evidence-blind-packet"),
+    evidence_mapping_packet: Path = typer.Option(..., "--evidence-mapping-packet"),
+    diagnosis_review: Path = typer.Option(..., "--diagnosis-review"),
+    diagnosis_blind_packet: Path = typer.Option(..., "--diagnosis-blind-packet"),
+    diagnosis_mapping_packet: Path = typer.Option(..., "--diagnosis-mapping-packet"),
+) -> None:
+    """Validate the frozen machine result and both final human reviews offline."""
+
+    try:
+        final = validate_p1_final_closeout(
+            record,
+            machine_result,
+            result_lock,
+            evidence_review,
+            evidence_blind_packet,
+            evidence_mapping_packet,
+            diagnosis_review,
+            diagnosis_blind_packet,
+            diagnosis_mapping_packet,
+        )
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        console.print(f"[red]FAIL[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+    console.print_json(json.dumps(final.model_dump(mode="json")))
+    console.print(
+        "[green]P1 final closeout PASS[/green]: GO to Phase 2; "
+        "machine and human results remain separately reported."
     )

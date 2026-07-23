@@ -1,0 +1,12 @@
+{
+  "schema_version": "p1-evidence-public-review/1",
+  "reviewer_id": "reviewer-evidence-01",
+  "blind_packet_sha256": "956c98e9619434d10aa594c39cf90c5c46afefa9a5c54ab02681d58c3fe60511",
+  "mapping_packet_sha256": "4049324c191e0e4ea20917df390556fa8929e9d6908ff9498e99ea7216b7d7a1",
+  "blind_before_mapping": true,
+  "ai_assistance_used": false,
+  "entry_pass_count": 15,
+  "family_pass_count": 5,
+  "uncertain_count": 0,
+  "verdict": "pass"
+}

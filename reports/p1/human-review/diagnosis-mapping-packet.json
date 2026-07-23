@@ -1,0 +1,2536 @@
+{
+  "blind_packet_sha256": "1497b0a32d468dce83bc1c0ea7c6f2edea6f5559f8f0319d7493ab4d8bba337b",
+  "entries": [
+    {
+      "case_family_id": "p1-family-9456255ca8887cfc717457b3879b448e5e396de6f5ef29560a808ad767481f6c",
+      "case_id": "p1-data-drift-05-missing-key",
+      "diagnosis_context_id": "p1-context-46fdaf9af322018666e23c45829bf86e21e2fd28887c06b416aaf78e57aa4b1b",
+      "entry_binding_sha256": "54f8877306d1d03e808511083686eeffbd26e6b5346fa52be9672917c6479cb1",
+      "evidence_condition": "missing_key",
+      "hidden_failure_cause": null,
+      "hidden_failure_eligibility": {
+        "classification": "stable_control",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-9456255ca8887cfc717457b3879b448e5e396de6f5ef29560a808ad767481f6c",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 1,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 1
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": false,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": false,
+          "label": "correct",
+          "rationale": "The control outcome is not promoted to a bounded failure cause.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-46fdaf9af322018666e23c45829bf86e21e2fd28887c06b416aaf78e57aa4b1b",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "missing_key",
+        "request_id": "diagreq-ef235abd85c8183da7ec6844b5193ebeca80fa9ff0a0ceb3552e9d2a26e06c7a",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "symptom"
+          ]
+        },
+        "variant": "b1_plain"
+      },
+      "observed_outcome": {
+        "classification": "stable",
+        "delta": 0.0056764427625355385,
+        "metric": "accuracy",
+        "observed": 0.7994323557237465,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-ef235abd85c8183da7ec6844b5193ebeca80fa9ff0a0ceb3552e9d2a26e06c7a",
+      "review_id": "dxreview-04d7bdddf53bbea72cb0d1e20bffddfd2575a1ea5af6ff106a7cf265b28d2517",
+      "variant": "b1_plain"
+    },
+    {
+      "case_family_id": "p1-family-9456255ca8887cfc717457b3879b448e5e396de6f5ef29560a808ad767481f6c",
+      "case_id": "p1-data-drift-05-full",
+      "diagnosis_context_id": "p1-context-5cec573484171fc6a0e92b28bf063ed788eb027abec0fc58a1984d313eff3c83",
+      "entry_binding_sha256": "cb25d987025bbf29e176b9ed75ee7466cb772251112eb76032c79f62b4271518",
+      "evidence_condition": "full",
+      "hidden_failure_cause": null,
+      "hidden_failure_eligibility": {
+        "classification": "stable_control",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-9456255ca8887cfc717457b3879b448e5e396de6f5ef29560a808ad767481f6c",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 3,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 3
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": false,
+          "cause_concept_negated": true,
+          "hidden_failure_eligible": false,
+          "label": "correct",
+          "rationale": "The control outcome is not promoted to a bounded failure cause.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-5cec573484171fc6a0e92b28bf063ed788eb027abec0fc58a1984d313eff3c83",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "full",
+        "request_id": "diagreq-4c4db95b3d7badc45e89d09d37f8a8c759de5fcd30640d224d670c003f548744",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "symptom"
+          ]
+        },
+        "variant": "a3_evidence_contract"
+      },
+      "observed_outcome": {
+        "classification": "stable",
+        "delta": 0.0056764427625355385,
+        "metric": "accuracy",
+        "observed": 0.7994323557237465,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-4c4db95b3d7badc45e89d09d37f8a8c759de5fcd30640d224d670c003f548744",
+      "review_id": "dxreview-11ca9f6dc52427bb5295e4ef3089536536ddc280e880a21bfc992265def48630",
+      "variant": "a3_evidence_contract"
+    },
+    {
+      "case_family_id": "p1-family-626dd94ace11e6d668ef277c32a04680c9819c1fc42fcdb4edf95677bf60673b",
+      "case_id": "p1-data-drift-03-noisy",
+      "diagnosis_context_id": "p1-context-b2459db47842c365a53a3b538b24b4d42ecaddbe1f98b2ed966b86c5625c4477",
+      "entry_binding_sha256": "72187bcb221e9c4ce030f0d9374b9b3f58dca094b8bedb70793d0b8ee464a0ec",
+      "evidence_condition": "noisy",
+      "hidden_failure_cause": {
+        "affected_components": [
+          "Contract"
+        ],
+        "causal_mechanism": "categorical_distribution_shift",
+        "cause_label": "data_drift",
+        "expected_symptoms": [
+          "metric_regression",
+          "distribution_shift:Contract"
+        ]
+      },
+      "hidden_failure_eligibility": {
+        "classification": "eligible_failure",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-626dd94ace11e6d668ef277c32a04680c9819c1fc42fcdb4edf95677bf60673b",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 4,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 5
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": true,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": true,
+          "label": "correct",
+          "rationale": "The output identifies the P1 shift concept and affected feature.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-b2459db47842c365a53a3b538b24b4d42ecaddbe1f98b2ed966b86c5625c4477",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "noisy",
+        "request_id": "diagreq-77b465a87e5d844c7a960e5606e8fe433f64a8455f102e46bab49a58b41838e8",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ]
+        },
+        "variant": "a3_evidence_contract"
+      },
+      "observed_outcome": {
+        "classification": "regression",
+        "delta": -0.08514664143803219,
+        "metric": "accuracy",
+        "observed": 0.7086092715231788,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-77b465a87e5d844c7a960e5606e8fe433f64a8455f102e46bab49a58b41838e8",
+      "review_id": "dxreview-128f42920ce5d97302fba858ab5dfe599e3b532a95c4fd8cd20af8a06e3c2d18",
+      "variant": "a3_evidence_contract"
+    },
+    {
+      "case_family_id": "p1-family-9456255ca8887cfc717457b3879b448e5e396de6f5ef29560a808ad767481f6c",
+      "case_id": "p1-data-drift-05-missing-key",
+      "diagnosis_context_id": "p1-context-46fdaf9af322018666e23c45829bf86e21e2fd28887c06b416aaf78e57aa4b1b",
+      "entry_binding_sha256": "38728c4d6e5be267c1ee937bcfcb7d3667a161fc33144765f85fac0b8a5bd603",
+      "evidence_condition": "missing_key",
+      "hidden_failure_cause": null,
+      "hidden_failure_eligibility": {
+        "classification": "stable_control",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-9456255ca8887cfc717457b3879b448e5e396de6f5ef29560a808ad767481f6c",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 1,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 1
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": false,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": false,
+          "label": "correct",
+          "rationale": "The control outcome is not promoted to a bounded failure cause.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-46fdaf9af322018666e23c45829bf86e21e2fd28887c06b416aaf78e57aa4b1b",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "missing_key",
+        "request_id": "diagreq-e3b37a3d4c0c966b1c3b69aeca808edf9c57172d0b8d2d051e0acf948acd9c2e",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "symptom"
+          ]
+        },
+        "variant": "a3_evidence_contract"
+      },
+      "observed_outcome": {
+        "classification": "stable",
+        "delta": 0.0056764427625355385,
+        "metric": "accuracy",
+        "observed": 0.7994323557237465,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-e3b37a3d4c0c966b1c3b69aeca808edf9c57172d0b8d2d051e0acf948acd9c2e",
+      "review_id": "dxreview-12d5fa304bbe3770416c3dc37c247f713e5fe283f897b11e29ae29fa8c39a07f",
+      "variant": "a3_evidence_contract"
+    },
+    {
+      "case_family_id": "p1-family-626dd94ace11e6d668ef277c32a04680c9819c1fc42fcdb4edf95677bf60673b",
+      "case_id": "p1-data-drift-03-missing-key",
+      "diagnosis_context_id": "p1-context-57e8bafd10cd3b37c13cb317c6cbddb9658ac7174aad59d589784ae33f64e501",
+      "entry_binding_sha256": "5d4556e5237d8e1cd4c43ff0f4b1b62c5be6c06f3b2fdaf9c643e6f5419fcfb5",
+      "evidence_condition": "missing_key",
+      "hidden_failure_cause": {
+        "affected_components": [
+          "Contract"
+        ],
+        "causal_mechanism": "categorical_distribution_shift",
+        "cause_label": "data_drift",
+        "expected_symptoms": [
+          "metric_regression",
+          "distribution_shift:Contract"
+        ]
+      },
+      "hidden_failure_eligibility": {
+        "classification": "eligible_failure",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-626dd94ace11e6d668ef277c32a04680c9819c1fc42fcdb4edf95677bf60673b",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 1,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 1
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": false,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": true,
+          "label": "not_asserted",
+          "rationale": "The output does not assert the hidden failure-cause concept.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-57e8bafd10cd3b37c13cb317c6cbddb9658ac7174aad59d589784ae33f64e501",
+        "divergence": "not_evaluable",
+        "evidence_aligned": true,
+        "evidence_condition": "missing_key",
+        "request_id": "diagreq-9d7173f0f64a3bc525eae25453a6e9a6dcbd1c84f03256864af56861e8a35a62",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "symptom"
+          ]
+        },
+        "variant": "b1_plain"
+      },
+      "observed_outcome": {
+        "classification": "regression",
+        "delta": -0.08514664143803219,
+        "metric": "accuracy",
+        "observed": 0.7086092715231788,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-9d7173f0f64a3bc525eae25453a6e9a6dcbd1c84f03256864af56861e8a35a62",
+      "review_id": "dxreview-1585fefa8dc52a488cc8e0e60db962592ccdd228c32712ae5f71bae6b1b7e73d",
+      "variant": "b1_plain"
+    },
+    {
+      "case_family_id": "p1-family-626dd94ace11e6d668ef277c32a04680c9819c1fc42fcdb4edf95677bf60673b",
+      "case_id": "p1-data-drift-03-full",
+      "diagnosis_context_id": "p1-context-1a51f8cdd61e4c41c366201c531010f1ba5da9771d71de3c9dba65e9997703d2",
+      "entry_binding_sha256": "9d380632049af53ce6c88c4d1bd41205eed92ecba56e036dc6ad5390ba962af3",
+      "evidence_condition": "full",
+      "hidden_failure_cause": {
+        "affected_components": [
+          "Contract"
+        ],
+        "causal_mechanism": "categorical_distribution_shift",
+        "cause_label": "data_drift",
+        "expected_symptoms": [
+          "metric_regression",
+          "distribution_shift:Contract"
+        ]
+      },
+      "hidden_failure_eligibility": {
+        "classification": "eligible_failure",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-626dd94ace11e6d668ef277c32a04680c9819c1fc42fcdb4edf95677bf60673b",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 4,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 4
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": true,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": true,
+          "label": "correct",
+          "rationale": "The output identifies the P1 shift concept and affected feature.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-1a51f8cdd61e4c41c366201c531010f1ba5da9771d71de3c9dba65e9997703d2",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "full",
+        "request_id": "diagreq-9553e25fe83201c8e4780639b359958b8b0224f7e1646099e4de4bed51828434",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ]
+        },
+        "variant": "a3_evidence_contract"
+      },
+      "observed_outcome": {
+        "classification": "regression",
+        "delta": -0.08514664143803219,
+        "metric": "accuracy",
+        "observed": 0.7086092715231788,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-9553e25fe83201c8e4780639b359958b8b0224f7e1646099e4de4bed51828434",
+      "review_id": "dxreview-272db2df1a737e5ca540878b58daf9cadf592317994eac1149220e62a9150fca",
+      "variant": "a3_evidence_contract"
+    },
+    {
+      "case_family_id": "p1-family-1bf39d487e89b6dc1da77331550395df78358eaa8b2ecdd413432e64a7b9f0ae",
+      "case_id": "p1-data-drift-02-full",
+      "diagnosis_context_id": "p1-context-10bd966cd283e8af7c99ff622d1eff1d929b94de8b5dc0b2ba9faed3cc1e62e4",
+      "entry_binding_sha256": "697a9b2df6ad7acc2df0ef7d2792652af4036cb1ff7d210106e76b118dc8b9ae",
+      "evidence_condition": "full",
+      "hidden_failure_cause": {
+        "affected_components": [
+          "Contract"
+        ],
+        "causal_mechanism": "categorical_distribution_shift",
+        "cause_label": "data_drift",
+        "expected_symptoms": [
+          "metric_regression",
+          "distribution_shift:Contract"
+        ]
+      },
+      "hidden_failure_eligibility": {
+        "classification": "eligible_failure",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-1bf39d487e89b6dc1da77331550395df78358eaa8b2ecdd413432e64a7b9f0ae",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 4,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 4
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": true,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": true,
+          "label": "correct",
+          "rationale": "The output identifies the P1 shift concept and affected feature.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-10bd966cd283e8af7c99ff622d1eff1d929b94de8b5dc0b2ba9faed3cc1e62e4",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "full",
+        "request_id": "diagreq-958f25cd3b7e8c37b46a4675d5682832e70cb2ba9425afb92c74dd1169e1bb3e",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ]
+        },
+        "variant": "b1_plain"
+      },
+      "observed_outcome": {
+        "classification": "regression",
+        "delta": -0.03595080416272467,
+        "metric": "accuracy",
+        "observed": 0.7578051087984863,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-958f25cd3b7e8c37b46a4675d5682832e70cb2ba9425afb92c74dd1169e1bb3e",
+      "review_id": "dxreview-3bab53db5acb17f480699ace107a1b20bb3190e02bf718fc03074c7cb9e52274",
+      "variant": "b1_plain"
+    },
+    {
+      "case_family_id": "p1-family-1bf39d487e89b6dc1da77331550395df78358eaa8b2ecdd413432e64a7b9f0ae",
+      "case_id": "p1-data-drift-02-missing-key",
+      "diagnosis_context_id": "p1-context-2a52ef823b5aaacf6ae578ff8a8d995549ace03e23318c72b4db42a7adf60cf6",
+      "entry_binding_sha256": "f4ce86493961da2e81182431378e0d510a6c907bb7cc65e25a655f68c607c0c9",
+      "evidence_condition": "missing_key",
+      "hidden_failure_cause": {
+        "affected_components": [
+          "Contract"
+        ],
+        "causal_mechanism": "categorical_distribution_shift",
+        "cause_label": "data_drift",
+        "expected_symptoms": [
+          "metric_regression",
+          "distribution_shift:Contract"
+        ]
+      },
+      "hidden_failure_eligibility": {
+        "classification": "eligible_failure",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-1bf39d487e89b6dc1da77331550395df78358eaa8b2ecdd413432e64a7b9f0ae",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 1,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 1
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": false,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": true,
+          "label": "not_asserted",
+          "rationale": "The output does not assert the hidden failure-cause concept.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-2a52ef823b5aaacf6ae578ff8a8d995549ace03e23318c72b4db42a7adf60cf6",
+        "divergence": "not_evaluable",
+        "evidence_aligned": true,
+        "evidence_condition": "missing_key",
+        "request_id": "diagreq-0e83bf37773a462f65717cd31dd1b4508027fc819c8a226d60125a65dc05835c",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "symptom"
+          ]
+        },
+        "variant": "a3_evidence_contract"
+      },
+      "observed_outcome": {
+        "classification": "regression",
+        "delta": -0.03595080416272467,
+        "metric": "accuracy",
+        "observed": 0.7578051087984863,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-0e83bf37773a462f65717cd31dd1b4508027fc819c8a226d60125a65dc05835c",
+      "review_id": "dxreview-48467cf365f4ac4c3732822edd52ca4aee0e59bf2a6d2cf8a4829a2fc28c3f1c",
+      "variant": "a3_evidence_contract"
+    },
+    {
+      "case_family_id": "p1-family-72137535a8a990f0d8c05cd467ed17830effd3ee2e8a10bf38426064ea3ebc49",
+      "case_id": "p1-data-drift-01-noisy",
+      "diagnosis_context_id": "p1-context-1d43ec6c4445234dc49a80fdea95b28d1d4515c4b96f411a083a490c61859bfa",
+      "entry_binding_sha256": "5df14e16489aebd01bdb7c16987e779bc198b7b4ab6ffd11cfaf70d1c439205b",
+      "evidence_condition": "noisy",
+      "hidden_failure_cause": {
+        "affected_components": [
+          "Contract"
+        ],
+        "causal_mechanism": "categorical_distribution_shift",
+        "cause_label": "data_drift",
+        "expected_symptoms": [
+          "metric_regression",
+          "distribution_shift:Contract"
+        ]
+      },
+      "hidden_failure_eligibility": {
+        "classification": "eligible_failure",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-72137535a8a990f0d8c05cd467ed17830effd3ee2e8a10bf38426064ea3ebc49",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 4,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 5
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": true,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": true,
+          "label": "correct",
+          "rationale": "The output identifies the P1 shift concept and affected feature.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-1d43ec6c4445234dc49a80fdea95b28d1d4515c4b96f411a083a490c61859bfa",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "noisy",
+        "request_id": "diagreq-849cf5e7e48e9250bb8873b86821b0733fd11dc5c3548168ba2591f93bce2c88",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ]
+        },
+        "variant": "b1_plain"
+      },
+      "observed_outcome": {
+        "classification": "regression",
+        "delta": -0.05676442762535472,
+        "metric": "accuracy",
+        "observed": 0.7369914853358562,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-849cf5e7e48e9250bb8873b86821b0733fd11dc5c3548168ba2591f93bce2c88",
+      "review_id": "dxreview-4b2bcf31db3c54441f2970208b6c013e87e735596fe23ea54048f6d3bccd8387",
+      "variant": "b1_plain"
+    },
+    {
+      "case_family_id": "p1-family-8e207fea89dfa353b28315bc3c4050fff0b16245f00455de1f78b53580ccb4b5",
+      "case_id": "p1-data-drift-04-full",
+      "diagnosis_context_id": "p1-context-257de6c73a300a92d8bd62241b78491363bc2d1529dfb8b41c412f5a27ed9195",
+      "entry_binding_sha256": "7e3523e5ddc139230cc8c5b58c6fe413c9d3d93b9e7dfd74042f438cf1d286d2",
+      "evidence_condition": "full",
+      "hidden_failure_cause": null,
+      "hidden_failure_eligibility": {
+        "classification": "improvement_control",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-8e207fea89dfa353b28315bc3c4050fff0b16245f00455de1f78b53580ccb4b5",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 3,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 3
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": true,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": false,
+          "label": "correct",
+          "rationale": "The control outcome is not promoted to a bounded failure cause.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-257de6c73a300a92d8bd62241b78491363bc2d1529dfb8b41c412f5a27ed9195",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "full",
+        "request_id": "diagreq-0ecc1d6022061c9a7e6ea76093547aa92d2cc8f0a0e9035367337f574c79b4ac",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "symptom"
+          ]
+        },
+        "variant": "a3_evidence_contract"
+      },
+      "observed_outcome": {
+        "classification": "improvement",
+        "delta": 0.03878902554399244,
+        "metric": "accuracy",
+        "observed": 0.8325449385052034,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-0ecc1d6022061c9a7e6ea76093547aa92d2cc8f0a0e9035367337f574c79b4ac",
+      "review_id": "dxreview-504346544f9d0dee203f7f43243eb205cb7124fa79cae173a1a02e627b84164f",
+      "variant": "a3_evidence_contract"
+    },
+    {
+      "case_family_id": "p1-family-8e207fea89dfa353b28315bc3c4050fff0b16245f00455de1f78b53580ccb4b5",
+      "case_id": "p1-data-drift-04-noisy",
+      "diagnosis_context_id": "p1-context-6207b7663769de90a63cd029e2afbd8be353c51d3ec1e8091c98ab273fff0056",
+      "entry_binding_sha256": "14b6ca342cb439d5a6651322d7ab6be09b13c5f290c8cd8a60e997049ed71bda",
+      "evidence_condition": "noisy",
+      "hidden_failure_cause": null,
+      "hidden_failure_eligibility": {
+        "classification": "improvement_control",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [
+            "control_promoted_to_failure_cause"
+          ],
+          "missing_evidence_requested": true,
+          "rubric_compliant": false,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-8e207fea89dfa353b28315bc3c4050fff0b16245f00455de1f78b53580ccb4b5",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 4,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 4
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": true,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": false,
+          "label": "incorrect",
+          "rationale": "A control outcome is promoted to a bounded failure-cause hypothesis.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-6207b7663769de90a63cd029e2afbd8be353c51d3ec1e8091c98ab273fff0056",
+        "divergence": "incorrect_and_not_evidence_aligned",
+        "evidence_aligned": false,
+        "evidence_condition": "noisy",
+        "request_id": "diagreq-0b2dbb919319bb7fa2c98e30c8fc2309f4d7285e3f0c2fb7be6e6cfe0ed4b1de",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ]
+        },
+        "variant": "b1_plain"
+      },
+      "observed_outcome": {
+        "classification": "improvement",
+        "delta": 0.03878902554399244,
+        "metric": "accuracy",
+        "observed": 0.8325449385052034,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-0b2dbb919319bb7fa2c98e30c8fc2309f4d7285e3f0c2fb7be6e6cfe0ed4b1de",
+      "review_id": "dxreview-54533353a6a00ee37c9b191e6b6801a82b18f8befcc2e2d89e52ba7b68c35a80",
+      "variant": "b1_plain"
+    },
+    {
+      "case_family_id": "p1-family-1bf39d487e89b6dc1da77331550395df78358eaa8b2ecdd413432e64a7b9f0ae",
+      "case_id": "p1-data-drift-02-full",
+      "diagnosis_context_id": "p1-context-10bd966cd283e8af7c99ff622d1eff1d929b94de8b5dc0b2ba9faed3cc1e62e4",
+      "entry_binding_sha256": "f2444d99ea8e2236625c245218fb99ab39fa33668fa24371049bdbe7c71fd217",
+      "evidence_condition": "full",
+      "hidden_failure_cause": {
+        "affected_components": [
+          "Contract"
+        ],
+        "causal_mechanism": "categorical_distribution_shift",
+        "cause_label": "data_drift",
+        "expected_symptoms": [
+          "metric_regression",
+          "distribution_shift:Contract"
+        ]
+      },
+      "hidden_failure_eligibility": {
+        "classification": "eligible_failure",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-1bf39d487e89b6dc1da77331550395df78358eaa8b2ecdd413432e64a7b9f0ae",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 4,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 4
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": true,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": true,
+          "label": "correct",
+          "rationale": "The output identifies the P1 shift concept and affected feature.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-10bd966cd283e8af7c99ff622d1eff1d929b94de8b5dc0b2ba9faed3cc1e62e4",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "full",
+        "request_id": "diagreq-48c2945884ddd4f71caa56254dc0dcd0eacb9efb2f59be059aff7147332aee10",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ]
+        },
+        "variant": "a3_evidence_contract"
+      },
+      "observed_outcome": {
+        "classification": "regression",
+        "delta": -0.03595080416272467,
+        "metric": "accuracy",
+        "observed": 0.7578051087984863,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-48c2945884ddd4f71caa56254dc0dcd0eacb9efb2f59be059aff7147332aee10",
+      "review_id": "dxreview-5ad6605c77e586b7c6c84b6a09a289c51da545e02784c451620878ca61545bbb",
+      "variant": "a3_evidence_contract"
+    },
+    {
+      "case_family_id": "p1-family-1bf39d487e89b6dc1da77331550395df78358eaa8b2ecdd413432e64a7b9f0ae",
+      "case_id": "p1-data-drift-02-noisy",
+      "diagnosis_context_id": "p1-context-4245b6b0f608d14edb2099a1246b3f5436cafdb26a867d29f2f73ae17a4c39cd",
+      "entry_binding_sha256": "c5bf6c4e2e3e672e2920b66af1c2508aa5e23c7475f1c875b0f1aaf5c74470b9",
+      "evidence_condition": "noisy",
+      "hidden_failure_cause": {
+        "affected_components": [
+          "Contract"
+        ],
+        "causal_mechanism": "categorical_distribution_shift",
+        "cause_label": "data_drift",
+        "expected_symptoms": [
+          "metric_regression",
+          "distribution_shift:Contract"
+        ]
+      },
+      "hidden_failure_eligibility": {
+        "classification": "eligible_failure",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-1bf39d487e89b6dc1da77331550395df78358eaa8b2ecdd413432e64a7b9f0ae",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 4,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 5
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": true,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": true,
+          "label": "correct",
+          "rationale": "The output identifies the P1 shift concept and affected feature.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-4245b6b0f608d14edb2099a1246b3f5436cafdb26a867d29f2f73ae17a4c39cd",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "noisy",
+        "request_id": "diagreq-26209e64e8ac6984d6e1529e8bb1f0d33f4964cd40e09b86ae6871d3a47548ce",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ]
+        },
+        "variant": "b1_plain"
+      },
+      "observed_outcome": {
+        "classification": "regression",
+        "delta": -0.03595080416272467,
+        "metric": "accuracy",
+        "observed": 0.7578051087984863,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-26209e64e8ac6984d6e1529e8bb1f0d33f4964cd40e09b86ae6871d3a47548ce",
+      "review_id": "dxreview-5e2d25c5860d18fddb8d77a9a37328a0b087813a41c21a6ff28cc81904f1666f",
+      "variant": "b1_plain"
+    },
+    {
+      "case_family_id": "p1-family-72137535a8a990f0d8c05cd467ed17830effd3ee2e8a10bf38426064ea3ebc49",
+      "case_id": "p1-data-drift-01-missing-key",
+      "diagnosis_context_id": "p1-context-afa92c9a248d09123f8f2b21319350e413cfc45ae8c89874d219a3f6ce0dc8d6",
+      "entry_binding_sha256": "bcf53640705486adaea6d013c6a4135445e49b9dd9fc380a805e7aa01cd7e4ed",
+      "evidence_condition": "missing_key",
+      "hidden_failure_cause": {
+        "affected_components": [
+          "Contract"
+        ],
+        "causal_mechanism": "categorical_distribution_shift",
+        "cause_label": "data_drift",
+        "expected_symptoms": [
+          "metric_regression",
+          "distribution_shift:Contract"
+        ]
+      },
+      "hidden_failure_eligibility": {
+        "classification": "eligible_failure",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-72137535a8a990f0d8c05cd467ed17830effd3ee2e8a10bf38426064ea3ebc49",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 1,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 1
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": false,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": true,
+          "label": "not_asserted",
+          "rationale": "The output does not assert the hidden failure-cause concept.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-afa92c9a248d09123f8f2b21319350e413cfc45ae8c89874d219a3f6ce0dc8d6",
+        "divergence": "not_evaluable",
+        "evidence_aligned": true,
+        "evidence_condition": "missing_key",
+        "request_id": "diagreq-4f9c0da506bb2cf3691f838530afeeea2909b6ebee3d5c956d9133633c1dc208",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "symptom"
+          ]
+        },
+        "variant": "b1_plain"
+      },
+      "observed_outcome": {
+        "classification": "regression",
+        "delta": -0.05676442762535472,
+        "metric": "accuracy",
+        "observed": 0.7369914853358562,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-4f9c0da506bb2cf3691f838530afeeea2909b6ebee3d5c956d9133633c1dc208",
+      "review_id": "dxreview-639ecca1e81bfc171beeab84d551371e5211dd193744fb7d4851078c6eca5794",
+      "variant": "b1_plain"
+    },
+    {
+      "case_family_id": "p1-family-8e207fea89dfa353b28315bc3c4050fff0b16245f00455de1f78b53580ccb4b5",
+      "case_id": "p1-data-drift-04-missing-key",
+      "diagnosis_context_id": "p1-context-4fc54e69a9a2691bebad8d0cc3c31570986afe859d908f8886779cf2d005c6cc",
+      "entry_binding_sha256": "1600cf07b9b445394d55052fba4ea81389f63d7dc8d8a80555562931895d6f50",
+      "evidence_condition": "missing_key",
+      "hidden_failure_cause": null,
+      "hidden_failure_eligibility": {
+        "classification": "improvement_control",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-8e207fea89dfa353b28315bc3c4050fff0b16245f00455de1f78b53580ccb4b5",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 1,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 1
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": false,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": false,
+          "label": "correct",
+          "rationale": "The control outcome is not promoted to a bounded failure cause.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-4fc54e69a9a2691bebad8d0cc3c31570986afe859d908f8886779cf2d005c6cc",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "missing_key",
+        "request_id": "diagreq-d611d82e80902eb489a4294876a7e8f66fa4711e216985458b79c6083116feb1",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "symptom"
+          ]
+        },
+        "variant": "b1_plain"
+      },
+      "observed_outcome": {
+        "classification": "improvement",
+        "delta": 0.03878902554399244,
+        "metric": "accuracy",
+        "observed": 0.8325449385052034,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-d611d82e80902eb489a4294876a7e8f66fa4711e216985458b79c6083116feb1",
+      "review_id": "dxreview-65e8f1f01af3bdc5020fc4a24f9b7ce4f2a0dbdc78035abfbe67ff553f2c8c98",
+      "variant": "b1_plain"
+    },
+    {
+      "case_family_id": "p1-family-8e207fea89dfa353b28315bc3c4050fff0b16245f00455de1f78b53580ccb4b5",
+      "case_id": "p1-data-drift-04-missing-key",
+      "diagnosis_context_id": "p1-context-4fc54e69a9a2691bebad8d0cc3c31570986afe859d908f8886779cf2d005c6cc",
+      "entry_binding_sha256": "ece582b31e256301c940fcd9091f27d8ce45e96bf049e320e8b891da1cb5c1bd",
+      "evidence_condition": "missing_key",
+      "hidden_failure_cause": null,
+      "hidden_failure_eligibility": {
+        "classification": "improvement_control",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-8e207fea89dfa353b28315bc3c4050fff0b16245f00455de1f78b53580ccb4b5",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 1,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 1
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": false,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": false,
+          "label": "correct",
+          "rationale": "The control outcome is not promoted to a bounded failure cause.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-4fc54e69a9a2691bebad8d0cc3c31570986afe859d908f8886779cf2d005c6cc",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "missing_key",
+        "request_id": "diagreq-a247170bd1397e98ea35c66112a4c7649e2130a0ec3feee256c66b058919296d",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "symptom"
+          ]
+        },
+        "variant": "a3_evidence_contract"
+      },
+      "observed_outcome": {
+        "classification": "improvement",
+        "delta": 0.03878902554399244,
+        "metric": "accuracy",
+        "observed": 0.8325449385052034,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-a247170bd1397e98ea35c66112a4c7649e2130a0ec3feee256c66b058919296d",
+      "review_id": "dxreview-73c39866d55f5c1908baeca81f4801d52422151af39b662d57bd333ccb0608f2",
+      "variant": "a3_evidence_contract"
+    },
+    {
+      "case_family_id": "p1-family-1bf39d487e89b6dc1da77331550395df78358eaa8b2ecdd413432e64a7b9f0ae",
+      "case_id": "p1-data-drift-02-noisy",
+      "diagnosis_context_id": "p1-context-4245b6b0f608d14edb2099a1246b3f5436cafdb26a867d29f2f73ae17a4c39cd",
+      "entry_binding_sha256": "8f62a1fea68f2478ad1bc64e7c879d1f9b28e294c24fa9e1f34549ad3dffe8b2",
+      "evidence_condition": "noisy",
+      "hidden_failure_cause": {
+        "affected_components": [
+          "Contract"
+        ],
+        "causal_mechanism": "categorical_distribution_shift",
+        "cause_label": "data_drift",
+        "expected_symptoms": [
+          "metric_regression",
+          "distribution_shift:Contract"
+        ]
+      },
+      "hidden_failure_eligibility": {
+        "classification": "eligible_failure",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-1bf39d487e89b6dc1da77331550395df78358eaa8b2ecdd413432e64a7b9f0ae",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 4,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 5
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": true,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": true,
+          "label": "correct",
+          "rationale": "The output identifies the P1 shift concept and affected feature.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-4245b6b0f608d14edb2099a1246b3f5436cafdb26a867d29f2f73ae17a4c39cd",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "noisy",
+        "request_id": "diagreq-e8eb76cfabf88b2479a91c31659989230e6882d59405866064fedee75d5e8af7",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ]
+        },
+        "variant": "a3_evidence_contract"
+      },
+      "observed_outcome": {
+        "classification": "regression",
+        "delta": -0.03595080416272467,
+        "metric": "accuracy",
+        "observed": 0.7578051087984863,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-e8eb76cfabf88b2479a91c31659989230e6882d59405866064fedee75d5e8af7",
+      "review_id": "dxreview-89fbff0af1299c19aee9d2fe254ad22c43af42108fe99a6bfd5bc6a8df711d17",
+      "variant": "a3_evidence_contract"
+    },
+    {
+      "case_family_id": "p1-family-626dd94ace11e6d668ef277c32a04680c9819c1fc42fcdb4edf95677bf60673b",
+      "case_id": "p1-data-drift-03-noisy",
+      "diagnosis_context_id": "p1-context-b2459db47842c365a53a3b538b24b4d42ecaddbe1f98b2ed966b86c5625c4477",
+      "entry_binding_sha256": "b15bcfe644c1f158db57d3098938db3f6b8939dfaf2fbcb9040a132ad2024918",
+      "evidence_condition": "noisy",
+      "hidden_failure_cause": {
+        "affected_components": [
+          "Contract"
+        ],
+        "causal_mechanism": "categorical_distribution_shift",
+        "cause_label": "data_drift",
+        "expected_symptoms": [
+          "metric_regression",
+          "distribution_shift:Contract"
+        ]
+      },
+      "hidden_failure_eligibility": {
+        "classification": "eligible_failure",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-626dd94ace11e6d668ef277c32a04680c9819c1fc42fcdb4edf95677bf60673b",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 4,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 5
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": true,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": true,
+          "label": "correct",
+          "rationale": "The output identifies the P1 shift concept and affected feature.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-b2459db47842c365a53a3b538b24b4d42ecaddbe1f98b2ed966b86c5625c4477",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "noisy",
+        "request_id": "diagreq-7d5a0cb585ce1e968571e5789bf510e36103eb139fa5bf83d1a89ce3986d9a85",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ]
+        },
+        "variant": "b1_plain"
+      },
+      "observed_outcome": {
+        "classification": "regression",
+        "delta": -0.08514664143803219,
+        "metric": "accuracy",
+        "observed": 0.7086092715231788,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-7d5a0cb585ce1e968571e5789bf510e36103eb139fa5bf83d1a89ce3986d9a85",
+      "review_id": "dxreview-9f1f79f4bccd29332a27fe5051e70fa66ff518f1a8a08943816537e05bd18b16",
+      "variant": "b1_plain"
+    },
+    {
+      "case_family_id": "p1-family-1bf39d487e89b6dc1da77331550395df78358eaa8b2ecdd413432e64a7b9f0ae",
+      "case_id": "p1-data-drift-02-missing-key",
+      "diagnosis_context_id": "p1-context-2a52ef823b5aaacf6ae578ff8a8d995549ace03e23318c72b4db42a7adf60cf6",
+      "entry_binding_sha256": "17967c24e821a7cd4517bbe5ad74d71d35f03bd05a3826066e49d6254529053e",
+      "evidence_condition": "missing_key",
+      "hidden_failure_cause": {
+        "affected_components": [
+          "Contract"
+        ],
+        "causal_mechanism": "categorical_distribution_shift",
+        "cause_label": "data_drift",
+        "expected_symptoms": [
+          "metric_regression",
+          "distribution_shift:Contract"
+        ]
+      },
+      "hidden_failure_eligibility": {
+        "classification": "eligible_failure",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-1bf39d487e89b6dc1da77331550395df78358eaa8b2ecdd413432e64a7b9f0ae",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 1,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 1
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": false,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": true,
+          "label": "not_asserted",
+          "rationale": "The output does not assert the hidden failure-cause concept.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-2a52ef823b5aaacf6ae578ff8a8d995549ace03e23318c72b4db42a7adf60cf6",
+        "divergence": "not_evaluable",
+        "evidence_aligned": true,
+        "evidence_condition": "missing_key",
+        "request_id": "diagreq-743ecceb5349053c2ace8f728f924fa9b9d491ac371b21e775d4422bbfe4e0f9",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "symptom"
+          ]
+        },
+        "variant": "b1_plain"
+      },
+      "observed_outcome": {
+        "classification": "regression",
+        "delta": -0.03595080416272467,
+        "metric": "accuracy",
+        "observed": 0.7578051087984863,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-743ecceb5349053c2ace8f728f924fa9b9d491ac371b21e775d4422bbfe4e0f9",
+      "review_id": "dxreview-a7828c37819685ad189f65fe7981db23c5f36df7cc82424878ee0d304ff34259",
+      "variant": "b1_plain"
+    },
+    {
+      "case_family_id": "p1-family-9456255ca8887cfc717457b3879b448e5e396de6f5ef29560a808ad767481f6c",
+      "case_id": "p1-data-drift-05-noisy",
+      "diagnosis_context_id": "p1-context-6520e3e4d40f239378d84b401293bb274ac21760c48531e7abfb290fb230f8e3",
+      "entry_binding_sha256": "c81729e64c36f08740183132210b3958c3ff9ad9c69c99fc0d42d829d2dab409",
+      "evidence_condition": "noisy",
+      "hidden_failure_cause": null,
+      "hidden_failure_eligibility": {
+        "classification": "stable_control",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-9456255ca8887cfc717457b3879b448e5e396de6f5ef29560a808ad767481f6c",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 2,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 2
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": false,
+          "cause_concept_negated": true,
+          "hidden_failure_eligible": false,
+          "label": "correct",
+          "rationale": "The control outcome is not promoted to a bounded failure cause.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-6520e3e4d40f239378d84b401293bb274ac21760c48531e7abfb290fb230f8e3",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "noisy",
+        "request_id": "diagreq-770edb218949faa40bcf6678a560270451e07a5ec452ca7c94d352e7f7db072a",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [
+            "candidate_psi",
+            "metric_comparison",
+            "secondary_distribution_comparison"
+          ],
+          "supported_roles": [
+            "candidate_psi",
+            "metric_comparison"
+          ]
+        },
+        "variant": "b1_plain"
+      },
+      "observed_outcome": {
+        "classification": "stable",
+        "delta": 0.0056764427625355385,
+        "metric": "accuracy",
+        "observed": 0.7994323557237465,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-770edb218949faa40bcf6678a560270451e07a5ec452ca7c94d352e7f7db072a",
+      "review_id": "dxreview-aa3d2d2bedb088e261f2ea79f3d233857457176c2441394d2339489654359872",
+      "variant": "b1_plain"
+    },
+    {
+      "case_family_id": "p1-family-8e207fea89dfa353b28315bc3c4050fff0b16245f00455de1f78b53580ccb4b5",
+      "case_id": "p1-data-drift-04-full",
+      "diagnosis_context_id": "p1-context-257de6c73a300a92d8bd62241b78491363bc2d1529dfb8b41c412f5a27ed9195",
+      "entry_binding_sha256": "da26b562b9e21cf4a4ec92970421f2ef5f90d09a3157133a3b67c789ab57d7d5",
+      "evidence_condition": "full",
+      "hidden_failure_cause": null,
+      "hidden_failure_eligibility": {
+        "classification": "improvement_control",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-8e207fea89dfa353b28315bc3c4050fff0b16245f00455de1f78b53580ccb4b5",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 4,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 4
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": true,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": false,
+          "label": "correct",
+          "rationale": "The control outcome is not promoted to a bounded failure cause.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-257de6c73a300a92d8bd62241b78491363bc2d1529dfb8b41c412f5a27ed9195",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "full",
+        "request_id": "diagreq-aa725e647c7a849a1558f5b2eb49880b30d66ca0c3d25a5f61b74c0f1babfb59",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [
+            "candidate_psi",
+            "metric_comparison",
+            "secondary_distribution_comparison"
+          ],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ]
+        },
+        "variant": "b1_plain"
+      },
+      "observed_outcome": {
+        "classification": "improvement",
+        "delta": 0.03878902554399244,
+        "metric": "accuracy",
+        "observed": 0.8325449385052034,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-aa725e647c7a849a1558f5b2eb49880b30d66ca0c3d25a5f61b74c0f1babfb59",
+      "review_id": "dxreview-ac74139467dbe68aaa89c6c94d94b54eb0387d8f2147a68b3e1182f6a0589bbc",
+      "variant": "b1_plain"
+    },
+    {
+      "case_family_id": "p1-family-72137535a8a990f0d8c05cd467ed17830effd3ee2e8a10bf38426064ea3ebc49",
+      "case_id": "p1-data-drift-01-full",
+      "diagnosis_context_id": "p1-context-f393c7280fbe90356f34cdc4fd1926a9cebd81160d91c1b731081e56d13f63fe",
+      "entry_binding_sha256": "d58569236a2436740ea3d75bbc9d0a360f87f7eb1a0f821725d59dc40514e030",
+      "evidence_condition": "full",
+      "hidden_failure_cause": {
+        "affected_components": [
+          "Contract"
+        ],
+        "causal_mechanism": "categorical_distribution_shift",
+        "cause_label": "data_drift",
+        "expected_symptoms": [
+          "metric_regression",
+          "distribution_shift:Contract"
+        ]
+      },
+      "hidden_failure_eligibility": {
+        "classification": "eligible_failure",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-72137535a8a990f0d8c05cd467ed17830effd3ee2e8a10bf38426064ea3ebc49",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 4,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 4
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": true,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": true,
+          "label": "correct",
+          "rationale": "The output identifies the P1 shift concept and affected feature.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-f393c7280fbe90356f34cdc4fd1926a9cebd81160d91c1b731081e56d13f63fe",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "full",
+        "request_id": "diagreq-ea1f7965192f084f5e311d85dcf1711183321da2f33ac8340d582929e26b455e",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ]
+        },
+        "variant": "a3_evidence_contract"
+      },
+      "observed_outcome": {
+        "classification": "regression",
+        "delta": -0.05676442762535472,
+        "metric": "accuracy",
+        "observed": 0.7369914853358562,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-ea1f7965192f084f5e311d85dcf1711183321da2f33ac8340d582929e26b455e",
+      "review_id": "dxreview-adee14426ecc08003e5ac344e2f111c21bbb38feae7cd8524a44fe2ddeac07ec",
+      "variant": "a3_evidence_contract"
+    },
+    {
+      "case_family_id": "p1-family-72137535a8a990f0d8c05cd467ed17830effd3ee2e8a10bf38426064ea3ebc49",
+      "case_id": "p1-data-drift-01-noisy",
+      "diagnosis_context_id": "p1-context-1d43ec6c4445234dc49a80fdea95b28d1d4515c4b96f411a083a490c61859bfa",
+      "entry_binding_sha256": "fb24d550a775c68feea9c8431e7193451d4094a8a8476bb071cb2aa2f8f893b3",
+      "evidence_condition": "noisy",
+      "hidden_failure_cause": {
+        "affected_components": [
+          "Contract"
+        ],
+        "causal_mechanism": "categorical_distribution_shift",
+        "cause_label": "data_drift",
+        "expected_symptoms": [
+          "metric_regression",
+          "distribution_shift:Contract"
+        ]
+      },
+      "hidden_failure_eligibility": {
+        "classification": "eligible_failure",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-72137535a8a990f0d8c05cd467ed17830effd3ee2e8a10bf38426064ea3ebc49",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 4,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 5
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": true,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": true,
+          "label": "correct",
+          "rationale": "The output identifies the P1 shift concept and affected feature.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-1d43ec6c4445234dc49a80fdea95b28d1d4515c4b96f411a083a490c61859bfa",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "noisy",
+        "request_id": "diagreq-cc8c143363bd13feb4a842a633512fc0dc958bd3cfc74cd8ee453de8da4c99a4",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ]
+        },
+        "variant": "a3_evidence_contract"
+      },
+      "observed_outcome": {
+        "classification": "regression",
+        "delta": -0.05676442762535472,
+        "metric": "accuracy",
+        "observed": 0.7369914853358562,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-cc8c143363bd13feb4a842a633512fc0dc958bd3cfc74cd8ee453de8da4c99a4",
+      "review_id": "dxreview-c139c78db0ddecaf60aeea6fe3473192f7c54ebecb62e7e030aaba9ffa5384cc",
+      "variant": "a3_evidence_contract"
+    },
+    {
+      "case_family_id": "p1-family-8e207fea89dfa353b28315bc3c4050fff0b16245f00455de1f78b53580ccb4b5",
+      "case_id": "p1-data-drift-04-noisy",
+      "diagnosis_context_id": "p1-context-6207b7663769de90a63cd029e2afbd8be353c51d3ec1e8091c98ab273fff0056",
+      "entry_binding_sha256": "882dd21d866b48bcdf782c28dc5b9d010b0ee0a29b96235651b8aef68e2a3ac9",
+      "evidence_condition": "noisy",
+      "hidden_failure_cause": null,
+      "hidden_failure_eligibility": {
+        "classification": "improvement_control",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-8e207fea89dfa353b28315bc3c4050fff0b16245f00455de1f78b53580ccb4b5",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 4,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 4
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": true,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": false,
+          "label": "correct",
+          "rationale": "The control outcome is not promoted to a bounded failure cause.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-6207b7663769de90a63cd029e2afbd8be353c51d3ec1e8091c98ab273fff0056",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "noisy",
+        "request_id": "diagreq-493fd0fe1f36182e8b5d9a3d4b4fc0ed983fd50126946c556466aaf3457c95cb",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [
+            "candidate_psi",
+            "metric_comparison",
+            "secondary_distribution_comparison"
+          ],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ]
+        },
+        "variant": "a3_evidence_contract"
+      },
+      "observed_outcome": {
+        "classification": "improvement",
+        "delta": 0.03878902554399244,
+        "metric": "accuracy",
+        "observed": 0.8325449385052034,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-493fd0fe1f36182e8b5d9a3d4b4fc0ed983fd50126946c556466aaf3457c95cb",
+      "review_id": "dxreview-c6971e02faac10b8be04b175e1644662fa315066ba7e9087ad091a580d60d33f",
+      "variant": "a3_evidence_contract"
+    },
+    {
+      "case_family_id": "p1-family-9456255ca8887cfc717457b3879b448e5e396de6f5ef29560a808ad767481f6c",
+      "case_id": "p1-data-drift-05-full",
+      "diagnosis_context_id": "p1-context-5cec573484171fc6a0e92b28bf063ed788eb027abec0fc58a1984d313eff3c83",
+      "entry_binding_sha256": "1bb5af679db2aa3285db1f6aa0d1404ccf336608cbde98388a54f50c423f04fc",
+      "evidence_condition": "full",
+      "hidden_failure_cause": null,
+      "hidden_failure_eligibility": {
+        "classification": "stable_control",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-9456255ca8887cfc717457b3879b448e5e396de6f5ef29560a808ad767481f6c",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 2,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 2
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": false,
+          "cause_concept_negated": true,
+          "hidden_failure_eligible": false,
+          "label": "correct",
+          "rationale": "The control outcome is not promoted to a bounded failure cause.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-5cec573484171fc6a0e92b28bf063ed788eb027abec0fc58a1984d313eff3c83",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "full",
+        "request_id": "diagreq-9c1a9edac5b9ace6ae03a463157dadd89d5687362a8fa2e6a030c15073b0aecb",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [
+            "candidate_psi",
+            "metric_comparison",
+            "secondary_distribution_comparison"
+          ],
+          "supported_roles": [
+            "candidate_psi",
+            "metric_comparison"
+          ]
+        },
+        "variant": "b1_plain"
+      },
+      "observed_outcome": {
+        "classification": "stable",
+        "delta": 0.0056764427625355385,
+        "metric": "accuracy",
+        "observed": 0.7994323557237465,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-9c1a9edac5b9ace6ae03a463157dadd89d5687362a8fa2e6a030c15073b0aecb",
+      "review_id": "dxreview-cc92a47657aae8fb9be18ffc58b296d54d911adb4a6d5121eb9ca9d12b5b7679",
+      "variant": "b1_plain"
+    },
+    {
+      "case_family_id": "p1-family-72137535a8a990f0d8c05cd467ed17830effd3ee2e8a10bf38426064ea3ebc49",
+      "case_id": "p1-data-drift-01-full",
+      "diagnosis_context_id": "p1-context-f393c7280fbe90356f34cdc4fd1926a9cebd81160d91c1b731081e56d13f63fe",
+      "entry_binding_sha256": "eb0e0fc96852868d9898001fdc3f2f87456187f383c4a9adfa2ec839b120bd3f",
+      "evidence_condition": "full",
+      "hidden_failure_cause": {
+        "affected_components": [
+          "Contract"
+        ],
+        "causal_mechanism": "categorical_distribution_shift",
+        "cause_label": "data_drift",
+        "expected_symptoms": [
+          "metric_regression",
+          "distribution_shift:Contract"
+        ]
+      },
+      "hidden_failure_eligibility": {
+        "classification": "eligible_failure",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-72137535a8a990f0d8c05cd467ed17830effd3ee2e8a10bf38426064ea3ebc49",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 4,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 4
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": true,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": true,
+          "label": "correct",
+          "rationale": "The output identifies the P1 shift concept and affected feature.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-f393c7280fbe90356f34cdc4fd1926a9cebd81160d91c1b731081e56d13f63fe",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "full",
+        "request_id": "diagreq-8ba77d5a8f584da74dcfd8c3e1a4afe238a8e68cdcaf662bbb16842b35a4caae",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ]
+        },
+        "variant": "b1_plain"
+      },
+      "observed_outcome": {
+        "classification": "regression",
+        "delta": -0.05676442762535472,
+        "metric": "accuracy",
+        "observed": 0.7369914853358562,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-8ba77d5a8f584da74dcfd8c3e1a4afe238a8e68cdcaf662bbb16842b35a4caae",
+      "review_id": "dxreview-d8aca48fa40fea99fd749066ba8d2a5a219480fa77fab6888aca78e2c77b6698",
+      "variant": "b1_plain"
+    },
+    {
+      "case_family_id": "p1-family-72137535a8a990f0d8c05cd467ed17830effd3ee2e8a10bf38426064ea3ebc49",
+      "case_id": "p1-data-drift-01-missing-key",
+      "diagnosis_context_id": "p1-context-afa92c9a248d09123f8f2b21319350e413cfc45ae8c89874d219a3f6ce0dc8d6",
+      "entry_binding_sha256": "3ad8c79677375f67dd8e0f7b6fd9b8078ffab429d16def3e402c1f2db1cc63c8",
+      "evidence_condition": "missing_key",
+      "hidden_failure_cause": {
+        "affected_components": [
+          "Contract"
+        ],
+        "causal_mechanism": "categorical_distribution_shift",
+        "cause_label": "data_drift",
+        "expected_symptoms": [
+          "metric_regression",
+          "distribution_shift:Contract"
+        ]
+      },
+      "hidden_failure_eligibility": {
+        "classification": "eligible_failure",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-72137535a8a990f0d8c05cd467ed17830effd3ee2e8a10bf38426064ea3ebc49",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 1,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 1
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": false,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": true,
+          "label": "not_asserted",
+          "rationale": "The output does not assert the hidden failure-cause concept.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-afa92c9a248d09123f8f2b21319350e413cfc45ae8c89874d219a3f6ce0dc8d6",
+        "divergence": "not_evaluable",
+        "evidence_aligned": true,
+        "evidence_condition": "missing_key",
+        "request_id": "diagreq-255f90acd3521ba0a30af342b2a89be158edcdf18af0aebdaf2812c2990b75ef",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "symptom"
+          ]
+        },
+        "variant": "a3_evidence_contract"
+      },
+      "observed_outcome": {
+        "classification": "regression",
+        "delta": -0.05676442762535472,
+        "metric": "accuracy",
+        "observed": 0.7369914853358562,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-255f90acd3521ba0a30af342b2a89be158edcdf18af0aebdaf2812c2990b75ef",
+      "review_id": "dxreview-e7b1966d2dad86ef2fe5bb9d1ab157014f8b1c9aa3f6ed03d05c8ad355223dd4",
+      "variant": "a3_evidence_contract"
+    },
+    {
+      "case_family_id": "p1-family-9456255ca8887cfc717457b3879b448e5e396de6f5ef29560a808ad767481f6c",
+      "case_id": "p1-data-drift-05-noisy",
+      "diagnosis_context_id": "p1-context-6520e3e4d40f239378d84b401293bb274ac21760c48531e7abfb290fb230f8e3",
+      "entry_binding_sha256": "4cd7af218720123705d493ea7cda83ec8c9ed4d4769f35f20faeca6e971683c4",
+      "evidence_condition": "noisy",
+      "hidden_failure_cause": null,
+      "hidden_failure_eligibility": {
+        "classification": "stable_control",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-9456255ca8887cfc717457b3879b448e5e396de6f5ef29560a808ad767481f6c",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 2,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 2
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": false,
+          "cause_concept_negated": true,
+          "hidden_failure_eligible": false,
+          "label": "correct",
+          "rationale": "The control outcome is not promoted to a bounded failure cause.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-6520e3e4d40f239378d84b401293bb274ac21760c48531e7abfb290fb230f8e3",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "noisy",
+        "request_id": "diagreq-11b81a07b957e905cd85dd854e647e2149dae4088815a06038c9feeb0dbe68c4",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [],
+          "supported_roles": [
+            "candidate_psi",
+            "metric_comparison"
+          ]
+        },
+        "variant": "a3_evidence_contract"
+      },
+      "observed_outcome": {
+        "classification": "stable",
+        "delta": 0.0056764427625355385,
+        "metric": "accuracy",
+        "observed": 0.7994323557237465,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-11b81a07b957e905cd85dd854e647e2149dae4088815a06038c9feeb0dbe68c4",
+      "review_id": "dxreview-e837dc9bd54f5e511215aadb32e2d3f2d9d6847b0c0ca8532bb60b74ff11d79b",
+      "variant": "a3_evidence_contract"
+    },
+    {
+      "case_family_id": "p1-family-626dd94ace11e6d668ef277c32a04680c9819c1fc42fcdb4edf95677bf60673b",
+      "case_id": "p1-data-drift-03-missing-key",
+      "diagnosis_context_id": "p1-context-57e8bafd10cd3b37c13cb317c6cbddb9658ac7174aad59d589784ae33f64e501",
+      "entry_binding_sha256": "6d17dd0594553ca8da8f05427c91024f3a7640a1f6949e6e247395695dc556e5",
+      "evidence_condition": "missing_key",
+      "hidden_failure_cause": {
+        "affected_components": [
+          "Contract"
+        ],
+        "causal_mechanism": "categorical_distribution_shift",
+        "cause_label": "data_drift",
+        "expected_symptoms": [
+          "metric_regression",
+          "distribution_shift:Contract"
+        ]
+      },
+      "hidden_failure_eligibility": {
+        "classification": "eligible_failure",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-626dd94ace11e6d668ef277c32a04680c9819c1fc42fcdb4edf95677bf60673b",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 1,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 1
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": false,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": true,
+          "label": "not_asserted",
+          "rationale": "The output does not assert the hidden failure-cause concept.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-57e8bafd10cd3b37c13cb317c6cbddb9658ac7174aad59d589784ae33f64e501",
+        "divergence": "not_evaluable",
+        "evidence_aligned": true,
+        "evidence_condition": "missing_key",
+        "request_id": "diagreq-d43777801645d2ef85f4e07fb44e965a7b814399b1eec3977f48425a95238390",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "symptom"
+          ]
+        },
+        "variant": "a3_evidence_contract"
+      },
+      "observed_outcome": {
+        "classification": "regression",
+        "delta": -0.08514664143803219,
+        "metric": "accuracy",
+        "observed": 0.7086092715231788,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-d43777801645d2ef85f4e07fb44e965a7b814399b1eec3977f48425a95238390",
+      "review_id": "dxreview-f029be64f60dea0124d0448a17a874ae3da41a2469b8b418240f28514964774a",
+      "variant": "a3_evidence_contract"
+    },
+    {
+      "case_family_id": "p1-family-626dd94ace11e6d668ef277c32a04680c9819c1fc42fcdb4edf95677bf60673b",
+      "case_id": "p1-data-drift-03-full",
+      "diagnosis_context_id": "p1-context-1a51f8cdd61e4c41c366201c531010f1ba5da9771d71de3c9dba65e9997703d2",
+      "entry_binding_sha256": "2213720eed69821664ec0fc495ed36f3a2a269c66598199ea26513a8019e70d2",
+      "evidence_condition": "full",
+      "hidden_failure_cause": {
+        "affected_components": [
+          "Contract"
+        ],
+        "causal_mechanism": "categorical_distribution_shift",
+        "cause_label": "data_drift",
+        "expected_symptoms": [
+          "metric_regression",
+          "distribution_shift:Contract"
+        ]
+      },
+      "hidden_failure_eligibility": {
+        "classification": "eligible_failure",
+        "metric_change_threshold": 0.01,
+        "policy_version": "accuracy-regression/v1"
+      },
+      "machine_evaluation": {
+        "behavior": {
+          "issues": [],
+          "missing_evidence_requested": true,
+          "rubric_compliant": true,
+          "secondary_comparison_used_as_support": false,
+          "strong_causal_language": false
+        },
+        "case_family_id": "p1-family-626dd94ace11e6d668ef277c32a04680c9819c1fc42fcdb4edf95677bf60673b",
+        "citations": {
+          "rationale": "All citations resolve to diagnosis-visible evidence.",
+          "supporting_citation_count": 4,
+          "unknown_evidence_ids": [],
+          "valid": true,
+          "visible_citation_count": 4
+        },
+        "correctness": {
+          "affected_feature_detected": true,
+          "cause_concept_detected": true,
+          "cause_concept_negated": false,
+          "hidden_failure_eligible": true,
+          "label": "correct",
+          "rationale": "The output identifies the P1 shift concept and affected feature.",
+          "requires_human_semantic_review": true
+        },
+        "diagnosis_context_id": "p1-context-1a51f8cdd61e4c41c366201c531010f1ba5da9771d71de3c9dba65e9997703d2",
+        "divergence": "correct_and_evidence_aligned",
+        "evidence_aligned": true,
+        "evidence_condition": "full",
+        "request_id": "diagreq-9652be69a2df8bc339bebf9fc1b1593b70da67b90f739757f8cc91c7c255e3a9",
+        "run_status": "success",
+        "support": {
+          "label": "fully_supported",
+          "missing_roles": [],
+          "rationale": "Cited evidence covers the roles required for this claim level.",
+          "required_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ],
+          "supported_roles": [
+            "candidate_distribution_observed",
+            "candidate_distribution_reference",
+            "candidate_psi",
+            "metric_comparison",
+            "symptom"
+          ]
+        },
+        "variant": "b1_plain"
+      },
+      "observed_outcome": {
+        "classification": "regression",
+        "delta": -0.08514664143803219,
+        "metric": "accuracy",
+        "observed": 0.7086092715231788,
+        "reference": 0.793755912961211,
+        "reference_split": "test"
+      },
+      "request_id": "diagreq-9652be69a2df8bc339bebf9fc1b1593b70da67b90f739757f8cc91c7c255e3a9",
+      "review_id": "dxreview-f29be336350761a5adb5c24f1ee46091c0a4e28f76fb4e457a1bc8f07fd91c1e",
+      "variant": "b1_plain"
+    }
+  ],
+  "entry_count": 30,
+  "paired_group_count": 10,
+  "paired_groups": [
+    {
+      "case_family_id": "p1-family-1bf39d487e89b6dc1da77331550395df78358eaa8b2ecdd413432e64a7b9f0ae",
+      "conditions": {
+        "full": {
+          "entry_binding_sha256": "f2444d99ea8e2236625c245218fb99ab39fa33668fa24371049bdbe7c71fd217",
+          "review_id": "dxreview-5ad6605c77e586b7c6c84b6a09a289c51da545e02784c451620878ca61545bbb"
+        },
+        "missing_key": {
+          "entry_binding_sha256": "f4ce86493961da2e81182431378e0d510a6c907bb7cc65e25a655f68c607c0c9",
+          "review_id": "dxreview-48467cf365f4ac4c3732822edd52ca4aee0e59bf2a6d2cf8a4829a2fc28c3f1c"
+        },
+        "noisy": {
+          "entry_binding_sha256": "8f62a1fea68f2478ad1bc64e7c879d1f9b28e294c24fa9e1f34549ad3dffe8b2",
+          "review_id": "dxreview-89fbff0af1299c19aee9d2fe254ad22c43af42108fe99a6bfd5bc6a8df711d17"
+        }
+      },
+      "paired_review_id": "dxpair-01",
+      "variant": "a3_evidence_contract"
+    },
+    {
+      "case_family_id": "p1-family-1bf39d487e89b6dc1da77331550395df78358eaa8b2ecdd413432e64a7b9f0ae",
+      "conditions": {
+        "full": {
+          "entry_binding_sha256": "697a9b2df6ad7acc2df0ef7d2792652af4036cb1ff7d210106e76b118dc8b9ae",
+          "review_id": "dxreview-3bab53db5acb17f480699ace107a1b20bb3190e02bf718fc03074c7cb9e52274"
+        },
+        "missing_key": {
+          "entry_binding_sha256": "17967c24e821a7cd4517bbe5ad74d71d35f03bd05a3826066e49d6254529053e",
+          "review_id": "dxreview-a7828c37819685ad189f65fe7981db23c5f36df7cc82424878ee0d304ff34259"
+        },
+        "noisy": {
+          "entry_binding_sha256": "c5bf6c4e2e3e672e2920b66af1c2508aa5e23c7475f1c875b0f1aaf5c74470b9",
+          "review_id": "dxreview-5e2d25c5860d18fddb8d77a9a37328a0b087813a41c21a6ff28cc81904f1666f"
+        }
+      },
+      "paired_review_id": "dxpair-02",
+      "variant": "b1_plain"
+    },
+    {
+      "case_family_id": "p1-family-626dd94ace11e6d668ef277c32a04680c9819c1fc42fcdb4edf95677bf60673b",
+      "conditions": {
+        "full": {
+          "entry_binding_sha256": "9d380632049af53ce6c88c4d1bd41205eed92ecba56e036dc6ad5390ba962af3",
+          "review_id": "dxreview-272db2df1a737e5ca540878b58daf9cadf592317994eac1149220e62a9150fca"
+        },
+        "missing_key": {
+          "entry_binding_sha256": "6d17dd0594553ca8da8f05427c91024f3a7640a1f6949e6e247395695dc556e5",
+          "review_id": "dxreview-f029be64f60dea0124d0448a17a874ae3da41a2469b8b418240f28514964774a"
+        },
+        "noisy": {
+          "entry_binding_sha256": "72187bcb221e9c4ce030f0d9374b9b3f58dca094b8bedb70793d0b8ee464a0ec",
+          "review_id": "dxreview-128f42920ce5d97302fba858ab5dfe599e3b532a95c4fd8cd20af8a06e3c2d18"
+        }
+      },
+      "paired_review_id": "dxpair-03",
+      "variant": "a3_evidence_contract"
+    },
+    {
+      "case_family_id": "p1-family-626dd94ace11e6d668ef277c32a04680c9819c1fc42fcdb4edf95677bf60673b",
+      "conditions": {
+        "full": {
+          "entry_binding_sha256": "2213720eed69821664ec0fc495ed36f3a2a269c66598199ea26513a8019e70d2",
+          "review_id": "dxreview-f29be336350761a5adb5c24f1ee46091c0a4e28f76fb4e457a1bc8f07fd91c1e"
+        },
+        "missing_key": {
+          "entry_binding_sha256": "5d4556e5237d8e1cd4c43ff0f4b1b62c5be6c06f3b2fdaf9c643e6f5419fcfb5",
+          "review_id": "dxreview-1585fefa8dc52a488cc8e0e60db962592ccdd228c32712ae5f71bae6b1b7e73d"
+        },
+        "noisy": {
+          "entry_binding_sha256": "b15bcfe644c1f158db57d3098938db3f6b8939dfaf2fbcb9040a132ad2024918",
+          "review_id": "dxreview-9f1f79f4bccd29332a27fe5051e70fa66ff518f1a8a08943816537e05bd18b16"
+        }
+      },
+      "paired_review_id": "dxpair-04",
+      "variant": "b1_plain"
+    },
+    {
+      "case_family_id": "p1-family-72137535a8a990f0d8c05cd467ed17830effd3ee2e8a10bf38426064ea3ebc49",
+      "conditions": {
+        "full": {
+          "entry_binding_sha256": "d58569236a2436740ea3d75bbc9d0a360f87f7eb1a0f821725d59dc40514e030",
+          "review_id": "dxreview-adee14426ecc08003e5ac344e2f111c21bbb38feae7cd8524a44fe2ddeac07ec"
+        },
+        "missing_key": {
+          "entry_binding_sha256": "3ad8c79677375f67dd8e0f7b6fd9b8078ffab429d16def3e402c1f2db1cc63c8",
+          "review_id": "dxreview-e7b1966d2dad86ef2fe5bb9d1ab157014f8b1c9aa3f6ed03d05c8ad355223dd4"
+        },
+        "noisy": {
+          "entry_binding_sha256": "fb24d550a775c68feea9c8431e7193451d4094a8a8476bb071cb2aa2f8f893b3",
+          "review_id": "dxreview-c139c78db0ddecaf60aeea6fe3473192f7c54ebecb62e7e030aaba9ffa5384cc"
+        }
+      },
+      "paired_review_id": "dxpair-05",
+      "variant": "a3_evidence_contract"
+    },
+    {
+      "case_family_id": "p1-family-72137535a8a990f0d8c05cd467ed17830effd3ee2e8a10bf38426064ea3ebc49",
+      "conditions": {
+        "full": {
+          "entry_binding_sha256": "eb0e0fc96852868d9898001fdc3f2f87456187f383c4a9adfa2ec839b120bd3f",
+          "review_id": "dxreview-d8aca48fa40fea99fd749066ba8d2a5a219480fa77fab6888aca78e2c77b6698"
+        },
+        "missing_key": {
+          "entry_binding_sha256": "bcf53640705486adaea6d013c6a4135445e49b9dd9fc380a805e7aa01cd7e4ed",
+          "review_id": "dxreview-639ecca1e81bfc171beeab84d551371e5211dd193744fb7d4851078c6eca5794"
+        },
+        "noisy": {
+          "entry_binding_sha256": "5df14e16489aebd01bdb7c16987e779bc198b7b4ab6ffd11cfaf70d1c439205b",
+          "review_id": "dxreview-4b2bcf31db3c54441f2970208b6c013e87e735596fe23ea54048f6d3bccd8387"
+        }
+      },
+      "paired_review_id": "dxpair-06",
+      "variant": "b1_plain"
+    },
+    {
+      "case_family_id": "p1-family-8e207fea89dfa353b28315bc3c4050fff0b16245f00455de1f78b53580ccb4b5",
+      "conditions": {
+        "full": {
+          "entry_binding_sha256": "7e3523e5ddc139230cc8c5b58c6fe413c9d3d93b9e7dfd74042f438cf1d286d2",
+          "review_id": "dxreview-504346544f9d0dee203f7f43243eb205cb7124fa79cae173a1a02e627b84164f"
+        },
+        "missing_key": {
+          "entry_binding_sha256": "ece582b31e256301c940fcd9091f27d8ce45e96bf049e320e8b891da1cb5c1bd",
+          "review_id": "dxreview-73c39866d55f5c1908baeca81f4801d52422151af39b662d57bd333ccb0608f2"
+        },
+        "noisy": {
+          "entry_binding_sha256": "882dd21d866b48bcdf782c28dc5b9d010b0ee0a29b96235651b8aef68e2a3ac9",
+          "review_id": "dxreview-c6971e02faac10b8be04b175e1644662fa315066ba7e9087ad091a580d60d33f"
+        }
+      },
+      "paired_review_id": "dxpair-07",
+      "variant": "a3_evidence_contract"
+    },
+    {
+      "case_family_id": "p1-family-8e207fea89dfa353b28315bc3c4050fff0b16245f00455de1f78b53580ccb4b5",
+      "conditions": {
+        "full": {
+          "entry_binding_sha256": "da26b562b9e21cf4a4ec92970421f2ef5f90d09a3157133a3b67c789ab57d7d5",
+          "review_id": "dxreview-ac74139467dbe68aaa89c6c94d94b54eb0387d8f2147a68b3e1182f6a0589bbc"
+        },
+        "missing_key": {
+          "entry_binding_sha256": "1600cf07b9b445394d55052fba4ea81389f63d7dc8d8a80555562931895d6f50",
+          "review_id": "dxreview-65e8f1f01af3bdc5020fc4a24f9b7ce4f2a0dbdc78035abfbe67ff553f2c8c98"
+        },
+        "noisy": {
+          "entry_binding_sha256": "14b6ca342cb439d5a6651322d7ab6be09b13c5f290c8cd8a60e997049ed71bda",
+          "review_id": "dxreview-54533353a6a00ee37c9b191e6b6801a82b18f8befcc2e2d89e52ba7b68c35a80"
+        }
+      },
+      "paired_review_id": "dxpair-08",
+      "variant": "b1_plain"
+    },
+    {
+      "case_family_id": "p1-family-9456255ca8887cfc717457b3879b448e5e396de6f5ef29560a808ad767481f6c",
+      "conditions": {
+        "full": {
+          "entry_binding_sha256": "cb25d987025bbf29e176b9ed75ee7466cb772251112eb76032c79f62b4271518",
+          "review_id": "dxreview-11ca9f6dc52427bb5295e4ef3089536536ddc280e880a21bfc992265def48630"
+        },
+        "missing_key": {
+          "entry_binding_sha256": "38728c4d6e5be267c1ee937bcfcb7d3667a161fc33144765f85fac0b8a5bd603",
+          "review_id": "dxreview-12d5fa304bbe3770416c3dc37c247f713e5fe283f897b11e29ae29fa8c39a07f"
+        },
+        "noisy": {
+          "entry_binding_sha256": "4cd7af218720123705d493ea7cda83ec8c9ed4d4769f35f20faeca6e971683c4",
+          "review_id": "dxreview-e837dc9bd54f5e511215aadb32e2d3f2d9d6847b0c0ca8532bb60b74ff11d79b"
+        }
+      },
+      "paired_review_id": "dxpair-09",
+      "variant": "a3_evidence_contract"
+    },
+    {
+      "case_family_id": "p1-family-9456255ca8887cfc717457b3879b448e5e396de6f5ef29560a808ad767481f6c",
+      "conditions": {
+        "full": {
+          "entry_binding_sha256": "1bb5af679db2aa3285db1f6aa0d1404ccf336608cbde98388a54f50c423f04fc",
+          "review_id": "dxreview-cc92a47657aae8fb9be18ffc58b296d54d911adb4a6d5121eb9ca9d12b5b7679"
+        },
+        "missing_key": {
+          "entry_binding_sha256": "54f8877306d1d03e808511083686eeffbd26e6b5346fa52be9672917c6479cb1",
+          "review_id": "dxreview-04d7bdddf53bbea72cb0d1e20bffddfd2575a1ea5af6ff106a7cf265b28d2517"
+        },
+        "noisy": {
+          "entry_binding_sha256": "c81729e64c36f08740183132210b3958c3ff9ad9c69c99fc0d42d829d2dab409",
+          "review_id": "dxreview-aa3d2d2bedb088e261f2ea79f3d233857457176c2441394d2339489654359872"
+        }
+      },
+      "paired_review_id": "dxpair-10",
+      "variant": "b1_plain"
+    }
+  ],
+  "schema_version": "diagnosis-human-review-mapping-packet/1",
+  "source_result_lock_sha256": "8050de78966315be6f5df5c60bb9b1fcff163513b3621a78f5d78c41fa20c815"
+}

@@ -1,0 +1,21 @@
+{
+  "schema_version": "p1-diagnosis-public-review/1",
+  "reviewer_id": "reviewer-diagnosis-01",
+  "blind_packet_sha256": "1497b0a32d468dce83bc1c0ea7c6f2edea6f5559f8f0319d7493ab4d8bba337b",
+  "mapping_packet_sha256": "5d438912be82d92b6e886e3708d55348b28e6292fbb41f22f9fc8d76294e32b1",
+  "source_result_lock_sha256": "8050de78966315be6f5df5c60bb9b1fcff163513b3621a78f5d78c41fa20c815",
+  "blind_before_mapping": true,
+  "ai_assistance_used": false,
+  "round1_pass": 18,
+  "round1_fail": 0,
+  "round1_uncertain": 12,
+  "human_correct": 24,
+  "human_incorrect": 0,
+  "human_not_asserted": 6,
+  "human_behavior_compliant": 30,
+  "human_machine_agreement": 29,
+  "human_missing_key_sensitive": 10,
+  "machine_noisy_robust": 8,
+  "human_semantic_noisy_robust": 10,
+  "status": "valid_with_disclosed_correction"
+}
