@@ -290,7 +290,9 @@ def test_closeout_output_tampering_fails(
 
 
 def test_closeout_rejects_stale_evaluation_and_symlink(
-    closeout_inputs: dict[str, Path], tmp_path: Path
+    closeout_inputs: dict[str, Path],
+    tmp_path: Path,
+    make_symlink,
 ) -> None:
     stale = tmp_path / "stale-evaluation.json"
     payload = json.loads(closeout_inputs["evaluation"].read_text("utf-8"))
@@ -320,7 +322,7 @@ def test_closeout_rejects_stale_evaluation_and_symlink(
         closeout_inputs["evaluation"],
         clean,
     )
-    (clean / "link").symlink_to(clean / "canonical-result.json")
+    make_symlink(clean / "link", clean / "canonical-result.json")
     with pytest.raises(ValueError, match="symlink"):
         validate_p1_closeout(
             closeout_inputs["lock"],

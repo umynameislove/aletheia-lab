@@ -154,12 +154,13 @@ def test_collector_fails_closed_when_source_case_checksum_is_tampered(p1_cases: 
 
 def test_collector_rejects_symlinked_source_even_when_bytes_and_checksum_match(
     p1_cases: Path,
+    make_symlink,
 ) -> None:
     case_dir = p1_cases / "p1-data-drift-01-full"
     source = case_dir / "diagnosis_input.json"
     moved = case_dir / "diagnosis_input.real.json"
     source.rename(moved)
-    source.symlink_to(moved.name)
+    make_symlink(source, moved.name)
 
     with pytest.raises(EvidenceCollectionError, match="must not be symlinks"):
         collect_p1_bundles(p1_cases)

@@ -1,0 +1,5 @@
+# Keep ordinary source and documentation text consistent across platforms.
+* text=auto eol=lf
+
+# These published records are bound by raw-byte SHA-256 digests.
+reports/p1/**/*.json -text !eol
