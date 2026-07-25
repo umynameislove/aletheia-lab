@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
@@ -39,6 +41,23 @@ _CATEGORY_VALUES: dict[str, list[str]] = {
         "Credit card (automatic)",
     ],
 }
+
+
+@pytest.fixture
+def make_symlink() -> Callable[[Path, str | Path], None]:
+    """Create a symlink or skip when Windows has not granted that capability."""
+
+    def create(link: Path, target: str | Path) -> None:
+        try:
+            link.symlink_to(target)
+        except NotImplementedError:
+            pytest.skip("symlink creation is unavailable on this platform")
+        except OSError as exc:
+            if os.name == "nt" and getattr(exc, "winerror", None) == 1314:
+                pytest.skip("Windows symlink creation requires Developer Mode or elevation")
+            raise
+
+    return create
 
 
 def build_frame(n: int = 240, seed: int = 0) -> pd.DataFrame:

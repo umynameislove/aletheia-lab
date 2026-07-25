@@ -118,9 +118,9 @@ def test_final_closeout_rejects_bound_artifact_tampering(
         validate_p1_final_closeout(*paths)
 
 
-def test_final_closeout_rejects_symlink(tmp_path: Path) -> None:
+def test_final_closeout_rejects_symlink(tmp_path: Path, make_symlink) -> None:
     link = tmp_path / "review.json"
-    link.symlink_to((REVIEW_ROOT / "evidence-review.json").resolve())
+    make_symlink(link, (REVIEW_ROOT / "evidence-review.json").resolve())
     paths = list(_paths())
     paths[3] = link
     with pytest.raises(ValueError, match="must not be symlinks"):
