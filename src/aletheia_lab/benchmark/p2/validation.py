@@ -25,6 +25,7 @@ from aletheia_lab.benchmark.p2.contracts import (
     AlphaValidityReport,
     CandidateExecution,
     CandidatePlan,
+    CandidateSlot,
     ClassificationRecord,
     ContextCensus,
     DuplicateAudit,
@@ -118,6 +119,10 @@ _M3_RANKS: Final[dict[str, tuple[int | None, int | None]]] = {
     "M3-R3": (1, 2),
 }
 
+_M3_TARGET_FEATURE: Final[str] = "Contract"
+_M3_MODE: Final[str] = "inference_only"
+_M3_TRANSFORM_NAME: Final[str] = "one_hot_encoder"
+
 
 class ContractViolation(ValueError):
     """Raised when Phase 2 artifacts disagree with one another."""
@@ -136,6 +141,91 @@ def _revalidated(model: _ModelT) -> _ModelT:
     return type(model).model_validate(model.model_dump())
 
 
+def validate_frozen_alpha_slot(slot: CandidateSlot) -> CandidateSlot:
+    """Validate one slot against the same authoritative grid used by the full plan.
+
+    Injectors operate on one slot at a time. Requiring them to accept an entire
+    :class:`CandidatePlan` would make it easy for callers to skip plan validation,
+    while re-stating the grid inside each injector would create competing sources
+    of truth. This entry point closes that gap: both single-slot execution and
+    whole-plan validation use the tables in this module.
+    """
+
+    slot = _revalidated(slot)
+    slot_id = slot.slot_id
+    expected = _FROZEN_ALPHA_SLOTS.get(slot_id)
+    if expected is None:
+        _fail(f"slot {slot_id} is not part of the frozen alpha grid")
+
+    actual = (
+        slot.fault_type,
+        slot.slot_kind,
+        slot.role,
+        slot.identity.seed,
+        slot.reserve_order,
+    )
+    wanted = (
+        expected.fault_type,
+        expected.slot_kind,
+        expected.role,
+        expected.seed,
+        expected.reserve_order,
+    )
+    if actual != wanted:
+        _fail(f"slot {slot_id} differs from the frozen alpha role/seed contract")
+
+    parameters = slot.identity.canonical_intervention_parameters
+    if slot_id.startswith("M1-"):
+        if not isinstance(parameters, DataDriftParameters):
+            _fail(f"slot {slot_id} must use data-drift parameters")
+        if parameters.feature != "Contract":
+            _fail(f"slot {slot_id} must target Contract")
+        if slot_id == "M1-B1":
+            if slot.identity.intervention_type != "empirical_distribution_resampling_control":
+                _fail("M1-B1 must use the empirical resampling control")
+        else:
+            if slot.identity.intervention_type != "categorical_distribution_shift":
+                _fail(f"slot {slot_id} must use categorical_distribution_shift")
+            if parameters.target_distribution != _M1_TARGETS[slot_id]:
+                _fail(f"slot {slot_id} target distribution differs from the alpha contract")
+    elif slot_id.startswith("M2-"):
+        if not isinstance(parameters, LabelNoiseParameters):
+            _fail(f"slot {slot_id} must use label-noise parameters")
+        if not math.isclose(parameters.flip_rate, _M2_RATES[slot_id], rel_tol=0.0, abs_tol=1e-12):
+            _fail(f"slot {slot_id} flip_rate differs from the alpha contract")
+        if (
+            parameters.flip_direction != "symmetric"
+            or parameters.selection_policy != "seeded_record_hash"
+            or parameters.scope != "train"
+        ):
+            _fail(f"slot {slot_id} label-noise semantics differ from the alpha contract")
+        expected_intervention = {
+            "M2-I1": "training_target_label_repair",
+            "M2-B1": "target_label_serialization_roundtrip",
+        }.get(slot_id, "training_target_label_corruption")
+        if slot.identity.intervention_type != expected_intervention:
+            _fail(f"slot {slot_id} intervention_type differs from the alpha contract")
+    else:
+        if not isinstance(parameters, PreprocessingBugParameters):
+            _fail(f"slot {slot_id} must use preprocessing-bug parameters")
+        if (
+            parameters.target_feature != _M3_TARGET_FEATURE
+            or parameters.mode != _M3_MODE
+            or parameters.transform_name != _M3_TRANSFORM_NAME
+        ):
+            _fail(f"slot {slot_id} preprocessing target/mode/transform differs from alpha")
+        if (parameters.source_rank, parameters.mapped_rank) != _M3_RANKS[slot_id]:
+            _fail(f"slot {slot_id} category-rank mapping differs from the alpha contract")
+        expected_intervention = {
+            "M3-I1": "inference_encoder_mapping_repair",
+            "M3-B1": "name_bound_column_order_permutation",
+        }.get(slot_id, "inference_encoder_mapping_mismatch")
+        if slot.identity.intervention_type != expected_intervention:
+            _fail(f"slot {slot_id} intervention_type differs from the alpha contract")
+
+    return slot
+
+
 def validate_frozen_alpha_plan(plan: CandidatePlan) -> None:
     """Reject any outcome-driven drift from the frozen alpha grid."""
 
@@ -152,71 +242,8 @@ def validate_frozen_alpha_plan(plan: CandidatePlan) -> None:
     if plan.primary_planned != PRIMARY_SLOT_COUNT or plan.reserve_planned != RESERVE_SLOT_COUNT:
         _fail("the frozen alpha plan must contain exactly 15 primary and 9 reserve slots")
 
-    for slot_id, expected in _FROZEN_ALPHA_SLOTS.items():
-        slot = by_id[slot_id]
-        actual = (
-            slot.fault_type,
-            slot.slot_kind,
-            slot.role,
-            slot.identity.seed,
-            slot.reserve_order,
-        )
-        wanted = (
-            expected.fault_type,
-            expected.slot_kind,
-            expected.role,
-            expected.seed,
-            expected.reserve_order,
-        )
-        if actual != wanted:
-            _fail(f"slot {slot_id} differs from the frozen alpha role/seed contract")
-
-        parameters = slot.identity.canonical_intervention_parameters
-        if slot_id.startswith("M1-"):
-            if not isinstance(parameters, DataDriftParameters):
-                _fail(f"slot {slot_id} must use data-drift parameters")
-            if parameters.feature != "Contract":
-                _fail(f"slot {slot_id} must target Contract")
-            if slot_id == "M1-B1":
-                if slot.identity.intervention_type != "empirical_distribution_resampling_control":
-                    _fail("M1-B1 must use the empirical resampling control")
-            else:
-                if slot.identity.intervention_type != "categorical_distribution_shift":
-                    _fail(f"slot {slot_id} must use categorical_distribution_shift")
-                if parameters.target_distribution != _M1_TARGETS[slot_id]:
-                    _fail(f"slot {slot_id} target distribution differs from the alpha contract")
-        elif slot_id.startswith("M2-"):
-            if not isinstance(parameters, LabelNoiseParameters):
-                _fail(f"slot {slot_id} must use label-noise parameters")
-            if not math.isclose(
-                parameters.flip_rate, _M2_RATES[slot_id], rel_tol=0.0, abs_tol=1e-12
-            ):
-                _fail(f"slot {slot_id} flip_rate differs from the alpha contract")
-            if (
-                parameters.flip_direction != "symmetric"
-                or parameters.selection_policy != "seeded_record_hash"
-                or parameters.scope != "train"
-            ):
-                _fail(f"slot {slot_id} label-noise semantics differ from the alpha contract")
-            expected_intervention = {
-                "M2-I1": "training_target_label_repair",
-                "M2-B1": "target_label_serialization_roundtrip",
-            }.get(slot_id, "training_target_label_corruption")
-            if slot.identity.intervention_type != expected_intervention:
-                _fail(f"slot {slot_id} intervention_type differs from the alpha contract")
-        else:
-            if not isinstance(parameters, PreprocessingBugParameters):
-                _fail(f"slot {slot_id} must use preprocessing-bug parameters")
-            if parameters.target_feature != "Contract" or parameters.mode != "inference_only":
-                _fail(f"slot {slot_id} preprocessing target/mode differs from the alpha contract")
-            if (parameters.source_rank, parameters.mapped_rank) != _M3_RANKS[slot_id]:
-                _fail(f"slot {slot_id} category-rank mapping differs from the alpha contract")
-            expected_intervention = {
-                "M3-I1": "inference_encoder_mapping_repair",
-                "M3-B1": "name_bound_column_order_permutation",
-            }.get(slot_id, "inference_encoder_mapping_mismatch")
-            if slot.identity.intervention_type != expected_intervention:
-                _fail(f"slot {slot_id} intervention_type differs from the alpha contract")
+    for slot in plan.slots:
+        validate_frozen_alpha_slot(slot)
 
 
 def validate_candidate_flow(
