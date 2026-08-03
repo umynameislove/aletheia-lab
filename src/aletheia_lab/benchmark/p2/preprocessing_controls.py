@@ -773,6 +773,39 @@ def _inference_source_sha256(source: InferenceTransformSource) -> str:
     )
 
 
+def validate_inference_evaluation_binding(
+    *, source: InferenceTransformSource, test_set: CleanTestSet
+) -> tuple[InferenceTransformSource, CleanTestSet]:
+    """Bind an inference intervention to the exact evaluation source it scored.
+
+    Validating the intervention and the metric independently is insufficient:
+    two internally valid artifacts from different record sets or fitted models
+    could otherwise be combined into one candidate package.  This relation is
+    shared by fault-directed and repair-control execution, so it has one
+    authoritative implementation.
+
+    The split-manifest digest is not compared here.  It identifies a manifest,
+    while the source carries digests of the materialized feature matrix, target
+    and fitted model.  Equating those different digest domains would create a
+    false invariant.
+    """
+
+    source = _revalidated(source)
+    test_set = _revalidated(test_set)
+    if source.record_ids != test_set.record_ids:
+        _fail(
+            "the inference source and clean test set must contain the same records "
+            "in the same order"
+        )
+    if source.attested_raw_feature_matrix_sha256 != (test_set.attested_test_feature_matrix_sha256):
+        _fail("the inference source and clean test set are not bound to the same feature matrix")
+    if source.attested_raw_target_sha256 != test_set.attested_target_sha256:
+        _fail("the inference source and clean test set are not bound to the same target artifact")
+    if source.attested_model_sha256 != test_set.attested_model_sha256:
+        _fail("the inference source and clean test set are not bound to the same fitted model")
+    return source, test_set
+
+
 def measure_repair_control(
     *,
     result: EncoderMappingRepairResult,
@@ -792,18 +825,7 @@ def measure_repair_control(
     seed, and a stable result is reported as stable.
     """
 
-    source = _revalidated(source)
-    test_set = _revalidated(test_set)
-    if source.record_ids != test_set.record_ids:
-        _fail(
-            "the repair source and clean test set must contain the same records in the same order"
-        )
-    if source.attested_raw_feature_matrix_sha256 != (test_set.attested_test_feature_matrix_sha256):
-        _fail("the repair source and clean test set are not bound to the same feature matrix")
-    if source.attested_raw_target_sha256 != test_set.attested_target_sha256:
-        _fail("the repair source and clean test set are not bound to the same target artifact")
-    if source.attested_model_sha256 != test_set.attested_model_sha256:
-        _fail("the repair source and clean test set are not bound to the same fitted model")
+    source, test_set = validate_inference_evaluation_binding(source=source, test_set=test_set)
 
     validated = validate_encoder_mapping_repair(result, source=source, spec=spec, slot=slot)
     comparison = compare_binary_metrics(
