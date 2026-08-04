@@ -20,7 +20,7 @@ from __future__ import annotations
 import math
 from typing import Final, Literal
 
-import pandas as pd  # type: ignore[import-untyped]
+import pandas as pd
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from aletheia_lab.baseline.loader import LoadedSplits, SplitData

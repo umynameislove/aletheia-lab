@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from sklearn.linear_model import LogisticRegression
-from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LogisticRegression  # type: ignore[import-untyped]
+from sklearn.pipeline import Pipeline  # type: ignore[import-untyped]
 
 from aletheia_lab.baseline.preprocess import build_preprocessor
 

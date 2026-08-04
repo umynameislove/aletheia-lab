@@ -10,10 +10,10 @@ target is never used to fit any transformer.
 
 from __future__ import annotations
 
-from sklearn.compose import ColumnTransformer
-from sklearn.impute import SimpleImputer
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.compose import ColumnTransformer  # type: ignore[import-untyped]
+from sklearn.impute import SimpleImputer  # type: ignore[import-untyped]
+from sklearn.pipeline import Pipeline  # type: ignore[import-untyped]
+from sklearn.preprocessing import OneHotEncoder, StandardScaler  # type: ignore[import-untyped]
 
 from aletheia_lab.baseline.schema import CATEGORICAL_FEATURES, NUMERIC_FEATURES
 

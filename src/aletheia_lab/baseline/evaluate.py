@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import numpy as np
 import numpy.typing as npt
-from sklearn.metrics import (
+from sklearn.metrics import (  # type: ignore[import-untyped]
     balanced_accuracy_score,
     confusion_matrix,
     f1_score,
@@ -18,7 +18,7 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import Pipeline  # type: ignore[import-untyped]
 
 from aletheia_lab.baseline.loader import SplitData
 from aletheia_lab.baseline.schema import SplitMetrics

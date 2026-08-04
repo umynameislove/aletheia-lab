@@ -47,7 +47,7 @@ def package_versions() -> dict[str, str]:
 
     import numpy
     import pandas
-    import sklearn
+    import sklearn  # type: ignore[import-untyped]
 
     return {
         "python": platform.python_version(),
