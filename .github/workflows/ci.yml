@@ -26,7 +26,7 @@ jobs:
       - name: Test
         run: pytest
       - name: Type-check (strict)
-        run: python -m mypy --strict src/aletheia_lab/data src/aletheia_lab/baseline
+        run: python -m mypy --strict --python-version ${{ matrix.python-version }} src/aletheia_lab/data src/aletheia_lab/baseline
 
   # ---------------------------------------------------------------------------
   # Quality job — lint and hygiene run once (not per-version).
