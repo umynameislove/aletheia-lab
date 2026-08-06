@@ -1,6 +1,6 @@
-"""Unit tests for data-quality measurement models and functions (job_02.md §2.5).
+"""Unit tests for authoritative data-quality measurement and validation.
 
-Coverage (job_02.md §2.7):
+Coverage:
   - valid DatasetQualityReport and ModelSplitQualityReport construction
   - quality expected computed independently in test
   - forged count/rate via model_copy and model_construct
@@ -22,6 +22,7 @@ from pydantic import ValidationError
 
 from aletheia_lab.baseline.loader import split_dataset
 from aletheia_lab.baseline.schema import NUMERIC_FEATURES, TARGET_COLUMN
+from aletheia_lab.data.manifest import ManifestContractError
 from aletheia_lab.data.manifest_generation import (
     build_dataset_snapshot,
     build_model_data_split,
@@ -32,14 +33,14 @@ from aletheia_lab.data.quality import (
     SplitCountDetail,
     measure_dataset,
     measure_model_split,
+    validate_dataset_quality_report,
+    validate_model_split_quality_report,
 )
 
 _DATASET_ID = "telco_customer_churn"
 _SNAP_REL = "manifests/snapshot.json"
 _SPLIT_REL = "manifests/model-split.json"
-_FORBIDDEN_FIELDS = frozenset(
-    {"passed", "valid", "verdict", "eligible", "expected_behavior"}
-)
+_FORBIDDEN_FIELDS = frozenset({"passed", "valid", "verdict", "eligible", "expected_behavior"})
 
 
 # ---------------------------------------------------------------------------
@@ -73,8 +74,8 @@ def quality_fixtures(tmp_path: Path, make_frame, processed_csv: Path):
         ratios={"train": 0.7, "validation": 0.15, "test": 0.15},
         stratified=True,
     )
-    dq = measure_dataset(snap, frame)
-    sq = measure_model_split(snap, model_split, splits)
+    dq = measure_dataset(snap, processed_csv)
+    sq = measure_model_split(snap, model_split, processed_csv)
     return snap, model_split, splits, frame, dq, sq
 
 
@@ -272,9 +273,7 @@ def test_measure_dataset_missing_count_computed_independently(
     """Missing counts match independently computed values for every column."""
     _, _, _, frame, dq, _ = quality_fixtures
     # Compute expected missing per column INDEPENDENTLY
-    expected = {
-        str(col): int(frame[col].isna().sum()) for col in sorted(frame.columns)
-    }
+    expected = {str(col): int(frame[col].isna().sum()) for col in sorted(frame.columns)}
     actual = {c.column: c.n_missing for c in dq.missing_per_column}
     assert actual == expected
 
@@ -370,9 +369,89 @@ def test_forged_model_split_quality_report_detected(quality_fixtures) -> None:
         ModelSplitQualityReport.model_validate(raw)
 
 
-def test_quality_report_replay_different_snapshot(
-    tmp_path: Path, make_frame
+def test_authoritative_dataset_quality_validator_rejects_self_consistent_tamper(
+    tmp_path: Path,
+    make_frame,
 ) -> None:
+    """A schema-valid changed measurement is rejected after source recomputation."""
+
+    csv = tmp_path / "processed.csv"
+    make_frame(n=240, seed=0).to_csv(csv, index=False, lineterminator="\n")
+    out = tmp_path / "out"
+    snapshot = build_dataset_snapshot(
+        csv,
+        dataset_id=_DATASET_ID,
+        output_root=out,
+        relative_path=_SNAP_REL,
+    )
+    report = measure_dataset(snapshot, csv)
+    forged = report.model_copy(update={"n_duplicate_ids": 27})
+
+    with pytest.raises(ManifestContractError, match="source-derived"):
+        validate_dataset_quality_report(forged, snapshot, csv)
+
+
+def test_dataset_quality_measurement_rejects_foreign_source(
+    tmp_path: Path,
+    make_frame,
+) -> None:
+    """A report cannot combine one snapshot with a different valid CSV."""
+
+    csv_a = tmp_path / "a.csv"
+    csv_b = tmp_path / "b.csv"
+    make_frame(n=240, seed=0).to_csv(csv_a, index=False, lineterminator="\n")
+    make_frame(n=240, seed=99).to_csv(csv_b, index=False, lineterminator="\n")
+    snapshot = build_dataset_snapshot(
+        csv_a,
+        dataset_id=_DATASET_ID,
+        output_root=tmp_path / "out",
+        relative_path=_SNAP_REL,
+    )
+
+    with pytest.raises(ManifestContractError, match="dataset_sha256"):
+        measure_dataset(snapshot, csv_b)
+
+
+def test_authoritative_split_quality_validator_rejects_self_consistent_tamper(
+    tmp_path: Path,
+    make_frame,
+) -> None:
+    """A schema-valid overlap claim is rejected after split recomputation."""
+
+    csv = tmp_path / "processed.csv"
+    make_frame(n=240, seed=0).to_csv(csv, index=False, lineterminator="\n")
+    out = tmp_path / "out"
+    snapshot = build_dataset_snapshot(
+        csv,
+        dataset_id=_DATASET_ID,
+        output_root=out,
+        relative_path=_SNAP_REL,
+    )
+    model_split = build_model_data_split(
+        snapshot,
+        csv,
+        output_root=out,
+        relative_path=_SPLIT_REL,
+    )
+    report = measure_model_split(snapshot, model_split, csv)
+    forged = report.model_copy(update={"n_overlap": 1})
+
+    with pytest.raises(ManifestContractError, match="source-derived"):
+        validate_model_split_quality_report(forged, snapshot, model_split, csv)
+
+
+def test_model_split_quality_rejects_swapped_named_details(quality_fixtures) -> None:
+    """Nested split details cannot be moved to a different report slot."""
+
+    _, _, _, _, _, report = quality_fixtures
+    raw = report.model_dump(warnings=False)
+    raw["train"], raw["validation"] = raw["validation"], raw["train"]
+
+    with pytest.raises(ValidationError, match="split report fields"):
+        ModelSplitQualityReport.model_validate(raw)
+
+
+def test_quality_report_replay_different_snapshot(tmp_path: Path, make_frame) -> None:
     """A report from snapshot_A has a different identity binding than snapshot_B."""
     frame_a = make_frame(n=240, seed=0)
     frame_b = make_frame(n=240, seed=99)
@@ -388,11 +467,11 @@ def test_quality_report_replay_different_snapshot(
     snap_b = build_dataset_snapshot(
         csv_b, dataset_id=_DATASET_ID, output_root=out_b, relative_path=_SNAP_REL
     )
-    report_a = measure_dataset(snap_a, frame_a)
+    report_a = measure_dataset(snap_a, csv_a)
     # The report is bound to snap_a; replaying it for snap_b shows the mismatch
     assert report_a.dataset_identity_sha256 != snap_b.identity_sha256(), (
         "Replay detection: identity sha256 must differ across distinct snapshots"
     )
     # A fresh measurement from snap_b yields a different report
-    report_b = measure_dataset(snap_b, frame_b)
+    report_b = measure_dataset(snap_b, csv_b)
     assert report_a.dataset_identity_sha256 != report_b.dataset_identity_sha256

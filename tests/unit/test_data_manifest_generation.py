@@ -1,6 +1,6 @@
-"""Unit tests for manifest_generation builders (job_02.md §2.2 – §2.4).
+"""Unit tests for manifest-generation trust boundaries.
 
-Coverage (job_02.md §2.7):
+Coverage:
   - valid snapshot/split/family synthetic round-trip
   - duplicate/blank ID, unknown target, missing column
   - source checksum/bytes change
@@ -50,9 +50,7 @@ _SNAP_REL = "manifests/snapshot.json"
 _SPLIT_REL = "manifests/model-split.json"
 _FAMILY_REL = "manifests/family-split.json"
 
-_FORBIDDEN_FIELDS = frozenset(
-    {"passed", "valid", "verdict", "eligible", "expected_behavior"}
-)
+_FORBIDDEN_FIELDS = frozenset({"passed", "valid", "verdict", "eligible", "expected_behavior"})
 
 # ---------------------------------------------------------------------------
 # Module-level helpers
@@ -107,9 +105,7 @@ def processed_csv(tmp_path: Path, make_frame) -> Path:
 
 
 @pytest.fixture
-def snap_out(
-    tmp_path: Path, processed_csv: Path
-) -> tuple[DatasetSnapshotManifest, Path, Path]:
+def snap_out(tmp_path: Path, processed_csv: Path) -> tuple[DatasetSnapshotManifest, Path, Path]:
     """(snapshot, csv_path, output_root) tuple for the synthetic CSV."""
     out = tmp_path / "out"
     snap = build_dataset_snapshot(
@@ -223,35 +219,22 @@ def test_snapshot_missing_required_column(tmp_path: Path, make_frame) -> None:
         )
 
 
-def test_snapshot_extra_column_ignored(tmp_path: Path, make_frame) -> None:
-    """A CSV with an extra column beyond the Telco schema succeeds.
-
-    Extra columns are ignored by load_processed (only required columns are
-    validated). The manifest uses the fixed schema from _build_telco_columns(),
-    so the extra column must NOT appear in the persisted manifest.
-    """
+def test_snapshot_extra_column_rejected(tmp_path: Path, make_frame) -> None:
+    """An undeclared source column is rejected instead of omitted from the manifest."""
     frame = make_frame(n=240, seed=0)
-    frame["extra_marketing_flag"] = "Y"  # column thừa — beyond Telco schema
+    frame["extra_marketing_flag"] = "Y"
     csv = _write_csv(tmp_path / "p.csv", frame)
-    out = tmp_path / "out"
-    snap = build_dataset_snapshot(
-        csv, dataset_id=_DATASET_ID, output_root=out, relative_path=_SNAP_REL
-    )
-    col_names = {c.name for c in snap.columns}
-    assert "extra_marketing_flag" not in col_names, (
-        "extra column must not appear in the schema-fixed manifest"
-    )
+    with pytest.raises(DatasetSchemaError, match="extra=.*extra_marketing_flag"):
+        build_dataset_snapshot(
+            csv,
+            dataset_id=_DATASET_ID,
+            output_root=tmp_path / "out",
+            relative_path=_SNAP_REL,
+        )
 
 
-def test_snapshot_duplicate_column_name_handled(tmp_path: Path, make_frame) -> None:
-    """A CSV with a duplicate column name is handled without silent ID corruption.
-
-    pandas renames the second occurrence to 'tenure.1' (column trùng).
-    The renamed duplicate is treated as an extra column and must NOT appear in
-    the schema-fixed manifest. Required columns remain intact so the builder
-    succeeds; any silent identity change from the extra data is impossible
-    because the inventory uses the fixed 'customerID' column only.
-    """
+def test_snapshot_duplicate_column_name_rejected(tmp_path: Path, make_frame) -> None:
+    """A pandas-mangled duplicate header is rejected as an undeclared column."""
     frame = make_frame(n=240, seed=0)
     # Build raw CSV text with "tenure" column duplicated in the header
     header_cols = list(frame.columns) + ["tenure"]
@@ -264,29 +247,21 @@ def test_snapshot_duplicate_column_name_handled(tmp_path: Path, make_frame) -> N
     csv = tmp_path / "dup.csv"
     csv.write_text(content, encoding="utf-8")
 
-    out = tmp_path / "out"
-    snap = build_dataset_snapshot(
-        csv, dataset_id=_DATASET_ID, output_root=out, relative_path=_SNAP_REL
-    )
-    col_names = {c.name for c in snap.columns}
-    # The pandas-renamed duplicate ("tenure.1") must not appear in the manifest
-    assert "tenure.1" not in col_names, (
-        "duplicate column (renamed by pandas) must not leak into the schema-fixed manifest"
-    )
-    # The original "tenure" column must be in the schema
-    assert "tenure" in col_names
+    with pytest.raises(DatasetSchemaError, match="extra=.*tenure.1"):
+        build_dataset_snapshot(
+            csv,
+            dataset_id=_DATASET_ID,
+            output_root=tmp_path / "out",
+            relative_path=_SNAP_REL,
+        )
 
 
-def test_snapshot_serialized_no_raw_customer_id(
-    tmp_path: Path, make_frame
-) -> None:
+def test_snapshot_serialized_no_raw_customer_id(tmp_path: Path, make_frame) -> None:
     """Persisted manifest JSON must not contain raw customer IDs."""
     frame = make_frame(n=240, seed=0)
     csv = _write_csv(tmp_path / "p.csv", frame)
     out = tmp_path / "out"
-    build_dataset_snapshot(
-        csv, dataset_id=_DATASET_ID, output_root=out, relative_path=_SNAP_REL
-    )
+    build_dataset_snapshot(csv, dataset_id=_DATASET_ID, output_root=out, relative_path=_SNAP_REL)
     content = (out / _SNAP_REL).read_text(encoding="utf-8")
     for raw_id in frame[ID_COLUMN]:
         assert str(raw_id) not in content, f"raw ID {raw_id!r} leaked into manifest"
@@ -307,9 +282,7 @@ def test_snapshot_no_forbidden_fields() -> None:
 def test_split_valid_round_trip(snap_out: tuple) -> None:
     """build_model_data_split writes a manifest that reload_manifest returns identically."""
     snap, csv, out = snap_out
-    split = build_model_data_split(
-        snap, csv, output_root=out, relative_path=_SPLIT_REL
-    )
+    split = build_model_data_split(snap, csv, output_root=out, relative_path=_SPLIT_REL)
     reloaded = load_manifest(
         output_root=out, relative_path=_SPLIT_REL, model_type=ModelDataSplitManifest
     )
@@ -324,6 +297,26 @@ def test_split_idempotent_second_write(snap_out: tuple) -> None:
     assert s1.identity_sha256() == s2.identity_sha256()
 
 
+def test_split_rejects_csv_with_same_ids_but_different_labels(
+    snap_out: tuple,
+    tmp_path: Path,
+) -> None:
+    """Split construction must bind to source bytes, not only record membership."""
+
+    snapshot, original_csv, _ = snap_out
+    changed = pd.read_csv(original_csv)
+    changed[TARGET_COLUMN] = changed[TARGET_COLUMN].map({"Yes": "No", "No": "Yes"})
+    changed_csv = _write_csv(tmp_path / "changed-labels.csv", changed)
+
+    with pytest.raises(ManifestContractError, match="dataset_sha256"):
+        build_model_data_split(
+            snapshot,
+            changed_csv,
+            output_root=tmp_path / "changed-out",
+            relative_path=_SPLIT_REL,
+        )
+
+
 def test_split_no_forbidden_fields() -> None:
     """ModelDataSplitManifest must not expose pass/eligibility/verdict fields."""
     assert not (set(ModelDataSplitManifest.model_fields) & _FORBIDDEN_FIELDS), (
@@ -331,9 +324,7 @@ def test_split_no_forbidden_fields() -> None:
     )
 
 
-def test_split_serialized_no_raw_customer_id(
-    snap_out: tuple, make_frame
-) -> None:
+def test_split_serialized_no_raw_customer_id(snap_out: tuple, make_frame) -> None:
     """Persisted split manifest JSON must not contain raw customer IDs."""
     snap, csv, out = snap_out
     build_model_data_split(snap, csv, output_root=out, relative_path=_SPLIT_REL)
@@ -343,9 +334,7 @@ def test_split_serialized_no_raw_customer_id(
         assert f"{i:05d}-SYNTH" not in content, "raw ID leaked into split manifest"
 
 
-def test_split_dataset_replay_rejected(
-    snap_out: tuple, tmp_path: Path, make_frame
-) -> None:
+def test_split_dataset_replay_rejected(snap_out: tuple, tmp_path: Path, make_frame) -> None:
     """A split bound to snapshot_A is rejected when validated against snapshot_B."""
     snap, csv, out = snap_out
     split = build_model_data_split(snap, csv, output_root=out, relative_path=_SPLIT_REL)
@@ -406,14 +395,9 @@ def test_split_missing_records_detected_by_validation() -> None:
 
     inventory = record_inventory(dataset_ids)
 
-
     columns = (
-        DatasetColumn(
-            name="customerID", logical_type="string", role="identifier", nullable=False
-        ),
-        DatasetColumn(
-            name="Churn", logical_type="category", role="target", nullable=False
-        ),
+        DatasetColumn(name="customerID", logical_type="string", role="identifier", nullable=False),
+        DatasetColumn(name="Churn", logical_type="category", role="target", nullable=False),
     )
     dataset = DatasetSnapshotManifest(
         dataset_id="telco_customer_churn",
@@ -569,18 +553,14 @@ def test_traversal_attack_rejected(snap_out: tuple) -> None:
     """A relative_path with '..' components escaping the root is rejected."""
     snap, csv, out = snap_out
     with pytest.raises(ValueError, match="parent"):
-        build_model_data_split(
-            snap, csv, output_root=out, relative_path="../evil.json"
-        )
+        build_model_data_split(snap, csv, output_root=out, relative_path="../evil.json")
 
 
 def test_windows_drive_rejected(snap_out: tuple) -> None:
     """A Windows drive-letter path in relative_path is rejected."""
     snap, csv, out = snap_out
     with pytest.raises(ValueError, match="Windows drive"):
-        build_model_data_split(
-            snap, csv, output_root=out, relative_path="C:\\evil.json"
-        )
+        build_model_data_split(snap, csv, output_root=out, relative_path="C:\\evil.json")
 
 
 def test_unc_path_rejected(snap_out: tuple) -> None:
@@ -588,14 +568,10 @@ def test_unc_path_rejected(snap_out: tuple) -> None:
     snap, csv, out = snap_out
     # //server/share is detected as a Windows UNC absolute path
     with pytest.raises(ValueError, match="Windows"):
-        build_model_data_split(
-            snap, csv, output_root=out, relative_path="//server/share/evil.json"
-        )
+        build_model_data_split(snap, csv, output_root=out, relative_path="//server/share/evil.json")
 
 
-def test_symlink_output_root_rejected(
-    tmp_path: Path, make_frame, make_symlink
-) -> None:
+def test_symlink_output_root_rejected(tmp_path: Path, make_frame, make_symlink) -> None:
     """A symlinked output root is rejected by write_manifest."""
     frame = make_frame(n=240, seed=0)
     csv = _write_csv(tmp_path / "p.csv", frame)

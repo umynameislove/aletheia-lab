@@ -1,9 +1,9 @@
-"""Integration tests for the full data pipeline (job_02.md §2.6).
+"""Integration tests for the full data-manifest pipeline.
 
-Coverage (job_02.md §2.7):
+Coverage:
   - valid pipeline end-to-end run producing all 4 artifacts
   - pipeline idempotent (second run succeeds with byte-identical output)
-  - input row shuffle → same manifest identity and bytes
+  - input row shuffle → stable semantic membership but distinct byte identity
   - PYTHONHASHSEED=1 and PYTHONHASHSEED=999 produce byte-identical manifests
   - subprocess uses sys.executable
   - reload verifies canonical encoding
@@ -102,9 +102,7 @@ def processed_csv(tmp_path: Path, make_frame) -> Path:
 def test_pipeline_valid_full_run(tmp_path: Path, processed_csv: Path) -> None:
     """run_pipeline returns four typed artifacts and persists two manifests."""
     out = tmp_path / "out"
-    result = run_pipeline(
-        processed_csv, dataset_id=_DATASET_ID, output_root=out
-    )
+    result = run_pipeline(processed_csv, dataset_id=_DATASET_ID, output_root=out)
     snap, model_split, dq, sq = result
 
     assert isinstance(snap, DatasetSnapshotManifest)
@@ -121,9 +119,7 @@ def test_pipeline_snapshot_bound_to_csv(tmp_path: Path, processed_csv: Path) -> 
     from aletheia_lab.data.download import sha256_file
 
     out = tmp_path / "out"
-    snap, _, _, _ = run_pipeline(
-        processed_csv, dataset_id=_DATASET_ID, output_root=out
-    )
+    snap, _, _, _ = run_pipeline(processed_csv, dataset_id=_DATASET_ID, output_root=out)
     assert snap.dataset_sha256 == sha256_file(processed_csv)
 
 
@@ -131,28 +127,20 @@ def test_pipeline_quality_report_row_count(tmp_path: Path, make_frame, processed
     """DatasetQualityReport.n_rows matches the frame length."""
     frame = make_frame(n=240, seed=0)
     out = tmp_path / "out"
-    _, _, dq, _ = run_pipeline(
-        processed_csv, dataset_id=_DATASET_ID, output_root=out
-    )
+    _, _, dq, _ = run_pipeline(processed_csv, dataset_id=_DATASET_ID, output_root=out)
     assert dq.n_rows == len(frame)
 
 
-def test_pipeline_quality_no_overlap_missing_extra(
-    tmp_path: Path, processed_csv: Path
-) -> None:
+def test_pipeline_quality_no_overlap_missing_extra(tmp_path: Path, processed_csv: Path) -> None:
     """ModelSplitQualityReport shows zero overlap, zero missing, zero extra."""
     out = tmp_path / "out"
-    _, _, _, sq = run_pipeline(
-        processed_csv, dataset_id=_DATASET_ID, output_root=out
-    )
+    _, _, _, sq = run_pipeline(processed_csv, dataset_id=_DATASET_ID, output_root=out)
     assert sq.n_overlap == 0
     assert sq.n_missing == 0
     assert sq.n_extra == 0
 
 
-def test_pipeline_no_raw_id_in_manifests(
-    tmp_path: Path, make_frame, processed_csv: Path
-) -> None:
+def test_pipeline_no_raw_id_in_manifests(tmp_path: Path, make_frame, processed_csv: Path) -> None:
     """Neither manifest file contains raw customer IDs."""
     frame = make_frame(n=240, seed=0)
     out = tmp_path / "out"
@@ -161,9 +149,7 @@ def test_pipeline_no_raw_id_in_manifests(
     for rel_path in (_SNAP_REL, _SPLIT_REL):
         content = (out / rel_path).read_text(encoding="utf-8")
         for raw_id in frame["customerID"]:
-            assert str(raw_id) not in content, (
-                f"raw ID {raw_id!r} leaked into {rel_path}"
-            )
+            assert str(raw_id) not in content, f"raw ID {raw_id!r} leaked into {rel_path}"
 
 
 # ---------------------------------------------------------------------------
@@ -174,12 +160,8 @@ def test_pipeline_no_raw_id_in_manifests(
 def test_pipeline_idempotent(tmp_path: Path, processed_csv: Path) -> None:
     """A second run_pipeline call with the same CSV succeeds with identical output."""
     out = tmp_path / "out"
-    snap1, split1, _, _ = run_pipeline(
-        processed_csv, dataset_id=_DATASET_ID, output_root=out
-    )
-    snap2, split2, _, _ = run_pipeline(
-        processed_csv, dataset_id=_DATASET_ID, output_root=out
-    )
+    snap1, split1, _, _ = run_pipeline(processed_csv, dataset_id=_DATASET_ID, output_root=out)
+    snap2, split2, _, _ = run_pipeline(processed_csv, dataset_id=_DATASET_ID, output_root=out)
     assert snap1.identity_sha256() == snap2.identity_sha256()
     assert split1.identity_sha256() == split2.identity_sha256()
 
@@ -197,14 +179,31 @@ def test_pipeline_overwrite_different_content_rejected(
         run_pipeline(processed_csv, dataset_id=_DATASET_ID, output_root=out)
 
 
+def test_pipeline_conflicting_split_leaves_no_partial_snapshot(
+    tmp_path: Path,
+    processed_csv: Path,
+) -> None:
+    """A pre-existing split conflict aborts before publishing a new snapshot."""
+
+    out = tmp_path / "out"
+    split_path = out / _SPLIT_REL
+    split_path.parent.mkdir(parents=True)
+    sentinel = b"foreign immutable artifact\n"
+    split_path.write_bytes(sentinel)
+
+    with pytest.raises(FileExistsError):
+        run_pipeline(processed_csv, dataset_id=_DATASET_ID, output_root=out)
+
+    assert not (out / _SNAP_REL).exists()
+    assert split_path.read_bytes() == sentinel
+
+
 # ---------------------------------------------------------------------------
 # Input row shuffle determinism
 # ---------------------------------------------------------------------------
 
 
-def test_pipeline_row_shuffle_same_output(
-    tmp_path: Path, make_frame
-) -> None:
+def test_pipeline_row_shuffle_same_output(tmp_path: Path, make_frame) -> None:
     """Shuffling input rows produces the same record membership and split structure.
 
     Row order changes the file sha256 (so dataset_sha256 and identity_sha256 differ),
@@ -223,15 +222,12 @@ def test_pipeline_row_shuffle_same_output(
     out_orig = tmp_path / "out_orig"
     out_shuf = tmp_path / "out_shuf"
 
-    snap_o, split_o, _, _ = run_pipeline(
-        csv_orig, dataset_id=_DATASET_ID, output_root=out_orig
-    )
-    snap_s, split_s, _, _ = run_pipeline(
-        csv_shuf, dataset_id=_DATASET_ID, output_root=out_shuf
-    )
+    snap_o, split_o, _, _ = run_pipeline(csv_orig, dataset_id=_DATASET_ID, output_root=out_orig)
+    snap_s, split_s, _, _ = run_pipeline(csv_shuf, dataset_id=_DATASET_ID, output_root=out_shuf)
 
-    # File sha256 differs (different byte sequence) so full identity_sha256 differs.
-    # However, the RECORD SET is identical → membership sha256 must be the same.
+    assert snap_o.dataset_sha256 != snap_s.dataset_sha256
+    assert snap_o.identity_sha256() != snap_s.identity_sha256()
+    assert split_o.identity_sha256() != split_s.identity_sha256()
     assert snap_o.record_membership_sha256 == snap_s.record_membership_sha256, (
         "record_membership_sha256 must be order-independent"
     )
@@ -251,7 +247,7 @@ def test_pipeline_hash_seed_byte_identical(tmp_path: Path, make_frame) -> None:
     """Pipeline manifests are byte-identical across PYTHONHASHSEED=1 and 999.
 
     The subprocess is launched via sys.executable so the same interpreter and
-    installed packages are guaranteed (job_02.md §2.7: subprocess dùng sys.executable).
+    installed packages are guaranteed.
     """
     frame = make_frame(n=240, seed=0)
     csv = tmp_path / "processed.csv"

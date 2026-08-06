@@ -1,12 +1,12 @@
 """CI configuration quality contract tests.
 
-These tests verify that .github/workflows/ci.yml satisfies the structural
-requirements documented in job_02.md §2.13:
+These tests verify that .github/workflows/ci.yml satisfies the published
+quality contract:
 
   - Python matrix uses exactly ["3.11", "3.12"] and the matrix variable
     (not a hard-coded version) inside the matrix job;
   - mypy and coverage steps do not carry ``continue-on-error``;
-  - ``--cov-fail-under`` is present, finite, and greater than zero;
+  - ``--cov-fail-under`` preserves the approved 88 percent baseline;
   - ``pandas-stubs`` is declared in dev optional-dependencies so the CI
     mypy command works without ``ignore_missing_imports``;
   - no shell escape valve (``|| true``) appears in any step.
@@ -24,6 +24,7 @@ import yaml
 _ROOT = Path(__file__).resolve().parent.parent.parent
 _CI_YAML = _ROOT / ".github" / "workflows" / "ci.yml"
 _PYPROJECT = _ROOT / "pyproject.toml"
+_MINIMUM_COVERAGE_BASELINE = 88.0
 
 
 # ---------------------------------------------------------------------------
@@ -74,8 +75,7 @@ def test_setup_python_uses_matrix_variable(test_job: dict) -> None:  # type: ign
         if "actions/setup-python" in step.get("uses", ""):
             pv = str(step.get("with", {}).get("python-version", ""))
             assert "${{ matrix.python-version }}" in pv, (
-                "setup-python must use ${{ matrix.python-version }}, "
-                f"got {pv!r}"
+                f"setup-python must use ${{{{ matrix.python-version }}}}, got {pv!r}"
             )
             return
     pytest.fail("No actions/setup-python step found in the 'test' job")
@@ -111,18 +111,16 @@ def test_coverage_step_has_no_continue_on_error(test_job: dict) -> None:  # type
 # ---------------------------------------------------------------------------
 
 
-def test_cov_fail_under_is_positive(test_job: dict) -> None:  # type: ignore[type-arg]
-    """--cov-fail-under must be present in a matrix test step and its value > 0."""
+def test_cov_fail_under_preserves_baseline(test_job: dict) -> None:  # type: ignore[type-arg]
+    """The blocking threshold cannot be weakened below the approved baseline."""
     for step in test_job.get("steps", []):
         run = step.get("run", "")
         if "--cov-fail-under" in run:
             match = re.search(r"--cov-fail-under[=\s]+(\d+(?:\.\d+)?)", run)
-            assert match, (
-                f"could not parse a numeric value from --cov-fail-under in: {run!r}"
-            )
+            assert match, f"could not parse a numeric value from --cov-fail-under in: {run!r}"
             threshold = float(match.group(1))
-            assert threshold > 0, (
-                f"--cov-fail-under must be > 0, got {threshold}"
+            assert threshold >= _MINIMUM_COVERAGE_BASELINE, (
+                f"--cov-fail-under must preserve the 88 percent baseline, got {threshold}"
             )
             return
     pytest.fail(
@@ -139,9 +137,8 @@ def test_cov_fail_under_is_positive(test_job: dict) -> None:  # type: ignore[typ
 def test_no_or_true_in_any_step(all_step_runs: list[str]) -> None:
     """No step in any job may use '|| true' to swallow a non-zero exit code."""
     offenders = [r for r in all_step_runs if "|| true" in r]
-    assert not offenders, (
-        f"'|| true' found in {len(offenders)} step(s):\n"
-        + "\n".join(f"  {r!r}" for r in offenders)
+    assert not offenders, f"'|| true' found in {len(offenders)} step(s):\n" + "\n".join(
+        f"  {r!r}" for r in offenders
     )
 
 
@@ -155,12 +152,7 @@ def test_pandas_stubs_declared_in_dev_deps() -> None:
     CI mypy step can resolve pandas types without broad ignore_missing_imports."""
     with open(_PYPROJECT, "rb") as fh:
         data = tomllib.load(fh)
-    dev_deps: list[str] = (
-        data.get("project", {})
-        .get("optional-dependencies", {})
-        .get("dev", [])
-    )
+    dev_deps: list[str] = data.get("project", {}).get("optional-dependencies", {}).get("dev", [])
     assert any("pandas-stubs" in dep for dep in dev_deps), (
-        "pandas-stubs is missing from [project.optional-dependencies.dev] "
-        "in pyproject.toml"
+        "pandas-stubs is missing from [project.optional-dependencies.dev] in pyproject.toml"
     )
