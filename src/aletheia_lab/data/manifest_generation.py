@@ -5,7 +5,7 @@ validation and persistence to the official API in ``data.manifest``, and
 returns an immutable, validated manifest object.  Raw customer IDs,
 timestamps, absolute paths and usernames are never stored in any artifact.
 
-Source-of-truth rules (job_02.md §2.1):
+Source-of-truth rules:
   - ``record_inventory``          — the only way to hash record IDs
   - ``manifest_identity_sha256``  — the only way to compute identity hashes
   - ``manifest_artifact_bytes``   — the only serialisation path
@@ -26,13 +26,10 @@ from aletheia_lab.baseline.loader import (
     LoadedSplits,
     SplitData,
     assert_no_overlap,
-    load_processed,
     split_dataset,
 )
 from aletheia_lab.baseline.schema import (
-    CATEGORICAL_FEATURES,
     ID_COLUMN,
-    NUMERIC_FEATURES,
     TARGET_COLUMN,
 )
 from aletheia_lab.benchmark.p2.contracts import FamilyCensus
@@ -43,7 +40,6 @@ from aletheia_lab.data.manifest import (
     TRAIN_RATIO,
     VALIDATION_RATIO,
     BenchmarkFamilySplitManifest,
-    DatasetColumn,
     DatasetSnapshotManifest,
     FamilySplitAssignment,
     FamilySplitCounts,
@@ -59,12 +55,16 @@ from aletheia_lab.data.manifest import (
     validate_dataset_snapshot_source,
     validate_model_data_split,
     write_manifest,
+    write_manifest_set,
 )
+from aletheia_lab.data.processed_contract import load_validated_processed
 from aletheia_lab.data.quality import (
     DatasetQualityReport,
     ModelSplitQualityReport,
     measure_dataset,
     measure_model_split,
+    validate_dataset_quality_report,
+    validate_model_split_quality_report,
 )
 from aletheia_lab.data.sources import get_source
 
@@ -74,9 +74,6 @@ from aletheia_lab.data.sources import get_source
 
 #: Canonical preprocessing version embedded in every Telco snapshot.
 _PREPROCESSING_VERSION: str = "telco-clean/v1"
-
-#: Numeric columns whose Telco-schema logical type is integer (not float).
-_INTEGER_NUMERIC: frozenset[str] = frozenset({"SeniorCitizen", "tenure"})
 
 #: Frozen split ratios forwarded to split_dataset (must match manifest.py constants).
 _SPLIT_RATIOS: dict[str, float] = {
@@ -89,59 +86,6 @@ _SPLIT_RATIOS: dict[str, float] = {
 # ---------------------------------------------------------------------------
 # Private helpers
 # ---------------------------------------------------------------------------
-
-
-def _build_telco_columns() -> tuple[DatasetColumn, ...]:
-    """Return ordered DatasetColumn contracts for the processed Telco schema.
-
-    Order: identifier → numeric features → categorical features → target,
-    matching the column ordering in ``baseline/schema.py``.
-    """
-    columns: list[DatasetColumn] = [
-        DatasetColumn(
-            name=ID_COLUMN,
-            logical_type="string",
-            role="identifier",
-            nullable=False,
-        ),
-    ]
-    for name in NUMERIC_FEATURES:
-        if name in _INTEGER_NUMERIC:
-            columns.append(
-                DatasetColumn(
-                    name=name,
-                    logical_type="integer",
-                    role="numeric_feature",
-                    nullable=False,
-                )
-            )
-        else:
-            columns.append(
-                DatasetColumn(
-                    name=name,
-                    logical_type="float",
-                    role="numeric_feature",
-                    nullable=False,
-                )
-            )
-    for name in CATEGORICAL_FEATURES:
-        columns.append(
-            DatasetColumn(
-                name=name,
-                logical_type="category",
-                role="categorical_feature",
-                nullable=False,
-            )
-        )
-    columns.append(
-        DatasetColumn(
-            name=TARGET_COLUMN,
-            logical_type="category",
-            role="target",
-            nullable=False,
-        )
-    )
-    return tuple(columns)
 
 
 def _to_record_split(split_data: SplitData, name: ModelSplitName) -> RecordSplit:
@@ -174,6 +118,73 @@ def _to_record_split(split_data: SplitData, name: ModelSplitName) -> RecordSplit
     )
 
 
+def _assemble_dataset_snapshot(
+    processed_path: Path,
+    *,
+    dataset_id: str,
+    relative_path: str,
+) -> DatasetSnapshotManifest:
+    source = get_source(dataset_id)
+    frame, columns = load_validated_processed(processed_path)
+    record_ids = [str(value) for value in frame[ID_COLUMN].tolist()]
+    inventory = record_inventory(record_ids)
+    manifest = DatasetSnapshotManifest(
+        dataset_id=dataset_id,
+        source_uri=source.url,
+        source_version=f"sha256:{source.sha256}",
+        preprocessing_version=_PREPROCESSING_VERSION,
+        normalized_relative_path=relative_path,
+        dataset_sha256=sha256_file(processed_path),
+        size_bytes=int(processed_path.stat().st_size),
+        n_rows=len(inventory),
+        n_cols=len(columns),
+        columns=columns,
+        id_column=ID_COLUMN,
+        target_column=TARGET_COLUMN,
+        record_id_hashes=inventory,
+        record_membership_sha256=record_membership_sha256(inventory),
+    )
+    return validate_dataset_snapshot_source(
+        manifest,
+        source_file=processed_path,
+        record_ids=record_ids,
+        columns=columns,
+    )
+
+
+def _assemble_model_data_split(
+    snapshot: DatasetSnapshotManifest,
+    processed_path: Path,
+) -> tuple[ModelDataSplitManifest, LoadedSplits]:
+    frame, columns = load_validated_processed(processed_path)
+    record_ids = [str(value) for value in frame[ID_COLUMN].tolist()]
+    validate_dataset_snapshot_source(
+        snapshot,
+        source_file=processed_path,
+        record_ids=record_ids,
+        columns=columns,
+    )
+    splits = split_dataset(
+        frame,
+        dataset_id=snapshot.dataset_id,
+        dataset_sha256=snapshot.dataset_sha256,
+        seed=42,
+        ratios=_SPLIT_RATIOS,
+        stratified=True,
+    )
+    assert_no_overlap(splits)
+    model_split = ModelDataSplitManifest(
+        dataset_id=snapshot.dataset_id,
+        dataset_sha256=snapshot.dataset_sha256,
+        dataset_identity_sha256=snapshot.identity_sha256(),
+        n_rows=len(snapshot.record_id_hashes),
+        train=_to_record_split(splits.train, "train"),
+        validation=_to_record_split(splits.validation, "validation"),
+        test=_to_record_split(splits.test, "test"),
+    )
+    return validate_model_data_split(snapshot, model_split), splits
+
+
 # ---------------------------------------------------------------------------
 # Public builders — §2.2: Dataset snapshot producer
 # ---------------------------------------------------------------------------
@@ -188,7 +199,8 @@ def build_dataset_snapshot(
 ) -> DatasetSnapshotManifest:
     """Build and persist a DatasetSnapshotManifest from a processed CSV.
 
-    Steps (job_02.md §2.2):
+    The builder validates the exact processed schema, binds every source-backed
+    field to the real CSV, then persists the canonical manifest immutably.
     1. Resolve the pinned source record via ``get_source``.
     2. Load and schema-validate the processed CSV via ``load_processed``.
     3. Extract raw record IDs from ``ID_COLUMN`` — never from the DataFrame index.
@@ -216,37 +228,10 @@ def build_dataset_snapshot(
         ManifestContractError: The manifest is inconsistent with the source file.
         FileExistsError: A different manifest already exists at ``relative_path``.
     """
-    processed_path = Path(processed_path)
-    source = get_source(dataset_id)
-    frame = load_processed(processed_path)
-
-    record_ids: list[str] = [str(v) for v in frame[ID_COLUMN].tolist()]
-    inventory = record_inventory(record_ids)
-    file_sha256 = sha256_file(processed_path)
-    size_bytes = int(processed_path.stat().st_size)
-    columns = _build_telco_columns()
-
-    manifest = DatasetSnapshotManifest(
+    manifest = _assemble_dataset_snapshot(
+        Path(processed_path),
         dataset_id=dataset_id,
-        source_uri=source.url,
-        source_version=f"sha256:{source.sha256}",
-        preprocessing_version=_PREPROCESSING_VERSION,
-        normalized_relative_path=relative_path,
-        dataset_sha256=file_sha256,
-        size_bytes=size_bytes,
-        n_rows=len(inventory),
-        n_cols=len(columns),
-        columns=columns,
-        id_column=ID_COLUMN,
-        target_column=TARGET_COLUMN,
-        record_id_hashes=inventory,
-        record_membership_sha256=record_membership_sha256(inventory),
-    )
-    validate_dataset_snapshot_source(
-        manifest,
-        source_file=processed_path,
-        record_ids=record_ids,
-        columns=columns,
+        relative_path=relative_path,
     )
     write_manifest(manifest, output_root=output_root, relative_path=relative_path)
     return manifest
@@ -266,7 +251,9 @@ def build_model_data_split(
 ) -> ModelDataSplitManifest:
     """Build and persist a ModelDataSplitManifest from a dataset snapshot.
 
-    Steps (job_02.md §2.3):
+    The source CSV is revalidated against the snapshot before the deterministic
+    partition is assembled. A file with matching IDs but different bytes or
+    labels is rejected.
     1. Reload and validate the processed CSV via ``load_processed``.
     2. Produce a deterministic stratified partition via ``split_dataset``
        (seed=42, stratified=True, ratios=0.70/0.15/0.15).
@@ -296,33 +283,7 @@ def build_model_data_split(
             dataset inventory, or the snapshot binding is inconsistent.
         FileExistsError: A different manifest already exists at ``relative_path``.
     """
-    processed_path = Path(processed_path)
-    frame = load_processed(processed_path)
-
-    splits: LoadedSplits = split_dataset(
-        frame,
-        dataset_id=snapshot.dataset_id,
-        dataset_sha256=snapshot.dataset_sha256,
-        seed=42,
-        ratios=_SPLIT_RATIOS,
-        stratified=True,
-    )
-    assert_no_overlap(splits)
-
-    train_split = _to_record_split(splits.train, "train")
-    validation_split = _to_record_split(splits.validation, "validation")
-    test_split = _to_record_split(splits.test, "test")
-
-    model_split = ModelDataSplitManifest(
-        dataset_id=snapshot.dataset_id,
-        dataset_sha256=snapshot.dataset_sha256,
-        dataset_identity_sha256=snapshot.identity_sha256(),
-        n_rows=len(snapshot.record_id_hashes),
-        train=train_split,
-        validation=validation_split,
-        test=test_split,
-    )
-    validate_model_data_split(snapshot, model_split)
+    model_split, _ = _assemble_model_data_split(snapshot, Path(processed_path))
     write_manifest(model_split, output_root=output_root, relative_path=relative_path)
     return model_split
 
@@ -341,13 +302,13 @@ def build_benchmark_family_split(
 ) -> BenchmarkFamilySplitManifest:
     """Wrap accepted-family assignments into a BenchmarkFamilySplitManifest.
 
-    This is a pure adapter (job_02.md §2.4): it does not choose family IDs,
+    This is a pure adapter: it does not choose family IDs,
     split names or ratios.  The caller is responsible for providing a
-    ``FamilyCensus`` from the research team and a complete set of
+    ``FamilyCensus`` from the authoritative census producer and a complete set of
     ``FamilySplitAssignment`` objects that cover every entry in that census.
     The adapter sorts, counts, binds and validates; it decides nothing.
 
-    Steps (job_02.md §2.4):
+    Processing steps:
     1. Sort assignments by ``case_family_id`` (required by manifest contract).
     2. Recompute ``FamilySplitCounts`` from the sorted assignments.
     3. Hash the census via ``family_census_sha256`` to bind this split to it.
@@ -419,7 +380,7 @@ def run_pipeline(
 ]:
     """Orchestrate the complete P2 data pipeline from processed CSV to quality reports.
 
-    Pipeline stages (job_02.md §2.6):
+    Pipeline stages:
     1. Load and schema-validate the processed CSV.
     2. Build and persist the DatasetSnapshotManifest.
     3. Build and persist the ModelDataSplitManifest.
@@ -455,45 +416,35 @@ def run_pipeline(
     """
     processed_path = Path(processed_path)
 
-    # Stage 1: Load and validate the processed CSV upfront
-    frame = load_processed(processed_path)
-
-    # Stage 2: Build and persist dataset snapshot
-    snapshot = build_dataset_snapshot(
+    # Assemble and validate every artifact before publishing either manifest.
+    snapshot = _assemble_dataset_snapshot(
         processed_path,
         dataset_id=dataset_id,
-        output_root=output_root,
         relative_path=snapshot_relative_path,
     )
-
-    # Stage 3: Build and persist model-data split manifest
-    model_split = build_model_data_split(
+    model_split, _ = _assemble_model_data_split(
         snapshot,
         processed_path,
+    )
+    dataset_quality = measure_dataset(snapshot, processed_path)
+    split_quality = measure_model_split(snapshot, model_split, processed_path)
+    validate_dataset_quality_report(dataset_quality, snapshot, processed_path)
+    validate_model_split_quality_report(
+        split_quality,
+        snapshot,
+        model_split,
+        processed_path,
+    )
+
+    write_manifest_set(
+        (
+            (snapshot, snapshot_relative_path),
+            (model_split, split_relative_path),
+        ),
         output_root=output_root,
-        relative_path=split_relative_path,
     )
 
-    # Stage 4: Recompute deterministic splits for quality measurement.
-    # split_dataset is deterministic; this reproduces the same partition used
-    # by build_model_data_split without threading internal state across functions.
-    splits: LoadedSplits = split_dataset(
-        frame,
-        dataset_id=snapshot.dataset_id,
-        dataset_sha256=snapshot.dataset_sha256,
-        seed=42,
-        ratios=_SPLIT_RATIOS,
-        stratified=True,
-    )
-
-    # Stage 5: Measure dataset and split quality from source artifacts
-    dataset_quality = measure_dataset(snapshot, frame)
-    split_quality = measure_model_split(snapshot, model_split, splits)
-
-    # Stage 6: Cross-artifact re-validation (defense-in-depth)
-    validate_model_data_split(snapshot, model_split)
-
-    # Stage 7: Reload from disk and verify canonical encoding + binding
+    # Reload from disk and verify canonical encoding + binding.
     reloaded_snapshot = load_manifest(
         output_root=output_root,
         relative_path=snapshot_relative_path,
@@ -509,9 +460,7 @@ def run_pipeline(
             "reloaded snapshot identity does not match the written snapshot"
         )
     if reloaded_split.identity_sha256() != model_split.identity_sha256():
-        raise ManifestContractError(
-            "reloaded split identity does not match the written split"
-        )
+        raise ManifestContractError("reloaded split identity does not match the written split")
     validate_model_data_split(reloaded_snapshot, reloaded_split)
 
     return snapshot, model_split, dataset_quality, split_quality

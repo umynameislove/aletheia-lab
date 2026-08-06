@@ -6,7 +6,7 @@ self-declare quality.  A report cannot be forged or replayed to a different
 dataset because it embeds the cryptographic identity of the manifest it was
 derived from.
 
-Constraints (job_02.md §2.5):
+Contract constraints:
   - ``extra="forbid"``, strict, frozen (``_QualityModel`` base)
   - NaN/Inf fail on every float field
   - Column/key names are unique and canonically sorted
@@ -18,12 +18,13 @@ Constraints (job_02.md §2.5):
 from __future__ import annotations
 
 import math
-from typing import Final, Literal
+from pathlib import Path
+from typing import Annotated, Final, Literal, TypeVar
 
 import pandas as pd
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from aletheia_lab.baseline.loader import LoadedSplits, SplitData
+from aletheia_lab.baseline.loader import SplitData, assert_no_overlap, split_dataset
 from aletheia_lab.baseline.schema import (
     ID_COLUMN,
     NEGATIVE_LABEL,
@@ -32,20 +33,37 @@ from aletheia_lab.baseline.schema import (
     TARGET_COLUMN,
 )
 from aletheia_lab.data.manifest import (
+    TEST_RATIO,
+    TRAIN_RATIO,
+    VALIDATION_RATIO,
     DatasetSnapshotManifest,
+    ManifestContractError,
     ModelDataSplitManifest,
+    ModelSplitName,
+    RecordSplit,
+    record_inventory,
+    record_membership_sha256,
+    validate_dataset_snapshot_source,
+    validate_model_data_split,
 )
+from aletheia_lab.data.processed_contract import load_validated_processed
 
 # --------------------------------------------------------------------------- #
 # Schema version constants
 # --------------------------------------------------------------------------- #
 
-DATASET_QUALITY_SCHEMA_VERSION: Final[Literal["p2-dataset-quality/v1"]] = (
-    "p2-dataset-quality/v1"
-)
+DATASET_QUALITY_SCHEMA_VERSION: Final[Literal["p2-dataset-quality/v1"]] = "p2-dataset-quality/v1"
 MODEL_SPLIT_QUALITY_SCHEMA_VERSION: Final[Literal["p2-model-split-quality/v1"]] = (
     "p2-model-split-quality/v1"
 )
+_SHA256_PATTERN: Final[str] = r"^[0-9a-f]{64}$"
+_SPLIT_RATIOS: Final[dict[str, float]] = {
+    "train": TRAIN_RATIO,
+    "validation": VALIDATION_RATIO,
+    "test": TEST_RATIO,
+}
+Sha256 = Annotated[str, Field(pattern=_SHA256_PATTERN)]
+_QualityT = TypeVar("_QualityT", bound=BaseModel)
 
 
 # --------------------------------------------------------------------------- #
@@ -104,7 +122,7 @@ class SplitCountDetail(_QualityModel):
     so that stratified splitting is verifiable.
     """
 
-    name: str = Field(min_length=1, max_length=32)
+    name: ModelSplitName
     n_records: int = Field(gt=0)
     n_positive: int = Field(gt=0)
     n_negative: int = Field(gt=0)
@@ -142,8 +160,8 @@ class DatasetQualityReport(_QualityModel):
 
     schema_version: Literal["p2-dataset-quality/v1"] = DATASET_QUALITY_SCHEMA_VERSION
     dataset_id: str = Field(min_length=1, max_length=128)
-    dataset_sha256: str = Field(min_length=64, max_length=64)
-    dataset_identity_sha256: str = Field(min_length=64, max_length=64)
+    dataset_sha256: Sha256
+    dataset_identity_sha256: Sha256
     n_rows: int = Field(gt=0)
     n_cols: int = Field(gt=0)
     n_duplicate_ids: int = Field(ge=0)
@@ -178,11 +196,9 @@ class ModelSplitQualityReport(_QualityModel):
     different artifacts.
     """
 
-    schema_version: Literal["p2-model-split-quality/v1"] = (
-        MODEL_SPLIT_QUALITY_SCHEMA_VERSION
-    )
-    dataset_identity_sha256: str = Field(min_length=64, max_length=64)
-    model_split_identity_sha256: str = Field(min_length=64, max_length=64)
+    schema_version: Literal["p2-model-split-quality/v1"] = MODEL_SPLIT_QUALITY_SCHEMA_VERSION
+    dataset_identity_sha256: Sha256
+    model_split_identity_sha256: Sha256
     n_rows: int = Field(gt=0)
     n_overlap: int = Field(ge=0)
     n_missing: int = Field(ge=0)
@@ -193,6 +209,12 @@ class ModelSplitQualityReport(_QualityModel):
 
     @model_validator(mode="after")
     def _split_totals_match_n_rows(self) -> ModelSplitQualityReport:
+        if (self.train.name, self.validation.name, self.test.name) != (
+            "train",
+            "validation",
+            "test",
+        ):
+            raise ValueError("split report fields must declare train, validation and test")
         total = self.train.n_records + self.validation.n_records + self.test.n_records
         if total != self.n_rows:
             raise ValueError("split record counts must sum to n_rows")
@@ -204,7 +226,7 @@ class ModelSplitQualityReport(_QualityModel):
 # --------------------------------------------------------------------------- #
 
 
-def _to_split_count_detail(split_data: SplitData, name: str) -> SplitCountDetail:
+def _to_split_count_detail(split_data: SplitData, name: ModelSplitName) -> SplitCountDetail:
     """Recompute per-split quality counts from a SplitData partition.
 
     ``SplitData.target`` is already encoded as 0/1 integers by
@@ -222,6 +244,71 @@ def _to_split_count_detail(split_data: SplitData, name: str) -> SplitCountDetail
     )
 
 
+def _revalidated(model: _QualityT) -> _QualityT:
+    return type(model).model_validate(model.model_dump(warnings=False))
+
+
+def _load_snapshot_source(
+    snapshot: DatasetSnapshotManifest,
+    processed_path: str | Path,
+) -> pd.DataFrame:
+    frame, columns = load_validated_processed(processed_path)
+    validate_dataset_snapshot_source(
+        snapshot,
+        source_file=processed_path,
+        record_ids=[str(value) for value in frame[ID_COLUMN].tolist()],
+        columns=columns,
+    )
+    return frame
+
+
+def _record_split_from_source(split_data: SplitData, name: ModelSplitName) -> RecordSplit:
+    inventory = record_inventory([str(value) for value in split_data.ids.tolist()])
+    n_records = len(inventory)
+    n_positive = int(split_data.target.sum())
+    return RecordSplit(
+        name=name,
+        record_id_hashes=inventory,
+        membership_sha256=record_membership_sha256(inventory),
+        n_records=n_records,
+        n_positive=n_positive,
+        n_negative=n_records - n_positive,
+        positive_rate=n_positive / n_records,
+    )
+
+
+def _canonical_splits(
+    snapshot: DatasetSnapshotManifest,
+    model_split: ModelDataSplitManifest,
+    processed_path: str | Path,
+) -> tuple[SplitData, SplitData, SplitData]:
+    frame = _load_snapshot_source(snapshot, processed_path)
+    validate_model_data_split(snapshot, model_split)
+    splits = split_dataset(
+        frame,
+        dataset_id=snapshot.dataset_id,
+        dataset_sha256=snapshot.dataset_sha256,
+        seed=42,
+        ratios=_SPLIT_RATIOS,
+        stratified=True,
+    )
+    assert_no_overlap(splits)
+    expected = (
+        _record_split_from_source(splits.train, "train"),
+        _record_split_from_source(splits.validation, "validation"),
+        _record_split_from_source(splits.test, "test"),
+    )
+    actual = (model_split.train, model_split.validation, model_split.test)
+    if any(
+        expected_item.model_dump(mode="json") != actual_item.model_dump(mode="json")
+        for expected_item, actual_item in zip(expected, actual, strict=True)
+    ):
+        raise ManifestContractError(
+            "model-data split does not match the canonical source-derived partition"
+        )
+    return splits.train, splits.validation, splits.test
+
+
 # --------------------------------------------------------------------------- #
 # Measurement functions
 # --------------------------------------------------------------------------- #
@@ -229,22 +316,21 @@ def _to_split_count_detail(split_data: SplitData, name: str) -> SplitCountDetail
 
 def measure_dataset(
     snapshot: DatasetSnapshotManifest,
-    frame: pd.DataFrame,
+    processed_path: str | Path,
 ) -> DatasetQualityReport:
     """Recompute all dataset quality measurements from source artifacts.
 
-    Every field is derived from ``frame``; no caller-supplied measurement is
-    accepted.  The report is bound to ``snapshot.identity_sha256()`` so it
-    cannot be replayed against a different snapshot.
+    Every field is derived from a CSV whose byte hash, record inventory and
+    column contract have been verified against ``snapshot``.
 
     Args:
         snapshot: The validated dataset snapshot manifest.
-        frame: The processed DataFrame produced by ``load_processed``.
+        processed_path: The exact processed CSV represented by ``snapshot``.
 
     Returns:
         A ``DatasetQualityReport`` bound to the snapshot identity.
     """
-    # Missing count for every column, sorted alphabetically
+    frame = _load_snapshot_source(snapshot, processed_path)
     sorted_columns: list[str] = sorted(str(col) for col in frame.columns.tolist())
     missing_per_column: tuple[ColumnMissingCount, ...] = tuple(
         ColumnMissingCount(column=col, n_missing=int(frame[col].isna().sum()))
@@ -272,10 +358,7 @@ def measure_dataset(
     # Duplicate and blank ID counts
     n_duplicate_ids = int(frame[ID_COLUMN].duplicated().sum())
     n_blank_ids = int(
-        (
-            frame[ID_COLUMN].isna()
-            | (frame[ID_COLUMN].astype(str).str.strip() == "")
-        ).sum()
+        (frame[ID_COLUMN].isna() | (frame[ID_COLUMN].astype(str).str.strip() == "")).sum()
     )
 
     return DatasetQualityReport(
@@ -296,34 +379,34 @@ def measure_dataset(
 def measure_model_split(
     snapshot: DatasetSnapshotManifest,
     model_split: ModelDataSplitManifest,
-    splits: LoadedSplits,
+    processed_path: str | Path,
 ) -> ModelSplitQualityReport:
     """Recompute all model-split quality measurements from source artifacts.
 
-    Overlap, missing and extra record counts are computed directly from the
-    manifest hash sets (not from ``splits``); split counts are computed from
-    the binary target vectors in ``splits``.  The report is bound to both
-    manifest identities.
+    The source CSV is first bound to the snapshot and split membership is
+    compared with a freshly recomputed canonical partition. The report is then
+    derived from those trusted inputs.
 
     Args:
         snapshot: The validated dataset snapshot manifest.
         model_split: The validated model-data split manifest.
-        splits: The ``LoadedSplits`` produced by ``split_dataset`` for the
-            same processed file.
+        processed_path: The exact processed CSV represented by ``snapshot``.
 
     Returns:
         A ``ModelSplitQualityReport`` bound to both manifest identities.
     """
-    # Cross-artifact membership checks using hash sets from manifests
+    train_data, validation_data, test_data = _canonical_splits(
+        snapshot,
+        model_split,
+        processed_path,
+    )
     train_set = set(model_split.train.record_id_hashes)
     val_set = set(model_split.validation.record_id_hashes)
     test_set = set(model_split.test.record_id_hashes)
     dataset_set = set(snapshot.record_id_hashes)
     all_split_hashes = train_set | val_set | test_set
 
-    n_overlap = len(
-        (train_set & val_set) | (train_set & test_set) | (val_set & test_set)
-    )
+    n_overlap = len((train_set & val_set) | (train_set & test_set) | (val_set & test_set))
     n_missing = len(dataset_set - all_split_hashes)
     n_extra = len(all_split_hashes - dataset_set)
 
@@ -334,7 +417,38 @@ def measure_model_split(
         n_overlap=n_overlap,
         n_missing=n_missing,
         n_extra=n_extra,
-        train=_to_split_count_detail(splits.train, "train"),
-        validation=_to_split_count_detail(splits.validation, "validation"),
-        test=_to_split_count_detail(splits.test, "test"),
+        train=_to_split_count_detail(train_data, "train"),
+        validation=_to_split_count_detail(validation_data, "validation"),
+        test=_to_split_count_detail(test_data, "test"),
     )
+
+
+def validate_dataset_quality_report(
+    report: DatasetQualityReport,
+    snapshot: DatasetSnapshotManifest,
+    processed_path: str | Path,
+) -> DatasetQualityReport:
+    """Recompute and compare every dataset-quality field at a trust boundary."""
+
+    report = _revalidated(report)
+    expected = measure_dataset(snapshot, processed_path)
+    if report.model_dump(mode="json") != expected.model_dump(mode="json"):
+        raise ManifestContractError("dataset quality report differs from source-derived evidence")
+    return report
+
+
+def validate_model_split_quality_report(
+    report: ModelSplitQualityReport,
+    snapshot: DatasetSnapshotManifest,
+    model_split: ModelDataSplitManifest,
+    processed_path: str | Path,
+) -> ModelSplitQualityReport:
+    """Recompute and compare every model-split quality field at a trust boundary."""
+
+    report = _revalidated(report)
+    expected = measure_model_split(snapshot, model_split, processed_path)
+    if report.model_dump(mode="json") != expected.model_dump(mode="json"):
+        raise ManifestContractError(
+            "model-split quality report differs from source-derived evidence"
+        )
+    return report
