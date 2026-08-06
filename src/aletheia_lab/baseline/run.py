@@ -14,7 +14,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
-import joblib
+import joblib  # type: ignore[import-untyped]
 import numpy as np
 
 from aletheia_lab.baseline.artifacts import (

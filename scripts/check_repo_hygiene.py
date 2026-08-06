@@ -85,6 +85,7 @@ CONTENT_RED_FLAGS = [
     re.compile(r"\b(deadline_policy|official_case_goal|next_step)\s*:", re.IGNORECASE),
     re.compile(r"^##\s*(task id|phase\s*/\s*module)\s*$", re.IGNORECASE | re.MULTILINE),
     re.compile(r"implementation-facing\s+v\d", re.IGNORECASE),
+    re.compile(r"\bjob[_ -]?\d+(?:\.md)?\b", re.IGNORECASE),
 ]
 
 WALK_EXCLUDED_DIRS = {

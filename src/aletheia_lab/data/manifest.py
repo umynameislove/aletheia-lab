@@ -689,6 +689,76 @@ def write_manifest(
     return destination
 
 
+def write_manifest_set(
+    entries: Sequence[tuple[Manifest, str]],
+    *,
+    output_root: str | Path,
+) -> tuple[Path, ...]:
+    """Publish a set of manifests without leaving partial files on failure.
+
+    Every payload and destination is validated before the first final file is
+    linked. Existing byte-identical files are retained for idempotency; a
+    conflicting file aborts the whole operation. If publication of any staged
+    entry fails, only files created by this call are removed.
+    """
+
+    if not entries:
+        raise ValueError("manifest set must not be empty")
+
+    prepared: list[tuple[bytes, Path]] = []
+    destinations: set[Path] = set()
+    for manifest, relative_path in entries:
+        payload = manifest_artifact_bytes(manifest)
+        _, destination = _safe_destination(
+            output_root,
+            relative_path,
+            create_parents=True,
+        )
+        if destination in destinations:
+            raise ValueError("manifest set contains duplicate destination paths")
+        destinations.add(destination)
+        prepared.append((payload, destination))
+
+    missing: list[tuple[bytes, Path]] = []
+    for payload, destination in prepared:
+        if destination.exists():
+            if destination.is_file() and destination.read_bytes() == payload:
+                continue
+            raise FileExistsError("refusing to overwrite a non-identical immutable manifest")
+        missing.append((payload, destination))
+
+    stages: list[Path] = []
+    created: list[Path] = []
+    try:
+        for payload, destination in missing:
+            fd, stage_name = tempfile.mkstemp(
+                prefix=f".{destination.name}.",
+                suffix=".stage",
+                dir=destination.parent,
+            )
+            stage = Path(stage_name)
+            stages.append(stage)
+            with os.fdopen(fd, "wb") as handle:
+                handle.write(payload)
+                handle.flush()
+                os.fsync(handle.fileno())
+
+        for (payload, destination), stage in zip(missing, stages, strict=True):
+            os.link(os.fspath(stage), os.fspath(destination), follow_symlinks=False)
+            created.append(destination)
+            if destination.read_bytes() != payload:
+                raise OSError("persisted manifest bytes differ from the validated payload")
+    except BaseException:
+        for destination in reversed(created):
+            destination.unlink(missing_ok=True)
+        raise
+    finally:
+        for stage in stages:
+            stage.unlink(missing_ok=True)
+
+    return tuple(destination for _, destination in prepared)
+
+
 def load_manifest(
     *,
     output_root: str | Path,

@@ -32,6 +32,7 @@ from aletheia_lab.data.manifest import (
     validate_dataset_snapshot_source,
     validate_model_data_split,
     write_manifest,
+    write_manifest_set,
 )
 
 __all__ = [
@@ -66,4 +67,5 @@ __all__ = [
     "validate_dataset_snapshot_source",
     "validate_model_data_split",
     "write_manifest",
+    "write_manifest_set",
 ]
