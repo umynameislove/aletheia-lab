@@ -42,6 +42,10 @@ from aletheia_lab.benchmark.p2.identity import (
     FamilyIdentity,
     PreprocessingBugParameters,
 )
+from aletheia_lab.benchmark.p2.mechanism_validation import (
+    MechanismValidationError,
+    validate_mechanism_candidate,
+)
 from aletheia_lab.benchmark.p2.preprocessing_controls import (
     BENIGN_EVIDENCE_SCHEMA_VERSION,
     ENCODER_REPAIR_INTERVENTION_TYPE,
@@ -450,6 +454,39 @@ def test_the_benign_control_packages_successfully(
     assert benign_package.status == "equivalence_verified_pending_admission"
     assert benign_package.disposition is not None
     assert benign_package.disposition.disposition == "technically_valid"
+
+
+def test_unified_validator_binds_preprocessing_to_the_shared_lifecycle(
+    fault_inputs: Any, fault_package: PreprocessingCandidatePackage
+) -> None:
+    assert fault_package.disposition is not None
+    binding = validate_mechanism_candidate(
+        fault_package,
+        slot=_slot("M3-F1"),
+        inputs=fault_inputs,
+        execution=fault_package.execution,
+        disposition=fault_package.disposition,
+    )
+    assert binding.candidate_id == fault_package.candidate_id
+    assert binding.fault_type == "preprocessing_bug"
+
+
+def test_unified_validator_rejects_a_forged_preprocessing_disposition(
+    fault_inputs: Any, fault_package: PreprocessingCandidatePackage
+) -> None:
+    forged = TechnicalDispositionEntry(
+        candidate_id=fault_package.candidate_id,
+        disposition="technical_rejected",
+        rejection_reason="source_contract_mismatch",
+    )
+    with pytest.raises(MechanismValidationError, match="disposition does not match"):
+        validate_mechanism_candidate(
+            fault_package,
+            slot=_slot("M3-F1"),
+            inputs=fault_inputs,
+            execution=fault_package.execution,
+            disposition=forged,
+        )
 
 
 def test_a_benign_control_without_evidence_is_pending_not_passing() -> None:
