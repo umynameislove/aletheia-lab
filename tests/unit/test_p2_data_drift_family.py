@@ -60,6 +60,10 @@ from aletheia_lab.benchmark.p2.identity import (
     DataDriftParameters,
     FamilyIdentity,
 )
+from aletheia_lab.benchmark.p2.mechanism_validation import (
+    MechanismValidationError,
+    validate_mechanism_candidate,
+)
 from aletheia_lab.benchmark.p2.validation import ContractViolation
 
 _H = {letter: letter * 64 for letter in "abcdef"}
@@ -354,6 +358,36 @@ def test_the_benign_control_packages_as_technical_equivalence_pass(
     assert benign_package.disposition.disposition == "technically_valid"
 
 
+def test_unified_validator_binds_drift_to_the_shared_lifecycle(
+    fault_inputs: Any, fault_package: DriftCandidatePackage
+) -> None:
+    binding = validate_mechanism_candidate(
+        fault_package,
+        slot=_slot("M1-F1"),
+        inputs=fault_inputs,
+        execution=fault_package.execution,
+        disposition=fault_package.disposition,
+    )
+    assert binding.candidate_id == fault_package.candidate_id
+    assert binding.fault_type == "data_drift"
+    assert binding.artifact_sha256 == fault_package.artifact_package_sha256()
+
+
+def test_unified_validator_rejects_a_replayed_drift_execution(
+    fault_inputs: Any, fault_package: DriftCandidatePackage
+) -> None:
+    other_inputs = _inputs("M1-F2")
+    other_package = build_drift_candidate_package(slot=_slot("M1-F2"), inputs=other_inputs)
+    with pytest.raises(MechanismValidationError, match="execution does not match"):
+        validate_mechanism_candidate(
+            fault_package,
+            slot=_slot("M1-F1"),
+            inputs=fault_inputs,
+            execution=other_package.execution,
+            disposition=fault_package.disposition,
+        )
+
+
 def test_the_candidate_identity_matches_an_independently_derived_expectation(
     fault_package: DriftCandidatePackage,
 ) -> None:
@@ -441,6 +475,9 @@ def test_the_public_api_exports_the_package() -> None:
         "drift_prediction_run_id_for",
         "build_drift_candidate_package",
         "validate_drift_candidate_package",
+        "MechanismValidationError",
+        "ValidatedMechanismCandidate",
+        "validate_mechanism_candidate",
     ):
         assert name in package.__all__
         assert hasattr(package, name)

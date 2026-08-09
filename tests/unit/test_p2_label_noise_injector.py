@@ -21,7 +21,17 @@ import pytest
 from pydantic import ValidationError
 
 from aletheia_lab.benchmark.p2 import canonical_sha256
-from aletheia_lab.benchmark.p2.identity import LabelNoiseParameters
+from aletheia_lab.benchmark.p2.contracts import (
+    CandidateSlot,
+    ExecutedCandidate,
+    TechnicalDispositionEntry,
+)
+from aletheia_lab.benchmark.p2.identity import (
+    FamilyIdentity,
+    LabelNoiseParameters,
+    candidate_id_for,
+    proposed_family_sha256,
+)
 from aletheia_lab.benchmark.p2.label_noise import (
     AUDIT_INTERVAL_METHOD,
     LABEL_MUTATION_SCHEMA_VERSION,
@@ -41,6 +51,11 @@ from aletheia_lab.benchmark.p2.label_noise import (
     selection_digest,
     validate_label_corruption,
     wilson_interval,
+)
+from aletheia_lab.benchmark.p2.mechanism_validation import (
+    LabelFaultDirectedInputs,
+    MechanismValidationError,
+    validate_mechanism_candidate,
 )
 
 _HEX_F = "f" * 64
@@ -79,6 +94,51 @@ def _spec(flip_rate: float = 0.05, seed: int = 202) -> LabelCorruptionSpec:
             scope="train",
         ),
         seed=seed,
+    )
+
+
+def _fault_slot() -> CandidateSlot:
+    return CandidateSlot(
+        slot_id="M2-F2",
+        fault_type="label_noise",
+        slot_kind="primary",
+        role="fault_directed",
+        identity=FamilyIdentity(
+            dataset_snapshot_id="telco_customer_churn@2026-07",
+            dataset_sha256="a" * 64,
+            model_data_split_manifest_sha256="b" * 64,
+            fault_type="label_noise",
+            intervention_type="training_target_label_corruption",
+            canonical_intervention_parameters=LabelNoiseParameters(
+                flip_rate=0.05,
+                flip_direction="symmetric",
+                selection_policy="seeded_record_hash",
+                scope="train",
+            ),
+            seed=202,
+            reference_construction_id="clean-test-reference/v1",
+            injector_contract_version="label-noise/v1",
+            model_specification_sha256=_HEX_C,
+            preprocessing_specification_sha256=_HEX_D,
+            identity_schema_version="p2-family-identity/v1",
+        ),
+    )
+
+
+def _execution(slot: CandidateSlot) -> ExecutedCandidate:
+    fingerprint = proposed_family_sha256(slot.identity)
+    return ExecutedCandidate(
+        candidate_id=candidate_id_for(
+            slot_id=slot.slot_id,
+            family_fingerprint=fingerprint,
+        ),
+        slot_id=slot.slot_id,
+        fault_type=slot.fault_type,
+        role=slot.role,
+        slot_kind=slot.slot_kind,
+        proposed_family_sha256=fingerprint,
+        dataset_sha256=slot.identity.dataset_sha256,
+        model_data_split_manifest_sha256=slot.identity.model_data_split_manifest_sha256,
     )
 
 
@@ -484,6 +544,52 @@ def test_validator_accepts_and_returns_an_honest_result(
     validated = validate_label_corruption(result, source=source, spec=spec)
     assert validated.artifact_sha256() == result.artifact_sha256()
     assert validated.semantic_sha256() == result.semantic_sha256()
+
+
+def test_unified_validator_binds_label_corruption_to_the_shared_lifecycle(
+    source: LabelNoiseSource, spec: LabelCorruptionSpec
+) -> None:
+    slot = _fault_slot()
+    execution = _execution(slot)
+    result = apply_label_corruption(source=source, spec=spec)
+    disposition = TechnicalDispositionEntry(
+        candidate_id=execution.candidate_id,
+        disposition="technically_valid",
+    )
+    binding = validate_mechanism_candidate(
+        result,
+        slot=slot,
+        inputs=LabelFaultDirectedInputs(source=source, spec=spec),
+        execution=execution,
+        disposition=disposition,
+    )
+    assert binding.candidate_id == execution.candidate_id
+    assert binding.fault_type == "label_noise"
+    assert binding.artifact_sha256 == result.artifact_sha256()
+
+
+def test_unified_validator_rejects_label_artifact_reuse_under_another_family(
+    source: LabelNoiseSource, spec: LabelCorruptionSpec
+) -> None:
+    slot = _fault_slot()
+    execution = _execution(slot)
+    result = apply_label_corruption(source=source, spec=spec)
+    forged_slot = slot.model_copy(
+        update={
+            "identity": slot.identity.model_copy(update={"dataset_sha256": "9" * 64})
+        }
+    )
+    with pytest.raises(MechanismValidationError, match="execution does not match"):
+        validate_mechanism_candidate(
+            result,
+            slot=forged_slot,
+            inputs=LabelFaultDirectedInputs(source=source, spec=spec),
+            execution=execution,
+            disposition=TechnicalDispositionEntry(
+                candidate_id=execution.candidate_id,
+                disposition="technically_valid",
+            ),
+        )
 
 
 def test_validator_rejects_a_tampered_mutation_map_with_a_matching_digest(
