@@ -251,3 +251,187 @@ def test_security_job_does_not_reference_secrets(security_job: dict) -> None:  #
         "The security job references a GitHub Actions secret. "
         "The bandit gate must work without any write-capable tokens."
     )
+
+
+# ===========================================================================
+# pip-audit contract — .github/workflows/dependency-audit.yml
+# §4.2 contract properties 1-8
+# ===========================================================================
+
+_AUDIT_YAML = _ROOT / ".github" / "workflows" / "dependency-audit.yml"
+_AUDIT_ESCAPE_VALVES = ("|| true", "; exit 0", "|| exit 0")
+
+
+@pytest.fixture(scope="module")
+def audit_workflow() -> dict:  # type: ignore[type-arg]
+    raw: dict = yaml.safe_load(_AUDIT_YAML.read_text(encoding="utf-8"))  # type: ignore[type-arg]
+    # PyYAML implements YAML 1.1 which parses the bare keyword 'on:' as boolean
+    # True. Normalise the trigger key to the string "on" so downstream tests
+    # can use audit_workflow.get("on") without knowing about this quirk.
+    if True in raw and "on" not in raw:
+        raw["on"] = raw.pop(True)
+    return raw  # type: ignore[no-any-return]
+
+
+@pytest.fixture(scope="module")
+def audit_job(audit_workflow: dict) -> dict:  # type: ignore[type-arg]
+    """Return the job that runs pip-audit."""
+    jobs = audit_workflow.get("jobs", {})
+    for _job_name, job in jobs.items():
+        for step in job.get("steps", []):
+            if "pip_audit" in step.get("run", "") or "pip-audit" in step.get("run", ""):
+                return job  # type: ignore[no-any-return]
+    pytest.fail(
+        "No job in dependency-audit.yml contains a step running pip_audit. "
+        "Add a blocking audit step: python -m pip_audit"
+    )
+
+
+@pytest.fixture(scope="module")
+def audit_step(audit_job: dict) -> dict:  # type: ignore[type-arg]
+    """Return the specific pip-audit run step."""
+    for step in audit_job.get("steps", []):
+        run = step.get("run", "")
+        if "pip_audit" in run or "pip-audit" in run:
+            return step  # type: ignore[no-any-return]
+    pytest.fail("pip-audit step not found inside the audit job")
+
+
+# ---------------------------------------------------------------------------
+# §4.2.1 — pip-audit declared in dev dependencies
+# ---------------------------------------------------------------------------
+
+
+def test_pip_audit_declared_in_dev_dependencies(pyproject: dict) -> None:  # type: ignore[type-arg]
+    """pip-audit must appear in [project.optional-dependencies.dev] in pyproject.toml."""
+    dev_deps: list[str] = (
+        pyproject.get("project", {}).get("optional-dependencies", {}).get("dev", [])
+    )
+    assert any("pip-audit" in dep for dep in dev_deps), (
+        f"pip-audit not found in [project.optional-dependencies.dev]: {dev_deps!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# §4.2.2 — push/PR path filter and §4.2.3 — weekly schedule + workflow_dispatch
+# ---------------------------------------------------------------------------
+
+
+def test_audit_workflow_has_push_pr_path_filter(audit_workflow: dict) -> None:  # type: ignore[type-arg]
+    """dependency-audit.yml must have path filters on push and pull_request triggers."""
+    on: dict = audit_workflow.get("on", {})  # type: ignore[type-arg]
+    for trigger in ("push", "pull_request"):
+        assert trigger in on, f"dependency-audit.yml missing {trigger!r} trigger"
+        paths = on[trigger].get("paths", [])
+        assert paths, (
+            f"dependency-audit.yml {trigger!r} trigger has no paths filter; "
+            "it should only run when pyproject.toml or the workflow itself changes"
+        )
+        assert any("pyproject.toml" in p for p in paths), (
+            f"{trigger!r} path filter does not include pyproject.toml: {paths!r}"
+        )
+
+
+def test_audit_workflow_has_weekly_schedule(audit_workflow: dict) -> None:  # type: ignore[type-arg]
+    """dependency-audit.yml must include a valid weekly cron schedule."""
+    on: dict = audit_workflow.get("on", {})  # type: ignore[type-arg]
+    schedule: list = on.get("schedule", [])  # type: ignore[type-arg]
+    assert schedule, "dependency-audit.yml has no schedule trigger"
+    crons = [entry.get("cron", "") for entry in schedule]
+    # A weekly cron has exactly 5 fields; the day-of-week or day-of-month
+    # field must narrow the run to once per week (not every day).
+    for cron in crons:
+        parts = cron.split()
+        assert len(parts) == 5, f"cron expression must have 5 fields: {cron!r}"
+        dow = parts[4]  # day-of-week field
+        dom = parts[2]  # day-of-month field
+        assert dow != "*" or dom != "*", (
+            f"cron {cron!r} would run daily, not weekly; "
+            "set day-of-week or day-of-month to a specific value"
+        )
+
+
+def test_audit_workflow_has_workflow_dispatch(audit_workflow: dict) -> None:  # type: ignore[type-arg]
+    """dependency-audit.yml must support manual workflow_dispatch trigger."""
+    on: dict = audit_workflow.get("on", {})  # type: ignore[type-arg]
+    assert "workflow_dispatch" in on, (
+        "dependency-audit.yml missing workflow_dispatch trigger; "
+        "add 'workflow_dispatch:' so the audit can be triggered manually"
+    )
+
+
+# ---------------------------------------------------------------------------
+# §4.2.4 — install from project environment (not a synthetic requirements file)
+# ---------------------------------------------------------------------------
+
+
+def test_audit_job_installs_from_project_environment(audit_job: dict) -> None:  # type: ignore[type-arg]
+    """The audit job must install from .[dev], not a standalone requirements file."""
+    install_runs = [
+        step.get("run", "")
+        for step in audit_job.get("steps", [])
+        if "pip install" in step.get("run", "")
+    ]
+    assert install_runs, "audit job has no pip install step"
+    for run in install_runs:
+        assert ".[dev]" in run or ".[dev" in run, (
+            f"audit job installs from a path that may not be the project environment: {run!r}. "
+            "Use: python -m pip install -e '.[dev]'"
+        )
+        # Must NOT install from a standalone requirements.txt
+        assert "requirements" not in run.lower(), (
+            f"audit job installs from a requirements file instead of the project: {run!r}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# §4.2.5 — audit step is blocking
+# ---------------------------------------------------------------------------
+
+
+def test_audit_step_has_no_continue_on_error(audit_step: dict) -> None:  # type: ignore[type-arg]
+    """pip-audit step must not carry continue-on-error: true."""
+    assert not audit_step.get("continue-on-error", False), (
+        "pip-audit step has continue-on-error: true — this silences vulnerability findings"
+    )
+
+
+# ---------------------------------------------------------------------------
+# §4.2.6 — no --ignore-vuln flag
+# ---------------------------------------------------------------------------
+
+
+def test_audit_step_has_no_ignore_vuln(audit_step: dict) -> None:  # type: ignore[type-arg]
+    """pip-audit command must not carry --ignore-vuln."""
+    run: str = audit_step.get("run", "")
+    assert "--ignore-vuln" not in run, (
+        f"pip-audit step contains --ignore-vuln, which silences known vulnerabilities: {run!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# §4.2.7 — no shell escape valves
+# ---------------------------------------------------------------------------
+
+
+def test_audit_step_has_no_shell_escape(audit_step: dict) -> None:  # type: ignore[type-arg]
+    """pip-audit run must not contain shell escape valves that swallow the exit code."""
+    run: str = audit_step.get("run", "")
+    for escape in _AUDIT_ESCAPE_VALVES:
+        assert escape not in run, (
+            f"pip-audit step contains shell escape {escape!r}: {run!r}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# §4.2.8 — no secrets in audit job
+# ---------------------------------------------------------------------------
+
+
+def test_audit_job_does_not_reference_secrets(audit_job: dict) -> None:  # type: ignore[type-arg]
+    """The audit job must not reference any GitHub Actions secrets."""
+    job_text = str(audit_job)
+    assert "${{ secrets." not in job_text, (
+        "The audit job references a GitHub Actions secret. "
+        "pip-audit must work without any tokens."
+    )
