@@ -32,7 +32,8 @@ dev = [
   "pre-commit>=3.7",
   "pytest>=8.2",
   "pytest-cov>=5.0",
-  "ruff>=0.5"
+  "ruff>=0.5",
+  "setuptools>=83.0.0"
 ]
 
 llm = [
