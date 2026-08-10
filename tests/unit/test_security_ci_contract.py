@@ -429,9 +429,61 @@ def test_audit_step_has_no_shell_escape(audit_step: dict) -> None:  # type: igno
 
 
 def test_audit_job_does_not_reference_secrets(audit_job: dict) -> None:  # type: ignore[type-arg]
-    """The audit job must not reference any GitHub Actions secrets."""
+    """The audit job must not reference any GitHub Actions secrets (§4.2.9)."""
     job_text = str(audit_job)
     assert "${{ secrets." not in job_text, (
         "The audit job references a GitHub Actions secret. "
         "pip-audit must work without any tokens."
     )
+
+
+# ---------------------------------------------------------------------------
+# §4.2.8 — workflow permissions are read-only
+# ---------------------------------------------------------------------------
+
+
+def test_audit_workflow_permissions_are_read_only(audit_workflow: dict) -> None:  # type: ignore[type-arg]
+    """dependency-audit.yml must grant no more than contents: read permission."""
+    top_perms = audit_workflow.get("permissions", {})
+    if top_perms == "write-all":
+        pytest.fail("dependency-audit.yml grants permissions: write-all")
+    if isinstance(top_perms, dict):
+        for scope, level in top_perms.items():
+            assert level != "write", (
+                f"dependency-audit.yml grants {scope!r}: write at workflow level"
+            )
+    # Job-level permissions must also not grant write access
+    for job_name, job in audit_workflow.get("jobs", {}).items():
+        job_perms = job.get("permissions", {})
+        if job_perms == "write-all":
+            pytest.fail(f"Job {job_name!r} in dependency-audit.yml grants write-all")
+        if isinstance(job_perms, dict):
+            for scope, level in job_perms.items():
+                assert level != "write", (
+                    f"Job {job_name!r} in dependency-audit.yml grants {scope!r}: write"
+                )
+
+
+# ---------------------------------------------------------------------------
+# §4.2.10 — workflow content is product-quality (no task IDs, names, tracking)
+# ---------------------------------------------------------------------------
+
+_TRACKING_PATTERNS = [
+    r"job[_\- ]?0[0-9]",      # job_03, job-03, job 03
+    r"phase[_\- ]?[0-9]",      # phase_2, phase-2, phase 2 (in tracking context)
+    r"\bKi[eê]n\b",            # name in workflow content
+    r"\bB[aả]o\b",             # reviewer name
+    r"p2-property-security",    # internal branch/task tracking language
+    r"task_name",               # task metadata keys
+]
+
+
+def test_audit_workflow_has_no_tracking_language() -> None:
+    """dependency-audit.yml must not contain task IDs, names, or internal tracking language."""
+    content = _AUDIT_YAML.read_text(encoding="utf-8")
+    for pattern in _TRACKING_PATTERNS:
+        match = re.search(pattern, content, re.IGNORECASE)
+        assert match is None, (
+            f"dependency-audit.yml contains tracking language matching {pattern!r}: "
+            f"{match.group()!r} — remove internal task/name references from the workflow"
+        )
