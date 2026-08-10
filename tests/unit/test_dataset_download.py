@@ -329,3 +329,76 @@ def test_prepare_dataset_is_deterministic(tmp_path) -> None:
     assert first["n_rows"] == 3
     assert first["n_cols"] == 21
     assert first["total_charges_blanks_zeroed"] == 1
+
+
+# ---------------------------------------------------------------------------
+# B310 regression — URL scheme validation (bandit B310 / CWE-22)
+#
+# download.py validates the URL scheme before calling urllib.request.urlopen.
+# These tests confirm that the guard is present and effective: only http/https
+# pass, and every other scheme is rejected before any network or filesystem
+# operation begins.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "bad_url",
+    [
+        "file:///etc/passwd",
+        "file://localhost/var/data.csv",
+        "ftp://example.com/data.csv",
+        "data:text/plain,hello",
+        "custom://example.com/data.csv",
+        "/etc/passwd",
+        "\\\\server\\share\\file",
+    ],
+)
+def test_download_to_temp_rejects_non_http_url(tmp_path, bad_url: str) -> None:
+    """_download_to_temp rejects non-http/https URL schemes (regression: B310).
+
+    The scheme check must fire before any directory creation or socket open,
+    so the tmp_path remains empty after the ValueError is raised.
+    """
+    from aletheia_lab.data.download import _download_to_temp
+
+    dest = tmp_path / "dl"
+    with pytest.raises(ValueError, match="http/https"):
+        _download_to_temp(bad_url, dest)
+
+    # Guard fires before mkdir — dest_dir must not have been created
+    assert not dest.exists(), (
+        f"dest_dir was created despite the scheme validation rejecting {bad_url!r}"
+    )
+
+
+def test_download_to_temp_accepts_https_url(tmp_path, monkeypatch) -> None:
+    """https:// URLs pass scheme validation and reach the network layer (regression: B310).
+
+    Monkeypatches urlopen so no real network call is made; verifies that the
+    validation does not accidentally block valid URLs.
+    """
+    import urllib.request
+
+    from aletheia_lab.data.download import _download_to_temp
+
+    payload = b"col1,col2\nval1,val2\n"
+    monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen(payload))
+
+    tmp = _download_to_temp("https://example.com/data.csv", tmp_path)
+    assert tmp.exists()
+    assert tmp.read_bytes() == payload
+    tmp.unlink(missing_ok=True)
+
+
+def test_download_to_temp_accepts_http_url(tmp_path, monkeypatch) -> None:
+    """http:// URLs also pass scheme validation (regression: B310)."""
+    import urllib.request
+
+    from aletheia_lab.data.download import _download_to_temp
+
+    payload = b"data"
+    monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen(payload))
+
+    tmp = _download_to_temp("http://example.com/data.csv", tmp_path)
+    assert tmp.exists()
+    tmp.unlink(missing_ok=True)

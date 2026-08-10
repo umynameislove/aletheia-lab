@@ -59,11 +59,20 @@ def _download_to_temp(url: str, dest_dir: Path) -> Path:
     failure the temp file is removed before the exception propagates.
     """
 
+    _PERMITTED = ("https://", "http://")
+    if not any(url.startswith(scheme) for scheme in _PERMITTED):
+        raise ValueError(
+            f"Only http/https URLs are permitted for dataset download; "
+            f"received a URL with a disallowed scheme: {url!r}"
+        )
+
     dest_dir.mkdir(parents=True, exist_ok=True)
     fd, tmp_name = tempfile.mkstemp(dir=dest_dir, suffix=".part")
     tmp = Path(tmp_name)
     try:
-        with os.fdopen(fd, "wb") as out, urllib.request.urlopen(url, timeout=_TIMEOUT) as resp:  # noqa: S310
+        with os.fdopen(fd, "wb") as out, urllib.request.urlopen(  # nosec B310 — scheme validated above; only http/https are permitted
+            url, timeout=_TIMEOUT
+        ) as resp:
             for chunk in iter(lambda: resp.read(_CHUNK), b""):
                 out.write(chunk)
             out.flush()
