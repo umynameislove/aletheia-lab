@@ -14,7 +14,9 @@ from __future__ import annotations
 
 import math
 from collections import Counter
+from collections.abc import Mapping
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import Final, NoReturn, TypeVar
 
 from pydantic import BaseModel
@@ -52,7 +54,7 @@ _POLICY_BY_FAULT: Final[dict[str, str]] = {
 
 
 @dataclass(frozen=True)
-class _FrozenSlotSpec:
+class FrozenAlphaSlotSpec:
     fault_type: str
     slot_kind: str
     role: str
@@ -60,44 +62,60 @@ class _FrozenSlotSpec:
     reserve_order: int | None = None
 
 
-_FROZEN_ALPHA_SLOTS: Final[dict[str, _FrozenSlotSpec]] = {
-    "M1-F1": _FrozenSlotSpec("data_drift", "primary", "fault_directed", 1),
-    "M1-F2": _FrozenSlotSpec("data_drift", "primary", "fault_directed", 3),
-    "M1-S1": _FrozenSlotSpec("data_drift", "primary", "fault_directed", 5),
-    "M1-I1": _FrozenSlotSpec("data_drift", "primary", "fault_directed", 4),
-    "M1-B1": _FrozenSlotSpec("data_drift", "primary", "designed_benign_control", 105),
-    "M1-R1": _FrozenSlotSpec("data_drift", "reserve", "fault_directed", 2, 1),
-    "M1-R2": _FrozenSlotSpec("data_drift", "reserve", "fault_directed", 106, 2),
-    "M1-R3": _FrozenSlotSpec("data_drift", "reserve", "fault_directed", 107, 3),
-    "M2-F1": _FrozenSlotSpec("label_noise", "primary", "fault_directed", 201),
-    "M2-F2": _FrozenSlotSpec("label_noise", "primary", "fault_directed", 202),
-    "M2-F3": _FrozenSlotSpec("label_noise", "primary", "fault_directed", 203),
-    "M2-I1": _FrozenSlotSpec("label_noise", "primary", "designed_improvement_control", 204),
-    "M2-B1": _FrozenSlotSpec("label_noise", "primary", "designed_benign_control", 205),
-    "M2-R1": _FrozenSlotSpec("label_noise", "reserve", "fault_directed", 206, 1),
-    "M2-R2": _FrozenSlotSpec("label_noise", "reserve", "fault_directed", 207, 2),
-    "M2-R3": _FrozenSlotSpec("label_noise", "reserve", "fault_directed", 208, 3),
-    "M3-F1": _FrozenSlotSpec("preprocessing_bug", "primary", "fault_directed", 301),
-    "M3-F2": _FrozenSlotSpec("preprocessing_bug", "primary", "fault_directed", 302),
-    "M3-F3": _FrozenSlotSpec("preprocessing_bug", "primary", "fault_directed", 303),
-    "M3-I1": _FrozenSlotSpec("preprocessing_bug", "primary", "designed_improvement_control", 304),
-    "M3-B1": _FrozenSlotSpec("preprocessing_bug", "primary", "designed_benign_control", 305),
-    "M3-R1": _FrozenSlotSpec("preprocessing_bug", "reserve", "fault_directed", 306, 1),
-    "M3-R2": _FrozenSlotSpec("preprocessing_bug", "reserve", "fault_directed", 307, 2),
-    "M3-R3": _FrozenSlotSpec("preprocessing_bug", "reserve", "fault_directed", 308, 3),
-}
+FROZEN_ALPHA_SLOTS: Final[Mapping[str, FrozenAlphaSlotSpec]] = MappingProxyType({
+    "M1-F1": FrozenAlphaSlotSpec("data_drift", "primary", "fault_directed", 1),
+    "M1-F2": FrozenAlphaSlotSpec("data_drift", "primary", "fault_directed", 3),
+    "M1-S1": FrozenAlphaSlotSpec("data_drift", "primary", "fault_directed", 5),
+    "M1-I1": FrozenAlphaSlotSpec("data_drift", "primary", "fault_directed", 4),
+    "M1-B1": FrozenAlphaSlotSpec("data_drift", "primary", "designed_benign_control", 105),
+    "M1-R1": FrozenAlphaSlotSpec("data_drift", "reserve", "fault_directed", 2, 1),
+    "M1-R2": FrozenAlphaSlotSpec("data_drift", "reserve", "fault_directed", 106, 2),
+    "M1-R3": FrozenAlphaSlotSpec("data_drift", "reserve", "fault_directed", 107, 3),
+    "M2-F1": FrozenAlphaSlotSpec("label_noise", "primary", "fault_directed", 201),
+    "M2-F2": FrozenAlphaSlotSpec("label_noise", "primary", "fault_directed", 202),
+    "M2-F3": FrozenAlphaSlotSpec("label_noise", "primary", "fault_directed", 203),
+    "M2-I1": FrozenAlphaSlotSpec("label_noise", "primary", "designed_improvement_control", 204),
+    "M2-B1": FrozenAlphaSlotSpec("label_noise", "primary", "designed_benign_control", 205),
+    "M2-R1": FrozenAlphaSlotSpec("label_noise", "reserve", "fault_directed", 206, 1),
+    "M2-R2": FrozenAlphaSlotSpec("label_noise", "reserve", "fault_directed", 207, 2),
+    "M2-R3": FrozenAlphaSlotSpec("label_noise", "reserve", "fault_directed", 208, 3),
+    "M3-F1": FrozenAlphaSlotSpec("preprocessing_bug", "primary", "fault_directed", 301),
+    "M3-F2": FrozenAlphaSlotSpec("preprocessing_bug", "primary", "fault_directed", 302),
+    "M3-F3": FrozenAlphaSlotSpec("preprocessing_bug", "primary", "fault_directed", 303),
+    "M3-I1": FrozenAlphaSlotSpec("preprocessing_bug", "primary", "designed_improvement_control", 304),
+    "M3-B1": FrozenAlphaSlotSpec("preprocessing_bug", "primary", "designed_benign_control", 305),
+    "M3-R1": FrozenAlphaSlotSpec("preprocessing_bug", "reserve", "fault_directed", 306, 1),
+    "M3-R2": FrozenAlphaSlotSpec("preprocessing_bug", "reserve", "fault_directed", 307, 2),
+    "M3-R3": FrozenAlphaSlotSpec("preprocessing_bug", "reserve", "fault_directed", 308, 3),
+})
 
-_M1_TARGETS: Final[dict[str, dict[str, float]]] = {
-    "M1-F1": {"Month-to-month": 0.80, "One year": 0.12, "Two year": 0.08},
-    "M1-F2": {"Month-to-month": 0.90, "One year": 0.06, "Two year": 0.04},
-    "M1-S1": {"Month-to-month": 0.60, "One year": 0.20, "Two year": 0.20},
-    "M1-I1": {"Month-to-month": 0.40, "One year": 0.30, "Two year": 0.30},
-    "M1-R1": {"Month-to-month": 0.70, "One year": 0.18, "Two year": 0.12},
-    "M1-R2": {"Month-to-month": 0.75, "One year": 0.15, "Two year": 0.10},
-    "M1-R3": {"Month-to-month": 0.50, "One year": 0.25, "Two year": 0.25},
-}
+FROZEN_DATA_DRIFT_TARGETS: Final[Mapping[str, Mapping[str, float]]] = MappingProxyType(
+    {
+        "M1-F1": MappingProxyType(
+            {"Month-to-month": 0.80, "One year": 0.12, "Two year": 0.08}
+        ),
+        "M1-F2": MappingProxyType(
+            {"Month-to-month": 0.90, "One year": 0.06, "Two year": 0.04}
+        ),
+        "M1-S1": MappingProxyType(
+            {"Month-to-month": 0.60, "One year": 0.20, "Two year": 0.20}
+        ),
+        "M1-I1": MappingProxyType(
+            {"Month-to-month": 0.40, "One year": 0.30, "Two year": 0.30}
+        ),
+        "M1-R1": MappingProxyType(
+            {"Month-to-month": 0.70, "One year": 0.18, "Two year": 0.12}
+        ),
+        "M1-R2": MappingProxyType(
+            {"Month-to-month": 0.75, "One year": 0.15, "Two year": 0.10}
+        ),
+        "M1-R3": MappingProxyType(
+            {"Month-to-month": 0.50, "One year": 0.25, "Two year": 0.25}
+        ),
+    }
+)
 
-_M2_RATES: Final[dict[str, float]] = {
+FROZEN_LABEL_NOISE_RATES: Final[Mapping[str, float]] = MappingProxyType({
     "M2-F1": 0.01,
     "M2-F2": 0.05,
     "M2-F3": 0.20,
@@ -106,9 +124,9 @@ _M2_RATES: Final[dict[str, float]] = {
     "M2-R1": 0.025,
     "M2-R2": 0.10,
     "M2-R3": 0.30,
-}
+})
 
-_M3_RANKS: Final[dict[str, tuple[int | None, int | None]]] = {
+FROZEN_PREPROCESSING_RANKS: Final[Mapping[str, tuple[int | None, int | None]]] = MappingProxyType({
     "M3-F1": (3, 2),
     "M3-F2": (2, 1),
     "M3-F3": (1, 3),
@@ -117,7 +135,7 @@ _M3_RANKS: Final[dict[str, tuple[int | None, int | None]]] = {
     "M3-R1": (3, 1),
     "M3-R2": (2, 3),
     "M3-R3": (1, 2),
-}
+})
 
 _M3_TARGET_FEATURE: Final[str] = "Contract"
 _M3_MODE: Final[str] = "inference_only"
@@ -153,7 +171,7 @@ def validate_frozen_alpha_slot(slot: CandidateSlot) -> CandidateSlot:
 
     slot = _revalidated(slot)
     slot_id = slot.slot_id
-    expected = _FROZEN_ALPHA_SLOTS.get(slot_id)
+    expected = FROZEN_ALPHA_SLOTS.get(slot_id)
     if expected is None:
         _fail(f"slot {slot_id} is not part of the frozen alpha grid")
 
@@ -186,12 +204,17 @@ def validate_frozen_alpha_slot(slot: CandidateSlot) -> CandidateSlot:
         else:
             if slot.identity.intervention_type != "categorical_distribution_shift":
                 _fail(f"slot {slot_id} must use categorical_distribution_shift")
-            if parameters.target_distribution != _M1_TARGETS[slot_id]:
+            if parameters.target_distribution != FROZEN_DATA_DRIFT_TARGETS[slot_id]:
                 _fail(f"slot {slot_id} target distribution differs from the alpha contract")
     elif slot_id.startswith("M2-"):
         if not isinstance(parameters, LabelNoiseParameters):
             _fail(f"slot {slot_id} must use label-noise parameters")
-        if not math.isclose(parameters.flip_rate, _M2_RATES[slot_id], rel_tol=0.0, abs_tol=1e-12):
+        if not math.isclose(
+            parameters.flip_rate,
+            FROZEN_LABEL_NOISE_RATES[slot_id],
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        ):
             _fail(f"slot {slot_id} flip_rate differs from the alpha contract")
         if (
             parameters.flip_direction != "symmetric"
@@ -214,7 +237,10 @@ def validate_frozen_alpha_slot(slot: CandidateSlot) -> CandidateSlot:
             or parameters.transform_name != _M3_TRANSFORM_NAME
         ):
             _fail(f"slot {slot_id} preprocessing target/mode/transform differs from alpha")
-        if (parameters.source_rank, parameters.mapped_rank) != _M3_RANKS[slot_id]:
+        if (
+            parameters.source_rank,
+            parameters.mapped_rank,
+        ) != FROZEN_PREPROCESSING_RANKS[slot_id]:
             _fail(f"slot {slot_id} category-rank mapping differs from the alpha contract")
         expected_intervention = {
             "M3-I1": "inference_encoder_mapping_repair",
@@ -231,7 +257,7 @@ def validate_frozen_alpha_plan(plan: CandidatePlan) -> None:
 
     plan = _revalidated(plan)
     by_id = {slot.slot_id: slot for slot in plan.slots}
-    expected_ids = set(_FROZEN_ALPHA_SLOTS)
+    expected_ids = set(FROZEN_ALPHA_SLOTS)
     actual_ids = set(by_id)
     if actual_ids != expected_ids:
         _fail(

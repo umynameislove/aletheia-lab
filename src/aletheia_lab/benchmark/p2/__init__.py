@@ -14,6 +14,22 @@ Phase 1 identity, artifacts and hashes are untouched: Phase 2 uses its own
 namespace so the two generations can never be mistaken for one another.
 """
 
+from aletheia_lab.benchmark.p2.alpha_lifecycle import (
+    AlphaCandidateResult,
+    AlphaLifecycleError,
+    EvaluatedAlphaCandidate,
+    RejectedAlphaCandidate,
+    assemble_alpha_artifacts,
+    execution_for_slot,
+    record_technical_rejection,
+)
+from aletheia_lab.benchmark.p2.alpha_plan import (
+    ALPHA_DATA_DRIFT_FEATURE,
+    ALPHA_PLAN_SCHEMA_VERSION,
+    ALPHA_PREPROCESSING_TRANSFORM,
+    AlphaSystemBinding,
+    build_frozen_alpha_plan,
+)
 from aletheia_lab.benchmark.p2.artifacts import (
     STORE_SCHEMA_VERSION,
     ContractStoreEntry,
@@ -379,6 +395,12 @@ from aletheia_lab.benchmark.p2.validation import (
 )
 
 __all__ = [
+    "ALPHA_DATA_DRIFT_FEATURE",
+    "ALPHA_PLAN_SCHEMA_VERSION",
+    "ALPHA_PREPROCESSING_TRANSFORM",
+    "AlphaCandidateResult",
+    "AlphaLifecycleError",
+    "AlphaSystemBinding",
     "ALPHA_PREPROCESSING_MODE",
     "ALPHA_RANK_COUNT",
     "ALPHA_TARGET_FEATURE",
@@ -638,6 +660,8 @@ __all__ = [
     "TransformSignatureComparison",
     "ValidExclusionReason",
     "ValidatedMechanismCandidate",
+    "EvaluatedAlphaCandidate",
+    "RejectedAlphaCandidate",
     "apply_categorical_drift",
     "apply_column_permutation",
     "apply_empirical_resampling_control",
@@ -653,6 +677,7 @@ __all__ = [
     "build_drift_prediction_run",
     "build_drift_observed_evaluation_set",
     "build_diagnosis_contexts",
+    "build_frozen_alpha_plan",
     "build_preprocessing_candidate_package",
     "candidate_id_for",
     "canonical_bytes",
@@ -671,6 +696,8 @@ __all__ = [
     "drift_selection_digest",
     "encode_target_label",
     "family_id_for",
+    "assemble_alpha_artifacts",
+    "execution_for_slot",
     "load_contract_store",
     "measure_drift_candidate",
     "measure_repair_control",
@@ -683,6 +710,7 @@ __all__ = [
     "performance_evidence_from",
     "proposed_family_sha256",
     "save_contract_store",
+    "record_technical_rejection",
     "select_category_rows",
     "select_record_ids",
     "selection_digest",
