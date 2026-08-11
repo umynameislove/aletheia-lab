@@ -2,7 +2,7 @@
 
 Scoped to tests/property/; loaded only when this directory is collected.
 
-Design decisions recorded here (required by §2.1 handoff):
+The profile keeps generated examples reproducible and the worktree clean:
 
 - database=None: prevents .hypothesis/ from appearing in the worktree.
   No filesystem residue from property test runs.
@@ -11,8 +11,8 @@ Design decisions recorded here (required by §2.1 handoff):
   Hypothesis version and seed.  CI runs are therefore reproducible without
   pinning a specific corpus.
 
-- max_examples=100: baseline for pure contract/hash property groups (A–C).
-  Group D (intervention) tests override to max_examples=40 per-test with
+- max_examples=100: baseline for pure contract and hash invariants.
+  Costlier intervention tests override to max_examples=40 per test with
   @settings(max_examples=40) where the fixture cost is significantly higher.
 
 - No broad suppress_health_check at the profile level.  Individual tests

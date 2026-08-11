@@ -1,6 +1,6 @@
-"""Property tests — Group A: canonical bytes and identity.
+"""Property tests for canonical bytes and identity.
 
-Covers §2.2 properties 1–10:
+Covered invariants:
   1. Dict insertion order → same canonical bytes and SHA-256
   2. Unicode NFC round-trip, byte-identical
   3. NaN, Infinity, -Infinity rejected at any depth
@@ -48,7 +48,7 @@ _HEX_CHARS = "0123456789abcdef"
 _ASCII_ALPHA = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 _SAFE_ID_CHARS = _ASCII_ALPHA + "0123456789-_"
 
-# Independent oracle for property A1 — computed WITHOUT calling canonical_bytes.
+# Independent oracle computed without calling ``canonical_bytes``.
 #
 # payload = {"b": "foo", "a": "bar"}
 # Step 1 — sort keys:           {"a": "bar", "b": "foo"}
@@ -57,9 +57,9 @@ _SAFE_ID_CHARS = _ASCII_ALPHA + "0123456789-_"
 # Step 4 — SHA-256:             hashlib.sha256(b'...').hexdigest()
 #
 # This verifies the production output against a reference built from first principles,
-# satisfying §2.2: "phải dựng ít nhất một expected canonical byte string thủ công".
-_A1_ORACLE_BYTES: bytes = b'{"a":"bar","b":"foo"}'
-_A1_ORACLE_SHA256: str = hashlib.sha256(_A1_ORACLE_BYTES).hexdigest()
+# The expected canonical byte string is constructed by hand.
+_ORACLE_BYTES: bytes = b'{"a":"bar","b":"foo"}'
+_ORACLE_SHA256: str = hashlib.sha256(_ORACLE_BYTES).hexdigest()
 
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
@@ -132,23 +132,21 @@ def family_identities(draw):  # type: ignore[no-untyped-def]
 
 
 # ---------------------------------------------------------------------------
-# Property A1 — insertion order invariance
+# Insertion order invariance
 # ---------------------------------------------------------------------------
 
 
-def test_a1_manual_oracle_canonical_bytes() -> None:
+def test_manual_oracle_canonical_bytes() -> None:
     """Independent-oracle verification: canonical bytes for {"b":"foo","a":"bar"}.
 
-    Required by §2.2: 'Test phải dựng ít nhất một expected canonical
-    byte string thủ công. Không chỉ kiểm tra hash(a)==hash(b) bằng cùng một
-    helper production.'
+    The expected value is assembled independently of production helpers.
 
-    The expected bytes and SHA-256 are computed at module load (see _A1_ORACLE_*
+    The expected bytes and SHA-256 are computed at module load (see _ORACLE_*
     constants above) without calling canonical_bytes or canonical_sha256.
     """
     payload = {"b": "foo", "a": "bar"}
-    assert canonical_bytes(payload) == _A1_ORACLE_BYTES
-    assert canonical_sha256(payload) == _A1_ORACLE_SHA256
+    assert canonical_bytes(payload) == _ORACLE_BYTES
+    assert canonical_sha256(payload) == _ORACLE_SHA256
 
 
 @given(
@@ -158,7 +156,7 @@ def test_a1_manual_oracle_canonical_bytes() -> None:
     v2=st.text(alphabet=_ASCII_ALPHA, min_size=1, max_size=8),
 )
 @example(k1="b", k2="a", v1="foo", v2="bar")  # classic reverse-alphabetical boundary
-def test_a1_insertion_order_invariant(k1: str, k2: str, v1: str, v2: str) -> None:
+def test_insertion_order_invariant(k1: str, k2: str, v1: str, v2: str) -> None:
     """Dict with same K→V mapping but different insertion order gives identical
     canonical bytes and SHA-256 (property 1).
     """
@@ -172,7 +170,7 @@ def test_a1_insertion_order_invariant(k1: str, k2: str, v1: str, v2: str) -> Non
 
 
 # ---------------------------------------------------------------------------
-# Property A2 — Unicode NFC round-trip, byte-identical
+# Unicode NFC round-trip
 # ---------------------------------------------------------------------------
 
 
@@ -182,7 +180,7 @@ def test_a1_insertion_order_invariant(k1: str, k2: str, v1: str, v2: str) -> Non
 )
 @example(s="caf\u00e9", form="NFC")     # café already in NFC
 @example(s="cafe\u0301", form="NFD")    # café in NFD — must produce same bytes
-def test_a2_nfc_equivalent_strings_are_byte_identical(s: str, form: str) -> None:
+def test_nfc_equivalent_strings_are_byte_identical(s: str, form: str) -> None:
     """Strings that NFC-normalize to the same value produce identical canonical
     bytes (property 2 — metamorphic property).
     """
@@ -201,7 +199,7 @@ def test_a2_nfc_equivalent_strings_are_byte_identical(s: str, form: str) -> None
 )
 @example(text_value="caf\u00e9")
 @example(text_value="hello world")
-def test_a2_canonical_bytes_matches_nfc_oracle(text_value: str) -> None:
+def test_canonical_bytes_matches_nfc_oracle(text_value: str) -> None:
     """canonical_bytes on a string matches the independent NFC oracle (property 2).
 
     Oracle (no call to canonical_bytes):
@@ -216,7 +214,7 @@ def test_a2_canonical_bytes_matches_nfc_oracle(text_value: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property A3 — NaN / Infinity / -Infinity rejected at any depth
+# Non-finite values are rejected at any depth
 # ---------------------------------------------------------------------------
 
 
@@ -228,7 +226,7 @@ def test_a2_canonical_bytes_matches_nfc_oracle(text_value: str) -> None:
 @example(non_finite=float("nan"), depth=0, key="x")    # top-level float
 @example(non_finite=float("inf"), depth=1, key="v")    # nested in dict
 @example(non_finite=float("-inf"), depth=3, key="d")   # deeply nested
-def test_a3_nonfinite_rejected_at_any_depth(
+def test_nonfinite_rejected_at_any_depth(
     non_finite: float, depth: int, key: str
 ) -> None:
     """NaN, Infinity, and -Infinity are rejected at every nesting depth (property 3)."""
@@ -241,7 +239,7 @@ def test_a3_nonfinite_rejected_at_any_depth(
 
 
 # ---------------------------------------------------------------------------
-# Property A4 — single field mutation changes digest
+# Single-field mutation changes the digest
 # ---------------------------------------------------------------------------
 
 
@@ -259,7 +257,7 @@ def test_a3_nonfinite_rejected_at_any_depth(
     payload={"field_a": "original", "field_b": "unchanged", "field_c": "same"},
     new_value="modified",
 )
-def test_a4_single_field_mutation_changes_digest(
+def test_single_field_mutation_changes_digest(
     payload: dict[str, str], new_value: str
 ) -> None:
     """Replacing exactly one field value changes the SHA-256 digest (property 4)."""
@@ -271,12 +269,12 @@ def test_a4_single_field_mutation_changes_digest(
 
 
 # ---------------------------------------------------------------------------
-# Property A5 — metadata excluded by contract does not affect identity
+# Identity payload includes only contract fields
 # ---------------------------------------------------------------------------
 
 
 @given(identity=family_identities())
-def test_a5_identity_payload_has_exactly_twelve_fields(
+def test_identity_payload_has_exactly_twelve_fields(
     identity: FamilyIdentity,
 ) -> None:
     """identity_payload() returns exactly the twelve semantic fields in
@@ -295,11 +293,11 @@ def test_a5_identity_payload_has_exactly_twelve_fields(
 
 
 # ---------------------------------------------------------------------------
-# Property A6 — every semantic field always affects identity
+# Every semantic field affects identity
 # ---------------------------------------------------------------------------
 
 
-def test_a6_all_identity_fields_affect_hash() -> None:
+def test_all_identity_fields_affect_hash() -> None:
     """Every field in IDENTITY_FIELD_NAMES changes the hash when mutated (property 6).
 
     Uses fixed known values and tests each of the twelve fields exactly once.
@@ -365,7 +363,7 @@ def test_a6_all_identity_fields_affect_hash() -> None:
     identity=family_identities(),
     new_seed=st.integers(min_value=0, max_value=100_000),
 )
-def test_a6_seed_field_affects_identity_generated(
+def test_seed_field_affects_identity_generated(
     identity: FamilyIdentity, new_seed: int
 ) -> None:
     """Hypothesis-verified: changing seed always changes the identity hash (property 6)."""
@@ -381,7 +379,7 @@ def test_a6_seed_field_affects_identity_generated(
     identity=family_identities(),
     new_sha=sha256_digests(),
 )
-def test_a6_dataset_sha256_affects_identity_generated(
+def test_dataset_sha256_affects_identity_generated(
     identity: FamilyIdentity, new_sha: str
 ) -> None:
     """Hypothesis-verified: changing dataset_sha256 always changes the hash (property 6)."""
@@ -394,7 +392,7 @@ def test_a6_dataset_sha256_affects_identity_generated(
 
 
 # ---------------------------------------------------------------------------
-# Property A7 — order-sensitive list: permutation changes digest
+# Order-sensitive lists change digest when permuted
 # ---------------------------------------------------------------------------
 
 
@@ -408,7 +406,7 @@ def test_a6_dataset_sha256_affects_identity_generated(
 )
 @example(items=["b", "a"])
 @example(items=["z", "a", "m"])
-def test_a7_list_order_sensitive(items: list[str]) -> None:
+def test_list_order_sensitive(items: list[str]) -> None:
     """An order-sensitive list that is reversed produces a different digest (property 7).
 
     Callers needing order-insensitive semantics must sort before serializing.
@@ -420,7 +418,7 @@ def test_a7_list_order_sensitive(items: list[str]) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property A8 — dict canonicalization independent of iteration order
+# Dictionary canonicalization is independent of iteration order
 # ---------------------------------------------------------------------------
 
 
@@ -433,7 +431,7 @@ def test_a7_list_order_sensitive(items: list[str]) -> None:
     )
 )
 @example(payload={"z": "last", "a": "first", "m": "middle"})
-def test_a8_dict_canonicalization_independent_of_iteration(
+def test_dict_canonicalization_independent_of_iteration(
     payload: dict[str, str],
 ) -> None:
     """Dict canonical bytes are independent of insertion/iteration order (property 8).
@@ -455,12 +453,12 @@ def test_a8_dict_canonicalization_independent_of_iteration(
 
 
 # ---------------------------------------------------------------------------
-# Property A9 — P1/P2 domain prefix no collision
+# Identity namespaces do not collide
 # ---------------------------------------------------------------------------
 
 
 @given(identity=family_identities())
-def test_a9_family_id_always_p2_prefixed(identity: FamilyIdentity) -> None:
+def test_family_id_always_p2_prefixed(identity: FamilyIdentity) -> None:
     """family_id_for() always produces a 'p2-family-' prefixed ID (property 9)."""
     fid = family_id_for(identity)
 
@@ -470,7 +468,7 @@ def test_a9_family_id_always_p2_prefixed(identity: FamilyIdentity) -> None:
 
 
 @given(sha=sha256_digests(), slot=valid_slot_ids())
-def test_a9_candidate_id_always_p2_prefixed(sha: str, slot: str) -> None:
+def test_candidate_id_always_p2_prefixed(sha: str, slot: str) -> None:
     """candidate_id_for() always produces a 'p2-candidate-' prefixed ID (property 9)."""
     cid = candidate_id_for(slot_id=slot, family_fingerprint=sha)
 
@@ -479,7 +477,7 @@ def test_a9_candidate_id_always_p2_prefixed(sha: str, slot: str) -> None:
     assert not cid.startswith("p2-family-")
 
 
-def test_a9_p1_snapshot_id_rejected_by_identity() -> None:
+def test_p1_snapshot_id_rejected_by_identity() -> None:
     """FamilyIdentity rejects 'p1-' prefixed dataset_snapshot_id (property 9).
 
     Fixed @example verifying domain-separation: a P1-namespaced identifier
@@ -508,7 +506,7 @@ def test_a9_p1_snapshot_id_rejected_by_identity() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property A10 — SHA-256 output always lowercase 64-char hex
+# SHA-256 output uses lowercase hexadecimal
 # ---------------------------------------------------------------------------
 
 
@@ -528,7 +526,7 @@ def test_a9_p1_snapshot_id_rejected_by_identity() -> None:
 @example(payload={"k": "value"})
 @example(payload="hello")
 @example(payload=["a", "b", "c"])
-def test_a10_sha256_output_is_lowercase_64_hex(payload: object) -> None:
+def test_sha256_output_is_lowercase_64_hex(payload: object) -> None:
     """canonical_sha256 always returns a lowercase 64-char hex string (property 10)."""
     result = canonical_sha256(payload)
 

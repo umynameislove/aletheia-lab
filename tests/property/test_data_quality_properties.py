@@ -1,6 +1,6 @@
-"""Property tests — Group C: data-quality recomputation.
+"""Property tests for data-quality recomputation.
 
-Covers §2.4 properties 1–14:
+Covered invariants:
   1.  Row/column count correct with source frame
   2.  Duplicate/blank ID count recomputed
   3.  Label counts have correct total equal to row count
@@ -59,7 +59,7 @@ _DATASET_ID = "telco_customer_churn"
 _SNAP_REL = "manifests/snap.json"
 _SPLIT_REL = "manifests/split.json"
 
-# Fields that no quality model may self-declare (§2.4 property 11)
+# Fields that no quality model may self-declare.
 _FORBIDDEN_FIELDS = frozenset({"passed", "valid", "verdict", "eligible", "expected_behavior"})
 
 # ---------------------------------------------------------------------------
@@ -109,6 +109,14 @@ def _minimal_split_detail(
     )
 
 
+@st.composite
+def inconsistent_split_counts(draw):  # type: ignore[no-untyped-def]
+    """Generate positive counts that leave a non-empty but short negative class."""
+    n_records = draw(st.integers(min_value=3, max_value=100))
+    n_positive = draw(st.integers(min_value=1, max_value=n_records - 2))
+    return n_records, n_positive
+
+
 def _build_quality_fixtures(
     tmp_path: Path,
     make_frame: object,
@@ -131,14 +139,14 @@ def _build_quality_fixtures(
 
 
 # ---------------------------------------------------------------------------
-# C1 — row / column count correct with source frame
+# Row and column counts match the source frame
 # ---------------------------------------------------------------------------
 
 
-def test_c1_row_column_count_matches_source_frame(
+def test_row_column_count_matches_source_frame(
     tmp_path: Path, make_frame: object
 ) -> None:
-    """n_rows and n_cols in the quality report match the source frame (C1).
+    """n_rows and n_cols in the quality report match the source frame.
 
     Independent oracle: count directly from raw CSV with pandas.read_csv,
     without using measure_dataset or any production count helper.
@@ -159,14 +167,14 @@ def test_c1_row_column_count_matches_source_frame(
 
 
 # ---------------------------------------------------------------------------
-# C2 — duplicate / blank ID count recomputed
+# Duplicate and blank identifier counts are recomputed
 # ---------------------------------------------------------------------------
 
 
-def test_c2_duplicate_blank_id_count_recomputed(
+def test_duplicate_blank_id_count_recomputed(
     tmp_path: Path, make_frame: object
 ) -> None:
-    """n_duplicate_ids and n_blank_ids match source-derived counts (C2).
+    """n_duplicate_ids and n_blank_ids match source-derived counts.
 
     Independent oracle: recount with pandas without measure_dataset.
     build_frame generates unique non-blank IDs, so both counts must be zero.
@@ -188,7 +196,7 @@ def test_c2_duplicate_blank_id_count_recomputed(
 
 
 # ---------------------------------------------------------------------------
-# C3 — label counts sum equals row count
+# Label counts sum to the row count
 # ---------------------------------------------------------------------------
 
 
@@ -198,8 +206,8 @@ def test_c2_duplicate_blank_id_count_recomputed(
 )
 @example(n_positive=1, n_negative=1)
 @example(n_positive=99, n_negative=1)
-def test_c3_label_counts_sum_to_n_rows(n_positive: int, n_negative: int) -> None:
-    """n_positive + n_negative == n_rows is enforced by the schema (C3)."""
+def test_label_counts_sum_to_n_rows(n_positive: int, n_negative: int) -> None:
+    """n_positive + n_negative == n_rows is enforced by the schema."""
     n_rows = n_positive + n_negative
     report = _minimal_dq_report(
         n_rows=n_rows, n_positive=n_positive, n_negative=n_negative
@@ -212,10 +220,10 @@ def test_c3_label_counts_sum_to_n_rows(n_positive: int, n_negative: int) -> None
     n_negative=st.integers(min_value=0, max_value=50),
     extra=st.integers(min_value=1, max_value=10),
 )
-def test_c3_inconsistent_label_counts_rejected(
+def test_inconsistent_label_counts_rejected(
     n_positive: int, n_negative: int, extra: int
 ) -> None:
-    """n_positive + n_negative != n_rows is rejected by the schema (C3, violation)."""
+    """n_positive + n_negative != n_rows is rejected by the schema."""
     # extra ensures n_rows > n_positive + n_negative (always wrong)
     n_rows = n_positive + n_negative + extra
     with pytest.raises(ValidationError, match="n_positive"):
@@ -224,10 +232,10 @@ def test_c3_inconsistent_label_counts_rejected(
         )
 
 
-def test_c3_label_counts_verified_against_source_oracle(
+def test_label_counts_verified_against_source_oracle(
     tmp_path: Path, make_frame: object
 ) -> None:
-    """Label counts from measure_dataset match a pandas-based oracle (C3, source).
+    """Label counts from measure_dataset match a pandas-based oracle.
 
     Expected counts computed independently using pandas comparison, not
     reusing the production counting helpers.
@@ -247,7 +255,7 @@ def test_c3_label_counts_verified_against_source_oracle(
 
 
 # ---------------------------------------------------------------------------
-# C4 — missing count per column correct and keys canonical (sorted)
+# Missing counts use canonical column keys
 # ---------------------------------------------------------------------------
 
 
@@ -264,8 +272,8 @@ def test_c3_label_counts_verified_against_source_oracle(
     )
 )
 @example(cols=["z_col", "a_col"])  # reversed alphabetical — key boundary
-def test_c4_missing_per_column_canonical_sorted_accepted(cols: list[str]) -> None:
-    """A sorted missing_per_column is accepted; reversed order is rejected (C4).
+def test_missing_per_column_canonical_sorted_accepted(cols: list[str]) -> None:
+    """A sorted missing_per_column is accepted; reversed order is rejected.
 
     Metamorphic property: the canonical sorted form is the only valid order.
     """
@@ -284,8 +292,8 @@ def test_c4_missing_per_column_canonical_sorted_accepted(cols: list[str]) -> Non
         _minimal_dq_report(missing_per_column=reversed_missing)
 
 
-def test_c4_duplicate_missing_column_rejected() -> None:
-    """Duplicate column names in missing_per_column are rejected (C4)."""
+def test_duplicate_missing_column_rejected() -> None:
+    """Duplicate column names in missing_per_column are rejected."""
     with pytest.raises(ValidationError, match="unique"):
         _minimal_dq_report(
             missing_per_column=(
@@ -296,14 +304,14 @@ def test_c4_duplicate_missing_column_rejected() -> None:
 
 
 # ---------------------------------------------------------------------------
-# C5 — non-finite count only applies to numeric columns
+# Non-finite counts apply only to numeric columns
 # ---------------------------------------------------------------------------
 
 
-def test_c5_nonfinite_count_only_for_numeric_columns(
+def test_nonfinite_count_only_for_numeric_columns(
     tmp_path: Path, make_frame: object
 ) -> None:
-    """measure_dataset computes nonfinite counts only for NUMERIC_FEATURES (C5)."""
+    """measure_dataset computes nonfinite counts only for numeric features."""
     snap, _, _, csv = _build_quality_fixtures(tmp_path, make_frame, n=60)
     report = measure_dataset(snap, csv)
 
@@ -317,14 +325,14 @@ def test_c5_nonfinite_count_only_for_numeric_columns(
 
 
 # ---------------------------------------------------------------------------
-# C6 — split counts, class counts and positive rate recomputed
+# Split counts and positive rates are recomputed
 # ---------------------------------------------------------------------------
 
 
-def test_c6_split_counts_recomputed_from_source(
+def test_split_counts_recomputed_from_source(
     tmp_path: Path, make_frame: object
 ) -> None:
-    """Split record counts, class counts and positive_rate match a pandas oracle (C6).
+    """Split record counts, class counts and positive_rate match a pandas oracle.
 
     Independent oracle: recount from split_dataset output without using
     SplitCountDetail or any production quality helper.
@@ -375,14 +383,14 @@ def test_c6_split_counts_recomputed_from_source(
 
 
 # ---------------------------------------------------------------------------
-# C7 — overlap / missing / extra record detected
+# Overlap, missing, and extra records are detected
 # ---------------------------------------------------------------------------
 
 
-def test_c7_valid_split_has_no_overlap_missing_extra(
+def test_valid_split_has_no_overlap_missing_extra(
     tmp_path: Path, make_frame: object
 ) -> None:
-    """A canonical model split has n_overlap=n_missing=n_extra=0 (C7).
+    """A canonical model split has n_overlap=n_missing=n_extra=0.
 
     Independent oracle: compute set intersections without using
     measure_model_split or any production overlap helper.
@@ -409,7 +417,7 @@ def test_c7_valid_split_has_no_overlap_missing_extra(
 
 
 # ---------------------------------------------------------------------------
-# C8 — column reorder valid does not change semantic result (metamorphic)
+# Column reordering does not change semantic results
 # ---------------------------------------------------------------------------
 
 
@@ -426,8 +434,8 @@ def test_c7_valid_split_has_no_overlap_missing_extra(
     )
 )
 @example(cols=["tenure", "monthly_charges"])
-def test_c8_column_reorder_produces_same_canonical_keys(cols: list[str]) -> None:
-    """Regardless of input order, missing_per_column keys are canonically sorted (C8).
+def test_column_reorder_produces_same_canonical_keys(cols: list[str]) -> None:
+    """Regardless of input order, missing_per_column keys are canonically sorted.
 
     Metamorphic property: providing columns in alphabetical vs reversed order
     produces the same canonical sorted representation when valid, and the
@@ -449,12 +457,12 @@ def test_c8_column_reorder_produces_same_canonical_keys(cols: list[str]) -> None
 
 
 # ---------------------------------------------------------------------------
-# C9 — missing / extra / duplicate column rejected
+# Invalid column schemas are rejected
 # ---------------------------------------------------------------------------
 
 
-def test_c9_unknown_field_in_dataset_quality_report_rejected() -> None:
-    """DatasetQualityReport rejects unknown extra fields (C9, extra field)."""
+def test_unknown_field_in_dataset_quality_report_rejected() -> None:
+    """DatasetQualityReport rejects unknown extra fields."""
     with pytest.raises(ValidationError, match="Extra inputs"):
         DatasetQualityReport(
             dataset_id="test01",
@@ -472,8 +480,8 @@ def test_c9_unknown_field_in_dataset_quality_report_rejected() -> None:
         )
 
 
-def test_c9_duplicate_nonfinite_column_rejected() -> None:
-    """Duplicate column names in nonfinite_per_numeric are rejected (C9)."""
+def test_duplicate_nonfinite_column_rejected() -> None:
+    """Duplicate column names in nonfinite_per_numeric are rejected."""
     with pytest.raises(ValidationError, match="unique"):
         _minimal_dq_report(
             nonfinite_per_numeric=(
@@ -484,7 +492,7 @@ def test_c9_duplicate_nonfinite_column_rejected() -> None:
 
 
 # ---------------------------------------------------------------------------
-# C10 — bad target, rate outside [0,1], NaN and Inf rejected
+# Invalid target rates are rejected
 # ---------------------------------------------------------------------------
 
 
@@ -496,10 +504,10 @@ def test_c9_duplicate_nonfinite_column_rejected() -> None:
         ("negative infinity", float("-inf")),
     ],
 )
-def test_c10_nonfinite_positive_rate_rejected(
+def test_nonfinite_positive_rate_rejected(
     description: str, bad_rate: float
 ) -> None:
-    """NaN and Inf positive_rate values are rejected by SplitCountDetail (C10)."""
+    """NaN and Inf positive_rate values are rejected by SplitCountDetail."""
     with pytest.raises(ValidationError):
         SplitCountDetail(
             name="train",
@@ -510,17 +518,10 @@ def test_c10_nonfinite_positive_rate_rejected(
         )
 
 
-@given(
-    n_records=st.integers(min_value=2, max_value=100),
-    n_positive=st.integers(min_value=1, max_value=99),
-)
-def test_c10_inconsistent_split_counts_rejected(
-    n_records: int, n_positive: int
-) -> None:
-    """SplitCountDetail rejects n_positive + n_negative != n_records (C10)."""
-    # n_positive <= n_records - 2 guarantees n_negative >= 1 (satisfies Field(gt=0))
-    # while keeping n_positive + n_negative = n_records - 1 != n_records.
-    assume(n_positive <= n_records - 2)
+@given(counts=inconsistent_split_counts())
+def test_inconsistent_split_counts_rejected(counts: tuple[int, int]) -> None:
+    """SplitCountDetail rejects inconsistent class totals."""
+    n_records, n_positive = counts
     n_negative = n_records - n_positive - 1  # deliberately one short
     with pytest.raises(ValidationError, match="n_positive"):
         SplitCountDetail(
@@ -533,32 +534,32 @@ def test_c10_inconsistent_split_counts_rejected(
 
 
 # ---------------------------------------------------------------------------
-# C11 — report cannot self-declare passed, valid, eligible, verdict
+# Reports cannot self-declare research outcomes
 # ---------------------------------------------------------------------------
 
 
-def test_c11_no_forbidden_fields_in_dataset_quality_schema() -> None:
-    """DatasetQualityReport schema contains no self-declared outcome fields (C11)."""
+def test_no_forbidden_fields_in_dataset_quality_schema() -> None:
+    """DatasetQualityReport schema contains no self-declared outcome fields."""
     assert not (set(DatasetQualityReport.model_fields) & _FORBIDDEN_FIELDS), (
         f"Forbidden fields found in DatasetQualityReport: "
         f"{set(DatasetQualityReport.model_fields) & _FORBIDDEN_FIELDS}"
     )
 
 
-def test_c11_no_forbidden_fields_in_split_quality_schema() -> None:
-    """ModelSplitQualityReport schema contains no self-declared outcome fields (C11)."""
+def test_no_forbidden_fields_in_split_quality_schema() -> None:
+    """ModelSplitQualityReport schema contains no self-declared outcome fields."""
     assert not (set(ModelSplitQualityReport.model_fields) & _FORBIDDEN_FIELDS)
 
 
-def test_c11_no_forbidden_fields_in_split_count_detail_schema() -> None:
-    """SplitCountDetail schema contains no self-declared outcome fields (C11)."""
+def test_no_forbidden_fields_in_split_count_detail_schema() -> None:
+    """SplitCountDetail schema contains no self-declared outcome fields."""
     assert not (set(SplitCountDetail.model_fields) & _FORBIDDEN_FIELDS)
 
 
-def test_c11_no_forbidden_fields_in_serialized_artifact(
+def test_no_forbidden_fields_in_serialized_artifact(
     tmp_path: Path, make_frame: object
 ) -> None:
-    """Serialized quality report JSON does not contain forbidden field names (C11)."""
+    """Serialized quality report JSON does not contain forbidden field names."""
     snap, _, _, csv = _build_quality_fixtures(tmp_path, make_frame, n=60)
     report = measure_dataset(snap, csv)
     artifact = json.dumps(report.model_dump(mode="json"))
@@ -569,14 +570,14 @@ def test_c11_no_forbidden_fields_in_serialized_artifact(
 
 
 # ---------------------------------------------------------------------------
-# C12 — correct report from dataset A replayed to dataset B must fail
+# Reports cannot be replayed against another dataset
 # ---------------------------------------------------------------------------
 
 
-def test_c12_quality_report_replay_to_different_dataset_fails(
+def test_quality_report_replay_to_different_dataset_fails(
     tmp_path: Path, make_frame: object
 ) -> None:
-    """A quality report measured from dataset A cannot be replayed to dataset B (C12).
+    """A quality report measured from one dataset cannot be replayed to another.
 
     Tamper/replay property: the binding dataset_identity_sha256 prevents replay.
     """
@@ -603,14 +604,14 @@ def test_c12_quality_report_replay_to_different_dataset_fails(
 
 
 # ---------------------------------------------------------------------------
-# C13 — simultaneously modifying measurement and hash still fails against source
+# Joint measurement and digest forgery still fails source validation
 # ---------------------------------------------------------------------------
 
 
-def test_c13_forge_measurement_and_hash_fails_against_source(
+def test_forge_measurement_and_hash_fails_against_source(
     tmp_path: Path, make_frame: object
 ) -> None:
-    """Forging a measurement field via model_copy still fails at source validation (C13).
+    """Forging a measurement field via model_copy still fails source validation.
 
     validate_dataset_quality_report recomputes every field from source;
     it cannot be deceived by a self-consistent but incorrect report.
@@ -627,14 +628,14 @@ def test_c13_forge_measurement_and_hash_fails_against_source(
 
 
 # ---------------------------------------------------------------------------
-# C14 — no raw ID in serialized quality artifact
+# Serialized quality artifacts contain no raw identifiers
 # ---------------------------------------------------------------------------
 
 
-def test_c14_quality_report_contains_no_raw_customer_ids(
+def test_quality_report_contains_no_raw_customer_ids(
     tmp_path: Path, make_frame: object
 ) -> None:
-    """Serialized quality report does not contain raw customer IDs (C14).
+    """Serialized quality report does not contain raw customer IDs.
 
     build_frame generates IDs in the format 'NNNNN-SYNTH'.  The '-SYNTH'
     suffix contains uppercase non-hex letters that provably cannot appear

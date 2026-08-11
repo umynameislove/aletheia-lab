@@ -1,6 +1,6 @@
-"""Property tests — Group D: intervention invariants.
+"""Property tests for label-corruption intervention invariants.
 
-Covers §2.5 properties 1–12.
+Covered invariants:
 
   1.  Same source/spec/seed produces byte-identical artifact
   2.  Changing seed or flip_rate changes semantic identity
@@ -9,11 +9,10 @@ Covers §2.5 properties 1–12.
   5.  Mutation map matches exactly the records that were actually changed
   6.  Reported count/hash/rate validated by model validators
   7.  Zero flip_rate (no-op) is rejected by spec validator
-  8.  Cross-family source/artifact/spec binding — DEFERRED (awaiting Bao interface)
-  9.  model_copy / model_construct forge fails at re-validation
-  10. Malformed label/rate and non-finite input fail closed
-  11. Output does not self-declare outcome, eligibility or causal conclusion
-  12. Deterministic result does not depend on PYTHONHASHSEED
+  8.  model_copy / model_construct forge fails at re-validation
+  9.  Malformed label/rate and non-finite input fail closed
+  10. Output does not self-declare outcome, eligibility or causal conclusion
+  11. Deterministic result does not depend on PYTHONHASHSEED
 """
 
 from __future__ import annotations
@@ -24,7 +23,7 @@ import subprocess
 import sys
 
 import pytest
-from hypothesis import assume, example, given, settings
+from hypothesis import example, given, settings
 from hypothesis import strategies as st
 from pydantic import ValidationError
 
@@ -57,13 +56,13 @@ _SHA_A = "a" * 64
 _SHA_B = "b" * 64
 _SHA_C = "c" * 64
 
-#: Fields that must not appear on any intervention output model (D11)
+#: Fields that must not appear on any intervention output model.
 _FORBIDDEN_OUTCOME_FIELDS = frozenset(
     {"passed", "eligible", "verdict", "outcome", "expected_behavior"}
 )
 
 #: Evaluator-facing vocabulary that must not appear as field names on the
-#: diagnosis-facing TargetQualityAudit model (D11 — structural vocabulary boundary).
+#: Diagnosis-facing fields must not reveal evaluator vocabulary.
 _EVALUATOR_VOCAB = frozenset(
     {
         "label_noise",
@@ -119,12 +118,12 @@ _FIXED_SOURCE = _make_source()
 _FIXED_SPEC = _make_spec(flip_rate=0.3, seed=42)
 
 # ---------------------------------------------------------------------------
-# D1 — same source/spec/seed produces byte-identical artifact
+# Identical source, specification, and seed produce identical artifacts
 # ---------------------------------------------------------------------------
 
 
-def test_d1_fixed_source_and_spec_are_deterministic() -> None:
-    """apply_label_corruption returns the same artifact SHA for the same inputs (D1)."""
+def test_fixed_source_and_spec_are_deterministic() -> None:
+    """apply_label_corruption returns the same artifact SHA for the same inputs."""
     result_a = apply_label_corruption(source=_FIXED_SOURCE, spec=_FIXED_SPEC)
     result_b = apply_label_corruption(source=_FIXED_SOURCE, spec=_FIXED_SPEC)
     assert result_a.artifact_sha256() == result_b.artifact_sha256()
@@ -136,11 +135,11 @@ def test_d1_fixed_source_and_spec_are_deterministic() -> None:
 @example(seed=0)
 @example(seed=1)
 @example(seed=42)
-def test_d1_hypothesis_determinism_across_seeds(seed: int) -> None:
-    """Calling apply_label_corruption twice with the same seed is idempotent (D1).
+def test_hypothesis_determinism_across_seeds(seed: int) -> None:
+    """Calling apply_label_corruption twice with the same seed is idempotent.
 
     max_examples=40: each call invokes the injector; fixture cost is higher
-    than pure schema properties (§2.5, min 40 for interventions).
+    than pure schema properties.
     """
     spec = _make_spec(flip_rate=0.3, seed=seed)
     result_a = apply_label_corruption(source=_FIXED_SOURCE, spec=spec)
@@ -149,25 +148,25 @@ def test_d1_hypothesis_determinism_across_seeds(seed: int) -> None:
 
 
 # ---------------------------------------------------------------------------
-# D2 — changing seed or flip_rate changes semantic identity
+# Changing seed or flip rate changes semantic identity
 # ---------------------------------------------------------------------------
 
 
 @given(
-    seed_a=st.integers(min_value=0, max_value=10_000),
-    seed_b=st.integers(min_value=0, max_value=10_000),
+    seed_a=st.integers(min_value=0, max_value=9_000),
+    seed_delta=st.integers(min_value=1, max_value=1_000),
 )
 @settings(max_examples=40)
-@example(seed_a=0, seed_b=1)
-@example(seed_a=42, seed_b=99)
-def test_d2_different_seed_changes_artifact_identity(seed_a: int, seed_b: int) -> None:
-    """Different seeds produce results with different provenance seeds (D2).
+@example(seed_a=0, seed_delta=1)
+@example(seed_a=42, seed_delta=57)
+def test_different_seed_changes_artifact_identity(seed_a: int, seed_delta: int) -> None:
+    """Different seeds produce results with different provenance seeds.
 
     The seed is embedded in the provenance and the artifact SHA, so different
     seeds must produce different artifact SHAs regardless of whether the
     randomly selected records overlap.
     """
-    assume(seed_a != seed_b)
+    seed_b = seed_a + seed_delta
     spec_a = _make_spec(flip_rate=0.3, seed=seed_a)
     spec_b = _make_spec(flip_rate=0.3, seed=seed_b)
     result_a = apply_label_corruption(source=_FIXED_SOURCE, spec=spec_a)
@@ -177,8 +176,8 @@ def test_d2_different_seed_changes_artifact_identity(seed_a: int, seed_b: int) -
     assert result_a.artifact_sha256() != result_b.artifact_sha256()
 
 
-def test_d2_different_flip_rate_changes_semantic_identity() -> None:
-    """Different flip_rates produce different semantic identity (D2, flip_rate)."""
+def test_different_flip_rate_changes_semantic_identity() -> None:
+    """Different flip rates produce different semantic identity."""
     spec_low = _make_spec(flip_rate=0.1, seed=42)
     spec_high = _make_spec(flip_rate=0.4, seed=42)
     result_low = apply_label_corruption(source=_FIXED_SOURCE, spec=spec_low)
@@ -188,12 +187,12 @@ def test_d2_different_flip_rate_changes_semantic_identity() -> None:
 
 
 # ---------------------------------------------------------------------------
-# D3 — record membership and order preserved
+# Record membership and order are preserved
 # ---------------------------------------------------------------------------
 
 
-def test_d3_record_membership_preserved_after_corruption() -> None:
-    """apply_label_corruption preserves record IDs and their order (D3)."""
+def test_record_membership_preserved_after_corruption() -> None:
+    """apply_label_corruption preserves record IDs and their order."""
     result = apply_label_corruption(source=_FIXED_SOURCE, spec=_FIXED_SPEC)
     assert result.record_ids == _FIXED_SOURCE.record_ids
     assert len(result.record_ids) == len(_FIXED_SOURCE.record_ids)
@@ -202,8 +201,8 @@ def test_d3_record_membership_preserved_after_corruption() -> None:
 
 @given(seed=st.integers(min_value=0, max_value=50_000))
 @settings(max_examples=40)
-def test_d3_hypothesis_membership_preserved(seed: int) -> None:
-    """Membership and record count are preserved for all tested seeds (D3)."""
+def test_hypothesis_membership_preserved(seed: int) -> None:
+    """Membership and record count are preserved for all tested seeds."""
     spec = _make_spec(flip_rate=0.3, seed=seed)
     result = apply_label_corruption(source=_FIXED_SOURCE, spec=spec)
     assert set(result.record_ids) == set(_FIXED_SOURCE.record_ids)
@@ -211,12 +210,12 @@ def test_d3_hypothesis_membership_preserved(seed: int) -> None:
 
 
 # ---------------------------------------------------------------------------
-# D4 — only targets change — structural guarantee: no features field
+# Only targets change; feature fields are structurally unavailable
 # ---------------------------------------------------------------------------
 
 
-def test_d4_label_noise_source_has_no_feature_field() -> None:
-    """LabelNoiseSource has no feature or feature_matrix field (D4, structural).
+def test_label_noise_source_has_no_feature_field() -> None:
+    """LabelNoiseSource has no feature or feature_matrix field.
 
     The injector cannot alter features it never receives; this is enforced
     by the type: if the source has no feature field, the injector cannot
@@ -226,25 +225,25 @@ def test_d4_label_noise_source_has_no_feature_field() -> None:
     assert "feature_matrix" not in LabelNoiseSource.model_fields
 
 
-def test_d4_label_corruption_result_has_no_feature_field() -> None:
-    """LabelCorruptionResult carries no feature matrix (D4, structural)."""
+def test_label_corruption_result_has_no_feature_field() -> None:
+    """LabelCorruptionResult carries no feature matrix."""
     assert "features" not in LabelCorruptionResult.model_fields
     assert "feature_matrix" not in LabelCorruptionResult.model_fields
 
 
-def test_d4_only_targets_differ_record_ids_unchanged() -> None:
-    """After corruption, record_ids are byte-identical to the source (D4)."""
+def test_only_targets_differ_record_ids_unchanged() -> None:
+    """After corruption, record_ids are byte-identical to the source."""
     result = apply_label_corruption(source=_FIXED_SOURCE, spec=_FIXED_SPEC)
     assert result.record_ids == _FIXED_SOURCE.record_ids  # exact order and content
 
 
 # ---------------------------------------------------------------------------
-# D5 — mutation map matches exactly the mutated records
+# Mutation map matches exactly the mutated records
 # ---------------------------------------------------------------------------
 
 
-def test_d5_mutation_map_matches_exactly_changed_records() -> None:
-    """mutation_map contains exactly the records where labels changed (D5).
+def test_mutation_map_matches_exactly_changed_records() -> None:
+    """mutation_map contains exactly the records where labels changed.
 
     Independent oracle: compare source vs mutated targets record-by-record
     without using the production mutation_map logic.
@@ -266,15 +265,15 @@ def test_d5_mutation_map_matches_exactly_changed_records() -> None:
 
 @given(seed=st.integers(min_value=0, max_value=50_000))
 @settings(max_examples=40)
-def test_d5_hypothesis_mutation_map_count_matches_provenance(seed: int) -> None:
-    """mutation_map.count always equals provenance.mutation_count (D5)."""
+def test_hypothesis_mutation_map_count_matches_provenance(seed: int) -> None:
+    """mutation_map.count always equals provenance.mutation_count."""
     spec = _make_spec(flip_rate=0.3, seed=seed)
     result = apply_label_corruption(source=_FIXED_SOURCE, spec=spec)
     assert result.mutation_map.count == result.provenance.mutation_count
 
 
-def test_d5_mutation_count_oracle_matches_decimal_rule() -> None:
-    """mutation_count uses decimal round-half-up, not Python float round (D5).
+def test_mutation_count_oracle_matches_decimal_rule() -> None:
+    """mutation_count uses decimal round-half-up, not Python float round.
 
     Independent oracle: recompute with decimal arithmetic directly.
     """
@@ -299,12 +298,12 @@ def test_d5_mutation_count_oracle_matches_decimal_rule() -> None:
 
 
 # ---------------------------------------------------------------------------
-# D6 — reported count/hash/rate validated by model validators
+# Model validators recompute reported counts, hashes, and rates
 # ---------------------------------------------------------------------------
 
 
-def test_d6_forged_mutation_count_rejected_by_validator() -> None:
-    """A mutation_count that doesn't follow the declared rate is rejected (D6)."""
+def test_forged_mutation_count_rejected_by_validator() -> None:
+    """A mutation_count that does not follow the declared rate is rejected."""
     result = apply_label_corruption(source=_FIXED_SOURCE, spec=_FIXED_SPEC)
     prov = result.provenance.model_dump(warnings=False)
     prov["mutation_count"] = prov["mutation_count"] + 1  # wrong count
@@ -312,8 +311,8 @@ def test_d6_forged_mutation_count_rejected_by_validator() -> None:
         LabelCorruptionProvenance.model_validate(prov)
 
 
-def test_d6_forged_achieved_flip_rate_rejected_by_validator() -> None:
-    """An achieved_flip_rate not derived from counts is rejected (D6)."""
+def test_forged_achieved_flip_rate_rejected_by_validator() -> None:
+    """An achieved_flip_rate not derived from counts is rejected."""
     result = apply_label_corruption(source=_FIXED_SOURCE, spec=_FIXED_SPEC)
     prov = result.provenance.model_dump(warnings=False)
     prov["achieved_flip_rate"] = 0.999  # not derived from mutation_count / record_count
@@ -321,8 +320,8 @@ def test_d6_forged_achieved_flip_rate_rejected_by_validator() -> None:
         LabelCorruptionProvenance.model_validate(prov)
 
 
-def test_d6_forged_target_quality_audit_rate_rejected() -> None:
-    """disagreement_rate not derived from counts is rejected by TargetQualityAudit (D6)."""
+def test_forged_target_quality_audit_rate_rejected() -> None:
+    """TargetQualityAudit rejects a disagreement rate not derived from counts."""
     lower, upper = wilson_interval(successes=3, trials=10)
     with pytest.raises(ValidationError, match="disagreement_rate"):
         TargetQualityAudit(
@@ -338,12 +337,12 @@ def test_d6_forged_target_quality_audit_rate_rejected() -> None:
 
 
 # ---------------------------------------------------------------------------
-# D7 — zero flip_rate (no-op) is rejected by spec validator
+# A zero flip rate is rejected as a no-op
 # ---------------------------------------------------------------------------
 
 
-def test_d7_zero_flip_rate_rejected_by_spec_validator() -> None:
-    """LabelCorruptionSpec rejects flip_rate=0.0 as a no-op (D7)."""
+def test_zero_flip_rate_rejected_by_spec_validator() -> None:
+    """LabelCorruptionSpec rejects flip_rate=0.0 as a no-op."""
     with pytest.raises(ValidationError, match="positive flip rate"):
         LabelCorruptionSpec(
             parameters=LabelNoiseParameters(
@@ -357,20 +356,12 @@ def test_d7_zero_flip_rate_rejected_by_spec_validator() -> None:
 
 
 # ---------------------------------------------------------------------------
-# D8 — cross-family source/artifact/spec binding
-# DEFERRED — awaiting Bao interface for BenchmarkFamilySplitManifest binding.
-# The family-level cross-binding requires canonical.FamilyCensus which is not
-# yet exposed in a testable form separate from the full pipeline.
+# Model-copy and model-construct forgeries fail revalidation
 # ---------------------------------------------------------------------------
 
 
-# ---------------------------------------------------------------------------
-# D9 — model_copy / model_construct forge fails at re-validation
-# ---------------------------------------------------------------------------
-
-
-def test_d9_model_copy_forge_of_mutation_count_fails_revalidation() -> None:
-    """A forged mutation_count via model_copy fails at model_validate (D9).
+def test_model_copy_forge_of_mutation_count_fails_revalidation() -> None:
+    """A forged mutation_count via model_copy fails at model_validate.
 
     model_copy skips validators; the model_validate call re-runs them.
     """
@@ -382,8 +373,8 @@ def test_d9_model_copy_forge_of_mutation_count_fails_revalidation() -> None:
         LabelCorruptionProvenance.model_validate(forged_prov.model_dump(warnings=False))
 
 
-def test_d9_model_construct_forge_of_targets_sha256_fails_revalidation() -> None:
-    """A forged source_targets_sha256 == mutated_targets_sha256 fails (D9).
+def test_model_construct_forge_of_targets_sha256_fails_revalidation() -> None:
+    """A forged source_targets_sha256 equal to mutated_targets_sha256 fails.
 
     LabelCorruptionProvenance requires source_targets != mutated_targets.
     model_construct skips validators; model_validate re-runs them.
@@ -398,7 +389,7 @@ def test_d9_model_construct_forge_of_targets_sha256_fails_revalidation() -> None
 
 
 # ---------------------------------------------------------------------------
-# D10 — malformed label/rate and non-finite input fail closed
+# Malformed labels, rates, and non-finite inputs fail closed
 # ---------------------------------------------------------------------------
 
 
@@ -410,8 +401,8 @@ def test_d9_model_construct_forge_of_targets_sha256_fails_revalidation() -> None
         ("label 99", 99),
     ],
 )
-def test_d10_non_binary_target_rejected(description: str, bad_label: int) -> None:
-    """LabelNoiseSource rejects non-binary target labels (D10)."""
+def test_non_binary_target_rejected(description: str, bad_label: int) -> None:
+    """LabelNoiseSource rejects non-binary target labels."""
     with pytest.raises(ValidationError, match="binary"):
         LabelNoiseSource(
             schema_version=LABEL_SOURCE_SCHEMA_VERSION,
@@ -424,8 +415,8 @@ def test_d10_non_binary_target_rejected(description: str, bad_label: int) -> Non
         )
 
 
-def test_d10_empty_record_id_rejected() -> None:
-    """LabelNoiseSource rejects empty/blank record IDs (D10)."""
+def test_empty_record_id_rejected() -> None:
+    """LabelNoiseSource rejects empty or blank record IDs."""
     with pytest.raises(ValidationError, match="blank"):
         LabelNoiseSource(
             schema_version=LABEL_SOURCE_SCHEMA_VERSION,
@@ -438,8 +429,8 @@ def test_d10_empty_record_id_rejected() -> None:
         )
 
 
-def test_d10_duplicate_record_id_rejected() -> None:
-    """LabelNoiseSource rejects duplicate record IDs (D10)."""
+def test_duplicate_record_id_rejected() -> None:
+    """LabelNoiseSource rejects duplicate record IDs."""
     with pytest.raises(ValidationError, match="unique"):
         LabelNoiseSource(
             schema_version=LABEL_SOURCE_SCHEMA_VERSION,
@@ -460,8 +451,8 @@ def test_d10_duplicate_record_id_rejected() -> None:
         ("negative inf", float("-inf")),
     ],
 )
-def test_d10_non_finite_flip_rate_rejected(description: str, bad_rate: float) -> None:
-    """LabelNoiseParameters rejects non-finite flip_rate (D10)."""
+def test_non_finite_flip_rate_rejected(description: str, bad_rate: float) -> None:
+    """LabelNoiseParameters rejects non-finite flip rates."""
     with pytest.raises(ValidationError):
         LabelNoiseParameters(
             flip_rate=bad_rate,
@@ -477,8 +468,8 @@ def test_d10_non_finite_flip_rate_rejected(description: str, bad_rate: float) ->
         st.floats(min_value=-1e6, max_value=-0.0001, allow_nan=False, allow_infinity=False),
     )
 )
-def test_d10_out_of_range_flip_rate_rejected(bad_rate: float) -> None:
-    """flip_rate outside [0, 0.5] is rejected by LabelNoiseParameters (D10)."""
+def test_out_of_range_flip_rate_rejected(bad_rate: float) -> None:
+    """LabelNoiseParameters rejects a flip rate outside its valid interval."""
     with pytest.raises(ValidationError):
         LabelNoiseParameters(
             flip_rate=bad_rate,
@@ -488,8 +479,8 @@ def test_d10_out_of_range_flip_rate_rejected(bad_rate: float) -> None:
         )
 
 
-def test_d10_mutation_map_with_duplicate_entry_rejected() -> None:
-    """MutationMap rejects duplicate record_id entries (D10)."""
+def test_mutation_map_with_duplicate_entry_rejected() -> None:
+    """MutationMap rejects duplicate record_id entries."""
     entry = MutationEntry(record_id="rec-001", original_label=0, mutated_label=1)
     with pytest.raises(ValidationError, match="mutated at most once"):
         MutationMap(
@@ -498,31 +489,31 @@ def test_d10_mutation_map_with_duplicate_entry_rejected() -> None:
         )
 
 
-def test_d10_mutation_entry_no_actual_change_rejected() -> None:
-    """MutationEntry with original == mutated is rejected (D10)."""
+def test_mutation_entry_no_actual_change_rejected() -> None:
+    """MutationEntry rejects an entry with no actual label change."""
     with pytest.raises(ValidationError, match="actual change"):
         MutationEntry(record_id="rec-001", original_label=0, mutated_label=0)
 
 
 # ---------------------------------------------------------------------------
-# D11 — output does not self-declare outcome/eligibility/causal conclusion
+# Outputs do not self-declare outcomes or causal conclusions
 # ---------------------------------------------------------------------------
 
 
-def test_d11_label_corruption_result_has_no_outcome_fields() -> None:
-    """LabelCorruptionResult schema has no self-declared outcome/eligibility fields (D11)."""
+def test_label_corruption_result_has_no_outcome_fields() -> None:
+    """LabelCorruptionResult has no self-declared outcome fields."""
     assert not (set(LabelCorruptionResult.model_fields) & _FORBIDDEN_OUTCOME_FIELDS), (
         f"Forbidden fields found: {set(LabelCorruptionResult.model_fields) & _FORBIDDEN_OUTCOME_FIELDS}"
     )
 
 
-def test_d11_label_corruption_provenance_has_no_outcome_fields() -> None:
-    """LabelCorruptionProvenance schema has no self-declared outcome/eligibility fields (D11)."""
+def test_label_corruption_provenance_has_no_outcome_fields() -> None:
+    """LabelCorruptionProvenance has no self-declared outcome fields."""
     assert not (set(LabelCorruptionProvenance.model_fields) & _FORBIDDEN_OUTCOME_FIELDS)
 
 
-def test_d11_target_quality_audit_has_no_evaluator_vocabulary_fields() -> None:
-    """TargetQualityAudit field names do not include evaluator-facing vocabulary (D11).
+def test_target_quality_audit_has_no_evaluator_vocabulary_fields() -> None:
+    """TargetQualityAudit field names exclude evaluator-facing vocabulary.
 
     The boundary is structural: a model with no 'seed', 'flip', 'mutation',
     'label_noise' etc. fields cannot carry those values to a diagnoser.
@@ -534,8 +525,8 @@ def test_d11_target_quality_audit_has_no_evaluator_vocabulary_fields() -> None:
     )
 
 
-def test_d11_diagnosis_facing_audit_contains_no_raw_record_ids() -> None:
-    """Diagnosis-facing TargetQualityAudit contains no raw record IDs (D11).
+def test_diagnosis_facing_audit_contains_no_raw_record_ids() -> None:
+    """Diagnosis-facing TargetQualityAudit contains no raw record IDs.
 
     LabelCorruptionResult (evaluator-only) intentionally stores raw IDs.
     The diagnosis boundary is enforced by type: TargetQualityAudit contains
@@ -554,10 +545,10 @@ def test_d11_diagnosis_facing_audit_contains_no_raw_record_ids() -> None:
 
 
 # ---------------------------------------------------------------------------
-# D12 — deterministic result does not depend on PYTHONHASHSEED
+# Deterministic results do not depend on the interpreter hash seed
 # ---------------------------------------------------------------------------
 
-_D12_SCRIPT = "\n".join([
+_HASH_SEED_SCRIPT = "\n".join([
     "import json",
     "from aletheia_lab.benchmark.p2.label_noise import (",
     "    LabelNoiseSource, LabelCorruptionSpec, apply_label_corruption,",
@@ -588,8 +579,8 @@ _D12_SCRIPT = "\n".join([
 ])
 
 
-def test_d12_pythonhashseed_invariance() -> None:
-    """Artifact and semantic SHA are identical for PYTHONHASHSEED=1 and 999 (D12).
+def test_pythonhashseed_invariance() -> None:
+    """Artifact and semantic SHA are identical across interpreter hash seeds.
 
     Subprocess uses sys.executable — not hard-coded python or python3.
     """
@@ -598,7 +589,7 @@ def test_d12_pythonhashseed_invariance() -> None:
         env = os.environ.copy()
         env["PYTHONHASHSEED"] = seed
         result = subprocess.run(
-            [sys.executable, "-c", _D12_SCRIPT],
+            [sys.executable, "-c", _HASH_SEED_SCRIPT],
             capture_output=True,
             text=True,
             env=env,

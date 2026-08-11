@@ -70,7 +70,8 @@ def _download_to_temp(url: str, dest_dir: Path) -> Path:
     fd, tmp_name = tempfile.mkstemp(dir=dest_dir, suffix=".part")
     tmp = Path(tmp_name)
     try:
-        with os.fdopen(fd, "wb") as out, urllib.request.urlopen(  # nosec B310 — scheme validated above; only http/https are permitted
+        # The scheme allowlist above is the compensating control for Bandit B310.
+        with os.fdopen(fd, "wb") as out, urllib.request.urlopen(  # nosec B310
             url, timeout=_TIMEOUT
         ) as resp:
             for chunk in iter(lambda: resp.read(_CHUNK), b""):

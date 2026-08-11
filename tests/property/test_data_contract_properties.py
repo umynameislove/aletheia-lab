@@ -1,6 +1,6 @@
-"""Property tests — Group B: manifest, path and immutable artifact.
+"""Property tests for manifests, paths, and immutable artifacts.
 
-Covers §2.3 properties 1–14:
+Covered invariants:
   1.  Record inventory unique and complete
   2.  Row shuffle does not change identity (order-insensitive contract)
   3.  Add / remove / replace one member changes membership identity
@@ -27,7 +27,7 @@ import sys
 from pathlib import Path
 
 import pytest
-from hypothesis import assume, example, given
+from hypothesis import example, given
 from hypothesis import strategies as st
 from pydantic import ValidationError
 
@@ -46,8 +46,6 @@ from aletheia_lab.data.manifest import (
 # Constants
 # ---------------------------------------------------------------------------
 
-_RECORD_ID_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
-
 # Minimal reusable column schema for tests
 _COLUMNS_2: tuple[DatasetColumn, ...] = (
     DatasetColumn(name="cid", logical_type="string", role="identifier", nullable=False),
@@ -56,7 +54,7 @@ _COLUMNS_2: tuple[DatasetColumn, ...] = (
 
 # ---------------------------------------------------------------------------
 # Independent oracle
-# §2.3: expected counts must be computed independently,
+# Expected counts are computed independently,
 # not reusing production measurement functions.
 # ---------------------------------------------------------------------------
 
@@ -142,30 +140,31 @@ def _unique_subdir(record_ids: list[str]) -> str:
 @st.composite
 def valid_record_ids(draw, *, min_size: int = 1, max_size: int = 8):  # type: ignore[no-untyped-def]
     """Unique list of valid ASCII record IDs for property tests."""
-    return draw(
+    numeric_ids = draw(
         st.lists(
-            st.text(alphabet=_RECORD_ID_CHARS, min_size=1, max_size=32),
+            st.integers(min_value=0, max_value=1_000_000_000),
             min_size=min_size,
             max_size=max_size,
             unique=True,
         )
     )
+    return [f"record-{numeric_id}" for numeric_id in numeric_ids]
 
 
 # ---------------------------------------------------------------------------
-# B1 — record inventory unique and complete
+# Record inventory is unique and complete
 # ---------------------------------------------------------------------------
 
 
 @given(record_ids=valid_record_ids(min_size=1, max_size=8))
 @example(record_ids=["bob", "alice"])  # reversed alphabetical — sort boundary
 @example(record_ids=["z"])             # single-record boundary
-def test_b1_record_inventory_unique_and_complete(record_ids: list[str]) -> None:
-    """record_inventory produces a sorted, unique, complete hash tuple (B1).
+def test_record_inventory_unique_and_complete(record_ids: list[str]) -> None:
+    """record_inventory produces a sorted, unique, complete hash tuple.
 
     Expected hash values verified against an independent oracle built from
     json.dumps + hashlib without calling record_id_sha256 or record_inventory
-    (§2.3 independent-count requirement).
+    without calling a production counting helper.
     """
     inventory = record_inventory(record_ids)
 
@@ -184,15 +183,15 @@ def test_b1_record_inventory_unique_and_complete(record_ids: list[str]) -> None:
 
 
 # ---------------------------------------------------------------------------
-# B2 — row shuffle does not change inventory (metamorphic property)
+# Row shuffle does not change inventory
 # ---------------------------------------------------------------------------
 
 
 @given(record_ids=valid_record_ids(min_size=2, max_size=8))
 @example(record_ids=["bob", "alice"])
 @example(record_ids=["z", "a", "m", "b"])
-def test_b2_row_shuffle_does_not_change_inventory(record_ids: list[str]) -> None:
-    """Shuffling input order does not change inventory or membership SHA-256 (B2).
+def test_row_shuffle_does_not_change_inventory(record_ids: list[str]) -> None:
+    """Shuffling input order does not change inventory or membership SHA-256.
 
     Metamorphic property: two orderings of the same record set are equivalent.
     """
@@ -206,18 +205,15 @@ def test_b2_row_shuffle_does_not_change_inventory(record_ids: list[str]) -> None
 
 
 # ---------------------------------------------------------------------------
-# B3 — add / remove / replace one member changes membership
+# Adding, removing, or replacing a member changes membership
 # ---------------------------------------------------------------------------
 
 
-@given(
-    record_ids=valid_record_ids(min_size=2, max_size=6),
-    new_id=st.text(alphabet=_RECORD_ID_CHARS, min_size=1, max_size=32),
-)
-@example(record_ids=["alice", "bob"], new_id="charlie")
-def test_b3_add_member_changes_membership(record_ids: list[str], new_id: str) -> None:
-    """Adding one new record changes the membership SHA-256 (B3, add)."""
-    assume(new_id not in record_ids)
+@given(all_ids=valid_record_ids(min_size=3, max_size=7))
+@example(all_ids=["alice", "bob", "charlie"])
+def test_add_member_changes_membership(all_ids: list[str]) -> None:
+    """Adding one new record changes the membership SHA-256."""
+    record_ids, new_id = all_ids[:-1], all_ids[-1]
     original = record_membership_sha256(record_inventory(record_ids))
     extended = record_membership_sha256(record_inventory([*record_ids, new_id]))
     assert original != extended
@@ -225,23 +221,18 @@ def test_b3_add_member_changes_membership(record_ids: list[str], new_id: str) ->
 
 @given(record_ids=valid_record_ids(min_size=2, max_size=6))
 @example(record_ids=["alice", "bob"])
-def test_b3_remove_member_changes_membership(record_ids: list[str]) -> None:
-    """Removing one record changes the membership SHA-256 (B3, remove)."""
+def test_remove_member_changes_membership(record_ids: list[str]) -> None:
+    """Removing one record changes the membership SHA-256."""
     original = record_membership_sha256(record_inventory(record_ids))
     reduced = record_membership_sha256(record_inventory(record_ids[1:]))
     assert original != reduced
 
 
-@given(
-    record_ids=valid_record_ids(min_size=2, max_size=6),
-    replacement=st.text(alphabet=_RECORD_ID_CHARS, min_size=1, max_size=32),
-)
-@example(record_ids=["alice", "bob"], replacement="charlie")
-def test_b3_replace_member_changes_membership(
-    record_ids: list[str], replacement: str
-) -> None:
-    """Replacing one record with a different one changes membership SHA-256 (B3, replace)."""
-    assume(replacement not in record_ids)
+@given(all_ids=valid_record_ids(min_size=3, max_size=7))
+@example(all_ids=["alice", "bob", "charlie"])
+def test_replace_member_changes_membership(all_ids: list[str]) -> None:
+    """Replacing one record with a different one changes membership SHA-256."""
+    record_ids, replacement = all_ids[:-1], all_ids[-1]
     original = record_membership_sha256(record_inventory(record_ids))
     replaced = record_membership_sha256(
         record_inventory([replacement, *record_ids[1:]])
@@ -250,12 +241,12 @@ def test_b3_replace_member_changes_membership(
 
 
 # ---------------------------------------------------------------------------
-# B4 — wrong dataset / split / census bind rejected at validator
+# Incorrect source bindings are rejected
 # ---------------------------------------------------------------------------
 
 
-def test_b4_wrong_membership_sha256_rejected_at_construction() -> None:
-    """A forged record_membership_sha256 fails the cross-field validator (B4).
+def test_wrong_membership_sha256_rejected_at_construction() -> None:
+    """A forged record_membership_sha256 fails the cross-field validator.
 
     The model validator recomputes the membership hash from record_id_hashes
     and rejects any mismatch — preventing wrong dataset/census binds.
@@ -280,8 +271,8 @@ def test_b4_wrong_membership_sha256_rejected_at_construction() -> None:
         )
 
 
-def test_b4_wrong_n_rows_rejected_at_construction() -> None:
-    """Declared n_rows not matching actual inventory size is rejected (B4)."""
+def test_wrong_n_rows_rejected_at_construction() -> None:
+    """Declared n_rows not matching actual inventory size is rejected."""
     inventory = record_inventory(["rec-001", "rec-002"])
     membership = record_membership_sha256(inventory)
     with pytest.raises(ValidationError, match="n_rows"):
@@ -304,12 +295,12 @@ def test_b4_wrong_n_rows_rejected_at_construction() -> None:
 
 
 # ---------------------------------------------------------------------------
-# B5 — model_copy / model_construct forge fails at re-validation
+# Model-copy and model-construct forgeries fail revalidation
 # ---------------------------------------------------------------------------
 
 
-def test_b5_model_copy_forge_rejected_by_revalidation() -> None:
-    """A forged field introduced via model_copy is caught at model_validate (B5).
+def test_model_copy_forge_rejected_by_revalidation() -> None:
+    """A forged field introduced via model_copy is caught at model_validate.
 
     model_copy bypasses field validators; model_validate re-runs all of them.
     """
@@ -319,8 +310,8 @@ def test_b5_model_copy_forge_rejected_by_revalidation() -> None:
         DatasetSnapshotManifest.model_validate(forged.model_dump(warnings=False))
 
 
-def test_b5_model_construct_forge_rejected_by_revalidation() -> None:
-    """A forged field via model_construct is caught at model_validate (B5).
+def test_model_construct_forge_rejected_by_revalidation() -> None:
+    """A forged field via model_construct is caught at model_validate.
 
     model_construct skips __init__ validators; model_validate enforces them.
     """
@@ -333,12 +324,12 @@ def test_b5_model_construct_forge_rejected_by_revalidation() -> None:
 
 
 # ---------------------------------------------------------------------------
-# B6 — unknown field top-level and nested rejected
+# Unknown fields are rejected at every depth
 # ---------------------------------------------------------------------------
 
 
-def test_b6_unknown_top_level_field_rejected() -> None:
-    """DatasetSnapshotManifest rejects any unknown extra top-level field (B6)."""
+def test_unknown_top_level_field_rejected() -> None:
+    """DatasetSnapshotManifest rejects any unknown extra top-level field."""
     inventory = record_inventory(["rec-001"])
     with pytest.raises(ValidationError, match="Extra inputs"):
         DatasetSnapshotManifest(
@@ -360,8 +351,8 @@ def test_b6_unknown_top_level_field_rejected() -> None:
         )
 
 
-def test_b6_unknown_nested_field_rejected() -> None:
-    """DatasetColumn rejects unknown nested fields (B6, nested)."""
+def test_unknown_nested_field_rejected() -> None:
+    """DatasetColumn rejects unknown nested fields."""
     with pytest.raises(ValidationError, match="Extra inputs"):
         DatasetColumn(
             name="cid",
@@ -373,7 +364,7 @@ def test_b6_unknown_nested_field_rejected() -> None:
 
 
 # ---------------------------------------------------------------------------
-# B7 — empty / blank / duplicate record ID rejected
+# Invalid record identifiers are rejected
 # ---------------------------------------------------------------------------
 
 
@@ -388,14 +379,14 @@ def test_b6_unknown_nested_field_rejected() -> None:
         ("empty in non-empty list", ["alice", ""]),
     ],
 )
-def test_b7_bad_record_ids_rejected(description: str, bad_ids: list[str]) -> None:
-    """Empty, blank, space-padded, and duplicate record IDs are rejected (B7)."""
+def test_bad_record_ids_rejected(description: str, bad_ids: list[str]) -> None:
+    """Empty, blank, space-padded, and duplicate record IDs are rejected."""
     with pytest.raises(ValueError):
         record_inventory(bad_ids)
 
 
 # ---------------------------------------------------------------------------
-# B8 — path traversal rejected
+# Path traversal is rejected
 # ---------------------------------------------------------------------------
 
 
@@ -411,11 +402,11 @@ def test_b7_bad_record_ids_rejected(description: str, bad_ids: list[str]) -> Non
         ("current dir dot", "./data/file.json"),
     ],
 )
-def test_b8_path_traversal_rejected_at_manifest_construction(
+def test_path_traversal_rejected_at_manifest_construction(
     description: str, bad_path: str
 ) -> None:
     """Absolute, traversing and mixed-separator paths rejected at manifest
-    construction via the _portable_relative_path field validator (B8).
+    construction via the _portable_relative_path field validator.
     """
     inventory = record_inventory(["rec-001"])
     membership = record_membership_sha256(inventory)
@@ -438,22 +429,22 @@ def test_b8_path_traversal_rejected_at_manifest_construction(
         )
 
 
-def test_b8_traversal_rejected_by_write_manifest(tmp_path: Path) -> None:
-    """write_manifest rejects traversal relative_path at write time (B8)."""
+def test_traversal_rejected_by_write_manifest(tmp_path: Path) -> None:
+    """write_manifest rejects traversal relative_path at write time."""
     manifest = _minimal_manifest(["rec-001"])
     with pytest.raises(ValueError):
         write_manifest(manifest, output_root=tmp_path, relative_path="../escape.json")
 
 
 # ---------------------------------------------------------------------------
-# B9 — immutable writer is idempotent for same bytes
+# Immutable writer is idempotent for identical bytes
 # ---------------------------------------------------------------------------
 
 
 @given(record_ids=valid_record_ids(min_size=1, max_size=5))
 @example(record_ids=["rec-001", "rec-002"])
-def test_b9_write_manifest_idempotent(record_ids: list[str]) -> None:
-    """Writing the same manifest twice succeeds and returns the same Path (B9).
+def test_write_manifest_idempotent(record_ids: list[str]) -> None:
+    """Writing the same manifest twice succeeds and returns the same Path.
 
     Uses tempfile.TemporaryDirectory instead of the tmp_path fixture so that
     each generated input gets a fresh isolated directory — avoids the
@@ -471,14 +462,14 @@ def test_b9_write_manifest_idempotent(record_ids: list[str]) -> None:
 
 
 # ---------------------------------------------------------------------------
-# B10 — immutable writer refuses to overwrite different content
+# Immutable writer refuses different content
 # ---------------------------------------------------------------------------
 
 
-def test_b10_write_manifest_refuses_overwrite_different_content(
+def test_write_manifest_refuses_overwrite_different_content(
     tmp_path: Path,
 ) -> None:
-    """write_manifest raises FileExistsError when destination has different bytes (B10)."""
+    """write_manifest raises FileExistsError when destination has different bytes."""
     manifest1 = _minimal_manifest(["rec-001"])
     manifest2 = _minimal_manifest(["rec-002"])  # different record → different bytes
     write_manifest(manifest1, output_root=tmp_path, relative_path="m.json")
@@ -487,12 +478,12 @@ def test_b10_write_manifest_refuses_overwrite_different_content(
 
 
 # ---------------------------------------------------------------------------
-# B11 — write failure leaves no partial staging artifact
+# Write failure leaves no staging artifact
 # ---------------------------------------------------------------------------
 
 
-def test_b11_write_failure_no_staging_artifact(tmp_path: Path) -> None:
-    """A failed write_manifest call removes any temporary staging file (B11).
+def test_write_failure_no_staging_artifact(tmp_path: Path) -> None:
+    """A failed write_manifest call removes any temporary staging file.
 
     Production implementation uses try/finally with stage.unlink(missing_ok=True)
     to prevent partial artifacts surviving a failed write.
@@ -509,14 +500,14 @@ def test_b11_write_failure_no_staging_artifact(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# B12 — symlink escape rejected (uses make_symlink fixture)
+# Symlink escapes are rejected
 # ---------------------------------------------------------------------------
 
 
-def test_b12_symlinked_output_root_rejected(
+def test_symlinked_output_root_rejected(
     tmp_path: Path, make_symlink: object
 ) -> None:
-    """write_manifest rejects a symlinked output root directory (B12).
+    """write_manifest rejects a symlinked output root directory.
 
     Uses the make_symlink fixture — does not call symlink_to directly.
     """
@@ -529,10 +520,10 @@ def test_b12_symlinked_output_root_rejected(
         write_manifest(manifest, output_root=link_dir, relative_path="m.json")
 
 
-def test_b12_symlinked_parent_directory_rejected(
+def test_symlinked_parent_directory_rejected(
     tmp_path: Path, make_symlink: object
 ) -> None:
-    """write_manifest rejects a symlinked intermediate directory in the path (B12)."""
+    """write_manifest rejects a symlinked intermediate directory in the path."""
     real_dir = tmp_path / "real"
     real_dir.mkdir()
     link_subdir = tmp_path / "link"
@@ -547,12 +538,12 @@ def test_b12_symlinked_parent_directory_rejected(
 
 
 # ---------------------------------------------------------------------------
-# B13 — serialized artifact contains no raw customer ID or absolute local path
+# Serialized artifacts contain no raw customer identifiers or absolute paths
 # ---------------------------------------------------------------------------
 
 
-def test_b13_artifact_contains_no_raw_customer_ids() -> None:
-    """Serialized manifest artifact does not expose raw record IDs (B13).
+def test_artifact_contains_no_raw_customer_ids() -> None:
+    """Serialized manifest artifact does not expose raw record IDs.
 
     record_inventory stores only SHA-256 hashes.  Raw IDs here use uppercase
     letters outside [a-f] that cannot appear in any SHA-256 hex digest, so
@@ -571,9 +562,9 @@ def test_b13_artifact_contains_no_raw_customer_ids() -> None:
         )
 
 
-def test_b13_artifact_normalized_path_is_relative() -> None:
+def test_artifact_normalized_path_is_relative() -> None:
     """The stored normalized_relative_path is relative — no absolute machine-local
-    paths appear in the artifact (B13, path boundary).
+    paths appear in the artifact.
     """
     manifest = _minimal_manifest(["rec-001"])
     artifact_str = manifest_artifact_bytes(manifest).decode("utf-8")
@@ -584,12 +575,12 @@ def test_b13_artifact_normalized_path_is_relative() -> None:
 
 
 # ---------------------------------------------------------------------------
-# B14 — PYTHONHASHSEED invariance across processes
+# Hash-seed invariance across processes
 # ---------------------------------------------------------------------------
 
 # Subprocess script: uses installed package, no sys.path hacks.
 # sys.executable ensures no hard-coded 'python' or 'python3'.
-_B14_SCRIPT = "\n".join([
+_HASH_SEED_SCRIPT = "\n".join([
     "import json",
     "from aletheia_lab.data.manifest import (",
     "    DatasetColumn, DatasetSnapshotManifest,",
@@ -624,9 +615,9 @@ _B14_SCRIPT = "\n".join([
 ])
 
 
-def test_b14_pythonhashseed_invariance() -> None:
+def test_pythonhashseed_invariance() -> None:
     """Record inventory and manifest bytes are identical for PYTHONHASHSEED=1
-    and PYTHONHASHSEED=999 (B14).
+    and PYTHONHASHSEED=999.
 
     Subprocess uses sys.executable — not hard-coded python or python3.
     """
@@ -635,7 +626,7 @@ def test_b14_pythonhashseed_invariance() -> None:
         env = os.environ.copy()
         env["PYTHONHASHSEED"] = seed
         result = subprocess.run(
-            [sys.executable, "-c", _B14_SCRIPT],
+            [sys.executable, "-c", _HASH_SEED_SCRIPT],
             capture_output=True,
             text=True,
             env=env,
