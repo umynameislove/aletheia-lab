@@ -164,7 +164,11 @@ def context_id_for(*, case_family_id: str, evidence_condition: str) -> str:
 
 
 _FORBIDDEN_PROJECTION_KEYS: Final[tuple[str, ...]] = (
+    "admission",
+    "candidate_id",
+    "classification",
     "distractor",
+    "disposition",
     "evidence_condition",
     "expected_behavior",
     "expected_diagnosis_behavior",
@@ -173,6 +177,17 @@ _FORBIDDEN_PROJECTION_KEYS: Final[tuple[str, ...]] = (
     "ground_truth",
     "cause_label",
     "hidden_intervention",
+    "intervention_type",
+    "flip",
+    "mechanism",
+    "mapping",
+    "mutation",
+    "original_label",
+    "original_target",
+    "provenance",
+    "record_id",
+    "seed",
+    "target_feature",
     "fault_type",
     "intervention_parameters",
     "injection_parameters",
@@ -182,6 +197,13 @@ _FORBIDDEN_PROJECTION_KEYS: Final[tuple[str, ...]] = (
     "sufficiency",
 )
 
+_FORBIDDEN_PROJECTION_VALUE_PATTERN: Final[re.Pattern[str]] = re.compile(
+    r"(?:^|_)(?:full|noisy|missing_key|distractor|data_drift|label_noise|"
+    r"preprocessing_bug|training_target_label_corruption|"
+    r"inference_encoder_mapping_mismatch|expected_sufficient|"
+    r"expected_insufficient)(?:_|$)"
+)
+
 _FORBIDDEN_PROJECTION_VALUES: Final[frozenset[str]] = frozenset(
     {
         "full",
@@ -189,6 +211,11 @@ _FORBIDDEN_PROJECTION_VALUES: Final[frozenset[str]] = frozenset(
         "missing_key",
         "missing-key",
         "distractor",
+        "data_drift",
+        "label_noise",
+        "preprocessing_bug",
+        "training_target_label_corruption",
+        "inference_encoder_mapping_mismatch",
         "expected sufficient",
         "expected insufficient",
     }
@@ -217,7 +244,11 @@ def _assert_projection_is_diagnosis_safe(value: object, path: str = "$") -> None
         return
     if isinstance(value, str):
         folded_value = unicodedata.normalize("NFC", value).strip().casefold()
-        if folded_value in _FORBIDDEN_PROJECTION_VALUES or "distractor" in folded_value:
+        normalized_value = re.sub(r"[-\s]+", "_", folded_value)
+        if (
+            normalized_value in _FORBIDDEN_PROJECTION_VALUES
+            or _FORBIDDEN_PROJECTION_VALUE_PATTERN.search(normalized_value) is not None
+        ):
             raise ValueError(f"diagnosis projection leaks evaluator metadata at {path}")
 
 

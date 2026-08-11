@@ -22,8 +22,17 @@ import pytest
 from pydantic import BaseModel, ValidationError
 
 from aletheia_lab.baseline.schema import NEGATIVE_LABEL, POSITIVE_LABEL
-from aletheia_lab.benchmark.p2.contracts import CandidateSlot
-from aletheia_lab.benchmark.p2.identity import FamilyIdentity, LabelNoiseParameters
+from aletheia_lab.benchmark.p2.contracts import (
+    CandidateSlot,
+    ExecutedCandidate,
+    TechnicalDispositionEntry,
+)
+from aletheia_lab.benchmark.p2.identity import (
+    FamilyIdentity,
+    LabelNoiseParameters,
+    candidate_id_for,
+    proposed_family_sha256,
+)
 from aletheia_lab.benchmark.p2.label_controls import (
     CODE_TO_SEMANTIC,
     LABEL_REPAIR_SCHEMA_VERSION,
@@ -76,6 +85,11 @@ from aletheia_lab.benchmark.p2.label_noise import (
     MutationEntry,
     MutationMap,
     apply_label_corruption,
+)
+from aletheia_lab.benchmark.p2.mechanism_validation import (
+    LabelBenignControlInputs,
+    LabelRepairControlInputs,
+    validate_mechanism_candidate,
 )
 
 _HEX_F = "f" * 64
@@ -227,6 +241,23 @@ def _prediction_source(
     )
 
 
+def _execution(slot: CandidateSlot) -> ExecutedCandidate:
+    fingerprint = proposed_family_sha256(slot.identity)
+    return ExecutedCandidate(
+        candidate_id=candidate_id_for(
+            slot_id=slot.slot_id,
+            family_fingerprint=fingerprint,
+        ),
+        slot_id=slot.slot_id,
+        fault_type=slot.fault_type,
+        role=slot.role,
+        slot_kind=slot.slot_kind,
+        proposed_family_sha256=fingerprint,
+        dataset_sha256=slot.identity.dataset_sha256,
+        model_data_split_manifest_sha256=slot.identity.model_data_split_manifest_sha256,
+    )
+
+
 def apply_label_repair(
     *,
     source: LabelNoiseSource,
@@ -357,6 +388,32 @@ def test_repair_restores_the_trusted_clean_targets_exactly(
     clean_source: LabelNoiseSource, repaired: LabelRepairResult
 ) -> None:
     assert repaired.repaired_targets == clean_source.targets
+
+
+def test_unified_validator_binds_the_label_repair_control(
+    clean_source: LabelNoiseSource,
+    corrupted: LabelCorruptionResult,
+    corruption_spec: LabelCorruptionSpec,
+    repaired: LabelRepairResult,
+) -> None:
+    slot = _control_slot("repair")
+    execution = _execution(slot)
+    binding = validate_mechanism_candidate(
+        repaired,
+        slot=slot,
+        inputs=LabelRepairControlInputs(
+            source=clean_source,
+            corrupted=corrupted,
+            spec=corruption_spec,
+        ),
+        execution=execution,
+        disposition=TechnicalDispositionEntry(
+            candidate_id=execution.candidate_id,
+            disposition="technically_valid",
+        ),
+    )
+    assert binding.candidate_id == execution.candidate_id
+    assert binding.artifact_sha256 == repaired.artifact_sha256()
 
 
 def test_repair_restores_exactly_the_records_the_mutation_map_names(
@@ -904,6 +961,70 @@ def _evidence(
         reference_predictions=reference,
         roundtrip_predictions=tuple(roundtrip_predictions),
     )
+
+
+def test_unified_validator_binds_the_label_benign_control(
+    semantic_source: SemanticTargetSource,
+    serialization_spec: SerializationControlSpec,
+    roundtrip: SerializationRoundTripResult,
+) -> None:
+    slot = _control_slot("serialization")
+    execution = _execution(slot)
+    evidence = _evidence(roundtrip)
+    evaluation_source = _prediction_source(
+        record_ids=evidence.record_ids,
+        true_labels=evidence.true_labels,
+    )
+    binding = validate_mechanism_candidate(
+        roundtrip,
+        slot=slot,
+        inputs=LabelBenignControlInputs(
+            source=semantic_source,
+            spec=serialization_spec,
+            evaluation_source=evaluation_source,
+            prediction_evidence=evidence,
+        ),
+        execution=execution,
+        disposition=TechnicalDispositionEntry(
+            candidate_id=execution.candidate_id,
+            disposition="technically_valid",
+        ),
+    )
+    assert binding.fault_type == "label_noise"
+    assert binding.disposition.disposition == "technically_valid"
+    assert binding.supporting_evidence_sha256 is not None
+
+
+def test_unified_validator_cannot_promote_a_diverging_label_control(
+    semantic_source: SemanticTargetSource,
+    serialization_spec: SerializationControlSpec,
+    roundtrip: SerializationRoundTripResult,
+) -> None:
+    slot = _control_slot("serialization")
+    execution = _execution(slot)
+    evidence = _evidence(roundtrip, diverge=1)
+    evaluation_source = _prediction_source(
+        record_ids=evidence.record_ids,
+        true_labels=evidence.true_labels,
+    )
+    binding = validate_mechanism_candidate(
+        roundtrip,
+        slot=slot,
+        inputs=LabelBenignControlInputs(
+            source=semantic_source,
+            spec=serialization_spec,
+            evaluation_source=evaluation_source,
+            prediction_evidence=evidence,
+        ),
+        execution=execution,
+        disposition=TechnicalDispositionEntry(
+            candidate_id=execution.candidate_id,
+            disposition="technical_rejected",
+            rejection_reason="benign_equivalence_failure",
+        ),
+    )
+    assert binding.disposition.disposition == "technical_rejected"
+    assert binding.disposition.rejection_reason == "benign_equivalence_failure"
 
 
 def _source_for_roundtrip(result: SerializationRoundTripResult) -> SemanticTargetSource:
