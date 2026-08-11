@@ -14,6 +14,12 @@ Phase 1 identity, artifacts and hashes are untouched: Phase 2 uses its own
 namespace so the two generations can never be mistaken for one another.
 """
 
+from aletheia_lab.benchmark.p2.alpha_execution import (
+    AlphaRuntime,
+    execute_alpha_slot,
+    execute_primary_alpha,
+    prepare_alpha_runtime,
+)
 from aletheia_lab.benchmark.p2.alpha_lifecycle import (
     AlphaCandidateResult,
     AlphaLifecycleError,
@@ -400,6 +406,7 @@ __all__ = [
     "ALPHA_PREPROCESSING_TRANSFORM",
     "AlphaCandidateResult",
     "AlphaLifecycleError",
+    "AlphaRuntime",
     "AlphaSystemBinding",
     "ALPHA_PREPROCESSING_MODE",
     "ALPHA_RANK_COUNT",
@@ -698,6 +705,8 @@ __all__ = [
     "family_id_for",
     "assemble_alpha_artifacts",
     "execution_for_slot",
+    "execute_alpha_slot",
+    "execute_primary_alpha",
     "load_contract_store",
     "measure_drift_candidate",
     "measure_repair_control",
@@ -708,6 +717,7 @@ __all__ = [
     "normalize_text",
     "permutation_order",
     "performance_evidence_from",
+    "prepare_alpha_runtime",
     "proposed_family_sha256",
     "save_contract_store",
     "record_technical_rejection",

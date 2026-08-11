@@ -36,8 +36,8 @@ Sha256 = Annotated[str, Field(pattern=SHA256_PATTERN)]
 class AlphaSystemBinding(BaseModel):
     """Frozen dataset, split and system inputs shared by every alpha slot.
 
-    The empirical training distribution is an input because the benign drift
-    control must target the actual frozen training distribution.  It is never
+    The empirical clean-evaluation distribution is an input because the benign
+    drift control must target the actual frozen source it resamples. It is never
     inferred from an outcome or replaced with a convenient synthetic value.
     """
 

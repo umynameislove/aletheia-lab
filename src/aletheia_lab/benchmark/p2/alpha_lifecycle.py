@@ -35,6 +35,7 @@ from aletheia_lab.benchmark.p2.contracts import (
     TechnicalRejectionReason,
     ValidExclusionReason,
 )
+from aletheia_lab.benchmark.p2.data_drift import DriftMetricComparison
 from aletheia_lab.benchmark.p2.evidence_projection import (
     MechanismDiagnosisEvidence,
     build_diagnosis_contexts,
@@ -64,6 +65,8 @@ _DUPLICATE_EXCLUSIONS = {
     "effective_intervention_duplicate",
 }
 
+AlphaMetricComparison = MetricComparison | DriftMetricComparison
+
 
 class AlphaLifecycleError(ContractViolation):
     """Raised when measured candidates cannot form one honest alpha run."""
@@ -82,7 +85,7 @@ class EvaluatedAlphaCandidate(_StrictFrozenModel):
 
     kind: Literal["evaluated"] = "evaluated"
     candidate: ValidatedMechanismCandidate
-    comparison: MetricComparison
+    comparison: AlphaMetricComparison
     diagnosis_evidence: MechanismDiagnosisEvidence | None = None
     equivalence_checks_passed: bool | None = None
     exclusion_reason: ValidExclusionReason | None = None
@@ -91,7 +94,7 @@ class EvaluatedAlphaCandidate(_StrictFrozenModel):
     @model_validator(mode="after")
     def _input_boundaries_hold(self) -> EvaluatedAlphaCandidate:
         candidate = ValidatedMechanismCandidate.model_validate(self.candidate.model_dump())
-        comparison = MetricComparison.model_validate(self.comparison.model_dump())
+        comparison = type(self.comparison).model_validate(self.comparison.model_dump())
         if candidate.disposition.disposition != "technically_valid":
             raise ValueError("an evaluated alpha candidate must be technically valid")
         if self.exclusion_reason in _DUPLICATE_EXCLUSIONS | {"control_direction_violation"}:
@@ -237,7 +240,7 @@ def _validate_execution_set(
 
 def _classification(result: EvaluatedAlphaCandidate) -> ClassificationRecord:
     execution = result.candidate.execution
-    comparison = MetricComparison.model_validate(result.comparison.model_dump())
+    comparison = type(result.comparison).model_validate(result.comparison.model_dump())
     outcome = comparison.measured_primary_outcome
     family_class: str | None
     deviation: str | None = None

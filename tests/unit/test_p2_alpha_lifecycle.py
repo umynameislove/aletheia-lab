@@ -21,6 +21,7 @@ from aletheia_lab.benchmark.p2.binary_evaluation import (
 )
 from aletheia_lab.benchmark.p2.canonical import canonical_sha256
 from aletheia_lab.benchmark.p2.contracts import DuplicateAudit, DuplicateFinding
+from aletheia_lab.benchmark.p2.data_drift import DriftMetricComparison
 from aletheia_lab.benchmark.p2.evidence_projection import (
     CategoryShare,
     DataDriftDiagnosisEvidence,
@@ -108,6 +109,26 @@ def _comparison(outcome: str) -> MetricComparison:
     )
 
 
+def _drift_comparison(outcome: str) -> DriftMetricComparison:
+    comparison = _comparison(outcome)
+    return DriftMetricComparison(
+        schema_version="p2-drift-binary-metric-comparison/v1",
+        metric_protocol_version=comparison.metric_protocol_version,
+        primary_metric=comparison.primary_metric,
+        primary_threshold=comparison.primary_threshold,
+        reference=comparison.reference,
+        observed=comparison.observed,
+        accuracy_delta=comparison.accuracy_delta,
+        macro_f1_delta=comparison.macro_f1_delta,
+        minority_recall_delta=comparison.minority_recall_delta,
+        measured_primary_outcome=comparison.measured_primary_outcome,
+        reference_evaluation_source_sha256=_HEX["a"],
+        observed_evaluation_source_sha256=_HEX["d"],
+        reference_predictions_sha256=_HEX["b"],
+        observed_predictions_sha256=_HEX["c"],
+    )
+
+
 def _secondary() -> SecondaryComparison:
     return SecondaryComparison(
         reference_value=0.40,
@@ -117,7 +138,11 @@ def _secondary() -> SecondaryComparison:
     )
 
 
-def _evidence(fault_type: str, comparison: MetricComparison, outcome: str):  # type: ignore[no-untyped-def]
+def _evidence(
+    fault_type: str,
+    comparison: MetricComparison | DriftMetricComparison,
+    outcome: str,
+):  # type: ignore[no-untyped-def]
     performance = performance_evidence_from(comparison)
     secondary = _secondary() if outcome == "regression" else None
     if fault_type == "data_drift":
@@ -194,7 +219,9 @@ def _evaluated(slot, *, outcome: str | None = None):  # type: ignore[no-untyped-
             outcome = "improvement"
         else:
             outcome = "regression"
-    comparison = _comparison(outcome)
+    comparison = (
+        _drift_comparison(outcome) if slot.fault_type == "data_drift" else _comparison(outcome)
+    )
     candidate = ValidatedMechanismCandidate(
         candidate_id=execution.candidate_id,
         slot_id=slot.slot_id,
