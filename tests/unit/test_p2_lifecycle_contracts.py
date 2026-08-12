@@ -1659,3 +1659,383 @@ def test_ids_must_use_the_phase_two_namespace() -> None:
         TechnicalDispositionEntry(
             candidate_id=f"p1-family-{_HEX_A}", disposition="technically_valid"
         )
+
+
+# --------------------------------------------------------------------------- #
+# Fail-closed lifecycle branch coverage
+# --------------------------------------------------------------------------- #
+
+
+def _flow_without_candidate(bundle: _Bundle, candidate_id: str) -> dict[str, object]:
+    """Remove one candidate consistently so a later cross-artifact gate is isolated."""
+
+    executed = tuple(item for item in bundle.executed if item.candidate_id != candidate_id)
+    return {
+        "plan": bundle.plan,
+        "execution": CandidateExecution(
+            schema_version="p2-candidate-execution/1",
+            executed=executed,
+            inactive_reserve_slot_ids=bundle.execution.inactive_reserve_slot_ids,
+        ),
+        "disposition": TechnicalDisposition(
+            schema_version="p2-technical-disposition/1",
+            entries=tuple(
+                item for item in bundle.disposition.entries if item.candidate_id != candidate_id
+            ),
+        ),
+        "classifications": tuple(
+            item for item in bundle.classifications if item.candidate_id != candidate_id
+        ),
+        "admissions": tuple(item for item in bundle.admissions if item.candidate_id != candidate_id),
+        "census": FamilyCensus(
+            schema_version="p2-family-census/1",
+            entries=tuple(item for item in bundle.census.entries if item.candidate_id != candidate_id),
+        ),
+    }
+
+
+@pytest.mark.parametrize(
+    ("slot_id", "identity_update", "expected"),
+    [
+        ("M1-F1", {"intervention_type": "empirical_distribution_resampling_control"}, "categorical_distribution_shift"),
+        ("M1-B1", {"intervention_type": "categorical_distribution_shift"}, "empirical resampling"),
+        ("M2-F1", {"intervention_type": "training_target_label_repair"}, "intervention_type"),
+        ("M3-F1", {"intervention_type": "inference_encoder_mapping_repair"}, "intervention_type"),
+    ],
+)
+def test_frozen_slot_rejects_role_specific_intervention_substitution(
+    slot_id: str,
+    identity_update: dict[str, object],
+    expected: str,
+) -> None:
+    slot = _slot(slot_id)
+    forged = slot.model_copy(update={"identity": slot.identity.model_copy(update=identity_update)})
+    with pytest.raises(ContractViolation, match=expected):
+        validate_frozen_alpha_plan(
+            CandidatePlan(
+                schema_version="p2-candidate-plan/1",
+                primary_planned=15,
+                reserve_planned=9,
+                slots=tuple(forged if item.slot_id == slot_id else item for item in _build_plan().slots),
+            )
+        )
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "expected"),
+    [
+        ("fault_type", "label_noise", "changed fault_type"),
+        ("role", "designed_benign_control", "changed role"),
+        ("slot_kind", "reserve", "changed slot_kind"),
+    ],
+)
+def test_candidate_flow_rejects_execution_metadata_rebinding(
+    bundle: _Bundle,
+    field: str,
+    value: str,
+    expected: str,
+) -> None:
+    executed = list(bundle.executed)
+    executed[0] = executed[0].model_copy(update={field: value})
+    kwargs = bundle.flow_kwargs()
+    kwargs["execution"] = CandidateExecution(
+        schema_version="p2-candidate-execution/1",
+        executed=tuple(executed),
+        inactive_reserve_slot_ids=bundle.execution.inactive_reserve_slot_ids,
+    )
+    with pytest.raises(ContractViolation, match=expected):
+        validate_candidate_flow(**kwargs)  # type: ignore[arg-type]
+
+
+def test_candidate_flow_rejects_unknown_execution_slot(bundle: _Bundle) -> None:
+    executed = list(bundle.executed)
+    executed[0] = executed[0].model_copy(update={"slot_id": "M1-F9"})
+    kwargs = bundle.flow_kwargs()
+    kwargs["execution"] = CandidateExecution(
+        schema_version="p2-candidate-execution/1",
+        executed=tuple(executed),
+        inactive_reserve_slot_ids=bundle.execution.inactive_reserve_slot_ids,
+    )
+    with pytest.raises(ContractViolation, match="not in the frozen plan"):
+        validate_candidate_flow(**kwargs)  # type: ignore[arg-type]
+
+
+def test_candidate_flow_requires_every_primary_even_if_ledgers_reconcile(bundle: _Bundle) -> None:
+    target = bundle.executed[0].candidate_id
+    with pytest.raises(ContractViolation, match="every primary slot must execute"):
+        validate_candidate_flow(**_flow_without_candidate(bundle, target))  # type: ignore[arg-type]
+
+
+def test_candidate_flow_rejects_primary_declared_as_inactive(bundle: _Bundle) -> None:
+    target = bundle.executed[0].candidate_id
+    kwargs = _flow_without_candidate(bundle, target)
+    execution = kwargs["execution"]
+    assert isinstance(execution, CandidateExecution)
+    kwargs["execution"] = CandidateExecution(
+        schema_version="p2-candidate-execution/1",
+        executed=execution.executed,
+        inactive_reserve_slot_ids=(*execution.inactive_reserve_slot_ids, "M1-F1"),
+    )
+    with pytest.raises(ContractViolation, match="only reserve slots may be inactive"):
+        validate_candidate_flow(**kwargs)  # type: ignore[arg-type]
+
+
+def test_candidate_flow_rejects_duplicate_classification_and_admission_records(
+    bundle: _Bundle,
+) -> None:
+    kwargs = bundle.flow_kwargs()
+    kwargs["classifications"] = (*bundle.classifications, bundle.classifications[0])
+    with pytest.raises(ContractViolation, match="at most one classification"):
+        validate_candidate_flow(**kwargs)  # type: ignore[arg-type]
+
+    kwargs = bundle.flow_kwargs()
+    kwargs["admissions"] = (*bundle.admissions, bundle.admissions[0])
+    with pytest.raises(ContractViolation, match="at most one admission"):
+        validate_candidate_flow(**kwargs)  # type: ignore[arg-type]
+
+
+def test_candidate_flow_rejects_admission_class_disagreement(bundle: _Bundle) -> None:
+    admissions = list(bundle.admissions)
+    admissions[0] = admissions[0].model_copy(update={"family_class": "stable_control"})
+    kwargs = bundle.flow_kwargs()
+    kwargs["admissions"] = tuple(admissions)
+    with pytest.raises(ContractViolation, match="admission family class disagrees"):
+        validate_candidate_flow(**kwargs)  # type: ignore[arg-type]
+
+
+def test_candidate_flow_rejects_direction_reason_on_classified_family(bundle: _Bundle) -> None:
+    admissions = list(bundle.admissions)
+    admissions[0] = AdmissionRecord(
+        schema_version="p2-admission-record/1",
+        candidate_id=admissions[0].candidate_id,
+        admission="excluded_valid",
+        exclusion_reason="control_direction_violation",
+    )
+    kwargs = bundle.flow_kwargs()
+    kwargs["admissions"] = tuple(admissions)
+    kwargs["census"] = FamilyCensus(
+        schema_version="p2-family-census/1",
+        entries=tuple(
+            item for item in bundle.census.entries if item.candidate_id != admissions[0].candidate_id
+        ),
+    )
+    with pytest.raises(ContractViolation, match="only valid when classification has no"):
+        validate_candidate_flow(**kwargs)  # type: ignore[arg-type]
+
+
+def test_duplicate_audit_rejects_duplicate_admissions(bundle: _Bundle) -> None:
+    execution = CandidateExecution(
+        schema_version="p2-candidate-execution/1",
+        executed=bundle.executed[:2],
+        inactive_reserve_slot_ids=(),
+    )
+    admissions = (bundle.admissions[0], bundle.admissions[0])
+    with pytest.raises(ContractViolation, match="unique admission candidate IDs"):
+        validate_duplicate_audit(
+            audit=DuplicateAudit(schema_version="p2-duplicate-audit/1", findings=()),
+            admissions=admissions,
+            execution=execution,
+        )
+
+
+def test_duplicate_audit_rejects_admission_for_unexecuted_candidate(bundle: _Bundle) -> None:
+    with pytest.raises(ContractViolation, match="admissions for unexecuted"):
+        validate_duplicate_audit(
+            audit=DuplicateAudit(schema_version="p2-duplicate-audit/1", findings=()),
+            admissions=(bundle.admissions[0],),
+            execution=CandidateExecution(
+                schema_version="p2-candidate-execution/1",
+                executed=(),
+                inactive_reserve_slot_ids=(),
+            ),
+        )
+
+
+@pytest.mark.parametrize(
+    ("family_id", "condition", "expected"),
+    [
+        ("p1-family-" + _HEX_A, "full", "Phase 2 family namespace"),
+        ("p2-family-" + _HEX_A, "hidden", "unknown evidence condition"),
+    ],
+)
+def test_context_identity_rejects_foreign_namespace_and_condition(
+    family_id: str, condition: str, expected: str
+) -> None:
+    with pytest.raises(ValueError, match=expected):
+        context_id_for(case_family_id=family_id, evidence_condition=condition)
+
+
+def test_candidate_slot_reserve_order_is_bound_to_slot_kind() -> None:
+    primary = _slot("M1-F1")
+    reserve = _slot("M1-R1")
+    with pytest.raises(ValidationError, match="primary slots must not"):
+        CandidateSlot(**{**primary.model_dump(), "reserve_order": 1})
+    with pytest.raises(ValidationError, match="reserve slots must declare"):
+        CandidateSlot(**{**reserve.model_dump(), "reserve_order": None})
+
+
+def test_candidate_plan_rejects_reserve_count_and_order_drift() -> None:
+    plan = _build_plan()
+    with pytest.raises(ValidationError, match="reserve_planned"):
+        CandidatePlan(
+            schema_version="p2-candidate-plan/1",
+            primary_planned=plan.primary_planned,
+            reserve_planned=8,
+            slots=plan.slots,
+        )
+    reserves = [slot for slot in plan.slots if slot.slot_kind == "reserve"]
+    target = reserves[1]
+    forged = target.model_copy(update={"reserve_order": 4})
+    with pytest.raises(ValidationError, match="gapless sequence"):
+        CandidatePlan(
+            schema_version="p2-candidate-plan/1",
+            primary_planned=15,
+            reserve_planned=9,
+            slots=tuple(forged if slot.slot_id == target.slot_id else slot for slot in plan.slots),
+        )
+
+
+def test_candidate_execution_rejects_executed_inactive_overlap(bundle: _Bundle) -> None:
+    with pytest.raises(ValidationError, match="both executed and inactive"):
+        CandidateExecution(
+            schema_version="p2-candidate-execution/1",
+            executed=bundle.executed,
+            inactive_reserve_slot_ids=(bundle.executed[0].slot_id,),
+        )
+
+
+@pytest.mark.parametrize(
+    ("updates", "expected"),
+    [
+        ({"reference_value": 1.1}, "reference_value must lie"),
+        ({"observed_value": -0.1}, "observed_value must lie"),
+        ({"delta": 1.1}, "delta must lie"),
+        ({"threshold": 0.02}, "threshold 0.01"),
+        ({"equivalence_checks_passed": True}, "reserved for benign controls"),
+    ],
+)
+def test_classification_rejects_invalid_metric_and_control_fields(
+    bundle: _Bundle, updates: dict[str, object], expected: str
+) -> None:
+    record = bundle.classifications[0]
+    with pytest.raises(ValidationError, match=expected):
+        ClassificationRecord(**{**record.model_dump(), **updates})
+
+
+def test_accepted_admission_requires_family_and_forbids_exclusion_reason() -> None:
+    with pytest.raises(ValidationError, match="family ID and class"):
+        AdmissionRecord(
+            schema_version="p2-admission-record/1",
+            candidate_id="p2-candidate-" + _HEX_A,
+            admission="accepted",
+        )
+    with pytest.raises(ValidationError, match="must not carry an exclusion"):
+        AdmissionRecord(
+            schema_version="p2-admission-record/1",
+            candidate_id="p2-candidate-" + _HEX_A,
+            admission="accepted",
+            case_family_id="p2-family-" + _HEX_A,
+            family_class="eligible_failure",
+            exclusion_reason="evidence_leakage",
+        )
+
+
+def test_context_entry_rejects_unbound_id_and_noncanonical_json() -> None:
+    family_id = "p2-family-" + _HEX_A
+    projection = {1: "not-a-string-key"}
+    with pytest.raises(ValidationError, match="valid string"):
+        ContextEntry(
+            diagnosis_context_id=context_id_for(
+                case_family_id=family_id, evidence_condition="full"
+            ),
+            case_family_id=family_id,
+            evidence_condition="full",
+            diagnosis_projection=projection,  # type: ignore[arg-type]
+            diagnosis_projection_sha256=_HEX_A,
+        )
+    valid_projection = {"items": []}
+    with pytest.raises(ValidationError, match="must bind family"):
+        ContextEntry(
+            diagnosis_context_id="p2-context-" + _HEX_B,
+            case_family_id=family_id,
+            evidence_condition="full",
+            diagnosis_projection=valid_projection,
+            diagnosis_projection_sha256=canonical_sha256(valid_projection),
+        )
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        (
+            {
+                "kind": "exact_identity",
+                "measure": "jaccard_similarity",
+                "candidate_basis_sha256": _HEX_C,
+                "duplicate_of_basis_sha256": _HEX_C,
+                "measure_value": None,
+            },
+            "identity_equality",
+        ),
+        (
+            {
+                "kind": "effective_intervention",
+                "measure": "effective_fingerprint_equality",
+                "candidate_basis_sha256": _HEX_C,
+                "duplicate_of_basis_sha256": _HEX_D,
+                "measure_value": None,
+            },
+            "equal intervention fingerprints",
+        ),
+        (
+            {
+                "kind": "near_duplicate",
+                "measure": "total_variation_distance",
+                "candidate_basis_sha256": _HEX_C,
+                "duplicate_of_basis_sha256": _HEX_D,
+                "measure_value": None,
+            },
+            "record its measure_value",
+        ),
+        (
+            {
+                "kind": "near_duplicate",
+                "measure": "jaccard_similarity",
+                "candidate_basis_sha256": _HEX_C,
+                "duplicate_of_basis_sha256": _HEX_D,
+                "measure_value": 0.89,
+            },
+            "at least 0.90",
+        ),
+    ],
+)
+def test_duplicate_finding_enforces_kind_specific_measure_contract(
+    payload: dict[str, object], expected: str
+) -> None:
+    with pytest.raises(ValidationError, match=expected):
+        DuplicateFinding(
+            fault_type="label_noise",
+            candidate_id="p2-candidate-" + _HEX_A,
+            duplicate_of_candidate_id="p2-candidate-" + _HEX_B,
+            **payload,  # type: ignore[arg-type]
+        )
+
+
+@pytest.mark.parametrize(
+    ("updates", "expected"),
+    [
+        ({"planned_total": 25}, "primary_planned"),
+        ({"executed": 14}, "primary_planned.*activated_reserve"),
+        ({"technically_valid": 14}, "technically_valid.*technical_rejected"),
+        ({"accepted": 14}, "accepted.*excluded_valid"),
+        ({"gate_status": "fail", "deviation_note": None}, "must be 'pass'"),
+        ({"gate_status": "pass", "deviation_note": "unexpected"}, "must not carry"),
+    ],
+)
+def test_alpha_report_rejects_arithmetic_and_status_forgery(
+    bundle: _Bundle, updates: dict[str, object], expected: str
+) -> None:
+    payload = _report(bundle).model_dump()
+    payload.update(updates)
+    with pytest.raises(ValidationError, match=expected):
+        AlphaValidityReport(**payload)  # type: ignore[arg-type]
