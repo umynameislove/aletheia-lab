@@ -165,16 +165,20 @@ def context_id_for(*, case_family_id: str, evidence_condition: str) -> str:
 
 _FORBIDDEN_PROJECTION_KEYS: Final[tuple[str, ...]] = (
     "admission",
+    "answer_key",
+    "artifact_path",
     "candidate_id",
     "classification",
     "distractor",
     "disposition",
     "evidence_condition",
     "expected_behavior",
+    "expected_diagnosis",
     "expected_diagnosis_behavior",
     "expected_sufficiency",
     "evaluator",
     "ground_truth",
+    "hidden_label",
     "cause_label",
     "hidden_intervention",
     "intervention_type",
@@ -195,6 +199,7 @@ _FORBIDDEN_PROJECTION_KEYS: Final[tuple[str, ...]] = (
     "family_class",
     "candidate_role",
     "sufficiency",
+    "scoring_threshold",
 )
 
 _FORBIDDEN_PROJECTION_VALUE_PATTERN: Final[re.Pattern[str]] = re.compile(
@@ -250,6 +255,11 @@ def _assert_projection_is_diagnosis_safe(value: object, path: str = "$") -> None
             or _FORBIDDEN_PROJECTION_VALUE_PATTERN.search(normalized_value) is not None
         ):
             raise ValueError(f"diagnosis projection leaks evaluator metadata at {path}")
+        if (
+            folded_value.startswith(("/", "~/", "file://"))
+            or re.match(r"^[a-z]:[\\/]", folded_value) is not None
+        ):
+            raise ValueError(f"diagnosis projection contains an absolute path at {path}")
 
 
 # --------------------------------------------------------------------------- #
