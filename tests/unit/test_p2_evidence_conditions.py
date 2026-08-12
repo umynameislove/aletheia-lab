@@ -20,11 +20,14 @@ from aletheia_lab.benchmark.p2.contracts import (
 from aletheia_lab.benchmark.p2.evidence_conditions import (
     EVIDENCE_CONDITION_BUILDER_VERSION,
     EVIDENCE_CONDITION_BUNDLE_SCHEMA_VERSION,
+    EvidenceConditionBuild,
     EvidenceConditionBundle,
     EvidenceConditionError,
+    build_evidence_bundle_collection,
     build_evidence_condition_bundles,
     evidence_execution_id_for,
     is_evidence_bundle_id,
+    validate_evidence_bundle_collection,
     validate_evidence_condition_bundles,
 )
 from aletheia_lab.benchmark.p2.evidence_projection import (
@@ -242,6 +245,7 @@ def test_builder_creates_versioned_family_paired_condition_set(fault_type: str) 
         _family(candidate).case_family_id
     }
     assert {bundle.candidate_id for bundle in bundles} == {candidate.candidate_id}
+    assert {bundle.fault_type for bundle in bundles} == {candidate.fault_type}
     assert {bundle.source_execution_id for bundle in bundles} == {
         evidence_execution_id_for(candidate)
     }
@@ -404,6 +408,67 @@ def test_bundle_id_namespace_is_strict() -> None:
     assert not is_evidence_bundle_id(f"p2-context-{_HEX['a']}")
     assert not is_evidence_bundle_id(f"p2-evidence-bundle-{_HEX['a'].upper()}")
     assert not is_evidence_bundle_id("p2-evidence-bundle-short")
+
+
+def test_one_collection_supports_all_mechanisms_without_contract_exceptions() -> None:
+    builds = tuple(
+        EvidenceConditionBuild(
+            candidate=(candidate := _candidate(fault_type)),
+            family=_family(candidate),
+            evidence=_EVIDENCE_FACTORY[fault_type](),
+        )
+        for fault_type in _EVIDENCE_FACTORY
+    )
+    bundles = build_evidence_bundle_collection(builds)
+
+    assert len(bundles) == 9
+    assert {bundle.evidence_condition for bundle in bundles} == {
+        "full",
+        "missing_key",
+        "noisy",
+    }
+    assert {bundle.case_family_id for bundle in bundles} == {
+        build.family.case_family_id for build in builds
+    }
+    audit = validate_evidence_bundle_collection(bundles, builds=builds)
+    assert not audit.has_blockers()
+
+
+def test_cross_mechanism_bundle_replay_is_rejected() -> None:
+    drift_candidate = _candidate("data_drift")
+    drift_family = _family(drift_candidate)
+    drift_bundles = build_evidence_condition_bundles(
+        candidate=drift_candidate,
+        family=drift_family,
+        evidence=_drift_evidence(),
+    )
+    label_candidate = _candidate("label_noise")
+
+    with pytest.raises(EvidenceConditionError, match="canonical condition build"):
+        validate_evidence_condition_bundles(
+            drift_bundles,
+            candidate=label_candidate,
+            family=_family(label_candidate),
+            evidence=_label_evidence(),
+        )
+
+
+def test_duplicate_audit_never_compares_different_mechanisms() -> None:
+    drift_candidate = _candidate("data_drift")
+    label_candidate = _candidate("label_noise")
+    drift = EvidenceConditionBuild(
+        candidate=drift_candidate,
+        family=_family(drift_candidate),
+        evidence=_drift_evidence(),
+    )
+    label = EvidenceConditionBuild(
+        candidate=label_candidate,
+        family=_family(label_candidate),
+        evidence=_label_evidence(),
+    )
+
+    bundles = build_evidence_bundle_collection((drift, label))
+    assert validate_evidence_bundle_collection(bundles, builds=(drift, label)).findings == ()
 
 
 _REPRODUCTION_SCRIPT = r"""
