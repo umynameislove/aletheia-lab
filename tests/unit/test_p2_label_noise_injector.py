@@ -57,6 +57,7 @@ from aletheia_lab.benchmark.p2.mechanism_validation import (
     MechanismValidationError,
     validate_mechanism_candidate,
 )
+from aletheia_lab.benchmark.p2.validation import ContractViolation
 
 _HEX_F = "f" * 64
 _HEX_D = "d" * 64
@@ -583,6 +584,68 @@ def test_unified_validator_rejects_label_artifact_reuse_under_another_family(
         validate_mechanism_candidate(
             result,
             slot=forged_slot,
+            inputs=LabelFaultDirectedInputs(source=source, spec=spec),
+            execution=execution,
+            disposition=TechnicalDispositionEntry(
+                candidate_id=execution.candidate_id,
+                disposition="technically_valid",
+            ),
+        )
+
+
+def test_unified_validator_rejects_label_fault_under_a_control_role(
+    source: LabelNoiseSource, spec: LabelCorruptionSpec
+) -> None:
+    slot = _fault_slot().model_copy(update={"role": "designed_benign_control"})
+    execution = _execution(slot)
+    result = apply_label_corruption(source=source, spec=spec)
+    with pytest.raises(ContractViolation, match="frozen alpha role/seed contract"):
+        validate_mechanism_candidate(
+            result,
+            slot=slot,
+            inputs=LabelFaultDirectedInputs(source=source, spec=spec),
+            execution=execution,
+            disposition=TechnicalDispositionEntry(
+                candidate_id=execution.candidate_id,
+                disposition="technically_valid",
+            ),
+        )
+
+
+def test_unified_validator_rejects_label_source_attestation_replay(
+    source: LabelNoiseSource, spec: LabelCorruptionSpec
+) -> None:
+    slot = _fault_slot()
+    execution = _execution(slot)
+    result = apply_label_corruption(source=source, spec=spec)
+    replayed_source = source.model_copy(
+        update={"attested_model_specification_sha256": "9" * 64}
+    )
+    with pytest.raises(MechanismValidationError, match="source attestations"):
+        validate_mechanism_candidate(
+            result,
+            slot=slot,
+            inputs=LabelFaultDirectedInputs(source=replayed_source, spec=spec),
+            execution=execution,
+            disposition=TechnicalDispositionEntry(
+                candidate_id=execution.candidate_id,
+                disposition="technically_valid",
+            ),
+        )
+
+
+def test_unified_validator_rejects_cross_mechanism_slot_forgery_before_dispatch(
+    source: LabelNoiseSource, spec: LabelCorruptionSpec
+) -> None:
+    label_slot = _fault_slot()
+    drift_slot = label_slot.model_copy(
+        update={"slot_id": "M1-F1", "fault_type": "data_drift"}
+    )
+    execution = _execution(drift_slot)
+    with pytest.raises(ValidationError, match="fault_type must match its identity"):
+        validate_mechanism_candidate(
+            apply_label_corruption(source=source, spec=spec),
+            slot=drift_slot,
             inputs=LabelFaultDirectedInputs(source=source, spec=spec),
             execution=execution,
             disposition=TechnicalDispositionEntry(

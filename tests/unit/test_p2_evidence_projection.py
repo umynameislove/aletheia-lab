@@ -594,3 +594,172 @@ def test_context_boundary_rejects_hidden_evaluator_material(leak: dict[str, obje
             diagnosis_projection=leak,
             diagnosis_projection_sha256=canonical_sha256(leak),
         )
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        ({"category": " monthly", "proportion": 1.0}, "trimmed Unicode NFC"),
+        ({"category": "monthly ", "proportion": 1.0}, "trimmed Unicode NFC"),
+    ],
+)
+def test_category_share_requires_canonical_text(
+    payload: dict[str, object], expected: str
+) -> None:
+    with pytest.raises(ValidationError, match=expected):
+        CategoryShare(**payload)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    ("categories", "expected"),
+    [
+        ((), "at least one category"),
+        (
+            (
+                CategoryShare(category="a", proportion=0.5),
+                CategoryShare(category="a", proportion=0.5),
+            ),
+            "unique",
+        ),
+        (
+            (
+                CategoryShare(category="b", proportion=0.5),
+                CategoryShare(category="a", proportion=0.5),
+            ),
+            "sorted order",
+        ),
+        ((CategoryShare(category="a", proportion=0.9),), "sum to one"),
+    ],
+)
+def test_distribution_snapshot_rejects_noncanonical_categories(
+    categories: tuple[CategoryShare, ...], expected: str
+) -> None:
+    with pytest.raises(ValidationError, match=expected):
+        DistributionSnapshot(sample_size=10, categories=categories)
+
+
+def test_mechanism_evidence_requires_aligned_aggregate_sources() -> None:
+    with pytest.raises(ValidationError, match="same categories"):
+        DataDriftDiagnosisEvidence(
+            performance=_performance(),
+            reference_distribution=_distribution(100, 0.6),
+            observed_distribution=DistributionSnapshot(
+                sample_size=100,
+                categories=(CategoryShare(category="unknown", proportion=1.0),),
+            ),
+            population_stability_index=0.2,
+        )
+
+    label = _label_evidence()
+    lower, upper = wilson_interval(successes=10, trials=99)
+    with pytest.raises(ValidationError, match="same sample"):
+        LabelDiagnosisEvidence(
+            performance=label.performance,
+            target_distribution_comparison=label.target_distribution_comparison,
+            target_quality_audit_summary=TargetQualityAudit(
+                schema_version="p2-target-quality-audit/v1",
+                audited_record_count=99,
+                disagreeing_record_count=10,
+                disagreement_rate=10 / 99,
+                disagreement_rate_lower_bound=lower,
+                disagreement_rate_upper_bound=upper,
+                interval_method="wilson-score/95",
+                protocol_version="target-quality-audit/v1",
+            ),
+        )
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        (
+            {
+                "reference_signature_sha256": _HEX["a"],
+                "observed_signature_sha256": _HEX["a"],
+                "signatures_equal": False,
+            },
+            "derived",
+        ),
+        (
+            {
+                "reference_signature_sha256": _HEX["a"],
+                "observed_signature_sha256": _HEX["b"],
+                "signatures_equal": True,
+            },
+            "derived",
+        ),
+    ],
+)
+def test_transform_signature_equality_is_derived(
+    payload: dict[str, object], expected: str
+) -> None:
+    with pytest.raises(ValidationError, match=expected):
+        TransformSignatureComparison(**payload)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    ("count", "rate", "reference", "observed", "expected"),
+    [
+        (11, 1.1, _HEX["a"], _HEX["b"], "less than or equal to 1"),
+        (2, 0.1, _HEX["a"], _HEX["b"], "derived from the two counts"),
+        (0, 0.0, _HEX["a"], _HEX["b"], "signatures and differing count"),
+        (1, 0.1, _HEX["a"], _HEX["a"], "signatures and differing count"),
+    ],
+)
+def test_target_projection_rejects_inconsistent_aggregate_claims(
+    count: int,
+    rate: float,
+    reference: str,
+    observed: str,
+    expected: str,
+) -> None:
+    with pytest.raises(ValidationError, match=expected):
+        TargetProjectionComparison(
+            sample_size=10,
+            differing_record_count=count,
+            difference_rate=rate,
+            reference_projection_sha256=reference,
+            observed_projection_sha256=observed,
+        )
+
+
+def test_schema_equality_requires_equal_field_counts() -> None:
+    with pytest.raises(ValidationError, match="equal field counts"):
+        SchemaComparison(
+            reference_field_count=10,
+            observed_field_count=11,
+            field_sets_equal=True,
+        )
+
+
+@pytest.mark.parametrize("fault_type", list(_EVIDENCE_FACTORY))
+def test_non_benign_family_requires_observable_evidence(fault_type: str) -> None:
+    candidate = _candidate(fault_type)
+    with pytest.raises(EvidenceProjectionError, match="requires observable evidence"):
+        build_diagnosis_contexts(
+            candidate=candidate,
+            family=_family(candidate),
+            evidence=None,
+        )
+
+
+def test_family_binding_rejects_candidate_mechanism_and_fingerprint_replay() -> None:
+    candidate = _candidate("data_drift")
+    base = _family(candidate)
+    mutations = (
+        base.model_copy(update={"candidate_id": f"p2-candidate-{'a' * 64}"}),
+        base.model_copy(update={"fault_type": "label_noise"}),
+        base.model_copy(update={"proposed_family_sha256": _HEX["f"]}),
+    )
+    for family, expected, error_type in zip(
+        mutations,
+        ("different candidate", "mechanism differs", "namespaced family fingerprint"),
+        (EvidenceProjectionError, EvidenceProjectionError, ValidationError),
+        strict=True,
+    ):
+        with pytest.raises(error_type, match=expected):
+            build_diagnosis_contexts(
+                candidate=candidate,
+                family=family,
+                evidence=_drift_evidence(),
+            )

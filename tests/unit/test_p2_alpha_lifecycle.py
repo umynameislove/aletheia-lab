@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+import unicodedata
+
 import pytest
 from pydantic import ValidationError
 
@@ -459,3 +462,181 @@ def test_forged_candidate_binding_is_rejected_even_if_counts_still_balance() -> 
             results=tuple(results),
             duplicate_audit=DuplicateAudit(schema_version="p2-duplicate-audit/1", findings=()),
         )
+
+
+@pytest.mark.parametrize(
+    "updates",
+    [
+        {"equivalence_checks_passed": False},
+        {"diagnosis_evidence": _evidence("data_drift", _drift_comparison("stable"), "stable")},
+    ],
+)
+def test_benign_candidate_requires_equivalence_and_forbids_diagnosis_evidence(
+    updates: dict[str, object],
+) -> None:
+    plan = build_frozen_alpha_plan(_binding())
+    slot = next(item for item in plan.slots if item.slot_id == "M1-B1")
+    candidate = _evaluated(slot)
+    with pytest.raises(ValidationError, match="equivalence|must not carry"):
+        type(candidate).model_validate({**candidate.model_dump(), **updates})
+
+
+def test_non_benign_candidate_forbids_equivalence_flag() -> None:
+    plan = build_frozen_alpha_plan(_binding())
+    slot = next(item for item in plan.slots if item.slot_id == "M2-F1")
+    candidate = _evaluated(slot)
+    with pytest.raises(ValidationError, match="reserved for benign controls"):
+        type(candidate).model_validate(
+            {**candidate.model_dump(), "equivalence_checks_passed": True}
+        )
+
+
+def test_candidate_rejects_performance_evidence_from_another_measurement() -> None:
+    plan = build_frozen_alpha_plan(_binding())
+    slot = next(item for item in plan.slots if item.slot_id == "M2-F1")
+    candidate = _evaluated(slot)
+    unrelated = _evidence("label_noise", _comparison("stable"), "stable")
+    with pytest.raises(ValidationError, match="derived from the measured comparison"):
+        type(candidate).model_validate(
+            {**candidate.model_dump(), "diagnosis_evidence": unrelated.model_dump()}
+        )
+
+
+def test_rejected_candidate_must_bind_rejection_to_execution() -> None:
+    plan = build_frozen_alpha_plan(_binding())
+    slot = next(item for item in plan.slots if item.slot_id == "M1-F1")
+    execution = execution_for_slot(slot)
+    with pytest.raises(ValidationError, match="describe the executed candidate"):
+        record_technical_rejection(
+            slot=slot,
+            reason="source_contract_mismatch",
+        ).model_copy(
+            update={
+                "disposition": {
+                    "candidate_id": f"p2-candidate-{'f' * 64}",
+                    "disposition": "technical_rejected",
+                    "rejection_reason": "source_contract_mismatch",
+                }
+            }
+        ).model_validate(
+            {
+                "kind": "technical_rejection",
+                "execution": execution.model_dump(),
+                "disposition": {
+                    "candidate_id": f"p2-candidate-{'f' * 64}",
+                    "disposition": "technical_rejected",
+                    "rejection_reason": "source_contract_mismatch",
+                },
+            }
+        )
+
+
+def test_duplicate_result_for_one_slot_is_rejected() -> None:
+    plan = build_frozen_alpha_plan(_binding())
+    results = _primary_results(plan)
+    with pytest.raises(AlphaLifecycleError, match="duplicate result"):
+        assemble_alpha_artifacts(
+            plan=plan,
+            results=(*results, results[0]),
+            duplicate_audit=DuplicateAudit(schema_version="p2-duplicate-audit/1", findings=()),
+        )
+
+
+def test_multiple_duplicate_findings_cannot_assign_two_exclusions() -> None:
+    plan = build_frozen_alpha_plan(_binding())
+    first, second, third = plan.slots[:3]
+    executions = tuple(execution_for_slot(slot) for slot in (first, second, third))
+    audit = DuplicateAudit(
+        schema_version="p2-duplicate-audit/1",
+        findings=tuple(
+            DuplicateFinding(
+                kind="effective_intervention",
+                fault_type="data_drift",
+                measure="effective_fingerprint_equality",
+                candidate_id=executions[1].candidate_id,
+                duplicate_of_candidate_id=representative.candidate_id,
+                candidate_basis_sha256=_HEX["e"],
+                duplicate_of_basis_sha256=_HEX["e"],
+            )
+            for representative in (executions[0], executions[2])
+        ),
+    )
+    with pytest.raises(AlphaLifecycleError, match="multiple exact/effective"):
+        assemble_alpha_artifacts(
+            plan=plan,
+            results=_primary_results(plan),
+            duplicate_audit=audit,
+        )
+
+
+def test_alpha_gate_fails_when_acceptance_floor_is_not_met() -> None:
+    plan = build_frozen_alpha_plan(_binding())
+    results = list(_primary_results(plan))
+    for index in range(4):
+        results[index] = results[index].model_copy(
+            update={
+                "exclusion_reason": "evidence_leakage",
+                "exclusion_detail": "independent review rejected the projection",
+            }
+        )
+    artifacts = assemble_alpha_artifacts(
+        plan=plan,
+        results=tuple(results),
+        duplicate_audit=DuplicateAudit(schema_version="p2-duplicate-audit/1", findings=()),
+    )
+    assert artifacts.report.accepted == 11
+    assert artifacts.report.gate_status == "fail"
+    assert artifacts.report.deviation_note is not None
+
+
+@pytest.mark.parametrize(
+    ("unsafe", "expected"),
+    [
+        ("file:///private/result.json", "file URI"),
+        ("api_key=abcdefgh", "secret-like"),
+        (unicodedata.normalize("NFD", "bằng chứng"), "Unicode NFC"),
+    ],
+)
+def test_contract_store_rejects_unsafe_text_payload(
+    tmp_path,
+    unsafe: str,
+    expected: str,
+) -> None:  # type: ignore[no-untyped-def]
+    plan = build_frozen_alpha_plan(_binding())
+    artifacts = assemble_alpha_artifacts(
+        plan=plan,
+        results=_primary_results(plan),
+        duplicate_audit=DuplicateAudit(schema_version="p2-duplicate-audit/1", findings=()),
+    )
+    first = artifacts.disposition.entries[0]
+    changed = artifacts.__class__(
+        **{
+            **artifacts.__dict__,
+            "disposition": artifacts.disposition.model_copy(
+                update={"entries": (first.model_copy(update={"detail": unsafe}), *artifacts.disposition.entries[1:])}
+            ),
+        }
+    )
+    with pytest.raises(ValueError, match=expected):
+        save_contract_store(changed, tmp_path / "unsafe")
+
+
+def test_contract_store_rejects_noncanonical_manifest_and_missing_payload(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    plan = build_frozen_alpha_plan(_binding())
+    artifacts = assemble_alpha_artifacts(
+        plan=plan,
+        results=_primary_results(plan),
+        duplicate_audit=DuplicateAudit(schema_version="p2-duplicate-audit/1", findings=()),
+    )
+    store = tmp_path / "store"
+    save_contract_store(artifacts, store)
+    manifest = store / "store-manifest.json"
+    manifest.write_text(json.dumps(json.loads(manifest.read_text())), encoding="utf-8")
+    with pytest.raises(ValueError, match="manifest is not canonically encoded"):
+        load_contract_store(store)
+
+    missing = tmp_path / "missing"
+    save_contract_store(artifacts, missing)
+    (missing / "candidate-plan.json").unlink()
+    with pytest.raises(ValueError, match="file set differs"):
+        load_contract_store(missing)
