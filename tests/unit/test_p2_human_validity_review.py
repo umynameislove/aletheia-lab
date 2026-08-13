@@ -40,6 +40,8 @@ from aletheia_lab.benchmark.p2.evidence_projection import (
 from aletheia_lab.benchmark.p2.human_validity_review import (
     BlindReviewEntry,
     BlindReviewPacket,
+    BlindStageDecisionForm,
+    BlindStageWorksheet,
     HumanEvidenceRubric,
     HumanFamilyDecision,
     HumanFamilyDecisionForm,
@@ -50,11 +52,14 @@ from aletheia_lab.benchmark.p2.human_validity_review import (
     HumanValidityReviewError,
     ReviewMappingEntry,
     ReviewMappingPacket,
+    build_blind_stage_worksheet,
     build_human_review_packets,
     build_human_review_worksheet,
     evaluate_human_review,
+    finalize_blind_stage_worksheet,
     finalize_human_review_worksheet,
     human_evidence_rubric_for,
+    open_mapped_review_stage,
     select_review_bundles,
     validate_human_review,
     validate_review_packets,
@@ -392,6 +397,68 @@ def test_worksheet_is_bound_incomplete_and_contains_no_expected_answers() -> Non
     assert "causal_conclusion" not in serialized
     with pytest.raises(HumanValidityReviewError, match="reviewer ID"):
         finalize_human_review_worksheet(worksheet)
+
+
+def test_two_stage_workflow_freezes_blind_answers_before_mapping() -> None:
+    blind, mapping = _packets()
+    worksheet = build_blind_stage_worksheet(blind)
+    assert worksheet.reviewer_id is None
+    serialized = worksheet.model_dump_json()
+    for forbidden in ("fault_type", "evidence_condition", "rubric", "case_family_id"):
+        assert forbidden not in serialized
+
+    completed = worksheet.model_copy(
+        update={
+            "reviewer_id": "reviewer-a",
+            "judgments_personally_recorded": True,
+            "mapping_packet_not_opened": True,
+            "decisions": tuple(
+                BlindStageDecisionForm(
+                    review_id=form.review_id,
+                    diagnosis_projection_sha256=form.diagnosis_projection_sha256,
+                    hidden_answer_cue_found="no",
+                    expected_judgment_cue_found="no",
+                    unsupported_causal_wording_found="no",
+                    rationale="Visible evidence contains measurements without evaluator labels.",
+                )
+                for form in worksheet.decisions
+            ),
+        }
+    )
+    record = finalize_blind_stage_worksheet(blind, completed)
+    mapped = open_mapped_review_stage(blind, mapping, record)
+    assert mapped.reviewer_id == "reviewer-a"
+    assert mapped.blind_stage_completed_before_mapping_opened
+    assert all(form.hidden_answer_cue_found == "no" for form in mapped.decisions)
+    assert all(form.observed_sufficiency is None for form in mapped.decisions)
+
+
+def test_blind_stage_rejects_incomplete_or_post_mapping_attestation() -> None:
+    blind, _ = _packets()
+    worksheet = build_blind_stage_worksheet(blind).model_copy(
+        update={"reviewer_id": "reviewer-a", "judgments_personally_recorded": True}
+    )
+    with pytest.raises(HumanValidityReviewError, match="mapping packet was not opened"):
+        finalize_blind_stage_worksheet(blind, worksheet)
+
+    completed_forms = list(worksheet.decisions)
+    completed_forms[0] = completed_forms[0].model_copy(
+        update={
+            "hidden_answer_cue_found": "no",
+            "expected_judgment_cue_found": "no",
+            "unsupported_causal_wording_found": "no",
+            "rationale": "This entry was reviewed only from its visible projection.",
+        }
+    )
+    incomplete = BlindStageWorksheet.model_validate(
+        {
+            **worksheet.model_dump(),
+            "mapping_packet_not_opened": True,
+            "decisions": tuple(completed_forms),
+        }
+    )
+    with pytest.raises(HumanValidityReviewError, match="entry is incomplete"):
+        finalize_blind_stage_worksheet(blind, incomplete)
 
 
 def test_complete_worksheet_finalizes_to_the_same_strict_record() -> None:

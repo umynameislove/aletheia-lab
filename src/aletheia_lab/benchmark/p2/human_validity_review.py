@@ -39,6 +39,12 @@ HUMAN_REVIEW_RECORD_SCHEMA_VERSION: Final[Literal["p2-human-review-record/v1"]] 
 HUMAN_REVIEW_WORKSHEET_SCHEMA_VERSION: Final[Literal["p2-human-review-worksheet/v1"]] = (
     "p2-human-review-worksheet/v1"
 )
+BLIND_STAGE_WORKSHEET_SCHEMA_VERSION: Final[
+    Literal["p2-human-blind-stage-worksheet/v1"]
+] = "p2-human-blind-stage-worksheet/v1"
+BLIND_STAGE_RECORD_SCHEMA_VERSION: Final[Literal["p2-human-blind-stage-record/v1"]] = (
+    "p2-human-blind-stage-record/v1"
+)
 HUMAN_VALIDITY_REPORT_SCHEMA_VERSION: Final[Literal["p2-human-validity-report/v1"]] = (
     "p2-human-validity-report/v1"
 )
@@ -630,6 +636,159 @@ class HumanReviewRecord(_StrictFrozenModel):
         return values
 
 
+class BlindStageDecisionForm(_StrictFrozenModel):
+    """Fillable leakage decision exposed before the mapping packet is opened."""
+
+    review_id: ReviewId
+    diagnosis_projection_sha256: Sha256
+    hidden_answer_cue_found: ReviewAnswer | None = None
+    expected_judgment_cue_found: ReviewAnswer | None = None
+    unsupported_causal_wording_found: ReviewAnswer | None = None
+    rationale: str | None = None
+
+
+class BlindStageWorksheet(_StrictFrozenModel):
+    """Stage-one form containing no condition, family, mechanism, or rubric."""
+
+    schema_version: Literal["p2-human-blind-stage-worksheet/v1"] = (
+        BLIND_STAGE_WORKSHEET_SCHEMA_VERSION
+    )
+    protocol_version: Literal["p2-human-validity-review/v1"] = HUMAN_REVIEW_PROTOCOL_VERSION
+    reviewer_kind: Literal["human"] = "human"
+    reviewer_id: str | None = None
+    judgments_personally_recorded: bool = False
+    mapping_packet_not_opened: bool = False
+    blind_packet_sha256: Sha256
+    decisions: tuple[BlindStageDecisionForm, ...]
+
+    @model_validator(mode="after")
+    def _exactly_covers_blind_entries(self) -> BlindStageWorksheet:
+        keys = tuple(decision.review_id for decision in self.decisions)
+        if len(keys) != 9 or len(set(keys)) != 9:
+            raise ValueError("blind-stage worksheet must contain nine unique decisions")
+        if keys != tuple(sorted(keys)):
+            raise ValueError("blind-stage decisions must use canonical review-ID order")
+        return self
+
+
+class BlindStageDecision(_StrictFrozenModel):
+    """One completed leakage judgment made without evaluator metadata."""
+
+    review_id: ReviewId
+    diagnosis_projection_sha256: Sha256
+    hidden_answer_cue_found: ReviewAnswer
+    expected_judgment_cue_found: ReviewAnswer
+    unsupported_causal_wording_found: ReviewAnswer
+    rationale: str = Field(min_length=20, max_length=4096)
+
+    @field_validator("rationale")
+    @classmethod
+    def _rationale_is_canonical(cls, value: str) -> str:
+        return _canonical_text(value, "blind-stage rationale")
+
+
+class BlindStageRecord(_StrictFrozenModel):
+    """Immutable stage-one submission that must precede mapping access."""
+
+    schema_version: Literal["p2-human-blind-stage-record/v1"] = (
+        BLIND_STAGE_RECORD_SCHEMA_VERSION
+    )
+    protocol_version: Literal["p2-human-validity-review/v1"] = HUMAN_REVIEW_PROTOCOL_VERSION
+    reviewer_kind: Literal["human"]
+    reviewer_id: str = Field(min_length=1, max_length=128)
+    judgments_personally_recorded: Literal[True]
+    mapping_packet_not_opened: Literal[True]
+    blind_packet_sha256: Sha256
+    decisions: tuple[BlindStageDecision, ...]
+
+    @field_validator("reviewer_id")
+    @classmethod
+    def _reviewer_id_is_canonical(cls, value: str) -> str:
+        return _canonical_text(value, "reviewer ID")
+
+    @field_validator("decisions")
+    @classmethod
+    def _decisions_are_unique_ordered(
+        cls, values: tuple[BlindStageDecision, ...]
+    ) -> tuple[BlindStageDecision, ...]:
+        keys = tuple(decision.review_id for decision in values)
+        if len(keys) != 9 or len(set(keys)) != 9:
+            raise ValueError("blind-stage record must contain nine unique decisions")
+        if keys != tuple(sorted(keys)):
+            raise ValueError("blind-stage decisions must use canonical review-ID order")
+        return values
+
+
+def build_blind_stage_worksheet(blind: BlindReviewPacket) -> BlindStageWorksheet:
+    """Create the only worksheet a reviewer may see during stage one."""
+
+    blind = _revalidated(blind)
+    return BlindStageWorksheet(
+        blind_packet_sha256=blind.canonical_sha256(),
+        decisions=tuple(
+            BlindStageDecisionForm(
+                review_id=entry.review_id,
+                diagnosis_projection_sha256=entry.diagnosis_projection_sha256,
+            )
+            for entry in blind.entries
+        ),
+    )
+
+
+def finalize_blind_stage_worksheet(
+    blind: BlindReviewPacket, worksheet: BlindStageWorksheet
+) -> BlindStageRecord:
+    """Validate and freeze a personally completed pre-mapping worksheet."""
+
+    blind = _revalidated(blind)
+    worksheet = _revalidated(worksheet)
+    if worksheet.blind_packet_sha256 != blind.canonical_sha256():
+        _fail("blind-stage worksheet is not bound to the blind packet")
+    if worksheet.reviewer_id is None:
+        _fail("blind-stage worksheet requires a reviewer ID")
+    if not worksheet.judgments_personally_recorded:
+        _fail("reviewer must attest that blind judgments were personally recorded")
+    if not worksheet.mapping_packet_not_opened:
+        _fail("reviewer must attest that the mapping packet was not opened")
+    projections = {
+        entry.review_id: entry.diagnosis_projection_sha256 for entry in blind.entries
+    }
+    decisions: list[BlindStageDecision] = []
+    for form in worksheet.decisions:
+        if projections.get(form.review_id) != form.diagnosis_projection_sha256:
+            _fail("blind-stage decision is bound to another diagnosis projection")
+        required = (
+            form.hidden_answer_cue_found,
+            form.expected_judgment_cue_found,
+            form.unsupported_causal_wording_found,
+            form.rationale,
+        )
+        if any(value is None for value in required):
+            _fail(f"blind-stage worksheet entry is incomplete: {form.review_id}")
+        decisions.append(
+            BlindStageDecision(
+                review_id=form.review_id,
+                diagnosis_projection_sha256=form.diagnosis_projection_sha256,
+                hidden_answer_cue_found=cast(ReviewAnswer, form.hidden_answer_cue_found),
+                expected_judgment_cue_found=cast(
+                    ReviewAnswer, form.expected_judgment_cue_found
+                ),
+                unsupported_causal_wording_found=cast(
+                    ReviewAnswer, form.unsupported_causal_wording_found
+                ),
+                rationale=cast(str, form.rationale),
+            )
+        )
+    return BlindStageRecord(
+        reviewer_kind="human",
+        reviewer_id=worksheet.reviewer_id,
+        judgments_personally_recorded=True,
+        mapping_packet_not_opened=True,
+        blind_packet_sha256=worksheet.blind_packet_sha256,
+        decisions=tuple(decisions),
+    )
+
+
 class HumanReviewDecisionForm(_StrictFrozenModel):
     """Fillable entry form; ``None`` is explicit incompleteness, never a verdict."""
 
@@ -706,6 +865,48 @@ def build_human_review_worksheet(
             HumanReviewDecisionForm(
                 review_id=entry.review_id,
                 diagnosis_projection_sha256=entry.diagnosis_projection_sha256,
+            )
+            for entry in mapping.entries
+        ),
+        family_decisions=tuple(
+            HumanFamilyDecisionForm(family_review_id=family_id)
+            for family_id in sorted({entry.family_review_id for entry in mapping.entries})
+        ),
+    )
+
+
+def open_mapped_review_stage(
+    blind: BlindReviewPacket,
+    mapping: ReviewMappingPacket,
+    blind_record: BlindStageRecord,
+) -> HumanReviewWorksheet:
+    """Open stage two only after a complete, hash-bound blind submission."""
+
+    validate_review_packets(blind, mapping)
+    blind_record = _revalidated(blind_record)
+    if blind_record.blind_packet_sha256 != blind.canonical_sha256():
+        _fail("blind-stage record is not bound to the blind packet")
+    blind_by_id = {decision.review_id: decision for decision in blind_record.decisions}
+    if set(blind_by_id) != {entry.review_id for entry in mapping.entries}:
+        _fail("blind-stage record does not exactly cover the mapped entries")
+    return HumanReviewWorksheet(
+        reviewer_id=blind_record.reviewer_id,
+        blind_stage_completed_before_mapping_opened=True,
+        judgments_personally_recorded=True,
+        blind_packet_sha256=blind.canonical_sha256(),
+        mapping_packet_sha256=mapping.canonical_sha256(),
+        decisions=tuple(
+            HumanReviewDecisionForm(
+                review_id=entry.review_id,
+                diagnosis_projection_sha256=entry.diagnosis_projection_sha256,
+                hidden_answer_cue_found=blind_by_id[entry.review_id].hidden_answer_cue_found,
+                expected_judgment_cue_found=(
+                    blind_by_id[entry.review_id].expected_judgment_cue_found
+                ),
+                unsupported_causal_wording_found=(
+                    blind_by_id[entry.review_id].unsupported_causal_wording_found
+                ),
+                rationale=blind_by_id[entry.review_id].rationale,
             )
             for entry in mapping.entries
         ),

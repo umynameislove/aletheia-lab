@@ -21,10 +21,14 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from aletheia_lab.benchmark.p2.canonical import canonical_sha256
 from aletheia_lab.benchmark.p2.contracts import (
+    CandidateExecution,
     CandidateId,
+    ContextCensus,
     ContextEntry,
     ContextId,
     EvidenceConditionName,
+    ExecutedCandidate,
+    FamilyCensus,
     FamilyCensusEntry,
     FamilyId,
     Sha256,
@@ -34,7 +38,7 @@ from aletheia_lab.benchmark.p2.evidence_projection import (
     MechanismDiagnosisEvidence,
     build_diagnosis_contexts,
 )
-from aletheia_lab.benchmark.p2.identity import FaultTypeName
+from aletheia_lab.benchmark.p2.identity import SHA256_PATTERN, FaultTypeName
 from aletheia_lab.benchmark.p2.mechanism_validation import ValidatedMechanismCandidate
 from aletheia_lab.benchmark.p2.validation import ContractViolation
 
@@ -84,13 +88,92 @@ def evidence_execution_id_for(candidate: ValidatedMechanismCandidate) -> str:
     """Derive an opaque ID from the complete validated execution record."""
 
     candidate = _revalidated(candidate)
+    return evidence_execution_id_from_execution(candidate.execution)
+
+
+def evidence_execution_id_from_execution(execution: ExecutedCandidate) -> str:
+    """Derive the evidence execution ID from a persisted execution record."""
+
+    execution = _revalidated(execution)
     digest = canonical_sha256(
         {
             "schema_version": EVIDENCE_EXECUTION_ID_SCHEMA_VERSION,
-            "execution": candidate.execution.model_dump(mode="json"),
+            "execution": execution.model_dump(mode="json"),
         }
     )
     return f"p2-execution-{digest}"
+
+
+def rebuild_evidence_bundles_from_census(
+    *,
+    execution: CandidateExecution,
+    census: FamilyCensus,
+    contexts: ContextCensus,
+) -> tuple[EvidenceConditionBundle, ...]:
+    """Rebuild review-safe bundle envelopes from a validated contract census.
+
+    The persisted alpha store intentionally keeps diagnosis projections rather
+    than evaluator envelopes.  This function performs the only permitted join:
+    accepted family -> executed candidate -> diagnosis context.  Every bundle
+    identity and digest is recomputed; caller-provided IDs are never trusted.
+    """
+
+    execution = _revalidated(execution)
+    census = _revalidated(census)
+    contexts = _revalidated(contexts)
+    executions = {item.candidate_id: item for item in execution.executed}
+    families = {item.case_family_id: item for item in census.entries}
+    rebuilt: list[EvidenceConditionBundle] = []
+    seen_contexts: set[str] = set()
+
+    for context in contexts.entries:
+        if context.diagnosis_context_id in seen_contexts:
+            _fail("context census contains a duplicate diagnosis context")
+        seen_contexts.add(context.diagnosis_context_id)
+        family = families.get(context.case_family_id)
+        if family is None:
+            _fail("context census references a family outside the accepted census")
+        executed = executions.get(family.candidate_id)
+        if executed is None:
+            _fail("accepted family has no persisted candidate execution")
+        if executed.fault_type != family.fault_type:
+            _fail("family mechanism differs from its persisted execution")
+        if executed.proposed_family_sha256 != family.proposed_family_sha256:
+            _fail("family fingerprint differs from its persisted execution")
+
+        source_binding = context.diagnosis_projection.get("source_binding_sha256")
+        if not isinstance(source_binding, str) or re.fullmatch(SHA256_PATTERN, source_binding) is None:
+            _fail("diagnosis projection has no valid source binding")
+        source_execution_id = evidence_execution_id_from_execution(executed)
+        bundle_hash = canonical_sha256(
+            _bundle_hash_payload(
+                diagnosis_context_id=context.diagnosis_context_id,
+                case_family_id=family.case_family_id,
+                candidate_id=family.candidate_id,
+                fault_type=family.fault_type,
+                evidence_condition=context.evidence_condition,
+                source_execution_id=source_execution_id,
+                source_binding_sha256=source_binding,
+                diagnosis_projection=context.diagnosis_projection,
+                diagnosis_projection_sha256=context.diagnosis_projection_sha256,
+            )
+        )
+        rebuilt.append(
+            EvidenceConditionBundle(
+                evidence_bundle_id=f"p2-evidence-bundle-{bundle_hash}",
+                diagnosis_context_id=context.diagnosis_context_id,
+                case_family_id=family.case_family_id,
+                candidate_id=family.candidate_id,
+                fault_type=family.fault_type,
+                evidence_condition=context.evidence_condition,
+                source_execution_id=source_execution_id,
+                source_binding_sha256=source_binding,
+                diagnosis_projection=context.diagnosis_projection,
+                diagnosis_projection_sha256=context.diagnosis_projection_sha256,
+                bundle_sha256=bundle_hash,
+            )
+        )
+    return tuple(sorted(rebuilt, key=lambda item: item.evidence_bundle_id))
 
 
 def _bundle_hash_payload(
