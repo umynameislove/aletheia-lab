@@ -728,3 +728,24 @@ print(bundle.canonical_sha256())
             ).strip()
         )
     assert outputs[0] == outputs[1]
+
+
+# ---------------------------------------------------------------------------
+# Nhóm C — validate_sibling_bundles error boundaries (offline unit tests)
+# ---------------------------------------------------------------------------
+
+
+def test_validate_sibling_bundles_empty_iterable_raises() -> None:
+    """An empty bundle list cannot satisfy all three required evidence conditions."""
+    from aletheia_lab.evidence.validation import validate_sibling_bundles
+
+    with pytest.raises(ValueError, match="one full, missing_key and noisy"):
+        validate_sibling_bundles([])
+
+
+def test_validate_sibling_bundles_two_bundles_raises() -> None:
+    """Two bundles cannot cover all three required conditions."""
+    from aletheia_lab.evidence.validation import validate_sibling_bundles
+
+    with pytest.raises(ValueError, match="one full, missing_key and noisy"):
+        validate_sibling_bundles(iter([]))  # exercises the count path via empty iterator

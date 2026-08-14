@@ -204,7 +204,9 @@ class OpenAIChatCompletionsAdapter:
         api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
             raise AdapterError("missing_api_key", "OPENAI_API_KEY is not set")
-        from openai import OpenAI
+        from openai import (  # type: ignore[import-not-found]  # openai is an optional runtime dep
+            OpenAI,
+        )
 
         client = cast(OpenAIClient, OpenAI(api_key=api_key))
         return cls(client=client)

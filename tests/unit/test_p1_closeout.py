@@ -334,3 +334,172 @@ def test_closeout_rejects_stale_evaluation_and_symlink(
             closeout_inputs["evaluation"],
             clean,
         )
+
+
+# ---------------------------------------------------------------------------
+# Nhóm C — result_lock tamper / invariant boundaries (offline unit tests)
+# ---------------------------------------------------------------------------
+
+
+def test_operational_totals_outcome_count_mismatch_raises() -> None:
+    """success_count + unresolved_count must equal run_count; model validator enforces this."""
+    from pydantic import ValidationError
+
+    from aletheia_lab.evaluation.result_lock import OperationalTotals
+
+    with pytest.raises(ValidationError, match="outcome counts do not match"):
+        OperationalTotals(
+            run_count=10,
+            success_count=8,   # 8 + 1 = 9, not 10
+            unresolved_count=1,
+            attempt_count=10,
+            retry_count=0,
+            input_tokens=100,
+            output_tokens=50,
+            estimated_cost_usd=0.01,
+            latency_ms=1000.0,
+        )
+
+
+def test_operational_totals_attempt_below_run_count_raises() -> None:
+    """attempt_count must be >= run_count; retries cannot be negative."""
+    from pydantic import ValidationError
+
+    from aletheia_lab.evaluation.result_lock import OperationalTotals
+
+    with pytest.raises(ValidationError, match="cannot be smaller than run_count"):
+        OperationalTotals(
+            run_count=5,
+            success_count=3,
+            unresolved_count=2,
+            attempt_count=4,   # 4 < 5 — impossible if each run needs one attempt
+            retry_count=0,
+            input_tokens=0,
+            output_tokens=0,
+            estimated_cost_usd=0.0,
+            latency_ms=0.0,
+        )
+
+
+def test_operational_totals_retry_count_mismatch_raises() -> None:
+    """retry_count must equal attempt_count - run_count."""
+    from pydantic import ValidationError
+
+    from aletheia_lab.evaluation.result_lock import OperationalTotals
+
+    with pytest.raises(ValidationError, match="retry_count is not derived"):
+        OperationalTotals(
+            run_count=4,
+            success_count=3,
+            unresolved_count=1,
+            attempt_count=6,
+            retry_count=1,   # correct would be 6 - 4 = 2
+            input_tokens=0,
+            output_tokens=0,
+            estimated_cost_usd=0.0,
+            latency_ms=0.0,
+        )
+
+
+def test_artifact_digest_invalid_sha256_rejected() -> None:
+    """sha256 field must match ^[0-9a-f]{64}$; short or non-hex strings must be rejected."""
+    from pydantic import ValidationError
+
+    from aletheia_lab.evaluation.result_lock import ArtifactDigest
+
+    with pytest.raises(ValidationError):
+        ArtifactDigest(relative_path="pilot-manifest.json", sha256="not_a_valid_sha256")
+
+
+def test_artifact_digest_absolute_path_rejected() -> None:
+    """_safe_relative_path must reject absolute POSIX paths."""
+    from pydantic import ValidationError
+
+    from aletheia_lab.evaluation.result_lock import ArtifactDigest
+
+    with pytest.raises(ValidationError):
+        ArtifactDigest(relative_path="/absolute/path/file.json", sha256="a" * 64)
+
+
+def test_artifact_digest_parent_traversal_rejected() -> None:
+    """_safe_relative_path must reject paths that traverse parent directories."""
+    from pydantic import ValidationError
+
+    from aletheia_lab.evaluation.result_lock import ArtifactDigest
+
+    with pytest.raises(ValidationError):
+        ArtifactDigest(relative_path="../parent/file.json", sha256="a" * 64)
+
+
+def test_artifact_digest_valid_construction() -> None:
+    """A canonical relative path with a valid 64-char hex sha256 must be accepted."""
+    from aletheia_lab.evaluation.result_lock import ArtifactDigest
+
+    digest = ArtifactDigest(relative_path="pilot-manifest.json", sha256="a" * 64)
+    assert digest.relative_path == "pilot-manifest.json"
+    assert len(digest.sha256) == 64
+
+
+def test_tree_digest_empty_directory_raises(tmp_path: Path) -> None:
+    """_tree_digest must raise ValueError when the artifact root has no files."""
+    from aletheia_lab.evaluation.result_lock import _tree_digest
+
+    empty = tmp_path / "empty_root"
+    empty.mkdir()
+    with pytest.raises(ValueError, match="contains no files"):
+        _tree_digest(empty)
+
+
+def test_tree_digest_non_directory_path_raises(tmp_path: Path) -> None:
+    """_tree_digest must raise FileNotFoundError when the path is a file, not a directory."""
+    from aletheia_lab.evaluation.result_lock import _tree_digest
+
+    file_path = tmp_path / "not_a_dir.json"
+    file_path.write_text("{}", encoding="utf-8")
+    with pytest.raises(FileNotFoundError, match="not a real directory"):
+        _tree_digest(file_path)
+
+
+# ---------------------------------------------------------------------------
+# Nhóm C — typing fix regression: _error_markdown paired-findings rendering
+# ---------------------------------------------------------------------------
+
+
+def test_error_markdown_renders_paired_findings_correctly() -> None:
+    """_error_markdown must render PairedErrorFinding rows with missing_key_sensitivity
+    and noisy_robustness.  Regression guard for the item→finding loop-variable rename
+    that resolved mypy [assignment] + [attr-defined] errors (Fix 2, Phần 3)."""
+    from aletheia_lab.diagnosis.schema import PilotVariant
+    from aletheia_lab.evaluation.closeout import (
+        P1ErrorAnalysisDraft,
+        PairedErrorFinding,
+        _error_markdown,
+    )
+
+    finding = PairedErrorFinding(
+        finding_id="paired-finding-01",
+        case_family_id="p1-family-" + "a" * 64,
+        variant=PilotVariant.B1_PLAIN,
+        missing_key_sensitivity=True,
+        noisy_robustness=False,
+        issues=(),
+        finding_codes=("sens-pass",),
+        human_review_status="pending",
+    )
+    draft = P1ErrorAnalysisDraft(
+        schema_version="p1-error-analysis-draft/1",
+        result_status="machine_scored_pending_human_review",
+        result_lock_sha256="a" * 64,
+        entry_finding_count=0,
+        paired_finding_count=1,
+        entry_findings=(),
+        paired_findings=(finding,),
+        analysis_boundary="analysis boundary goes here",
+    )
+    rendered = _error_markdown(draft)
+
+    assert "paired-finding-01" in rendered, "finding_id must appear in rendered markdown"
+    assert "True" in rendered, "missing_key_sensitivity=True must appear in rendered markdown"
+    assert "False" in rendered, "noisy_robustness=False must appear in rendered markdown"
+    assert "sens-pass" in rendered, "finding_codes must appear in rendered markdown"
+    assert "Paired-sensitivity findings" in rendered, "section header must be present"

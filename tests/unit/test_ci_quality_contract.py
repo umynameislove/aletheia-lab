@@ -156,3 +156,83 @@ def test_pandas_stubs_declared_in_dev_deps() -> None:
     assert any("pandas-stubs" in dep for dep in dev_deps), (
         "pandas-stubs is missing from [project.optional-dependencies.dev] in pyproject.toml"
     )
+
+
+# ---------------------------------------------------------------------------
+# Expanded mypy scope contract
+# ---------------------------------------------------------------------------
+
+_MYPY_EXPANDED_MODULES: tuple[str, ...] = (
+    "src/aletheia_lab/baseline",
+    "src/aletheia_lab/data",
+    "src/aletheia_lab/benchmark",
+    "src/aletheia_lab/diagnosis",
+    "src/aletheia_lab/evidence",
+    "src/aletheia_lab/evaluation",
+    "src/aletheia_lab/reporting",
+    "src/aletheia_lab/cli.py",
+    "src/aletheia_lab/config.py",
+)
+
+
+def _mypy_run(test_job: dict) -> str:  # type: ignore[type-arg]
+    """Return the 'run' string of the mypy step; fail the test if missing."""
+    for step in test_job.get("steps", []):
+        run = str(step.get("run", ""))
+        if "mypy" in run:
+            return run
+    pytest.fail("No mypy step found in the 'test' job of ci.yml")
+
+
+def test_mypy_uses_strict_flag(test_job: dict) -> None:  # type: ignore[type-arg]
+    """The CI mypy step must pass --strict; widening to permissive is not allowed."""
+    run = _mypy_run(test_job)
+    assert "--strict" in run, f"--strict flag missing from mypy step: {run!r}"
+
+
+def test_mypy_preserves_original_data_baseline_scope(test_job: dict) -> None:  # type: ignore[type-arg]
+    """The original data + baseline scope must not be silently dropped from CI."""
+    run = _mypy_run(test_job)
+    for path in ("src/aletheia_lab/data", "src/aletheia_lab/baseline"):
+        assert path in run, (
+            f"Original mypy scope {path!r} must still be present in the CI step."
+        )
+
+
+def test_mypy_includes_expanded_non_p2_scope(test_job: dict) -> None:  # type: ignore[type-arg]
+    """All non-P2 aletheia_lab modules must appear in the blocking CI mypy step."""
+    run = _mypy_run(test_job)
+    missing = [m for m in _MYPY_EXPANDED_MODULES if m not in run]
+    assert not missing, (
+        "The following required modules are absent from the CI mypy step:\n"
+        + "\n".join(f"  {m}" for m in missing)
+    )
+
+
+def test_mypy_excludes_benchmark_p2(test_job: dict) -> None:  # type: ignore[type-arg]
+    """benchmark/p2 must be explicitly excluded; type debt in P2 is tracked separately."""
+    run = _mypy_run(test_job)
+    assert "--exclude" in run and "benchmark/p2" in run, (
+        "The CI mypy step must explicitly --exclude src/aletheia_lab/benchmark/p2. "
+        f"Current run string: {run!r}"
+    )
+
+
+_MYPY_BROAD_SUPPRESS_FLAGS: tuple[str, ...] = (
+    "--ignore-missing-imports",
+    "--no-strict",
+    "--allow-untyped-defs",
+    "--allow-untyped-calls",
+    "--disable-error-code",
+    "--no-error-summary",
+)
+
+
+def test_mypy_has_no_broad_suppress_flags(test_job: dict) -> None:  # type: ignore[type-arg]
+    """The CI mypy step must not carry broad suppression flags that silently weaken strict mode."""
+    run = _mypy_run(test_job)
+    offenders = [f for f in _MYPY_BROAD_SUPPRESS_FLAGS if f in run]
+    assert not offenders, (
+        f"Broad suppression flags found in mypy step: {offenders!r}. "
+        "These would silently swallow type errors without raising CI failure."
+    )

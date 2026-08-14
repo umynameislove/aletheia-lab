@@ -57,8 +57,8 @@ class OpenAICapabilities(_StrictFrozenModel):
 
 
 class OpenAIPricing(_StrictFrozenModel):
-    input: Literal[2.0]
-    output: Literal[8.0]
+    input: Literal[2.0]  # type: ignore[valid-type]  # Pydantic validates float literals; mypy/PEP 586 do not
+    output: Literal[8.0]  # type: ignore[valid-type]  # Pydantic validates float literals; mypy/PEP 586 do not
 
 
 class OpenAIExecutionPolicy(_StrictFrozenModel):

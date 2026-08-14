@@ -33,7 +33,20 @@ jobs:
       - name: Test
         run: pytest --cov=aletheia_lab --cov-report=term-missing --cov-fail-under=88
       - name: Type-check (strict)
-        run: python -m mypy --strict --python-version ${{ matrix.python-version }} src/aletheia_lab/data src/aletheia_lab/baseline
+        run: >-
+          python -m mypy --strict --python-version ${{ matrix.python-version }}
+          src/aletheia_lab/__init__.py
+          src/aletheia_lab/__main__.py
+          src/aletheia_lab/cli.py
+          src/aletheia_lab/config.py
+          src/aletheia_lab/baseline
+          src/aletheia_lab/data
+          src/aletheia_lab/benchmark
+          src/aletheia_lab/diagnosis
+          src/aletheia_lab/evidence
+          src/aletheia_lab/evaluation
+          src/aletheia_lab/reporting
+          --exclude src/aletheia_lab/benchmark/p2
 
   # ---------------------------------------------------------------------------
   # Quality job — lint and hygiene run once (not per-version).
