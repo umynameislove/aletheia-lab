@@ -728,3 +728,42 @@ print(bundle.canonical_sha256())
             ).strip()
         )
     assert outputs[0] == outputs[1]
+
+
+# ---------------------------------------------------------------------------
+# validate_sibling_bundles error boundaries (offline unit tests)
+# ---------------------------------------------------------------------------
+
+
+def test_validate_sibling_bundles_empty_iterable_raises() -> None:
+    """An empty bundle list cannot satisfy all three required evidence conditions."""
+    from aletheia_lab.evidence.validation import validate_sibling_bundles
+
+    with pytest.raises(ValueError, match="one full, missing_key and noisy"):
+        validate_sibling_bundles([])
+
+
+def test_validate_sibling_bundles_two_bundles_raises(p1_manifest_factory) -> None:
+    """Two bundles cannot cover all three required conditions."""
+    from aletheia_lab.evidence.validation import validate_sibling_bundles
+
+    full_manifest = CaseManifest.model_validate(
+        p1_manifest_factory(
+            case_id="p1-data-drift-01-full",
+            public_id="p1-case-01-full",
+            condition="full",
+        )
+    )
+    missing_manifest = CaseManifest.model_validate(
+        p1_manifest_factory(
+            case_id="p1-data-drift-01-missing",
+            public_id="p1-case-01-missing",
+            condition="missing_key",
+        )
+    )
+    siblings = (
+        _bundle_for_manifest(full_manifest),
+        _bundle_for_manifest(missing_manifest),
+    )
+    with pytest.raises(ValueError, match="one full, missing_key and noisy"):
+        validate_sibling_bundles(iter(siblings))

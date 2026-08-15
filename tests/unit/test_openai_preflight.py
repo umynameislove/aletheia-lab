@@ -88,6 +88,26 @@ def test_config_rejects_embedded_api_key() -> None:
         OpenAIPilotConfig.model_validate(payload)
 
 
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("input", 2),
+        ("input", 2.01),
+        ("output", 8),
+        ("output", 7.99),
+    ],
+)
+def test_config_rejects_non_exact_pricing(field: str, value: object) -> None:
+    """Frozen prices require both the exact value and the exact JSON number type."""
+
+    payload = _config_payload()
+    pricing = payload["pricing_usd_per_million_tokens"]
+    assert isinstance(pricing, dict)
+    pricing[field] = value
+    with pytest.raises(ValidationError, match="frozen provider contract"):
+        OpenAIPilotConfig.model_validate(payload)
+
+
 def test_preflight_proves_complete_matched_plan_without_network(
     p1_store: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -140,9 +160,7 @@ def test_preflight_report_is_secret_free_immutable_and_non_overwriting(
         write_openai_preflight(report, output)
 
 
-def test_preflight_loader_rejects_duplicate_json_keys(
-    p1_store: Path, tmp_path: Path
-) -> None:
+def test_preflight_loader_rejects_duplicate_json_keys(p1_store: Path, tmp_path: Path) -> None:
     report = build_openai_preflight(p1_store, load_openai_pilot_config(CONFIG_PATH))
     raw = json.dumps(report.model_dump(mode="json"))
     duplicate = raw[:-1] + ',"passed":true}'
@@ -173,9 +191,7 @@ class _CapturingCompletions:
             }
         )
         usage = (
-            SimpleNamespace(prompt_tokens=120, completion_tokens=40)
-            if self.include_usage
-            else None
+            SimpleNamespace(prompt_tokens=120, completion_tokens=40) if self.include_usage else None
         )
         return SimpleNamespace(
             id="chatcmpl-test",
@@ -217,6 +233,44 @@ def test_environment_factory_fails_closed_when_sdk_is_absent(
     with pytest.raises(AdapterError) as exc_info:
         OpenAIChatCompletionsAdapter.from_environment()
     assert exc_info.value.error_type == "missing_sdk"
+
+
+def test_environment_factory_builds_pinned_client_without_network(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _FakeClient(_CapturingCompletions())
+    captured: dict[str, object] = {}
+
+    def client_factory(**kwargs: object) -> _FakeClient:
+        captured.update(kwargs)
+        return client
+
+    monkeypatch.setattr("importlib.metadata.version", lambda _name: "2.46.0")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key-never-sent")
+    monkeypatch.setattr(
+        "aletheia_lab.diagnosis.adapters.importlib.import_module",
+        lambda _name: SimpleNamespace(OpenAI=client_factory),
+    )
+
+    adapter = OpenAIChatCompletionsAdapter.from_environment()
+
+    assert adapter.identity.model == MODEL_SNAPSHOT
+    assert captured == {"api_key": "test-key-never-sent"}
+
+
+def test_environment_factory_rejects_sdk_without_client_factory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("importlib.metadata.version", lambda _name: "2.46.0")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key-never-sent")
+    monkeypatch.setattr(
+        "aletheia_lab.diagnosis.adapters.importlib.import_module",
+        lambda _name: SimpleNamespace(),
+    )
+
+    with pytest.raises(AdapterError) as exc_info:
+        OpenAIChatCompletionsAdapter.from_environment()
+    assert exc_info.value.error_type == "invalid_sdk"
 
 
 def _first_request(p1_store: Path):

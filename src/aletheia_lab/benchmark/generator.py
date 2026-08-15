@@ -18,7 +18,7 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 import pandas as pd
 
@@ -233,7 +233,7 @@ def generate_p1(
         observed = categorical_distribution(drifted[feature].astype(str).tolist())
         psi = population_stability_index(reference, observed)
         observed_metric = _accuracy(
-            drifted[list(FEATURE_COLUMNS)], cast("pd.Series", drifted[_TARGET_COLUMN])
+            drifted[list(FEATURE_COLUMNS)], drifted[_TARGET_COLUMN]
         )
         delta = observed_metric - reference_metric
         outcome_class = classify_outcome(delta)

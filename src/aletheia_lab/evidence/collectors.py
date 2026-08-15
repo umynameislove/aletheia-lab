@@ -102,7 +102,7 @@ def _item(
     visible: bool,
     evaluator_role: str | None = None,
 ) -> EvidenceItem:
-    metadata: dict[str, str] = {"source_context_id": source_context_id}
+    metadata: dict[str, str | int | float | bool | None] = {"source_context_id": source_context_id}
     if evaluator_role is not None:
         metadata["evaluator_role"] = evaluator_role
     return EvidenceItem.from_content(
@@ -130,7 +130,7 @@ def _core_items(
 
     # Local import only avoids weakening the public collector signature to a
     # loose dict while retaining strict Pydantic values from DiagnosisInput.
-    from aletheia_lab.benchmark.case_schema import ObservableSignals
+    from aletheia_lab.benchmark.case_schema import ObservableSignals, ObservedOutcome
 
     if not isinstance(signals, ObservableSignals):
         raise EvidenceCollectionError("collector requires strict ObservableSignals")
@@ -148,6 +148,8 @@ def _core_items(
     withheld = set(condition_rubric_for(condition).intentionally_withheld_evidence_roles)
     feature = cast("str", signals.candidate_feature)
     sample_size = cast("int", signals.sample_size)
+    # Narrow from ObservedOutcome | None; the required-fields guard above ensures non-None.
+    baseline_metric_ref = cast(ObservedOutcome, signals.baseline_metric_reference)
     common = {"feature": feature, "sample_size": sample_size}
 
     items = [
@@ -194,7 +196,7 @@ def _core_items(
             kind="metric",
             roles=("metric_comparison",),
             title="Evaluation metric comparison",
-            payload=signals.baseline_metric_reference.model_dump(mode="json"),
+            payload=baseline_metric_ref.model_dump(mode="json"),
             source_path=source_path,
             source_context_id=source_context_id,
             visible="metric_comparison" not in withheld,

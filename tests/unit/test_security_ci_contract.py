@@ -121,7 +121,7 @@ def test_bandit_suppression_is_narrow_and_documented() -> None:
             if match:
                 preceding = lines[index - 1].strip() if index else ""
                 suppressions.append(
-                    (str(path.relative_to(_ROOT)), match.group(1) or "", preceding)
+                    (path.relative_to(_ROOT).as_posix(), match.group(1) or "", preceding)
                 )
     assert suppressions == [
         (

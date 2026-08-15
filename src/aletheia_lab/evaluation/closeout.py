@@ -545,11 +545,11 @@ def _error_markdown(report: P1ErrorAnalysisDraft) -> str:
             "|---|---|---:|---:|---|",
         ]
     )
-    for item in report.paired_findings:
+    for finding in report.paired_findings:
         lines.append(
-            f"| `{item.finding_id}` | `{item.variant}` | "
-            f"{item.missing_key_sensitivity} | {item.noisy_robustness} | "
-            f"{', '.join(item.finding_codes)} |"
+            f"| `{finding.finding_id}` | `{finding.variant}` | "
+            f"{finding.missing_key_sensitivity} | {finding.noisy_robustness} | "
+            f"{', '.join(finding.finding_codes)} |"
         )
     if not report.paired_findings:
         lines.append("| none | - | - | - | - |")

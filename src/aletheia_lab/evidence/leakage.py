@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from collections import Counter, defaultdict
 from collections.abc import Iterable
-from typing import Final, Literal
+from typing import Final, Literal, TypedDict
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
@@ -261,6 +261,19 @@ class BlindReviewPacket(_StrictFrozenModel):
         return sha256_text(canonical_json(self.model_dump(mode="json")))
 
 
+class _MappingBindingPayload(TypedDict):
+    """Typed mapping payload; preserves EvidenceCondition and EvidenceSufficiency Literals."""
+
+    review_id: str
+    diagnosis_view_sha256: str
+    evidence_bundle_id: str
+    case_family_id: str
+    family_review_id: str
+    evidence_condition: EvidenceCondition
+    expected_sufficiency: EvidenceSufficiency
+    expected_diagnosis_behavior: str
+
+
 def _mapping_binding_payload(
     *,
     review_id: str,
@@ -271,7 +284,7 @@ def _mapping_binding_payload(
     evidence_condition: EvidenceCondition,
     expected_sufficiency: EvidenceSufficiency,
     expected_diagnosis_behavior: str,
-) -> dict[str, str]:
+) -> _MappingBindingPayload:
     return {
         "review_id": review_id,
         "diagnosis_view_sha256": diagnosis_view_sha256,
@@ -402,7 +415,7 @@ def build_human_review_packets(
 
     materialized = tuple(bundles)
     blind_entries: list[BlindReviewPacketEntry] = []
-    mapping_values: list[dict[str, str]] = []
+    mapping_values: list[_MappingBindingPayload] = []
     for bundle in materialized:
         view = project_diagnosis_evidence(bundle)
         view_sha = view.canonical_sha256()

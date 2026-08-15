@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import importlib.metadata
 import os
 import time
@@ -204,9 +205,11 @@ class OpenAIChatCompletionsAdapter:
         api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
             raise AdapterError("missing_api_key", "OPENAI_API_KEY is not set")
-        from openai import OpenAI
-
-        client = cast(OpenAIClient, OpenAI(api_key=api_key))
+        module = importlib.import_module("openai")
+        factory = getattr(module, "OpenAI", None)
+        if factory is None or not callable(factory):
+            raise AdapterError("invalid_sdk", "OpenAI SDK does not expose a client factory")
+        client = cast(OpenAIClient, factory(api_key=api_key))
         return cls(client=client)
 
     @property
@@ -231,7 +234,9 @@ class OpenAIChatCompletionsAdapter:
                 timeout=request.settings.timeout_seconds,
             )
         except Exception as exc:
-            raise AdapterError("openai_api_error", f"OpenAI request failed: {type(exc).__name__}") from exc
+            raise AdapterError(
+                "openai_api_error", f"OpenAI request failed: {type(exc).__name__}"
+            ) from exc
         latency_ms = (time.perf_counter() - started) * 1000.0
 
         response_id = getattr(response, "id", None)
@@ -243,7 +248,9 @@ class OpenAIChatCompletionsAdapter:
         if not isinstance(actual_model, str) or not actual_model.strip():
             raise AdapterError("incomplete_response", "OpenAI response has no model identity")
         if not isinstance(choices, list) or len(choices) != 1:
-            raise AdapterError("incomplete_response", "OpenAI response must contain exactly one choice")
+            raise AdapterError(
+                "incomplete_response", "OpenAI response must contain exactly one choice"
+            )
         message = getattr(choices[0], "message", None)
         content = getattr(message, "content", None)
         refusal = getattr(message, "refusal", None)
