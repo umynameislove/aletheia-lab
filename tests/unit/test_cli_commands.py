@@ -12,6 +12,7 @@ No external providers are contacted and no P1/P2 artifacts are generated.
 from __future__ import annotations
 
 import json
+import re
 import runpy
 import sys
 from pathlib import Path
@@ -38,7 +39,7 @@ def test_module_entry_point_invokes_cli_app(
     with pytest.raises(SystemExit) as exc_info:
         runpy.run_module("aletheia_lab", run_name="__main__", alter_sys=True)
     assert exc_info.value.code == 0
-    output = capsys.readouterr().out
+    output = re.sub(r"\x1b\[[0-9;]*m", "", capsys.readouterr().out)
     assert "Usage: python -m aletheia_lab" in output
     assert "benchmark" in output
 
