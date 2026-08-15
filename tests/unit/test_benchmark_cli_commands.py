@@ -187,17 +187,33 @@ def test_generate_p1_validation_failure_after_generation_exits_one(
 # ---------------------------------------------------------------------------
 
 
-def test_validate_p1_generated_cases_passes(
+def test_generated_p1_validation_commands_pass(
     generated_p1_assets: tuple[Path, Path],
 ) -> None:
-    cases_dir, _ = generated_p1_assets
-    result = _runner.invoke(
+    """Exercise both validators against one shared synthetic pipeline lifecycle."""
+
+    cases_dir, store_dir = generated_p1_assets
+    cases_result = _runner.invoke(
         benchmark_app,
         ["validate-p1", "--cases-dir", str(cases_dir)],
     )
-    assert result.exit_code == 0, result.output
-    assert "Validation PASS" in result.output
-    assert '"passed": true' in result.output
+    assert cases_result.exit_code == 0, cases_result.output
+    assert "Validation PASS" in cases_result.output
+    assert '"passed": true' in cases_result.output
+
+    evidence_result = _runner.invoke(
+        benchmark_app,
+        [
+            "validate-p1-evidence",
+            "--store-dir",
+            str(store_dir),
+            "--cases-dir",
+            str(cases_dir),
+        ],
+    )
+    assert evidence_result.exit_code == 0, evidence_result.output
+    assert "Evidence technical validation PASS" in evidence_result.output
+    assert '"passed": true' in evidence_result.output
 
 
 def test_validate_p1_empty_cases_dir_exits_nonzero(tmp_path: Path) -> None:
@@ -270,25 +286,6 @@ def test_generate_p1_evidence_file_exists_exits_one(
 # ---------------------------------------------------------------------------
 # validate-p1-evidence — validation failure boundary
 # ---------------------------------------------------------------------------
-
-
-def test_validate_p1_evidence_generated_store_passes(
-    generated_p1_assets: tuple[Path, Path],
-) -> None:
-    cases_dir, store_dir = generated_p1_assets
-    result = _runner.invoke(
-        benchmark_app,
-        [
-            "validate-p1-evidence",
-            "--store-dir",
-            str(store_dir),
-            "--cases-dir",
-            str(cases_dir),
-        ],
-    )
-    assert result.exit_code == 0, result.output
-    assert "Evidence technical validation PASS" in result.output
-    assert '"passed": true' in result.output
 
 
 def test_validate_p1_evidence_missing_store_exits_nonzero(tmp_path: Path) -> None:
