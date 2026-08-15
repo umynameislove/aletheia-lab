@@ -1,4 +1,4 @@
-"""Tests for reporting helper modules (Nhóm B).
+"""Tests for reporting helper modules.
 
 Covers behavioral contracts of:
   - reporting/plots.py  — figure_filename normalization
@@ -8,6 +8,8 @@ All tests are offline, deterministic, and free of external I/O.
 """
 
 from __future__ import annotations
+
+from collections.abc import Iterator
 
 from aletheia_lab.evaluation.judge import JudgeResult
 from aletheia_lab.reporting.plots import figure_filename
@@ -145,7 +147,8 @@ def test_metric_rows_multiple_results_preserves_order() -> None:
 
 def test_metric_rows_generator_input_accepted() -> None:
     """metric_rows must work with any Iterable, not just lists."""
-    def _gen() -> JudgeResult:  # type: ignore[return]
+
+    def _gen() -> Iterator[JudgeResult]:
         yield _make_result("gen-01")
         yield _make_result("gen-02")
 

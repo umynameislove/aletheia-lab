@@ -6,12 +6,9 @@ Tests are grouped by behavioral contract:
   - Failure paths (validation returns passed=False → exit 1 + FAIL message)
   - FileExistsError / immutable-output boundaries (monkeypatched)
 
-All tests are offline and deterministic.
-No P1/P2 artifacts are generated, read, or written.
-No external providers are contacted.
-
-Success paths that require a fully generated P1 evidence store are deferred
-to integration tests that run only when those artifacts are present.
+All tests are offline and deterministic. Representative success paths build
+synthetic P1 cases and an evidence store under ``tmp_path``; no frozen project
+artifacts are read or written and no external providers are contacted.
 """
 
 from __future__ import annotations
@@ -33,6 +30,41 @@ _runner = CliRunner()
 def _np(tmp_path: Path, name: str) -> Path:
     """Return a path that does NOT exist inside tmp_path."""
     return tmp_path / name
+
+
+@pytest.fixture
+def generated_p1_assets(p1_generator_config: Path, tmp_path: Path) -> tuple[Path, Path]:
+    """Generate and validate a real synthetic case set and evidence store via CLI."""
+
+    cases_dir = tmp_path / "cases"
+    store_dir = tmp_path / "evidence-store"
+    generated = _runner.invoke(
+        benchmark_app,
+        [
+            "generate-p1",
+            "--config",
+            str(p1_generator_config),
+            "--output-dir",
+            str(cases_dir),
+        ],
+    )
+    assert generated.exit_code == 0, generated.output
+    assert "Generated 15 cases, validation PASS, leakage 0" in generated.output
+
+    evidence = _runner.invoke(
+        benchmark_app,
+        [
+            "generate-p1-evidence",
+            "--cases-dir",
+            str(cases_dir),
+            "--output-dir",
+            str(store_dir),
+        ],
+    )
+    assert evidence.exit_code == 0, evidence.output
+    assert "Generated and verified 15 bundles" in evidence.output
+    assert "machine leakage PASS" in evidence.output
+    return cases_dir, store_dir
 
 
 # ---------------------------------------------------------------------------
@@ -86,7 +118,13 @@ def test_generate_p1_generator_config_error_exits_one(
     monkeypatch.setattr("aletheia_lab.benchmark.cli.generate_p1", _raise)
     result = _runner.invoke(
         benchmark_app,
-        ["generate-p1", "--config", str(_np(tmp_path, "cfg.yaml")), "--output-dir", str(_np(tmp_path, "out"))],
+        [
+            "generate-p1",
+            "--config",
+            str(_np(tmp_path, "cfg.yaml")),
+            "--output-dir",
+            str(_np(tmp_path, "out")),
+        ],
     )
     assert result.exit_code == 1
     assert "FAIL" in result.output
@@ -104,7 +142,13 @@ def test_generate_p1_dataset_schema_error_exits_one(
     monkeypatch.setattr("aletheia_lab.benchmark.cli.generate_p1", _raise)
     result = _runner.invoke(
         benchmark_app,
-        ["generate-p1", "--config", str(_np(tmp_path, "cfg.yaml")), "--output-dir", str(_np(tmp_path, "out"))],
+        [
+            "generate-p1",
+            "--config",
+            str(_np(tmp_path, "cfg.yaml")),
+            "--output-dir",
+            str(_np(tmp_path, "out")),
+        ],
     )
     assert result.exit_code == 1
     assert "FAIL" in result.output
@@ -126,7 +170,13 @@ def test_generate_p1_validation_failure_after_generation_exits_one(
     )
     result = _runner.invoke(
         benchmark_app,
-        ["generate-p1", "--config", str(_np(tmp_path, "cfg.yaml")), "--output-dir", str(_np(tmp_path, "out"))],
+        [
+            "generate-p1",
+            "--config",
+            str(_np(tmp_path, "cfg.yaml")),
+            "--output-dir",
+            str(_np(tmp_path, "out")),
+        ],
     )
     assert result.exit_code == 1
     assert "FAIL" in result.output
@@ -137,6 +187,19 @@ def test_generate_p1_validation_failure_after_generation_exits_one(
 # ---------------------------------------------------------------------------
 
 
+def test_validate_p1_generated_cases_passes(
+    generated_p1_assets: tuple[Path, Path],
+) -> None:
+    cases_dir, _ = generated_p1_assets
+    result = _runner.invoke(
+        benchmark_app,
+        ["validate-p1", "--cases-dir", str(cases_dir)],
+    )
+    assert result.exit_code == 0, result.output
+    assert "Validation PASS" in result.output
+    assert '"passed": true' in result.output
+
+
 def test_validate_p1_empty_cases_dir_exits_nonzero(tmp_path: Path) -> None:
     """An empty cases directory has 0 of 15 required cases → validation fails."""
     cases_dir = tmp_path / "empty_cases"
@@ -145,7 +208,8 @@ def test_validate_p1_empty_cases_dir_exits_nonzero(tmp_path: Path) -> None:
         benchmark_app,
         ["validate-p1", "--cases-dir", str(cases_dir)],
     )
-    assert result.exit_code != 0
+    assert result.exit_code == 1
+    assert "Validation FAILED" in result.output
 
 
 def test_validate_p1_missing_cases_dir_exits_nonzero(tmp_path: Path) -> None:
@@ -153,7 +217,8 @@ def test_validate_p1_missing_cases_dir_exits_nonzero(tmp_path: Path) -> None:
         benchmark_app,
         ["validate-p1", "--cases-dir", str(_np(tmp_path, "no_dir"))],
     )
-    assert result.exit_code != 0
+    assert result.exit_code == 1
+    assert "Validation FAILED" in result.output
 
 
 # ---------------------------------------------------------------------------
@@ -167,8 +232,10 @@ def test_generate_p1_evidence_missing_cases_dir_exits_one(tmp_path: Path) -> Non
         benchmark_app,
         [
             "generate-p1-evidence",
-            "--cases-dir", str(_np(tmp_path, "no_cases")),
-            "--output-dir", str(_np(tmp_path, "out")),
+            "--cases-dir",
+            str(_np(tmp_path, "no_cases")),
+            "--output-dir",
+            str(_np(tmp_path, "out")),
         ],
     )
     assert result.exit_code == 1
@@ -179,6 +246,7 @@ def test_generate_p1_evidence_file_exists_exits_one(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """generate_p1_evidence_store raises FileExistsError for immutable output → exit 1."""
+
     def _raise(*_a: object, **_kw: object) -> None:
         raise FileExistsError("output already exists and is immutable")
 
@@ -189,8 +257,10 @@ def test_generate_p1_evidence_file_exists_exits_one(
         benchmark_app,
         [
             "generate-p1-evidence",
-            "--cases-dir", str(cases_dir),
-            "--output-dir", str(_np(tmp_path, "out")),
+            "--cases-dir",
+            str(cases_dir),
+            "--output-dir",
+            str(_np(tmp_path, "out")),
         ],
     )
     assert result.exit_code == 1
@@ -202,16 +272,38 @@ def test_generate_p1_evidence_file_exists_exits_one(
 # ---------------------------------------------------------------------------
 
 
+def test_validate_p1_evidence_generated_store_passes(
+    generated_p1_assets: tuple[Path, Path],
+) -> None:
+    cases_dir, store_dir = generated_p1_assets
+    result = _runner.invoke(
+        benchmark_app,
+        [
+            "validate-p1-evidence",
+            "--store-dir",
+            str(store_dir),
+            "--cases-dir",
+            str(cases_dir),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert "Evidence technical validation PASS" in result.output
+    assert '"passed": true' in result.output
+
+
 def test_validate_p1_evidence_missing_store_exits_nonzero(tmp_path: Path) -> None:
     result = _runner.invoke(
         benchmark_app,
         [
             "validate-p1-evidence",
-            "--store-dir", str(_np(tmp_path, "no_store")),
-            "--cases-dir", str(_np(tmp_path, "no_cases")),
+            "--store-dir",
+            str(_np(tmp_path, "no_store")),
+            "--cases-dir",
+            str(_np(tmp_path, "no_cases")),
         ],
     )
-    assert result.exit_code != 0
+    assert result.exit_code == 1
+    assert "Evidence validation FAILED" in result.output
 
 
 # ---------------------------------------------------------------------------
@@ -225,8 +317,10 @@ def test_run_p1_pilot_mock_missing_store_exits_one(tmp_path: Path) -> None:
         benchmark_app,
         [
             "run-p1-pilot-mock",
-            "--store-dir", str(_np(tmp_path, "no_store")),
-            "--output-dir", str(_np(tmp_path, "out")),
+            "--store-dir",
+            str(_np(tmp_path, "no_store")),
+            "--output-dir",
+            str(_np(tmp_path, "out")),
         ],
     )
     assert result.exit_code == 1
@@ -237,6 +331,7 @@ def test_run_p1_pilot_mock_file_exists_exits_one(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """FileExistsError from run_p1_matched_pilot (immutable output) → exit 1."""
+
     def _raise(*_a: object, **_kw: object) -> None:
         raise FileExistsError("pilot output directory already exists")
 
@@ -245,8 +340,10 @@ def test_run_p1_pilot_mock_file_exists_exits_one(
         benchmark_app,
         [
             "run-p1-pilot-mock",
-            "--store-dir", str(_np(tmp_path, "store")),
-            "--output-dir", str(_np(tmp_path, "out")),
+            "--store-dir",
+            str(_np(tmp_path, "store")),
+            "--output-dir",
+            str(_np(tmp_path, "out")),
         ],
     )
     assert result.exit_code == 1
@@ -263,8 +360,10 @@ def test_validate_p1_pilot_missing_dirs_exits_one(tmp_path: Path) -> None:
         benchmark_app,
         [
             "validate-p1-pilot",
-            "--output-dir", str(_np(tmp_path, "no_pilot")),
-            "--store-dir", str(_np(tmp_path, "no_store")),
+            "--output-dir",
+            str(_np(tmp_path, "no_pilot")),
+            "--store-dir",
+            str(_np(tmp_path, "no_store")),
         ],
     )
     assert result.exit_code == 1
@@ -282,9 +381,12 @@ def test_preflight_p1_openai_missing_store_exits_one(tmp_path: Path) -> None:
         benchmark_app,
         [
             "preflight-p1-openai",
-            "--store-dir", str(_np(tmp_path, "no_store")),
-            "--config", str(_np(tmp_path, "no_config.yaml")),
-            "--output", str(_np(tmp_path, "out.json")),
+            "--store-dir",
+            str(_np(tmp_path, "no_store")),
+            "--config",
+            str(_np(tmp_path, "no_config.yaml")),
+            "--output",
+            str(_np(tmp_path, "out.json")),
         ],
     )
     assert result.exit_code == 1
@@ -302,11 +404,16 @@ def test_run_p1_openai_smoke_missing_config_exits_one(tmp_path: Path) -> None:
         benchmark_app,
         [
             "run-p1-openai-smoke",
-            "--store-dir", str(_np(tmp_path, "store")),
-            "--config", str(_np(tmp_path, "no_config.yaml")),
-            "--preflight", str(_np(tmp_path, "preflight.json")),
-            "--output-dir", str(_np(tmp_path, "out")),
-            "--confirm-preflight-sha256", "a" * 64,
+            "--store-dir",
+            str(_np(tmp_path, "store")),
+            "--config",
+            str(_np(tmp_path, "no_config.yaml")),
+            "--preflight",
+            str(_np(tmp_path, "preflight.json")),
+            "--output-dir",
+            str(_np(tmp_path, "out")),
+            "--confirm-preflight-sha256",
+            "a" * 64,
         ],
     )
     assert result.exit_code == 1
@@ -323,10 +430,14 @@ def test_validate_p1_openai_smoke_missing_dirs_exits_one(tmp_path: Path) -> None
         benchmark_app,
         [
             "validate-p1-openai-smoke",
-            "--output-dir", str(_np(tmp_path, "no_dir")),
-            "--store-dir", str(_np(tmp_path, "no_store")),
-            "--config", str(_np(tmp_path, "no_config.yaml")),
-            "--preflight", str(_np(tmp_path, "no_preflight.json")),
+            "--output-dir",
+            str(_np(tmp_path, "no_dir")),
+            "--store-dir",
+            str(_np(tmp_path, "no_store")),
+            "--config",
+            str(_np(tmp_path, "no_config.yaml")),
+            "--preflight",
+            str(_np(tmp_path, "no_preflight.json")),
         ],
     )
     assert result.exit_code == 1
@@ -343,12 +454,18 @@ def test_run_p1_openai_full_missing_config_exits_one(tmp_path: Path) -> None:
         benchmark_app,
         [
             "run-p1-openai-full",
-            "--store-dir", str(_np(tmp_path, "store")),
-            "--config", str(_np(tmp_path, "no_config.yaml")),
-            "--preflight", str(_np(tmp_path, "preflight.json")),
-            "--output-dir", str(_np(tmp_path, "out")),
-            "--confirm-preflight-sha256", "a" * 64,
-            "--confirm-estimated-full-retry-ceiling-usd", "1.0",
+            "--store-dir",
+            str(_np(tmp_path, "store")),
+            "--config",
+            str(_np(tmp_path, "no_config.yaml")),
+            "--preflight",
+            str(_np(tmp_path, "preflight.json")),
+            "--output-dir",
+            str(_np(tmp_path, "out")),
+            "--confirm-preflight-sha256",
+            "a" * 64,
+            "--confirm-estimated-full-retry-ceiling-usd",
+            "1.0",
         ],
     )
     assert result.exit_code == 1
@@ -365,10 +482,14 @@ def test_validate_p1_openai_full_missing_dirs_exits_one(tmp_path: Path) -> None:
         benchmark_app,
         [
             "validate-p1-openai-full",
-            "--output-dir", str(_np(tmp_path, "no_dir")),
-            "--store-dir", str(_np(tmp_path, "no_store")),
-            "--config", str(_np(tmp_path, "no_config.yaml")),
-            "--preflight", str(_np(tmp_path, "no_preflight.json")),
+            "--output-dir",
+            str(_np(tmp_path, "no_dir")),
+            "--store-dir",
+            str(_np(tmp_path, "no_store")),
+            "--config",
+            str(_np(tmp_path, "no_config.yaml")),
+            "--preflight",
+            str(_np(tmp_path, "no_preflight.json")),
         ],
     )
     assert result.exit_code == 1
@@ -385,10 +506,14 @@ def test_evaluate_p1_pilot_missing_dirs_exits_one(tmp_path: Path) -> None:
         benchmark_app,
         [
             "evaluate-p1-pilot",
-            "--pilot-dir", str(_np(tmp_path, "no_pilot")),
-            "--store-dir", str(_np(tmp_path, "no_store")),
-            "--cases-dir", str(_np(tmp_path, "no_cases")),
-            "--output", str(_np(tmp_path, "report.json")),
+            "--pilot-dir",
+            str(_np(tmp_path, "no_pilot")),
+            "--store-dir",
+            str(_np(tmp_path, "no_store")),
+            "--cases-dir",
+            str(_np(tmp_path, "no_cases")),
+            "--output",
+            str(_np(tmp_path, "report.json")),
         ],
     )
     assert result.exit_code == 1
@@ -405,15 +530,24 @@ def test_freeze_p1_result_missing_paths_exits_one(tmp_path: Path) -> None:
         benchmark_app,
         [
             "freeze-p1-result",
-            "--pilot-dir", str(_np(tmp_path, "no_pilot")),
-            "--store-dir", str(_np(tmp_path, "no_store")),
-            "--cases-dir", str(_np(tmp_path, "no_cases")),
-            "--config", str(_np(tmp_path, "no_config.yaml")),
-            "--preflight", str(_np(tmp_path, "no_preflight.json")),
-            "--evaluation", str(_np(tmp_path, "no_eval.json")),
-            "--output", str(_np(tmp_path, "lock.json")),
-            "--execution-commit-sha", "a" * 40,
-            "--evaluation-commit-sha", "b" * 40,
+            "--pilot-dir",
+            str(_np(tmp_path, "no_pilot")),
+            "--store-dir",
+            str(_np(tmp_path, "no_store")),
+            "--cases-dir",
+            str(_np(tmp_path, "no_cases")),
+            "--config",
+            str(_np(tmp_path, "no_config.yaml")),
+            "--preflight",
+            str(_np(tmp_path, "no_preflight.json")),
+            "--evaluation",
+            str(_np(tmp_path, "no_eval.json")),
+            "--output",
+            str(_np(tmp_path, "lock.json")),
+            "--execution-commit-sha",
+            "a" * 40,
+            "--evaluation-commit-sha",
+            "b" * 40,
         ],
     )
     assert result.exit_code == 1
@@ -430,13 +564,20 @@ def test_validate_p1_result_lock_missing_paths_exits_one(tmp_path: Path) -> None
         benchmark_app,
         [
             "validate-p1-result-lock",
-            "--lock", str(_np(tmp_path, "no_lock.json")),
-            "--pilot-dir", str(_np(tmp_path, "no_pilot")),
-            "--store-dir", str(_np(tmp_path, "no_store")),
-            "--cases-dir", str(_np(tmp_path, "no_cases")),
-            "--config", str(_np(tmp_path, "no_config.yaml")),
-            "--preflight", str(_np(tmp_path, "no_preflight.json")),
-            "--evaluation", str(_np(tmp_path, "no_eval.json")),
+            "--lock",
+            str(_np(tmp_path, "no_lock.json")),
+            "--pilot-dir",
+            str(_np(tmp_path, "no_pilot")),
+            "--store-dir",
+            str(_np(tmp_path, "no_store")),
+            "--cases-dir",
+            str(_np(tmp_path, "no_cases")),
+            "--config",
+            str(_np(tmp_path, "no_config.yaml")),
+            "--preflight",
+            str(_np(tmp_path, "no_preflight.json")),
+            "--evaluation",
+            str(_np(tmp_path, "no_eval.json")),
         ],
     )
     assert result.exit_code == 1
@@ -453,14 +594,22 @@ def test_generate_p1_closeout_missing_paths_exits_one(tmp_path: Path) -> None:
         benchmark_app,
         [
             "generate-p1-closeout",
-            "--lock", str(_np(tmp_path, "no_lock.json")),
-            "--pilot-dir", str(_np(tmp_path, "no_pilot")),
-            "--store-dir", str(_np(tmp_path, "no_store")),
-            "--cases-dir", str(_np(tmp_path, "no_cases")),
-            "--config", str(_np(tmp_path, "no_config.yaml")),
-            "--preflight", str(_np(tmp_path, "no_preflight.json")),
-            "--evaluation", str(_np(tmp_path, "no_eval.json")),
-            "--output-dir", str(_np(tmp_path, "out")),
+            "--lock",
+            str(_np(tmp_path, "no_lock.json")),
+            "--pilot-dir",
+            str(_np(tmp_path, "no_pilot")),
+            "--store-dir",
+            str(_np(tmp_path, "no_store")),
+            "--cases-dir",
+            str(_np(tmp_path, "no_cases")),
+            "--config",
+            str(_np(tmp_path, "no_config.yaml")),
+            "--preflight",
+            str(_np(tmp_path, "no_preflight.json")),
+            "--evaluation",
+            str(_np(tmp_path, "no_eval.json")),
+            "--output-dir",
+            str(_np(tmp_path, "out")),
         ],
     )
     assert result.exit_code == 1
@@ -477,14 +626,22 @@ def test_validate_p1_closeout_missing_paths_exits_one(tmp_path: Path) -> None:
         benchmark_app,
         [
             "validate-p1-closeout",
-            "--lock", str(_np(tmp_path, "no_lock.json")),
-            "--pilot-dir", str(_np(tmp_path, "no_pilot")),
-            "--store-dir", str(_np(tmp_path, "no_store")),
-            "--cases-dir", str(_np(tmp_path, "no_cases")),
-            "--config", str(_np(tmp_path, "no_config.yaml")),
-            "--preflight", str(_np(tmp_path, "no_preflight.json")),
-            "--evaluation", str(_np(tmp_path, "no_eval.json")),
-            "--output-dir", str(_np(tmp_path, "out")),
+            "--lock",
+            str(_np(tmp_path, "no_lock.json")),
+            "--pilot-dir",
+            str(_np(tmp_path, "no_pilot")),
+            "--store-dir",
+            str(_np(tmp_path, "no_store")),
+            "--cases-dir",
+            str(_np(tmp_path, "no_cases")),
+            "--config",
+            str(_np(tmp_path, "no_config.yaml")),
+            "--preflight",
+            str(_np(tmp_path, "no_preflight.json")),
+            "--evaluation",
+            str(_np(tmp_path, "no_eval.json")),
+            "--output-dir",
+            str(_np(tmp_path, "out")),
         ],
     )
     assert result.exit_code == 1
@@ -501,15 +658,24 @@ def test_validate_p1_final_missing_paths_exits_one(tmp_path: Path) -> None:
         benchmark_app,
         [
             "validate-p1-final",
-            "--record", str(_np(tmp_path, "no_record.json")),
-            "--machine-result", str(_np(tmp_path, "no_machine.json")),
-            "--result-lock", str(_np(tmp_path, "no_lock.json")),
-            "--evidence-review", str(_np(tmp_path, "no_ev_review.json")),
-            "--evidence-blind-packet", str(_np(tmp_path, "no_ev_blind.json")),
-            "--evidence-mapping-packet", str(_np(tmp_path, "no_ev_map.json")),
-            "--diagnosis-review", str(_np(tmp_path, "no_diag_review.json")),
-            "--diagnosis-blind-packet", str(_np(tmp_path, "no_diag_blind.json")),
-            "--diagnosis-mapping-packet", str(_np(tmp_path, "no_diag_map.json")),
+            "--record",
+            str(_np(tmp_path, "no_record.json")),
+            "--machine-result",
+            str(_np(tmp_path, "no_machine.json")),
+            "--result-lock",
+            str(_np(tmp_path, "no_lock.json")),
+            "--evidence-review",
+            str(_np(tmp_path, "no_ev_review.json")),
+            "--evidence-blind-packet",
+            str(_np(tmp_path, "no_ev_blind.json")),
+            "--evidence-mapping-packet",
+            str(_np(tmp_path, "no_ev_map.json")),
+            "--diagnosis-review",
+            str(_np(tmp_path, "no_diag_review.json")),
+            "--diagnosis-blind-packet",
+            str(_np(tmp_path, "no_diag_blind.json")),
+            "--diagnosis-mapping-packet",
+            str(_np(tmp_path, "no_diag_map.json")),
         ],
     )
     assert result.exit_code == 1

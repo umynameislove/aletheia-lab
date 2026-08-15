@@ -1,4 +1,4 @@
-"""Tests for leaf evaluation helper modules (Nhóm B).
+"""Tests for leaf evaluation helper modules.
 
 Covers behavioral contracts of:
   - benchmark/fault_types.py   — FaultType enum values, StrEnum contract
@@ -40,9 +40,7 @@ from aletheia_lab.evaluation.stats import bootstrap_mean_ci
 # ---------------------------------------------------------------------------
 
 _MINIMAL_CASE_PATH = Path("tests") / "fixtures" / "minimal_case.json"
-_MINIMAL_CASE_DATA: dict[str, object] = json.loads(
-    _MINIMAL_CASE_PATH.read_text(encoding="utf-8")
-)
+_MINIMAL_CASE_DATA: dict[str, object] = json.loads(_MINIMAL_CASE_PATH.read_text(encoding="utf-8"))
 
 
 def _make_case(case_id: str = "case-01", fault_type: str = "data_drift") -> BenchmarkCase:
@@ -389,9 +387,7 @@ def test_judge_result_missing_required_field_rejected() -> None:
     from pydantic import ValidationError
 
     with pytest.raises(ValidationError):
-        JudgeResult.model_validate(
-            {"case_id": "c1", "variant": "b1_plain", "correctness": 0.5}
-        )
+        JudgeResult.model_validate({"case_id": "c1", "variant": "b1_plain", "correctness": 0.5})
 
 
 # ===========================================================================

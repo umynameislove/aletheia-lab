@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import runpy
+import sys
 from pathlib import Path
 
 import pytest
@@ -28,14 +29,18 @@ _runner = CliRunner()
 # ---------------------------------------------------------------------------
 
 
-def test_module_entry_point_invokes_cli_app() -> None:
-    """python -m aletheia_lab delegates to the CLI app and exits with a CLI code."""
-    # runpy re-executes __main__.py with __name__ == "__main__", which calls
-    # app(). Typer always raises SystemExit when it finishes (0 for help,
-    # 2 for a usage error if pytest argv is parsed as commands).
+def test_module_entry_point_invokes_cli_app(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """python -m aletheia_lab routes a valid help request through the CLI app."""
+
+    monkeypatch.setattr(sys, "argv", ["aletheia_lab", "--help"])
     with pytest.raises(SystemExit) as exc_info:
         runpy.run_module("aletheia_lab", run_name="__main__", alter_sys=True)
-    assert isinstance(exc_info.value.code, int)
+    assert exc_info.value.code == 0
+    output = capsys.readouterr().out
+    assert "Usage: python -m aletheia_lab" in output
+    assert "benchmark" in output
 
 
 def test_module_entry_point_exposes_same_app_as_cli() -> None:
@@ -85,9 +90,7 @@ def _write_project_config(
 
 
 def test_info_prints_project_name_and_dataset_id(tmp_path: Path) -> None:
-    config = _write_project_config(
-        tmp_path, name="my-research-project", dataset_id="telco_churn"
-    )
+    config = _write_project_config(tmp_path, name="my-research-project", dataset_id="telco_churn")
     result = _runner.invoke(app, ["info", "--config", str(config)])
     assert result.exit_code == 0
     assert "my-research-project" in result.output
@@ -147,9 +150,7 @@ def test_validate_case_invalid_json_exits_nonzero(tmp_path: Path) -> None:
 def test_validate_case_missing_required_fields_exits_nonzero(tmp_path: Path) -> None:
     """A JSON object missing required BenchmarkCase fields fails Pydantic validation."""
     case_file = tmp_path / "incomplete.json"
-    case_file.write_text(
-        json.dumps({"case_id": "x", "fault_type": "data_drift"}), encoding="utf-8"
-    )
+    case_file.write_text(json.dumps({"case_id": "x", "fault_type": "data_drift"}), encoding="utf-8")
     result = _runner.invoke(app, ["validate-case", str(case_file)])
     assert result.exit_code != 0
 
@@ -177,7 +178,12 @@ def test_leakage_check_match_exits_one_and_reports_term() -> None:
 def test_leakage_check_no_match_with_forbidden_list_passes() -> None:
     result = _runner.invoke(
         app,
-        ["leakage-check", "Distribution shift was observed in Contract.", "--forbidden", "answer key"],
+        [
+            "leakage-check",
+            "Distribution shift was observed in Contract.",
+            "--forbidden",
+            "answer key",
+        ],
     )
     assert result.exit_code == 0
 
@@ -197,8 +203,10 @@ def test_leakage_check_multiple_forbidden_terms_reports_match() -> None:
         [
             "leakage-check",
             "Label noise was injected.",
-            "--forbidden", "answer key",
-            "--forbidden", "label noise",
+            "--forbidden",
+            "answer key",
+            "--forbidden",
+            "label noise",
         ],
     )
     assert result.exit_code == 1
@@ -265,25 +273,19 @@ def test_baseline_evaluate_missing_metrics_json_exits_one(tmp_path: Path) -> Non
     """evaluate must print FAIL and exit 1 when metrics.json is absent."""
     run_dir = tmp_path / "run_no_metrics"
     run_dir.mkdir()
-    result = _runner.invoke(
-        baseline_app, ["evaluate", "--run-dir", str(run_dir)]
-    )
+    result = _runner.invoke(baseline_app, ["evaluate", "--run-dir", str(run_dir)])
     assert result.exit_code == 1
 
 
 def test_baseline_evaluate_nonexistent_run_dir_exits_one(tmp_path: Path) -> None:
-    result = _runner.invoke(
-        baseline_app, ["evaluate", "--run-dir", str(tmp_path / "nonexistent")]
-    )
+    result = _runner.invoke(baseline_app, ["evaluate", "--run-dir", str(tmp_path / "nonexistent")])
     assert result.exit_code == 1
 
 
 def test_baseline_evaluate_valid_metrics_exits_zero(tmp_path: Path) -> None:
     run_dir = tmp_path / "run"
     run_dir.mkdir()
-    (run_dir / "metrics.json").write_text(
-        json.dumps(_metrics_payload()), encoding="utf-8"
-    )
+    (run_dir / "metrics.json").write_text(json.dumps(_metrics_payload()), encoding="utf-8")
     result = _runner.invoke(baseline_app, ["evaluate", "--run-dir", str(run_dir)])
     assert result.exit_code == 0
 

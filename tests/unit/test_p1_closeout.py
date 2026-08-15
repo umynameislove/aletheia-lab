@@ -77,9 +77,7 @@ class _OfflineFixtureAdapter:
 
 
 @pytest.fixture
-def closeout_inputs(
-    p1_generator_config: Path, tmp_path: Path
-) -> dict[str, Path]:
+def closeout_inputs(p1_generator_config: Path, tmp_path: Path) -> dict[str, Path]:
     cases = tmp_path / "cases"
     store = tmp_path / "evidence-store"
     pilot = tmp_path / "full"
@@ -198,16 +196,19 @@ def test_closeout_is_offline_deterministic_and_fails_closed(
         "operational-report.json",
         "operational-report.md",
     }
-    assert validate_p1_closeout(
-        closeout_inputs["lock"],
-        closeout_inputs["pilot"],
-        closeout_inputs["store"],
-        closeout_inputs["cases"],
-        CONFIG_PATH,
-        closeout_inputs["preflight"],
-        closeout_inputs["evaluation"],
-        first,
-    ) == package
+    assert (
+        validate_p1_closeout(
+            closeout_inputs["lock"],
+            closeout_inputs["pilot"],
+            closeout_inputs["store"],
+            closeout_inputs["cases"],
+            CONFIG_PATH,
+            closeout_inputs["preflight"],
+            closeout_inputs["evaluation"],
+            first,
+        )
+        == package
+    )
 
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
@@ -337,7 +338,7 @@ def test_closeout_rejects_stale_evaluation_and_symlink(
 
 
 # ---------------------------------------------------------------------------
-# Nhóm C — result_lock tamper / invariant boundaries (offline unit tests)
+# result_lock tamper and invariant boundaries (offline unit tests)
 # ---------------------------------------------------------------------------
 
 
@@ -350,7 +351,7 @@ def test_operational_totals_outcome_count_mismatch_raises() -> None:
     with pytest.raises(ValidationError, match="outcome counts do not match"):
         OperationalTotals(
             run_count=10,
-            success_count=8,   # 8 + 1 = 9, not 10
+            success_count=8,  # 8 + 1 = 9, not 10
             unresolved_count=1,
             attempt_count=10,
             retry_count=0,
@@ -372,7 +373,7 @@ def test_operational_totals_attempt_below_run_count_raises() -> None:
             run_count=5,
             success_count=3,
             unresolved_count=2,
-            attempt_count=4,   # 4 < 5 — impossible if each run needs one attempt
+            attempt_count=4,  # 4 < 5 — impossible if each run needs one attempt
             retry_count=0,
             input_tokens=0,
             output_tokens=0,
@@ -393,7 +394,7 @@ def test_operational_totals_retry_count_mismatch_raises() -> None:
             success_count=3,
             unresolved_count=1,
             attempt_count=6,
-            retry_count=1,   # correct would be 6 - 4 = 2
+            retry_count=1,  # correct would be 6 - 4 = 2
             input_tokens=0,
             output_tokens=0,
             estimated_cost_usd=0.0,
@@ -461,14 +462,13 @@ def test_tree_digest_non_directory_path_raises(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Nhóm C — typing fix regression: _error_markdown paired-findings rendering
+# _error_markdown paired-findings rendering regression
 # ---------------------------------------------------------------------------
 
 
 def test_error_markdown_renders_paired_findings_correctly() -> None:
     """_error_markdown must render PairedErrorFinding rows with missing_key_sensitivity
-    and noisy_robustness.  Regression guard for the item→finding loop-variable rename
-    that resolved mypy [assignment] + [attr-defined] errors (Fix 2, Phần 3)."""
+    and noisy_robustness without relying on untyped attribute access."""
     from aletheia_lab.diagnosis.schema import PilotVariant
     from aletheia_lab.evaluation.closeout import (
         P1ErrorAnalysisDraft,

@@ -16,7 +16,9 @@ from __future__ import annotations
 
 import re
 import tomllib
+from collections.abc import Mapping
 from pathlib import Path
+from typing import cast
 
 import pytest
 import yaml
@@ -32,24 +34,41 @@ _MINIMUM_COVERAGE_BASELINE = 88.0
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture(scope="module")
-def ci() -> dict:  # type: ignore[type-arg]
-    return yaml.safe_load(_CI_YAML.read_text(encoding="utf-8"))  # type: ignore[no-any-return]
+def _string_mapping(value: object, *, label: str) -> dict[str, object]:
+    """Validate a YAML node before exposing it to typed contract checks."""
+
+    assert isinstance(value, dict), f"{label} must be a mapping"
+    assert all(isinstance(key, str) for key in value), f"{label} keys must be strings"
+    return cast(dict[str, object], value)
+
+
+def _steps(job: Mapping[str, object]) -> list[dict[str, object]]:
+    """Return validated step mappings for one CI job."""
+
+    raw_steps = job.get("steps")
+    assert isinstance(raw_steps, list), "CI job steps must be a list"
+    return [_string_mapping(step, label=f"CI step {index}") for index, step in enumerate(raw_steps)]
 
 
 @pytest.fixture(scope="module")
-def test_job(ci: dict) -> dict:  # type: ignore[type-arg]
-    job = ci.get("jobs", {}).get("test")
-    assert job is not None, "ci.yml must have a 'test' job"
-    return job  # type: ignore[no-any-return]
+def jobs() -> dict[str, object]:
+    payload: object = yaml.safe_load(_CI_YAML.read_text(encoding="utf-8"))
+    assert isinstance(payload, dict), "ci.yml root must be a mapping"
+    return _string_mapping(payload.get("jobs"), label="ci.yml jobs")
 
 
 @pytest.fixture(scope="module")
-def all_step_runs(ci: dict) -> list[str]:  # type: ignore[type-arg]
+def test_job(jobs: Mapping[str, object]) -> dict[str, object]:
+    return _string_mapping(jobs.get("test"), label="ci.yml test job")
+
+
+@pytest.fixture(scope="module")
+def all_step_runs(jobs: Mapping[str, object]) -> list[str]:
     """Collect every 'run:' string from every job in ci.yml."""
     runs: list[str] = []
-    for job in ci.get("jobs", {}).values():
-        for step in job.get("steps", []):
+    for job_name, raw_job in jobs.items():
+        job = _string_mapping(raw_job, label=f"ci.yml job {job_name!r}")
+        for step in _steps(job):
             if "run" in step:
                 runs.append(str(step["run"]))
     return runs
@@ -60,20 +79,23 @@ def all_step_runs(ci: dict) -> list[str]:  # type: ignore[type-arg]
 # ---------------------------------------------------------------------------
 
 
-def test_matrix_python_versions(test_job: dict) -> None:  # type: ignore[type-arg]
+def test_matrix_python_versions(test_job: Mapping[str, object]) -> None:
     """Matrix must declare exactly Python 3.11 and 3.12 — no more, no less."""
-    versions = test_job["strategy"]["matrix"]["python-version"]
+    strategy = _string_mapping(test_job.get("strategy"), label="test strategy")
+    matrix = _string_mapping(strategy.get("matrix"), label="test matrix")
+    versions = matrix.get("python-version")
     assert versions == ["3.11", "3.12"], (
         f"expected matrix python-version == ['3.11', '3.12'], got {versions!r}"
     )
 
 
-def test_setup_python_uses_matrix_variable(test_job: dict) -> None:  # type: ignore[type-arg]
+def test_setup_python_uses_matrix_variable(test_job: Mapping[str, object]) -> None:
     """setup-python in the matrix job must use ${{ matrix.python-version }},
     not a hard-coded version string."""
-    for step in test_job.get("steps", []):
-        if "actions/setup-python" in step.get("uses", ""):
-            pv = str(step.get("with", {}).get("python-version", ""))
+    for step in _steps(test_job):
+        if "actions/setup-python" in str(step.get("uses", "")):
+            inputs = _string_mapping(step.get("with"), label="setup-python inputs")
+            pv = str(inputs.get("python-version", ""))
             assert "${{ matrix.python-version }}" in pv, (
                 f"setup-python must use ${{{{ matrix.python-version }}}}, got {pv!r}"
             )
@@ -86,20 +108,20 @@ def test_setup_python_uses_matrix_variable(test_job: dict) -> None:  # type: ign
 # ---------------------------------------------------------------------------
 
 
-def test_mypy_step_has_no_continue_on_error(test_job: dict) -> None:  # type: ignore[type-arg]
+def test_mypy_step_has_no_continue_on_error(test_job: Mapping[str, object]) -> None:
     """The mypy step in the matrix job must block the build on failure."""
-    for step in test_job.get("steps", []):
-        if "mypy" in step.get("run", ""):
+    for step in _steps(test_job):
+        if "mypy" in str(step.get("run", "")):
             assert not step.get("continue-on-error", False), (
                 "mypy step must not set continue-on-error"
             )
             return
 
 
-def test_coverage_step_has_no_continue_on_error(test_job: dict) -> None:  # type: ignore[type-arg]
+def test_coverage_step_has_no_continue_on_error(test_job: Mapping[str, object]) -> None:
     """The coverage step in the matrix job must block the build on failure."""
-    for step in test_job.get("steps", []):
-        if "--cov-fail-under" in step.get("run", ""):
+    for step in _steps(test_job):
+        if "--cov-fail-under" in str(step.get("run", "")):
             assert not step.get("continue-on-error", False), (
                 "coverage step must not set continue-on-error"
             )
@@ -111,10 +133,10 @@ def test_coverage_step_has_no_continue_on_error(test_job: dict) -> None:  # type
 # ---------------------------------------------------------------------------
 
 
-def test_cov_fail_under_preserves_baseline(test_job: dict) -> None:  # type: ignore[type-arg]
+def test_cov_fail_under_preserves_baseline(test_job: Mapping[str, object]) -> None:
     """The blocking threshold cannot be weakened below the approved baseline."""
-    for step in test_job.get("steps", []):
-        run = step.get("run", "")
+    for step in _steps(test_job):
+        run = str(step.get("run", ""))
         if "--cov-fail-under" in run:
             match = re.search(r"--cov-fail-under[=\s]+(\d+(?:\.\d+)?)", run)
             assert match, f"could not parse a numeric value from --cov-fail-under in: {run!r}"
@@ -175,31 +197,31 @@ _MYPY_EXPANDED_MODULES: tuple[str, ...] = (
 )
 
 
-def _mypy_run(test_job: dict) -> str:  # type: ignore[type-arg]
+def _mypy_run(test_job: Mapping[str, object]) -> str:
     """Return the 'run' string of the mypy step; fail the test if missing."""
-    for step in test_job.get("steps", []):
+    for step in _steps(test_job):
         run = str(step.get("run", ""))
         if "mypy" in run:
             return run
     pytest.fail("No mypy step found in the 'test' job of ci.yml")
 
 
-def test_mypy_uses_strict_flag(test_job: dict) -> None:  # type: ignore[type-arg]
+def test_mypy_uses_strict_flag(test_job: Mapping[str, object]) -> None:
     """The CI mypy step must pass --strict; widening to permissive is not allowed."""
     run = _mypy_run(test_job)
     assert "--strict" in run, f"--strict flag missing from mypy step: {run!r}"
 
 
-def test_mypy_preserves_original_data_baseline_scope(test_job: dict) -> None:  # type: ignore[type-arg]
+def test_mypy_preserves_original_data_baseline_scope(
+    test_job: Mapping[str, object],
+) -> None:
     """The original data + baseline scope must not be silently dropped from CI."""
     run = _mypy_run(test_job)
     for path in ("src/aletheia_lab/data", "src/aletheia_lab/baseline"):
-        assert path in run, (
-            f"Original mypy scope {path!r} must still be present in the CI step."
-        )
+        assert path in run, f"Original mypy scope {path!r} must still be present in the CI step."
 
 
-def test_mypy_includes_expanded_non_p2_scope(test_job: dict) -> None:  # type: ignore[type-arg]
+def test_mypy_includes_expanded_non_p2_scope(test_job: Mapping[str, object]) -> None:
     """All non-P2 aletheia_lab modules must appear in the blocking CI mypy step."""
     run = _mypy_run(test_job)
     missing = [m for m in _MYPY_EXPANDED_MODULES if m not in run]
@@ -209,7 +231,7 @@ def test_mypy_includes_expanded_non_p2_scope(test_job: dict) -> None:  # type: i
     )
 
 
-def test_mypy_excludes_benchmark_p2(test_job: dict) -> None:  # type: ignore[type-arg]
+def test_mypy_excludes_benchmark_p2(test_job: Mapping[str, object]) -> None:
     """benchmark/p2 must be explicitly excluded; type debt in P2 is tracked separately."""
     run = _mypy_run(test_job)
     assert "--exclude" in run and "benchmark/p2" in run, (
@@ -228,7 +250,7 @@ _MYPY_BROAD_SUPPRESS_FLAGS: tuple[str, ...] = (
 )
 
 
-def test_mypy_has_no_broad_suppress_flags(test_job: dict) -> None:  # type: ignore[type-arg]
+def test_mypy_has_no_broad_suppress_flags(test_job: Mapping[str, object]) -> None:
     """The CI mypy step must not carry broad suppression flags that silently weaken strict mode."""
     run = _mypy_run(test_job)
     offenders = [f for f in _MYPY_BROAD_SUPPRESS_FLAGS if f in run]

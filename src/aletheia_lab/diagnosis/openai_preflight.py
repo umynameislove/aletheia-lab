@@ -6,10 +6,10 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Final, Literal, Self
+from typing import Annotated, Final, Literal, Self
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, WithJsonSchema, model_validator
 
 from aletheia_lab.diagnosis.adapters import (
     OPENAI_INPUT_PRICE_PER_MILLION,
@@ -34,15 +34,35 @@ from aletheia_lab.diagnosis.schema import (
 from aletheia_lab.evidence.schema import canonical_json, project_diagnosis_evidence, sha256_text
 from aletheia_lab.evidence.store import load_bundle_store
 
-CONFIG_SCHEMA_VERSION: Final[Literal["openai-pilot-config/1"]] = (
-    "openai-pilot-config/1"
-)
-PREFLIGHT_SCHEMA_VERSION: Final[Literal["openai-pilot-preflight/1"]] = (
-    "openai-pilot-preflight/1"
-)
+CONFIG_SCHEMA_VERSION: Final[Literal["openai-pilot-config/1"]] = "openai-pilot-config/1"
+PREFLIGHT_SCHEMA_VERSION: Final[Literal["openai-pilot-preflight/1"]] = "openai-pilot-preflight/1"
 MODEL_SNAPSHOT: Final[str] = OPENAI_MODEL_SNAPSHOT
 MODEL_VERSION: Final[str] = OPENAI_MODEL_VERSION
 _SHA256_PATTERN = r"^[0-9a-f]{64}$"
+
+
+def _exact_input_price(value: object) -> float:
+    if type(value) is not float or value != OPENAI_INPUT_PRICE_PER_MILLION:
+        raise ValueError("input price differs from the frozen provider contract")
+    return value
+
+
+def _exact_output_price(value: object) -> float:
+    if type(value) is not float or value != OPENAI_OUTPUT_PRICE_PER_MILLION:
+        raise ValueError("output price differs from the frozen provider contract")
+    return value
+
+
+_InputPrice = Annotated[
+    float,
+    BeforeValidator(_exact_input_price),
+    WithJsonSchema({"type": "number", "const": OPENAI_INPUT_PRICE_PER_MILLION}),
+]
+_OutputPrice = Annotated[
+    float,
+    BeforeValidator(_exact_output_price),
+    WithJsonSchema({"type": "number", "const": OPENAI_OUTPUT_PRICE_PER_MILLION}),
+]
 
 
 class _StrictFrozenModel(BaseModel):
@@ -57,8 +77,8 @@ class OpenAICapabilities(_StrictFrozenModel):
 
 
 class OpenAIPricing(_StrictFrozenModel):
-    input: Literal[2.0]  # type: ignore[valid-type]  # Pydantic validates float literals; mypy/PEP 586 do not
-    output: Literal[8.0]  # type: ignore[valid-type]  # Pydantic validates float literals; mypy/PEP 586 do not
+    input: _InputPrice
+    output: _OutputPrice
 
 
 class OpenAIExecutionPolicy(_StrictFrozenModel):
@@ -162,14 +182,9 @@ class OpenAIPreflightReport(_StrictFrozenModel):
             ):
                 if (
                     ceiling.request_attempt_count != one.request_attempt_count * attempts
-                    or ceiling.estimated_input_tokens
-                    != one.estimated_input_tokens * attempts
+                    or ceiling.estimated_input_tokens != one.estimated_input_tokens * attempts
                     or ceiling.reserved_output_tokens != one.reserved_output_tokens * attempts
-                    or abs(
-                        ceiling.estimated_cost_usd
-                        - one.estimated_cost_usd * attempts
-                    )
-                    > 1e-12
+                    or abs(ceiling.estimated_cost_usd - one.estimated_cost_usd * attempts) > 1e-12
                 ):
                     raise ValueError("retry-ceiling cost projection is not derived")
             full = costs.full_one_attempt
@@ -244,9 +259,10 @@ def _contains_forbidden_outbound_material(payloads: tuple[dict[str, object], ...
         "missing_key",
         "distractor",
     )
-    return any(marker in serialized for marker in forbidden) or re.search(
-        r"\bsk-[a-z0-9_-]{12,}\b", serialized
-    ) is not None
+    return (
+        any(marker in serialized for marker in forbidden)
+        or re.search(r"\bsk-[a-z0-9_-]{12,}\b", serialized) is not None
+    )
 
 
 def build_openai_preflight(
@@ -347,9 +363,10 @@ def write_openai_preflight(report: OpenAIPreflightReport, output_path: str | Pat
     if output.exists():
         raise FileExistsError(f"refusing to replace an existing preflight report: {output}")
     output.parent.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps(
-        report.model_dump(mode="json"), sort_keys=True, indent=2, ensure_ascii=False
-    ) + "\n"
+    payload = (
+        json.dumps(report.model_dump(mode="json"), sort_keys=True, indent=2, ensure_ascii=False)
+        + "\n"
+    )
     with output.open("x", encoding="utf-8") as handle:
         handle.write(payload)
         handle.flush()
