@@ -24,6 +24,11 @@ from aletheia_lab.benchmark.p2.binary_evaluation import (
 )
 from aletheia_lab.benchmark.p2.canonical import canonical_sha256
 from aletheia_lab.benchmark.p2.contracts import DuplicateAudit, DuplicateFinding
+from aletheia_lab.benchmark.p2.coverage import (
+    CoverageContractError,
+    assess_mechanism_coverage,
+    build_candidate_census,
+)
 from aletheia_lab.benchmark.p2.data_drift import DriftMetricComparison
 from aletheia_lab.benchmark.p2.evidence_projection import (
     CategoryShare,
@@ -82,12 +87,8 @@ def _snapshot(confusion: ConfusionMatrix) -> BinaryMetricSnapshot:
 
 
 def _comparison(outcome: str) -> MetricComparison:
-    high = ConfusionMatrix(
-        true_negative=70, false_positive=10, false_negative=10, true_positive=10
-    )
-    low = ConfusionMatrix(
-        true_negative=60, false_positive=20, false_negative=10, true_positive=10
-    )
+    high = ConfusionMatrix(true_negative=70, false_positive=10, false_negative=10, true_positive=10)
+    low = ConfusionMatrix(true_negative=60, false_positive=20, false_negative=10, true_positive=10)
     reference_confusion, observed_confusion = {
         "regression": (high, low),
         "stable": (high, high),
@@ -296,6 +297,158 @@ def test_complete_primary_alpha_emits_nine_valid_artifacts_and_passes(tmp_path) 
     loaded = load_contract_store(tmp_path / "alpha")
     assert manifest.artifact_count == 9
     assert loaded.artifacts == artifacts
+
+
+def test_candidate_census_reconciles_every_planned_slot_with_one_terminal_reason() -> None:
+    plan = build_frozen_alpha_plan(_binding())
+    artifacts = assemble_alpha_artifacts(
+        plan=plan,
+        results=_primary_results(plan),
+        duplicate_audit=DuplicateAudit(schema_version="p2-duplicate-audit/1", findings=()),
+    )
+
+    candidate_census = build_candidate_census(
+        plan=artifacts.plan,
+        execution=artifacts.execution,
+        disposition=artifacts.disposition,
+        classifications=artifacts.classifications.entries,
+        admissions=artifacts.admissions.entries,
+        census=artifacts.census,
+        contexts=artifacts.contexts,
+    )
+
+    assert len(candidate_census.entries) == 24
+    assert sum(entry.lifecycle_status == "accepted" for entry in candidate_census.entries) == 15
+    assert (
+        sum(entry.lifecycle_status == "inactive_reserve" for entry in candidate_census.entries) == 9
+    )
+    assert (
+        candidate_census.canonical_sha256()
+        == build_candidate_census(
+            plan=artifacts.plan,
+            execution=artifacts.execution,
+            disposition=artifacts.disposition,
+            classifications=artifacts.classifications.entries,
+            admissions=artifacts.admissions.entries,
+            census=artifacts.census,
+            contexts=artifacts.contexts,
+        ).canonical_sha256()
+    )
+
+
+def test_candidate_census_rejects_an_unexplained_valid_candidate() -> None:
+    plan = build_frozen_alpha_plan(_binding())
+    artifacts = assemble_alpha_artifacts(
+        plan=plan,
+        results=_primary_results(plan),
+        duplicate_audit=DuplicateAudit(schema_version="p2-duplicate-audit/1", findings=()),
+    )
+
+    with pytest.raises(CoverageContractError, match="classification/admission"):
+        build_candidate_census(
+            plan=artifacts.plan,
+            execution=artifacts.execution,
+            disposition=artifacts.disposition,
+            classifications=artifacts.classifications.entries[1:],
+            admissions=artifacts.admissions.entries,
+            census=artifacts.census,
+            contexts=artifacts.contexts,
+        )
+
+
+@pytest.mark.parametrize("ledger", ["classification", "admission"])
+def test_candidate_census_rejects_duplicate_terminal_records(ledger: str) -> None:
+    plan = build_frozen_alpha_plan(_binding())
+    artifacts = assemble_alpha_artifacts(
+        plan=plan,
+        results=_primary_results(plan),
+        duplicate_audit=DuplicateAudit(schema_version="p2-duplicate-audit/1", findings=()),
+    )
+    classifications = artifacts.classifications.entries
+    admissions = artifacts.admissions.entries
+    if ledger == "classification":
+        classifications = (*classifications, classifications[0])
+    else:
+        admissions = (*admissions, admissions[0])
+
+    with pytest.raises(CoverageContractError, match=f"duplicate {ledger}"):
+        build_candidate_census(
+            plan=artifacts.plan,
+            execution=artifacts.execution,
+            disposition=artifacts.disposition,
+            classifications=classifications,
+            admissions=admissions,
+            census=artifacts.census,
+            contexts=artifacts.contexts,
+        )
+
+
+def test_candidate_census_preserves_rejection_and_exclusion_reason_codes() -> None:
+    plan = build_frozen_alpha_plan(_binding())
+    by_slot = {slot.slot_id: slot for slot in plan.slots}
+    results = []
+    for slot in plan.slots:
+        if slot.slot_kind != "primary":
+            continue
+        if slot.slot_id == "M1-F1":
+            results.append(record_technical_rejection(slot=slot, reason="provenance_hash_mismatch"))
+            continue
+        evaluated = _evaluated(slot)
+        if slot.slot_id == "M2-F1":
+            evaluated = evaluated.model_copy(
+                update={
+                    "exclusion_reason": "evidence_leakage",
+                    "exclusion_detail": "diagnosis projection failed structural review",
+                }
+            )
+        results.append(evaluated)
+    results.append(_evaluated(by_slot["M1-R1"]))
+    artifacts = assemble_alpha_artifacts(
+        plan=plan,
+        results=tuple(results),
+        duplicate_audit=DuplicateAudit(schema_version="p2-duplicate-audit/1", findings=()),
+    )
+
+    candidate_census = build_candidate_census(
+        plan=artifacts.plan,
+        execution=artifacts.execution,
+        disposition=artifacts.disposition,
+        classifications=artifacts.classifications.entries,
+        admissions=artifacts.admissions.entries,
+        census=artifacts.census,
+        contexts=artifacts.contexts,
+    )
+    by_id = {entry.slot_id: entry for entry in candidate_census.entries}
+
+    assert by_id["M1-F1"].lifecycle_status == "technical_rejected"
+    assert by_id["M1-F1"].technical_rejection_reason == "provenance_hash_mismatch"
+    assert by_id["M1-R1"].lifecycle_status == "accepted"
+    assert by_id["M2-F1"].lifecycle_status == "excluded_valid"
+    assert by_id["M2-F1"].admission_exclusion_reason == "evidence_leakage"
+
+
+def test_fault_directed_stable_label_candidates_cannot_make_coverage_pass() -> None:
+    plan = build_frozen_alpha_plan(_binding())
+    results = tuple(
+        _evaluated(slot, outcome="stable")
+        if slot.fault_type == "label_noise" and slot.role == "fault_directed"
+        else _evaluated(slot)
+        for slot in plan.slots
+        if slot.slot_kind == "primary"
+    )
+    artifacts = assemble_alpha_artifacts(
+        plan=plan,
+        results=results,
+        duplicate_audit=DuplicateAudit(schema_version="p2-duplicate-audit/1", findings=()),
+    )
+    audit = assess_mechanism_coverage(census=artifacts.census, contexts=artifacts.contexts)
+    label = next(entry for entry in audit.mechanisms if entry.fault_type == "label_noise")
+
+    assert artifacts.report.accepted == 15
+    assert artifacts.report.mechanism_coverage_passed is False
+    assert artifacts.report.gate_status == "fail"
+    assert label.eligible_family_ids == ()
+    assert {finding.reason_code for finding in label.findings} == {"no_eligible_failure"}
 
 
 def test_result_input_order_cannot_change_any_lifecycle_artifact() -> None:

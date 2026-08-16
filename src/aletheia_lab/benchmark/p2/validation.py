@@ -34,6 +34,11 @@ from aletheia_lab.benchmark.p2.contracts import (
     FamilyCensus,
     TechnicalDisposition,
 )
+from aletheia_lab.benchmark.p2.coverage import (
+    assess_mechanism_coverage,
+    build_candidate_census,
+    require_mechanism_coverage,
+)
 from aletheia_lab.benchmark.p2.identity import (
     DataDriftParameters,
     LabelNoiseParameters,
@@ -661,23 +666,8 @@ def validate_alpha_report(
         _fail(f"the alpha grid must declare {RESERVE_SLOT_COUNT} reserve slots")
 
     activated_reserve = sum(1 for item in execution.executed if item.slot_kind == "reserve")
-    accepted_ids = {record.candidate_id for record in admissions if record.admission == "accepted"}
-    accepted_execution = [item for item in execution.executed if item.candidate_id in accepted_ids]
-    mechanism_coverage_passed = all(
-        sum(
-            1
-            for item in accepted_execution
-            if item.fault_type == fault_type and item.role == "fault_directed"
-        )
-        >= 2
-        and sum(
-            1
-            for item in accepted_execution
-            if item.fault_type == fault_type and item.role != "fault_directed"
-        )
-        >= 1
-        for fault_type in _POLICY_BY_FAULT
-    )
+    coverage = assess_mechanism_coverage(census=census, contexts=contexts)
+    mechanism_coverage_passed = coverage.passed
     recomputed = {
         "primary_planned": plan.primary_planned,
         "reserve_planned": plan.reserve_planned,
@@ -708,6 +698,9 @@ def validate_alpha_report(
         "context_count": len(contexts.entries),
         "mechanism_coverage_passed": mechanism_coverage_passed,
     }
+
+    if report.mechanism_coverage_passed and not mechanism_coverage_passed:
+        require_mechanism_coverage(coverage)
 
     for field, expected in recomputed.items():
         declared = getattr(report, field)
@@ -740,6 +733,15 @@ def validate_contract_bundle(
         classifications=classifications,
         admissions=admissions,
         census=census,
+    )
+    build_candidate_census(
+        plan=plan,
+        execution=execution,
+        disposition=disposition,
+        classifications=classifications,
+        admissions=admissions,
+        census=census,
+        contexts=contexts,
     )
     validate_reserve_activation(
         plan=plan,

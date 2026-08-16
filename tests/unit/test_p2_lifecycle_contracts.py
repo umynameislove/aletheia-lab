@@ -259,7 +259,10 @@ def _context_entry(
     *,
     projection: dict[str, object] | None = None,
 ) -> ContextEntry:
-    payload = projection or {"items": [{"id": "primary-comparison", "value": "observable"}]}
+    payload = {
+        **(projection or {"items": [{"id": "primary-comparison", "value": "observable"}]}),
+        "source_binding_sha256": family_id.removeprefix("p2-family-"),
+    }
     return ContextEntry(
         diagnosis_context_id=context_id_for(
             case_family_id=family_id,

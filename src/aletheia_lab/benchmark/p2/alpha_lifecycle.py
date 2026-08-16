@@ -35,6 +35,7 @@ from aletheia_lab.benchmark.p2.contracts import (
     TechnicalRejectionReason,
     ValidExclusionReason,
 )
+from aletheia_lab.benchmark.p2.coverage import assess_mechanism_coverage
 from aletheia_lab.benchmark.p2.data_drift import DriftMetricComparison
 from aletheia_lab.benchmark.p2.evidence_projection import (
     MechanismDiagnosisEvidence,
@@ -298,31 +299,22 @@ def _gate_report(
     census: FamilyCensus,
     contexts: ContextCensus,
 ) -> AlphaValidityReport:
-    accepted_ids = {
-        record.candidate_id for record in admissions.entries if record.admission == "accepted"
-    }
-    accepted_execution = [item for item in execution.executed if item.candidate_id in accepted_ids]
-    mechanism_coverage = all(
-        sum(
-            item.fault_type == fault_type and item.role == "fault_directed"
-            for item in accepted_execution
-        )
-        >= 2
-        and sum(
-            item.fault_type == fault_type and item.role != "fault_directed"
-            for item in accepted_execution
-        )
-        >= 1
-        for fault_type in _POLICY_BY_FAULT
-    )
+    coverage = assess_mechanism_coverage(census=census, contexts=contexts)
+    mechanism_coverage = coverage.passed
     accepted = len(admissions.entries) - sum(
         record.admission == "excluded_valid" for record in admissions.entries
     )
     if accepted < 12 or not mechanism_coverage:
         gate_status = "fail"
-        deviation = (
-            "alpha acceptance floor or per-mechanism coverage requirement was not satisfied"
+        blockers = ", ".join(
+            f"{entry.fault_type}="
+            + "+".join(finding.reason_code for finding in entry.findings)
+            for entry in coverage.mechanisms
+            if not entry.passed
         )
+        deviation = "alpha acceptance floor or mechanism coverage failed"
+        if blockers:
+            deviation = f"{deviation}: {blockers}"
     elif accepted < 15:
         gate_status = "pass_with_deviation"
         deviation = "alpha passed the 12-family floor but did not reach the 15-family target"

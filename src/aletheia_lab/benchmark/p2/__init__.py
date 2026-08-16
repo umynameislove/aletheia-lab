@@ -107,6 +107,20 @@ from aletheia_lab.benchmark.p2.contracts import (
     ValidExclusionReason,
     context_id_for,
 )
+from aletheia_lab.benchmark.p2.coverage import (
+    CANDIDATE_CENSUS_SCHEMA_VERSION,
+    MECHANISM_COVERAGE_SCHEMA_VERSION,
+    CandidateCensus,
+    CandidateCensusEntry,
+    CoverageContractError,
+    MechanismCoverageAudit,
+    MechanismCoverageEntry,
+    MechanismCoverageError,
+    MechanismCoverageFinding,
+    assess_mechanism_coverage,
+    build_candidate_census,
+    require_mechanism_coverage,
+)
 from aletheia_lab.benchmark.p2.data_drift import (
     APPORTIONMENT_RULE,
     DRIFT_ARTIFACT_DIGEST_SCHEMA_VERSION,
@@ -466,6 +480,15 @@ from aletheia_lab.benchmark.p2.validation import (
 )
 
 __all__ = [
+    "CANDIDATE_CENSUS_SCHEMA_VERSION",
+    "MECHANISM_COVERAGE_SCHEMA_VERSION",
+    "CandidateCensus",
+    "CandidateCensusEntry",
+    "CoverageContractError",
+    "MechanismCoverageAudit",
+    "MechanismCoverageEntry",
+    "MechanismCoverageError",
+    "MechanismCoverageFinding",
     "ALPHA_DATA_DRIFT_FEATURE",
     "ALPHA_PLAN_SCHEMA_VERSION",
     "ALPHA_PREPROCESSING_TRANSFORM",
@@ -823,6 +846,8 @@ __all__ = [
     "human_evidence_rubric_for",
     "open_mapped_review_stage",
     "assemble_alpha_artifacts",
+    "assess_mechanism_coverage",
+    "build_candidate_census",
     "execution_for_slot",
     "execute_alpha_slot",
     "execute_primary_alpha",
@@ -842,6 +867,7 @@ __all__ = [
     "rebuild_evidence_bundles_from_census",
     "save_contract_store",
     "record_technical_rejection",
+    "require_mechanism_coverage",
     "select_category_rows",
     "select_record_ids",
     "selection_digest",

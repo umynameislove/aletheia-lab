@@ -37,8 +37,9 @@ def test_real_primary_alpha_executes_validates_and_round_trips(tmp_path: Path) -
     assert artifacts.report.technically_valid == 15
     assert artifacts.report.technical_rejected == 0
     assert artifacts.report.accepted == 15
-    assert artifacts.report.mechanism_coverage_passed is True
-    assert artifacts.report.gate_status == "pass"
+    assert artifacts.report.mechanism_coverage_passed is False
+    assert artifacts.report.gate_status == "fail"
+    assert "label_noise=no_eligible_failure" in (artifacts.report.deviation_note or "")
     assert artifacts.report.context_count == len(artifacts.contexts.entries)
 
     manifest = save_contract_store(artifacts, tmp_path / "alpha")
