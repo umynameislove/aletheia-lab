@@ -85,3 +85,12 @@ not produce an eligible label-noise family. The immutable amendment, measured
 outcomes, reproducibility command and limits on subsequent claims are documented
 in [p2-label-noise-recovery.md](p2-label-noise-recovery.md). Until a new protocol
 is approved, Phase 2 mechanism coverage remains failed closed.
+
+## Prospective label-noise confirmation
+
+The prospectively frozen outcome-free follow-up design is recorded in
+[p2-label-noise-confirmatory-protocol.md](p2-label-noise-confirmatory-protocol.md)
+and its machine-readable contract. It replaces neither the alpha artifacts nor
+their failed decision. Confirmatory mechanism coverage may change only after the
+new protocol executes in full and its frozen scientific, control, provenance and
+multiplicity gates pass.
