@@ -1,0 +1,26 @@
+{
+  "artifact_checksums": {
+    "config.resolved.json": "2cd6a27796cbea67495a13cfb84e37207bb0657459db8254944108f52c72ccc8",
+    "metrics.json": "e1d5a6a8ca0bd81d2285f964fa32a96f6bda2fe525b3135a01ad2098308c9e16",
+    "model.joblib": "a8fe0f6c90308be0e9ec732f920b97e0522195e44656bf43d5651036d959282a",
+    "predictions.json": "5e274eea0ba979ed22400c6cd7d716c4c540f4018ae73583f391182918044e30",
+    "split_manifest.json": "37a4d1fe36c98d0fa409e4ec214faf6542462480feefd61966cdea9106099e5d"
+  },
+  "created_at": "2026-08-11T06:38:27+00:00",
+  "dataset_id": "telco_customer_churn",
+  "dataset_sha256": "7dd93bbff704f59a3044237c6695f4cfb2ee1b6faff6c21265b2e4044195cbd8",
+  "model": {
+    "C": 1.0,
+    "class_weight": null,
+    "kind": "logistic_regression",
+    "max_iter": 1000,
+    "seed": 42
+  },
+  "package_versions": {
+    "numpy": "2.5.1",
+    "pandas": "3.0.5",
+    "python": "3.12.13",
+    "scikit_learn": "1.9.0"
+  },
+  "seed": 42
+}

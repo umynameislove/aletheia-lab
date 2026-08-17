@@ -85,6 +85,14 @@ from aletheia_lab.benchmark.p2.canonical import (
     normalize_number,
     normalize_text,
 )
+from aletheia_lab.benchmark.p2.confirmatory_protocol import (
+    CONFIRMATORY_PROTOCOL_SCHEMA_VERSION,
+    DEFAULT_CONFIRMATORY_PROTOCOL_PATH,
+    ConfirmatoryProtocol,
+    ConfirmatoryProtocolError,
+    load_confirmatory_protocol,
+    verify_confirmatory_predecessor,
+)
 from aletheia_lab.benchmark.p2.contracts import (
     CONTEXT_CARDINALITY,
     AcceptedFamilyClass,
@@ -650,6 +658,8 @@ __all__ = [
     "TARGET_QUALITY_AUDIT_SCHEMA_VERSION",
     "TRANSFORMED_MATRIX_SCHEMA_VERSION",
     "ZERO_DIVISION_POLICY",
+    "CONFIRMATORY_PROTOCOL_SCHEMA_VERSION",
+    "DEFAULT_CONFIRMATORY_PROTOCOL_PATH",
     "AcceptedFamilyClass",
     "AdmissionLedger",
     "AdmissionRecord",
@@ -687,6 +697,8 @@ __all__ = [
     "ReserveRecoveryObservation",
     "ColumnPermutationSpec",
     "ConfusionMatrix",
+    "ConfirmatoryProtocol",
+    "ConfirmatoryProtocolError",
     "ContextCensus",
     "ContextEntry",
     "ContractStoreEntry",
@@ -867,6 +879,8 @@ __all__ = [
     "execute_reserve_recovery",
     "validate_reserve_recovery_pair",
     "load_contract_store",
+    "load_confirmatory_protocol",
+    "verify_confirmatory_predecessor",
     "manifest_for_contract_store",
     "is_evidence_bundle_id",
     "measure_drift_candidate",

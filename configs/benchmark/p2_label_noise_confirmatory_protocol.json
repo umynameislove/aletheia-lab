@@ -1,0 +1,195 @@
+{
+  "schema_version": "p2-label-noise-confirmatory-protocol/2",
+  "status": "frozen_not_executed",
+  "research_question": "Does class-conditional training-label corruption cause a reproducible degradation in clean-label probabilistic prediction quality?",
+  "predecessor": {
+    "merge_commit": "6592ac4ad6920f5f77016fd849db4c8b825de6e6",
+    "alpha_store_receipt_uri": "configs/benchmark/provenance/p2_alpha_primary_seed42_store_manifest.json",
+    "alpha_store_receipt_sha256": "78c24fd7562322155925971b772654db7adff8022216fc341544003b58630f85",
+    "alpha_store_sha256": "53381a20008da7fd876b70d3c3fbf8db95700f5336c54660fbf8273d5e60a47e",
+    "recovery_report_sha256": "1458f3f09a1727c8479953431cbcf7f98645970b447a8d34cb5892c374ca6d84",
+    "alpha_is_immutable": true,
+    "alpha_gate_status": "fail",
+    "alpha_missing_mechanism": "label_noise"
+  },
+  "datasets": [
+    {
+      "dataset_id": "telco_customer_churn",
+      "role": "primary",
+      "source_uri": "configs/benchmark/provenance/baseline_logistic_regression_seed42_provenance.json",
+      "source_receipt_sha256": "7c7a7e2f0428ac59c117e19c93a026109e057362ca8a83dd731bd414a2ebc752",
+      "snapshot_sha256": "7dd93bbff704f59a3044237c6695f4cfb2ee1b6faff6c21265b2e4044195cbd8",
+      "archive_sha256": null,
+      "target_column": "Churn",
+      "positive_label": "Yes",
+      "excluded_features": [],
+      "split": {
+        "strategy": "seeded_stratified",
+        "train_fraction": 0.6,
+        "development_fraction": 0.2,
+        "sealed_test_fraction": 0.2,
+        "seed": 314159,
+        "test_is_single_open": true
+      }
+    },
+    {
+      "dataset_id": "uci_bank_marketing_additional_full",
+      "role": "external_replication",
+      "source_uri": "https://archive.ics.uci.edu/static/public/222/bank%2Bmarketing.zip",
+      "source_receipt_sha256": null,
+      "snapshot_sha256": "74adfc578bf77a7ff4bb1ba4a9f8709d9e3c6907342959c2c8416847e0afb4d8",
+      "archive_sha256": "e0bf5f5de5b846e2f18e9d90606637267d46dfa260e0f17bb12e605db5efbeb4",
+      "target_column": "y",
+      "positive_label": "yes",
+      "excluded_features": [
+        "duration"
+      ],
+      "split": {
+        "strategy": "source_order_temporal",
+        "train_fraction": 0.6,
+        "development_fraction": 0.2,
+        "sealed_test_fraction": 0.2,
+        "seed": null,
+        "test_is_single_open": true
+      }
+    }
+  ],
+  "model": {
+    "model_type": "logistic_regression",
+    "max_iter": 1000,
+    "c": 1.0,
+    "class_weight": null,
+    "solver": "lbfgs",
+    "training_seed": 42,
+    "probability_output_required": true
+  },
+  "intervention_cells": [
+    {
+      "cell_id": "ccn-yes-to-no-10",
+      "flip_direction": "yes_to_no",
+      "conditional_flip_rate": 0.1,
+      "rate_denominator": "source_class_count",
+      "hypothesis_role": "dose_response_secondary",
+      "primary_replicate_seeds": [4101, 4102, 4103, 4104, 4105, 4106, 4107, 4108, 4109, 4110, 4111, 4112, 4113, 4114, 4115, 4116, 4117, 4118, 4119, 4120, 4121, 4122, 4123, 4124, 4125, 4126, 4127, 4128, 4129, 4130],
+      "replication_replicate_seeds": [5101, 5102, 5103, 5104, 5105, 5106, 5107, 5108, 5109, 5110, 5111, 5112, 5113, 5114, 5115, 5116, 5117, 5118, 5119, 5120, 5121, 5122, 5123, 5124, 5125, 5126, 5127, 5128, 5129, 5130]
+    },
+    {
+      "cell_id": "ccn-yes-to-no-20",
+      "flip_direction": "yes_to_no",
+      "conditional_flip_rate": 0.2,
+      "rate_denominator": "source_class_count",
+      "hypothesis_role": "dose_response_secondary",
+      "primary_replicate_seeds": [4101, 4102, 4103, 4104, 4105, 4106, 4107, 4108, 4109, 4110, 4111, 4112, 4113, 4114, 4115, 4116, 4117, 4118, 4119, 4120, 4121, 4122, 4123, 4124, 4125, 4126, 4127, 4128, 4129, 4130],
+      "replication_replicate_seeds": [5101, 5102, 5103, 5104, 5105, 5106, 5107, 5108, 5109, 5110, 5111, 5112, 5113, 5114, 5115, 5116, 5117, 5118, 5119, 5120, 5121, 5122, 5123, 5124, 5125, 5126, 5127, 5128, 5129, 5130]
+    },
+    {
+      "cell_id": "ccn-yes-to-no-30",
+      "flip_direction": "yes_to_no",
+      "conditional_flip_rate": 0.3,
+      "rate_denominator": "source_class_count",
+      "hypothesis_role": "co_primary",
+      "primary_replicate_seeds": [4101, 4102, 4103, 4104, 4105, 4106, 4107, 4108, 4109, 4110, 4111, 4112, 4113, 4114, 4115, 4116, 4117, 4118, 4119, 4120, 4121, 4122, 4123, 4124, 4125, 4126, 4127, 4128, 4129, 4130],
+      "replication_replicate_seeds": [5101, 5102, 5103, 5104, 5105, 5106, 5107, 5108, 5109, 5110, 5111, 5112, 5113, 5114, 5115, 5116, 5117, 5118, 5119, 5120, 5121, 5122, 5123, 5124, 5125, 5126, 5127, 5128, 5129, 5130]
+    },
+    {
+      "cell_id": "ccn-no-to-yes-10",
+      "flip_direction": "no_to_yes",
+      "conditional_flip_rate": 0.1,
+      "rate_denominator": "source_class_count",
+      "hypothesis_role": "dose_response_secondary",
+      "primary_replicate_seeds": [4101, 4102, 4103, 4104, 4105, 4106, 4107, 4108, 4109, 4110, 4111, 4112, 4113, 4114, 4115, 4116, 4117, 4118, 4119, 4120, 4121, 4122, 4123, 4124, 4125, 4126, 4127, 4128, 4129, 4130],
+      "replication_replicate_seeds": [5101, 5102, 5103, 5104, 5105, 5106, 5107, 5108, 5109, 5110, 5111, 5112, 5113, 5114, 5115, 5116, 5117, 5118, 5119, 5120, 5121, 5122, 5123, 5124, 5125, 5126, 5127, 5128, 5129, 5130]
+    },
+    {
+      "cell_id": "ccn-no-to-yes-20",
+      "flip_direction": "no_to_yes",
+      "conditional_flip_rate": 0.2,
+      "rate_denominator": "source_class_count",
+      "hypothesis_role": "dose_response_secondary",
+      "primary_replicate_seeds": [4101, 4102, 4103, 4104, 4105, 4106, 4107, 4108, 4109, 4110, 4111, 4112, 4113, 4114, 4115, 4116, 4117, 4118, 4119, 4120, 4121, 4122, 4123, 4124, 4125, 4126, 4127, 4128, 4129, 4130],
+      "replication_replicate_seeds": [5101, 5102, 5103, 5104, 5105, 5106, 5107, 5108, 5109, 5110, 5111, 5112, 5113, 5114, 5115, 5116, 5117, 5118, 5119, 5120, 5121, 5122, 5123, 5124, 5125, 5126, 5127, 5128, 5129, 5130]
+    },
+    {
+      "cell_id": "ccn-no-to-yes-30",
+      "flip_direction": "no_to_yes",
+      "conditional_flip_rate": 0.3,
+      "rate_denominator": "source_class_count",
+      "hypothesis_role": "co_primary",
+      "primary_replicate_seeds": [4101, 4102, 4103, 4104, 4105, 4106, 4107, 4108, 4109, 4110, 4111, 4112, 4113, 4114, 4115, 4116, 4117, 4118, 4119, 4120, 4121, 4122, 4123, 4124, 4125, 4126, 4127, 4128, 4129, 4130],
+      "replication_replicate_seeds": [5101, 5102, 5103, 5104, 5105, 5106, 5107, 5108, 5109, 5110, 5111, 5112, 5113, 5114, 5115, 5116, 5117, 5118, 5119, 5120, 5121, 5122, 5123, 5124, 5125, 5126, 5127, 5128, 5129, 5130]
+    }
+  ],
+  "controls": {
+    "control_ids": [
+      "clean_reference",
+      "serialization_roundtrip",
+      "symmetric_matched_count",
+      "label_repair"
+    ],
+    "matched_on_dataset_split_model_and_seed": true,
+    "symmetric_control_is_not_a_failure_substitute": true,
+    "repair_must_restore_clean_artifact": true
+  },
+  "endpoints": {
+    "primary_metric": "clean_test_log_loss",
+    "primary_effect": "relative_increase_from_paired_clean_reference",
+    "minimum_practical_effect": 0.05,
+    "legacy_comparator": "accuracy_delta_threshold_0.01",
+    "secondary_metrics": [
+      "brier_score",
+      "roc_auc",
+      "balanced_accuracy",
+      "accuracy",
+      "positive_recall",
+      "negative_recall"
+    ],
+    "secondary_metrics_cannot_rescue_primary": true
+  },
+  "inference": {
+    "family_unit": "dataset_model_direction_rate",
+    "replicate_unit": "corruption_seed",
+    "replicate_count_per_cell": 30,
+    "target_standardized_effect": 0.53,
+    "target_power": 0.8,
+    "familywise_alpha": 0.05,
+    "multiplicity_method": "holm_two_co_primary_directions",
+    "interval_method": "two_way_product_weight_bootstrap",
+    "bootstrap_factors": [
+      "evaluation_record",
+      "corruption_seed"
+    ],
+    "bootstrap_resamples": 10000,
+    "bootstrap_seed": 271828,
+    "hypothesis_test": "paired_seed_level_sign_flip",
+    "hypothesis_test_resamples": 100000,
+    "hypothesis_test_seed": 161803,
+    "no_early_stopping": true,
+    "report_every_cell": true
+  },
+  "decision": {
+    "direction_pass_requirements": [
+      "relative_log_loss_increase_at_least_0.05",
+      "bootstrap_lower_bound_above_0",
+      "holm_adjusted_one_sided_p_below_0.05",
+      "all_technical_and_control_gates_pass"
+    ],
+    "primary_mechanism_gate": "at_least_one_co_primary_direction_passes",
+    "external_replication_cannot_rescue_primary": true,
+    "cross_dataset_claim_requires_same_direction_to_pass_both": true,
+    "failed_primary_action": "retain_fail_closed_and_narrow_claim",
+    "additional_grid_after_results_forbidden": true
+  },
+  "governance": {
+    "protocol_only_commit_required": true,
+    "required_git_tag": "p2-label-noise-confirmatory-v2",
+    "supersedes_invalid_tag": "p2-label-noise-confirmatory-v1",
+    "supersession_reason": "v1_tag_does_not_contain_the_protocol",
+    "immutable_release_or_external_timestamp_required": true,
+    "execution_before_registration_forbidden": true,
+    "changes_require_new_protocol_version": true,
+    "outcome_analysts_cannot_change_admission_rule": true,
+    "human_reviewers_cannot_select_families": true,
+    "primary_and_replication_outputs_released_together": true
+  },
+  "outcome_fields_forbidden": true
+}
