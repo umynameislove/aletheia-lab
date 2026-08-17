@@ -30,6 +30,7 @@ from aletheia_lab.benchmark.p2.contracts import (
     FamilyCensus,
     FamilyId,
     MeasuredOutcome,
+    ReserveRecoveryAuthorization,
     SlotId,
     SlotKind,
     TechnicalDisposition,
@@ -57,6 +58,7 @@ CandidateLifecycleStatus = Literal[
 ]
 CoverageReason = Literal[
     "no_eligible_failure",
+    "unpromoted_reserve_family",
     "incomplete_evidence_conditions",
     "source_binding_mismatch",
     "evidence_content_reuse",
@@ -105,6 +107,7 @@ class CandidateCensusEntry(_StrictFrozenModel):
     case_family_id: FamilyId | None = None
     family_class: AcceptedFamilyClass | None = None
     evidence_conditions: tuple[EvidenceConditionName, ...] = ()
+    reserve_promotion_authorized: bool = False
 
     @model_validator(mode="after")
     def _terminal_state_is_unambiguous(self) -> CandidateCensusEntry:
@@ -123,6 +126,7 @@ class CandidateCensusEntry(_StrictFrozenModel):
                     )
                 )
                 or self.evidence_conditions
+                or self.reserve_promotion_authorized
             ):
                 raise ValueError("an inactive reserve must not claim downstream records")
             return self
@@ -143,6 +147,7 @@ class CandidateCensusEntry(_StrictFrozenModel):
                     )
                 )
                 or self.evidence_conditions
+                or self.reserve_promotion_authorized
             ):
                 raise ValueError("a technical rejection must not enter classification or admission")
             return self
@@ -154,6 +159,8 @@ class CandidateCensusEntry(_StrictFrozenModel):
                 raise ValueError("an excluded-valid candidate must retain its reason code")
             if self.case_family_id is not None or self.evidence_conditions:
                 raise ValueError("an excluded-valid candidate must not claim family evidence")
+            if self.reserve_promotion_authorized:
+                raise ValueError("an excluded-valid candidate cannot claim reserve promotion")
             return self
 
         if (
@@ -172,6 +179,8 @@ class CandidateCensusEntry(_StrictFrozenModel):
             expected
         ):
             raise ValueError("accepted family evidence conditions disagree with its class")
+        if self.slot_kind == "primary" and self.reserve_promotion_authorized:
+            raise ValueError("a primary candidate cannot claim reserve promotion")
         return self
 
 
@@ -397,6 +406,11 @@ def build_candidate_census(
                 case_family_id=family.case_family_id,
                 family_class=family.family_class,
                 evidence_conditions=conditions,
+                reserve_promotion_authorized=(
+                    execution.reserve_recovery_authorization is not None
+                    and slot.slot_id
+                    == execution.reserve_recovery_authorization.promoted_reserve_slot_id
+                ),
             )
         )
 
@@ -423,13 +437,40 @@ def build_candidate_census(
 
 
 def assess_mechanism_coverage(
-    *, census: FamilyCensus, contexts: ContextCensus
+    *,
+    census: FamilyCensus,
+    contexts: ContextCensus,
+    candidate_census: CandidateCensus,
+    reserve_recovery_authorization: ReserveRecoveryAuthorization | None = None,
 ) -> MechanismCoverageAudit:
     """Require an independent complete eligible-failure family for every mechanism."""
 
     census = _revalidated(census)
     contexts = _revalidated(contexts)
+    candidate_census = _revalidated(candidate_census)
+    if reserve_recovery_authorization is not None:
+        reserve_recovery_authorization = _revalidated(reserve_recovery_authorization)
     family_by_id = {item.case_family_id: item for item in census.entries}
+    candidate_by_id = {
+        item.candidate_id: item
+        for item in candidate_census.entries
+        if item.candidate_id is not None
+    }
+    for family in census.entries:
+        candidate = candidate_by_id.get(family.candidate_id)
+        if candidate is None or candidate.lifecycle_status != "accepted":
+            _fail("mechanism coverage cannot bind an accepted family to the candidate census")
+        if candidate.case_family_id != family.case_family_id:
+            _fail("mechanism coverage family and candidate census IDs disagree")
+        if candidate.slot_kind != family.origin_slot_kind:
+            _fail("mechanism coverage family origin differs from the candidate census")
+        if candidate.reserve_promotion_authorized != family.reserve_promotion_authorized:
+            _fail("mechanism coverage reserve promotion binding differs across censuses")
+        if family.reserve_promotion_authorized:
+            if reserve_recovery_authorization is None:
+                _fail("mechanism coverage cannot trust a reserve promotion without authorization")
+            if candidate.slot_id != reserve_recovery_authorization.promoted_reserve_slot_id:
+                _fail("mechanism coverage reserve family differs from the authorized promotion")
     contexts_by_family: dict[str, list[ContextEntry]] = defaultdict(list)
     for context in contexts.entries:
         if context.case_family_id not in family_by_id:
@@ -453,12 +494,34 @@ def assess_mechanism_coverage(
             ].append(family_id)
 
     for fault_type in _MECHANISMS:
-        eligible = tuple(
+        raw_eligible = tuple(
             sorted(
-                entry.case_family_id
-                for entry in census.entries
-                if entry.fault_type == fault_type and entry.family_class == "eligible_failure"
+                (
+                    entry
+                    for entry in census.entries
+                    if entry.fault_type == fault_type
+                    and entry.family_class == "eligible_failure"
+                ),
+                key=lambda item: item.case_family_id,
             )
+        )
+        ineligible_reserves = tuple(
+            entry.case_family_id
+            for entry in raw_eligible
+            if entry.origin_slot_kind == "reserve" and not entry.reserve_promotion_authorized
+        )
+        for family_id in ineligible_reserves:
+            findings_by_fault[fault_type].append(
+                MechanismCoverageFinding(
+                    reason_code="unpromoted_reserve_family",
+                    family_ids=(family_id,),
+                    detail="an unpromoted reserve family cannot satisfy mechanism coverage",
+                )
+            )
+        eligible = tuple(
+            entry.case_family_id
+            for entry in raw_eligible
+            if entry.case_family_id not in ineligible_reserves
         )
         eligible_by_fault[fault_type] = eligible
         findings = findings_by_fault[fault_type]

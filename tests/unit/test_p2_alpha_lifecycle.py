@@ -23,7 +23,12 @@ from aletheia_lab.benchmark.p2.binary_evaluation import (
     MetricComparison,
 )
 from aletheia_lab.benchmark.p2.canonical import canonical_sha256
-from aletheia_lab.benchmark.p2.contracts import DuplicateAudit, DuplicateFinding
+from aletheia_lab.benchmark.p2.contracts import (
+    DuplicateAudit,
+    DuplicateFinding,
+    ReserveRecoveryAuthorization,
+    ReserveRecoveryObservation,
+)
 from aletheia_lab.benchmark.p2.coverage import (
     CoverageContractError,
     assess_mechanism_coverage,
@@ -250,6 +255,40 @@ def _evaluated(slot, *, outcome: str | None = None):  # type: ignore[no-untyped-
     )
 
 
+def _recovery_authorization(plan) -> ReserveRecoveryAuthorization:  # type: ignore[no-untyped-def]
+    rates = {"M2-F1": 0.01, "M2-F2": 0.05, "M2-F3": 0.20}
+    return ReserveRecoveryAuthorization(
+        schema_version="p2-reserve-recovery-authorization/1",
+        protocol_version="complete-prespecified-reserve-recovery/v1",
+        trigger="missing_mechanism_coverage",
+        root_cause="effective_intervention_below_frozen_primary_threshold",
+        fault_type="label_noise",
+        source_store_sha256=_HEX["a"],
+        source_candidate_plan_sha256=canonical_sha256(plan.model_dump(mode="json")),
+        source_candidate_census_sha256=_HEX["b"],
+        source_coverage_audit_sha256=_HEX["c"],
+        source_observations=tuple(
+            ReserveRecoveryObservation(
+                slot_id=slot_id,
+                declared_intervention_rate=rate,
+                achieved_intervention_rate=rate,
+                primary_metric_delta=0.0,
+                threshold=0.01,
+                measured_outcome="stable",
+            )
+            for slot_id, rate in rates.items()
+        ),
+        activated_reserve_slot_ids=("M2-R1", "M2-R2", "M2-R3"),
+        probe_slot_ids=("M2-R1", "M2-R2"),
+        promoted_reserve_slot_id="M2-R3",
+        superseded_primary_slot_id="M2-F3",
+        primary_metric="accuracy",
+        threshold=0.01,
+        preserves_primary_measurements=True,
+        executes_complete_reserve_set=True,
+    )
+
+
 def _primary_results(plan):  # type: ignore[no-untyped-def]
     return tuple(_evaluated(slot) for slot in plan.slots if slot.slot_kind == "primary")
 
@@ -441,7 +480,21 @@ def test_fault_directed_stable_label_candidates_cannot_make_coverage_pass() -> N
         results=results,
         duplicate_audit=DuplicateAudit(schema_version="p2-duplicate-audit/1", findings=()),
     )
-    audit = assess_mechanism_coverage(census=artifacts.census, contexts=artifacts.contexts)
+    candidate_census = build_candidate_census(
+        plan=artifacts.plan,
+        execution=artifacts.execution,
+        disposition=artifacts.disposition,
+        classifications=artifacts.classifications.entries,
+        admissions=artifacts.admissions.entries,
+        census=artifacts.census,
+        contexts=artifacts.contexts,
+    )
+    audit = assess_mechanism_coverage(
+        census=artifacts.census,
+        contexts=artifacts.contexts,
+        candidate_census=candidate_census,
+        reserve_recovery_authorization=artifacts.execution.reserve_recovery_authorization,
+    )
     label = next(entry for entry in audit.mechanisms if entry.fault_type == "label_noise")
 
     assert artifacts.report.accepted == 15
@@ -500,6 +553,80 @@ def test_primary_technical_rejection_activates_only_first_same_mechanism_reserve
     assert artifacts.report.activated_reserve == 1
     assert artifacts.report.technical_rejected == 1
     assert artifacts.report.accepted == 15
+
+
+def test_recovery_executes_all_reserves_but_only_predeclared_promotion_can_count() -> None:
+    plan = build_frozen_alpha_plan(_binding())
+    results = tuple(
+        _evaluated(slot, outcome="stable")
+        if slot.fault_type == "label_noise"
+        and slot.slot_kind == "primary"
+        and slot.role == "fault_directed"
+        else _evaluated(slot)
+        for slot in plan.slots
+        if slot.slot_kind == "primary"
+    ) + tuple(
+        _evaluated(slot, outcome="regression")
+        for slot in plan.slots
+        if slot.slot_id in {"M2-R1", "M2-R2", "M2-R3"}
+    )
+    artifacts = assemble_alpha_artifacts(
+        plan=plan,
+        results=results,
+        duplicate_audit=DuplicateAudit(schema_version="p2-duplicate-audit/1", findings=()),
+        reserve_recovery_authorization=_recovery_authorization(plan),
+    )
+    admissions = {
+        execution.slot_id: next(
+            record
+            for record in artifacts.admissions.entries
+            if record.candidate_id == execution.candidate_id
+        )
+        for execution in artifacts.execution.executed
+    }
+    promoted = next(
+        family
+        for family in artifacts.census.entries
+        if family.candidate_id == next(
+            item.candidate_id
+            for item in artifacts.execution.executed
+            if item.slot_id == "M2-R3"
+        )
+    )
+
+    assert artifacts.report.executed == 18
+    assert artifacts.report.accepted == 15
+    assert artifacts.report.excluded_valid == 3
+    assert artifacts.report.mechanism_coverage_passed
+    assert artifacts.report.gate_status == "pass"
+    assert admissions["M2-R1"].exclusion_reason == "protocol_amendment_probe"
+    assert admissions["M2-R2"].exclusion_reason == "protocol_amendment_probe"
+    assert admissions["M2-F3"].exclusion_reason == "protocol_amendment_superseded"
+    assert admissions["M2-R3"].admission == "accepted"
+    assert promoted.origin_slot_kind == "reserve"
+    assert promoted.reserve_promotion_authorized
+
+
+def test_recovery_remains_failed_when_the_predeclared_promotion_is_stable() -> None:
+    plan = build_frozen_alpha_plan(_binding())
+    results = tuple(
+        _evaluated(slot, outcome="stable")
+        if slot.fault_type == "label_noise"
+        and slot.role == "fault_directed"
+        else _evaluated(slot)
+        for slot in plan.slots
+        if slot.slot_kind == "primary" or slot.slot_id in {"M2-R1", "M2-R2", "M2-R3"}
+    )
+    artifacts = assemble_alpha_artifacts(
+        plan=plan,
+        results=results,
+        duplicate_audit=DuplicateAudit(schema_version="p2-duplicate-audit/1", findings=()),
+        reserve_recovery_authorization=_recovery_authorization(plan),
+    )
+
+    assert artifacts.report.mechanism_coverage_passed is False
+    assert artifacts.report.gate_status == "fail"
+    assert "label_noise=no_eligible_failure" in (artifacts.report.deviation_note or "")
 
 
 @pytest.mark.parametrize("reserve_id", [None, "M1-R2", "M2-R1"])

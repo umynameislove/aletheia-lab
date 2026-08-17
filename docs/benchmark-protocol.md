@@ -72,3 +72,16 @@ Mitigation:
 - withheld/counterfactual evidence;
 - blind human audit trên toàn bộ 15 context;
 - công khai manifest/schema.
+
+## Alpha mechanism-coverage amendment
+
+Coverage requires at least one independently bound `eligible_failure` family
+with exactly `full`, `missing_key` and `noisy` siblings for every mechanism.
+Stable controls, excluded candidates, unpromoted reserves and replayed evidence
+cannot satisfy this gate.
+
+The primary alpha and the complete prespecified label-noise reserve recovery did
+not produce an eligible label-noise family. The immutable amendment, measured
+outcomes, reproducibility command and limits on subsequent claims are documented
+in [p2-label-noise-recovery.md](p2-label-noise-recovery.md). Until a new protocol
+is approved, Phase 2 mechanism coverage remains failed closed.

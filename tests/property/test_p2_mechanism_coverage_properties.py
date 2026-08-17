@@ -13,7 +13,11 @@ from aletheia_lab.benchmark.p2.contracts import (
     FamilyCensusEntry,
     context_id_for,
 )
-from aletheia_lab.benchmark.p2.coverage import assess_mechanism_coverage
+from aletheia_lab.benchmark.p2.coverage import (
+    CandidateCensus,
+    CandidateCensusEntry,
+    assess_mechanism_coverage,
+)
 
 _MECHANISMS = ("data_drift", "label_noise", "preprocessing_bug")
 _CONDITIONS = ("full", "missing_key", "noisy")
@@ -54,6 +58,29 @@ def _fixtures():  # type: ignore[no-untyped-def]
     )
 
 
+def _candidate_census(census: FamilyCensus) -> CandidateCensus:
+    entries = tuple(
+        CandidateCensusEntry(
+            slot_id=f"M{index}-F1",
+            candidate_id=family.candidate_id,
+            fault_type=family.fault_type,
+            role="fault_directed",
+            slot_kind="primary",
+            lifecycle_status="accepted",
+            measured_outcome=(
+                "regression" if family.family_class == "eligible_failure" else "stable"
+            ),
+            case_family_id=family.case_family_id,
+            family_class=family.family_class,
+            evidence_conditions=(
+                _CONDITIONS if family.family_class == "eligible_failure" else ("full",)
+            ),
+        )
+        for index, family in enumerate(census.entries, start=1)
+    )
+    return CandidateCensus(entries=entries)
+
+
 @given(
     mechanism=st.sampled_from(_MECHANISMS),
     missing_condition=st.sampled_from(_CONDITIONS),
@@ -76,7 +103,11 @@ def test_removing_any_required_sibling_blocks_only_its_mechanism(
         ),
     )
 
-    audit = assess_mechanism_coverage(census=census, contexts=incomplete)
+    audit = assess_mechanism_coverage(
+        census=census,
+        contexts=incomplete,
+        candidate_census=_candidate_census(census),
+    )
     failed = {entry.fault_type for entry in audit.mechanisms if not entry.passed}
     finding = next(entry for entry in audit.mechanisms if entry.fault_type == mechanism)
 
@@ -105,7 +136,11 @@ def test_reclassifying_an_eligible_family_as_stable_never_preserves_coverage(
         ),
     )
 
-    audit = assess_mechanism_coverage(census=stable_census, contexts=control_contexts)
+    audit = assess_mechanism_coverage(
+        census=stable_census,
+        contexts=control_contexts,
+        candidate_census=_candidate_census(stable_census),
+    )
     failed = next(entry for entry in audit.mechanisms if entry.fault_type == mechanism)
 
     assert not failed.passed

@@ -224,6 +224,13 @@ def _build_store(
     return manifest, files
 
 
+def manifest_for_contract_store(artifacts: P2ContractArtifacts) -> ContractStoreManifest:
+    """Derive the immutable store manifest without writing any files."""
+
+    manifest, _ = _build_store(artifacts)
+    return manifest
+
+
 def _read_real_file(root: Path, relative_path: str) -> bytes:
     pure = PurePosixPath(relative_path)
     if pure.is_absolute() or ".." in pure.parts or pure.as_posix() != relative_path:

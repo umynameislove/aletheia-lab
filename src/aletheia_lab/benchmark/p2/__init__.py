@@ -36,6 +36,12 @@ from aletheia_lab.benchmark.p2.alpha_plan import (
     AlphaSystemBinding,
     build_frozen_alpha_plan,
 )
+from aletheia_lab.benchmark.p2.alpha_recovery import (
+    ReserveRecoveryError,
+    build_reserve_recovery_authorization,
+    execute_reserve_recovery,
+    validate_reserve_recovery_pair,
+)
 from aletheia_lab.benchmark.p2.artifacts import (
     STORE_SCHEMA_VERSION,
     ContractStoreEntry,
@@ -43,6 +49,7 @@ from aletheia_lab.benchmark.p2.artifacts import (
     LoadedContractStore,
     P2ContractArtifacts,
     load_contract_store,
+    manifest_for_contract_store,
     save_contract_store,
 )
 from aletheia_lab.benchmark.p2.binary_evaluation import (
@@ -100,6 +107,8 @@ from aletheia_lab.benchmark.p2.contracts import (
     FamilyCensus,
     FamilyCensusEntry,
     MeasuredOutcome,
+    ReserveRecoveryAuthorization,
+    ReserveRecoveryObservation,
     SlotKind,
     TechnicalDisposition,
     TechnicalDispositionEntry,
@@ -673,6 +682,9 @@ __all__ = [
     "CleanTestSet",
     "ColumnPermutationProvenance",
     "ColumnPermutationResult",
+    "ReserveRecoveryAuthorization",
+    "ReserveRecoveryError",
+    "ReserveRecoveryObservation",
     "ColumnPermutationSpec",
     "ConfusionMatrix",
     "ContextCensus",
@@ -848,10 +860,14 @@ __all__ = [
     "assemble_alpha_artifacts",
     "assess_mechanism_coverage",
     "build_candidate_census",
+    "build_reserve_recovery_authorization",
     "execution_for_slot",
     "execute_alpha_slot",
     "execute_primary_alpha",
+    "execute_reserve_recovery",
+    "validate_reserve_recovery_pair",
     "load_contract_store",
+    "manifest_for_contract_store",
     "is_evidence_bundle_id",
     "measure_drift_candidate",
     "measure_repair_control",

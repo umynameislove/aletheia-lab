@@ -3,8 +3,8 @@
 This module does not execute a model and does not choose measurements.  It
 consumes mechanism candidates that already passed the mechanism trust boundary,
 derives every lifecycle decision allowed by the frozen contract, activates
-reserves only for primary technical rejections, and emits the complete nine-file
-artifact set.
+reserves only for primary technical rejections or one hash-bound recovery
+authorization, and emits the complete nine-file artifact set.
 """
 
 from __future__ import annotations
@@ -30,12 +30,17 @@ from aletheia_lab.benchmark.p2.contracts import (
     ExecutedCandidate,
     FamilyCensus,
     FamilyCensusEntry,
+    ReserveRecoveryAuthorization,
     TechnicalDisposition,
     TechnicalDispositionEntry,
     TechnicalRejectionReason,
     ValidExclusionReason,
 )
-from aletheia_lab.benchmark.p2.coverage import assess_mechanism_coverage
+from aletheia_lab.benchmark.p2.coverage import (
+    CandidateCensus,
+    assess_mechanism_coverage,
+    build_candidate_census,
+)
 from aletheia_lab.benchmark.p2.data_drift import DriftMetricComparison
 from aletheia_lab.benchmark.p2.evidence_projection import (
     MechanismDiagnosisEvidence,
@@ -204,7 +209,10 @@ def _validate_result_binding(result: AlphaCandidateResult, slot: CandidateSlot) 
 
 
 def _validate_execution_set(
-    *, plan: CandidatePlan, by_slot: dict[str, AlphaCandidateResult]
+    *,
+    plan: CandidatePlan,
+    by_slot: dict[str, AlphaCandidateResult],
+    reserve_recovery_authorization: ReserveRecoveryAuthorization | None,
 ) -> None:
     plan_slots = {slot.slot_id: slot for slot in plan.slots}
     unknown = set(by_slot) - set(plan_slots)
@@ -231,11 +239,17 @@ def _validate_execution_set(
         )
         required = min(rejected_primary[fault_type], len(reserves))
         expected = {slot.slot_id for slot in reserves[:required]}
+        if (
+            reserve_recovery_authorization is not None
+            and reserve_recovery_authorization.fault_type == fault_type
+        ):
+            expected.update(reserve_recovery_authorization.activated_reserve_slot_ids)
         observed = {slot.slot_id for slot in reserves if slot.slot_id in by_slot}
         if observed != expected:
             _fail(
-                f"reserve execution for {fault_type} must replace primary technical "
-                f"rejections in order; expected={sorted(expected)}; observed={sorted(observed)}"
+                f"reserve execution for {fault_type} must match technical replacements "
+                f"and any bound recovery authorization; expected={sorted(expected)}; "
+                f"observed={sorted(observed)}"
             )
 
 
@@ -298,8 +312,14 @@ def _gate_report(
     admissions: AdmissionLedger,
     census: FamilyCensus,
     contexts: ContextCensus,
+    candidate_census: CandidateCensus,
 ) -> AlphaValidityReport:
-    coverage = assess_mechanism_coverage(census=census, contexts=contexts)
+    coverage = assess_mechanism_coverage(
+        census=census,
+        contexts=contexts,
+        candidate_census=candidate_census,
+        reserve_recovery_authorization=execution.reserve_recovery_authorization,
+    )
     mechanism_coverage = coverage.passed
     accepted = len(admissions.entries) - sum(
         record.admission == "excluded_valid" for record in admissions.entries
@@ -354,6 +374,7 @@ def assemble_alpha_artifacts(
     plan: CandidatePlan,
     results: tuple[AlphaCandidateResult, ...],
     duplicate_audit: DuplicateAudit,
+    reserve_recovery_authorization: ReserveRecoveryAuthorization | None = None,
 ) -> P2ContractArtifacts:
     """Derive and cross-validate the complete alpha lifecycle artifact set."""
 
@@ -367,7 +388,15 @@ def assemble_alpha_artifacts(
         if slot_id in by_slot:
             _fail(f"alpha run contains duplicate result for slot {slot_id}")
         by_slot[slot_id] = result
-    _validate_execution_set(plan=plan, by_slot=by_slot)
+    if reserve_recovery_authorization is not None:
+        reserve_recovery_authorization = ReserveRecoveryAuthorization.model_validate(
+            reserve_recovery_authorization.model_dump()
+        )
+    _validate_execution_set(
+        plan=plan,
+        by_slot=by_slot,
+        reserve_recovery_authorization=reserve_recovery_authorization,
+    )
 
     ordered_results = tuple(by_slot[slot.slot_id] for slot in plan.slots if slot.slot_id in by_slot)
     slot_by_id = {slot.slot_id: slot for slot in plan.slots}
@@ -382,6 +411,7 @@ def assemble_alpha_artifacts(
             for slot in plan.slots
             if slot.slot_kind == "reserve" and slot.slot_id not in by_slot
         ),
+        reserve_recovery_authorization=reserve_recovery_authorization,
     )
     disposition = TechnicalDisposition(
         schema_version="p2-technical-disposition/1",
@@ -397,6 +427,17 @@ def assemble_alpha_artifacts(
     classification_by_id = {entry.candidate_id: entry for entry in classifications.entries}
     result_by_id = {result.candidate.candidate_id: result for result in evaluated}
     duplicate_exclusions = _duplicate_exclusions(duplicate_audit)
+    amendment_exclusions: dict[str, ValidExclusionReason] = {}
+    if reserve_recovery_authorization is not None:
+        amendment_exclusions.update(
+            {
+                slot_id: "protocol_amendment_probe"
+                for slot_id in reserve_recovery_authorization.probe_slot_ids
+            }
+        )
+        amendment_exclusions[
+            reserve_recovery_authorization.superseded_primary_slot_id
+        ] = "protocol_amendment_superseded"
 
     admission_entries: list[AdmissionRecord] = []
     census_entries: list[FamilyCensusEntry] = []
@@ -416,6 +457,8 @@ def assemble_alpha_artifacts(
         elif exclusion is None and result.exclusion_reason is not None:
             exclusion = result.exclusion_reason
             detail = result.exclusion_detail
+        if exclusion is None:
+            exclusion = amendment_exclusions.get(candidate.execution.slot_id)
         if exclusion is not None:
             admission_entries.append(
                 AdmissionRecord(
@@ -453,6 +496,12 @@ def assemble_alpha_artifacts(
                 fault_type=candidate.fault_type,
                 family_class=family_class,
                 proposed_family_sha256=candidate.proposed_family_sha256,
+                origin_slot_kind=candidate.execution.slot_kind,
+                reserve_promotion_authorized=(
+                    reserve_recovery_authorization is not None
+                    and candidate.execution.slot_id
+                    == reserve_recovery_authorization.promoted_reserve_slot_id
+                ),
             )
         )
 
@@ -472,6 +521,15 @@ def assemble_alpha_artifacts(
             )
         ),
     )
+    candidate_census = build_candidate_census(
+        plan=plan,
+        execution=execution,
+        disposition=disposition,
+        classifications=classifications.entries,
+        admissions=admissions.entries,
+        census=census,
+        contexts=contexts,
+    )
     report = _gate_report(
         plan=plan,
         execution=execution,
@@ -479,6 +537,7 @@ def assemble_alpha_artifacts(
         admissions=admissions,
         census=census,
         contexts=contexts,
+        candidate_census=candidate_census,
     )
     artifacts = P2ContractArtifacts(
         plan=plan,

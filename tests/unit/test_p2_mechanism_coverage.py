@@ -16,6 +16,7 @@ from aletheia_lab.benchmark.p2.contracts import (
 from aletheia_lab.benchmark.p2.coverage import (
     CandidateCensus,
     CandidateCensusEntry,
+    CoverageContractError,
     MechanismCoverageError,
     MechanismCoverageFinding,
     assess_mechanism_coverage,
@@ -74,9 +75,45 @@ def _complete_store():  # type: ignore[no-untyped-def]
     )
 
 
+def _candidate_census(census: FamilyCensus) -> CandidateCensus:
+    mechanism_index = {mechanism: index for index, mechanism in enumerate(_MECHANISMS, start=1)}
+    counters = {mechanism: 0 for mechanism in _MECHANISMS}
+    entries: list[CandidateCensusEntry] = []
+    for family in census.entries:
+        counters[family.fault_type] += 1
+        entries.append(
+            CandidateCensusEntry(
+                slot_id=f"M{mechanism_index[family.fault_type]}-F{counters[family.fault_type]}",
+                candidate_id=family.candidate_id,
+                fault_type=family.fault_type,
+                role="fault_directed",
+                slot_kind=family.origin_slot_kind,
+                lifecycle_status="accepted",
+                measured_outcome=(
+                    "regression" if family.family_class == "eligible_failure" else "stable"
+                ),
+                case_family_id=family.case_family_id,
+                family_class=family.family_class,
+                evidence_conditions=(
+                    _CONDITIONS if family.family_class == "eligible_failure" else ("full",)
+                ),
+                reserve_promotion_authorized=family.reserve_promotion_authorized,
+            )
+        )
+    return CandidateCensus(entries=tuple(sorted(entries, key=lambda item: item.slot_id)))
+
+
+def _assess(census: FamilyCensus, contexts: ContextCensus):  # type: ignore[no-untyped-def]
+    return assess_mechanism_coverage(
+        census=census,
+        contexts=contexts,
+        candidate_census=_candidate_census(census),
+    )
+
+
 def test_one_complete_independent_failure_per_mechanism_passes() -> None:
     census, contexts = _complete_store()
-    audit = assess_mechanism_coverage(census=census, contexts=contexts)
+    audit = _assess(census, contexts)
 
     assert audit.passed
     assert all(entry.passed for entry in audit.mechanisms)
@@ -102,10 +139,45 @@ def test_stable_controls_do_not_substitute_for_an_eligible_failure() -> None:
         ),
     )
 
-    audit = assess_mechanism_coverage(census=changed_census, contexts=changed_contexts)
+    audit = _assess(changed_census, changed_contexts)
     record = next(entry for entry in audit.mechanisms if entry.fault_type == "label_noise")
     assert not record.passed
     assert [finding.reason_code for finding in record.findings] == ["no_eligible_failure"]
+
+
+def test_unpromoted_reserve_family_cannot_supply_mechanism_coverage() -> None:
+    census, contexts = _complete_store()
+    label = next(entry for entry in census.entries if entry.fault_type == "label_noise")
+    reserve = label.model_copy(update={"origin_slot_kind": "reserve"})
+    changed = FamilyCensus(
+        schema_version="p2-family-census/1",
+        entries=tuple(reserve if entry == label else entry for entry in census.entries),
+    )
+
+    audit = _assess(changed, contexts)
+    record = next(entry for entry in audit.mechanisms if entry.fault_type == "label_noise")
+
+    assert not record.passed
+    assert record.eligible_family_ids == ()
+    assert {finding.reason_code for finding in record.findings} == {
+        "no_eligible_failure",
+        "unpromoted_reserve_family",
+    }
+
+
+def test_promoted_reserve_family_without_authorization_is_rejected() -> None:
+    census, contexts = _complete_store()
+    label = next(entry for entry in census.entries if entry.fault_type == "label_noise")
+    promoted = label.model_copy(
+        update={"origin_slot_kind": "reserve", "reserve_promotion_authorized": True}
+    )
+    changed = FamilyCensus(
+        schema_version="p2-family-census/1",
+        entries=tuple(promoted if entry == label else entry for entry in census.entries),
+    )
+
+    with pytest.raises(CoverageContractError, match="without authorization"):
+        _assess(changed, contexts)
 
 
 def test_missing_sibling_fails_with_family_bound_reason() -> None:
@@ -123,7 +195,7 @@ def test_missing_sibling_fails_with_family_bound_reason() -> None:
         ),
     )
 
-    audit = assess_mechanism_coverage(census=census, contexts=incomplete)
+    audit = _assess(census, incomplete)
     record = next(entry for entry in audit.mechanisms if entry.fault_type == "label_noise")
     assert record.complete_independent_family_ids == ()
     assert record.findings[0].reason_code == "incomplete_evidence_conditions"
@@ -151,7 +223,7 @@ def test_cross_family_projection_replay_is_not_independent_coverage() -> None:
     census = FamilyCensus(schema_version="p2-family-census/1", entries=families)
     context_census = ContextCensus(schema_version="p2-context-census/1", entries=tuple(contexts))
 
-    audit = assess_mechanism_coverage(census=census, contexts=context_census)
+    audit = _assess(census, context_census)
     drift = next(entry for entry in audit.mechanisms if entry.fault_type == "data_drift")
     finding = next(item for item in drift.findings if item.reason_code == "evidence_content_reuse")
     assert finding.family_ids == tuple(sorted((first.case_family_id, second.case_family_id)))
@@ -175,9 +247,10 @@ def test_cross_mechanism_projection_replay_invalidates_both_sources() -> None:
         for condition in _CONDITIONS
     )
 
-    audit = assess_mechanism_coverage(
-        census=FamilyCensus(schema_version="p2-family-census/1", entries=families),
-        contexts=ContextCensus(schema_version="p2-context-census/1", entries=contexts),
+    census = FamilyCensus(schema_version="p2-family-census/1", entries=families)
+    audit = _assess(
+        census,
+        ContextCensus(schema_version="p2-context-census/1", entries=contexts),
     )
     by_fault = {entry.fault_type: entry for entry in audit.mechanisms}
 
@@ -207,9 +280,10 @@ def test_projection_replay_does_not_hide_an_independent_family() -> None:
         for condition in _CONDITIONS
     )
 
-    audit = assess_mechanism_coverage(
-        census=FamilyCensus(schema_version="p2-family-census/1", entries=families),
-        contexts=ContextCensus(schema_version="p2-context-census/1", entries=contexts),
+    census = FamilyCensus(schema_version="p2-family-census/1", entries=families)
+    audit = _assess(
+        census,
+        ContextCensus(schema_version="p2-context-census/1", entries=contexts),
     )
     drift = next(entry for entry in audit.mechanisms if entry.fault_type == "data_drift")
 
@@ -236,9 +310,12 @@ def test_replay_from_a_stable_control_cannot_supply_an_eligible_sibling() -> Non
         context for context in contexts.entries if context.case_family_id != label.case_family_id
     ) + (*label_contexts, stable_full)
 
-    audit = assess_mechanism_coverage(
-        census=FamilyCensus(schema_version="p2-family-census/1", entries=(*census.entries, stable)),
-        contexts=ContextCensus(schema_version="p2-context-census/1", entries=changed_contexts),
+    changed_census = FamilyCensus(
+        schema_version="p2-family-census/1", entries=(*census.entries, stable)
+    )
+    audit = _assess(
+        changed_census,
+        ContextCensus(schema_version="p2-context-census/1", entries=changed_contexts),
     )
     label_coverage = next(entry for entry in audit.mechanisms if entry.fault_type == "label_noise")
 
@@ -263,9 +340,9 @@ def test_source_binding_mismatch_blocks_a_complete_family() -> None:
         for context in contexts.entries
     )
 
-    audit = assess_mechanism_coverage(
-        census=census,
-        contexts=ContextCensus(schema_version="p2-context-census/1", entries=changed),
+    audit = _assess(
+        census,
+        ContextCensus(schema_version="p2-context-census/1", entries=changed),
     )
     record = next(entry for entry in audit.mechanisms if entry.fault_type == "label_noise")
     assert record.findings[0].reason_code == "source_binding_mismatch"
@@ -283,7 +360,7 @@ def test_structured_error_retains_machine_readable_audit() -> None:
             if context.case_family_id != label.case_family_id
         ),
     )
-    audit = assess_mechanism_coverage(census=census, contexts=incomplete)
+    audit = _assess(census, incomplete)
 
     with pytest.raises(MechanismCoverageError) as raised:
         require_mechanism_coverage(audit)
