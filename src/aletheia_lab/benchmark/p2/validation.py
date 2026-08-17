@@ -21,6 +21,7 @@ from typing import Final, NoReturn, TypeVar
 
 from pydantic import BaseModel
 
+from aletheia_lab.benchmark.p2.canonical import canonical_sha256
 from aletheia_lab.benchmark.p2.contracts import (
     CONTEXT_CARDINALITY,
     AdmissionRecord,
@@ -32,7 +33,13 @@ from aletheia_lab.benchmark.p2.contracts import (
     ContextCensus,
     DuplicateAudit,
     FamilyCensus,
+    ReserveRecoveryAuthorization,
     TechnicalDisposition,
+)
+from aletheia_lab.benchmark.p2.coverage import (
+    assess_mechanism_coverage,
+    build_candidate_census,
+    require_mechanism_coverage,
 )
 from aletheia_lab.benchmark.p2.identity import (
     DataDriftParameters,
@@ -459,6 +466,87 @@ def validate_candidate_flow(
             _fail(f"census fingerprint disagrees with execution for {record.candidate_id}")
         if entry.fault_type != executed.fault_type:
             _fail(f"census fault_type disagrees with execution for {record.candidate_id}")
+        if entry.origin_slot_kind != executed.slot_kind:
+            _fail(f"census origin slot kind disagrees with execution for {record.candidate_id}")
+        authorization = execution.reserve_recovery_authorization
+        expected_promotion = (
+            authorization is not None
+            and executed.slot_id == authorization.promoted_reserve_slot_id
+        )
+        if entry.reserve_promotion_authorized != expected_promotion:
+            _fail(f"census reserve promotion is not authorized for {record.candidate_id}")
+
+
+def _validate_recovery_authorization(
+    *, plan: CandidatePlan, execution: CandidateExecution
+) -> ReserveRecoveryAuthorization | None:
+    authorization = execution.reserve_recovery_authorization
+    if authorization is None:
+        return None
+    if authorization.fault_type != "label_noise":
+        _fail("the current recovery protocol is limited to the audited label-noise gap")
+    if authorization.source_candidate_plan_sha256 != canonical_sha256(
+        plan.model_dump(mode="json")
+    ):
+        _fail("reserve recovery authorization is bound to another candidate plan")
+
+    slots = {slot.slot_id: slot for slot in plan.slots}
+    expected_reserves = tuple(
+        slot.slot_id
+        for slot in plan.slots
+        if slot.fault_type == authorization.fault_type and slot.slot_kind == "reserve"
+    )
+    if authorization.activated_reserve_slot_ids != tuple(sorted(expected_reserves)):
+        _fail("reserve recovery must execute the complete prespecified mechanism reserve set")
+    if authorization.probe_slot_ids != ("M2-R1", "M2-R2"):
+        _fail("label-noise recovery probes must remain the predeclared R1 and R2 slots")
+    if authorization.promoted_reserve_slot_id != "M2-R3":
+        _fail("label-noise recovery may promote only the predeclared high-dose R3 slot")
+    if authorization.superseded_primary_slot_id != "M2-F3":
+        _fail("label-noise recovery must supersede the predeclared high-dose primary slot")
+
+    for slot_id in authorization.activated_reserve_slot_ids:
+        slot = slots.get(slot_id)
+        if (
+            slot is None
+            or slot.slot_kind != "reserve"
+            or slot.fault_type != authorization.fault_type
+            or slot.role != "fault_directed"
+        ):
+            _fail(f"reserve recovery authorization names an invalid reserve slot: {slot_id}")
+    superseded = slots.get(authorization.superseded_primary_slot_id)
+    if (
+        superseded is None
+        or superseded.slot_kind != "primary"
+        or superseded.fault_type != authorization.fault_type
+        or superseded.role != "fault_directed"
+    ):
+        _fail("reserve recovery supersession must target a primary fault-directed slot")
+
+    expected_observation_ids = tuple(
+        sorted(
+            slot.slot_id
+            for slot in plan.slots
+            if slot.slot_kind == "primary"
+            and slot.fault_type == authorization.fault_type
+            and slot.role == "fault_directed"
+        )
+    )
+    observed_ids = tuple(item.slot_id for item in authorization.source_observations)
+    if observed_ids != expected_observation_ids:
+        _fail("reserve recovery observations must cover every primary fault candidate")
+    for observation in authorization.source_observations:
+        parameters = slots[observation.slot_id].identity.canonical_intervention_parameters
+        if not isinstance(parameters, LabelNoiseParameters):
+            _fail("reserve recovery observation does not bind label-noise parameters")
+        if not math.isclose(
+            observation.declared_intervention_rate,
+            parameters.flip_rate,
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        ):
+            _fail("reserve recovery observation changed the frozen intervention rate")
+    return authorization
 
 
 def validate_reserve_activation(
@@ -472,6 +560,7 @@ def validate_reserve_activation(
     plan = _revalidated(plan)
     execution = _revalidated(execution)
     disposition = _revalidated(disposition)
+    authorization = _validate_recovery_authorization(plan=plan, execution=execution)
     plan_slots = {slot.slot_id: slot for slot in plan.slots}
     disposition_by_id = {entry.candidate_id: entry for entry in disposition.entries}
     execution_ids = {item.candidate_id for item in execution.executed}
@@ -506,11 +595,14 @@ def validate_reserve_activation(
                 f"reserve activation for {fault_type} must follow R1, R2, R3 without gaps; "
                 f"got {ordered}"
             )
-        budget = rejected_primary_by_fault.get(fault_type, 0)
-        if len(ordered) > budget:
+        recovery_count = 0
+        if authorization is not None and fault_type == authorization.fault_type:
+            recovery_count = len(authorization.activated_reserve_slot_ids)
+        budget = rejected_primary_by_fault.get(fault_type, 0) + recovery_count
+        if len(ordered) != budget:
             _fail(
-                f"reserve activation for {fault_type} exceeds the technical-rejection budget: "
-                f"{len(ordered)} activated, {budget} rejected"
+                f"reserve activation for {fault_type} must equal the technical-rejection "
+                f"and recovery budget: {len(ordered)} activated, {budget} authorized"
             )
 
 
@@ -641,6 +733,7 @@ def validate_alpha_report(
     plan: CandidatePlan,
     execution: CandidateExecution,
     disposition: TechnicalDisposition,
+    classifications: tuple[ClassificationRecord, ...],
     admissions: tuple[AdmissionRecord, ...],
     census: FamilyCensus,
     contexts: ContextCensus,
@@ -651,6 +744,7 @@ def validate_alpha_report(
     plan = _revalidated(plan)
     execution = _revalidated(execution)
     disposition = _revalidated(disposition)
+    classifications = tuple(_revalidated(record) for record in classifications)
     admissions = tuple(_revalidated(record) for record in admissions)
     census = _revalidated(census)
     contexts = _revalidated(contexts)
@@ -661,23 +755,22 @@ def validate_alpha_report(
         _fail(f"the alpha grid must declare {RESERVE_SLOT_COUNT} reserve slots")
 
     activated_reserve = sum(1 for item in execution.executed if item.slot_kind == "reserve")
-    accepted_ids = {record.candidate_id for record in admissions if record.admission == "accepted"}
-    accepted_execution = [item for item in execution.executed if item.candidate_id in accepted_ids]
-    mechanism_coverage_passed = all(
-        sum(
-            1
-            for item in accepted_execution
-            if item.fault_type == fault_type and item.role == "fault_directed"
-        )
-        >= 2
-        and sum(
-            1
-            for item in accepted_execution
-            if item.fault_type == fault_type and item.role != "fault_directed"
-        )
-        >= 1
-        for fault_type in _POLICY_BY_FAULT
+    candidate_census = build_candidate_census(
+        plan=plan,
+        execution=execution,
+        disposition=disposition,
+        classifications=classifications,
+        admissions=admissions,
+        census=census,
+        contexts=contexts,
     )
+    coverage = assess_mechanism_coverage(
+        census=census,
+        contexts=contexts,
+        candidate_census=candidate_census,
+        reserve_recovery_authorization=execution.reserve_recovery_authorization,
+    )
+    mechanism_coverage_passed = coverage.passed
     recomputed = {
         "primary_planned": plan.primary_planned,
         "reserve_planned": plan.reserve_planned,
@@ -708,6 +801,9 @@ def validate_alpha_report(
         "context_count": len(contexts.entries),
         "mechanism_coverage_passed": mechanism_coverage_passed,
     }
+
+    if report.mechanism_coverage_passed and not mechanism_coverage_passed:
+        require_mechanism_coverage(coverage)
 
     for field, expected in recomputed.items():
         declared = getattr(report, field)
@@ -741,6 +837,15 @@ def validate_contract_bundle(
         admissions=admissions,
         census=census,
     )
+    build_candidate_census(
+        plan=plan,
+        execution=execution,
+        disposition=disposition,
+        classifications=classifications,
+        admissions=admissions,
+        census=census,
+        contexts=contexts,
+    )
     validate_reserve_activation(
         plan=plan,
         execution=execution,
@@ -757,6 +862,7 @@ def validate_contract_bundle(
         plan=plan,
         execution=execution,
         disposition=disposition,
+        classifications=classifications,
         admissions=admissions,
         census=census,
         contexts=contexts,

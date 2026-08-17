@@ -36,6 +36,12 @@ from aletheia_lab.benchmark.p2.alpha_plan import (
     AlphaSystemBinding,
     build_frozen_alpha_plan,
 )
+from aletheia_lab.benchmark.p2.alpha_recovery import (
+    ReserveRecoveryError,
+    build_reserve_recovery_authorization,
+    execute_reserve_recovery,
+    validate_reserve_recovery_pair,
+)
 from aletheia_lab.benchmark.p2.artifacts import (
     STORE_SCHEMA_VERSION,
     ContractStoreEntry,
@@ -43,6 +49,7 @@ from aletheia_lab.benchmark.p2.artifacts import (
     LoadedContractStore,
     P2ContractArtifacts,
     load_contract_store,
+    manifest_for_contract_store,
     save_contract_store,
 )
 from aletheia_lab.benchmark.p2.binary_evaluation import (
@@ -100,12 +107,28 @@ from aletheia_lab.benchmark.p2.contracts import (
     FamilyCensus,
     FamilyCensusEntry,
     MeasuredOutcome,
+    ReserveRecoveryAuthorization,
+    ReserveRecoveryObservation,
     SlotKind,
     TechnicalDisposition,
     TechnicalDispositionEntry,
     TechnicalRejectionReason,
     ValidExclusionReason,
     context_id_for,
+)
+from aletheia_lab.benchmark.p2.coverage import (
+    CANDIDATE_CENSUS_SCHEMA_VERSION,
+    MECHANISM_COVERAGE_SCHEMA_VERSION,
+    CandidateCensus,
+    CandidateCensusEntry,
+    CoverageContractError,
+    MechanismCoverageAudit,
+    MechanismCoverageEntry,
+    MechanismCoverageError,
+    MechanismCoverageFinding,
+    assess_mechanism_coverage,
+    build_candidate_census,
+    require_mechanism_coverage,
 )
 from aletheia_lab.benchmark.p2.data_drift import (
     APPORTIONMENT_RULE,
@@ -466,6 +489,15 @@ from aletheia_lab.benchmark.p2.validation import (
 )
 
 __all__ = [
+    "CANDIDATE_CENSUS_SCHEMA_VERSION",
+    "MECHANISM_COVERAGE_SCHEMA_VERSION",
+    "CandidateCensus",
+    "CandidateCensusEntry",
+    "CoverageContractError",
+    "MechanismCoverageAudit",
+    "MechanismCoverageEntry",
+    "MechanismCoverageError",
+    "MechanismCoverageFinding",
     "ALPHA_DATA_DRIFT_FEATURE",
     "ALPHA_PLAN_SCHEMA_VERSION",
     "ALPHA_PREPROCESSING_TRANSFORM",
@@ -650,6 +682,9 @@ __all__ = [
     "CleanTestSet",
     "ColumnPermutationProvenance",
     "ColumnPermutationResult",
+    "ReserveRecoveryAuthorization",
+    "ReserveRecoveryError",
+    "ReserveRecoveryObservation",
     "ColumnPermutationSpec",
     "ConfusionMatrix",
     "ContextCensus",
@@ -823,10 +858,16 @@ __all__ = [
     "human_evidence_rubric_for",
     "open_mapped_review_stage",
     "assemble_alpha_artifacts",
+    "assess_mechanism_coverage",
+    "build_candidate_census",
+    "build_reserve_recovery_authorization",
     "execution_for_slot",
     "execute_alpha_slot",
     "execute_primary_alpha",
+    "execute_reserve_recovery",
+    "validate_reserve_recovery_pair",
     "load_contract_store",
+    "manifest_for_contract_store",
     "is_evidence_bundle_id",
     "measure_drift_candidate",
     "measure_repair_control",
@@ -842,6 +883,7 @@ __all__ = [
     "rebuild_evidence_bundles_from_census",
     "save_contract_store",
     "record_technical_rejection",
+    "require_mechanism_coverage",
     "select_category_rows",
     "select_record_ids",
     "selection_digest",

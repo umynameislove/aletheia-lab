@@ -20,6 +20,7 @@ from aletheia_lab.benchmark.p2 import (
     ContextCensus,
     ContextEntry,
     ContractViolation,
+    CoverageContractError,
     DataDriftParameters,
     DuplicateAudit,
     DuplicateFinding,
@@ -259,7 +260,10 @@ def _context_entry(
     *,
     projection: dict[str, object] | None = None,
 ) -> ContextEntry:
-    payload = projection or {"items": [{"id": "primary-comparison", "value": "observable"}]}
+    payload = {
+        **(projection or {"items": [{"id": "primary-comparison", "value": "observable"}]}),
+        "source_binding_sha256": family_id.removeprefix("p2-family-"),
+    }
     return ContextEntry(
         diagnosis_context_id=context_id_for(
             case_family_id=family_id,
@@ -965,7 +969,7 @@ def _activate(bundle: _Bundle, slot_id: str, *, reject_primary: str | None) -> d
 
 def test_reserve_activation_requires_a_technical_rejection(bundle: _Bundle) -> None:
     kwargs = _activate(bundle, "M1-R1", reject_primary=None)
-    with pytest.raises(ContractViolation, match="exceeds the technical-rejection budget"):
+    with pytest.raises(ContractViolation, match="technical-rejection and recovery budget"):
         validate_reserve_activation(**kwargs)  # type: ignore[arg-type]
 
 
@@ -991,7 +995,7 @@ def test_reserve_activation_must_stay_within_its_mechanism(bundle: _Bundle) -> N
         item.candidate_id for item in bundle.executed if item.fault_type == "data_drift"
     )
     kwargs = _activate(bundle, "M2-R1", reject_primary=rejected)
-    with pytest.raises(ContractViolation, match="exceeds the technical-rejection budget"):
+    with pytest.raises(ContractViolation, match="technical-rejection and recovery budget"):
         validate_reserve_activation(**kwargs)  # type: ignore[arg-type]
 
 
@@ -1349,6 +1353,7 @@ def test_report_reconciles_with_the_underlying_entries(bundle: _Bundle) -> None:
         plan=bundle.plan,
         execution=bundle.execution,
         disposition=bundle.disposition,
+        classifications=bundle.classifications,
         admissions=bundle.admissions,
         census=bundle.census,
         contexts=bundle.contexts,
@@ -1374,12 +1379,13 @@ def test_validator_recomputes_counts_from_entries(bundle: _Bundle) -> None:
     """A report can be arithmetically self-consistent yet disagree with reality."""
 
     shrunk = FamilyCensus(schema_version="p2-family-census/1", entries=bundle.census.entries[:-1])
-    with pytest.raises(ContractViolation, match="recomputes to"):
+    with pytest.raises(CoverageContractError, match="cannot bind accepted family"):
         validate_alpha_report(
             report=_report(bundle),
             plan=bundle.plan,
             execution=bundle.execution,
             disposition=bundle.disposition,
+            classifications=bundle.classifications,
             admissions=bundle.admissions,
             census=shrunk,
             contexts=bundle.contexts,
@@ -1399,6 +1405,7 @@ def test_validator_recomputes_mechanism_coverage_and_gate_status(bundle: _Bundle
             plan=bundle.plan,
             execution=bundle.execution,
             disposition=bundle.disposition,
+            classifications=bundle.classifications,
             admissions=bundle.admissions,
             census=bundle.census,
             contexts=bundle.contexts,
@@ -1496,6 +1503,7 @@ def test_alpha_report_requires_the_frozen_grid_size(bundle: _Bundle) -> None:
             plan=shrunk,
             execution=bundle.execution,
             disposition=bundle.disposition,
+            classifications=bundle.classifications,
             admissions=bundle.admissions,
             census=bundle.census,
             contexts=bundle.contexts,

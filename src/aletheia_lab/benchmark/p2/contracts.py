@@ -88,6 +88,8 @@ ValidExclusionReason = Literal[
     "evidence_leakage",
     "artifact_binding_failure",
     "control_direction_violation",
+    "protocol_amendment_probe",
+    "protocol_amendment_superseded",
 ]
 
 DuplicateKind = Literal["exact_identity", "effective_intervention", "near_duplicate"]
@@ -336,12 +338,92 @@ class ExecutedCandidate(_StrictFrozenModel):
     model_data_split_manifest_sha256: Sha256
 
 
+class ReserveRecoveryObservation(_StrictFrozenModel):
+    """One pre-amendment result proving that intervention ran but stayed stable."""
+
+    slot_id: SlotId
+    declared_intervention_rate: float = Field(gt=0.0, le=0.5)
+    achieved_intervention_rate: float = Field(gt=0.0, le=0.5)
+    primary_metric_delta: float
+    threshold: float = Field(gt=0.0)
+    measured_outcome: Literal["stable"]
+
+    @field_validator(
+        "declared_intervention_rate",
+        "achieved_intervention_rate",
+        "primary_metric_delta",
+        "threshold",
+    )
+    @classmethod
+    def _finite_observation(cls, value: float) -> float:
+        return _require_finite(value, "reserve recovery observation")
+
+    @model_validator(mode="after")
+    def _observation_matches_the_frozen_policy(self) -> ReserveRecoveryObservation:
+        if not math.isclose(self.threshold, 0.01, rel_tol=0.0, abs_tol=1e-12):
+            raise ValueError("reserve recovery must preserve the frozen 0.01 threshold")
+        if not -self.threshold < self.primary_metric_delta < self.threshold:
+            raise ValueError("a reserve recovery observation must remain inside the stable band")
+        return self
+
+
+class ReserveRecoveryAuthorization(_StrictFrozenModel):
+    """Hash-bound amendment authorizing one outcome-blind reserve promotion.
+
+    All reserve outcomes are measured, but only the predeclared promoted slot may
+    enter mechanism coverage. Probe slots are excluded regardless of outcome,
+    which prevents optional stopping and post-outcome candidate selection.
+    """
+
+    schema_version: Literal["p2-reserve-recovery-authorization/1"]
+    protocol_version: Literal["complete-prespecified-reserve-recovery/v1"]
+    trigger: Literal["missing_mechanism_coverage"]
+    root_cause: Literal["effective_intervention_below_frozen_primary_threshold"]
+    fault_type: FaultTypeName
+    source_store_sha256: Sha256
+    source_candidate_plan_sha256: Sha256
+    source_candidate_census_sha256: Sha256
+    source_coverage_audit_sha256: Sha256
+    source_observations: tuple[ReserveRecoveryObservation, ...]
+    activated_reserve_slot_ids: tuple[SlotId, ...]
+    probe_slot_ids: tuple[SlotId, ...]
+    promoted_reserve_slot_id: SlotId
+    superseded_primary_slot_id: SlotId
+    primary_metric: Literal["accuracy"]
+    threshold: float = Field(gt=0.0)
+    preserves_primary_measurements: Literal[True]
+    executes_complete_reserve_set: Literal[True]
+
+    @model_validator(mode="after")
+    def _authorization_is_outcome_blind_and_complete(self) -> ReserveRecoveryAuthorization:
+        _require_unique(self.activated_reserve_slot_ids, "activated reserve slot IDs")
+        _require_unique(self.probe_slot_ids, "reserve recovery probe slot IDs")
+        observation_ids = tuple(item.slot_id for item in self.source_observations)
+        _require_unique(observation_ids, "reserve recovery observation slot IDs")
+        if observation_ids != tuple(sorted(observation_ids)):
+            raise ValueError("reserve recovery observations must use canonical slot order")
+        if self.activated_reserve_slot_ids != tuple(sorted(self.activated_reserve_slot_ids)):
+            raise ValueError("activated reserve slots must use canonical order")
+        if self.probe_slot_ids != tuple(sorted(self.probe_slot_ids)):
+            raise ValueError("reserve recovery probes must use canonical order")
+        if self.promoted_reserve_slot_id in self.probe_slot_ids:
+            raise ValueError("the promoted reserve cannot also be a sensitivity probe")
+        if set(self.probe_slot_ids) | {self.promoted_reserve_slot_id} != set(
+            self.activated_reserve_slot_ids
+        ):
+            raise ValueError("probe and promoted slots must partition the activated reserve set")
+        if not math.isclose(self.threshold, 0.01, rel_tol=0.0, abs_tol=1e-12):
+            raise ValueError("reserve recovery must preserve the frozen 0.01 threshold")
+        return self
+
+
 class CandidateExecution(_StrictFrozenModel):
     """Which slots ran, and which reserve slots deliberately did not."""
 
     schema_version: Literal["p2-candidate-execution/1"]
     executed: tuple[ExecutedCandidate, ...]
     inactive_reserve_slot_ids: tuple[SlotId, ...]
+    reserve_recovery_authorization: ReserveRecoveryAuthorization | None = None
 
     @model_validator(mode="after")
     def _no_duplicate_entries(self) -> CandidateExecution:
@@ -352,6 +434,10 @@ class CandidateExecution(_StrictFrozenModel):
         overlap = executed_slots & set(self.inactive_reserve_slot_ids)
         if overlap:
             raise ValueError(f"slots cannot be both executed and inactive: {sorted(overlap)}")
+        if self.reserve_recovery_authorization is not None:
+            authorization = self.reserve_recovery_authorization
+            if not set(authorization.activated_reserve_slot_ids) <= executed_slots:
+                raise ValueError("authorized reserve slots must all be executed")
         return self
 
 
@@ -574,6 +660,14 @@ class FamilyCensusEntry(_StrictFrozenModel):
     fault_type: FaultTypeName
     family_class: AcceptedFamilyClass
     proposed_family_sha256: Sha256
+    origin_slot_kind: SlotKind = "primary"
+    reserve_promotion_authorized: bool = False
+
+    @model_validator(mode="after")
+    def _reserve_origin_is_explicit(self) -> FamilyCensusEntry:
+        if self.origin_slot_kind == "primary" and self.reserve_promotion_authorized:
+            raise ValueError("a primary family cannot claim reserve promotion")
+        return self
 
     @model_validator(mode="after")
     def _family_id_matches_fingerprint(self) -> FamilyCensusEntry:
