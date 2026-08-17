@@ -21,8 +21,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from aletheia_lab.benchmark.p2.canonical import canonical_sha256
 
 CONFIRMATORY_PROTOCOL_SCHEMA_VERSION: Final[
-    Literal["p2-label-noise-confirmatory-protocol/1"]
-] = "p2-label-noise-confirmatory-protocol/1"
+    Literal["p2-label-noise-confirmatory-protocol/2"]
+] = "p2-label-noise-confirmatory-protocol/2"
 DEFAULT_CONFIRMATORY_PROTOCOL_PATH: Final[Path] = Path(
     "configs/benchmark/p2_label_noise_confirmatory_protocol.json"
 )
@@ -39,13 +39,19 @@ class _StrictFrozenModel(BaseModel):
 
 class PredecessorBinding(_StrictFrozenModel):
     merge_commit: str
+    alpha_store_receipt_uri: Literal[
+        "configs/benchmark/provenance/p2_alpha_primary_seed42_store_manifest.json"
+    ]
+    alpha_store_receipt_sha256: str
     alpha_store_sha256: str
     recovery_report_sha256: str
     alpha_is_immutable: Literal[True]
     alpha_gate_status: Literal["fail"]
     alpha_missing_mechanism: Literal["label_noise"]
 
-    @field_validator("alpha_store_sha256", "recovery_report_sha256")
+    @field_validator(
+        "alpha_store_receipt_sha256", "alpha_store_sha256", "recovery_report_sha256"
+    )
     @classmethod
     def _is_sha256(cls, value: str) -> str:
         if SHA256_PATTERN.fullmatch(value) is None:
@@ -86,6 +92,7 @@ class DatasetBinding(_StrictFrozenModel):
     dataset_id: str = Field(min_length=1)
     role: Literal["primary", "external_replication"]
     source_uri: str = Field(min_length=1)
+    source_receipt_sha256: str | None = None
     snapshot_sha256: str
     archive_sha256: str | None = None
     target_column: str = Field(min_length=1)
@@ -93,7 +100,7 @@ class DatasetBinding(_StrictFrozenModel):
     excluded_features: tuple[str, ...]
     split: SplitDesign
 
-    @field_validator("snapshot_sha256", "archive_sha256")
+    @field_validator("source_receipt_sha256", "snapshot_sha256", "archive_sha256")
     @classmethod
     def _optional_sha256(cls, value: str | None) -> str | None:
         if value is not None and SHA256_PATTERN.fullmatch(value) is None:
@@ -107,6 +114,15 @@ class DatasetBinding(_StrictFrozenModel):
         if self.role == "primary":
             if self.dataset_id != "telco_customer_churn":
                 raise ValueError("the primary dataset cannot be selected after alpha")
+            if self.source_uri != (
+                "configs/benchmark/provenance/"
+                "baseline_logistic_regression_seed42_provenance.json"
+            ):
+                raise ValueError("the primary dataset must use its tracked provenance receipt")
+            if self.source_receipt_sha256 is None:
+                raise ValueError("the primary provenance receipt checksum is required")
+            if self.archive_sha256 is not None:
+                raise ValueError("the primary dataset must not declare an external archive")
             if self.split.strategy != "seeded_stratified" or self.split.seed != 314159:
                 raise ValueError("the primary confirmatory split is frozen at seed 314159")
         else:
@@ -116,6 +132,10 @@ class DatasetBinding(_StrictFrozenModel):
                 raise ValueError("the external replication must preserve source time order")
             if self.excluded_features != ("duration",):
                 raise ValueError("the post-call duration feature must be excluded")
+            if self.source_receipt_sha256 is not None:
+                raise ValueError("the external source must use its archive checksum")
+            if self.archive_sha256 is None:
+                raise ValueError("the external archive checksum is required")
         return self
 
 
@@ -291,7 +311,9 @@ class DecisionDesign(_StrictFrozenModel):
 
 class GovernanceDesign(_StrictFrozenModel):
     protocol_only_commit_required: Literal[True]
-    required_git_tag: Literal["p2-label-noise-confirmatory-v1"]
+    required_git_tag: Literal["p2-label-noise-confirmatory-v2"]
+    supersedes_invalid_tag: Literal["p2-label-noise-confirmatory-v1"]
+    supersession_reason: Literal["v1_tag_does_not_contain_the_protocol"]
     immutable_release_or_external_timestamp_required: Literal[True]
     execution_before_registration_forbidden: Literal[True]
     changes_require_new_protocol_version: Literal[True]
@@ -301,7 +323,7 @@ class GovernanceDesign(_StrictFrozenModel):
 
 
 class ConfirmatoryProtocol(_StrictFrozenModel):
-    schema_version: Literal["p2-label-noise-confirmatory-protocol/1"]
+    schema_version: Literal["p2-label-noise-confirmatory-protocol/2"]
     status: Literal["frozen_not_executed"]
     research_question: Literal[
         "Does class-conditional training-label corruption cause a reproducible degradation in clean-label probabilistic prediction quality?"
@@ -365,24 +387,33 @@ def verify_confirmatory_predecessor(
 
     protocol = ConfirmatoryProtocol.model_validate(protocol.model_dump())
     repository = Path(root)
-    alpha_manifest_path = repository / "experiments/p2/runs/alpha-primary-seed42/store-manifest.json"
+    alpha_manifest_path = repository / protocol.predecessor.alpha_store_receipt_uri
     recovery_report_path = repository / "docs/p2-label-noise-recovery.md"
-    baseline_path = (
-        repository
-        / "experiments/baseline/runs/logistic_regression_seed42/provenance.json"
-    )
+    primary = next(dataset for dataset in protocol.datasets if dataset.role == "primary")
+    baseline_path = repository / primary.source_uri
     try:
-        alpha_manifest = json.loads(alpha_manifest_path.read_text(encoding="utf-8"))
+        alpha_receipt = alpha_manifest_path.read_bytes()
         recovery_report = recovery_report_path.read_bytes()
-        baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
+        baseline_receipt = baseline_path.read_bytes()
+        alpha_manifest = json.loads(alpha_receipt)
+        baseline = json.loads(baseline_receipt)
     except (OSError, json.JSONDecodeError) as exc:
         raise ConfirmatoryProtocolError("cannot verify confirmatory predecessor artifacts") from exc
+    if (
+        hashlib.sha256(alpha_receipt).hexdigest()
+        != protocol.predecessor.alpha_store_receipt_sha256
+    ):
+        raise ConfirmatoryProtocolError("confirmatory alpha receipt checksum mismatch")
     if not isinstance(alpha_manifest, dict) or (
         alpha_manifest.get("store_sha256") != protocol.predecessor.alpha_store_sha256
     ):
         raise ConfirmatoryProtocolError("confirmatory protocol is bound to another alpha store")
     if hashlib.sha256(recovery_report).hexdigest() != protocol.predecessor.recovery_report_sha256:
         raise ConfirmatoryProtocolError("confirmatory protocol is bound to another recovery report")
-    primary = next(dataset for dataset in protocol.datasets if dataset.role == "primary")
+    if (
+        primary.source_receipt_sha256 is None
+        or hashlib.sha256(baseline_receipt).hexdigest() != primary.source_receipt_sha256
+    ):
+        raise ConfirmatoryProtocolError("confirmatory baseline receipt checksum mismatch")
     if not isinstance(baseline, dict) or baseline.get("dataset_sha256") != primary.snapshot_sha256:
         raise ConfirmatoryProtocolError("confirmatory protocol is bound to another primary dataset")

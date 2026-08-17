@@ -2,7 +2,7 @@
 
 > Status: internally frozen design; no confirmatory outcome has been generated.
 > Machine-readable contract: `configs/benchmark/p2_label_noise_confirmatory_protocol.json`
-> Contract SHA-256: `09dd4124eaf54a11c7f4b30d23c4e1369ebca77e3335ffbefc4bd3034b3d53a1`
+> Contract SHA-256: `1a7340d0897fcbbde02bb0a3ffe0a50cccd1cebd695ebf2c293c6c260bb02d4e`
 
 Validate the contract and its local predecessor bindings without running an
 experiment:
@@ -13,9 +13,15 @@ python scripts/p2_label_noise_confirmatory_protocol.py
 
 After this protocol-only change is merged, it must be registered before any
 outcome execution: create the immutable Git tag
-`p2-label-noise-confirmatory-v1` and archive the tagged artifact in a GitHub
+`p2-label-noise-confirmatory-v2` and archive the tagged artifact in a GitHub
 release or an external timestamped registry. Any later design change requires a
 new protocol version and new registration; the existing hash must not be edited.
+
+The previously published tag `p2-label-noise-confirmatory-v1` resolves to a
+commit that predates and does not contain this protocol. It is retained as an
+auditable invalid registration and must never authorize outcome execution or be
+force-moved. Version 2 supersedes that tag before any confirmatory outcome has
+been generated or inspected.
 
 ## 1. Decision and scientific purpose
 
@@ -231,6 +237,9 @@ The implementation must preserve these boundaries:
 - the source archive, normalized dataset, split, model, preprocessing, mutation
   map, predictions, per-record losses, analysis code and outputs receive
   canonical hashes;
+- the alpha store root and baseline provenance are preserved as tracked,
+  byte-hashed receipts, so predecessor verification works in a clean checkout
+  without depending on ignored local run directories;
 - the protocol hash is embedded in every run and report;
 - a result with a mismatched protocol, dataset, split, seed set, endpoint or
   analysis hash fails closed.

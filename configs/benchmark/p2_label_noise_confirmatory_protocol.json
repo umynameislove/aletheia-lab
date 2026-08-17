@@ -1,9 +1,11 @@
 {
-  "schema_version": "p2-label-noise-confirmatory-protocol/1",
+  "schema_version": "p2-label-noise-confirmatory-protocol/2",
   "status": "frozen_not_executed",
   "research_question": "Does class-conditional training-label corruption cause a reproducible degradation in clean-label probabilistic prediction quality?",
   "predecessor": {
     "merge_commit": "6592ac4ad6920f5f77016fd849db4c8b825de6e6",
+    "alpha_store_receipt_uri": "configs/benchmark/provenance/p2_alpha_primary_seed42_store_manifest.json",
+    "alpha_store_receipt_sha256": "78c24fd7562322155925971b772654db7adff8022216fc341544003b58630f85",
     "alpha_store_sha256": "53381a20008da7fd876b70d3c3fbf8db95700f5336c54660fbf8273d5e60a47e",
     "recovery_report_sha256": "1458f3f09a1727c8479953431cbcf7f98645970b447a8d34cb5892c374ca6d84",
     "alpha_is_immutable": true,
@@ -14,7 +16,8 @@
     {
       "dataset_id": "telco_customer_churn",
       "role": "primary",
-      "source_uri": "experiments/baseline/runs/logistic_regression_seed42/provenance.json",
+      "source_uri": "configs/benchmark/provenance/baseline_logistic_regression_seed42_provenance.json",
+      "source_receipt_sha256": "7c7a7e2f0428ac59c117e19c93a026109e057362ca8a83dd731bd414a2ebc752",
       "snapshot_sha256": "7dd93bbff704f59a3044237c6695f4cfb2ee1b6faff6c21265b2e4044195cbd8",
       "archive_sha256": null,
       "target_column": "Churn",
@@ -33,6 +36,7 @@
       "dataset_id": "uci_bank_marketing_additional_full",
       "role": "external_replication",
       "source_uri": "https://archive.ics.uci.edu/static/public/222/bank%2Bmarketing.zip",
+      "source_receipt_sha256": null,
       "snapshot_sha256": "74adfc578bf77a7ff4bb1ba4a9f8709d9e3c6907342959c2c8416847e0afb4d8",
       "archive_sha256": "e0bf5f5de5b846e2f18e9d90606637267d46dfa260e0f17bb12e605db5efbeb4",
       "target_column": "y",
@@ -177,7 +181,9 @@
   },
   "governance": {
     "protocol_only_commit_required": true,
-    "required_git_tag": "p2-label-noise-confirmatory-v1",
+    "required_git_tag": "p2-label-noise-confirmatory-v2",
+    "supersedes_invalid_tag": "p2-label-noise-confirmatory-v1",
+    "supersession_reason": "v1_tag_does_not_contain_the_protocol",
     "immutable_release_or_external_timestamp_required": true,
     "execution_before_registration_forbidden": true,
     "changes_require_new_protocol_version": true,

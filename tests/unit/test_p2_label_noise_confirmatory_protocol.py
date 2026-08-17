@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -18,7 +19,7 @@ from aletheia_lab.benchmark.p2.confirmatory_protocol import (
 )
 
 _PROTOCOL_PATH = Path("configs/benchmark/p2_label_noise_confirmatory_protocol.json")
-_EXPECTED_PROTOCOL_SHA256 = "09dd4124eaf54a11c7f4b30d23c4e1369ebca77e3335ffbefc4bd3034b3d53a1"
+_EXPECTED_PROTOCOL_SHA256 = "1a7340d0897fcbbde02bb0a3ffe0a50cccd1cebd695ebf2c293c6c260bb02d4e"
 
 
 def _payload() -> dict[str, object]:
@@ -43,23 +44,23 @@ def test_frozen_protocol_loads_and_has_stable_canonical_hash() -> None:
 
 def test_protocol_binds_the_existing_alpha_store_and_recovery_report() -> None:
     protocol = load_confirmatory_protocol()
-    alpha_manifest = json.loads(
-        Path("experiments/p2/runs/alpha-primary-seed42/store-manifest.json").read_text(
-            encoding="utf-8"
-        )
-    )
+    alpha_receipt_path = Path(protocol.predecessor.alpha_store_receipt_uri)
+    alpha_receipt = alpha_receipt_path.read_bytes()
+    alpha_manifest = json.loads(alpha_receipt)
     recovery_report = Path("docs/p2-label-noise-recovery.md").read_bytes()
-    baseline_provenance = json.loads(
-        Path("experiments/baseline/runs/logistic_regression_seed42/provenance.json").read_text(
-            encoding="utf-8"
-        )
-    )
+    primary = protocol.datasets[0]
+    baseline_receipt = Path(primary.source_uri).read_bytes()
+    baseline_provenance = json.loads(baseline_receipt)
 
+    assert protocol.predecessor.alpha_store_receipt_sha256 == hashlib.sha256(
+        alpha_receipt
+    ).hexdigest()
     assert protocol.predecessor.alpha_store_sha256 == alpha_manifest["store_sha256"]
     assert protocol.predecessor.recovery_report_sha256 == hashlib.sha256(
         recovery_report
     ).hexdigest()
-    assert protocol.datasets[0].snapshot_sha256 == baseline_provenance["dataset_sha256"]
+    assert primary.source_receipt_sha256 == hashlib.sha256(baseline_receipt).hexdigest()
+    assert primary.snapshot_sha256 == baseline_provenance["dataset_sha256"]
     verify_confirmatory_predecessor(protocol)
 
 
@@ -109,7 +110,12 @@ def test_execution_requires_an_immutable_protocol_registration() -> None:
     protocol = load_confirmatory_protocol()
 
     assert protocol.governance.protocol_only_commit_required
-    assert protocol.governance.required_git_tag == "p2-label-noise-confirmatory-v1"
+    assert protocol.governance.required_git_tag == "p2-label-noise-confirmatory-v2"
+    assert protocol.governance.supersedes_invalid_tag == "p2-label-noise-confirmatory-v1"
+    assert (
+        protocol.governance.supersession_reason
+        == "v1_tag_does_not_contain_the_protocol"
+    )
     assert protocol.governance.immutable_release_or_external_timestamp_required
     assert protocol.governance.execution_before_registration_forbidden
     assert protocol.governance.changes_require_new_protocol_version
@@ -127,6 +133,12 @@ def test_execution_requires_an_immutable_protocol_registration() -> None:
         ("decision", "external_replication_cannot_rescue_primary", False, "literal_error"),
         ("decision", "additional_grid_after_results_forbidden", False, "literal_error"),
         ("governance", "execution_before_registration_forbidden", False, "literal_error"),
+        (
+            "governance",
+            "required_git_tag",
+            "p2-label-noise-confirmatory-v1",
+            "literal_error",
+        ),
     ],
 )
 def test_frozen_safeguards_cannot_be_relaxed(
@@ -258,3 +270,45 @@ def test_loader_wraps_missing_and_invalid_protocols(tmp_path: Path) -> None:
 
     with pytest.raises(ConfirmatoryProtocolError, match="predecessor artifacts"):
         verify_confirmatory_predecessor(load_confirmatory_protocol(), root=tmp_path)
+
+
+def test_predecessor_verification_is_hermetic_and_detects_receipt_tampering(
+    tmp_path: Path,
+) -> None:
+    protocol = load_confirmatory_protocol()
+    primary = protocol.datasets[0]
+    relative_paths = (
+        protocol.predecessor.alpha_store_receipt_uri,
+        "docs/p2-label-noise-recovery.md",
+        primary.source_uri,
+    )
+    for relative_path in relative_paths:
+        destination = tmp_path / relative_path
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(relative_path, destination)
+
+    verify_confirmatory_predecessor(protocol, root=tmp_path)
+
+    alpha_receipt = tmp_path / protocol.predecessor.alpha_store_receipt_uri
+    alpha_receipt.write_bytes(alpha_receipt.read_bytes() + b"\n")
+    with pytest.raises(ConfirmatoryProtocolError, match="alpha receipt checksum mismatch"):
+        verify_confirmatory_predecessor(protocol, root=tmp_path)
+
+
+def test_baseline_receipt_tampering_fails_closed(tmp_path: Path) -> None:
+    protocol = load_confirmatory_protocol()
+    primary = protocol.datasets[0]
+    relative_paths = (
+        protocol.predecessor.alpha_store_receipt_uri,
+        "docs/p2-label-noise-recovery.md",
+        primary.source_uri,
+    )
+    for relative_path in relative_paths:
+        destination = tmp_path / relative_path
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(relative_path, destination)
+
+    baseline_receipt = tmp_path / primary.source_uri
+    baseline_receipt.write_bytes(baseline_receipt.read_bytes() + b"\n")
+    with pytest.raises(ConfirmatoryProtocolError, match="baseline receipt checksum mismatch"):
+        verify_confirmatory_predecessor(protocol, root=tmp_path)
