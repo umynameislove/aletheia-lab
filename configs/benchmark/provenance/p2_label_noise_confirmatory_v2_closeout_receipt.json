@@ -1,0 +1,46 @@
+{
+  "schema_version": "p2-confirmatory-publication-receipt/1",
+  "study_id": "p2-label-noise-confirmatory-v2",
+  "protocol": {
+    "sha256": "1a7340d0897fcbbde02bb0a3ffe0a50cccd1cebd695ebf2c293c6c260bb02d4e",
+    "tag": "p2-label-noise-confirmatory-v2",
+    "tagged_commit": "eaa16121e8c42b846fbc80eaadb77bf4ab157a08",
+    "immutable_release_id": 373522136,
+    "immutable_release_url": "https://github.com/umynameislove/aletheia-lab/releases/tag/p2-label-noise-confirmatory-v2",
+    "release_published_at": "2026-08-20T06:15:29Z"
+  },
+  "execution": {
+    "commit": "81abe13da1cf6072396bb73289569f95d64b520f",
+    "executed_at": "2026-08-20T06:28:05.130014Z",
+    "python_version": "3.12.13",
+    "operating_system": "macOS-26.6.1-arm64-arm-64bit",
+    "outcomes_released_together": true
+  },
+  "decision": {
+    "mechanism_admitted": true,
+    "primary_pass": true,
+    "replication_pass": false,
+    "cross_dataset_claim_allowed": false,
+    "cross_dataset_direction": null,
+    "disposition": "primary_dataset_bounded_admission"
+  },
+  "census": {
+    "primary_replicates": 180,
+    "replication_replicates": 180,
+    "total_replicates": 360,
+    "all_technical_and_control_gates_passed": true
+  },
+  "artifact_identity": {
+    "result_store_sha256": "7e46d0997bc5ad6807409a4aebea39c82c11216f2bdcadd5704724994117504c",
+    "closeout_sha256": "cf89cce144760110958fd4aebb774448bdd0adac71572c79a4ea196851c14f02",
+    "primary_outcome_sha256": "98413e6188470ab59a1f8dfefb4d73cdc708eaa9818bd22be7feb6f3c6126e6e",
+    "replication_outcome_sha256": "8f895bb9234fe851927340838f0fc5f86a1326f547bae93c56be65f887a196b7",
+    "environment_sha256": "e5b6bb625650c5da1fc816ee527378e6b803c12231a915296a68390ff50aa7b6",
+    "registration_sha256": "7c83874cedd8ce1ee1195eb74d67177f09bae316948d321436540d6f14ba9338",
+    "store_manifest_file_sha256": "804ba72bdd942263fbbcdbc763000e0ca46afa683a46af555706e09e0e2308a3",
+    "artifact_count": 5,
+    "artifact_bytes": 699147366,
+    "full_artifacts_excluded_from_git": true,
+    "publication_archive_uri": null
+  }
+}
