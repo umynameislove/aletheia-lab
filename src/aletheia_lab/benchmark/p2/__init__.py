@@ -85,6 +85,23 @@ from aletheia_lab.benchmark.p2.canonical import (
     normalize_number,
     normalize_text,
 )
+from aletheia_lab.benchmark.p2.confirmatory_closeout import (
+    CLOSEOUT_SCHEMA_VERSION,
+    ENVIRONMENT_SCHEMA_VERSION,
+    REGISTRATION_SCHEMA_VERSION,
+    ConfirmatoryCloseout,
+    ExecutionEnvironmentReceipt,
+    ProtocolRegistrationReceipt,
+    ResultStoreManifest,
+    build_closeout,
+    capture_execution_environment,
+    load_and_verify_result_store,
+    registration_from_github_release,
+    write_result_store,
+)
+from aletheia_lab.benchmark.p2.confirmatory_closeout import (
+    STORE_SCHEMA_VERSION as CONFIRMATORY_RESULT_STORE_SCHEMA_VERSION,
+)
 from aletheia_lab.benchmark.p2.confirmatory_execution import (
     EXECUTION_SCHEMA_VERSION,
     METRIC_SCHEMA_VERSION,
@@ -139,12 +156,28 @@ from aletheia_lab.benchmark.p2.confirmatory_protocol import (
     load_confirmatory_protocol,
     verify_confirmatory_predecessor,
 )
+from aletheia_lab.benchmark.p2.confirmatory_registered import (
+    DATASET_OUTCOME_SCHEMA_VERSION,
+    REGISTERED_DATASET_SCHEMA_VERSION,
+    REPLICATE_ARTIFACT_SCHEMA_VERSION,
+    DatasetOutcome,
+    RegisteredDataset,
+    RegisteredDatasetReceipt,
+    ReplicateArtifact,
+    execute_registered_dataset,
+    load_registered_dataset,
+    validate_dose_monotonicity,
+)
 from aletheia_lab.benchmark.p2.confirmatory_runtime import (
     PREPROCESSING_RUNTIME_VERSION,
     feature_frame_sha256,
     fit_frozen_probability_vector,
     frozen_model_specification_sha256,
     frozen_preprocessing_sha256,
+)
+from aletheia_lab.benchmark.p2.confirmatory_sources import (
+    download_registered_archive,
+    extract_registered_snapshot,
 )
 from aletheia_lab.benchmark.p2.contracts import (
     CONTEXT_CARDINALITY,
@@ -1030,4 +1063,29 @@ __all__ = [
     "analyze_dataset",
     "repair_labels",
     "wilson_interval",
+    "CLOSEOUT_SCHEMA_VERSION",
+    "CONFIRMATORY_RESULT_STORE_SCHEMA_VERSION",
+    "DATASET_OUTCOME_SCHEMA_VERSION",
+    "ENVIRONMENT_SCHEMA_VERSION",
+    "REGISTERED_DATASET_SCHEMA_VERSION",
+    "REGISTRATION_SCHEMA_VERSION",
+    "REPLICATE_ARTIFACT_SCHEMA_VERSION",
+    "ConfirmatoryCloseout",
+    "DatasetOutcome",
+    "ExecutionEnvironmentReceipt",
+    "ProtocolRegistrationReceipt",
+    "RegisteredDataset",
+    "RegisteredDatasetReceipt",
+    "ReplicateArtifact",
+    "ResultStoreManifest",
+    "build_closeout",
+    "capture_execution_environment",
+    "download_registered_archive",
+    "execute_registered_dataset",
+    "extract_registered_snapshot",
+    "load_and_verify_result_store",
+    "load_registered_dataset",
+    "registration_from_github_release",
+    "validate_dose_monotonicity",
+    "write_result_store",
 ]
