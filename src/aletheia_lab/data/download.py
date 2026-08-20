@@ -70,10 +70,13 @@ def _download_to_temp(url: str, dest_dir: Path) -> Path:
     fd, tmp_name = tempfile.mkstemp(dir=dest_dir, suffix=".part")
     tmp = Path(tmp_name)
     try:
-        # The scheme allowlist above is the compensating control for Bandit B310.
-        with os.fdopen(fd, "wb") as out, urllib.request.urlopen(  # nosec B310
-            url, timeout=_TIMEOUT
-        ) as resp:
+        with (
+            os.fdopen(fd, "wb") as out,
+            # The scheme allowlist above is the compensating control for Bandit B310.
+            urllib.request.urlopen(  # nosec B310
+                url, timeout=_TIMEOUT
+            ) as resp,
+        ):
             for chunk in iter(lambda: resp.read(_CHUNK), b""):
                 out.write(chunk)
             out.flush()
@@ -123,6 +126,32 @@ def download_dataset(
         # quarantined temporary file and leave ``dest`` exactly as it was.
         tmp.unlink(missing_ok=True)
     return dest
+
+
+def download_pinned_file(*, url: str, sha256: str, destination: str | Path) -> Path:
+    """Download a generic SHA-pinned file through the audited transport boundary."""
+
+    if len(sha256) != 64 or any(character not in "0123456789abcdef" for character in sha256):
+        raise ValueError("expected checksum must be a lowercase SHA-256 digest")
+    output = Path(destination)
+    if output.exists():
+        actual = sha256_file(output)
+        if actual != sha256:
+            raise ChecksumError(
+                f"sha256 mismatch for {output.name}: expected {sha256}, got {actual}"
+            )
+        return output
+    temporary = _download_to_temp(url, output.parent)
+    try:
+        actual = sha256_file(temporary)
+        if actual != sha256:
+            raise ChecksumError(
+                f"sha256 mismatch for downloaded file: expected {sha256}, got {actual}"
+            )
+        os.replace(temporary, output)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return output
 
 
 def write_provenance(source: DatasetSource, dest: str | Path, out_path: str | Path) -> Path:

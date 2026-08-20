@@ -23,6 +23,7 @@ import pytest
 from aletheia_lab.data.download import (
     ChecksumError,
     download_dataset,
+    download_pinned_file,
     sha256_file,
     verify_file,
     write_provenance,
@@ -139,6 +140,51 @@ def test_download_reuses_valid_existing_file(tmp_path) -> None:
     source = replace(TELCO_CUSTOMER_CHURN, sha256=sha256_file(target))
     # offline + present + matching checksum -> returned without any network access.
     assert download_dataset(source, target, offline=True) == target
+
+
+def test_generic_pinned_download_is_atomic_and_reuses_verified_bytes(tmp_path, monkeypatch) -> None:
+    destination = tmp_path / "archive.zip"
+    payload = b"registered external archive"
+    digest = hashlib.sha256(payload).hexdigest()
+    monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen(payload))
+
+    assert (
+        download_pinned_file(
+            url="https://example.test/archive.zip",
+            sha256=digest,
+            destination=destination,
+        )
+        == destination
+    )
+    assert destination.read_bytes() == payload
+    assert (
+        download_pinned_file(
+            url="https://example.test/archive.zip",
+            sha256=digest,
+            destination=destination,
+        )
+        == destination
+    )
+    assert _no_part_files(tmp_path)
+
+
+def test_generic_pinned_download_rejects_bad_pin_and_bad_payload(tmp_path, monkeypatch) -> None:
+    destination = tmp_path / "archive.zip"
+    with pytest.raises(ValueError, match="SHA-256"):
+        download_pinned_file(
+            url="https://example.test/archive.zip",
+            sha256="not-a-digest",
+            destination=destination,
+        )
+    monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen(b"wrong"))
+    with pytest.raises(ChecksumError, match="downloaded"):
+        download_pinned_file(
+            url="https://example.test/archive.zip",
+            sha256="0" * 64,
+            destination=destination,
+        )
+    assert not destination.exists()
+    assert _no_part_files(tmp_path)
 
 
 # --- download failure-path regression tests for atomic verification ---
