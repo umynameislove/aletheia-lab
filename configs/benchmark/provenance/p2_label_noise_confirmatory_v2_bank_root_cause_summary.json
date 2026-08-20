@@ -1,0 +1,84 @@
+{
+  "schema_version": "p2-confirmatory-root-cause-summary/1",
+  "protocol_sha256": "1a7340d0897fcbbde02bb0a3ffe0a50cccd1cebd695ebf2c293c6c260bb02d4e",
+  "result_store_sha256": "7e46d0997bc5ad6807409a4aebea39c82c11216f2bdcadd5704724994117504c",
+  "replication_outcome_sha256": "8f895bb9234fe851927340838f0fc5f86a1326f547bae93c56be65f887a196b7",
+  "dataset_id": "uci_bank_marketing_additional_full",
+  "audit_type": "outcome_aware_explanatory",
+  "registered_decision_unchanged": true,
+  "disposition": "temporal_prior_shift_supported",
+  "implementation_defects": [],
+  "validity_checks": {
+    "split_reproduced_exactly": true,
+    "target_encoding": {
+      "no": 0,
+      "yes": 1
+    },
+    "yes_to_no_mapping": [
+      1,
+      0
+    ],
+    "no_to_yes_mapping": [
+      0,
+      1
+    ],
+    "all_180_mutations_reproduced_exactly": true,
+    "duration_excluded": true,
+    "all_181_prediction_vectors_reproduced_exactly": true,
+    "convergence_warning_count": 0,
+    "inference_reproduced_exactly": true,
+    "stored_analysis_sha256": "7911433696c8c7d44ed5169f3a307740bd2fe794c8b364c79878fd0d45ddf9d9",
+    "reproduced_analysis_sha256": "7911433696c8c7d44ed5169f3a307740bd2fe794c8b364c79878fd0d45ddf9d9"
+  },
+  "temporal_positive_prevalence": {
+    "train": 0.04807381029459372,
+    "development": 0.11071992230180891,
+    "sealed_test": 0.30828984100012136
+  },
+  "clean_calibration": {
+    "sealed_test_positive_rate": 0.30828984100012136,
+    "mean_predicted_positive_rate": 0.000010662389243228838,
+    "calibration_intercept": 11.401114379191903,
+    "log_loss": 4.064583599344323,
+    "positive_class_log_loss": 13.184271564334182,
+    "negative_class_log_loss": 0.000009563360074199937
+  },
+  "no_to_yes_30_percent": {
+    "mutation_count_per_seed": 7057,
+    "achieved_conditional_rate": 0.2999914980445502,
+    "mutated_training_positive_rate": 0.33364357397215927,
+    "sealed_test_prior_gap_before": 0.2602160307055276,
+    "sealed_test_prior_gap_after": 0.025353732972037912,
+    "negative_effect_seeds": 30,
+    "positive_effect_seeds": 0,
+    "mean_relative_log_loss_change": -0.7716812866322251,
+    "minimum_relative_log_loss_change": -0.8431855839437012,
+    "maximum_relative_log_loss_change": -0.622699633081524
+  },
+  "registered_inference": {
+    "bootstrap_resamples": 10000,
+    "sign_flip_resamples": 100000,
+    "multiplicity_method": "holm_two_co_primary_directions",
+    "yes_to_no": {
+      "point_estimate": 0.0532672822543099,
+      "bootstrap_95_percent_interval": [
+        0.003321829145304315,
+        0.10778442551621342
+      ],
+      "raw_one_sided_sign_flip_pvalue": 0.02888971110288897,
+      "holm_adjusted_pvalue": 0.05777942220577794,
+      "direction_pass": false
+    },
+    "no_to_yes": {
+      "point_estimate": -0.7716812866322251,
+      "bootstrap_95_percent_interval": [
+        -0.7922938977747034,
+        -0.7489856483141389
+      ],
+      "raw_one_sided_sign_flip_pvalue": 1.0,
+      "holm_adjusted_pvalue": 1.0,
+      "direction_pass": false
+    }
+  },
+  "interpretation_boundary": "The frozen Bank replication remains failed. The audit supports temporal class-prior shift as the dominant observed explanation but does not prove it is the only temporal distribution shift and does not authorize a cross-dataset claim."
+}
