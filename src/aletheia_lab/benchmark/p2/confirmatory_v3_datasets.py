@@ -430,9 +430,36 @@ def inspect_v3_dataset_archive(
 ) -> DatasetBindingAudit:
     """Inspect only identity, schema, eligibility and duplicate leakage risks."""
 
+    checked, frame = load_v3_dataset_snapshot_for_registration(
+        dataset=dataset,
+        archive_path=archive_path,
+    )
+    return _audit_v3_dataset_snapshot(
+        manifest_sha256=manifest_sha256,
+        checked=checked,
+        frame=frame,
+    )
+
+
+def load_v3_dataset_snapshot_for_registration(
+    *,
+    dataset: V3DatasetBinding,
+    archive_path: str | Path,
+) -> tuple[V3DatasetBinding, pd.DataFrame]:
+    """Load a verified snapshot for outcome-free protocol compilation only."""
+
     checked = V3DatasetBinding.model_validate(dataset.model_dump())
     content = _archive_member(checked, Path(archive_path))
     frame = _read_snapshot(checked, content)
+    return checked, frame
+
+
+def _audit_v3_dataset_snapshot(
+    *,
+    manifest_sha256: str,
+    checked: V3DatasetBinding,
+    frame: pd.DataFrame,
+) -> DatasetBindingAudit:
     columns = tuple(str(column) for column in frame.columns)
     if columns != checked.source_columns or len(columns) != len(set(columns)):
         raise V3DatasetBindingError("observed source schema differs from the binding")
