@@ -1,5 +1,5 @@
 {
-  "schema_version": "p2-label-noise-shift-design/1",
+  "schema_version": "p2-label-noise-shift-design/2",
   "status": "draft_outcome_blind_not_registered",
   "research_question": "Can a shift-aware verification gate distinguish training-label corruption from class-prior shift while preserving cross-dataset sensitivity to corruption?",
   "predecessor": {
@@ -219,9 +219,9 @@
     "v2_opened_partitions_forbidden_for_v3_confirmation": true,
     "dataset_bytes_and_columns_must_be_pinned_before_registration": true,
     "protocol_only_registration_commit_required": true,
-    "required_future_tag": "p2-label-noise-shift-factorial-v3",
-    "independent_methods_review_required": true,
-    "review_must_precede_registration": true,
+    "required_future_tag": "p2-label-noise-shift-factorial-v3.1",
+    "structured_internal_outcome_blind_audit_required": true,
+    "internal_audit_must_precede_registration": true,
     "execution_implementation_must_follow_registration": true,
     "target_outcomes_cannot_tune_design": true,
     "primary_and_replication_released_together": true

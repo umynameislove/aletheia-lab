@@ -2,7 +2,7 @@
   "schema_version": "p2-v3-dataset-binding/1",
   "status": "bound_outcome_free_not_registered",
   "design_uri": "configs/benchmark/p2_label_noise_shift_v3_design.json",
-  "design_sha256": "0cbbdc83961658cd2b767800ea6dbf736239a268cad96461ef96bd59d9c1f7cc",
+  "design_sha256": "1c9c6592112038ae5ee11d0ef91921172dc61873e4d20272902178003171bd25",
   "datasets": [
     {
       "dataset_id": "uci_default_of_credit_card_clients",

@@ -5,12 +5,13 @@
 This document accompanies the frozen protocol candidate at
 `configs/benchmark/p2_label_noise_shift_v3_protocol.json`. Its canonical
 SHA-256 is
-`9b9db59c9555ecb41ef0ead5af3bafecf30189d69511e0b39711ebf1ff1220bf`.
+`0e9c594a6453dc111def3208582cec85d13518d542a61d86197620f9707ab7b2`.
 
 The candidate is complete enough for outcome-free verification, but this file
 does not register the study or authorize execution. Registration requires the
-protocol-only commit, independent methods review and an immutable release at
-the tag `p2-label-noise-shift-factorial-v3` before execution code is merged.
+protocol-only commit, a structured internal outcome-blind audit and an
+immutable release at the tag `p2-label-noise-shift-factorial-v3.1` before
+execution code is merged.
 
 No predictive model was fitted, no predictive metric was calculated and no
 sealed outcome was generated while compiling this protocol. Labels were read
@@ -22,9 +23,9 @@ The protocol binds all earlier evidence by canonical hash:
 
 | Artifact | Canonical SHA-256 |
 |---|---|
-| Outcome-free v3 design | `0cbbdc83961658cd2b767800ea6dbf736239a268cad96461ef96bd59d9c1f7cc` |
-| Dataset manifest | `67599382e1e114cf76e4f35d1e01c92477c8dd65f9e4e7eff1a94957bf3658fa` |
-| Dataset audit receipt | `05b2703381f81f10979f916ef6eb657ed34c5728152e9c052d9dfa67fc66c684` |
+| Outcome-free v3 design | `1c9c6592112038ae5ee11d0ef91921172dc61873e4d20272902178003171bd25` |
+| Dataset manifest | `a019a134f6e903fb80a6714237ca59b36adcca3ef1ab69cd9fd664fc5fc63b94` |
+| Dataset audit receipt | `bc480803505edb7c49f67eb24b8ebbb8ba415c4813278631239f372aca2f60d1` |
 | Frozen v2 result store | `7e46d0997bc5ad6807409a4aebea39c82c11216f2bdcadd5704724994117504c` |
 
 Changing a source archive, target order, record identity, feature role, design
@@ -169,7 +170,8 @@ Both commands must report `model_fitted`, `predictive_metrics_generated`,
 `sealed_outcomes_generated`, `registration_authorized` and
 `execution_authorized` as false.
 
-After this candidate is independently reviewed, merge it as a protocol-only
-commit and publish the immutable tag and release. Only the following task may
-implement the execution runtime, and that runtime must reproduce every frozen
-membership and decision contract before the sealed test is opened once.
+After this candidate passes the structured internal outcome-blind audit, merge
+it as a protocol-only commit and publish the immutable tag and release. Only
+the following task may implement the execution runtime, and that runtime must
+reproduce every frozen membership and decision contract before the sealed test
+is opened once.

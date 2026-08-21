@@ -27,7 +27,7 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_protocol import (
 )
 
 _PROTOCOL_PATH = Path("configs/benchmark/p2_label_noise_shift_v3_protocol.json")
-_PROTOCOL_SHA256 = "9b9db59c9555ecb41ef0ead5af3bafecf30189d69511e0b39711ebf1ff1220bf"
+_PROTOCOL_SHA256 = "0e9c594a6453dc111def3208582cec85d13518d542a61d86197620f9707ab7b2"
 _DATASETS = (
     "uci_default_of_credit_card_clients",
     "uci_online_shoppers_purchasing_intention",
@@ -291,6 +291,12 @@ def test_assumption_failure_abstains_instead_of_passing_or_becoming_evidence_aga
         ("inference", "minimum_practical_effect", 0.01),
         ("decision", "requirements", ["zero_prior_only_label_noise_admissions"]),
         ("decision", "any_dataset_failure_blocks_that_direction", False),
+        (
+            "governance",
+            "structured_internal_outcome_blind_audit_required_before_registration",
+            False,
+        ),
+        ("governance", "required_git_tag", "p2-label-noise-shift-factorial-v3"),
         ("governance", "execution_authorized_by_this_file", True),
     ],
 )

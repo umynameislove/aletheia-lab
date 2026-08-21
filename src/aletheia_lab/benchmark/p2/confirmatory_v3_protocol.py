@@ -37,8 +37,8 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_design import (
 )
 from aletheia_lab.benchmark.p2.identity import SHA256_PATTERN
 
-V3_PROTOCOL_SCHEMA_VERSION: Final[Literal["p2-label-noise-shift-protocol/1"]] = (
-    "p2-label-noise-shift-protocol/1"
+V3_PROTOCOL_SCHEMA_VERSION: Final[Literal["p2-label-noise-shift-protocol/2"]] = (
+    "p2-label-noise-shift-protocol/2"
 )
 DEFAULT_V3_PROTOCOL_PATH: Final[Path] = Path(
     "configs/benchmark/p2_label_noise_shift_v3_protocol.json"
@@ -381,10 +381,10 @@ class DecisionRuntimeContract(_StrictFrozenModel):
 
 
 class ProtocolGovernance(_StrictFrozenModel):
-    required_git_tag: Literal["p2-label-noise-shift-factorial-v3"]
+    required_git_tag: Literal["p2-label-noise-shift-factorial-v3.1"]
     protocol_only_commit_required: Literal[True]
     immutable_release_required_before_execution: Literal[True]
-    independent_methods_review_required_before_registration: Literal[True]
+    structured_internal_outcome_blind_audit_required_before_registration: Literal[True]
     execution_implementation_must_follow_registration: Literal[True]
     changes_after_registration_require_new_protocol_version: Literal[True]
     primary_and_replication_outcomes_released_together: Literal[True]
@@ -394,7 +394,7 @@ class ProtocolGovernance(_StrictFrozenModel):
 
 
 class V3ConfirmatoryProtocol(_StrictFrozenModel):
-    schema_version: Literal["p2-label-noise-shift-protocol/1"]
+    schema_version: Literal["p2-label-noise-shift-protocol/2"]
     status: Literal["frozen_protocol_candidate_not_registered"]
     artifacts: ProtocolArtifactBindings
     split_algorithm: SplitAlgorithmContract

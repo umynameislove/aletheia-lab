@@ -21,8 +21,8 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from aletheia_lab.benchmark.p2.canonical import canonical_sha256
 from aletheia_lab.benchmark.p2.identity import SHA256_PATTERN
 
-V3_DESIGN_SCHEMA_VERSION: Final[Literal["p2-label-noise-shift-design/1"]] = (
-    "p2-label-noise-shift-design/1"
+V3_DESIGN_SCHEMA_VERSION: Final[Literal["p2-label-noise-shift-design/2"]] = (
+    "p2-label-noise-shift-design/2"
 )
 DEFAULT_V3_DESIGN_PATH: Final[Path] = Path("configs/benchmark/p2_label_noise_shift_v3_design.json")
 
@@ -406,16 +406,16 @@ class GovernanceDesign(_StrictFrozenModel):
     v2_opened_partitions_forbidden_for_v3_confirmation: Literal[True]
     dataset_bytes_and_columns_must_be_pinned_before_registration: Literal[True]
     protocol_only_registration_commit_required: Literal[True]
-    required_future_tag: Literal["p2-label-noise-shift-factorial-v3"]
-    independent_methods_review_required: Literal[True]
-    review_must_precede_registration: Literal[True]
+    required_future_tag: Literal["p2-label-noise-shift-factorial-v3.1"]
+    structured_internal_outcome_blind_audit_required: Literal[True]
+    internal_audit_must_precede_registration: Literal[True]
     execution_implementation_must_follow_registration: Literal[True]
     target_outcomes_cannot_tune_design: Literal[True]
     primary_and_replication_released_together: Literal[True]
 
 
 class V3StudyDesign(_StrictFrozenModel):
-    schema_version: Literal["p2-label-noise-shift-design/1"]
+    schema_version: Literal["p2-label-noise-shift-design/2"]
     status: Literal["draft_outcome_blind_not_registered"]
     research_question: Literal[
         "Can a shift-aware verification gate distinguish training-label corruption from class-prior shift while preserving cross-dataset sensitivity to corruption?"

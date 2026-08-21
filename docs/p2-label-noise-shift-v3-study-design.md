@@ -2,14 +2,14 @@
 
 ## Status
 
-This document defines an outcome-free design candidate. It is ready for
-independent methods review, but it is not a preregistration and cannot authorize
+This document defines an outcome-free design candidate. It is ready for a
+structured internal audit, but it is not a preregistration and cannot authorize
 execution. Dataset bytes, target encodings, excluded columns and source hashes
 must be bound in a later protocol-only registration.
 
 The machine-readable design is
 `configs/benchmark/p2_label_noise_shift_v3_design.json`, canonical SHA-256
-`0cbbdc83961658cd2b767800ea6dbf736239a268cad96461ef96bd59d9c1f7cc`.
+`1c9c6592112038ae5ee11d0ef91921172dc61873e4d20272902178003171bd25`.
 
 No v3 outcome has been generated. The v2 result store remains immutable at
 SHA-256
@@ -272,14 +272,14 @@ annotation processes or domain-adaptation methods.
 
 Before a v3 protocol can be registered:
 
-1. independently review the design without any v3 outcomes;
+1. complete the structured internal audit without any v3 outcomes;
 2. download only the two fixed official datasets;
 3. bind source bytes, licenses, targets, exclusions and preprocessing receipts;
 4. verify class-count eligibility without fitting outcome models;
 5. run synthetic/property tests for prior matching, shift generation,
    estimator abstention and the complete decision algebra;
 6. publish a protocol-only commit and immutable tag
-   `p2-label-noise-shift-factorial-v3`; and
+   `p2-label-noise-shift-factorial-v3.1`; and
 7. implement execution only after registration.
 
 Run the current non-executing readiness check with:

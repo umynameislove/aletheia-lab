@@ -1,13 +1,13 @@
 {
-  "schema_version": "p2-label-noise-shift-protocol/1",
+  "schema_version": "p2-label-noise-shift-protocol/2",
   "status": "frozen_protocol_candidate_not_registered",
   "artifacts": {
     "design_uri": "configs/benchmark/p2_label_noise_shift_v3_design.json",
-    "design_sha256": "0cbbdc83961658cd2b767800ea6dbf736239a268cad96461ef96bd59d9c1f7cc",
+    "design_sha256": "1c9c6592112038ae5ee11d0ef91921172dc61873e4d20272902178003171bd25",
     "dataset_manifest_uri": "configs/benchmark/p2_label_noise_shift_v3_dataset_bindings.json",
-    "dataset_manifest_sha256": "67599382e1e114cf76e4f35d1e01c92477c8dd65f9e4e7eff1a94957bf3658fa",
+    "dataset_manifest_sha256": "a019a134f6e903fb80a6714237ca59b36adcca3ef1ab69cd9fd664fc5fc63b94",
     "dataset_receipt_uri": "configs/benchmark/provenance/p2_v3_dataset_binding_receipt.json",
-    "dataset_receipt_sha256": "05b2703381f81f10979f916ef6eb657ed34c5728152e9c052d9dfa67fc66c684",
+    "dataset_receipt_sha256": "bc480803505edb7c49f67eb24b8ebbb8ba415c4813278631239f372aca2f60d1",
     "v2_result_store_sha256": "7e46d0997bc5ad6807409a4aebea39c82c11216f2bdcadd5704724994117504c"
   },
   "split_algorithm": {
@@ -190,10 +190,10 @@
     "additional_grid_or_seed_after_outcomes_forbidden": true
   },
   "governance": {
-    "required_git_tag": "p2-label-noise-shift-factorial-v3",
+    "required_git_tag": "p2-label-noise-shift-factorial-v3.1",
     "protocol_only_commit_required": true,
     "immutable_release_required_before_execution": true,
-    "independent_methods_review_required_before_registration": true,
+    "structured_internal_outcome_blind_audit_required_before_registration": true,
     "execution_implementation_must_follow_registration": true,
     "changes_after_registration_require_new_protocol_version": true,
     "primary_and_replication_outcomes_released_together": true,
