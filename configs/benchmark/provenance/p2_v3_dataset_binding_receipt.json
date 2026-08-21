@@ -1,10 +1,10 @@
 {
   "schema_version": "p2-v3-dataset-audit/1",
-  "manifest_sha256": "67599382e1e114cf76e4f35d1e01c92477c8dd65f9e4e7eff1a94957bf3658fa",
+  "manifest_sha256": "a019a134f6e903fb80a6714237ca59b36adcca3ef1ab69cd9fd664fc5fc63b94",
   "datasets": [
     {
       "schema_version": "p2-v3-dataset-audit/1",
-      "manifest_sha256": "67599382e1e114cf76e4f35d1e01c92477c8dd65f9e4e7eff1a94957bf3658fa",
+      "manifest_sha256": "a019a134f6e903fb80a6714237ca59b36adcca3ef1ab69cd9fd664fc5fc63b94",
       "dataset_id": "uci_default_of_credit_card_clients",
       "role": "primary",
       "archive_sha256": "56c885f84457f6680f8438f02bfcdac9579323d8a94465ee5f26e32baa727602",
@@ -44,7 +44,7 @@
     },
     {
       "schema_version": "p2-v3-dataset-audit/1",
-      "manifest_sha256": "67599382e1e114cf76e4f35d1e01c92477c8dd65f9e4e7eff1a94957bf3658fa",
+      "manifest_sha256": "a019a134f6e903fb80a6714237ca59b36adcca3ef1ab69cd9fd664fc5fc63b94",
       "dataset_id": "uci_online_shoppers_purchasing_intention",
       "role": "external_replication",
       "archive_sha256": "2972e6184d3ad7beaaa831d9fc2b059dc3ee29df69d1ec593c466a5cd8485d14",

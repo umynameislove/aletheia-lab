@@ -24,7 +24,7 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_design import (
 )
 
 _DESIGN_PATH = Path("configs/benchmark/p2_label_noise_shift_v3_design.json")
-_EXPECTED_DESIGN_SHA256 = "0cbbdc83961658cd2b767800ea6dbf736239a268cad96461ef96bd59d9c1f7cc"
+_EXPECTED_DESIGN_SHA256 = "1c9c6592112038ae5ee11d0ef91921172dc61873e4d20272902178003171bd25"
 
 
 def _payload() -> dict[str, object]:
@@ -193,6 +193,9 @@ def test_reference_prior_score_is_invariant_to_class_prevalence_duplication() ->
     ("section", "field", "replacement"),
     [
         ("governance", "v2_opened_partitions_forbidden_for_v3_confirmation", False),
+        ("governance", "structured_internal_outcome_blind_audit_required", False),
+        ("governance", "internal_audit_must_precede_registration", False),
+        ("governance", "required_future_tag", "p2-label-noise-shift-factorial-v3"),
         ("governance", "target_outcomes_cannot_tune_design", False),
         ("models", "hyperparameter_search_forbidden", False),
         ("models", "secondary_model_cannot_rescue_primary", False),

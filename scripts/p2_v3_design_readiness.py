@@ -29,7 +29,7 @@ def main() -> int:
         one_sided_alpha=design.inference.worst_case_direction_alpha,
     )
     report = {
-        "status": "outcome_blind_design_ready_for_methods_review",
+        "status": "outcome_blind_design_ready_for_internal_audit",
         "schema_version": design.schema_version,
         "design_sha256": design.canonical_sha256(),
         "v2_result_store_sha256": design.predecessor.v2_result_store_sha256,

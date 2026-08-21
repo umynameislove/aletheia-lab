@@ -50,8 +50,8 @@ def main() -> int:
             item.dataset_id: item.membership_sha256 for item in protocol.dataset_splits
         },
         "splits_recompiled_from_pinned_archives": splits_recompiled,
-        "methods_review_required": (
-            protocol.governance.independent_methods_review_required_before_registration
+        "internal_outcome_blind_audit_required": (
+            protocol.governance.structured_internal_outcome_blind_audit_required_before_registration
         ),
         "required_git_tag": protocol.governance.required_git_tag,
         "model_fitted": protocol.model_fitted,

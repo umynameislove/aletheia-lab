@@ -20,9 +20,9 @@ calculated and no sealed experimental outcome was generated.
 The machine-readable manifest is
 `configs/benchmark/p2_label_noise_shift_v3_dataset_bindings.json`, canonical
 SHA-256
-`67599382e1e114cf76e4f35d1e01c92477c8dd65f9e4e7eff1a94957bf3658fa`.
+`a019a134f6e903fb80a6714237ca59b36adcca3ef1ab69cd9fd664fc5fc63b94`.
 The deterministic audit receipt has canonical SHA-256
-`05b2703381f81f10979f916ef6eb657ed34c5728152e9c052d9dfa67fc66c684`.
+`bc480803505edb7c49f67eb24b8ebbb8ba415c4813278631239f372aca2f60d1`.
 
 ## Source census
 
@@ -141,9 +141,9 @@ The next implementation step is a protocol-only registration that freezes:
 5. inference and cross-dataset decision algebra; and
 6. an immutable commit, tag and public release before any real execution.
 
-This binding does not satisfy the independent methods-review requirement in the
-D3C governance contract. That requirement must be fulfilled or explicitly
-amended while still outcome-free; it cannot be ignored after execution.
+This binding does not by itself satisfy the structured internal outcome-blind
+audit required by the governance contract. That audit and the immutable
+registration release must be completed before execution.
 
 ## Authoritative sources
 

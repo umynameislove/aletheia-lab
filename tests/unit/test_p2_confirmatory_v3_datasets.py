@@ -27,8 +27,8 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_datasets import (
 )
 from aletheia_lab.data.download import ChecksumError
 
-_MANIFEST_SHA256 = "67599382e1e114cf76e4f35d1e01c92477c8dd65f9e4e7eff1a94957bf3658fa"
-_RECEIPT_SHA256 = "05b2703381f81f10979f916ef6eb657ed34c5728152e9c052d9dfa67fc66c684"
+_MANIFEST_SHA256 = "a019a134f6e903fb80a6714237ca59b36adcca3ef1ab69cd9fd664fc5fc63b94"
+_RECEIPT_SHA256 = "bc480803505edb7c49f67eb24b8ebbb8ba415c4813278631239f372aca2f60d1"
 
 
 def _archive_bytes(member_name: str, content: bytes, *, extra_member: bool = False) -> bytes:
