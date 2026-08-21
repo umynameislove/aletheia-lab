@@ -1,0 +1,230 @@
+{
+  "schema_version": "p2-label-noise-shift-design/1",
+  "status": "draft_outcome_blind_not_registered",
+  "research_question": "Can a shift-aware verification gate distinguish training-label corruption from class-prior shift while preserving cross-dataset sensitivity to corruption?",
+  "predecessor": {
+    "v2_protocol_sha256": "1a7340d0897fcbbde02bb0a3ffe0a50cccd1cebd695ebf2c293c6c260bb02d4e",
+    "v2_result_store_sha256": "7e46d0997bc5ad6807409a4aebea39c82c11216f2bdcadd5704724994117504c",
+    "closeout_receipt_uri": "configs/benchmark/provenance/p2_label_noise_confirmatory_v2_closeout_receipt.json",
+    "closeout_receipt_file_sha256": "f4f957cd2c0a72e50a5e092d95d0e5297507bb85e412ddc91a5340e844e04409",
+    "root_cause_summary_uri": "configs/benchmark/provenance/p2_label_noise_confirmatory_v2_bank_root_cause_summary.json",
+    "root_cause_summary_file_sha256": "af5b77fe4a1da4dfdcc07d0ca0dbc7a1a444871e6baf428d5e37ff4a1ea6109b",
+    "registered_disposition": "primary_dataset_bounded_admission",
+    "cross_dataset_claim_allowed": false,
+    "audit_disposition": "temporal_prior_shift_supported",
+    "implementation_defects_detected": false,
+    "registered_decision_unchanged": true
+  },
+  "new_datasets": [
+    {
+      "dataset_id": "uci_default_of_credit_card_clients",
+      "role": "primary",
+      "uci_id": 350,
+      "doi": "10.24432/C55S3H",
+      "source_uri": "https://archive.ics.uci.edu/dataset/350/default+of+credit+card+clients",
+      "license": "CC_BY_4_0",
+      "expected_record_count": 30000,
+      "binary_target_required": true,
+      "minimum_records_per_class": 1000,
+      "no_confirmatory_outcome_previously_opened": true,
+      "snapshot_sha256_required_before_registration": true,
+      "post_outcome_features_must_be_excluded": true,
+      "split": {
+        "strategy": "seeded_stratified",
+        "train_fraction": 0.6,
+        "development_fraction": 0.2,
+        "sealed_test_fraction": 0.2,
+        "seed": 2718,
+        "sealed_test_single_open": true
+      }
+    },
+    {
+      "dataset_id": "uci_online_shoppers_purchasing_intention",
+      "role": "external_replication",
+      "uci_id": 468,
+      "doi": "10.24432/C5F88Q",
+      "source_uri": "https://archive.ics.uci.edu/dataset/468/online+shoppers+purchasing+intention+dataset",
+      "license": "CC_BY_4_0",
+      "expected_record_count": 12330,
+      "binary_target_required": true,
+      "minimum_records_per_class": 1000,
+      "no_confirmatory_outcome_previously_opened": true,
+      "snapshot_sha256_required_before_registration": true,
+      "post_outcome_features_must_be_excluded": true,
+      "split": {
+        "strategy": "seeded_stratified",
+        "train_fraction": 0.6,
+        "development_fraction": 0.2,
+        "sealed_test_fraction": 0.2,
+        "seed": 3141,
+        "sealed_test_single_open": true
+      }
+    }
+  ],
+  "excluded_confirmation_datasets": [
+    "telco_customer_churn",
+    "uci_bank_marketing_additional_full"
+  ],
+  "models": {
+    "primary_model": "logistic_regression",
+    "primary_parameters": [
+      "c=1.0",
+      "solver=lbfgs",
+      "max_iter=1000",
+      "random_state=42"
+    ],
+    "secondary_sensitivity_model": "hist_gradient_boosting",
+    "secondary_parameters": [
+      "learning_rate=0.1",
+      "max_iter=100",
+      "max_leaf_nodes=31",
+      "l2_regularization=0.0",
+      "early_stopping=false",
+      "random_state=43"
+    ],
+    "probability_output_required": true,
+    "preprocessing_fit_on_training_only": true,
+    "development_only_calibration": true,
+    "sealed_labels_for_model_selection_forbidden": true,
+    "hyperparameter_search_forbidden": true,
+    "secondary_model_cannot_rescue_primary": true
+  },
+  "corruption": {
+    "directions": [
+      "yes_to_no",
+      "no_to_yes"
+    ],
+    "conditional_rates": [
+      0.1,
+      0.2,
+      0.3
+    ],
+    "rate_denominator": "source_class_count",
+    "co_primary_rate": 0.3,
+    "selection_is_feature_blind": true,
+    "only_training_targets_may_change": true,
+    "corruption_seeds": {
+      "first": 6101,
+      "last": 6150,
+      "count": 50
+    }
+  },
+  "orthogonalization": {
+    "primary_treatment": "class_conditional_label_corruption",
+    "nuisance_control": "clean_labels_effective_prior_matched_sample_weight",
+    "nuisance_match_target": "corrupted_training_label_prevalence",
+    "prevalence_preserving_control": "reciprocal_matched_pair_flip",
+    "primary_contrast": "corrupted_model_minus_prior_matched_clean_label_model",
+    "clean_reference_required": true,
+    "serialization_roundtrip_required": true,
+    "label_repair_required": true,
+    "exact_prevalence_reconciliation_required": true,
+    "controls_cannot_rescue_primary": true
+  },
+  "prior_environments": {
+    "construction": "label_conditioned_sealed_evaluation_resampling",
+    "odds_multipliers": [
+      0.25,
+      1.0,
+      4.0
+    ],
+    "environment_seeds": {
+      "first": 7101,
+      "last": 7150,
+      "count": 50
+    },
+    "target_labels_hidden_from_estimators": true,
+    "target_labels_available_only_to_generator_and_scorer": true,
+    "class_conditionals_preserved_by_construction": true,
+    "natural_temporal_bank_is_exploratory_only": true
+  },
+  "shift_estimators": {
+    "baselines": [
+      "unadjusted_v2_log_loss",
+      "oracle_prior_ratio",
+      "bbse",
+      "mlls_em",
+      "rlls"
+    ],
+    "calibration": "development_logit_intercept_slope",
+    "calibration_uses_sealed_labels": false,
+    "ill_conditioned_estimator_action": "abstain",
+    "silent_weight_clipping_forbidden": true,
+    "oracle_is_upper_bound_not_deployable_baseline": true,
+    "class_conditional_shift_diagnostic": "classwise_mmd_permutation",
+    "diagnostic_resamples": 2000,
+    "diagnostic_seed": 314160,
+    "diagnostic_multiplicity": "holm_across_classes_and_datasets",
+    "failed_label_shift_assumption_action": "abstain_from_pure_label_shift_claim"
+  },
+  "endpoints": {
+    "primary_metric": "reference_prior_standardized_log_loss",
+    "reference_positive_prior": 0.5,
+    "primary_estimand": "relative_net_corruption_effect_vs_prior_matched_clean_control",
+    "minimum_practical_effect": 0.05,
+    "legacy_comparators": [
+      "accuracy_regression_v1",
+      "raw_target_prior_log_loss_v2"
+    ],
+    "secondary_metrics": [
+      "target_prior_log_loss",
+      "brier_score",
+      "calibration_intercept",
+      "calibration_slope",
+      "roc_auc",
+      "balanced_accuracy",
+      "classwise_log_loss"
+    ],
+    "secondary_metrics_cannot_rescue_primary": true
+  },
+  "inference": {
+    "replicate_unit": "corruption_seed",
+    "replicate_count_per_cell": 50,
+    "target_standardized_effect": 0.5,
+    "target_power": 0.9,
+    "familywise_alpha": 0.05,
+    "worst_case_direction_alpha": 0.025,
+    "cross_dataset_test": "intersection_union_max_p",
+    "direction_multiplicity": "holm_two_directions",
+    "interval_method": "two_way_product_weight_bootstrap",
+    "bootstrap_factors": [
+      "evaluation_record",
+      "corruption_seed"
+    ],
+    "bootstrap_resamples": 10000,
+    "bootstrap_seed": 271829,
+    "hypothesis_test": "paired_seed_level_sign_flip",
+    "hypothesis_test_resamples": 100000,
+    "hypothesis_test_seed": 161804,
+    "no_early_stopping": true,
+    "report_every_cell_and_baseline": true
+  },
+  "decision": {
+    "direction_pass_requirements": [
+      "net_effect_at_least_0.05_in_both_new_datasets",
+      "bootstrap_lower_bound_above_0_in_both_new_datasets",
+      "intersection_union_p_then_holm_below_0.05",
+      "all_orthogonalization_and_technical_controls_pass",
+      "zero_label_noise_admissions_in_prior_only_negative_controls"
+    ],
+    "cross_dataset_claim_requires_same_direction_to_pass": true,
+    "primary_failure_cannot_be_rescued_by_secondary_metrics": true,
+    "estimator_comparison_cannot_change_construct_admission": true,
+    "assumption_failure_requires_abstention": true,
+    "additional_grid_after_outcomes_forbidden": true
+  },
+  "governance": {
+    "design_is_not_execution_authority": true,
+    "v2_artifacts_remain_immutable": true,
+    "v2_opened_partitions_forbidden_for_v3_confirmation": true,
+    "dataset_bytes_and_columns_must_be_pinned_before_registration": true,
+    "protocol_only_registration_commit_required": true,
+    "required_future_tag": "p2-label-noise-shift-factorial-v3",
+    "independent_methods_review_required": true,
+    "review_must_precede_registration": true,
+    "execution_implementation_must_follow_registration": true,
+    "target_outcomes_cannot_tune_design": true,
+    "primary_and_replication_released_together": true
+  },
+  "outcome_fields_forbidden": true
+}
