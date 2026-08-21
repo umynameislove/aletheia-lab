@@ -1,0 +1,90 @@
+{
+  "schema_version": "p2-v3-dataset-audit/1",
+  "manifest_sha256": "67599382e1e114cf76e4f35d1e01c92477c8dd65f9e4e7eff1a94957bf3658fa",
+  "datasets": [
+    {
+      "schema_version": "p2-v3-dataset-audit/1",
+      "manifest_sha256": "67599382e1e114cf76e4f35d1e01c92477c8dd65f9e4e7eff1a94957bf3658fa",
+      "dataset_id": "uci_default_of_credit_card_clients",
+      "role": "primary",
+      "archive_sha256": "56c885f84457f6680f8438f02bfcdac9579323d8a94465ee5f26e32baa727602",
+      "member_sha256": "30c6be3abd8dcfd3e6096c828bad8c2f011238620f5369220bd60cfc82700933",
+      "archive_byte_count": 5539494,
+      "member_byte_count": 5539328,
+      "row_count": 30000,
+      "column_count": 25,
+      "source_columns": [
+        "ID", "LIMIT_BAL", "SEX", "EDUCATION", "MARRIAGE", "AGE",
+        "PAY_0", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6",
+        "BILL_AMT1", "BILL_AMT2", "BILL_AMT3", "BILL_AMT4", "BILL_AMT5", "BILL_AMT6",
+        "PAY_AMT1", "PAY_AMT2", "PAY_AMT3", "PAY_AMT4", "PAY_AMT5", "PAY_AMT6",
+        "default payment next month"
+      ],
+      "analysis_feature_columns": [
+        "SEX", "EDUCATION", "MARRIAGE", "PAY_0", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6",
+        "LIMIT_BAL", "AGE", "BILL_AMT1", "BILL_AMT2", "BILL_AMT3", "BILL_AMT4",
+        "BILL_AMT5", "BILL_AMT6", "PAY_AMT1", "PAY_AMT2", "PAY_AMT3", "PAY_AMT4",
+        "PAY_AMT5", "PAY_AMT6"
+      ],
+      "excluded_feature_columns": [],
+      "target_column": "default payment next month",
+      "positive_token": "1",
+      "negative_token": "0",
+      "class_counts": {"0": 23364, "1": 6636},
+      "minimum_class_count": 6636,
+      "missing_or_blank_cell_count": 0,
+      "identifier_is_unique": true,
+      "duplicate_group_count": 52,
+      "rows_in_duplicate_groups": 108,
+      "conflicting_target_duplicate_group_count": 21,
+      "source_schema_sha256": "3daa98b2c674c698e0d019781da8d2e3439d934f398b27bcc396ac62d781a42a",
+      "record_identity_sha256": "bdf31fad2ac036f5547fd091b688c51d206e982f506e9ee9152760c49f644fa2",
+      "target_binding_sha256": "c97a648b11ad69fe205c263d054adf75f6b1cbbdbf86483a5ea944baf8aa57a3",
+      "eligible": true
+    },
+    {
+      "schema_version": "p2-v3-dataset-audit/1",
+      "manifest_sha256": "67599382e1e114cf76e4f35d1e01c92477c8dd65f9e4e7eff1a94957bf3658fa",
+      "dataset_id": "uci_online_shoppers_purchasing_intention",
+      "role": "external_replication",
+      "archive_sha256": "2972e6184d3ad7beaaa831d9fc2b059dc3ee29df69d1ec593c466a5cd8485d14",
+      "member_sha256": "b3055ee355f59134d851d32641183cb4a8b45def7124d2f50442a042f358e0d9",
+      "archive_byte_count": 1072219,
+      "member_byte_count": 1072063,
+      "row_count": 12330,
+      "column_count": 18,
+      "source_columns": [
+        "Administrative", "Administrative_Duration", "Informational", "Informational_Duration",
+        "ProductRelated", "ProductRelated_Duration", "BounceRates", "ExitRates", "PageValues",
+        "SpecialDay", "Month", "OperatingSystems", "Browser", "Region", "TrafficType",
+        "VisitorType", "Weekend", "Revenue"
+      ],
+      "analysis_feature_columns": [
+        "Month", "OperatingSystems", "Browser", "Region", "TrafficType", "VisitorType", "Weekend",
+        "Administrative", "Administrative_Duration", "Informational", "Informational_Duration",
+        "ProductRelated", "ProductRelated_Duration", "BounceRates", "ExitRates", "SpecialDay"
+      ],
+      "excluded_feature_columns": ["PageValues"],
+      "target_column": "Revenue",
+      "positive_token": "true",
+      "negative_token": "false",
+      "class_counts": {"false": 10422, "true": 1908},
+      "minimum_class_count": 1908,
+      "missing_or_blank_cell_count": 0,
+      "identifier_is_unique": true,
+      "duplicate_group_count": 76,
+      "rows_in_duplicate_groups": 201,
+      "conflicting_target_duplicate_group_count": 0,
+      "source_schema_sha256": "622a01592ef30731f15d1a90435ca423c148674649e9336733c8f7d9ae8c8941",
+      "record_identity_sha256": "bade1e00e15248f21be1eabcb011590da259193277f5b466859f60738c6a8884",
+      "target_binding_sha256": "0768c8f7f3dda15eb50b89cccd10b93f62869d94d682c2a144912dd750df1fde",
+      "eligible": true
+    }
+  ],
+  "all_datasets_eligible": true,
+  "model_fitted": false,
+  "predictive_metrics_generated": false,
+  "sealed_outcomes_generated": false,
+  "registration_authorized": false,
+  "execution_authorized": false
+}
