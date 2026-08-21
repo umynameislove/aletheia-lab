@@ -1,0 +1,134 @@
+{
+  "schema_version": "p2-v3-dataset-binding/1",
+  "status": "bound_outcome_free_not_registered",
+  "design_uri": "configs/benchmark/p2_label_noise_shift_v3_design.json",
+  "design_sha256": "0cbbdc83961658cd2b767800ea6dbf736239a268cad96461ef96bd59d9c1f7cc",
+  "datasets": [
+    {
+      "dataset_id": "uci_default_of_credit_card_clients",
+      "role": "primary",
+      "uci_id": 350,
+      "doi": "10.24432/C55S3H",
+      "source_page_uri": "https://archive.ics.uci.edu/dataset/350/default+of+credit+card+clients",
+      "license": "CC_BY_4_0",
+      "archive": {
+        "source_uri": "https://archive.ics.uci.edu/static/public/350/default+of+credit+card+clients.zip",
+        "file_name": "uci-default-of-credit-card-clients.zip",
+        "sha256": "56c885f84457f6680f8438f02bfcdac9579323d8a94465ee5f26e32baa727602",
+        "byte_count": 5539494,
+        "member_path": "default of credit card clients.xls",
+        "member_sha256": "30c6be3abd8dcfd3e6096c828bad8c2f011238620f5369220bd60cfc82700933",
+        "member_byte_count": 5539328,
+        "member_count": 1
+      },
+      "parser": {
+        "format": "xls",
+        "engine": "xlrd",
+        "sheet_name": "Data",
+        "header_row": 1,
+        "delimiter": null,
+        "keep_default_na": true
+      },
+      "source_columns": [
+        "ID", "LIMIT_BAL", "SEX", "EDUCATION", "MARRIAGE", "AGE",
+        "PAY_0", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6",
+        "BILL_AMT1", "BILL_AMT2", "BILL_AMT3", "BILL_AMT4", "BILL_AMT5", "BILL_AMT6",
+        "PAY_AMT1", "PAY_AMT2", "PAY_AMT3", "PAY_AMT4", "PAY_AMT5", "PAY_AMT6",
+        "default payment next month"
+      ],
+      "target": {
+        "column": "default payment next month",
+        "storage": "integer_binary",
+        "positive_token": "1",
+        "negative_token": "0",
+        "positive_semantics": "default_payment_next_month"
+      },
+      "identifier_columns": ["ID"],
+      "excluded_feature_columns": [],
+      "post_outcome_exclusions": [],
+      "categorical_features": [
+        "SEX", "EDUCATION", "MARRIAGE", "PAY_0", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6"
+      ],
+      "numeric_features": [
+        "LIMIT_BAL", "AGE", "BILL_AMT1", "BILL_AMT2", "BILL_AMT3", "BILL_AMT4",
+        "BILL_AMT5", "BILL_AMT6", "PAY_AMT1", "PAY_AMT2", "PAY_AMT3", "PAY_AMT4",
+        "PAY_AMT5", "PAY_AMT6"
+      ],
+      "expected_row_count": 30000,
+      "expected_class_counts": {"0": 23364, "1": 6636},
+      "minimum_records_per_class": 1000,
+      "missing_value_policy": "fail_if_any_missing_or_blank",
+      "undocumented_category_policy": "retain_as_explicit_other_category",
+      "duplicate_split_policy": "keep_exact_analysis_feature_groups_within_one_partition",
+      "split_seed": 2718,
+      "split_fractions": [0.6, 0.2, 0.2]
+    },
+    {
+      "dataset_id": "uci_online_shoppers_purchasing_intention",
+      "role": "external_replication",
+      "uci_id": 468,
+      "doi": "10.24432/C5F88Q",
+      "source_page_uri": "https://archive.ics.uci.edu/dataset/468/online+shoppers+purchasing+intention+dataset",
+      "license": "CC_BY_4_0",
+      "archive": {
+        "source_uri": "https://archive.ics.uci.edu/static/public/468/online+shoppers+purchasing+intention+dataset.zip",
+        "file_name": "uci-online-shoppers-purchasing-intention.zip",
+        "sha256": "2972e6184d3ad7beaaa831d9fc2b059dc3ee29df69d1ec593c466a5cd8485d14",
+        "byte_count": 1072219,
+        "member_path": "online_shoppers_intention.csv",
+        "member_sha256": "b3055ee355f59134d851d32641183cb4a8b45def7124d2f50442a042f358e0d9",
+        "member_byte_count": 1072063,
+        "member_count": 1
+      },
+      "parser": {
+        "format": "csv",
+        "engine": "pandas_c",
+        "sheet_name": null,
+        "header_row": 0,
+        "delimiter": ",",
+        "keep_default_na": false
+      },
+      "source_columns": [
+        "Administrative", "Administrative_Duration", "Informational", "Informational_Duration",
+        "ProductRelated", "ProductRelated_Duration", "BounceRates", "ExitRates", "PageValues",
+        "SpecialDay", "Month", "OperatingSystems", "Browser", "Region", "TrafficType",
+        "VisitorType", "Weekend", "Revenue"
+      ],
+      "target": {
+        "column": "Revenue",
+        "storage": "boolean",
+        "positive_token": "true",
+        "negative_token": "false",
+        "positive_semantics": "session_ended_with_purchase"
+      },
+      "identifier_columns": [],
+      "excluded_feature_columns": ["PageValues"],
+      "post_outcome_exclusions": ["PageValues"],
+      "categorical_features": [
+        "Month", "OperatingSystems", "Browser", "Region", "TrafficType", "VisitorType", "Weekend"
+      ],
+      "numeric_features": [
+        "Administrative", "Administrative_Duration", "Informational", "Informational_Duration",
+        "ProductRelated", "ProductRelated_Duration", "BounceRates", "ExitRates", "SpecialDay"
+      ],
+      "expected_row_count": 12330,
+      "expected_class_counts": {"false": 10422, "true": 1908},
+      "minimum_records_per_class": 1000,
+      "missing_value_policy": "fail_if_any_missing_or_blank",
+      "undocumented_category_policy": "retain_as_explicit_other_category",
+      "duplicate_split_policy": "keep_exact_analysis_feature_groups_within_one_partition",
+      "split_seed": 3141,
+      "split_fractions": [0.6, 0.2, 0.2]
+    }
+  ],
+  "governance": {
+    "archive_bytes_excluded_from_git": true,
+    "download_requires_pinned_sha256": true,
+    "target_inspection_limited_to_encoding_and_class_eligibility": true,
+    "feature_duplicate_groups_must_not_cross_partitions": true,
+    "model_fitting_forbidden": true,
+    "sealed_outcome_generation_forbidden": true,
+    "registration_authorized": false,
+    "execution_authorized": false
+  }
+}
