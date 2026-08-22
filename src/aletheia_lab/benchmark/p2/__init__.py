@@ -193,6 +193,24 @@ from aletheia_lab.benchmark.p2.confirmatory_sources import (
     download_registered_archive,
     extract_registered_snapshot,
 )
+from aletheia_lab.benchmark.p2.confirmatory_v3_closeout import (
+    V3ConfirmatoryCloseout,
+    V3ExecutionEnvironmentReceipt,
+    V3ProtocolRegistrationReceipt,
+    V3ResultStoreManifest,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_closeout import (
+    build_closeout as build_v3_closeout,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_closeout import (
+    load_and_verify_result_store as load_and_verify_v3_result_store,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_closeout import (
+    registration_from_github_release as v3_registration_from_github_release,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_closeout import (
+    write_result_store as write_v3_result_store,
+)
 from aletheia_lab.benchmark.p2.confirmatory_v3_datasets import (
     D4A_DATASET_AUDIT_SCHEMA_VERSION,
     D4A_DATASET_BINDING_SCHEMA_VERSION,
@@ -225,6 +243,28 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_design import (
     target_prior_from_odds_multiplier,
     verify_v3_predecessor,
 )
+from aletheia_lab.benchmark.p2.confirmatory_v3_execution import (
+    ExecutionPlan as V3ExecutionPlan,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_execution import (
+    V3DatasetOutcome,
+    execute_v3_dataset,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_inference import (
+    DatasetInference as V3DatasetInference,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_inference import (
+    SeedNetEffect as V3SeedNetEffect,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_inference import (
+    V3StudyDecision,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_inference import (
+    analyze_dataset as analyze_v3_dataset,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_inference import (
+    decide_study as decide_v3_study,
+)
 from aletheia_lab.benchmark.p2.confirmatory_v3_protocol import (
     DEFAULT_V3_PROTOCOL_PATH,
     V3_PROTOCOL_SCHEMA_VERSION,
@@ -243,6 +283,21 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_protocol import (
     target_environment_class_counts,
     verify_compiled_split_receipts,
     verify_v3_protocol_artifacts,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import (
+    FittedProbabilities,
+    PreparedRuntimeDataset,
+    V3RuntimeError,
+    apply_directional_corruption,
+    build_prior_environment,
+    fit_registered_model,
+    prepare_runtime_dataset,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_shift import (
+    MmdDiagnostic,
+    ShiftEstimate,
+    classwise_mmd_diagnostic,
+    estimate_label_shift,
 )
 from aletheia_lab.benchmark.p2.contracts import (
     CONTEXT_CARDINALITY,
@@ -1210,4 +1265,31 @@ __all__ = [
     "registration_from_github_release",
     "validate_dose_monotonicity",
     "write_result_store",
+    "FittedProbabilities",
+    "PreparedRuntimeDataset",
+    "V3RuntimeError",
+    "apply_directional_corruption",
+    "build_prior_environment",
+    "fit_registered_model",
+    "prepare_runtime_dataset",
+    "MmdDiagnostic",
+    "ShiftEstimate",
+    "classwise_mmd_diagnostic",
+    "estimate_label_shift",
+    "V3DatasetInference",
+    "V3SeedNetEffect",
+    "V3StudyDecision",
+    "analyze_v3_dataset",
+    "decide_v3_study",
+    "V3ExecutionPlan",
+    "V3DatasetOutcome",
+    "execute_v3_dataset",
+    "V3ConfirmatoryCloseout",
+    "V3ExecutionEnvironmentReceipt",
+    "V3ProtocolRegistrationReceipt",
+    "V3ResultStoreManifest",
+    "build_v3_closeout",
+    "load_and_verify_v3_result_store",
+    "v3_registration_from_github_release",
+    "write_v3_result_store",
 ]
