@@ -66,6 +66,7 @@ FLOAT_TOLERANCE: Final[float] = 1e-12
 HASH_BITS: Final[int] = 256
 HASH_MODULUS: Final[int] = 1 << HASH_BITS
 CALIBRATION_MIN_STEP: Final[float] = 2.0**-20
+NUMERIC_EVIDENCE_SIGNIFICANT_DIGITS: Final[int] = 12
 
 Sha256 = Annotated[str, Field(pattern=SHA256_PATTERN)]
 Direction = Literal["yes_to_no", "no_to_yes"]
@@ -80,6 +81,24 @@ class V3RuntimeError(V3ProtocolError):
 
 def _fail(message: str) -> NoReturn:
     raise V3RuntimeError(message)
+
+
+def stabilize_numeric_evidence(value: float) -> float:
+    """Return a platform-stable float for persisted numerical evidence.
+
+    Registered solvers operate in float64, but LAPACK and libm may disagree in
+    the last few binary digits across operating systems. Persisting those
+    unobservable backend differences would make evidence hashes depend on the
+    runner instead of the registered calculation. Twelve significant
+    decimal digits retain substantially more precision than the study's 1e-8
+    numerical tolerances while removing that non-scientific variation.
+    """
+
+    number = float(value)
+    if not math.isfinite(number):
+        _fail("numerical evidence must be finite before stabilization")
+    stabilized = float(f"{number:.{NUMERIC_EVIDENCE_SIGNIFICANT_DIGITS}g}")
+    return 0.0 if stabilized == 0.0 else stabilized
 
 
 class _StrictFrozenModel(BaseModel):
@@ -830,11 +849,11 @@ def fit_logit_calibration(
         gradient_norm = float(np.max(np.abs(gradient)))
         if gradient_norm <= tolerance:
             return CalibrationResult(
-                intercept=float(beta[0]),
-                slope=float(beta[1]),
+                intercept=stabilize_numeric_evidence(float(beta[0])),
+                slope=stabilize_numeric_evidence(float(beta[1])),
                 iterations=iteration,
                 converged=True,
-                gradient_infinity_norm=gradient_norm,
+                gradient_infinity_norm=stabilize_numeric_evidence(gradient_norm),
                 development_record_count=probabilities.size,
             )
         if iteration == max_iter:

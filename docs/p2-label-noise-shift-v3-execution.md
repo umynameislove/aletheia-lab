@@ -44,6 +44,12 @@ Fitted-model hashes bind targets, weights, preprocessing, learned parameters,
 calibration, record identities and raw plus calibrated predictions. Dataset
 outcomes bind all per-seed record-level losses and all shift-estimator evidence.
 
+Persisted solver evidence is normalized to twelve significant decimal digits
+before hashing and downstream use. This removes last-bit LAPACK/libm variation
+between supported runners while retaining precision far beyond the registered
+`1e-8` convergence tolerances. It does not alter an estimand, threshold, seed,
+model, split, or admission rule.
+
 ## Cross-dataset inference
 
 Each co-primary direction uses the registered two-way product-weight bootstrap

@@ -25,6 +25,7 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import (
     fit_registered_model,
     prior_match_sample_weights,
     reciprocal_control_targets,
+    stabilize_numeric_evidence,
     transform_features,
 )
 from aletheia_lab.benchmark.p2.confirmatory_v3_shift import (
@@ -463,10 +464,10 @@ def test_shift_estimator_golden_fixture_freezes_equations_and_class_order() -> N
     }
     expected_hashes = {
         "unadjusted_v2": "1b959e96600bd41101d2fe6026e9f48b3fd78739302cdb6477d368781eeb53e3",
-        "oracle_prior_ratio": "56ccac76f2912e1db72dfea0e500f1b913eb4520581b5a860f4b4b9bcc210c7a",
-        "bbse": "7e23fdad57d525c064832347c3e1d7161be99d283dda32c532a4de07f7a022ba",
-        "mlls_em": "8e80684f6af0958f85c3cce8e407e1606c7d0c7d25a5a188aed1ac35549a6e35",
-        "rlls": "ec9c0b981d007fa929c2a44007da1f308f26c834ae5fa90d8bdc09588121757b",
+        "oracle_prior_ratio": "d7bfe68bb11857a8d7a616ea2c7c7ef25f8846f47b7a78e7ac970dba94f0dd0a",
+        "bbse": "f3fc7ea3d1a0e9bfaaf06f140df2b0090c62212cac9f49e1f2861d4fcf1e3f7b",
+        "mlls_em": "b2a6628ec0e42d2ca2a4bfbf60188c25f8947daa7abd14c443efa48cf6ddb95c",
+        "rlls": "e413d115f8c6a37b013646dcaab95d1c368dddda40ecdacd7e740fb945ffe598",
     }
     for estimator, (expected_prior, expected_iterations) in expected.items():
         result = estimate_label_shift(
@@ -479,7 +480,7 @@ def test_shift_estimator_golden_fixture_freezes_equations_and_class_order() -> N
             ),
         )
         assert result.status == "ok"
-        assert result.target_positive_prior == pytest.approx(expected_prior, abs=1e-15)
+        assert result.target_positive_prior == pytest.approx(expected_prior, abs=1e-11)
         assert result.iterations == expected_iterations
         assert result.canonical_sha256() == expected_hashes[estimator]
 
@@ -489,12 +490,34 @@ def test_calibration_golden_fixture_freezes_newton_solution() -> None:
         (0.1, 0.2, 0.3, 0.6, 0.7, 0.8),
         (0, 0, 1, 0, 1, 1),
     )
-    assert calibration.intercept == pytest.approx(0.32561960840052373, abs=1e-15)
-    assert calibration.slope == pytest.approx(1.1865688446812601, abs=1e-15)
+    assert calibration.intercept == pytest.approx(0.32561960840052373, abs=1e-11)
+    assert calibration.slope == pytest.approx(1.1865688446812601, abs=1e-11)
     assert calibration.iterations == 4
     assert calibration.canonical_sha256() == (
-        "f6e8e8ac741b7df9ee078d26d103e266987db5eb66200c35c345709084b321bb"
+        "525e00dd76b3b272be9b1b924de1ca68f3555f5a131a946b78830a745cc18389"
     )
+
+
+def test_numeric_evidence_stabilization_removes_last_bit_backend_noise() -> None:
+    values = (
+        0.32561960840052373,
+        1.1865688446812601,
+        9.913111128921549e-15,
+        0.6216216216216216,
+        1.6666666666666672,
+        0.2911392405063291,
+    )
+    for value in values:
+        expected = stabilize_numeric_evidence(value)
+        for direction in (-math.inf, math.inf):
+            perturbed = value
+            for _ in range(8):
+                perturbed = math.nextafter(perturbed, direction)
+            assert stabilize_numeric_evidence(perturbed) == expected
+
+    assert math.copysign(1.0, stabilize_numeric_evidence(-0.0)) == 1.0
+    with pytest.raises(V3RuntimeError, match="finite"):
+        stabilize_numeric_evidence(math.inf)
 
 
 def test_mmd_golden_fixture_freezes_statistic_permutation_and_holm() -> None:

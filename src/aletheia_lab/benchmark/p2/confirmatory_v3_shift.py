@@ -13,6 +13,7 @@ from aletheia_lab.benchmark.p2.canonical import canonical_sha256
 from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import (
     PROTOCOL_SHA256,
     V3RuntimeError,
+    stabilize_numeric_evidence,
 )
 from aletheia_lab.benchmark.p2.identity import SHA256_PATTERN
 
@@ -165,9 +166,13 @@ def _abstain(
     return ShiftEstimate(
         estimator=estimator,
         status="abstain",
-        source_positive_prior=source_positive_prior,
+        source_positive_prior=stabilize_numeric_evidence(source_positive_prior),
         target_positive_prior=None,
-        condition_number=condition_number,
+        condition_number=(
+            None
+            if condition_number is None
+            else stabilize_numeric_evidence(condition_number)
+        ),
         iterations=iterations,
         reason=reason,
         adjusted_probabilities=(),
@@ -290,24 +295,31 @@ def estimate_label_shift(
 
     if target_prior is None:
         _fail("shift estimator reached an impossible incomplete state")
+    stable_target_positive = stabilize_numeric_evidence(float(target_prior[1]))
     adjusted = (
-        tuple(float(value) for value in target)
+        tuple(stabilize_numeric_evidence(float(value)) for value in target)
         if estimator == "unadjusted_v2"
         else adjust_probabilities_for_prior(
             target.tolist(),
             source_positive_prior=source_positive,
-            target_positive_prior=float(target_prior[1]),
+            target_positive_prior=stable_target_positive,
         )
     )
     return ShiftEstimate(
         estimator=estimator,
         status="ok",
-        source_positive_prior=source_positive,
-        target_positive_prior=float(target_prior[1]),
-        condition_number=condition_number,
+        source_positive_prior=stabilize_numeric_evidence(source_positive),
+        target_positive_prior=stable_target_positive,
+        condition_number=(
+            None
+            if condition_number is None
+            else stabilize_numeric_evidence(condition_number)
+        ),
         iterations=iterations,
         reason=None,
-        adjusted_probabilities=adjusted,
+        adjusted_probabilities=tuple(
+            stabilize_numeric_evidence(value) for value in adjusted
+        ),
     )
 
 
