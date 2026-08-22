@@ -25,6 +25,7 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import (
     fit_registered_model,
     prior_match_sample_weights,
     reciprocal_control_targets,
+    stabilize_converged_residual,
     stabilize_numeric_evidence,
     transform_features,
 )
@@ -340,6 +341,7 @@ def test_bbse_abstains_on_singular_soft_confusion_without_clipping() -> None:
         target_probabilities=(0.5,) * 100,
     )
     assert estimate.status == "abstain"
+    assert estimate.condition_number is None
     assert estimate.adjusted_probabilities == ()
     assert estimate.reason is not None
 
@@ -494,7 +496,7 @@ def test_calibration_golden_fixture_freezes_newton_solution() -> None:
     assert calibration.slope == pytest.approx(1.1865688446812601, abs=1e-11)
     assert calibration.iterations == 4
     assert calibration.canonical_sha256() == (
-        "525e00dd76b3b272be9b1b924de1ca68f3555f5a131a946b78830a745cc18389"
+        "5bd21d48ab8b46752f7f5b22c313dd73d0915d1acb585a01235469f92d247811"
     )
 
 
@@ -518,6 +520,13 @@ def test_numeric_evidence_stabilization_removes_last_bit_backend_noise() -> None
     assert math.copysign(1.0, stabilize_numeric_evidence(-0.0)) == 1.0
     with pytest.raises(V3RuntimeError, match="finite"):
         stabilize_numeric_evidence(math.inf)
+
+
+def test_converged_residual_uses_absolute_sub_tolerance_resolution() -> None:
+    assert stabilize_converged_residual(9.913111128921549e-15) == 0.0
+    assert stabilize_converged_residual(4.321987654321e-9) == 4.322e-9
+    with pytest.raises(V3RuntimeError, match="non-negative"):
+        stabilize_converged_residual(-1.0)
 
 
 def test_mmd_golden_fixture_freezes_statistic_permutation_and_holm() -> None:

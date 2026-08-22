@@ -67,6 +67,7 @@ HASH_BITS: Final[int] = 256
 HASH_MODULUS: Final[int] = 1 << HASH_BITS
 CALIBRATION_MIN_STEP: Final[float] = 2.0**-20
 NUMERIC_EVIDENCE_SIGNIFICANT_DIGITS: Final[int] = 12
+CONVERGED_RESIDUAL_DECIMAL_PLACES: Final[int] = 12
 
 Sha256 = Annotated[str, Field(pattern=SHA256_PATTERN)]
 Direction = Literal["yes_to_no", "no_to_yes"]
@@ -98,6 +99,16 @@ def stabilize_numeric_evidence(value: float) -> float:
     if not math.isfinite(number):
         _fail("numerical evidence must be finite before stabilization")
     stabilized = float(f"{number:.{NUMERIC_EVIDENCE_SIGNIFICANT_DIGITS}g}")
+    return 0.0 if stabilized == 0.0 else stabilized
+
+
+def stabilize_converged_residual(value: float) -> float:
+    """Quantize a converged residual at a resolution below protocol tolerance."""
+
+    number = float(value)
+    if not math.isfinite(number) or number < 0.0:
+        _fail("converged residual evidence must be finite and non-negative")
+    stabilized = round(number, CONVERGED_RESIDUAL_DECIMAL_PLACES)
     return 0.0 if stabilized == 0.0 else stabilized
 
 
@@ -853,7 +864,7 @@ def fit_logit_calibration(
                 slope=stabilize_numeric_evidence(float(beta[1])),
                 iterations=iteration,
                 converged=True,
-                gradient_infinity_norm=stabilize_numeric_evidence(gradient_norm),
+                gradient_infinity_norm=stabilize_converged_residual(gradient_norm),
                 development_record_count=probabilities.size,
             )
         if iteration == max_iter:

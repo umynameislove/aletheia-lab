@@ -49,6 +49,10 @@ before hashing and downstream use. This removes last-bit LAPACK/libm variation
 between supported runners while retaining precision far beyond the registered
 `1e-8` convergence tolerances. It does not alter an estimand, threshold, seed,
 model, split, or admission rule.
+Converged solver residuals use an absolute `1e-12` evidence resolution. A
+condition number beyond the registered admissibility bound, including infinity
+from a singular system, is recorded as unavailable instead of preserving a
+backend-specific magnitude; the reason remains explicit fail-closed evidence.
 
 ## Cross-dataset inference
 

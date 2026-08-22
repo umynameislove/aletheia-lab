@@ -222,7 +222,7 @@ def estimate_label_shift(
                 estimator,
                 source_positive,
                 "soft confusion matrix is ill-conditioned",
-                condition_number=condition_number,
+                condition_number=None,
             )
         try:
             if estimator == "bbse":
