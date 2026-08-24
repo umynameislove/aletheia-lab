@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import importlib.util
+import sys
 from argparse import Namespace
 from pathlib import Path
+from typing import Protocol, cast
 
 import pytest
 
@@ -14,6 +17,7 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_2_closeout import (
 )
 from aletheia_lab.benchmark.p2.confirmatory_v3_2_protocol import (
     DEFAULT_V3_2_PROTOCOL_PATH,
+    V32ConfirmatoryProtocol,
     load_v3_2_confirmatory_protocol,
     verify_v3_2_protocol_artifacts,
 )
@@ -24,9 +28,46 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_protocol import (
     DEFAULT_V3_PROTOCOL_PATH,
 )
 from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import V3RuntimeError
-from scripts import p2_v3_2_confirmatory as entrypoint
 
 _COMMIT = "d63e4262961930d7d8126875d38c2c9625893f14"
+_ROOT = Path(__file__).resolve().parents[2]
+_SCRIPT = _ROOT / "scripts" / "p2_v3_2_confirmatory.py"
+
+
+class _Entrypoint(Protocol):
+    def _protocol_from_text(self, content: str) -> V32ConfirmatoryProtocol: ...
+
+    def _write_registration_exclusive(
+        self,
+        path: Path,
+        receipt: V32ProtocolRegistrationReceipt,
+    ) -> None: ...
+
+    def _open_sealed_marker(
+        self,
+        *,
+        path: Path,
+        protocol_sha256: str,
+        registration_sha256: str,
+        execution_commit: str,
+    ) -> None: ...
+
+    def _verify_clean_main(self, root: Path) -> str: ...
+
+    def _execute(self, args: Namespace) -> dict[str, object]: ...
+
+
+def _load_entrypoint() -> _Entrypoint:
+    spec = importlib.util.spec_from_file_location("p2_v3_2_confirmatory_entrypoint", _SCRIPT)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("v3.2 entrypoint cannot be loaded from its repository path")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return cast(_Entrypoint, module)
+
+
+entrypoint = _load_entrypoint()
 
 
 def _registration() -> V32ProtocolRegistrationReceipt:
