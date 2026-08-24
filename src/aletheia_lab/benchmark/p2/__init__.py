@@ -193,6 +193,34 @@ from aletheia_lab.benchmark.p2.confirmatory_sources import (
     download_registered_archive,
     extract_registered_snapshot,
 )
+from aletheia_lab.benchmark.p2.confirmatory_v3_2_closeout import (
+    V32ConfirmatoryCloseout,
+    V32DatasetAttempt,
+    V32ProtocolRegistrationReceipt,
+    V32TechnicalFailureReceipt,
+    V32TerminalStoreManifest,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_2_closeout import (
+    build_closeout as build_v3_2_closeout,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_2_closeout import (
+    build_technical_failure as build_v3_2_technical_failure,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_2_closeout import (
+    dataset_attempt as v3_2_dataset_attempt,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_2_closeout import (
+    load_and_verify_terminal_store as load_and_verify_v3_2_terminal_store,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_2_closeout import (
+    registration_from_github_release as v3_2_registration_from_github_release,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_2_closeout import (
+    write_failure_store as write_v3_2_failure_store,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_2_closeout import (
+    write_result_store as write_v3_2_result_store,
+)
 from aletheia_lab.benchmark.p2.confirmatory_v3_2_protocol import (
     DEFAULT_V3_2_PROTOCOL_PATH,
     RECOVERY_IMPLEMENTATION_COMMIT,
@@ -312,6 +340,7 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_recovery import (
     verify_v3_technical_failure_receipt,
 )
 from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import (
+    V3_2_PROTOCOL_SHA256,
     CalibrationAbstention,
     CalibrationResult,
     FittedProbabilities,
@@ -323,6 +352,7 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import (
     fit_logit_calibration_attempt,
     fit_registered_model,
     prepare_runtime_dataset,
+    validate_registered_protocol,
 )
 from aletheia_lab.benchmark.p2.confirmatory_v3_shift import (
     MmdDiagnostic,
@@ -1350,4 +1380,18 @@ __all__ = [
     "verify_v3_2_compiled_split_receipts",
     "verify_v3_2_protocol_artifacts",
     "verify_v3_2_technical_delta",
+    "V32ConfirmatoryCloseout",
+    "V32DatasetAttempt",
+    "V32ProtocolRegistrationReceipt",
+    "V32TechnicalFailureReceipt",
+    "V32TerminalStoreManifest",
+    "build_v3_2_closeout",
+    "build_v3_2_technical_failure",
+    "v3_2_dataset_attempt",
+    "load_and_verify_v3_2_terminal_store",
+    "v3_2_registration_from_github_release",
+    "write_v3_2_failure_store",
+    "write_v3_2_result_store",
+    "V3_2_PROTOCOL_SHA256",
+    "validate_registered_protocol",
 ]
