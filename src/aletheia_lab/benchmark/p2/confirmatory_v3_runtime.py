@@ -1,6 +1,7 @@
 """Deterministic, outcome-agnostic runtime primitives for the v3 study.
 
-The module implements only operations fixed by the immutable v3.1 protocol:
+The module implements only operations shared by the immutable v3.1 protocol
+and its prospectively registered v3.2 technical recovery:
 group-aware partition reconstruction, train-only preprocessing, directional
 target corruption, prior-matched controls, controlled prior environments,
 registered models, and development-only calibration.  Importing this module
@@ -17,7 +18,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from fractions import Fraction
 from numbers import Integral, Real
-from typing import Annotated, Final, Literal, NoReturn, TypeVar, cast
+from typing import TYPE_CHECKING, Annotated, Final, Literal, NoReturn, TypeAlias, TypeVar, cast
 
 import numpy as np
 import pandas as pd
@@ -39,6 +40,15 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_protocol import (
     target_environment_class_counts,
 )
 from aletheia_lab.benchmark.p2.identity import SHA256_PATTERN
+
+if TYPE_CHECKING:
+    from aletheia_lab.benchmark.p2.confirmatory_v3_2_protocol import (
+        V32ConfirmatoryProtocol,
+    )
+
+    RegisteredV3Protocol: TypeAlias = V3ConfirmatoryProtocol | V32ConfirmatoryProtocol
+else:
+    RegisteredV3Protocol: TypeAlias = V3ConfirmatoryProtocol
 
 RUNTIME_SCHEMA_VERSION: Final[Literal["p2-label-noise-shift-runtime/1"]] = (
     "p2-label-noise-shift-runtime/1"
@@ -68,6 +78,9 @@ MODEL_ABSTENTION_SCHEMA_VERSION: Final[
 PROTOCOL_SHA256: Final[str] = (
     "0e9c594a6453dc111def3208582cec85d13518d542a61d86197620f9707ab7b2"
 )
+V3_2_PROTOCOL_SHA256: Final[str] = (
+    "7cba25f08f4e27007bf17fc837b9f11137123f2f83452378c8ac3db5de3ffe27"
+)
 FLOAT_TOLERANCE: Final[float] = 1e-12
 HASH_BITS: Final[int] = 256
 HASH_MODULUS: Final[int] = 1 << HASH_BITS
@@ -88,6 +101,28 @@ class V3RuntimeError(V3ProtocolError):
 
 def _fail(message: str) -> NoReturn:
     raise V3RuntimeError(message)
+
+
+def validate_registered_protocol(protocol: RegisteredV3Protocol) -> RegisteredV3Protocol:
+    """Validate one of the two immutable protocol identities accepted by the runtime."""
+
+    digest = protocol.canonical_sha256()
+    if digest == PROTOCOL_SHA256:
+        return cast(
+            RegisteredV3Protocol,
+            V3ConfirmatoryProtocol.model_validate(protocol.model_dump()),
+        )
+    if digest == V3_2_PROTOCOL_SHA256:
+        # Imported lazily because the recovery protocol verifies the v3.1 runtime chain.
+        from aletheia_lab.benchmark.p2.confirmatory_v3_2_protocol import (
+            V32ConfirmatoryProtocol,
+        )
+
+        checked = V32ConfirmatoryProtocol.model_validate(protocol.model_dump())
+        if checked.canonical_sha256() != V3_2_PROTOCOL_SHA256:
+            _fail("v3.2 runtime protocol identity changed during validation")
+        return cast(RegisteredV3Protocol, checked)
+    _fail("runtime protocol is not an immutable registered v3 identity")
 
 
 def stabilize_numeric_evidence(value: float) -> float:
@@ -202,17 +237,15 @@ class RuntimeSplit(_StrictFrozenModel):
 
 def reconstruct_runtime_split(
     *,
-    protocol: V3ConfirmatoryProtocol,
+    protocol: RegisteredV3Protocol,
     dataset: V3DatasetBinding,
     frame: pd.DataFrame,
     receipt: DatasetSplitReceipt,
 ) -> RuntimeSplit:
     """Reconstruct exact membership and reconcile it to the registered receipt."""
 
-    protocol = V3ConfirmatoryProtocol.model_validate(protocol.model_dump())
+    protocol = validate_registered_protocol(protocol)
     dataset = V3DatasetBinding.model_validate(dataset.model_dump())
-    if protocol.canonical_sha256() != PROTOCOL_SHA256:
-        _fail("runtime accepts only the immutable v3.1 protocol")
     registered = {
         (item.dataset_id, item.role): item for item in protocol.dataset_splits
     }
@@ -1147,7 +1180,7 @@ def _weights_sha256(weights: Sequence[float] | None) -> str | None:
 
 def fit_registered_model(
     *,
-    protocol: V3ConfirmatoryProtocol,
+    protocol: RegisteredV3Protocol,
     dataset: V3DatasetBinding,
     model_kind: ModelKind,
     training_role: str,
@@ -1164,11 +1197,11 @@ def fit_registered_model(
 ) -> FittedProbabilities:
     """Fit one registered model and calibrate only on development predictions."""
 
-    protocol = V3ConfirmatoryProtocol.model_validate(protocol.model_dump())
+    protocol = validate_registered_protocol(protocol)
     dataset = V3DatasetBinding.model_validate(dataset.model_dump())
     state = PreprocessorState.model_validate(state.model_dump())
-    if protocol.canonical_sha256() != PROTOCOL_SHA256 or state.dataset_id != dataset.dataset_id:
-        _fail("model runtime does not match the immutable v3.1 registration")
+    if state.dataset_id != dataset.dataset_id:
+        _fail("model runtime does not match its immutable registration")
     if (dataset.dataset_id, dataset.role) not in {
         (item.dataset_id, item.role) for item in protocol.dataset_splits
     }:
@@ -1356,7 +1389,7 @@ def _pick(values: Sequence[_ValueT], indices: Sequence[int]) -> tuple[_ValueT, .
 
 def prepare_runtime_dataset(
     *,
-    protocol: V3ConfirmatoryProtocol,
+    protocol: RegisteredV3Protocol,
     dataset: V3DatasetBinding,
     split_receipt: DatasetSplitReceipt,
     frame: pd.DataFrame,

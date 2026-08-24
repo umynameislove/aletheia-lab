@@ -18,7 +18,6 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_inference import (
 )
 from aletheia_lab.benchmark.p2.confirmatory_v3_protocol import (
     DatasetSplitReceipt,
-    V3ConfirmatoryProtocol,
 )
 from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import (
     PROTOCOL_SHA256,
@@ -27,6 +26,7 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import (
     ModelCalibrationAbstention,
     ModelCalibrationAbstentionSignal,
     PreparedRuntimeDataset,
+    RegisteredV3Protocol,
     V3RuntimeError,
     apply_directional_corruption,
     build_prior_environment,
@@ -35,6 +35,7 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import (
     prepare_runtime_dataset,
     prior_match_sample_weights,
     reciprocal_control_targets,
+    validate_registered_protocol,
 )
 from aletheia_lab.benchmark.p2.confirmatory_v3_shift import (
     EstimatorName,
@@ -84,8 +85,8 @@ class ExecutionPlan(_StrictFrozenModel):
     include_sensitivity_model: bool
 
     @classmethod
-    def registered(cls, protocol: V3ConfirmatoryProtocol) -> ExecutionPlan:
-        protocol = V3ConfirmatoryProtocol.model_validate(protocol.model_dump())
+    def registered(cls, protocol: RegisteredV3Protocol) -> ExecutionPlan:
+        protocol = validate_registered_protocol(protocol)
         return cls(
             mode="registered_execution",
             corruption_seeds=REGISTERED_CORRUPTION_SEEDS,
@@ -116,7 +117,7 @@ class ExecutionPlan(_StrictFrozenModel):
             include_sensitivity_model=False,
         )
 
-    def validate_against(self, protocol: V3ConfirmatoryProtocol) -> None:
+    def validate_against(self, protocol: RegisteredV3Protocol) -> None:
         if self.mode == "registered_execution" and self != ExecutionPlan.registered(protocol):
             _fail("registered execution plan differs from the immutable protocol")
 
@@ -269,7 +270,7 @@ class V3DatasetOutcome(_StrictFrozenModel):
 
 
 def _partition_receipt(
-    protocol: V3ConfirmatoryProtocol, dataset: V3DatasetBinding
+    protocol: RegisteredV3Protocol, dataset: V3DatasetBinding
 ) -> DatasetSplitReceipt:
     try:
         return next(item for item in protocol.dataset_splits if item.dataset_id == dataset.dataset_id)
@@ -279,7 +280,7 @@ def _partition_receipt(
 
 def _fit(
     *,
-    protocol: V3ConfirmatoryProtocol,
+    protocol: RegisteredV3Protocol,
     prepared: PreparedRuntimeDataset,
     model_kind: Literal["logistic_regression", "hist_gradient_boosting"],
     training_role: str,
@@ -330,7 +331,7 @@ def _losses(
 
 def _environment_evidence(
     *,
-    protocol: V3ConfirmatoryProtocol,
+    protocol: RegisteredV3Protocol,
     prepared: PreparedRuntimeDataset,
     clean: FittedProbabilities,
     plan: ExecutionPlan,
@@ -455,7 +456,7 @@ def _environment_evidence(
 
 def _sensitivity_summaries(
     *,
-    protocol: V3ConfirmatoryProtocol,
+    protocol: RegisteredV3Protocol,
     prepared: PreparedRuntimeDataset,
     plan: ExecutionPlan,
 ) -> tuple[SensitivityDoseSummary, ...]:
@@ -535,18 +536,16 @@ def _sensitivity_summaries(
 
 def execute_v3_dataset(
     *,
-    protocol: V3ConfirmatoryProtocol,
+    protocol: RegisteredV3Protocol,
     dataset: V3DatasetBinding,
     frame: pd.DataFrame,
     plan: ExecutionPlan,
 ) -> V3DatasetOutcome:
     """Execute the complete registered matrix for one dataset in memory."""
 
-    protocol = V3ConfirmatoryProtocol.model_validate(protocol.model_dump())
+    protocol = validate_registered_protocol(protocol)
     dataset = V3DatasetBinding.model_validate(dataset.model_dump())
     plan = ExecutionPlan.model_validate(plan.model_dump())
-    if protocol.canonical_sha256() != PROTOCOL_SHA256:
-        _fail("execution accepts only the immutable v3.1 protocol")
     plan.validate_against(protocol)
     if (
         plan.mode == "registered_execution"
@@ -706,6 +705,7 @@ def execute_v3_dataset(
         plan=plan,
     )
     return V3DatasetOutcome(
+        protocol_sha256=protocol.canonical_sha256(),
         dataset_id=dataset.dataset_id,
         dataset_role=dataset.role,
         execution_mode=plan.mode,
@@ -733,7 +733,7 @@ V3DatasetExecutionAttempt = V3DatasetOutcome | ModelCalibrationAbstention
 
 def execute_v3_dataset_fail_closed(
     *,
-    protocol: V3ConfirmatoryProtocol,
+    protocol: RegisteredV3Protocol,
     dataset: V3DatasetBinding,
     frame: pd.DataFrame,
     plan: ExecutionPlan,

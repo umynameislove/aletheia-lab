@@ -12,13 +12,14 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from aletheia_lab.benchmark.p2.canonical import canonical_sha256
 from aletheia_lab.benchmark.p2.confirmatory_v3_protocol import (
     DirectionEvidence,
-    V3ConfirmatoryProtocol,
     evaluate_cross_dataset_decision,
     holm_adjusted_p_values,
 )
 from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import (
     PROTOCOL_SHA256,
+    RegisteredV3Protocol,
     V3RuntimeError,
+    validate_registered_protocol,
 )
 from aletheia_lab.benchmark.p2.identity import SHA256_PATTERN
 
@@ -325,7 +326,7 @@ class DatasetInference(_StrictFrozenModel):
 
 def analyze_dataset(
     *,
-    protocol: V3ConfirmatoryProtocol,
+    protocol: RegisteredV3Protocol,
     dataset_id: str,
     dataset_role: DatasetRole,
     split_membership_sha256: str,
@@ -337,9 +338,7 @@ def analyze_dataset(
 ) -> DatasetInference:
     """Reconcile the full 6x50 grid before analyzing the 30% co-primary cells."""
 
-    protocol = V3ConfirmatoryProtocol.model_validate(protocol.model_dump())
-    if protocol.canonical_sha256() != PROTOCOL_SHA256:
-        _fail("dataset inference accepts only the immutable v3.1 protocol")
+    protocol = validate_registered_protocol(protocol)
     effects = tuple(SeedNetEffect.model_validate(item.model_dump()) for item in seed_effects)
     grouped: dict[tuple[Direction, float], list[SeedNetEffect]] = {
         (direction, rate): []
@@ -423,6 +422,7 @@ def analyze_dataset(
             )
         )
     return DatasetInference(
+        protocol_sha256=protocol.canonical_sha256(),
         dataset_id=dataset_id,
         dataset_role=dataset_role,
         split_membership_sha256=split_membership_sha256,
@@ -448,17 +448,18 @@ class V3StudyDecision(_StrictFrozenModel):
 
 def decide_study(
     *,
-    protocol: V3ConfirmatoryProtocol,
+    protocol: RegisteredV3Protocol,
     primary: DatasetInference,
     replication: DatasetInference,
 ) -> V3StudyDecision:
     """Apply dataset IUT then two-direction Holm without a rescue path."""
 
-    protocol = V3ConfirmatoryProtocol.model_validate(protocol.model_dump())
+    protocol = validate_registered_protocol(protocol)
     primary = DatasetInference.model_validate(primary.model_dump())
     replication = DatasetInference.model_validate(replication.model_dump())
     if (
-        protocol.canonical_sha256() != PROTOCOL_SHA256
+        primary.protocol_sha256 != protocol.canonical_sha256()
+        or replication.protocol_sha256 != protocol.canonical_sha256()
         or primary.dataset_role != "primary"
         or replication.dataset_role != "external_replication"
     ):
@@ -521,6 +522,7 @@ def decide_study(
     ):
         _fail("cross-dataset decision and independently computed Holm values disagree")
     return V3StudyDecision(
+        protocol_sha256=protocol.canonical_sha256(),
         primary_inference_sha256=primary.canonical_sha256(),
         replication_inference_sha256=replication.canonical_sha256(),
         iut_p_values=iut,
