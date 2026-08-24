@@ -52,12 +52,18 @@ MUTATION_SCHEMA_VERSION: Final[Literal["p2-v3-directional-corruption/1"]] = (
 ENVIRONMENT_SCHEMA_VERSION: Final[Literal["p2-v3-prior-environment/1"]] = (
     "p2-v3-prior-environment/1"
 )
-CALIBRATION_SCHEMA_VERSION: Final[Literal["p2-v3-logit-calibration/1"]] = (
-    "p2-v3-logit-calibration/1"
+CALIBRATION_SCHEMA_VERSION: Final[Literal["p2-v3-logit-calibration/2"]] = (
+    "p2-v3-logit-calibration/2"
 )
+CALIBRATION_ABSTENTION_SCHEMA_VERSION: Final[
+    Literal["p2-v3-logit-calibration-abstention/1"]
+] = "p2-v3-logit-calibration-abstention/1"
 MODEL_SCHEMA_VERSION: Final[Literal["p2-v3-fitted-probabilities/1"]] = (
     "p2-v3-fitted-probabilities/1"
 )
+MODEL_ABSTENTION_SCHEMA_VERSION: Final[
+    Literal["p2-v3-model-calibration-abstention/1"]
+] = "p2-v3-model-calibration-abstention/1"
 
 PROTOCOL_SHA256: Final[str] = (
     "0e9c594a6453dc111def3208582cec85d13518d542a61d86197620f9707ab7b2"
@@ -804,12 +810,14 @@ def build_prior_environment(
 
 
 class CalibrationResult(_StrictFrozenModel):
-    schema_version: Literal["p2-v3-logit-calibration/1"] = CALIBRATION_SCHEMA_VERSION
+    schema_version: Literal["p2-v3-logit-calibration/2"] = CALIBRATION_SCHEMA_VERSION
+    status: Literal["ok"] = "ok"
     intercept: float
     slope: float
     iterations: int
     converged: Literal[True]
     gradient_infinity_norm: float
+    gradient_scale: Literal["mean_per_development_record"] = "mean_per_development_record"
     development_record_count: int
 
     @model_validator(mode="after")
@@ -827,20 +835,131 @@ class CalibrationResult(_StrictFrozenModel):
         return canonical_sha256(self.model_dump(mode="json"))
 
 
+CalibrationAbstentionReason = Literal[
+    "singular_hessian",
+    "newton_solve_failed",
+    "nonfinite_numerics",
+    "line_search_failed",
+    "iteration_budget_exhausted",
+]
+
+
+class CalibrationAbstention(_StrictFrozenModel):
+    """Fail-closed calibration disposition without a usable partial fit."""
+
+    schema_version: Literal["p2-v3-logit-calibration-abstention/1"] = (
+        CALIBRATION_ABSTENTION_SCHEMA_VERSION
+    )
+    status: Literal["abstain"] = "abstain"
+    reason_code: CalibrationAbstentionReason
+    iterations: int = Field(ge=0)
+    gradient_infinity_norm: float | None
+    gradient_scale: Literal["mean_per_development_record"] = "mean_per_development_record"
+    objective_mean: float | None
+    development_record_count: int = Field(ge=2)
+    exposes_partial_calibration: Literal[False] = False
+
+    @model_validator(mode="after")
+    def _diagnostics_are_finite(self) -> CalibrationAbstention:
+        diagnostics = (self.gradient_infinity_norm, self.objective_mean)
+        if any(value is not None and not math.isfinite(value) for value in diagnostics):
+            raise ValueError("calibration abstention diagnostics must be finite when present")
+        if self.gradient_infinity_norm is not None and self.gradient_infinity_norm < 0.0:
+            raise ValueError("calibration abstention gradient norm must be non-negative")
+        return self
+
+    def canonical_sha256(self) -> str:
+        return canonical_sha256(self.model_dump(mode="json"))
+
+
+class CalibrationAbstentionSignal(V3RuntimeError):
+    """Internal control-flow signal carrying an auditable calibration abstention."""
+
+    def __init__(self, abstention: CalibrationAbstention) -> None:
+        self.abstention = CalibrationAbstention.model_validate(abstention.model_dump())
+        super().__init__(f"calibration abstained: {self.abstention.reason_code}")
+
+
+class ModelCalibrationAbstention(_StrictFrozenModel):
+    """Dataset/model context for a calibration failure that blocks scoring."""
+
+    schema_version: Literal["p2-v3-model-calibration-abstention/1"] = (
+        MODEL_ABSTENTION_SCHEMA_VERSION
+    )
+    status: Literal["abstain"] = "abstain"
+    stage: Literal["development_only_calibration"] = "development_only_calibration"
+    protocol_sha256: Sha256
+    dataset_id: str
+    dataset_role: Literal["primary", "external_replication"]
+    model_kind: ModelKind
+    training_role: str
+    training_targets_sha256: Sha256
+    sample_weights_sha256: Sha256 | None
+    calibration_abstention: CalibrationAbstention
+    predictive_metrics_generated: Literal[False] = False
+    partial_model_reusable: Literal[False] = False
+
+    def canonical_sha256(self) -> str:
+        return canonical_sha256(self.model_dump(mode="json"))
+
+
+class ModelCalibrationAbstentionSignal(V3RuntimeError):
+    """Internal signal used to make dataset execution return an abstention."""
+
+    def __init__(self, abstention: ModelCalibrationAbstention) -> None:
+        self.abstention = ModelCalibrationAbstention.model_validate(
+            abstention.model_dump()
+        )
+        super().__init__(
+            "model calibration abstained: "
+            f"{self.abstention.dataset_id}/{self.abstention.training_role}/"
+            f"{self.abstention.calibration_abstention.reason_code}"
+        )
+
+
 def _calibration_objective(design: np.ndarray, targets: np.ndarray, beta: np.ndarray) -> float:
     linear = design @ beta
-    return float(np.sum(np.logaddexp(0.0, linear) - targets * linear))
+    return float(np.mean(np.logaddexp(0.0, linear) - targets * linear))
 
 
-def fit_logit_calibration(
+def _calibration_abstention(
+    *,
+    reason_code: CalibrationAbstentionReason,
+    iterations: int,
+    gradient_norm: float | None,
+    objective: float | None,
+    development_record_count: int,
+) -> CalibrationAbstention:
+    return CalibrationAbstention(
+        reason_code=reason_code,
+        iterations=iterations,
+        gradient_infinity_norm=(
+            None
+            if gradient_norm is None
+            else stabilize_numeric_evidence(gradient_norm)
+        ),
+        objective_mean=(
+            None if objective is None else stabilize_numeric_evidence(objective)
+        ),
+        development_record_count=development_record_count,
+    )
+
+
+def fit_logit_calibration_attempt(
     raw_probabilities: Sequence[float],
     targets: Sequence[int],
     *,
     probability_clip: float = 1e-15,
     max_iter: int = 100,
     tolerance: float = 1e-8,
-) -> CalibrationResult:
-    """Fit intercept/slope calibration with deterministic damped Newton steps."""
+) -> CalibrationResult | CalibrationAbstention:
+    """Fit calibration or return a structured, non-predictive abstention.
+
+    Objective, gradient, and Hessian are means over development records. The
+    Newton direction is therefore identical to the corresponding summed
+    equations, while the convergence tolerance no longer changes meaning when
+    the development partition size changes.
+    """
 
     probabilities = np.asarray(tuple(raw_probabilities), dtype=np.float64)
     y = np.asarray(tuple(targets), dtype=np.float64)
@@ -850,14 +969,39 @@ def fit_logit_calibration(
         _fail("calibration requires finite probabilities and both target classes")
     if np.any(probabilities < 0.0) or np.any(probabilities > 1.0):
         _fail("calibration probabilities must lie in [0, 1]")
+    if (
+        not 0.0 < probability_clip < 0.5
+        or max_iter < 1
+        or not math.isfinite(tolerance)
+        or tolerance <= 0.0
+    ):
+        _fail("calibration numerical controls are invalid")
     clipped = np.clip(probabilities, probability_clip, 1.0 - probability_clip)
     design = np.column_stack((np.ones_like(clipped), logit(clipped))).astype(np.float64)
+    if np.linalg.matrix_rank(design) < 2:
+        return _calibration_abstention(
+            reason_code="singular_hessian",
+            iterations=0,
+            gradient_norm=None,
+            objective=None,
+            development_record_count=probabilities.size,
+        )
     beta = np.asarray((0.0, 1.0), dtype=np.float64)
     gradient_norm = math.inf
+    objective: float | None = None
     for iteration in range(max_iter + 1):
         fitted = expit(design @ beta)
-        gradient = design.T @ (fitted - y)
+        gradient = (design.T @ (fitted - y)) / probabilities.size
         gradient_norm = float(np.max(np.abs(gradient)))
+        objective = _calibration_objective(design, y, beta)
+        if not math.isfinite(gradient_norm) or not math.isfinite(objective):
+            return _calibration_abstention(
+                reason_code="nonfinite_numerics",
+                iterations=iteration,
+                gradient_norm=None,
+                objective=None,
+                development_record_count=probabilities.size,
+            )
         if gradient_norm <= tolerance:
             return CalibrationResult(
                 intercept=stabilize_numeric_evidence(float(beta[0])),
@@ -868,16 +1012,33 @@ def fit_logit_calibration(
                 development_record_count=probabilities.size,
             )
         if iteration == max_iter:
-            break
+            return _calibration_abstention(
+                reason_code="iteration_budget_exhausted",
+                iterations=iteration,
+                gradient_norm=gradient_norm,
+                objective=objective,
+                development_record_count=probabilities.size,
+            )
         weights = fitted * (1.0 - fitted)
-        hessian = design.T @ (weights[:, None] * design)
+        hessian = (design.T @ (weights[:, None] * design)) / probabilities.size
         if not np.isfinite(hessian).all() or np.linalg.matrix_rank(hessian) < 2:
-            _fail("calibration Hessian is singular")
+            return _calibration_abstention(
+                reason_code="singular_hessian",
+                iterations=iteration,
+                gradient_norm=gradient_norm,
+                objective=objective,
+                development_record_count=probabilities.size,
+            )
         try:
             step = np.linalg.solve(hessian, gradient)
-        except np.linalg.LinAlgError as exc:
-            raise V3RuntimeError("calibration Newton solve failed") from exc
-        objective = _calibration_objective(design, y, beta)
+        except np.linalg.LinAlgError:
+            return _calibration_abstention(
+                reason_code="newton_solve_failed",
+                iterations=iteration,
+                gradient_norm=gradient_norm,
+                objective=objective,
+                development_record_count=probabilities.size,
+            )
         multiplier = 1.0
         accepted = False
         while multiplier >= CALIBRATION_MIN_STEP:
@@ -889,8 +1050,36 @@ def fit_logit_calibration(
                 break
             multiplier /= 2.0
         if not accepted:
-            _fail("calibration line search failed")
-    _fail("calibration did not converge within the registered iteration budget")
+            return _calibration_abstention(
+                reason_code="line_search_failed",
+                iterations=iteration,
+                gradient_norm=gradient_norm,
+                objective=objective,
+                development_record_count=probabilities.size,
+            )
+    raise AssertionError("calibration loop must return before exhaustion")
+
+
+def fit_logit_calibration(
+    raw_probabilities: Sequence[float],
+    targets: Sequence[int],
+    *,
+    probability_clip: float = 1e-15,
+    max_iter: int = 100,
+    tolerance: float = 1e-8,
+) -> CalibrationResult:
+    """Fit calibration, signalling the structured abstention to strict callers."""
+
+    attempt = fit_logit_calibration_attempt(
+        raw_probabilities,
+        targets,
+        probability_clip=probability_clip,
+        max_iter=max_iter,
+        tolerance=tolerance,
+    )
+    if isinstance(attempt, CalibrationAbstention):
+        raise CalibrationAbstentionSignal(attempt)
+    return attempt
 
 
 def apply_logit_calibration(
@@ -1037,13 +1226,29 @@ def fit_registered_model(
         _fail("registered model emitted a convergence warning")
     if not np.isfinite(raw_development).all() or not np.isfinite(raw_evaluation).all():
         _fail("registered model produced non-finite probabilities")
-    calibration = fit_logit_calibration(
-        raw_development.tolist(),
-        y_development.tolist(),
-        probability_clip=protocol.models.calibration_probability_clip,
-        max_iter=protocol.models.calibration_max_iter,
-        tolerance=protocol.models.calibration_tolerance,
-    )
+    targets_hash = labelled_targets_sha256(training_record_ids, y_train.tolist())
+    weights_hash = _weights_sha256(sample_weights)
+    try:
+        calibration = fit_logit_calibration(
+            raw_development.tolist(),
+            y_development.tolist(),
+            probability_clip=protocol.models.calibration_probability_clip,
+            max_iter=protocol.models.calibration_max_iter,
+            tolerance=protocol.models.calibration_tolerance,
+        )
+    except CalibrationAbstentionSignal as exc:
+        raise ModelCalibrationAbstentionSignal(
+            ModelCalibrationAbstention(
+                protocol_sha256=protocol.canonical_sha256(),
+                dataset_id=dataset.dataset_id,
+                dataset_role=dataset.role,
+                model_kind=model_kind,
+                training_role=training_role,
+                training_targets_sha256=targets_hash,
+                sample_weights_sha256=weights_hash,
+                calibration_abstention=exc.abstention,
+            )
+        ) from exc
     development_probabilities = apply_logit_calibration(
         raw_development.tolist(),
         calibration,
@@ -1054,8 +1259,6 @@ def fit_registered_model(
         calibration,
         clip=protocol.models.calibration_probability_clip,
     )
-    targets_hash = labelled_targets_sha256(training_record_ids, y_train.tolist())
-    weights_hash = _weights_sha256(sample_weights)
     model_payload: dict[str, object] = {
         "schema_version": MODEL_SCHEMA_VERSION,
         "protocol_sha256": protocol.canonical_sha256(),

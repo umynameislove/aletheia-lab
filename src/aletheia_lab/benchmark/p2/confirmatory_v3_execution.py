@@ -24,6 +24,8 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import (
     PROTOCOL_SHA256,
     Direction,
     FittedProbabilities,
+    ModelCalibrationAbstention,
+    ModelCalibrationAbstentionSignal,
     PreparedRuntimeDataset,
     V3RuntimeError,
     apply_directional_corruption,
@@ -724,3 +726,32 @@ def execute_v3_dataset(
         assumptions_pass=assumptions_pass,
         sensitivity_summaries=sensitivity,
     )
+
+
+V3DatasetExecutionAttempt = V3DatasetOutcome | ModelCalibrationAbstention
+
+
+def execute_v3_dataset_fail_closed(
+    *,
+    protocol: V3ConfirmatoryProtocol,
+    dataset: V3DatasetBinding,
+    frame: pd.DataFrame,
+    plan: ExecutionPlan,
+) -> V3DatasetExecutionAttempt:
+    """Execute a dataset, converting calibration failure into auditable abstention.
+
+    Invalid inputs, provenance failures, non-finite model output, and other
+    technical defects still raise. Only the protocol-declared calibration
+    failure class is converted, and the returned object deliberately contains
+    no predictions, losses, or partial fitted model.
+    """
+
+    try:
+        return execute_v3_dataset(
+            protocol=protocol,
+            dataset=dataset,
+            frame=frame,
+            plan=plan,
+        )
+    except ModelCalibrationAbstentionSignal as exc:
+        return exc.abstention
