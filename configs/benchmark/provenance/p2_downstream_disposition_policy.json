@@ -1,0 +1,83 @@
+{
+  "schema_version": "p2-downstream-disposition-policy/1",
+  "evidence_snapshot_commit": "8155a31a10a8749fb0ea2c299e823eb10c4f3760",
+  "frozen_before_p4_p5_outcomes": true,
+  "mechanisms": [
+    {
+      "mechanism_id": "data_drift",
+      "implementation_merged": true,
+      "scientific_status": "pending_confirmatory",
+      "registered_study_completed": false,
+      "protocol_sha256": null,
+      "terminal_store_sha256": null,
+      "terminal_status": "not_run",
+      "cross_environment_assumption_gates_passed": null,
+      "cross_dataset_claim_allowed": false
+    },
+    {
+      "mechanism_id": "preprocessing_mismatch",
+      "implementation_merged": true,
+      "scientific_status": "pending_confirmatory",
+      "registered_study_completed": false,
+      "protocol_sha256": null,
+      "terminal_store_sha256": null,
+      "terminal_status": "not_run",
+      "cross_environment_assumption_gates_passed": null,
+      "cross_dataset_claim_allowed": false
+    },
+    {
+      "mechanism_id": "label_noise",
+      "implementation_merged": true,
+      "scientific_status": "assumption_limited",
+      "registered_study_completed": true,
+      "protocol_sha256": "5fa057e17203b00fa78fc86d58ce5b324bb30cebf916ebb94a3d6b389f30b456",
+      "terminal_store_sha256": "d2a4537de7f25a069cd23c7942d0e3d3cef9c6e4fea826a7080d61a04f95f152",
+      "terminal_status": "abstain",
+      "cross_environment_assumption_gates_passed": false,
+      "cross_dataset_claim_allowed": false
+    }
+  ],
+  "denominators": {
+    "mechanism_inventory": [
+      "data_drift",
+      "preprocessing_mismatch",
+      "label_noise"
+    ],
+    "primary_admitted_track": [],
+    "assumption_limited_track": ["label_noise"],
+    "pending_confirmatory_track": ["data_drift", "preprocessing_mismatch"],
+    "pooling_across_tracks_forbidden": true,
+    "empty_primary_track_must_be_reported": true
+  },
+  "admission_governance": {
+    "implementation_or_ci_is_not_admission": true,
+    "registered_confirmatory_study_required": true,
+    "every_prespecified_gate_must_pass": true,
+    "content_addressed_terminal_evidence_required": true,
+    "p4_or_p5_outcomes_may_change_status": false,
+    "retrospective_threshold_or_denominator_changes_forbidden": true,
+    "status_updates_require_superseding_versioned_artifact": true,
+    "prior_policy_artifacts_remain_immutable": true
+  },
+  "abstention_evaluation": {
+    "mechanism_id": "label_noise",
+    "reference_status": "assumption_limited",
+    "required_facts": [
+      "state_abstain_or_assumption_limited",
+      "acknowledge_strong_registered_directional_signal",
+      "identify_failed_extreme_prior_assumptions",
+      "deny_cross_dataset_admission",
+      "cite_protocol_and_terminal_store_provenance"
+    ],
+    "forbidden_claims": [
+      "mechanism_confirmed_or_admitted",
+      "three_of_three_mechanisms_admitted",
+      "cross_dataset_generalization_allowed",
+      "no_effect_observed",
+      "hidden_or_unavailable_evidence_used"
+    ],
+    "any_forbidden_claim_is_hard_failure": true,
+    "missing_required_fact_is_incomplete": true,
+    "evaluation_may_not_change_mechanism_status": true
+  }
+}
