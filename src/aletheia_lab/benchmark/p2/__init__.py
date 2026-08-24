@@ -247,8 +247,10 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_execution import (
     ExecutionPlan as V3ExecutionPlan,
 )
 from aletheia_lab.benchmark.p2.confirmatory_v3_execution import (
+    V3DatasetExecutionAttempt,
     V3DatasetOutcome,
     execute_v3_dataset,
+    execute_v3_dataset_fail_closed,
 )
 from aletheia_lab.benchmark.p2.confirmatory_v3_inference import (
     DatasetInference as V3DatasetInference,
@@ -284,12 +286,24 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_protocol import (
     verify_compiled_split_receipts,
     verify_v3_protocol_artifacts,
 )
+from aletheia_lab.benchmark.p2.confirmatory_v3_recovery import (
+    DEFAULT_V3_1_FAILURE_RECEIPT_PATH,
+    CalibrationFailureCell,
+    V3TechnicalFailureReceipt,
+    load_v3_technical_failure_receipt,
+    refuse_v3_1_reexecution,
+    verify_v3_technical_failure_receipt,
+)
 from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import (
+    CalibrationAbstention,
+    CalibrationResult,
     FittedProbabilities,
+    ModelCalibrationAbstention,
     PreparedRuntimeDataset,
     V3RuntimeError,
     apply_directional_corruption,
     build_prior_environment,
+    fit_logit_calibration_attempt,
     fit_registered_model,
     prepare_runtime_dataset,
 )
@@ -1266,10 +1280,20 @@ __all__ = [
     "validate_dose_monotonicity",
     "write_result_store",
     "FittedProbabilities",
+    "CalibrationAbstention",
+    "CalibrationResult",
+    "ModelCalibrationAbstention",
     "PreparedRuntimeDataset",
     "V3RuntimeError",
+    "DEFAULT_V3_1_FAILURE_RECEIPT_PATH",
+    "CalibrationFailureCell",
+    "V3TechnicalFailureReceipt",
+    "load_v3_technical_failure_receipt",
+    "refuse_v3_1_reexecution",
+    "verify_v3_technical_failure_receipt",
     "apply_directional_corruption",
     "build_prior_environment",
+    "fit_logit_calibration_attempt",
     "fit_registered_model",
     "prepare_runtime_dataset",
     "MmdDiagnostic",
@@ -1282,8 +1306,10 @@ __all__ = [
     "analyze_v3_dataset",
     "decide_v3_study",
     "V3ExecutionPlan",
+    "V3DatasetExecutionAttempt",
     "V3DatasetOutcome",
     "execute_v3_dataset",
+    "execute_v3_dataset_fail_closed",
     "V3ConfirmatoryCloseout",
     "V3ExecutionEnvironmentReceipt",
     "V3ProtocolRegistrationReceipt",
