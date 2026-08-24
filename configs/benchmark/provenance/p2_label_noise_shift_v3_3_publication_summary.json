@@ -1,0 +1,30 @@
+{
+  "schema_version": "p2-v3-3-publication-summary/1",
+  "study_id": "p2-label-noise-shift-factorial-v3.3",
+  "protocol_sha256": "5fa057e17203b00fa78fc86d58ce5b324bb30cebf916ebb94a3d6b389f30b456",
+  "registration_sha256": "a87c9047489b8c423778879d6dc9cc10144cc1b08175a6348a67790ac7836b1c",
+  "execution_commit": "8155a31a10a8749fb0ea2c299e823eb10c4f3760",
+  "terminal_store_sha256": "d2a4537de7f25a069cd23c7942d0e3d3cef9c6e4fea826a7080d61a04f95f152",
+  "terminal_artifact_sha256": "9b8d87cbd3e52dc5c6da50066c6816d5620457a3d8ac8094fafc8136560339c4",
+  "disposition": "abstain",
+  "cross_dataset_claim_allowed": false,
+  "outcomes_released_together": true,
+  "datasets": [
+    "uci_default_of_credit_card_clients",
+    "uci_online_shoppers_purchasing_intention"
+  ],
+  "assumption_environments": [
+    {"odds_multiplier": 0.25, "assumptions_pass": false},
+    {"odds_multiplier": 1.0, "assumptions_pass": true},
+    {"odds_multiplier": 4.0, "assumptions_pass": false}
+  ],
+  "directional_holm_adjusted_p_values": {
+    "no_to_yes": 0.00001999980000199998,
+    "yes_to_no": 0.00001999980000199998
+  },
+  "scientific_interpretation": "strong_registered_directional_signal_but_extreme_prior_assumptions_failed",
+  "claim_boundary": "assumption_limited_not_admitted_no_cross_dataset_generalization",
+  "rerun_forbidden": true,
+  "external_content_address": "sha256-d2a4537de7f25a069cd23c7942d0e3d3cef9c6e4fea826a7080d61a04f95f152",
+  "large_artifacts_excluded_from_git": true
+}
