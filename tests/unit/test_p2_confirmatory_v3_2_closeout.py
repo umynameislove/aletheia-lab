@@ -351,7 +351,7 @@ def test_calibration_abstention_contains_no_partial_fit_or_metrics() -> None:
     assert not attempt.partial_model_reusable
 
 
-def test_abstention_closeout_cannot_claim_or_expose_partial_inference() -> None:
+def test_calibration_abstention_cannot_claim_or_expose_partial_inference() -> None:
     closeout = _abstention_closeout()
     assert closeout.disposition == "abstain"
     assert not closeout.cross_dataset_claim_allowed
@@ -364,6 +364,85 @@ def test_abstention_closeout_cannot_claim_or_expose_partial_inference() -> None:
     payload["cross_dataset_claim_allowed"] = True
     with pytest.raises(ValidationError, match="cannot allow"):
         V32ConfirmatoryCloseout.model_validate(payload)
+
+
+def test_assumption_abstention_preserves_complete_scientific_inference() -> None:
+    registration = _registration()
+    primary = _synthetic_complete_outcome(_PRIMARY, "primary", mmd_p=0.001)
+    replication = _synthetic_complete_outcome(
+        _REPLICATION,
+        "external_replication",
+        mmd_p=0.001,
+    )
+
+    closeout = build_closeout(
+        protocol=load_v3_2_confirmatory_protocol(),
+        registration=registration,
+        environment=_environment(),
+        execution_commit=_COMMIT,
+        primary=dataset_attempt(primary),
+        replication=dataset_attempt(replication),
+        executed_at=registration.release_published_at + timedelta(seconds=1),
+    )
+
+    assert closeout.disposition == "abstain"
+    assert not closeout.cross_dataset_claim_allowed
+    assert closeout.primary_inference is not None
+    assert closeout.replication_inference is not None
+    assert closeout.decision is not None
+    assert closeout.decision.disposition == "abstain"
+    assert len(closeout.assumption_families) == 3
+    assert not all(item.assumptions_pass for item in closeout.assumption_families)
+
+
+def test_abstention_rejects_mixed_or_partial_scientific_evidence() -> None:
+    calibration = _abstention_closeout()
+    payload = calibration.model_dump()
+    payload["assumption_families"] = (
+        {
+            "odds_multiplier": 1.0,
+            "raw_p_values": {"candidate": 0.5},
+            "holm_adjusted_p_values": {"candidate": 0.5},
+            "assumptions_pass": True,
+        },
+    )
+    with pytest.raises(ValidationError, match="cannot expose assumption families"):
+        V32ConfirmatoryCloseout.model_validate(payload)
+
+
+def test_scientific_abstention_is_persisted_atomically(tmp_path: Path) -> None:
+    registration = _registration()
+    environment = _environment()
+    primary = dataset_attempt(_synthetic_complete_outcome(_PRIMARY, "primary", mmd_p=0.001))
+    replication = dataset_attempt(
+        _synthetic_complete_outcome(
+            _REPLICATION,
+            "external_replication",
+            mmd_p=0.001,
+        )
+    )
+    closeout = build_closeout(
+        protocol=load_v3_2_confirmatory_protocol(),
+        registration=registration,
+        environment=environment,
+        execution_commit=_COMMIT,
+        primary=primary,
+        replication=replication,
+        executed_at=registration.release_published_at + timedelta(seconds=1),
+    )
+
+    destination = tmp_path / "scientific-abstention"
+    manifest = write_result_store(
+        output_dir=destination,
+        registration=registration,
+        environment=environment,
+        primary=primary,
+        replication=replication,
+        closeout=closeout,
+    )
+
+    assert manifest.terminal_status == "abstain"
+    assert load_and_verify_terminal_store(destination) == manifest
 
 
 def test_result_store_is_atomic_content_addressed_and_non_overwriting(

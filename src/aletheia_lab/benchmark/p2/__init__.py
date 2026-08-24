@@ -221,6 +221,14 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_2_closeout import (
 from aletheia_lab.benchmark.p2.confirmatory_v3_2_closeout import (
     write_result_store as write_v3_2_result_store,
 )
+from aletheia_lab.benchmark.p2.confirmatory_v3_2_failure import (
+    DEFAULT_V3_2_FAILURE_AUDIT_PATH,
+    DEFAULT_V3_2_TERMINAL_STORE_PATH,
+    V3_2_TERMINAL_STORE_SHA256,
+    V32TechnicalFailureAudit,
+    load_v3_2_failure_audit,
+    verify_v3_2_failure_audit,
+)
 from aletheia_lab.benchmark.p2.confirmatory_v3_2_protocol import (
     DEFAULT_V3_2_PROTOCOL_PATH,
     RECOVERY_IMPLEMENTATION_COMMIT,
@@ -1392,6 +1400,12 @@ __all__ = [
     "v3_2_registration_from_github_release",
     "write_v3_2_failure_store",
     "write_v3_2_result_store",
+    "DEFAULT_V3_2_FAILURE_AUDIT_PATH",
+    "DEFAULT_V3_2_TERMINAL_STORE_PATH",
+    "V3_2_TERMINAL_STORE_SHA256",
+    "V32TechnicalFailureAudit",
+    "load_v3_2_failure_audit",
+    "verify_v3_2_failure_audit",
     "V3_2_PROTOCOL_SHA256",
     "validate_registered_protocol",
 ]

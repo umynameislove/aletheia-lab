@@ -268,13 +268,15 @@ class V32ConfirmatoryCloseout(_StrictFrozenModel):
             self.replication_inference,
             self.decision,
         )
-        if self.disposition == "abstain":
-            if any(item is not None for item in analysis) or self.assumption_families:
-                raise ValueError("abstention closeout cannot expose partial inference")
+        analysis_is_empty = all(item is None for item in analysis)
+        analysis_is_complete = all(item is not None for item in analysis)
+        if self.disposition == "abstain" and analysis_is_empty:
+            if self.assumption_families:
+                raise ValueError("calibration abstention cannot expose assumption families")
             if self.cross_dataset_claim_allowed:
                 raise ValueError("abstention cannot allow a cross-dataset claim")
             return self
-        if any(item is None for item in analysis) or len(self.assumption_families) != 3:
+        if not analysis_is_complete or len(self.assumption_families) != 3:
             raise ValueError("scientific closeout requires both complete analyses")
         assert self.primary_inference is not None
         assert self.replication_inference is not None
