@@ -1,5 +1,12 @@
 # Shift-aware label-noise v3 execution
 
+> **Post-execution status:** the single v3.1 attempt was interrupted by a
+> development-calibration implementation defect before an atomic result store
+> or scientific disposition was produced. Its sealed-open marker forbids a
+> rerun. See [V3.1 technical-failure preservation and recovery basis](p2-v3-technical-recovery.md)
+> for the hash-bound failure receipt, four-cell audit, and prospective recovery
+> boundary.
+
 This document describes the implementation that executes the immutable v3.1
 protocol. It does not change the registered estimand, datasets, splits, model
 grid, seeds, inference, thresholds, or admission rule.

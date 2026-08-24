@@ -38,6 +38,7 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_protocol import (
     verify_compiled_split_receipts,
     verify_v3_protocol_artifacts,
 )
+from aletheia_lab.benchmark.p2.confirmatory_v3_recovery import refuse_v3_1_reexecution
 from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import V3RuntimeError
 
 _RELEASE_API = (
@@ -226,6 +227,7 @@ def _validated_inputs(args: argparse.Namespace):  # type: ignore[no-untyped-def]
 
 
 def _preflight(args: argparse.Namespace) -> dict[str, object]:
+    refuse_v3_1_reexecution(root=Path(args.root))
     (
         root,
         protocol_path,
@@ -266,6 +268,7 @@ def _preflight(args: argparse.Namespace) -> dict[str, object]:
 
 
 def _execute(args: argparse.Namespace) -> dict[str, object]:
+    refuse_v3_1_reexecution(root=Path(args.root))
     (
         root,
         protocol_path,

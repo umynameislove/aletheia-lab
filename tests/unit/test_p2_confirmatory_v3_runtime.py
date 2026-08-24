@@ -15,12 +15,15 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_protocol import (
     load_v3_confirmatory_protocol,
 )
 from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import (
+    CalibrationAbstention,
+    CalibrationAbstentionSignal,
     PreprocessorState,
     V3RuntimeError,
     apply_directional_corruption,
     apply_logit_calibration,
     build_prior_environment,
     fit_logit_calibration,
+    fit_logit_calibration_attempt,
     fit_preprocessor,
     fit_registered_model,
     prior_match_sample_weights,
@@ -228,6 +231,37 @@ def test_calibration_is_deterministic_and_reduces_development_log_loss() -> None
     assert calibration == fit_logit_calibration(raw, targets)
     assert calibrated_loss <= raw_loss
     assert calibration.gradient_infinity_norm <= 1e-8
+    assert calibration.gradient_scale == "mean_per_development_record"
+
+
+def test_calibration_tolerance_is_invariant_to_development_sample_size() -> None:
+    raw = (0.08, 0.19, 0.31, 0.47, 0.63, 0.79, 0.91, 0.72)
+    targets = (0, 0, 1, 0, 1, 1, 1, 0)
+    base = fit_logit_calibration(raw, targets)
+    replicated = fit_logit_calibration(raw * 750, targets * 750)
+
+    assert replicated.intercept == pytest.approx(base.intercept, abs=1e-10)
+    assert replicated.slope == pytest.approx(base.slope, abs=1e-10)
+    assert replicated.iterations == base.iterations
+    assert replicated.gradient_infinity_norm == pytest.approx(
+        base.gradient_infinity_norm, abs=1e-12
+    )
+    assert replicated.development_record_count == 6000
+
+
+def test_calibration_failure_is_structured_abstention_without_partial_fit() -> None:
+    attempt = fit_logit_calibration_attempt(
+        (0.5, 0.5, 0.5, 0.5),
+        (0, 1, 0, 1),
+    )
+    assert isinstance(attempt, CalibrationAbstention)
+    assert attempt.reason_code == "singular_hessian"
+    assert not attempt.exposes_partial_calibration
+    assert "intercept" not in type(attempt).model_fields
+    assert "slope" not in type(attempt).model_fields
+    with pytest.raises(CalibrationAbstentionSignal) as raised:
+        fit_logit_calibration((0.5, 0.5, 0.5, 0.5), (0, 1, 0, 1))
+    assert raised.value.abstention == attempt
 
 
 def _state_for_model() -> PreprocessorState:
@@ -496,7 +530,7 @@ def test_calibration_golden_fixture_freezes_newton_solution() -> None:
     assert calibration.slope == pytest.approx(1.1865688446812601, abs=1e-11)
     assert calibration.iterations == 4
     assert calibration.canonical_sha256() == (
-        "5bd21d48ab8b46752f7f5b22c313dd73d0915d1acb585a01235469f92d247811"
+        "0c418eb010f2a3c164c7c48e86ea0c3c36afc66e337e4eea08bab7485d63f353"
     )
 
 

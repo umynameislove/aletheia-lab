@@ -13,7 +13,11 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_datasets import (
 from aletheia_lab.benchmark.p2.confirmatory_v3_protocol import (
     load_v3_confirmatory_protocol,
 )
-from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import prepare_runtime_dataset
+from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import (
+    fit_registered_model,
+    prepare_runtime_dataset,
+    reciprocal_control_targets,
+)
 
 _DATA_DIR = Path("data/raw/p2-v3")
 _EXPECTED_PREPROCESSORS = {
@@ -56,3 +60,59 @@ def test_registered_splits_and_preprocessors_reconcile_without_model_fit() -> No
         assert set(prepared.development_targets) == {0, 1}
         assert set(prepared.sealed_targets) == {0, 1}
     assert prepared_hashes == _EXPECTED_PREPROCESSORS
+
+
+@pytest.mark.skipif(not _DATA_DIR.is_dir(), reason="local pinned v3 archives unavailable")
+def test_four_audited_reciprocal_cells_now_calibrate_on_development_data() -> None:
+    """Regression over the exact cells implicated by the interrupted attempt."""
+
+    protocol = load_v3_confirmatory_protocol()
+    dataset = load_v3_dataset_binding_manifest().datasets[0]
+    checked, frame = load_v3_dataset_snapshot_for_registration(
+        dataset=dataset,
+        archive_path=_DATA_DIR / dataset.archive.file_name,
+    )
+    receipt = next(
+        item for item in protocol.dataset_splits if item.dataset_id == dataset.dataset_id
+    )
+    prepared = prepare_runtime_dataset(
+        protocol=protocol,
+        dataset=checked,
+        split_receipt=receipt,
+        frame=frame,
+    )
+    cells = (
+        ("yes_to_no", 0.1, 6103),
+        ("yes_to_no", 0.1, 6111),
+        ("yes_to_no", 0.1, 6112),
+        ("no_to_yes", 0.3, 6118),
+    )
+    observed: list[tuple[str, float, int]] = []
+    for direction, rate, seed in cells:
+        targets, _, _ = reciprocal_control_targets(
+            dataset_id=dataset.dataset_id,
+            record_ids=prepared.train_record_ids,
+            clean_targets=prepared.train_targets,
+            direction=direction,  # type: ignore[arg-type]
+            conditional_rate=rate,
+            seed=seed,
+        )
+        fitted = fit_registered_model(
+            protocol=protocol,
+            dataset=dataset,
+            model_kind="logistic_regression",
+            training_role=f"reciprocal-{direction}-{rate:g}-{seed}",
+            state=prepared.preprocessor,
+            training_matrix=prepared.train_matrix,
+            training_record_ids=prepared.train_record_ids,
+            training_targets=targets,
+            development_matrix=prepared.development_matrix,
+            development_record_ids=prepared.development_record_ids,
+            development_targets=prepared.development_targets,
+            evaluation_matrix=prepared.development_matrix,
+            evaluation_record_ids=prepared.development_record_ids,
+        )
+        assert fitted.calibration.gradient_scale == "mean_per_development_record"
+        assert fitted.calibration.gradient_infinity_norm <= 1e-8
+        observed.append((direction, rate, seed))
+    assert tuple(observed) == cells
