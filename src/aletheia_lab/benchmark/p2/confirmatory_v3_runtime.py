@@ -45,8 +45,13 @@ if TYPE_CHECKING:
     from aletheia_lab.benchmark.p2.confirmatory_v3_2_protocol import (
         V32ConfirmatoryProtocol,
     )
+    from aletheia_lab.benchmark.p2.confirmatory_v3_3_protocol import (
+        V33ConfirmatoryProtocol,
+    )
 
-    RegisteredV3Protocol: TypeAlias = V3ConfirmatoryProtocol | V32ConfirmatoryProtocol
+    RegisteredV3Protocol: TypeAlias = (
+        V3ConfirmatoryProtocol | V32ConfirmatoryProtocol | V33ConfirmatoryProtocol
+    )
 else:
     RegisteredV3Protocol: TypeAlias = V3ConfirmatoryProtocol
 
@@ -81,6 +86,9 @@ PROTOCOL_SHA256: Final[str] = (
 V3_2_PROTOCOL_SHA256: Final[str] = (
     "7cba25f08f4e27007bf17fc837b9f11137123f2f83452378c8ac3db5de3ffe27"
 )
+V3_3_PROTOCOL_SHA256: Final[str] = (
+    "5fa057e17203b00fa78fc86d58ce5b324bb30cebf916ebb94a3d6b389f30b456"
+)
 FLOAT_TOLERANCE: Final[float] = 1e-12
 HASH_BITS: Final[int] = 256
 HASH_MODULUS: Final[int] = 1 << HASH_BITS
@@ -104,7 +112,7 @@ def _fail(message: str) -> NoReturn:
 
 
 def validate_registered_protocol(protocol: RegisteredV3Protocol) -> RegisteredV3Protocol:
-    """Validate one of the two immutable protocol identities accepted by the runtime."""
+    """Validate one of the immutable protocol identities accepted by the runtime."""
 
     digest = protocol.canonical_sha256()
     if digest == PROTOCOL_SHA256:
@@ -122,6 +130,16 @@ def validate_registered_protocol(protocol: RegisteredV3Protocol) -> RegisteredV3
         if checked.canonical_sha256() != V3_2_PROTOCOL_SHA256:
             _fail("v3.2 runtime protocol identity changed during validation")
         return cast(RegisteredV3Protocol, checked)
+    if digest == V3_3_PROTOCOL_SHA256:
+        # Imported lazily because the v3.3 protocol verifies the predecessor chain.
+        from aletheia_lab.benchmark.p2.confirmatory_v3_3_protocol import (
+            V33ConfirmatoryProtocol,
+        )
+
+        checked_v33 = V33ConfirmatoryProtocol.model_validate(protocol.model_dump())
+        if checked_v33.canonical_sha256() != V3_3_PROTOCOL_SHA256:
+            _fail("v3.3 runtime protocol identity changed during validation")
+        return cast(RegisteredV3Protocol, checked_v33)
     _fail("runtime protocol is not an immutable registered v3 identity")
 
 

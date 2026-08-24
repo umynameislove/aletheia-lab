@@ -246,6 +246,34 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_2_protocol import (
     verify_v3_2_protocol_artifacts,
     verify_v3_2_technical_delta,
 )
+from aletheia_lab.benchmark.p2.confirmatory_v3_3_closeout import (
+    V33ConfirmatoryCloseout,
+    V33DatasetAttempt,
+    V33ProtocolRegistrationReceipt,
+    V33TechnicalFailureReceipt,
+    V33TerminalStoreManifest,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_3_closeout import (
+    build_closeout as build_v3_3_closeout,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_3_closeout import (
+    build_technical_failure as build_v3_3_technical_failure,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_3_closeout import (
+    dataset_attempt as v3_3_dataset_attempt,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_3_closeout import (
+    load_and_verify_terminal_store as load_and_verify_v3_3_terminal_store,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_3_closeout import (
+    registration_from_github_release as v3_3_registration_from_github_release,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_3_closeout import (
+    write_failure_store as write_v3_3_failure_store,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_3_closeout import (
+    write_result_store as write_v3_3_result_store,
+)
 from aletheia_lab.benchmark.p2.confirmatory_v3_3_protocol import (
     DEFAULT_V3_3_PROTOCOL_PATH,
     V3_2_FAILURE_AUDIT_FILE_SHA256,
@@ -1416,6 +1444,18 @@ __all__ = [
     "v3_2_registration_from_github_release",
     "write_v3_2_failure_store",
     "write_v3_2_result_store",
+    "V33ConfirmatoryCloseout",
+    "V33DatasetAttempt",
+    "V33ProtocolRegistrationReceipt",
+    "V33TechnicalFailureReceipt",
+    "V33TerminalStoreManifest",
+    "build_v3_3_closeout",
+    "build_v3_3_technical_failure",
+    "v3_3_dataset_attempt",
+    "load_and_verify_v3_3_terminal_store",
+    "v3_3_registration_from_github_release",
+    "write_v3_3_failure_store",
+    "write_v3_3_result_store",
     "DEFAULT_V3_2_FAILURE_AUDIT_PATH",
     "DEFAULT_V3_2_TERMINAL_STORE_PATH",
     "V3_2_TERMINAL_STORE_SHA256",

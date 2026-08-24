@@ -154,11 +154,13 @@ class V33ProtocolGovernance(_StrictFrozenModel):
 
 
 class V33ConfirmatoryProtocol(V32ConfirmatoryProtocol):
-    schema_version: Literal["p2-label-noise-shift-protocol/4"]
-    status: Literal["closeout_recovery_protocol_candidate_not_registered"]
+    schema_version: Literal["p2-label-noise-shift-protocol/4"]  # type: ignore[assignment]
+    status: Literal[  # type: ignore[assignment]
+        "closeout_recovery_protocol_candidate_not_registered"
+    ]
     artifacts: V33ArtifactBindings
-    technical_recovery: CloseoutRecoveryContract
-    governance: V33ProtocolGovernance
+    technical_recovery: CloseoutRecoveryContract  # type: ignore[assignment]
+    governance: V33ProtocolGovernance  # type: ignore[assignment]
 
     @model_validator(mode="after")
     def _v3_3_dataset_census_is_unchanged(self) -> V33ConfirmatoryProtocol:
