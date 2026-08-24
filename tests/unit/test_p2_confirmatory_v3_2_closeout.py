@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
-from importlib import import_module
 from pathlib import Path
-from typing import Literal, cast
+from typing import Literal
 
 import pytest
 from pydantic import ValidationError
@@ -29,30 +27,174 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_2_protocol import (
 from aletheia_lab.benchmark.p2.confirmatory_v3_closeout import (
     V3ExecutionEnvironmentReceipt,
 )
-from aletheia_lab.benchmark.p2.confirmatory_v3_execution import V3DatasetOutcome
+from aletheia_lab.benchmark.p2.confirmatory_v3_execution import (
+    PriorOnlyControlSummary,
+    PriorShiftEstimatorEvidence,
+    SensitivityDoseSummary,
+    V3DatasetOutcome,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_inference import SeedNetEffect
 from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import (
     V3_2_PROTOCOL_SHA256,
     CalibrationAbstention,
+    Direction,
     ModelCalibrationAbstention,
     V3RuntimeError,
+)
+from aletheia_lab.benchmark.p2.confirmatory_v3_shift import (
+    EstimatorName,
+    MmdClassResult,
+    MmdDiagnostic,
+    holm_adjust_all,
 )
 
 _COMMIT = "d63e4262961930d7d8126875d38c2c9625893f14"
 
 
-def _synthetic_complete_outcome(dataset_id: str, role: str) -> V3DatasetOutcome:
-    """Reuse the established registered-shape fixture without static test coupling."""
-
-    fixture_module = import_module("tests.unit.test_p2_confirmatory_v3_closeout")
-    factory = cast(
-        Callable[[str, str], V3DatasetOutcome],
-        fixture_module._outcome,
-    )
-    return factory(dataset_id, role)
-
-
 _PRIMARY = "uci_default_of_credit_card_clients"
 _REPLICATION = "uci_online_shoppers_purchasing_intention"
+DatasetRole = Literal["primary", "external_replication"]
+
+
+def _seed_effects(dataset_id: str, role: DatasetRole) -> tuple[SeedNetEffect, ...]:
+    output: list[SeedNetEffect] = []
+    directions: tuple[Direction, ...] = (
+        "yes_to_no",
+        "no_to_yes",
+    )
+    for direction_index, direction in enumerate(directions):
+        for rate in (0.1, 0.2, 0.3):
+            for seed in range(6101, 6151):
+                effect = 0.10 * rate / 0.3 + (seed - 6125.5) * 1e-5
+                control = tuple(0.7 + index * 0.002 for index in range(12))
+                corrupted = tuple(value * (1.0 + effect) for value in control)
+                output.append(
+                    SeedNetEffect(
+                        dataset_id=dataset_id,
+                        dataset_role=role,
+                        direction=direction,
+                        conditional_rate=rate,
+                        corruption_seed=seed,
+                        mutation_sha256=f"{direction_index + 1:x}" * 64,
+                        corrupted_model_sha256="a" * 64,
+                        prior_matched_control_model_sha256="b" * 64,
+                        reciprocal_control_model_sha256="c" * 64,
+                        corrupted_losses=corrupted,
+                        prior_matched_control_losses=control,
+                        relative_net_effect=effect,
+                        mutation_reconciled=True,
+                        prior_match_reconciled=True,
+                        reciprocal_prevalence_reconciled=True,
+                        serialization_reconciled=True,
+                    )
+                )
+    return tuple(output)
+
+
+def _mmd(dataset_id: str, p_value: float) -> MmdDiagnostic:
+    def class_result(label: Literal[0, 1]) -> MmdClassResult:
+        return MmdClassResult(
+            class_label=label,
+            source_count=50,
+            target_count=50,
+            balanced_count=50,
+            bandwidth_squared=1.0,
+            statistic=0.01,
+            permutation_p_value=p_value,
+            resamples=2000,
+            seed=314160 + label,
+        )
+
+    return MmdDiagnostic(
+        dataset_id=dataset_id,
+        representation="registered_preprocessed_model_inputs",
+        statistic="balanced_linear_time_unbiased_rbf_mmd_squared",
+        bandwidth="median_nonzero_deterministic_paired_squared_distance",
+        permutation_p_value="plus_one_greater_or_equal",
+        classes=(class_result(0), class_result(1)),
+    )
+
+
+def _synthetic_complete_outcome(
+    dataset_id: str,
+    role: DatasetRole,
+    *,
+    mmd_p: float = 0.5,
+) -> V3DatasetOutcome:
+    estimators: tuple[EstimatorName, ...] = (
+        "unadjusted_v2",
+        "oracle_prior_ratio",
+        "bbse",
+        "mlls_em",
+        "rlls",
+    )
+    shift = tuple(
+        PriorShiftEstimatorEvidence(
+            dataset_id=dataset_id,
+            odds_multiplier=multiplier,
+            environment_seed=seed,
+            environment_sha256="d" * 64,
+            estimator=estimator,
+            estimate_sha256="e" * 64,
+            status="ok",
+            estimated_positive_prior=0.5,
+            oracle_positive_prior=0.5,
+            reference_prior_log_loss=0.7,
+            reason=None,
+        )
+        for multiplier in (0.25, 1.0, 4.0)
+        for seed in range(7101, 7151)
+        for estimator in estimators
+    )
+    controls = tuple(
+        PriorOnlyControlSummary(
+            odds_multiplier=multiplier,
+            replicate_count=50,
+            mean_relative_score_change=0.0,
+            raw_one_sided_p_value=0.5,
+            bonferroni_adjusted_p_value=1.0,
+            label_noise_admission=False,
+        )
+        for multiplier in (0.25, 4.0)
+    )
+    sensitivity = tuple(
+        SensitivityDoseSummary(
+            direction=direction,
+            conditional_rate=rate,
+            replicate_count=50,
+            mean_relative_net_effect=0.1,
+        )
+        for direction in ("yes_to_no", "no_to_yes")
+        for rate in (0.1, 0.2, 0.3)
+    )
+    raw_mmd = {
+        f"odds={multiplier:g}/class={label}": mmd_p
+        for multiplier in (0.25, 1.0, 4.0)
+        for label in (0, 1)
+    }
+    adjusted_mmd = holm_adjust_all(raw_mmd)
+    return V3DatasetOutcome(
+        protocol_sha256=V3_2_PROTOCOL_SHA256,
+        dataset_id=dataset_id,
+        dataset_role=role,
+        execution_mode="registered_execution",
+        corruption_replicate_count=50,
+        environment_replicate_count=50,
+        split_membership_sha256="1" * 64,
+        runtime_split_sha256="2" * 64,
+        preprocessor_sha256="3" * 64,
+        output_columns_sha256="4" * 64,
+        clean_primary_model_sha256="5" * 64,
+        clean_roundtrip_model_sha256="5" * 64,
+        clean_roundtrip_equal=True,
+        seed_effects=_seed_effects(dataset_id, role),
+        prior_shift_evidence=shift,
+        prior_only_controls=controls,
+        mmd_diagnostics=tuple(_mmd(dataset_id, mmd_p) for _ in range(3)),
+        mmd_holm_adjusted_p_values=adjusted_mmd,
+        assumptions_pass=all(value >= 0.05 for value in adjusted_mmd.values()),
+        sensitivity_summaries=sensitivity,
+    )
 
 
 def _release_payload(**changes: object) -> dict[str, object]:
@@ -145,11 +287,11 @@ def test_complete_attempts_produce_one_protocol_bound_scientific_closeout() -> N
     primary = _synthetic_complete_outcome(
         "uci_default_of_credit_card_clients",
         "primary",
-    ).model_copy(update={"protocol_sha256": V3_2_PROTOCOL_SHA256})
+    )
     replication = _synthetic_complete_outcome(
         "uci_online_shoppers_purchasing_intention",
         "external_replication",
-    ).model_copy(update={"protocol_sha256": V3_2_PROTOCOL_SHA256})
+    )
 
     closeout = build_closeout(
         protocol=load_v3_2_confirmatory_protocol(),
