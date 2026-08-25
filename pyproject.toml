@@ -57,6 +57,12 @@ where = ["src"]
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-q"
+markers = [
+  "integration: tests that cross process, filesystem, or component boundaries",
+  "property: generative invariant and property-based tests",
+  "research_regression: frozen benchmark or scientific regression tests",
+  "large_artifact: byte-level checks over large local research artifacts",
+]
 
 [tool.ruff]
 line-length = 100
