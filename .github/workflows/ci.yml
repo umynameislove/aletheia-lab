@@ -45,6 +45,7 @@ jobs:
           src/aletheia_lab/diagnosis
           src/aletheia_lab/evidence
           src/aletheia_lab/evaluation
+          src/aletheia_lab/project
           src/aletheia_lab/reporting
           --exclude src/aletheia_lab/benchmark/p2
 
