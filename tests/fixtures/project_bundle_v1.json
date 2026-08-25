@@ -1,0 +1,80 @@
+{
+  "schema_version": "project-bundle/v1",
+  "contract_state": "schema_validated",
+  "project_bundle_id": "p3-bundle-e78b4c9809b1d97170ada0ab01cf8e10d5ad9dcf153791a7cf31e967f6ff37e5",
+  "project_id": "p3-project-110e48da9536deb198a9bc27c22dfe6dd39ab4b4f93e1efdf1f6014175c71ff9",
+  "display_name": "Fixture Project",
+  "granted_root_fingerprint": "6853a8683befaf384448a29c6c57f4dcec6aab635ad4e45b0686ceda717a2a99",
+  "created_at": "2026-08-25T00:00:00Z",
+  "updated_at": "2026-08-25T00:00:00Z",
+  "collector_versions": [
+    {
+      "schema_version": "project-collector/v1",
+      "name": "json-config",
+      "version": "1.0.0"
+    }
+  ],
+  "project_manifest": {
+    "schema_version": "project-manifest/v1",
+    "project_id": "p3-project-110e48da9536deb198a9bc27c22dfe6dd39ab4b4f93e1efdf1f6014175c71ff9",
+    "item_count": 1,
+    "source_byte_count": 21,
+    "artifact_byte_count": 21,
+    "entries": [
+      {
+        "project_item_id": "p3-item-2a188fe1f664098454970c9939ca6fc0901da009ed24e3207acd730aa5120975",
+        "relative_path": "configs/model.json",
+        "source_type": "config",
+        "content_sha256": "d975b95059c61dbcb3fe615a1901947943f49e5060503a4967af30d9851a500c",
+        "source_byte_size": 21,
+        "artifact_id": "p3-artifact-d975b95059c61dbcb3fe615a1901947943f49e5060503a4967af30d9851a500c",
+        "artifact_sha256": "d975b95059c61dbcb3fe615a1901947943f49e5060503a4967af30d9851a500c",
+        "artifact_byte_size": 21
+      }
+    ],
+    "manifest_sha256": "f847f3a9a7e3ec85ecce8a35b2b1e86b733fb787dab431e1b95ecb35a669c447"
+  },
+  "items": [
+    {
+      "schema_version": "project-item/v1",
+      "project_item_id": "p3-item-2a188fe1f664098454970c9939ca6fc0901da009ed24e3207acd730aa5120975",
+      "project_id": "p3-project-110e48da9536deb198a9bc27c22dfe6dd39ab4b4f93e1efdf1f6014175c71ff9",
+      "relative_path": "configs/model.json",
+      "source_type": "config",
+      "media_type": "application/json",
+      "source_schema": "model-config/v1",
+      "content_sha256": "d975b95059c61dbcb3fe615a1901947943f49e5060503a4967af30d9851a500c",
+      "byte_size": 21,
+      "source_modified_at": "2026-08-24T23:59:59Z",
+      "ingested_at": "2026-08-25T00:00:00Z",
+      "collector": {
+        "schema_version": "project-collector/v1",
+        "name": "json-config",
+        "version": "1.0.0"
+      },
+      "visibility": "diagnosis",
+      "redaction_state": "none",
+      "redaction_reasons": [],
+      "parse_status": "parsed",
+      "parse_warnings": [],
+      "parent_snapshot_id": null,
+      "parent_run_id": null,
+      "artifact": {
+        "schema_version": "project-artifact-reference/v1",
+        "artifact_id": "p3-artifact-d975b95059c61dbcb3fe615a1901947943f49e5060503a4967af30d9851a500c",
+        "sha256": "d975b95059c61dbcb3fe615a1901947943f49e5060503a4967af30d9851a500c",
+        "byte_size": 21,
+        "media_type": "application/json"
+      }
+    }
+  ],
+  "permission_policy_sha256": null,
+  "provider_policy_sha256": null,
+  "mapping_configuration_sha256": null,
+  "validation_summary_sha256": null,
+  "ingestion_report_sha256": null,
+  "deletion_policy_sha256": null,
+  "retention_policy_sha256": null,
+  "snapshot_refs": [],
+  "evidence_bundle_refs": []
+}
