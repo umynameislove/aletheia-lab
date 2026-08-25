@@ -111,7 +111,7 @@ def is_path_safely_contained(root: Path, candidate: Path) -> bool:
         resolved_candidate = candidate.resolve()
         resolved_candidate.relative_to(resolved_root)
         return True
-    except (ValueError, OSError):
+    except (ValueError, OSError, RuntimeError):
         return False
 
 
@@ -339,6 +339,21 @@ def test_broken_symlink_fails_containment_oracle(
     # Target does not exist — broken link
     make_symlink(link, tmp_path / "nonexistent_target.txt")
     assert not is_path_safely_contained(project, link)
+
+
+def test_symlink_loop_fails_containment_oracle(
+    tmp_path: Path,
+    make_symlink: Callable[[Path, str | Path], None],
+) -> None:
+    """A symlink loop (link-A → link-B → link-A) must fail containment — deny by default."""
+    project = tmp_path / "project"
+    project.mkdir()
+    link_a = project / "loop_a.txt"
+    link_b = project / "loop_b.txt"
+    # Create loop: link_a → link_b, link_b → link_a
+    make_symlink(link_a, link_b)
+    make_symlink(link_b, link_a)
+    assert not is_path_safely_contained(project, link_a)
 
 
 # ---------------------------------------------------------------------------
