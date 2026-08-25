@@ -41,6 +41,7 @@ def _copy_source_evidence(tmp_path: Path) -> Path:
 
 
 @pytest.mark.skipif(not _STORE.exists(), reason="ignored immutable v3.3 terminal store unavailable")
+@pytest.mark.large_artifact
 def test_tracked_publication_summary_reproduces_from_terminal_store() -> None:
     summary = verify_v3_3_publication_summary(
         load_v3_3_publication_summary(), terminal_store_path=_STORE
@@ -63,6 +64,7 @@ def test_publication_summary_cannot_turn_abstention_into_admission() -> None:
 
 
 @pytest.mark.skipif(not _STORE.exists(), reason="ignored immutable v3.3 terminal store unavailable")
+@pytest.mark.large_artifact
 def test_preservation_copy_is_content_addressed_and_idempotently_verified(tmp_path: Path) -> None:
     source_root = _copy_source_evidence(tmp_path)
     archive = tmp_path / "archive"
@@ -80,6 +82,7 @@ def test_preservation_copy_is_content_addressed_and_idempotently_verified(tmp_pa
 
 
 @pytest.mark.skipif(not _STORE.exists(), reason="ignored immutable v3.3 terminal store unavailable")
+@pytest.mark.large_artifact
 def test_preservation_rejects_unexpected_source_artifact(tmp_path: Path) -> None:
     source_root = _copy_source_evidence(tmp_path)
     store = source_root / "experiments/p2/outputs/label-noise-shift-factorial-v3.3"
@@ -89,6 +92,7 @@ def test_preservation_rejects_unexpected_source_artifact(tmp_path: Path) -> None
 
 
 @pytest.mark.skipif(not _STORE.exists(), reason="ignored immutable v3.3 terminal store unavailable")
+@pytest.mark.large_artifact
 def test_preserved_copy_detects_byte_tamper(tmp_path: Path) -> None:
     source_root = _copy_source_evidence(tmp_path)
     archive = tmp_path / "archive"
@@ -102,6 +106,7 @@ def test_preserved_copy_detects_byte_tamper(tmp_path: Path) -> None:
 
 
 @pytest.mark.skipif(not _STORE.exists(), reason="ignored immutable v3.3 terminal store unavailable")
+@pytest.mark.large_artifact
 def test_preservation_rejects_symlinked_source_artifact(tmp_path: Path) -> None:
     source_root = _copy_source_evidence(tmp_path)
     store = source_root / "experiments/p2/outputs/label-noise-shift-factorial-v3.3"

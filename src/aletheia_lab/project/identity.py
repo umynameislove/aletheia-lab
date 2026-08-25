@@ -50,6 +50,17 @@ def _fail(message: str) -> NoReturn:
     raise ProjectIdentityError(message)
 
 
+def _unicode_scalar_text(value: str, *, label: str) -> str:
+    """Reject lone surrogates that cannot be represented as canonical UTF-8."""
+
+    normalized = unicodedata.normalize("NFC", value)
+    try:
+        normalized.encode("utf-8", errors="strict")
+    except UnicodeEncodeError as exc:
+        raise ProjectIdentityError(f"{label} must contain valid Unicode scalar values") from exc
+    return normalized
+
+
 def normalize_text(value: str, *, label: str, max_length: int = _MAX_TEXT_LENGTH) -> str:
     """Require trimmed, control-free Unicode NFC text."""
 
@@ -59,7 +70,7 @@ def normalize_text(value: str, *, label: str, max_length: int = _MAX_TEXT_LENGTH
         _fail(f"{label} exceeds the maximum length of {max_length}")
     if _CONTROL_CHARACTERS.search(value):
         _fail(f"{label} must not contain control characters")
-    if value != unicodedata.normalize("NFC", value):
+    if value != _unicode_scalar_text(value, label=label):
         _fail(f"{label} must already be Unicode NFC")
     return value
 
@@ -112,7 +123,7 @@ def _canonicalize(value: object) -> object:
     if value is None or isinstance(value, bool):
         return value
     if isinstance(value, str):
-        return unicodedata.normalize("NFC", value)
+        return _unicode_scalar_text(value, label="canonical project string")
     if isinstance(value, int | float):
         return _canonical_number(value)
     if isinstance(value, dict):
@@ -120,7 +131,7 @@ def _canonicalize(value: object) -> object:
         for raw_key, nested in value.items():
             if not isinstance(raw_key, str):
                 raise TypeError("canonical project mapping keys must be strings")
-            key = unicodedata.normalize("NFC", raw_key)
+            key = _unicode_scalar_text(raw_key, label="canonical project mapping key")
             if not key or len(key) > _MAX_KEY_LENGTH:
                 _fail("canonical project mapping key is empty or too long")
             if key in canonical:
