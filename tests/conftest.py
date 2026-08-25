@@ -42,6 +42,31 @@ _CATEGORY_VALUES: dict[str, list[str]] = {
     ],
 }
 
+_RESEARCH_TEST_PREFIXES = (
+    "test_p1_",
+    "test_p2_",
+    "test_confirmatory_",
+)
+
+
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    """Classify suites without changing which tests the default run executes.
+
+    Profiles are metadata only: plain ``pytest`` still collects every test.  The
+    path-based rules keep new integration/property modules classified without
+    requiring each contributor to repeat decorators in every file.
+    """
+
+    for item in items:
+        path = Path(str(item.path))
+        parts = set(path.parts)
+        if "integration" in parts:
+            item.add_marker(pytest.mark.integration)
+        if "property" in parts:
+            item.add_marker(pytest.mark.property)
+        if path.stem.startswith(_RESEARCH_TEST_PREFIXES):
+            item.add_marker(pytest.mark.research_regression)
+
 
 @pytest.fixture
 def make_symlink() -> Callable[[Path, str | Path], None]:

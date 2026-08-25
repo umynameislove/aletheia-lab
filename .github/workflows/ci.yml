@@ -1,8 +1,16 @@
 name: ci
 
 on:
+  # Feature commits are validated by the pull-request event. Running the same
+  # commit again through push would duplicate every matrix job.
   push:
+    branches: [main]
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -30,8 +38,14 @@ jobs:
           python -m pip install -e ".[dev]"
       - name: Prepare pinned test dataset
         run: python scripts/download_dataset.py all --config configs/project.yaml
-      - name: Test
-        run: pytest --cov=aletheia_lab --cov-report=term-missing --cov-fail-under=88
+      - name: Test with blocking coverage
+        if: matrix.python-version == '3.11'
+        run: >-
+          pytest --durations=20
+          --cov=aletheia_lab --cov-report=term-missing --cov-fail-under=88
+      - name: Test interpreter compatibility
+        if: matrix.python-version == '3.12'
+        run: pytest --durations=20
       - name: Type-check (strict)
         run: >-
           python -m mypy --strict --python-version ${{ matrix.python-version }}
