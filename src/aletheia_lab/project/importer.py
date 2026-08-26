@@ -205,6 +205,7 @@ class _Candidate:
 class _DirectoryObservation:
     path: Path = field(repr=False)
     stat_result: os.stat_result = field(repr=False)
+    entry_names: tuple[bytes, ...] = field(repr=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -339,6 +340,20 @@ def _directory_signature(value: os.stat_result) -> tuple[int, int, int, int]:
     )
 
 
+def _directory_entry_names(entries: list[os.DirEntry[str]]) -> tuple[bytes, ...]:
+    """Return a lossless, ordering-independent directory membership snapshot."""
+
+    return tuple(sorted(os.fsencode(entry.name) for entry in entries))
+
+
+def _scan_directory(directory: Path) -> tuple[list[os.DirEntry[str]], tuple[bytes, ...]]:
+    """Enumerate one directory without following or inspecting its children."""
+
+    with os.scandir(directory) as iterator:
+        entries = list(iterator)
+    return entries, _directory_entry_names(entries)
+
+
 def _grant_is_current(grant: GrantedProjectRoot) -> bool:
     try:
         inspected = grant._path.lstat()
@@ -426,10 +441,9 @@ def _discover(
                     _decision_without_content(relative, action="block", reason="source_read_failed")
                 )
             continue
-        directories.append(_DirectoryObservation(path=directory, stat_result=directory_stat))
         try:
-            with os.scandir(directory) as iterator:
-                entries = sorted(iterator, key=lambda item: os.fsencode(item.name))
+            entries, entry_names = _scan_directory(directory)
+            completed_directory_stat = directory.lstat()
         except OSError:
             relative = "/".join(parent_parts) if parent_parts else None
             issue = _issue(
@@ -443,6 +457,27 @@ def _discover(
                     _decision_without_content(relative, action="block", reason="source_read_failed")
                 )
             continue
+
+        if _directory_signature(completed_directory_stat) != _directory_signature(
+            directory_stat
+        ):
+            relative = "/".join(parent_parts) if parent_parts else None
+            issues.append(
+                _issue(
+                    "source_changed_during_read",
+                    subject=relative or grant.root_fingerprint,
+                    relative_path=relative,
+                )
+            )
+            continue
+        directories.append(
+            _DirectoryObservation(
+                path=directory,
+                stat_result=completed_directory_stat,
+                entry_names=entry_names,
+            )
+        )
+        entries.sort(key=lambda item: os.fsencode(item.name))
 
         child_directories: list[tuple[Path, tuple[str, ...]]] = []
         for entry in entries:
@@ -983,10 +1018,17 @@ def _observations_are_current(
             return False
     for observation in directories:
         try:
-            current = observation.path.lstat()
+            before = observation.path.lstat()
+            _, current_entry_names = _scan_directory(observation.path)
+            after = observation.path.lstat()
         except OSError:
             return False
-        if _directory_signature(current) != _directory_signature(observation.stat_result):
+        expected_signature = _directory_signature(observation.stat_result)
+        if (
+            _directory_signature(before) != expected_signature
+            or _directory_signature(after) != expected_signature
+            or current_entry_names != observation.entry_names
+        ):
             return False
     return True
 

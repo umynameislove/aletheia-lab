@@ -69,8 +69,11 @@ The importer compares filesystem identity, mode, size and nanosecond mtime:
 4. through the path after the read;
 5. once more before assembly.
 
-Directory membership observations are also rechecked before assembly. A race,
-replacement, removal, or membership change aborts the transaction.
+Directory membership observations are also rechecked before assembly. The
+recheck compares both directory identity metadata and a lossless snapshot of
+entry names because Windows does not guarantee an immediate directory-mtime
+change for membership mutations. A race, replacement, removal, or membership
+change therefore aborts the transaction on every supported platform.
 
 ## Content handling
 

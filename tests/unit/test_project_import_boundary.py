@@ -690,6 +690,10 @@ def test_directory_membership_change_during_read_aborts_snapshot(
     monkeypatch,
 ) -> None:  # type: ignore[no-untyped-def]
     _write(tmp_path / "config.json", '{"value":1}')
+    # Model Windows filesystems that do not expose an immediate directory
+    # metadata change when an entry is added. Membership reconciliation must
+    # remain authoritative even when every directory stat signature is equal.
+    monkeypatch.setattr(importer_module, "_directory_signature", lambda _value: (0, 0, 0, 0))
     real_read = importer_module.os.read
     changed = False
 
