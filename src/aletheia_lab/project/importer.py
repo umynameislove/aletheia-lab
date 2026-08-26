@@ -24,6 +24,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final, Literal, NoReturn, cast
 
+import pyarrow as pa  # type: ignore[import-untyped]
+import pyarrow.parquet as pq  # type: ignore[import-untyped]
 import yaml
 from pydantic import ValidationError
 
@@ -40,6 +42,7 @@ from aletheia_lab.project.contracts import (
 )
 from aletheia_lab.project.identity import (
     ProjectIdentityError,
+    canonical_project_json,
     canonical_project_sha256,
     content_sha256,
     granted_root_fingerprint,
@@ -187,6 +190,7 @@ class _FileProfile:
     source_type: ProjectSourceType
     media_type: str
     source_schema: str
+    binary: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -227,6 +231,9 @@ _PROFILES: Final[dict[str, _FileProfile]] = {
     ".json": _FileProfile("config", "application/json", "untrusted-json/v1"),
     ".log": _FileProfile("log", "text/plain", "untrusted-log-text/v1"),
     ".md": _FileProfile("other", "text/markdown", "untrusted-markdown/v1"),
+    ".parquet": _FileProfile(
+        "dataset", "application/vnd.apache.parquet", "parquet-metadata/v1", binary=True
+    ),
     ".py": _FileProfile("other", "text/x-python", "untrusted-python-text/v1"),
     ".toml": _FileProfile("config", "application/toml", "untrusted-toml/v1"),
     ".tsv": _FileProfile("dataset", "text/tab-separated-values", "untrusted-tsv/v1"),
@@ -236,6 +243,13 @@ _PROFILES: Final[dict[str, _FileProfile]] = {
 }
 _EXACT_NAME_PROFILE: Final[_FileProfile] = _FileProfile(
     "other", "text/plain", "untrusted-project-text/v1"
+)
+_METRIC_PROFILES: Final[dict[str, _FileProfile]] = {
+    ".csv": _FileProfile("metrics", "text/csv", "untrusted-metrics-csv/v1"),
+    ".json": _FileProfile("metrics", "application/json", "untrusted-metrics-json/v1"),
+}
+_METRIC_NAMES: Final[frozenset[str]] = frozenset(
+    {"metric.csv", "metric.json", "metrics.csv", "metrics.json"}
 )
 
 
@@ -372,6 +386,8 @@ def _profile_for(path: Path, policy: ProjectImportPolicy) -> _FileProfile | None
     extension = path.suffix.lower()
     if extension not in policy.allowed_extensions:
         return None
+    if path.name.lower() in _METRIC_NAMES:
+        return _METRIC_PROFILES[extension]
     return _PROFILES.get(extension)
 
 
@@ -728,6 +744,64 @@ def _decode_and_validate(
     return text
 
 
+def _safe_field_name(value: str, *, index: int) -> str:
+    """Keep schema labels useful without leaking embedded credentials or PII."""
+
+    _, pii_count = _redact_pii(value)
+    if _secret_occurrences(value) or pii_count:
+        return f"field_{index + 1}_redacted"
+    return value
+
+
+def _csv_metadata(text: str, *, delimiter: str) -> dict[str, object]:
+    rows = csv.reader(io.StringIO(text, newline=""), delimiter=delimiter, strict=True)
+    header = next(rows, None)
+    if header is None:
+        return {"column_count": 0, "columns": [], "format": "csv", "row_count": 0}
+    row_count = sum(1 for _ in rows)
+    return {
+        "column_count": len(header),
+        "columns": [_safe_field_name(column, index=index) for index, column in enumerate(header)],
+        "format": "tsv" if delimiter == "\t" else "csv",
+        "row_count": row_count,
+    }
+
+
+def _parquet_metadata(source_bytes: bytes) -> dict[str, object]:
+    try:
+        parquet = pq.ParquetFile(pa.BufferReader(source_bytes))
+        metadata = parquet.metadata
+        arrow_schema = parquet.schema_arrow
+    except (pa.ArrowException, OSError, ValueError) as exc:
+        raise _ContentFailure("structured_content_invalid") from exc
+    return {
+        "column_count": len(arrow_schema),
+        "columns": [
+            _safe_field_name(field.name, index=index) for index, field in enumerate(arrow_schema)
+        ],
+        "format": "parquet",
+        "row_count": metadata.num_rows,
+        "row_group_count": metadata.num_row_groups,
+        "types": [str(field.type) for field in arrow_schema],
+    }
+
+
+def _dataset_metadata_bytes(
+    candidate: _Candidate, source_bytes: bytes, text: str | None
+) -> bytes:
+    if candidate.profile.binary:
+        metadata = _parquet_metadata(source_bytes)
+    else:
+        assert text is not None
+        delimiter = "\t" if Path(candidate.relative_path).suffix.lower() == ".tsv" else ","
+        metadata = _csv_metadata(text, delimiter=delimiter)
+    payload = {
+        "schema_version": "project-dataset-metadata/v1",
+        **metadata,
+    }
+    return (canonical_project_json(payload) + "\n").encode("utf-8")
+
+
 def _secret_occurrences(text: str) -> int:
     return sum(len(pattern.findall(text)) for pattern in _SECRET_PATTERNS)
 
@@ -762,7 +836,9 @@ def _prepare_item(
 ) -> _PreparedItem:
     try:
         source_bytes, final_stat = _bounded_read(candidate, policy)
-        text = _decode_and_validate(candidate, source_bytes, policy)
+        text = None if candidate.profile.binary else _decode_and_validate(
+            candidate, source_bytes, policy
+        )
     except _ContentFailure as exc:
         raise exc
 
@@ -771,11 +847,11 @@ def _prepare_item(
     redaction_state: Literal["none", "redacted", "withheld"] = "none"
     redaction_reasons: tuple[str, ...] = ()
     visibility: Literal["local_only", "diagnosis"] = "diagnosis"
-    artifact_text = text
+    artifact_text = "" if text is None else text
     reason: ProjectDecisionReason = "included"
     action: Literal["include", "redact", "withhold"] = "include"
 
-    secret_count = _secret_occurrences(text)
+    secret_count = 0 if text is None else _secret_occurrences(text)
     if secret_count:
         issues.append(
             _issue(
@@ -792,7 +868,7 @@ def _prepare_item(
         reason = "secret_withheld"
         action = "withhold"
     else:
-        artifact_text, pii_count = _redact_pii(text)
+        artifact_text, pii_count = _redact_pii(artifact_text)
         if pii_count:
             issues.append(
                 _issue(
@@ -807,7 +883,7 @@ def _prepare_item(
             reason = "pii_redacted"
             action = "redact"
 
-    if _PROMPT_INJECTION.search(text):
+    if text is not None and _PROMPT_INJECTION.search(text):
         issues.append(
             _issue(
                 "untrusted_instruction_text",
@@ -826,6 +902,21 @@ def _prepare_item(
     artifact_media_type = (
         "text/plain" if redaction_state in {"redacted", "withheld"} else candidate.profile.media_type
     )
+    if candidate.profile.source_type == "dataset":
+        artifact_bytes = _dataset_metadata_bytes(candidate, source_bytes, text)
+        artifact_media_type = "application/json"
+        redaction_state = "redacted"
+        redaction_reasons = ("dataset.raw_rows_withheld",)
+        visibility = "diagnosis"
+        reason = "dataset_rows_withheld"
+        action = "redact"
+        issues.append(
+            _issue(
+                "dataset_rows_withheld",
+                subject=source_bytes,
+                relative_path=candidate.relative_path,
+            )
+        )
     item = build_project_item(
         project_id=grant.project_id,
         relative_path=candidate.relative_path,

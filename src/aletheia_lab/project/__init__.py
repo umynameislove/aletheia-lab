@@ -1,5 +1,15 @@
 """Versioned contracts for safe local-project ingestion."""
 
+from aletheia_lab.project.collectors import (
+    DatasetMetadata,
+    GitChangedFile,
+    ProjectCollectionError,
+    ProjectFileCollection,
+    ProjectFileObservation,
+    ProjectGitState,
+    collect_git_state,
+    collect_project_files,
+)
 from aletheia_lab.project.contracts import (
     PROJECT_BUNDLE_SCHEMA_VERSION,
     PROJECT_ITEM_SCHEMA_VERSION,
@@ -53,9 +63,15 @@ __all__ = [
     "PROJECT_IMPORT_PREVIEW_SCHEMA_VERSION",
     "PROJECT_VALIDATION_ISSUE_SCHEMA_VERSION",
     "GrantedProjectRoot",
+    "DatasetMetadata",
+    "GitChangedFile",
     "ImmutableArtifactReference",
     "ProjectBundle",
     "ProjectCollector",
+    "ProjectCollectionError",
+    "ProjectFileCollection",
+    "ProjectFileObservation",
+    "ProjectGitState",
     "ProjectIdentityError",
     "ProjectImportArtifact",
     "ProjectImportBoundaryError",
@@ -72,6 +88,8 @@ __all__ = [
     "build_project_manifest",
     "build_project_import_preview",
     "canonical_project_sha256",
+    "collect_git_state",
+    "collect_project_files",
     "content_sha256",
     "granted_root_fingerprint",
     "grant_project_root",
