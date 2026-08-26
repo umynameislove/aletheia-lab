@@ -402,9 +402,17 @@ def test_audited_structured_text_profiles_are_accepted(
 
     result = _import(tmp_path)
 
-    assert result.status == "imported"
+    expected_status = (
+        "imported_with_restrictions" if name.endswith((".csv", ".tsv")) else "imported"
+    )
+    assert result.status == expected_status
     assert result.bundle is not None
-    assert result.preview.included_count == 1
+    if name.endswith((".csv", ".tsv")):
+        assert result.preview.redacted_count == 1
+        assert b"1,2" not in result.artifacts[0].content
+        assert b'"row_count":1' in result.artifacts[0].content
+    else:
+        assert result.preview.included_count == 1
 
 
 def test_line_limit_fails_before_bundle_assembly(tmp_path: Path) -> None:
