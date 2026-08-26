@@ -487,7 +487,14 @@ def _discover(
 
             candidate_path = Path(entry.path)
             try:
-                inspected = entry.stat(follow_symlinks=False)
+                # CPython 3.11 on Windows can return zero ``st_dev`` and
+                # ``st_ino`` from ``DirEntry.stat(follow_symlinks=False)``
+                # while ``Path.lstat`` and ``os.fstat`` expose the real file
+                # identity.  Capture discovery identity through the same
+                # path-based API used after the bounded read so a stable file
+                # is not falsely classified as a source race.  The later
+                # lstat/fstat/lstat comparisons still fail closed on replacement.
+                inspected = candidate_path.lstat()
             except OSError:
                 issues.append(
                     _issue("source_read_failed", subject=relative, relative_path=relative)

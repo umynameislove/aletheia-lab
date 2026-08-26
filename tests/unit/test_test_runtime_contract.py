@@ -76,6 +76,23 @@ def test_python_312_still_runs_the_complete_unfiltered_suite() -> None:
     assert "-m" not in run and "--ignore" not in run
 
 
+def test_windows_project_boundary_is_a_blocking_ci_gate() -> None:
+    jobs = _workflow().get("jobs")
+    assert isinstance(jobs, dict)
+    windows_job = jobs.get("windows-project")
+    assert isinstance(windows_job, dict)
+    assert windows_job.get("runs-on") == "windows-latest"
+    steps = windows_job.get("steps")
+    assert isinstance(steps, list)
+    boundary_steps = [
+        step
+        for step in steps
+        if isinstance(step, dict) and "run_test_profile.py project" in str(step.get("run", ""))
+    ]
+    assert len(boundary_steps) == 1
+    assert boundary_steps[0].get("continue-on-error") is None
+
+
 def test_named_profiles_resolve_without_collecting_tests() -> None:
     for profile in ("fast", "project", "research", "full"):
         completed = subprocess.run(

@@ -57,6 +57,10 @@ blocking error.
 
 Every candidate is inspected without following links. Regular files are opened
 read-only with `O_NOFOLLOW` and `O_CLOEXEC` when the platform provides them.
+Directory enumeration supplies names only; discovery identity is captured with
+`Path.lstat()`. This avoids the zero device/inode values returned by
+`DirEntry.stat()` on CPython 3.11 for Windows while retaining the same
+path-to-descriptor identity comparison on every platform.
 The importer compares filesystem identity, mode, size and nanosecond mtime:
 
 1. at discovery;
