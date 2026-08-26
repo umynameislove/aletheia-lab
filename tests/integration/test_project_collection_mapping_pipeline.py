@@ -39,6 +39,10 @@ def test_import_collect_map_pipeline_is_read_only_and_fail_closed(tmp_path: Path
     _git(tmp_path, "init", "-q")
     _git(tmp_path, "config", "user.name", "Synthetic Test")
     _git(tmp_path, "config", "user.email", "synthetic@example.invalid")
+    # Do not inherit Git for Windows' usual global CRLF conversion policy.
+    # The fixture is intended to start from an exactly clean repository on
+    # every supported platform.
+    _git(tmp_path, "config", "core.autocrlf", "false")
     (tmp_path / "dataset.csv").write_text("id,target\n1,0\n2,1\n", encoding="utf-8")
     (tmp_path / "metrics.csv").write_text(
         "run,name,value\nbaseline,loss,0.5\ncandidate,loss,0.6\n", encoding="utf-8"

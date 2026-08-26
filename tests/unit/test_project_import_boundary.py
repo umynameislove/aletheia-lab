@@ -85,6 +85,52 @@ def test_valid_import_binds_policy_preview_manifest_and_safe_artifacts(tmp_path:
     assert all(item.source_schema.startswith("untrusted-") for item in result.bundle.items)
 
 
+def test_windows_zero_identity_direntry_does_not_false_block_import(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Discovery must not trust the zero file identity returned by Windows 3.11."""
+
+    _write(tmp_path / "safe.txt", "safe\n")
+    real_scandir = importer_module.os.scandir
+
+    class ZeroIdentityStat:
+        def __init__(self, source: os.stat_result) -> None:
+            self._source = source
+            self.st_dev = 0
+            self.st_ino = 0
+
+        def __getattr__(self, name: str) -> object:
+            return getattr(self._source, name)
+
+    class WindowsDirEntry:
+        def __init__(self, source: os.DirEntry[str]) -> None:
+            self._source = source
+            self.name = source.name
+            self.path = source.path
+
+        def stat(self, *, follow_symlinks: bool = True) -> ZeroIdentityStat:
+            return ZeroIdentityStat(self._source.stat(follow_symlinks=follow_symlinks))
+
+    class WindowsScandir:
+        def __init__(self, path: os.PathLike[str] | str) -> None:
+            self._source = real_scandir(path)
+
+        def __enter__(self):  # type: ignore[no-untyped-def]
+            return iter(WindowsDirEntry(entry) for entry in self._source.__enter__())
+
+        def __exit__(self, *args: object) -> object:
+            return self._source.__exit__(*args)
+
+    monkeypatch.setattr(importer_module.os, "scandir", WindowsScandir)
+
+    result = _import(tmp_path)
+
+    assert result.status == "imported"
+    assert result.bundle is not None
+    assert result.preview.blocked_count == 0
+
+
 def test_import_is_deterministic_for_same_tree_policy_and_timestamp(tmp_path: Path) -> None:
     _write(tmp_path / "b.json", '{"b":2}')
     _write(tmp_path / "a.json", '{"a":1}')
@@ -589,6 +635,54 @@ def test_source_change_between_discovery_and_open_is_detected(
     assert result.bundle is None
     assert result.artifacts == ()
     assert any(issue.code == "source_changed_during_read" for issue in result.preview.issues)
+    assert any(
+        decision.relative_path == "config.json"
+        and decision.action == "block"
+        and decision.reason_code == "source_changed_during_read"
+        for decision in result.preview.decisions
+    )
+
+
+def test_same_size_and_mtime_file_replacement_is_detected_by_identity(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = _write(tmp_path / "config.json", '{"value":1}')
+    original = target.lstat()
+    real_open = importer_module.os.open
+    replaced = False
+
+    def racing_open(
+        path: str | bytes | os.PathLike[str] | os.PathLike[bytes], flags: int
+    ) -> int:
+        nonlocal replaced
+        if not replaced and Path(path) == target:
+            replacement = _write(tmp_path / "replacement.json", '{"value":2}')
+            os.utime(
+                replacement,
+                ns=(original.st_atime_ns, original.st_mtime_ns),
+            )
+            os.replace(replacement, target)
+            replaced = True
+        return real_open(path, flags)
+
+    monkeypatch.setattr(importer_module.os, "open", racing_open)
+
+    result = _import(tmp_path)
+
+    assert replaced
+    assert target.lstat().st_size == original.st_size
+    assert target.lstat().st_mtime_ns == original.st_mtime_ns
+    assert result.status == "blocked"
+    assert result.bundle is None
+    assert result.artifacts == ()
+    assert any(issue.code == "source_changed_during_read" for issue in result.preview.issues)
+    assert any(
+        decision.relative_path == "config.json"
+        and decision.action == "block"
+        and decision.reason_code == "source_changed_during_read"
+        for decision in result.preview.decisions
+    )
 
 
 def test_directory_membership_change_during_read_aborts_snapshot(
@@ -596,6 +690,10 @@ def test_directory_membership_change_during_read_aborts_snapshot(
     monkeypatch,
 ) -> None:  # type: ignore[no-untyped-def]
     _write(tmp_path / "config.json", '{"value":1}')
+    # Model Windows filesystems that do not expose an immediate directory
+    # metadata change when an entry is added. Membership reconciliation must
+    # remain authoritative even when every directory stat signature is equal.
+    monkeypatch.setattr(importer_module, "_directory_signature", lambda _value: (0, 0, 0, 0))
     real_read = importer_module.os.read
     changed = False
 
