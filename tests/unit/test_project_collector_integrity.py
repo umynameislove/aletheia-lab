@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 from pathlib import Path
@@ -17,6 +18,7 @@ from aletheia_lab.project import (
     grant_project_root,
     import_local_project,
 )
+from aletheia_lab.project import collectors as collectors_module
 
 _STAMP = "2026-08-26T00:00:00Z"
 
@@ -107,6 +109,7 @@ def test_csv_metadata_is_bounded_for_empty_header_only_and_regular_inputs(
     if raw:
         assert raw not in result.artifacts[0].content
     assert result.bundle.items[0].content_sha256 != result.bundle.items[0].artifact.sha256
+    assert result.bundle.items[0].content_sha256 == hashlib.sha256(raw).hexdigest()
 
 
 def test_dataset_rows_with_sensitive_and_instruction_like_content_do_not_escape(
@@ -140,6 +143,12 @@ def test_dataset_rows_with_sensitive_and_instruction_like_content_do_not_escape(
     [
         ("invalid.log", b"\xff", None, "invalid_utf8"),
         ("nul.log", b"safe\x00unsafe", None, "unsafe_control_character"),
+        (
+            "blank-header.csv",
+            b",target\n1,0\n",
+            None,
+            "structured_content_invalid",
+        ),
         (
             "long.log",
             b"x" * 129,
@@ -275,3 +284,55 @@ def test_git_collection_preserves_index_refs_tree_and_status(tmp_path: Path) -> 
     assert _git(root, "status", "--porcelain=v1", "-z") == before_status
     assert _git(root, "show-ref", "--head") == before_refs
     assert (root / ".git" / "index").read_bytes() == before_index
+
+
+def test_git_collector_uses_only_read_only_commands_and_hides_remote_credentials(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = tmp_path / "repository"
+    root.mkdir()
+    _repository(root)
+    secret = "SYNTHETIC_GIT_REMOTE_SECRET"
+    _git(
+        root,
+        "remote",
+        "add",
+        "origin",
+        f"https://demo:{secret}@example.invalid/repository.git",
+    )
+
+    commands: list[tuple[str, ...]] = []
+    real_run = collectors_module.subprocess.run
+
+    def record_run(*args: object, **kwargs: object) -> object:
+        assert args
+        command = args[0]
+        assert isinstance(command, tuple)
+        assert all(isinstance(argument, str) for argument in command)
+        commands.append(command)
+        return real_run(*args, **kwargs)
+
+    monkeypatch.setattr(collectors_module.subprocess, "run", record_run)
+
+    state = collect_git_state(grant_project_root(root))
+
+    assert secret not in state.model_dump_json()
+    assert commands
+    assert all(
+        command[:5]
+        == (
+            "git",
+            "-c",
+            "core.quotepath=false",
+            "-c",
+            "core.fsmonitor=false",
+        )
+        for command in commands
+    )
+    assert {command[5] for command in commands} == {
+        "--version",
+        "rev-parse",
+        "status",
+        "symbolic-ref",
+    }
