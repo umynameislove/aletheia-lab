@@ -36,6 +36,10 @@ PROJECT_ITEM_ID_PATTERN: Final[str] = r"^p3-item-[0-9a-f]{64}$"
 PROJECT_BUNDLE_ID_PATTERN: Final[str] = r"^p3-bundle-[0-9a-f]{64}$"
 ARTIFACT_ID_PATTERN: Final[str] = r"^p3-artifact-[0-9a-f]{64}$"
 SNAPSHOT_ID_PATTERN: Final[str] = r"^p3-snapshot-[0-9a-f]{64}$"
+SNAPSHOT_COMPARISON_ID_PATTERN: Final[str] = r"^p3-comparison-[0-9a-f]{64}$"
+REGRESSION_EVENT_ID_PATTERN: Final[str] = r"^p3-event-[0-9a-f]{64}$"
+PROJECT_EVIDENCE_ID_PATTERN: Final[str] = r"^p3-evidence-[0-9a-f]{64}$"
+PROJECT_EVIDENCE_BUNDLE_ID_PATTERN: Final[str] = r"^p3-evidence-bundle-[0-9a-f]{64}$"
 
 _MAX_KEY_LENGTH: Final[int] = 256
 _MAX_TEXT_LENGTH: Final[int] = 4096
