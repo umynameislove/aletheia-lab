@@ -46,6 +46,11 @@ def _repository(root: Path) -> None:
     _git(root, "init", "-q")
     _git(root, "config", "user.name", "Synthetic Test")
     _git(root, "config", "user.email", "synthetic@example.invalid")
+    # Keep the synthetic repository independent of the runner's global Git
+    # configuration.  Git for Windows commonly enables ``core.autocrlf``;
+    # without an explicit repository policy an LF fixture can appear modified
+    # immediately after commit even though the collector has not mutated it.
+    _git(root, "config", "core.autocrlf", "false")
     (root / "tracked.txt").write_text("first\n", encoding="utf-8")
     _git(root, "add", "tracked.txt")
     _git(root, "commit", "-q", "-m", "initial")

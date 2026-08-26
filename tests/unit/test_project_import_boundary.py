@@ -661,7 +661,6 @@ def test_same_size_and_mtime_file_replacement_is_detected_by_identity(
             os.utime(
                 replacement,
                 ns=(original.st_atime_ns, original.st_mtime_ns),
-                follow_symlinks=False,
             )
             os.replace(replacement, target)
             replaced = True
