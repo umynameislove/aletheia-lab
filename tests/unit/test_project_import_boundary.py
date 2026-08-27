@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 import os
 import socket
@@ -641,6 +642,57 @@ def test_source_change_between_discovery_and_open_is_detected(
         and decision.reason_code == "source_changed_during_read"
         for decision in result.preview.decisions
     )
+
+
+def test_post_read_path_identity_reconciliation_blocks_source_replacement(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = _write(tmp_path / "config.json", '{"value":1}')
+    real_read = importer_module.os.read
+    real_lstat = Path.lstat
+    read_completed = False
+    identity_changed = False
+
+    class ChangedIdentityStat:
+        def __init__(self, source: os.stat_result) -> None:
+            self._source = source
+            self.st_ino = int(source.st_ino) + 1
+
+        def __getattr__(self, name: str) -> object:
+            return getattr(self._source, name)
+
+    def racing_read(descriptor: int, count: int) -> bytes:
+        nonlocal read_completed
+        payload = real_read(descriptor, count)
+        read_completed = True
+        return payload
+
+    def racing_lstat(path: Path) -> object:
+        nonlocal identity_changed
+        observed = real_lstat(path)
+        caller = inspect.currentframe().f_back
+        if (
+            path == target
+            and read_completed
+            and caller is not None
+            and caller.f_code.co_name == "_bounded_read"
+            and not identity_changed
+        ):
+            identity_changed = True
+            return ChangedIdentityStat(observed)
+        return observed
+
+    monkeypatch.setattr(importer_module.os, "read", racing_read)
+    monkeypatch.setattr(Path, "lstat", racing_lstat)
+
+    result = _import(tmp_path)
+
+    assert identity_changed
+    assert result.status == "blocked"
+    assert result.bundle is None
+    assert result.artifacts == ()
+    assert any(issue.code == "source_changed_during_read" for issue in result.preview.issues)
 
 
 def test_same_size_and_mtime_file_replacement_is_detected_by_identity(
