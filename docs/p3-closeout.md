@@ -1,8 +1,15 @@
-# P3 ingestion, snapshot, persistence and lineage closeout
+# P3 core ingestion, snapshot, persistence and lineage closeout
 
-P3 closes only when an exact persisted generation can be reconciled from mapped
-project imports through a non-causal lineage graph. A merge, passing unit test or
-valid SQLite file by itself is not sufficient.
+The P3 core vertical slice closes only when an exact persisted generation can be
+reconciled from mapped project imports through a non-causal lineage graph. A
+merge, passing unit test or valid SQLite file by itself is not sufficient.
+
+This receipt does not claim that every product-release or prospective-case
+obligation originally scheduled near P3 is complete. Retention/delete/purge,
+the prospective temporal seal/access ledger, the version-pinned Projmem bridge,
+and a sanctioned non-synthetic sample audit remain separately gated work. Their
+scope, dependencies and stop conditions are recorded in
+[`p3-scope-amendment.md`](p3-scope-amendment.md).
 
 ## Closeout unit
 
@@ -70,3 +77,8 @@ The complete blocking matrix is in
 acceptance additionally requires the project profile, Python 3.11/3.12 full test
 matrix, Windows project job, coverage threshold, Ruff, strict mypy, hygiene,
 Bandit and dependency audit to pass.
+
+Passing this closeout is therefore evidence for the P3 core persistence-lineage
+generation only. It is not a deletion receipt, a prospective-holdout seal, a
+Projmem compatibility report, a real-project effectiveness result, or a product
+release authorization.

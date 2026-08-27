@@ -85,6 +85,14 @@ LogDx-CI results remain separate from the controlled ML benchmark. The prospecti
 
 > Aletheia Lab contributes a controlled ML-failure benchmark and audit protocol that jointly binds diagnosis-visible evidence, condition-specific causal claim limits, evidence-conditioned abstention, atomic claim support, paired evidence interventions and immutable lineage. These individual constructs have prior art; the contribution is their strict integration and empirical evaluation for ML-system failure diagnosis, plus a local-first audit workflow that preserves uncertainty when hidden ground truth is unavailable.
 
+The current extension makes that boundary more falsifiable: competing mechanisms
+must be symptom-matched on development data yet distinguishable by
+diagnosis-visible evidence. Injection labels are candidates rather than automatic
+ground truth; a mechanism requires manipulation, dominant-cause, control,
+discriminability, provenance and reproduction gates. If visible evidence cannot
+separate two causes, the valid target is a bounded set-valued hypothesis or
+abstention rather than a forced single label.
+
 ## Claims to avoid
 
 - “the first LLM debugging system”;
@@ -103,5 +111,34 @@ LogDx-CI results remain separate from the controlled ML benchmark. The prospecti
 - [FaithEval](https://proceedings.iclr.cc/paper_files/paper/2025/hash/48404cd9ce03946c6b7177691f3267a1-Abstract-Conference.html)
 - [Do LLMs Know When to NOT Answer?](https://aclanthology.org/2025.coling-main.627/)
 - [DQA](https://aclanthology.org/2026.acl-industry.79/)
+- [OpenRCA](https://openreview.net/pdf?id=M4qNIzQYpd)
+- [OpenRCA 2.0](https://arxiv.org/abs/2606.27154)
+- [ORCA-bench](https://arxiv.org/abs/2607.28545)
+- [Who & When](https://arxiv.org/abs/2505.00212)
+- [Who&When Pro](https://arxiv.org/abs/2607.09996)
+- [AgentRx](https://arxiv.org/abs/2602.02475)
+- [TRAJDEBUG](https://arxiv.org/abs/2608.06346)
+- [AgentDebugX](https://arxiv.org/abs/2607.18754)
+- [Beyond Fault Localization](https://arxiv.org/abs/2608.21310)
+- [CodeGraph](https://github.com/codegraph-ai/CodeGraph) — project/system
+  documentation only; self-reported capabilities are not scientific results.
 
 The exact LogDx-CI version and adapter must be pinned before comparative evaluation.
+
+## 2026 refresh and bounded novelty
+
+Recent work already evaluates trajectory-level RCA, agent/step failure
+attribution, evidence-based validation, causal graph tracing and recovery/rerun.
+Therefore Aletheia does not claim to invent evidence-grounded debugging,
+trajectory attribution, code graphs or closed-loop repair.
+
+The bounded position is that the prespecified reviewed corpus did not reveal one
+evaluated system that jointly combines controlled ML-failure eligibility,
+diagnosis-visible evidence siblings, atomic support, evidence-conditioned
+abstention, correctness-groundedness divergence, immutable project lineage and
+reproducible local audit. This wording describes a scoped review result, not a
+universal first.
+
+CodeGraph may be evaluated as an optional evidence-index component. It cannot
+replace matched generic RAG, claim-support evaluation, abstention gates or
+provenance and reproduction checks.

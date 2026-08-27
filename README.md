@@ -40,7 +40,9 @@ controlled fault
 
 The framework is designed around four principles:
 
-1. **Controlled causes.** Fault injection provides an independently known cause.
+1. **Controlled candidates with admission gates.** Fault injection proposes a
+   cause; manipulation, dominant-cause, control, discriminability, provenance and
+   reproduction checks determine whether it is admissible ground truth.
 2. **Hard evidence boundaries.** Ground truth is never included in diagnosis input.
 3. **Counterfactual evidence.** The same case can be tested with complete, missing,
    or distracting evidence.
@@ -77,11 +79,29 @@ Aletheia currently provides:
 - CLI commands for data preparation, baseline training, verification, and
   contract validation;
 - automated linting, repository-hygiene checks, and tests in CI.
+- a deterministic P3 core that binds authorized imports, mapped project bundles,
+  immutable snapshots, causally unverified regression evidence, content-addressed
+  persistence and visibility-safe non-causal lineage into one closeout receipt.
 
 Aletheia Lab is research software, not a production incident-response system.
 The repository includes the complete deterministic benchmark, evidence-store,
 matched-diagnosis, and provider-preflight workflows described below. Generated
 experiment artifacts remain local and are independently validated before use.
+
+## Current research and delivery status
+
+- P1 establishes a bounded feasibility result, not broad superiority.
+- P2 implements three candidate mechanism types. Scientific admission remains
+  separate from implementation/merge/CI status and is reconciled only through
+  registered terminal studies.
+- The P3 core persistence-lineage vertical slice is closed at merge `31f6c58`.
+  Delete/purge, the prospective temporal seal, the version-pinned Projmem bridge
+  and a sanctioned non-synthetic sample audit remain separately gated obligations.
+- P4/P5 main outcomes are not yet authorized. Instrument, model, prompt,
+  denominator and analysis policy must be frozen before those outcomes exist.
+
+See the [P3 scope amendment](docs/p3-scope-amendment.md) for the exact boundary
+and [related work](docs/related-work.md) for the bounded novelty position.
 
 ## Installation
 
@@ -339,6 +359,8 @@ documentation, and reproducible artifacts.
 - [Dataset card](docs/dataset-card.md)
 - [Phase 1 feasibility report](docs/p1-feasibility-report.md)
 - [Phase 1 frozen closeout package](reports/p1/README.md)
+- [P3 core closeout](docs/p3-closeout.md)
+- [P3 scope amendment and deferred gates](docs/p3-scope-amendment.md)
 - [Related work and research positioning](docs/related-work.md)
 - [Architecture decisions](docs/adr/)
 
