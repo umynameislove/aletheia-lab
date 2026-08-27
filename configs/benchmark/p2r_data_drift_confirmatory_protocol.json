@@ -1,0 +1,97 @@
+{
+  "schema_version": "p2r-lightweight-confirmatory-protocol/1",
+  "protocol_version": "p2r-data_drift-confirmatory/1",
+  "status": "verified_outcome_blind_not_registered",
+  "mechanism": "data_drift",
+  "required_git_tag": "p2r-data-drift-confirmatory-v1",
+  "artifacts": {
+    "instrument_protocol_uri": "configs/benchmark/p2r_instrument_validity_protocol.json",
+    "instrument_protocol_file_sha256": "3daa1a5661982004729e9863b26d343f91f82d8de49cdad6287641d94cd3f146",
+    "instrument_protocol_sha256": "f4efe45571d93cfffc40733cc77343df331604ade539761a3dd59e0c5240fb4e",
+    "dataset_manifest_uri": "configs/benchmark/p2_label_noise_shift_v3_dataset_bindings.json",
+    "dataset_manifest_file_sha256": "d60bb6d6ea74366c6fb5b82368a736428b2606940824f856d917429dd78c0d52",
+    "dataset_manifest_sha256": "a019a134f6e903fb80a6714237ca59b36adcca3ef1ab69cd9fd664fc5fc63b94",
+    "dataset_receipt_uri": "configs/benchmark/provenance/p2_v3_dataset_binding_receipt.json",
+    "dataset_receipt_file_sha256": "be821617fae710c51f0c8e9811ba44687a935729810b50b1f98c72d2a0f13402",
+    "dataset_receipt_sha256": "bc480803505edb7c49f67eb24b8ebbb8ba415c4813278631239f372aca2f60d1"
+  },
+  "datasets": [
+    {
+      "dataset_id": "uci_default_of_credit_card_clients",
+      "role": "primary",
+      "split_membership_sha256": "fa0f3fe0cb03b12cecf590f806107206c0bb5c65c332cd5940f9ddca800bbcd8",
+      "sealed_membership_sha256": "635fb10e640fb8a95a82b97892e08dc7ae806f6e250721ef60550b3d350bd248",
+      "target_feature": "EDUCATION",
+      "intervention_rule": "sealed_feature_marginal_plus_0.20_toward_training_mode_by_seeded_row_hash",
+      "nuisance_comparator": "same_size_seed_matched_empirical_distribution_resample"
+    },
+    {
+      "dataset_id": "uci_online_shoppers_purchasing_intention",
+      "role": "external_replication",
+      "split_membership_sha256": "1f9b1076228a949fd3bc2e3ad48651b27a2046350a51f82cbaaf63619e36574e",
+      "sealed_membership_sha256": "467ae903412e0d9a773197d60839395c428da75fc774a21be67daf12ca121381",
+      "target_feature": "VisitorType",
+      "intervention_rule": "sealed_feature_marginal_plus_0.20_toward_training_mode_by_seeded_row_hash",
+      "nuisance_comparator": "same_size_seed_matched_empirical_distribution_resample"
+    }
+  ],
+  "model": {
+    "estimator": "sklearn.linear_model.LogisticRegression",
+    "parameters": ["C=1.0", "solver=lbfgs", "max_iter=1000", "random_state=42"],
+    "preprocessing": "train_fit_standard_scaler_plus_one_hot_handle_unknown_ignore_float64",
+    "probability_output_required": true,
+    "convergence_warning_action": "technical_failure",
+    "nonfinite_metric_action": "technical_failure",
+    "hyperparameter_search_forbidden": true,
+    "secondary_model_cannot_rescue_primary": true
+  },
+  "endpoint": {
+    "primary_metric": "accuracy_drop_from_seed_matched_clean_reference",
+    "primary_estimand": "median_seed_level_target_effect",
+    "minimum_practical_effect": 0.01,
+    "expected_direction": "decrease",
+    "minimum_expected_direction_fraction": 0.8,
+    "manipulation_tolerance": "max_0.01_absolute_or_0.10_relative",
+    "dominance_rule": "median_target_ge_1.5x_nuisance_or_margin_ge_0.005",
+    "cross_dataset_rule": "both_datasets_must_pass",
+    "replicate_unit": "seed_within_dataset_not_independent_study_n"
+  },
+  "execution": {
+    "seeds": [8201, 8202, 8203, 8204, 8205],
+    "maximum_registered_execution_attempts": 1,
+    "no_interim_analysis": true,
+    "outcomes_released_together": true,
+    "additional_seed_or_grid_after_outcomes_forbidden": true,
+    "candidate_plan_frozen_before_outcomes": true,
+    "sealed_outcomes_generated": false,
+    "model_fitted": false,
+    "execution_authorized": false
+  },
+  "exclusions": {
+    "exclude_stable_controls_from_admission": true,
+    "exclude_reserve_candidates_from_admission": true,
+    "exclude_duplicate_or_replayed_receipts": true,
+    "exclude_cross_family_evidence_reuse": true,
+    "exclude_post_outcome_artifacts": true,
+    "exclude_failed_manipulation_checks": true,
+    "exclude_nuisance_dominated_candidates": true,
+    "exclude_incomplete_sibling_bundles": true
+  },
+  "dispositions": {
+    "pass_disposition": "admitted",
+    "scientific_abstention_disposition": "assumption_limited",
+    "valid_negative_disposition": "rejected",
+    "contract_failure_disposition": "technical_failure",
+    "missing_or_ambiguous_evidence_action": "fail_closed",
+    "implementation_or_ci_cannot_admit": true,
+    "downstream_denominator_change_forbidden_before_terminal_receipt": true
+  },
+  "governance": {
+    "reuses_partitions_opened_for_another_mechanism": true,
+    "independent_new_dataset_replication": false,
+    "target_mechanism_outcomes_inspected_before_freeze": false,
+    "historical_other_mechanism_results_cannot_select_feature_or_threshold": true,
+    "claim_scope": "named_dataset_mechanism_bounded",
+    "protocol_amendment_required_for_any_change": true
+  }
+}
