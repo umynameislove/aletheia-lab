@@ -361,6 +361,7 @@ documentation, and reproducible artifacts.
 - [Phase 1 frozen closeout package](reports/p1/README.md)
 - [P3 core closeout](docs/p3-closeout.md)
 - [P3 scope amendment and deferred gates](docs/p3-scope-amendment.md)
+- [P2R instrument-validity and empty-evidence contract](docs/p2r-instrument-validity.md)
 - [Related work and research positioning](docs/related-work.md)
 - [Architecture decisions](docs/adr/)
 
