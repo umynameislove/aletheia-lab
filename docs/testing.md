@@ -28,6 +28,18 @@ Additional pytest arguments may follow `--`, for example:
 python scripts/run_test_profile.py project -- -x --durations=20
 ```
 
+P3 closeout changes must exercise the persisted end-to-end generation directly:
+
+```bash
+pytest tests/integration/test_project_snapshot_regression_pipeline.py -q
+python scripts/run_test_profile.py project -- --durations=20
+```
+
+The first command checks import, mapping, snapshot, regression, evidence,
+persistence, restart recovery, typed lineage and closeout reconciliation as one
+pipeline. The project profile remains the portable blocking gate and also runs in
+the Windows CI job.
+
 Before opening or updating a pull request, run the authoritative local gate:
 
 ```bash

@@ -1,5 +1,14 @@
 """Versioned contracts for safe local-project ingestion."""
 
+from aletheia_lab.project.closeout import (
+    P3_CLOSEOUT_SCHEMA_VERSION,
+    ProjectCloseoutError,
+    ProjectCloseoutMigration,
+    ProjectCloseoutProjection,
+    ProjectCloseoutReceipt,
+    ProjectCloseoutRecord,
+    build_project_closeout,
+)
 from aletheia_lab.project.collectors import (
     DatasetMetadata,
     GitChangedFile,
@@ -103,6 +112,7 @@ from aletheia_lab.project.snapshots import (
 
 __all__ = [
     "PROJECT_BUNDLE_SCHEMA_VERSION",
+    "P3_CLOSEOUT_SCHEMA_VERSION",
     "PROJECT_ITEM_SCHEMA_VERSION",
     "PROJECT_MANIFEST_SCHEMA_VERSION",
     "PROJECT_IMPORT_DECISION_SCHEMA_VERSION",
@@ -124,6 +134,11 @@ __all__ = [
     "ProjectBundle",
     "ProjectCollector",
     "ProjectCollectionError",
+    "ProjectCloseoutError",
+    "ProjectCloseoutMigration",
+    "ProjectCloseoutProjection",
+    "ProjectCloseoutReceipt",
+    "ProjectCloseoutRecord",
     "ProjectFileCollection",
     "ProjectFileObservation",
     "ProjectGitState",
@@ -159,6 +174,7 @@ __all__ = [
     "SnapshotCollectorBinding",
     "StoredRecord",
     "build_project_bundle",
+    "build_project_closeout",
     "build_project_item",
     "build_project_manifest",
     "build_lineage_edge",

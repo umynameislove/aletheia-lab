@@ -8,7 +8,10 @@ from pathlib import Path
 import pytest
 
 from aletheia_lab.project import (
+    ProjectCloseoutError,
+    ProjectCloseoutReceipt,
     ProjectStore,
+    build_project_closeout,
     build_project_regression_event,
     build_project_regression_evidence,
     build_project_snapshot,
@@ -77,7 +80,7 @@ def _snapshot(root: Path, captured_at: str):  # type: ignore[no-untyped-def]
         imported.bundle, imported.artifacts, collection, configuration
     )
     bound = bind_project_mapping(imported.bundle, configuration, result)
-    return build_project_snapshot(
+    snapshot = build_project_snapshot(
         bound,
         collection,
         collect_git_state(grant),
@@ -85,6 +88,7 @@ def _snapshot(root: Path, captured_at: str):  # type: ignore[no-untyped-def]
         result,
         captured_at=captured_at,
     )
+    return bound, snapshot
 
 
 def test_project_refresh_becomes_traceable_payload_free_evidence(tmp_path: Path) -> None:
@@ -100,7 +104,7 @@ def test_project_refresh_becomes_traceable_payload_free_evidence(tmp_path: Path)
     (tmp_path / "config.json").write_text('{"seed":42}', encoding="utf-8")
     _git(tmp_path, "add", "dataset.csv", "metrics.csv", "config.json")
     _git(tmp_path, "commit", "-q", "-m", "before")
-    before = _snapshot(tmp_path, "2026-08-26T01:00:00Z")
+    before_bundle, before = _snapshot(tmp_path, "2026-08-26T01:00:00Z")
 
     (tmp_path / "metrics.csv").write_text(
         "run,name,value\nbaseline,loss,0.5\ncandidate,loss,0.8\n",
@@ -108,7 +112,7 @@ def test_project_refresh_becomes_traceable_payload_free_evidence(tmp_path: Path)
     )
     _git(tmp_path, "add", "metrics.csv")
     _git(tmp_path, "commit", "-q", "-m", "after")
-    after = _snapshot(tmp_path, "2026-08-26T02:00:00Z")
+    after_bundle, after = _snapshot(tmp_path, "2026-08-26T02:00:00Z")
 
     comparison = compare_project_snapshots(before, after)
     event = build_project_regression_event(comparison)
@@ -136,17 +140,95 @@ def test_project_refresh_becomes_traceable_payload_free_evidence(tmp_path: Path)
         == "unverified"
         for node in lineage.nodes
     )
-    store_root = tmp_path / ".aletheia-store"
+    store_root = tmp_path.parent / f"{tmp_path.name}-aletheia-store"
     with ProjectStore(store_root) as store:
-        records = store.persist((before, after, comparison, event, evidence, lineage))
-        assert len(records) == 6
+        records = store.persist(
+            (
+                before_bundle,
+                after_bundle,
+                before,
+                after,
+                comparison,
+                event,
+                evidence,
+                lineage,
+            )
+        )
+        assert len(records) == 8
         assert store.load(before.snapshot_id) == before
         assert store.load(after.snapshot_id) == after
         assert store.load(comparison.comparison_id) == comparison
         assert store.load(event.event_id) == event
         assert store.load(evidence.evidence_bundle_id) == evidence
         assert store.load(lineage.graph_id) == lineage
+        closeout = build_project_closeout(
+            store,
+            project_id=before.project_id,
+            before_bundle_id=before_bundle.project_bundle_id,
+            after_bundle_id=after_bundle.project_bundle_id,
+            before_snapshot_id=before.snapshot_id,
+            after_snapshot_id=after.snapshot_id,
+            comparison_id=comparison.comparison_id,
+            event_id=event.event_id,
+            evidence_bundle_id=evidence.evidence_bundle_id,
+            lineage_graph_id=lineage.graph_id,
+        )
+        assert closeout.status == "p3_closeout_pass"
+        assert closeout.causal_status == "unverified"
+        assert [value.visibility for value in closeout.projections] == [
+            "public",
+            "diagnosis",
+            "evaluator",
+        ]
+        assert tmp_path.as_posix() not in closeout.model_dump_json()
+        assert _git(tmp_path, "status", "--porcelain=v1", "-z") == b""
+
+        with pytest.raises(ProjectCloseoutError, match="relations"):
+            build_project_closeout(
+                store,
+                project_id=before.project_id,
+                before_bundle_id=after_bundle.project_bundle_id,
+                after_bundle_id=before_bundle.project_bundle_id,
+                before_snapshot_id=before.snapshot_id,
+                after_snapshot_id=after.snapshot_id,
+                comparison_id=comparison.comparison_id,
+                event_id=event.event_id,
+                evidence_bundle_id=evidence.evidence_bundle_id,
+                lineage_graph_id=lineage.graph_id,
+            )
+        with pytest.raises(ProjectCloseoutError, match="missing or ambiguous"):
+            build_project_closeout(
+                store,
+                project_id=before.project_id,
+                before_bundle_id=before_bundle.project_bundle_id,
+                after_bundle_id=after_bundle.project_bundle_id,
+                before_snapshot_id=before.snapshot_id,
+                after_snapshot_id=after.snapshot_id,
+                comparison_id=comparison.comparison_id,
+                event_id="p3-event-" + "0" * 64,
+                evidence_bundle_id=evidence.evidence_bundle_id,
+                lineage_graph_id=lineage.graph_id,
+            )
+        forged = closeout.model_dump(mode="python")
+        forged["closeout_sha256"] = "0" * 64
+        with pytest.raises(ValueError, match="identity"):
+            ProjectCloseoutReceipt.model_validate(forged)
 
     with ProjectStore(store_root) as reopened:
-        assert len(reopened.list_records(before.project_id)) == 6
+        assert len(reopened.list_records(before.project_id)) == 8
         assert reopened.load(lineage.graph_id) == lineage
+        assert (
+            build_project_closeout(
+                reopened,
+                project_id=before.project_id,
+                before_bundle_id=before_bundle.project_bundle_id,
+                after_bundle_id=after_bundle.project_bundle_id,
+                before_snapshot_id=before.snapshot_id,
+                after_snapshot_id=after.snapshot_id,
+                comparison_id=comparison.comparison_id,
+                event_id=event.event_id,
+                evidence_bundle_id=evidence.evidence_bundle_id,
+                lineage_graph_id=lineage.graph_id,
+            )
+            == closeout
+        )
