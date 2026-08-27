@@ -1,0 +1,11 @@
+gate_id,requirement,evidence,blocking_condition
+P3-C01,"Eight selected roles form one project-bound generation","ProjectCloseoutReceipt.records","missing duplicate role wrong-type or cross-project record"
+P3-C02,"Both snapshots bind their persisted mapped project bundles","build_project_closeout relation reconciliation","bundle or source-bundle identity mismatch"
+P3-C03,"Comparison event evidence and lineage reconcile exact IDs and hashes","build_project_closeout relation reconciliation","stale replayed or mismatched generation member"
+P3-C04,"Regression candidate remains causally unverified","ProjectCloseoutReceipt.causal_status","causal admission inferred from temporal or lineage proximity"
+P3-C05,"SQLite objects records migrations and lineage indexes pass integrity checks","ProjectStore.verify_integrity and migration bindings","database object migration or lineage tampering"
+P3-C06,"Public diagnosis and evaluator projections are monotonic and non-dangling","ProjectCloseoutReceipt.projections","hidden endpoint exposure or dangling projected edge"
+P3-C07,"Closeout and exported index are deterministic and payload-free","closeout_sha256 and export_index_sha256","identity drift local path raw payload or unstable restart output"
+P3-C08,"Source repository remains read-only while the store is external","integration project snapshot regression pipeline","source worktree mutation during collect map snapshot persist or closeout"
+P3-C09,"Project profile passes on Windows and supported Python versions","GitHub CI windows-project and test matrix","any blocking CI failure"
+P3-C10,"Full repository quality security and coverage gates pass","GitHub CI test quality security jobs","coverage below 88 percent or unresolved lint typing hygiene security failure"

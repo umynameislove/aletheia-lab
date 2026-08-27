@@ -122,3 +122,16 @@ The persistence and lineage gate covers:
 - deterministic graph/table identity under input permutation;
 - dangling, cross-project and visibility-downgrade rejection; and
 - end-to-end snapshot, comparison, event, evidence and lineage persistence.
+
+## Phase closeout
+
+Persistence is necessary but does not close P3 by itself. The final closeout gate
+uses `build_project_closeout()` to reload and reconcile the two mapped bundles,
+two snapshots, comparison, regression candidate, evidence bundle and lineage
+graph selected for one generation. It binds the current migration history,
+content-addressed record metadata, byte-stable exported index and all three
+visibility projections in a self-hashed, payload-free receipt.
+
+See [`p3-closeout.md`](p3-closeout.md) for the operational and scientific
+boundary and [`p3-closeout-acceptance.csv`](p3-closeout-acceptance.csv) for the
+blocking acceptance matrix.
