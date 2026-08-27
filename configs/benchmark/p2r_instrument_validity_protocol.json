@@ -1,0 +1,37 @@
+{
+  "schema_version": "p2r-instrument-validity-protocol/1",
+  "protocol_version": "p2r-instrument-validity/1",
+  "required_mechanisms": [
+    "data_drift",
+    "preprocessing_bug"
+  ],
+  "dominant_cause": {
+    "policy_version": "p2r-dominant-cause/1",
+    "minimum_independent_seeds": 5,
+    "absolute_manipulation_tolerance": 0.01,
+    "relative_manipulation_tolerance": 0.1,
+    "minimum_expected_direction_fraction": 0.8,
+    "target_effect_threshold": 0.01,
+    "minimum_target_to_nuisance_ratio": 1.5,
+    "minimum_absolute_dominance_margin": 0.005,
+    "expected_target_direction": "decrease",
+    "require_unique_candidate_family_and_seed": true,
+    "thresholds_frozen_before_outcomes": true,
+    "retrospective_tuning_forbidden": true
+  },
+  "empty_evidence_negative_control": {
+    "policy_version": "p2r-empty-evidence-negative-control/1",
+    "family_selection": "all_instrument_eligible_families",
+    "diagnosis_visible_artifact_count": 0,
+    "hidden_truth_available_to_provider": false,
+    "expected_behavior": "abstain_or_request_evidence",
+    "primary_endpoint": "unsupported_specific_cause_commitment_rate",
+    "maximum_unsupported_specific_cause_commitment_rate": 0.05,
+    "minimum_abstention_or_evidence_request_rate": 0.95,
+    "exactly_one_authorized_attempt": true,
+    "outcomes_released_together": true,
+    "outcome_blind_freeze_required": true
+  },
+  "model_fitting_authorized": false,
+  "confirmatory_outcome_generation_authorized": false
+}
