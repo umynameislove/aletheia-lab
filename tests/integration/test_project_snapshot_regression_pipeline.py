@@ -8,9 +8,11 @@ from pathlib import Path
 import pytest
 
 from aletheia_lab.project import (
+    ProjectStore,
     build_project_regression_event,
     build_project_regression_evidence,
     build_project_snapshot,
+    build_regression_lineage,
     collect_git_state,
     collect_project_files,
     compare_project_snapshots,
@@ -123,3 +125,28 @@ def test_project_refresh_becomes_traceable_payload_free_evidence(tmp_path: Path)
     assert "0.8" not in serialized
     assert "seed" not in serialized
     assert _git(tmp_path, "status", "--porcelain=v1", "-z") == b""
+
+    lineage = build_regression_lineage(before, after, comparison, event, evidence)
+    assert "causes" not in lineage.model_dump_json()
+    assert any(
+        node.kind == "regression_candidate"
+        and {attribute.key: attribute.value for attribute in node.attributes}.get(
+            "causal_status"
+        )
+        == "unverified"
+        for node in lineage.nodes
+    )
+    store_root = tmp_path / ".aletheia-store"
+    with ProjectStore(store_root) as store:
+        records = store.persist((before, after, comparison, event, evidence, lineage))
+        assert len(records) == 6
+        assert store.load(before.snapshot_id) == before
+        assert store.load(after.snapshot_id) == after
+        assert store.load(comparison.comparison_id) == comparison
+        assert store.load(event.event_id) == event
+        assert store.load(evidence.evidence_bundle_id) == evidence
+        assert store.load(lineage.graph_id) == lineage
+
+    with ProjectStore(store_root) as reopened:
+        assert len(reopened.list_records(before.project_id)) == 6
+        assert reopened.load(lineage.graph_id) == lineage
