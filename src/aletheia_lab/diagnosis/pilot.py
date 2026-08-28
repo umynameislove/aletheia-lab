@@ -41,6 +41,7 @@ from aletheia_lab.diagnosis.schema import (
 )
 from aletheia_lab.evidence.schema import DiagnosisEvidenceView, project_diagnosis_evidence
 from aletheia_lab.evidence.store import load_bundle_store
+from aletheia_lab.filesystem import publish_staged_directory
 
 P1_VARIANTS: Final[tuple[PilotVariant, ...]] = (
     PilotVariant.B1_PLAIN,
@@ -352,7 +353,7 @@ def run_p1_matched_pilot(
             entries=tuple(sorted(entries, key=lambda item: item.request_id)),
         )
         _write_bytes(stage, "pilot-manifest.json", _json_bytes(manifest.model_dump(mode="json")))
-        os.replace(stage, output)
+        publish_staged_directory(stage, output)
     except BaseException:
         shutil.rmtree(stage, ignore_errors=True)
         raise

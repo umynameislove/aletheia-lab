@@ -13,9 +13,9 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
+from aletheia_lab import filesystem as filesystem_module
 from aletheia_lab.benchmark.case_writer import load_case_dir_schema_only
 from aletheia_lab.benchmark.generator import generate_p1
-from aletheia_lab.evidence import store as store_module
 from aletheia_lab.evidence.collectors import EvidenceCollectionError, collect_p1_bundles
 from aletheia_lab.evidence.leakage import (
     HUMAN_REVIEW_ATTESTATION,
@@ -198,17 +198,17 @@ def test_windows_store_publication_uses_atomic_directory_rename(
 ) -> None:
     bundles = collect_p1_bundles(p1_cases)
     output = tmp_path / "windows-store"
-    real_rename = store_module.os.rename
+    real_rename = filesystem_module.os.rename
     calls: list[tuple[Path, Path]] = []
 
     def rename(stage: Path, destination: Path) -> None:
         calls.append((Path(stage), Path(destination)))
         real_rename(stage, destination)
 
-    monkeypatch.setattr(store_module, "_IS_WINDOWS", True)
-    monkeypatch.setattr(store_module.os, "rename", rename)
+    monkeypatch.setattr(filesystem_module, "_IS_WINDOWS", True)
+    monkeypatch.setattr(filesystem_module.os, "rename", rename)
     monkeypatch.setattr(
-        store_module.os,
+        filesystem_module.os,
         "replace",
         lambda *_args: pytest.fail("Windows directory publication used os.replace"),
     )
@@ -225,7 +225,7 @@ def test_windows_store_publication_retries_transient_access_denial(
 ) -> None:
     bundles = collect_p1_bundles(p1_cases)
     output = tmp_path / "windows-retry-store"
-    real_rename = store_module.os.rename
+    real_rename = filesystem_module.os.rename
     attempts = 0
     delays: list[float] = []
 
@@ -236,14 +236,14 @@ def test_windows_store_publication_retries_transient_access_denial(
             raise PermissionError("synthetic Windows scanner denial")
         real_rename(stage, destination)
 
-    monkeypatch.setattr(store_module, "_IS_WINDOWS", True)
-    monkeypatch.setattr(store_module.os, "rename", rename)
-    monkeypatch.setattr(store_module.time, "sleep", delays.append)
+    monkeypatch.setattr(filesystem_module, "_IS_WINDOWS", True)
+    monkeypatch.setattr(filesystem_module.os, "rename", rename)
+    monkeypatch.setattr(filesystem_module.time, "sleep", delays.append)
 
     save_bundle_store(bundles, output, artifacts=_audit_artifacts(bundles))
 
     assert attempts == 3
-    assert delays == [0.01, 0.02]
+    assert delays == [0.05, 0.10]
     assert load_bundle_store(output).manifest.bundle_count == len(bundles)
 
 
@@ -258,10 +258,10 @@ def test_windows_store_publication_fails_closed_on_destination_race(
         (destination / "foreign.txt").write_text("foreign\n", encoding="utf-8")
         raise PermissionError("destination appeared before publication")
 
-    monkeypatch.setattr(store_module, "_IS_WINDOWS", True)
-    monkeypatch.setattr(store_module.os, "rename", raced_rename)
+    monkeypatch.setattr(filesystem_module, "_IS_WINDOWS", True)
+    monkeypatch.setattr(filesystem_module.os, "rename", raced_rename)
 
-    with pytest.raises(PermissionError, match="destination appeared"):
+    with pytest.raises(FileExistsError, match="destination appeared"):
         save_bundle_store(bundles, output, artifacts=_audit_artifacts(bundles))
 
     assert (output / "foreign.txt").read_text(encoding="utf-8") == "foreign\n"

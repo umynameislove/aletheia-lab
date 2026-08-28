@@ -21,6 +21,7 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_3_closeout import (
 )
 from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import V3RuntimeError
 from aletheia_lab.benchmark.p2.identity import SHA256_PATTERN
+from aletheia_lab.filesystem import publish_staged_directory
 
 PRESERVATION_SCHEMA_VERSION: Final[Literal["p2-v3-3-preservation-receipt/1"]] = (
     "p2-v3-3-preservation-receipt/1"
@@ -400,7 +401,7 @@ def preserve_v3_3_evidence(
         observed_source_hashes["sealed-open-receipt.json"] = _file_sha256(marker_path)
         if observed_source_hashes != source_hashes:
             raise V3RuntimeError("source v3.3 evidence changed during preservation")
-        os.replace(stage, destination)
+        publish_staged_directory(stage, destination)
         return verify_preserved_v3_3(destination)
     except BaseException:
         if stage.exists():

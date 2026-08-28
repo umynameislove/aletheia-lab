@@ -28,6 +28,7 @@ from aletheia_lab.benchmark.p2.contracts import (
     TechnicalDisposition,
 )
 from aletheia_lab.benchmark.p2.validation import validate_contract_bundle
+from aletheia_lab.filesystem import publish_staged_directory
 
 ArtifactKind = Literal[
     "candidate-plan",
@@ -282,7 +283,7 @@ def save_contract_store(
                 handle.write(payload)
                 handle.flush()
                 os.fsync(handle.fileno())
-        os.replace(stage, output)
+        publish_staged_directory(stage, output)
     except BaseException:
         shutil.rmtree(stage, ignore_errors=True)
         raise

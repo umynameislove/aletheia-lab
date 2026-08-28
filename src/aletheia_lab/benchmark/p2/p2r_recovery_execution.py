@@ -9,7 +9,7 @@ import shutil
 import tempfile
 from collections.abc import Sequence
 from datetime import UTC, datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Annotated, Final, Literal, NoReturn
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -37,6 +37,7 @@ from aletheia_lab.benchmark.p2.p2r_recovery_protocol import (
     verify_p2r_recovery_protocol_pair,
 )
 from aletheia_lab.benchmark.p2.p2r_runtime import DatasetSeedMeasurement
+from aletheia_lab.filesystem import publish_staged_directory
 
 RECOVERY_REGISTRATION_SCHEMA_VERSION: Final[
     Literal["p2r-recovery-registration/1"]
@@ -336,13 +337,16 @@ class RecoveryStoreEntry(_StrictFrozenModel):
     @field_validator("relative_path")
     @classmethod
     def _path_is_canonical_and_local(cls, value: str) -> str:
-        candidate = Path(value)
+        posix_candidate = PurePosixPath(value)
+        windows_candidate = PureWindowsPath(value)
         if (
             not value
             or "\\" in value
-            or candidate.is_absolute()
-            or any(part in {"", ".", ".."} for part in candidate.parts)
-            or candidate.as_posix() != value
+            or ":" in value
+            or posix_candidate.is_absolute()
+            or windows_candidate.is_absolute()
+            or any(part in {"", ".", ".."} for part in posix_candidate.parts)
+            or posix_candidate.as_posix() != value
         ):
             raise ValueError("recovery store path must be canonical and relative")
         return value
@@ -519,7 +523,7 @@ def write_recovery_terminal_store(
             {**payload, "store_sha256": canonical_sha256(hash_payload)}
         )
         _write_bytes_durable(temporary / "manifest.json", _json_bytes(manifest))
-        os.replace(temporary, target)
+        publish_staged_directory(temporary, target)
     except Exception:
         shutil.rmtree(temporary, ignore_errors=True)
         raise
