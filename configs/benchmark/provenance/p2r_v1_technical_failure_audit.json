@@ -1,0 +1,46 @@
+{
+  "schema_version": "p2r-v1-failure-audit/1",
+  "study_tags": [
+    "p2r-data-drift-confirmatory-v1",
+    "p2r-preprocessing-mismatch-confirmatory-v1"
+  ],
+  "protocol_sha256s": [
+    "bad097a4298f7925b314f049a762da2f0e4485a24f40860d667ae936b422c289",
+    "4fcca028153fce45098e8547608d16231c33f9a78cdc243ff9931d119eca4904"
+  ],
+  "registration_sha256s": [
+    "a4291fced2354fbc0d7d1ae45118b8ec3233f9db6e0eef52db2e1d8d36710b1d",
+    "c6a8dcaf5ecfff38d429cd37e985bd240e291f4f55d81477dc275e51a7a17af9"
+  ],
+  "execution_commit": "451388b8a5bd9c0e5d421b9130daf00e51268103",
+  "failure_stage": "load_primary",
+  "exception_class": "V3DatasetBindingError",
+  "exception_message_sha256": "fc38248738d0a77b7ba95e83c1573f4addc1ee8f66e52724361c4aab1933765e",
+  "exception_message_preimage": "cannot inspect the bound dataset archive",
+  "terminal_artifact_sha256": "074967051b5e5468ff814bddf56ea8fe1671bdaeeba3cabd225bcf4c8ca0128d",
+  "terminal_store_sha256": "28fab91bf7a24994f93a7a145e3786ae200dab8062d06f7501e114df0ce7e28d",
+  "registration_file_sha256": "a4adff36e5ea3a0fd22920b439b3ca2c4209b1f47bce9b7a957d9460f0c1f4bf",
+  "sealed_marker_file_sha256": "dcedf002f76bef39e568499ff5646a088c791483a36addf0efb7e6d40844f64d",
+  "terminal_manifest_file_sha256": "059a405e8ef64faafb76caf9ab564b2882f58a95f8042f61c71121b0b7bd4984",
+  "terminal_failure_file_sha256": "deab70451ded8e57db917385cf506033796c58fb38b95e7cf8f9336a9a7a6c5b",
+  "terminal_environment_file_sha256": "0e0c3a692edcf5c1f9c0503faa9a04613ee4f41cb4d2b157b83a8ed84b44095e",
+  "required_archive_file_names": [
+    "uci-default-of-credit-card-clients.zip",
+    "uci-online-shoppers-purchasing-intention.zip"
+  ],
+  "required_archive_sha256s": [
+    "56c885f84457f6680f8438f02bfcdac9579323d8a94465ee5f26e32baa727602",
+    "2972e6184d3ad7beaaa831d9fc2b059dc3ee29df69d1ec593c466a5cd8485d14"
+  ],
+  "archives_absent_in_execution_worktree_after_failure": [true, true],
+  "valid_archive_copies_verified_elsewhere_after_failure": true,
+  "partial_outcome_published": false,
+  "scientific_disposition_generated": false,
+  "model_fitted": false,
+  "rerun_forbidden": true,
+  "root_cause_classification": "preflight_archive_readiness_defect",
+  "causal_attribution": "exception_preimage_and_post_failure_filesystem_state_verified",
+  "scientific_semantics_changed_by_repair": false,
+  "original_attempt_may_be_overwritten": false,
+  "recovery_scope": "new_protocol_tag_release_registration_and_single_prospective_execution_required"
+}

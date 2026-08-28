@@ -48,6 +48,13 @@ from aletheia_lab.benchmark.p2.p2r_closeout import (
     registration_from_release,
     write_terminal_store,
 )
+from aletheia_lab.benchmark.p2.p2r_recovery import (
+    DEFAULT_P2R_READINESS_PATH,
+    build_p2r_archive_readiness,
+    load_archive_readiness,
+    verify_p2r_archive_readiness,
+    write_archive_readiness_exclusive,
+)
 from aletheia_lab.benchmark.p2.p2r_runtime import (
     DatasetSeedMeasurement,
     build_joint_candidate_plan,
@@ -89,9 +96,7 @@ def _verify_clean_main(root: Path) -> str:
     return head
 
 
-def _tagged_protocol(
-    *, root: Path, path: Path, protocol: LightweightConfirmatoryProtocol
-) -> str:
+def _tagged_protocol(*, root: Path, path: Path, protocol: LightweightConfirmatoryProtocol) -> str:
     tag = protocol.required_git_tag
     if _git(root, "cat-file", "-t", f"refs/tags/{tag}") != "tag":
         raise P2RCloseoutError("registered P2R protocol tag must be annotated")
@@ -128,9 +133,7 @@ def _release_payload(tag: str) -> object:
         with urllib.request.urlopen(request, timeout=30) as response:  # nosec B310
             return json.loads(response.read())
     except (OSError, urllib.error.HTTPError, json.JSONDecodeError) as exc:
-        raise P2RCloseoutError(
-            f"immutable P2R GitHub release is unavailable: {tag}"
-        ) from exc
+        raise P2RCloseoutError(f"immutable P2R GitHub release is unavailable: {tag}") from exc
 
 
 def _write_registration_exclusive(
@@ -153,7 +156,9 @@ def _write_registration_exclusive(
             os.fsync(handle.fileno())
     except FileExistsError:
         if _load_registrations(path) != tuple(registrations):
-            raise P2RCloseoutError("existing P2R registration contains different evidence") from None
+            raise P2RCloseoutError(
+                "existing P2R registration contains different evidence"
+            ) from None
 
 
 def _load_registrations(path: Path) -> tuple[P2RProtocolRegistration, ...]:
@@ -240,22 +245,28 @@ def _preflight(args: argparse.Namespace) -> dict[str, object]:
     output = _resolve(root, args.output)
     if marker.exists() or marker.is_symlink() or output.exists() or output.is_symlink():
         raise P2RCloseoutError("P2R execution marker or terminal store already exists")
+    manifest = load_v3_dataset_binding_manifest(_resolve(root, args.manifest))
+    receipt = load_v3_dataset_binding_receipt(_resolve(root, args.receipt))
+    readiness = build_p2r_archive_readiness(
+        manifest=manifest,
+        pinned_receipt=receipt,
+        archive_directory=_resolve(root, args.data_dir),
+    )
+    write_archive_readiness_exclusive(_resolve(root, args.readiness), readiness)
     _write_registration_exclusive(registration_path, registrations)
     return {
         "status": "registered_p2r_preflight_pass",
         "execution_commit": head,
-        "protocol_sha256s": {
-            item.mechanism: item.canonical_sha256() for item in protocols
-        },
-        "registration_sha256s": {
-            item.mechanism: item.canonical_sha256() for item in registrations
-        },
+        "protocol_sha256s": {item.mechanism: item.canonical_sha256() for item in protocols},
+        "registration_sha256s": {item.mechanism: item.canonical_sha256() for item in registrations},
         "tagged_protocol_commits": {
             item.mechanism: item.tagged_protocol_commit for item in registrations
         },
         "dataset_ids": [item.dataset_id for item in drift.datasets],
         "seeds": list(drift.execution.seeds),
         "registered_attempts_consumed": 0,
+        "archive_readiness_sha256": readiness.canonical_sha256(),
+        "all_pinned_archives_reproduced": True,
         "sealed_test_opened": False,
         "model_fitted": False,
         "outcomes_generated": False,
@@ -291,6 +302,12 @@ def _execute(args: argparse.Namespace) -> dict[str, object]:
         raise P2RCloseoutError("runtime dataset manifest differs from both protocols")
     if receipt.canonical_sha256() != drift.artifacts.dataset_receipt_sha256:
         raise P2RCloseoutError("runtime dataset receipt differs from both protocols")
+    verify_p2r_archive_readiness(
+        load_archive_readiness(_resolve(root, args.readiness)),
+        manifest=manifest,
+        pinned_receipt=receipt,
+        archive_directory=_resolve(root, args.data_dir),
+    )
     reused_protocol = load_v3_3_confirmatory_protocol(_resolve(root, args.split_protocol))
     instrument = load_instrument_validity_protocol(
         _resolve(root, Path(drift.artifacts.instrument_protocol_uri))
@@ -317,7 +334,9 @@ def _execute(args: argparse.Namespace) -> dict[str, object]:
                 archive_path=_resolve(root, args.data_dir) / binding.archive.file_name,
             )
             split_receipt = next(
-                item for item in reused_protocol.dataset_splits if item.dataset_id == binding.dataset_id
+                item
+                for item in reused_protocol.dataset_splits
+                if item.dataset_id == binding.dataset_id
             )
             prepared = prepare_runtime_dataset(
                 protocol=reused_protocol,
@@ -352,9 +371,7 @@ def _execute(args: argparse.Namespace) -> dict[str, object]:
             measurements=checked_measurements,
             environment=environment,
             protocols={"data_drift": drift, "preprocessing_bug": preprocessing},
-            registrations={
-                item.mechanism: item for item in registrations
-            },
+            registrations={item.mechanism: item for item in registrations},
             instrument_protocol=instrument,
         )
         store = write_terminal_store(
@@ -434,6 +451,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--receipt", type=Path, default=DEFAULT_V3_DATASET_RECEIPT_PATH)
     parser.add_argument("--split-protocol", type=Path, default=DEFAULT_V3_3_PROTOCOL_PATH)
     parser.add_argument("--data-dir", type=Path, default=_DEFAULT_DATA_DIR)
+    parser.add_argument("--readiness", type=Path, default=DEFAULT_P2R_READINESS_PATH)
     parser.add_argument("--registration", type=Path, default=_DEFAULT_REGISTRATION)
     parser.add_argument("--marker", type=Path, default=_DEFAULT_MARKER)
     parser.add_argument("--output", type=Path, default=_DEFAULT_STORE)
