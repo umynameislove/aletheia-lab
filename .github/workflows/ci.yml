@@ -57,6 +57,7 @@ jobs:
           src/aletheia_lab/__main__.py
           src/aletheia_lab/cli.py
           src/aletheia_lab/config.py
+          src/aletheia_lab/filesystem.py
           src/aletheia_lab/baseline
           src/aletheia_lab/data
           src/aletheia_lab/benchmark
@@ -84,12 +85,16 @@ jobs:
           python -m pip install -e ".[dev]"
       - name: Test Windows project boundary
         run: python scripts/run_test_profile.py project -- --durations=20
-      - name: Test Windows evidence-store publication
+      - name: Test Windows immutable-store publication
         run: >-
           pytest
+          tests/unit/test_filesystem_publication.py
           tests/unit/test_evidence_store.py
           tests/unit/test_matched_diagnosis_pilot.py
           tests/unit/test_p1_closeout.py
+          tests/unit/test_pilot_evaluator.py
+          tests/unit/test_p2r_recovery_execution.py
+          tests/unit/test_p2_evidence_bundle_duplicates.py
           --durations=20
 
   # ---------------------------------------------------------------------------

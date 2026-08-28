@@ -34,6 +34,7 @@ from aletheia_lab.benchmark.p2.p2r_runtime import (
     measurement_census,
 )
 from aletheia_lab.benchmark.p2.p2r_runtime import paired_observations as derive_paired_observations
+from aletheia_lab.filesystem import publish_staged_directory
 
 REGISTRATION_SCHEMA_VERSION: Final[Literal["p2r-protocol-registration/1"]] = (
     "p2r-protocol-registration/1"
@@ -681,7 +682,7 @@ def write_terminal_store(
                 handle.write(content)
                 handle.flush()
                 os.fsync(handle.fileno())
-        os.replace(temporary, target)
+        publish_staged_directory(temporary, target)
     except Exception:
         shutil.rmtree(temporary, ignore_errors=True)
         raise

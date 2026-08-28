@@ -31,6 +31,7 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import (
 )
 from aletheia_lab.benchmark.p2.confirmatory_v3_shift import holm_adjust_all
 from aletheia_lab.benchmark.p2.identity import SHA256_PATTERN
+from aletheia_lab.filesystem import publish_staged_directory
 
 REGISTRATION_SCHEMA_VERSION: Final[Literal["p2-v3-registration/1"]] = (
     "p2-v3-registration/1"
@@ -481,7 +482,7 @@ def write_result_store(
             store_sha256=root,
         )
         _write_exclusive(stage / "store-manifest.json", _json_bytes(manifest))
-        os.replace(stage, destination)
+        publish_staged_directory(stage, destination)
         return manifest
     except BaseException:
         if stage.exists():

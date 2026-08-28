@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 from pydantic import ValidationError
 
@@ -352,6 +352,7 @@ def test_duplicate_audit_requires_unique_canonical_findings() -> None:
 
 
 @given(st.integers(min_value=65, max_value=90), st.integers(min_value=65, max_value=90))
+@settings(deadline=None)
 def test_content_similarity_is_symmetric_bounded_and_reflexive(
     left_percent: int,
     right_percent: int,

@@ -285,7 +285,10 @@ def test_cross_mechanism_registration_reuse_is_rejected() -> None:
         )
 
 
-@pytest.mark.parametrize("path", ("../outside.json", "/absolute.json", "a\\b.json"))
+@pytest.mark.parametrize(
+    "path",
+    ("../outside.json", "/absolute.json", "C:\\absolute.json", "a\\b.json"),
+)
 def test_recovery_store_entry_rejects_nonlocal_paths(path: str) -> None:
     with pytest.raises(ValidationError, match="canonical and relative"):
         RecoveryStoreEntry(relative_path=path, sha256="0" * 64, byte_count=1)
