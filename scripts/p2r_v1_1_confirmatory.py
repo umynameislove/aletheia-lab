@@ -204,7 +204,9 @@ def _load_recovery_registrations(path: Path) -> tuple[P2RRecoveryRegistration, .
         raw = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(raw, list):
             raise TypeError("recovery registration must contain a list")
-        return tuple(P2RRecoveryRegistration.model_validate(item) for item in raw)
+        return tuple(
+            P2RRecoveryRegistration.model_validate_json(json.dumps(item)) for item in raw
+        )
     except (OSError, TypeError, ValueError) as exc:
         raise P2RRecoveryExecutionError(
             "P2R v1.1 registration is unavailable or invalid"
@@ -216,7 +218,9 @@ def _load_scientific_registrations(path: Path) -> tuple[P2RProtocolRegistration,
         raw = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(raw, list):
             raise TypeError("scientific registration must contain a list")
-        registrations = tuple(P2RProtocolRegistration.model_validate(item) for item in raw)
+        registrations = tuple(
+            P2RProtocolRegistration.model_validate_json(json.dumps(item)) for item in raw
+        )
     except (OSError, TypeError, ValueError) as exc:
         raise P2RRecoveryExecutionError(
             "P2R v1 scientific registration is unavailable or invalid"

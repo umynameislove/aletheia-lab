@@ -5,14 +5,17 @@ from __future__ import annotations
 import importlib.util
 import inspect
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from types import ModuleType
 
 import pytest
 import yaml
 
+from aletheia_lab.benchmark.p2.p2r_closeout import P2RProtocolRegistration
 from aletheia_lab.benchmark.p2.p2r_recovery_execution import (
     P2RRecoveryExecutionError,
+    P2RRecoveryRegistration,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -112,3 +115,70 @@ def test_registration_write_is_idempotent_but_not_replaceable(tmp_path: Path) ->
     assert path.read_bytes() == first
     with pytest.raises(P2RRecoveryExecutionError, match="different evidence"):
         module._write_json_exclusive(path, (_Model("b"),))
+
+
+def test_registration_loaders_round_trip_serialized_datetime_evidence(
+    tmp_path: Path,
+) -> None:
+    module = _entrypoint()
+    timestamp = datetime(2026, 8, 28, tzinfo=UTC)
+    recovery = P2RRecoveryRegistration(
+        mechanism="data_drift",
+        recovery_protocol_sha256="1" * 64,
+        predecessor_protocol_sha256="2" * 64,
+        predecessor_terminal_store_sha256="3" * 64,
+        tagged_protocol_commit="4" * 40,
+        tag_name="p2r-data-drift-confirmatory-v1.1",
+        release_url=(
+            "https://github.com/umynameislove/aletheia-lab/releases/tag/"
+            "p2r-data-drift-confirmatory-v1.1"
+        ),
+        release_id=1,
+        release_created_at=timestamp,
+        release_published_at=timestamp,
+        immutable=True,
+        draft=False,
+        prerelease=False,
+    )
+    scientific = P2RProtocolRegistration(
+        mechanism="data_drift",
+        protocol_sha256="5" * 64,
+        tagged_protocol_commit="6" * 40,
+        tag_name="p2r-data-drift-confirmatory-v1",
+        release_url=(
+            "https://github.com/umynameislove/aletheia-lab/releases/tag/"
+            "p2r-data-drift-confirmatory-v1"
+        ),
+        release_id=2,
+        release_created_at=timestamp,
+        release_published_at=timestamp,
+        immutable=True,
+        draft=False,
+        prerelease=False,
+    )
+    scientific_preprocessing = P2RProtocolRegistration(
+        mechanism="preprocessing_bug",
+        protocol_sha256="7" * 64,
+        tagged_protocol_commit="8" * 40,
+        tag_name="p2r-preprocessing-mismatch-confirmatory-v1",
+        release_url=(
+            "https://github.com/umynameislove/aletheia-lab/releases/tag/"
+            "p2r-preprocessing-mismatch-confirmatory-v1"
+        ),
+        release_id=3,
+        release_created_at=timestamp,
+        release_published_at=timestamp,
+        immutable=True,
+        draft=False,
+        prerelease=False,
+    )
+    recovery_path = tmp_path / "recovery.json"
+    scientific_path = tmp_path / "scientific.json"
+    module._write_json_exclusive(recovery_path, (recovery,))
+    module._write_json_exclusive(scientific_path, (scientific, scientific_preprocessing))
+
+    assert module._load_recovery_registrations(recovery_path) == (recovery,)
+    assert module._load_scientific_registrations(scientific_path) == (
+        scientific,
+        scientific_preprocessing,
+    )
