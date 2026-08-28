@@ -1,0 +1,83 @@
+{
+  "schema_version": "p2r-lightweight-confirmatory-recovery/1",
+  "protocol_version": "p2r-preprocessing_bug-confirmatory/1.1",
+  "status": "technical_recovery_protocol_candidate_not_registered",
+  "mechanism": "preprocessing_bug",
+  "artifacts": {
+    "predecessor_protocol_uri": "configs/benchmark/p2r_preprocessing_confirmatory_protocol.json",
+    "predecessor_protocol_file_sha256": "9b81d608df02e402760217fd1d8f1b891dd0dd24b9a93d9a5d9396ba65fe2802",
+    "predecessor_protocol_sha256": "4fcca028153fce45098e8547608d16231c33f9a78cdc243ff9931d119eca4904",
+    "failure_audit_uri": "configs/benchmark/provenance/p2r_v1_technical_failure_audit.json",
+    "failure_audit_file_sha256": "f36f4a40472b022d922476b41873fd0c8bca08f7bd097798445afbae1e0a54d6",
+    "failure_audit_sha256": "b5d8701cbc50f2eab32cfe0a1d880126907510778cb58edea2f1273397caec24",
+    "readiness_implementation_uri": "src/aletheia_lab/benchmark/p2/p2r_recovery.py",
+    "readiness_implementation_file_sha256": "4f81a6ab15ee7636da0c0b3087ff08b524ac3ea46f38db7b906d4f71de6533a7",
+    "predecessor_terminal_store_sha256": "28fab91bf7a24994f93a7a145e3786ae200dab8062d06f7501e114df0ce7e28d"
+  },
+  "readiness": {
+    "receipt_schema_version": "p2r-archive-readiness/1",
+    "item_schema_version": "p2r-archive-readiness-item/1",
+    "expected_receipt_sha256": "528e5d1d25f905c450faeafe6c35c87b7cc09f25f4f9fe77666f85da5c36403c",
+    "required_archive_file_names": [
+      "uci-default-of-credit-card-clients.zip",
+      "uci-online-shoppers-purchasing-intention.zip"
+    ],
+    "required_archive_sha256s": [
+      "56c885f84457f6680f8438f02bfcdac9579323d8a94465ee5f26e32baa727602",
+      "2972e6184d3ad7beaaa831d9fc2b059dc3ee29df69d1ec593c466a5cd8485d14"
+    ],
+    "inspection_scope": "encoding_and_class_eligibility_only",
+    "reproduce_pinned_archive_member_schema_and_eligibility": true,
+    "required_before_registration_receipt": true,
+    "revalidated_immediately_before_sealed_marker": true,
+    "failure_consumes_execution_attempt": false,
+    "split_membership_compilation_forbidden": true,
+    "sealed_partition_open_forbidden": true,
+    "model_fit_forbidden": true,
+    "predictive_metrics_forbidden": true
+  },
+  "technical_recovery": {
+    "predecessor_execution_commit": "451388b8a5bd9c0e5d421b9130daf00e51268103",
+    "recovery_implementation_commit": "c2fd14155c857fe6595fa8bea78db607860fa29d",
+    "predecessor_failure_stage": "load_primary",
+    "root_cause_classification": "preflight_archive_readiness_defect",
+    "predecessor_model_fitted": false,
+    "predecessor_partial_outcome_published": false,
+    "predecessor_scientific_disposition_generated": false,
+    "predecessor_rerun_forbidden": true,
+    "predecessor_attempt_permanently_retired": true,
+    "allowed_changes": [
+      "pre_registration_archive_readiness_gate",
+      "pre_marker_archive_readiness_revalidation",
+      "permanent_v1_execution_retirement",
+      "protocol_tag_release_registration_and_store_identity"
+    ],
+    "datasets_or_roles_changed": false,
+    "split_membership_changed": false,
+    "model_or_preprocessing_changed": false,
+    "seeds_or_candidate_plan_changed": false,
+    "intervention_or_nuisance_comparator_changed": false,
+    "estimand_metric_or_threshold_changed": false,
+    "exclusion_or_disposition_rule_changed": false,
+    "outcome_information_used_for_recovery": false,
+    "maximum_registered_execution_attempts": 1,
+    "further_recovery_requires_new_disclosed_protocol": true
+  },
+  "governance": {
+    "required_git_tag": "p2r-preprocessing-mismatch-confirmatory-v1.1",
+    "immutable_release_required_before_execution": true,
+    "tagged_protocol_must_equal_execution_protocol": true,
+    "recovery_implementation_must_predate_registration": true,
+    "changes_after_registration_require_new_protocol_version": true,
+    "paired_mechanism_outcomes_released_together": true,
+    "one_sealed_open_marker_for_both_mechanisms": true,
+    "predecessor_failure_evidence_must_remain_preserved": true,
+    "recovery_is_not_independent_new_dataset_replication": true,
+    "registration_authorized_by_this_file": false,
+    "execution_authorized_by_this_file": false
+  },
+  "outcome_fields_forbidden": true,
+  "model_fitted": false,
+  "predictive_metrics_generated": false,
+  "sealed_outcomes_generated": false
+}
