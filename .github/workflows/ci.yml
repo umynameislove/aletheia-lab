@@ -84,6 +84,13 @@ jobs:
           python -m pip install -e ".[dev]"
       - name: Test Windows project boundary
         run: python scripts/run_test_profile.py project -- --durations=20
+      - name: Test Windows evidence-store publication
+        run: >-
+          pytest
+          tests/unit/test_evidence_store.py
+          tests/unit/test_matched_diagnosis_pilot.py
+          tests/unit/test_p1_closeout.py
+          --durations=20
 
   # ---------------------------------------------------------------------------
   # Quality job — lint and hygiene run once (not per-version).

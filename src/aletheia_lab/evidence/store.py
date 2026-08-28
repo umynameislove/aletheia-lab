@@ -7,6 +7,7 @@ import json
 import os
 import shutil
 import tempfile
+import time
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath, PureWindowsPath
@@ -23,6 +24,13 @@ from aletheia_lab.evidence.schema import (
 
 EVIDENCE_STORE_SCHEMA_VERSION: Final[Literal["evidence-store/2"]] = "evidence-store/2"
 _SHA256_PATTERN = r"^[0-9a-f]{64}$"
+_WINDOWS_DIRECTORY_PUBLISH_DELAYS: Final[tuple[float, ...]] = (
+    0.01,
+    0.02,
+    0.04,
+    0.08,
+)
+_IS_WINDOWS: Final[bool] = os.name == "nt"
 
 
 def _json_bytes(payload: object) -> bytes:
@@ -242,6 +250,30 @@ def _build_store_files(
     return manifest, files
 
 
+def _publish_staged_directory(stage: Path, output: Path) -> None:
+    """Publish a complete staged directory using one same-volume rename.
+
+    ``os.replace`` provides the desired no-gap publication on POSIX. Windows can
+    reject directory replacement with ``ERROR_ACCESS_DENIED`` even when the
+    destination does not exist, so it uses ``os.rename`` instead. Short bounded
+    retries tolerate transient filesystem scanners. There is deliberately no
+    copy fallback: a destination race or persistent denial remains fail-closed.
+    """
+
+    if not _IS_WINDOWS:
+        os.replace(stage, output)
+        return
+
+    for delay in (*_WINDOWS_DIRECTORY_PUBLISH_DELAYS, None):
+        try:
+            os.rename(stage, output)
+            return
+        except PermissionError:
+            if output.exists() or output.is_symlink() or delay is None:
+                raise
+            time.sleep(delay)
+
+
 def save_bundle_store(
     bundles: tuple[EvidenceBundle, ...],
     output_dir: str | Path,
@@ -279,7 +311,7 @@ def save_bundle_store(
                 handle.write(payload)
                 handle.flush()
                 os.fsync(handle.fileno())
-        os.replace(stage, output)
+        _publish_staged_directory(stage, output)
     except BaseException:
         shutil.rmtree(stage, ignore_errors=True)
         raise
