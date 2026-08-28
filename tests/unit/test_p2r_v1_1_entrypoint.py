@@ -9,6 +9,7 @@ from pathlib import Path
 from types import ModuleType
 
 import pytest
+import yaml
 
 from aletheia_lab.benchmark.p2.p2r_recovery_execution import (
     P2RRecoveryExecutionError,
@@ -16,6 +17,7 @@ from aletheia_lab.benchmark.p2.p2r_recovery_execution import (
 
 ROOT = Path(__file__).resolve().parents[2]
 ENTRYPOINT_PATH = ROOT / "scripts/p2r_v1_1_confirmatory.py"
+CI_PATH = ROOT / ".github/workflows/ci.yml"
 
 
 def _entrypoint() -> ModuleType:
@@ -43,6 +45,14 @@ def test_runtime_uses_new_paths_and_never_overwrites_v1() -> None:
     assert args.registration != args.v1_registration
     assert args.marker != args.v1_marker
     assert args.output != args.v1_store
+
+
+def test_ci_test_matrix_preserves_history_for_registered_commit_ancestry() -> None:
+    workflow = yaml.safe_load(CI_PATH.read_text(encoding="utf-8"))
+    steps = workflow["jobs"]["test"]["steps"]
+    checkout = next(step for step in steps if step.get("uses") == "actions/checkout@v5")
+
+    assert checkout.get("with", {}).get("fetch-depth") == 0
 
 
 def test_preflight_orders_readiness_before_registration() -> None:
