@@ -362,6 +362,7 @@ documentation, and reproducible artifacts.
 - [P3 core closeout](docs/p3-closeout.md)
 - [P3 scope amendment and deferred gates](docs/p3-scope-amendment.md)
 - [P2R instrument-validity and empty-evidence contract](docs/p2r-instrument-validity.md)
+- [P2R registered confirmatory execution](docs/p2r-confirmatory-execution.md)
 - [Related work and research positioning](docs/related-work.md)
 - [Architecture decisions](docs/adr/)
 
