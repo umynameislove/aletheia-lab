@@ -28,6 +28,10 @@ jobs:
         python-version: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@v5
+        with:
+          # Registered protocol tests verify that frozen implementation commits
+          # are ancestors of the candidate under test.
+          fetch-depth: 0
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
