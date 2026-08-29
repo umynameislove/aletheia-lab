@@ -4,12 +4,15 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from pydantic import ValidationError
 
 from aletheia_lab.benchmark.p2.confirmatory_closeout import ExecutionEnvironmentReceipt
 from aletheia_lab.benchmark.p2.confirmatory_v3_datasets import (
+    DatasetBindingAudit,
+    V3DatasetBinding,
     load_v3_dataset_binding_manifest,
     load_v3_dataset_binding_receipt,
 )
@@ -53,11 +56,27 @@ def _amendments() -> tuple[
 
 @pytest.fixture(scope="module")
 def readiness() -> P2RArchiveReadinessReceipt:
-    return build_p2r_archive_readiness(
-        manifest=load_v3_dataset_binding_manifest(),
-        pinned_receipt=load_v3_dataset_binding_receipt(),
-        archive_directory="data/raw/p2-v3",
-    )
+    manifest = load_v3_dataset_binding_manifest()
+    pinned_receipt = load_v3_dataset_binding_receipt()
+    pinned_audits = {item.dataset_id: item for item in pinned_receipt.datasets}
+
+    def inspect(**kwargs: object) -> DatasetBindingAudit:
+        dataset = kwargs["dataset"]
+        assert isinstance(dataset, V3DatasetBinding)
+        return pinned_audits[dataset.dataset_id]
+
+    # Registration tests exercise evidence binding, not archive parsing. Reuse the
+    # already-pinned audit objects so this unit module remains hermetic on clean CI
+    # runners where licensed source archives are intentionally absent.
+    with patch(
+        "aletheia_lab.benchmark.p2.p2r_recovery.inspect_v3_dataset_archive",
+        inspect,
+    ):
+        return build_p2r_archive_readiness(
+            manifest=manifest,
+            pinned_receipt=pinned_receipt,
+            archive_directory="outcome-blind-test-double",
+        )
 
 
 def _release(amendment: P2RV12MethodologicalAmendmentProtocol, marker: int) -> dict[str, object]:
