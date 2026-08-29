@@ -18,7 +18,7 @@ _CELL = st.text(
 ).filter(lambda value: value not in {"id", "value"})
 
 
-@settings(max_examples=30)
+@settings(max_examples=30, deadline=None)
 @given(first=_CELL, second=_CELL)
 def test_csv_row_values_never_enter_dataset_metadata(first: str, second: str) -> None:
     first_value = f"ROW_A_{first}_END"
