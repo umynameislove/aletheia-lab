@@ -181,3 +181,11 @@ feature has a large predictive effect, or that the result generalizes beyond
 the two named datasets. Those are prospective scientific questions. Until a
 successor completes, data drift and preprocessing mismatch remain pending
 confirmatory admission.
+
+## Prospective successor
+
+The registered v1.1 attempt remains immutable and retired. Its audit authorizes
+no replay. The prospective
+[v1.2 methodological amendment](p2r-v1-2-methodological-amendment.md) binds
+this failure evidence and the complete outcome-blind feasibility census; it
+does not alter the historical v1.1 record.
