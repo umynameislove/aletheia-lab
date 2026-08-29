@@ -68,6 +68,23 @@ A diagnosis can be correct but unsupported, supported but incorrect, both or nei
 
 The joint protocol studies these properties without equating plausible text, a valid citation or task accuracy with faithful diagnosis.
 
+## Contribution 6 — Intervention support before scientific admission
+
+Experimental and causal-inference methods distinguish a failed or unsupported
+manipulation from a negative outcome under a valid manipulation. Positivity and
+overlap formalize the requirement that the declared intervention be supported
+by the study population; manipulation-validation work likewise treats evidence
+that an intervention changed its intended construct as part of construct
+validity.
+
+P2R adapts that prior logic to deterministic fault injection. Before a
+registered attempt can be authorized, each mechanism direction must have enough
+susceptible sealed rows to deliver the declared dose, plus a prospectively
+frozen reserve. This is an instrument-validity gate, not a causal estimator and
+not a claim that passing the gate proves dominant cause. The contribution is
+the content-addressed, outcome-blind integration of intervention support with
+mechanism admission, failure receipts and immutable benchmark lineage.
+
 ## Comparison requirements
 
 The related work requires the following comparison structure:
@@ -120,6 +137,9 @@ abstention rather than a forced single label.
 - [TRAJDEBUG](https://arxiv.org/abs/2608.06346)
 - [AgentDebugX](https://arxiv.org/abs/2607.18754)
 - [Beyond Fault Localization](https://arxiv.org/abs/2608.21310)
+- [Causal Inference: What If](https://miguelhernan.org/whatifbook)
+- [Diagnosing and responding to violations in the positivity assumption](https://doi.org/10.1177/0962280210386207)
+- [Construct Validation of Experimental Manipulations in Social Psychology](https://pmc.ncbi.nlm.nih.gov/articles/PMC7954782/)
 - [CodeGraph](https://github.com/codegraph-ai/CodeGraph) — project/system
   documentation only; self-reported capabilities are not scientific results.
 
