@@ -86,3 +86,14 @@ recovery wrapper, uses new registration/marker/store paths, verifies both
 immutable releases, and consumes at most one paired prospective attempt. The
 protocol-registration task itself must not execute a model or generate an
 outcome.
+
+## Historical execution note
+
+The protocol above remains the immutable record of what was authorized. The
+single v1.1 attempt subsequently terminated at `execute_replication` without a
+scientific disposition. The post-attempt
+[replication-failure audit](p2r-v1-1-replication-failure.md) found a registered
+intervention-capacity defect in the online-shoppers `VisitorType` data-drift
+direction. This note does not amend v1.1; it links the retired protocol to its
+content-addressed terminal evidence and the requirements for a prospective
+methodological successor.

@@ -366,6 +366,7 @@ documentation, and reproducible artifacts.
 - [P2R v1 archive-readiness recovery](docs/p2r-v1-archive-readiness-recovery.md)
 - [P2R v1.1 registered recovery protocol](docs/p2r-v1-1-recovery-protocol.md)
 - [P2R v1.1 recovery execution and closeout](docs/p2r-v1-1-execution.md)
+- [P2R v1.1 replication-failure and intervention-support audit](docs/p2r-v1-1-replication-failure.md)
 - [Related work and research positioning](docs/related-work.md)
 - [Architecture decisions](docs/adr/)
 

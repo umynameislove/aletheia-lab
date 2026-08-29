@@ -1,0 +1,55 @@
+{
+  "schema_version": "p2r-v1-1-replication-failure-audit/1",
+  "study_tags": [
+    "p2r-data-drift-confirmatory-v1.1",
+    "p2r-preprocessing-mismatch-confirmatory-v1.1"
+  ],
+  "recovery_protocol_sha256s": [
+    "e9d9dd57f3e92a0825631c11dbf2d570b01a993a04757c8e08a503f1c76c0003",
+    "4a166b04da1b801af6d625703a900d542dc66d001c88a486a0a8984c792230f2"
+  ],
+  "recovery_registration_sha256s": [
+    "1c71ec4b909d7001777fb5afb68841701a07c122b30131a7b951ff557a40f2df",
+    "5dfdc996189909588fa8382055446006d1bda614b253dce28439f09c5d49fbc0"
+  ],
+  "scientific_protocol_sha256s": [
+    "bad097a4298f7925b314f049a762da2f0e4485a24f40860d667ae936b422c289",
+    "4fcca028153fce45098e8547608d16231c33f9a78cdc243ff9931d119eca4904"
+  ],
+  "execution_commit": "3aa6252f1a751721f91fc7142411add66b42351d",
+  "execution_runtime_file_sha256": "1d1668c7d81d6298b7d00701b4a28e3d0f3143dc5e338a3141b91aef9dd8045f",
+  "execution_entrypoint_file_sha256": "a283a24cf2e49bfb83ca16f21f08e5ddb9ae1b9bfa723f994af43f0ac9ffc816",
+  "failure_stage": "execute_replication",
+  "exception_class": "P2RRuntimeError",
+  "exception_message_sha256": "f56917bf211df220637ebdfd2b83cf0e1de68b582b905f7fd838f30f6061826c",
+  "exception_message_preimage": "registered manipulation cannot achieve its declared row count",
+  "terminal_store_sha256": "aafbecaaab43dddad538cf23a66190ca2b71c1a573ed04c7232db14105e12a53",
+  "scientific_store_sha256": "33badf1e34cf9a6546ee2c920f9a279ac957db2d6d3c8c471315d54544691e66",
+  "registration_file_sha256": "b7b62a0bf79568d2a48d61d03c1f8bd90c51b4ed1314a7c920a5c0e5a91fd90b",
+  "sealed_marker_file_sha256": "ba2022843e9cce9abd8887fab7042b4760db2702067351dd36325ad4cb2a89dc",
+  "terminal_manifest_file_sha256": "5010bb88fa17073f0ed4322b6cd04614923fe6da817a45132c7e0405c0df889e",
+  "terminal_failure_file_sha256": "4646d945876c7db7f702a82a1b78e5a798dee1b93df3a43afac4efa15efb0602",
+  "terminal_environment_file_sha256": "5ce98504a6490d0a8bde59e7ff320c194387357912f819ca5ccd7b9ea31d27bb",
+  "feasibility_receipt_sha256": "2234d0c7bf9b1a35e971792a34134c3917ce35b8ff6410afec8f64625f673c13",
+  "failed_dataset_id": "uci_online_shoppers_purchasing_intention",
+  "failed_mechanism": "data_drift",
+  "failed_feature": "VisitorType",
+  "declared_target_row_count": 493,
+  "eligible_row_count": 343,
+  "capacity_shortfall": 150,
+  "replacement_feature": "OperatingSystems",
+  "root_cause_classification": "registered_intervention_capacity_defect",
+  "causal_attribution": "terminal_preimage_control_flow_and_covariate_capacity_census_reconcile",
+  "implementation_bug": false,
+  "scientific_negative_result": false,
+  "protocol_feasibility_defect": true,
+  "predictive_outcomes_inspected_for_repair": false,
+  "partial_outcome_published": false,
+  "scientific_disposition_generated": false,
+  "rerun_forbidden": true,
+  "v1_1_attempt_retired": true,
+  "scientific_semantics_changed_by_repair": true,
+  "required_successor_scope": "prospective_v1_2_methodological_amendment_with_structured_dose_and_feasibility_binding",
+  "independent_new_dataset_replication": false,
+  "audit_sha256": "077c2acfcd37fb3c85253caa4644130ef7be5b818e39558c43613b31b28f5175"
+}

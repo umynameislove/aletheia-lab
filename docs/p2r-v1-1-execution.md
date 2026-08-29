@@ -111,3 +111,18 @@ Possible scientific dispositions remain `admitted`, `assumption_limited`, or
 `rejected` per mechanism and are derived from the unchanged v1 rules. Passing
 CI, publishing releases, completing preflight or obtaining a technically valid
 store does not by itself constitute scientific admission.
+
+## Recorded terminal result
+
+The single v1.1 attempt ended at `execute_replication` as a structured technical
+failure. Its immutable terminal-store SHA-256 is
+`aafbecaaab43dddad538cf23a66190ca2b71c1a573ed04c7232db14105e12a53`.
+No complete scientific census or mechanism disposition was published, and the
+attempt must not be run again.
+
+The [replication-failure audit](p2r-v1-1-replication-failure.md) reconciles the
+terminal message, execution control flow, and a complete covariate-only
+capacity census. It classifies the failure as a registered intervention-
+capacity defect: the online-shoppers `VisitorType` data-drift direction had 343
+eligible rows for a declared 493-row dose. Any successor must therefore be a
+prospective methodological amendment, not another technical-only retry.
