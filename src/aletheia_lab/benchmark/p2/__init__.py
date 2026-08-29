@@ -901,6 +901,33 @@ from aletheia_lab.benchmark.p2.p2r_runtime import (
     measurement_census,
     paired_observations,
 )
+from aletheia_lab.benchmark.p2.p2r_v1_2_execution import (
+    MARKER_SCHEMA_VERSION as P2R_V1_2_MARKER_SCHEMA_VERSION,
+)
+from aletheia_lab.benchmark.p2.p2r_v1_2_execution import (
+    P2R_V1_2_TAGGED_COMMIT,
+    P2RV12ExecutionError,
+    P2RV12Registration,
+    P2RV12SealedMarker,
+)
+from aletheia_lab.benchmark.p2.p2r_v1_2_execution import (
+    REGISTRATION_SCHEMA_VERSION as P2R_V1_2_REGISTRATION_SCHEMA_VERSION,
+)
+from aletheia_lab.benchmark.p2.p2r_v1_2_execution import (
+    build_sealed_marker as build_p2r_v1_2_sealed_marker,
+)
+from aletheia_lab.benchmark.p2.p2r_v1_2_execution import (
+    compile_execution_protocol as compile_p2r_v1_2_execution_protocol,
+)
+from aletheia_lab.benchmark.p2.p2r_v1_2_execution import (
+    registration_from_release as p2r_v1_2_registration_from_release,
+)
+from aletheia_lab.benchmark.p2.p2r_v1_2_execution import (
+    verify_registration_pair as verify_p2r_v1_2_registration_pair,
+)
+from aletheia_lab.benchmark.p2.p2r_v1_2_execution import (
+    write_marker_exclusive as write_p2r_v1_2_marker_exclusive,
+)
 from aletheia_lab.benchmark.p2.p2r_v1_2_protocol import (
     DEFAULT_DATA_DRIFT_V1_2_PROTOCOL_PATH,
     DEFAULT_PREPROCESSING_V1_2_PROTOCOL_PATH,
@@ -1217,6 +1244,17 @@ __all__ = [
     "load_p2r_v1_2_protocol",
     "verify_p2r_v1_2_protocol",
     "verify_p2r_v1_2_protocol_pair",
+    "P2R_V1_2_MARKER_SCHEMA_VERSION",
+    "P2R_V1_2_REGISTRATION_SCHEMA_VERSION",
+    "P2R_V1_2_TAGGED_COMMIT",
+    "P2RV12ExecutionError",
+    "P2RV12Registration",
+    "P2RV12SealedMarker",
+    "build_p2r_v1_2_sealed_marker",
+    "compile_p2r_v1_2_execution_protocol",
+    "p2r_v1_2_registration_from_release",
+    "verify_p2r_v1_2_registration_pair",
+    "write_p2r_v1_2_marker_exclusive",
     "ALPHA_DATA_DRIFT_FEATURE",
     "ALPHA_PLAN_SCHEMA_VERSION",
     "ALPHA_PREPROCESSING_TRANSFORM",

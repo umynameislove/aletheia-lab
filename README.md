@@ -368,6 +368,7 @@ documentation, and reproducible artifacts.
 - [P2R v1.1 recovery execution and closeout](docs/p2r-v1-1-execution.md)
 - [P2R v1.1 replication-failure and intervention-support audit](docs/p2r-v1-1-replication-failure.md)
 - [P2R v1.2 outcome-blind methodological amendment](docs/p2r-v1-2-methodological-amendment.md)
+- [P2R v1.2 registered execution and closeout](docs/p2r-v1-2-execution.md)
 - [Related work and research positioning](docs/related-work.md)
 - [Architecture decisions](docs/adr/)
 

@@ -11,7 +11,7 @@ import tempfile
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Annotated, Final, Literal, NoReturn
+from typing import Annotated, Final, Literal, NoReturn, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
@@ -63,6 +63,17 @@ def _fail(message: str) -> NoReturn:
 
 class _StrictFrozenModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True, allow_inf_nan=False)
+
+
+class P2RRegistrationEvidence(Protocol):
+    """Structural registration evidence shared by registered protocol versions."""
+
+    mechanism: MechanismName
+    protocol_sha256: str
+
+    def canonical_sha256(self) -> str: ...
+
+    def model_dump(self, *, mode: str) -> dict[str, object]: ...
 
 
 class P2RProtocolRegistration(_StrictFrozenModel):
@@ -324,7 +335,7 @@ class P2RMechanismCloseout(_StrictFrozenModel):
 def close_mechanism(
     *,
     protocol: LightweightConfirmatoryProtocol,
-    registration: P2RProtocolRegistration,
+    registration: P2RRegistrationEvidence,
     measurements: Sequence[DatasetSeedMeasurement],
     instrument_audit: InstrumentValidityAudit,
 ) -> P2RMechanismCloseout:
@@ -432,7 +443,7 @@ def build_joint_closeout(
     measurements: Sequence[DatasetSeedMeasurement],
     environment: ExecutionEnvironmentReceipt,
     protocols: Mapping[MechanismName, LightweightConfirmatoryProtocol],
-    registrations: Mapping[MechanismName, P2RProtocolRegistration],
+    registrations: Mapping[MechanismName, P2RRegistrationEvidence],
     instrument_protocol: object,
     executed_at: datetime | None = None,
 ) -> tuple[InstrumentValidityAudit, P2RJointCloseout]:
@@ -520,7 +531,7 @@ class P2RTechnicalFailure(_StrictFrozenModel):
 def build_technical_failure(
     *,
     protocols: Sequence[LightweightConfirmatoryProtocol],
-    registrations: Sequence[P2RProtocolRegistration],
+    registrations: Sequence[P2RRegistrationEvidence],
     execution_commit: str,
     failure_stage: Literal[
         "load_primary",
@@ -577,12 +588,13 @@ def write_terminal_store(
     *,
     output_dir: str | Path,
     protocols: Sequence[LightweightConfirmatoryProtocol],
-    registrations: Sequence[P2RProtocolRegistration],
+    registrations: Sequence[P2RRegistrationEvidence],
     terminal: P2RJointCloseout | P2RTechnicalFailure,
     environment: ExecutionEnvironmentReceipt,
     measurements: Sequence[DatasetSeedMeasurement] = (),
     observations: Sequence[ManipulationObservation] = (),
     audit: InstrumentValidityAudit | None = None,
+    sealed_marker: BaseModel | None = None,
 ) -> P2RTerminalStore:
     """Publish one complete directory by atomic rename; never overwrite."""
 
@@ -617,6 +629,30 @@ def write_terminal_store(
             != terminal.paired_observation_census_sha256
         ):
             _fail("P2R paired observations differ from the joint closeout")
+    registration_schemas = tuple(
+        item.model_dump(mode="json").get("schema_version") for item in registrations
+    )
+    is_v1_2 = registration_schemas == (
+        "p2r-v1-2-registration/1",
+        "p2r-v1-2-registration/1",
+    )
+    if is_v1_2 != (sealed_marker is not None):
+        _fail("P2R v1.2 terminal stores require exactly one sealed-open marker")
+    checked_marker: BaseModel | None = None
+    if sealed_marker is not None:
+        from aletheia_lab.benchmark.p2.p2r_v1_2_execution import P2RV12SealedMarker
+
+        checked_marker = P2RV12SealedMarker.model_validate(sealed_marker.model_dump())
+        if checked_marker.execution_commit != terminal.execution_commit:
+            _fail("P2R v1.2 marker differs from the terminal execution")
+        if checked_marker.execution_protocol_sha256s != tuple(
+            item.canonical_sha256() for item in protocols
+        ):
+            _fail("P2R v1.2 marker differs from the execution protocols")
+        if checked_marker.registration_sha256s != tuple(
+            item.canonical_sha256() for item in registrations
+        ):
+            _fail("P2R v1.2 marker differs from the registrations")
     files: dict[str, bytes] = {
         "environment.json": _json_bytes(environment),
         "registrations.json": (
@@ -630,6 +666,8 @@ def write_terminal_store(
         ).encode(),
         ("technical-failure.json" if is_failure else "closeout.json"): _json_bytes(terminal),
     }
+    if checked_marker is not None:
+        files["sealed-open.json"] = _json_bytes(checked_marker)
     if not is_failure:
         assert audit is not None
         files["instrument-audit.json"] = _json_bytes(audit)
@@ -724,6 +762,8 @@ def load_and_verify_terminal_store(path: str | Path) -> P2RTerminalStore:
             "registrations.json",
         }
     )
+    if "sealed-open.json" in actual:
+        expected_paths.add("sealed-open.json")
     if actual != expected_paths:
         _fail("P2R terminal store does not match its terminal status")
     terminal_path = (
@@ -738,9 +778,8 @@ def load_and_verify_terminal_store(path: str | Path) -> P2RTerminalStore:
         raw_registrations = json.loads((root / "registrations.json").read_text(encoding="utf-8"))
         if not isinstance(raw_registrations, list):
             raise ValueError("registration artifact must contain a list")
-        registrations = tuple(
-            P2RProtocolRegistration.model_validate_json(json.dumps(item))
-            for item in raw_registrations
+        registrations: tuple[P2RRegistrationEvidence, ...] = tuple(
+            _registration_from_json(item) for item in raw_registrations
         )
         terminal: P2RJointCloseout | P2RTechnicalFailure
         if manifest.terminal_status == "technical_failure":
@@ -761,6 +800,30 @@ def load_and_verify_terminal_store(path: str | Path) -> P2RTerminalStore:
     if registration_protocols != manifest.protocol_sha256s:
         _fail("P2R registration census differs from the terminal manifest")
     registration_hashes = tuple(item.canonical_sha256() for item in registrations)
+    registration_schemas = tuple(
+        item.model_dump(mode="json").get("schema_version") for item in registrations
+    )
+    is_v1_2 = registration_schemas == (
+        "p2r-v1-2-registration/1",
+        "p2r-v1-2-registration/1",
+    )
+    if is_v1_2 != ("sealed-open.json" in actual):
+        _fail("P2R v1.2 terminal store is missing its sealed-open marker")
+    if is_v1_2:
+        from aletheia_lab.benchmark.p2.p2r_v1_2_execution import P2RV12SealedMarker
+
+        try:
+            marker = P2RV12SealedMarker.model_validate_json(
+                (root / "sealed-open.json").read_text(encoding="utf-8")
+            )
+        except (OSError, ValueError) as exc:
+            raise P2RCloseoutError("P2R v1.2 sealed-open marker is invalid") from exc
+        if marker.execution_commit != terminal.execution_commit:
+            _fail("P2R v1.2 marker differs from the terminal execution")
+        if marker.execution_protocol_sha256s != manifest.protocol_sha256s:
+            _fail("P2R v1.2 marker differs from the terminal protocols")
+        if marker.registration_sha256s != registration_hashes:
+            _fail("P2R v1.2 marker differs from the terminal registrations")
     if isinstance(terminal, P2RTechnicalFailure):
         if registration_hashes != terminal.registration_sha256s:
             _fail("P2R registrations differ from the technical failure")
@@ -804,3 +867,18 @@ def load_and_verify_terminal_store(path: str | Path) -> P2RTerminalStore:
     ):
         _fail("P2R paired observations differ from the terminal closeout")
     return manifest
+
+
+def _registration_from_json(item: object) -> P2RRegistrationEvidence:
+    """Parse only explicitly supported registration schemas."""
+
+    if not isinstance(item, dict):
+        _fail("P2R registration entry must be an object")
+    schema = item.get("schema_version")
+    if schema == REGISTRATION_SCHEMA_VERSION:
+        return P2RProtocolRegistration.model_validate_json(json.dumps(item))
+    if schema == "p2r-v1-2-registration/1":
+        from aletheia_lab.benchmark.p2.p2r_v1_2_execution import P2RV12Registration
+
+        return P2RV12Registration.model_validate_json(json.dumps(item))
+    _fail("P2R registration schema is unsupported")

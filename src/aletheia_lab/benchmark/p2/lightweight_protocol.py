@@ -218,7 +218,7 @@ class LightweightConfirmatoryProtocol(_StrictFrozenModel):
         if self.mechanism not in self.protocol_version:
             raise ValueError("protocol version must identify its mechanism")
         expected_identity = {
-            "data_drift": (
+            ("data_drift", "p2r-data_drift-confirmatory/1"): (
                 "p2r-data_drift-confirmatory/1",
                 "p2r-data-drift-confirmatory-v1",
                 (
@@ -234,7 +234,7 @@ class LightweightConfirmatoryProtocol(_StrictFrozenModel):
                     ),
                 ),
             ),
-            "preprocessing_bug": (
+            ("preprocessing_bug", "p2r-preprocessing_bug-confirmatory/1"): (
                 "p2r-preprocessing_bug-confirmatory/1",
                 "p2r-preprocessing-mismatch-confirmatory-v1",
                 (
@@ -250,8 +250,45 @@ class LightweightConfirmatoryProtocol(_StrictFrozenModel):
                     ),
                 ),
             ),
+            ("data_drift", "p2r-data_drift-confirmatory/1.2"): (
+                "p2r-data_drift-confirmatory/1.2",
+                "p2r-data-drift-confirmatory-v1.2",
+                (
+                    (
+                        "EDUCATION",
+                        "sealed_feature_marginal_plus_0.20_toward_training_mode_by_seeded_row_hash",
+                        "same_size_seed_matched_empirical_distribution_resample",
+                    ),
+                    (
+                        "OperatingSystems",
+                        "sealed_feature_marginal_plus_0.20_toward_training_mode_by_seeded_row_hash",
+                        "same_size_seed_matched_empirical_distribution_resample",
+                    ),
+                ),
+            ),
+            ("preprocessing_bug", "p2r-preprocessing_bug-confirmatory/1.2"): (
+                "p2r-preprocessing_bug-confirmatory/1.2",
+                "p2r-preprocessing-mismatch-confirmatory-v1.2",
+                (
+                    (
+                        "EDUCATION",
+                        "inference_only_training_mode_to_second_mode_mapping_on_seeded_rows",
+                        "same_rows_name_bound_column_permutation_control",
+                    ),
+                    (
+                        "OperatingSystems",
+                        "inference_only_training_mode_to_second_mode_mapping_on_seeded_rows",
+                        "same_rows_name_bound_column_permutation_control",
+                    ),
+                ),
+            ),
         }
-        version, tag, intervention_bindings = expected_identity[self.mechanism]
+        try:
+            version, tag, intervention_bindings = expected_identity[
+                (self.mechanism, self.protocol_version)
+            ]
+        except KeyError as exc:
+            raise ValueError("protocol version is not registered for its mechanism") from exc
         if (self.protocol_version, self.required_git_tag) != (version, tag):
             raise ValueError("protocol version or required Git tag is not canonical")
         actual_interventions = tuple(
