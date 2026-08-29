@@ -58,7 +58,10 @@ def test_policy_tuple_order_does_not_change_policy_hash(extensions: list[str]) -
     assert forward.canonical_sha256() == reverse.canonical_sha256()
 
 
-@settings(max_examples=30)
+# These properties exercise real filesystem and subprocess-adjacent import
+# boundaries. Wall-clock deadlines are not semantic assertions and are unstable
+# across NTFS, antivirus scanning, and cold filesystem caches on Windows.
+@settings(max_examples=30, deadline=None)
 @given(segment=_SAFE_SEGMENT, text=_TEXT)
 def test_safe_text_import_is_repeatable(segment: str, text: str) -> None:
     with TemporaryDirectory(prefix=f"project-{segment}-") as directory:
@@ -75,7 +78,7 @@ def test_safe_text_import_is_repeatable(segment: str, text: str) -> None:
         assert first.artifacts == second.artifacts
 
 
-@settings(max_examples=30)
+@settings(max_examples=30, deadline=None)
 @given(first=_TEXT, second=_TEXT)
 def test_source_mutation_changes_content_bound_identity(
     first: str,
@@ -96,7 +99,7 @@ def test_source_mutation_changes_content_bound_identity(
         assert before.bundle.project_bundle_id != after.bundle.project_bundle_id
 
 
-@settings(max_examples=30)
+@settings(max_examples=30, deadline=None)
 @given(payload=st.binary(min_size=0, max_size=128))
 def test_invalid_utf8_prefix_always_blocks_atomically(payload: bytes) -> None:
     with TemporaryDirectory(prefix=hashlib_name(payload)) as directory:
@@ -117,7 +120,7 @@ def hashlib_name(payload: bytes) -> str:
     return "case-" + hashlib.sha256(payload).hexdigest()[:16]
 
 
-@settings(max_examples=30)
+@settings(max_examples=30, deadline=None)
 @given(local=_EMAIL_SEGMENT, domain=_EMAIL_SEGMENT)
 def test_email_like_pii_never_survives_diagnosis_artifact(
     local: str,
@@ -137,7 +140,7 @@ def test_email_like_pii_never_survives_diagnosis_artifact(
         assert b"[REDACTED:pii.email]" in result.artifacts[0].content
 
 
-@settings(max_examples=30)
+@settings(max_examples=30, deadline=None)
 @given(secret=_SAFE_SEGMENT.filter(lambda value: len(value) >= 8))
 def test_secret_assignment_is_always_local_only_and_withheld(
     secret: str,
@@ -156,7 +159,7 @@ def test_secret_assignment_is_always_local_only_and_withheld(
         assert raw.encode() not in result.artifacts[0].content
 
 
-@settings(max_examples=30)
+@settings(max_examples=30, deadline=None)
 @given(extension=_SAFE_SEGMENT.map(str.lower))
 def test_unsupported_extension_is_never_admitted(extension: str) -> None:
     assume(f".{extension}" not in ProjectImportPolicy().allowed_extensions)
@@ -176,7 +179,7 @@ def test_unsupported_extension_is_never_admitted(extension: str) -> None:
         assert decision.reason_code == "file_type_not_allowed"
 
 
-@settings(max_examples=30)
+@settings(max_examples=30, deadline=None)
 @given(names=st.lists(_SAFE_SEGMENT, min_size=1, max_size=8, unique=True))
 def test_filesystem_creation_order_does_not_change_import_result(
     names: list[str],
