@@ -134,7 +134,11 @@ def test_bandit_suppression_is_narrow_and_documented() -> None:
 
 def test_dependency_workflow_triggers_are_complete(audit_workflow: dict) -> None:  # type: ignore[type-arg]
     triggers = audit_workflow["on"]
-    expected_paths = {"pyproject.toml", ".github/workflows/dependency-audit.yml"}
+    expected_paths = {
+        "pyproject.toml",
+        "scripts/report_dependency_inventory.py",
+        ".github/workflows/dependency-audit.yml",
+    }
     assert set(triggers["push"]["paths"]) == expected_paths
     assert set(triggers["pull_request"]["paths"]) == expected_paths
     assert "workflow_dispatch" in triggers
@@ -169,6 +173,28 @@ def test_dependency_audit_command_is_exact_and_blocking(audit_workflow: dict) ->
     )
     _assert_blocking_job(audit_workflow, job_name, step)
     assert "--ignore-vuln" not in str(step.get("run", ""))
+
+
+def test_dependency_inventory_evidence_is_exact_and_blocking(
+    audit_workflow: dict,  # type: ignore[type-arg]
+) -> None:
+    job_name, _, step = _find_exact_command(
+        audit_workflow, ["python", "scripts/report_dependency_inventory.py"]
+    )
+    _assert_blocking_job(audit_workflow, job_name, step)
+
+
+def test_dependency_cache_binds_pyproject(audit_workflow: dict) -> None:  # type: ignore[type-arg]
+    setup_steps = [
+        step
+        for _, _, step in _steps(audit_workflow)
+        if "actions/setup-python" in str(step.get("uses", ""))
+    ]
+    assert len(setup_steps) == 1
+    inputs = setup_steps[0].get("with")
+    assert isinstance(inputs, dict)
+    assert inputs.get("cache") == "pip"
+    assert inputs.get("cache-dependency-path") == "pyproject.toml"
 
 
 def test_dependency_audit_permissions_are_read_only(audit_workflow: dict) -> None:  # type: ignore[type-arg]
