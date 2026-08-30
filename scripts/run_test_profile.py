@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -160,7 +161,7 @@ def main() -> int:
     if args.repeat != 1 and args.profile != "evaluation":
         _parser().error("--repeat is supported only by the evaluation profile")
     if args.show_command:
-        print(" ".join(command))
+        print(json.dumps(command, ensure_ascii=True, separators=(",", ":")))
         return 0
     return run_profile(args.profile, extra, repeat=args.repeat)
 

@@ -34,7 +34,10 @@ def _evaluation_command() -> tuple[str, ...]:
         capture_output=True,
         text=True,
     )
-    return tuple(completed.stdout.strip().split())
+    payload = json.loads(completed.stdout)
+    assert isinstance(payload, list)
+    assert all(isinstance(item, str) for item in payload)
+    return tuple(payload)
 
 
 def test_evaluation_profile_has_required_boundaries_without_deselection() -> None:
@@ -56,6 +59,32 @@ def test_evaluation_profile_has_required_boundaries_without_deselection() -> Non
     assert "--durations=20" in command
     assert command[:3] == (sys.executable, "-m", "pytest")
     assert not {"-k", "-m", "--ignore", "--ignore-glob"} & set(command[3:])
+
+
+@pytest.mark.parametrize(
+    "executable",
+    (
+        "/Users/research owner/đồ án/.venv/bin/python",
+        r"C:\\Research Workspace\\.venv\\Scripts\\python.exe",
+    ),
+)
+def test_show_command_round_trips_executable_paths_without_shell_splitting(
+    executable: str,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    runner = _runner_module()
+    monkeypatch.setattr(runner.sys, "executable", executable)
+    monkeypatch.setattr(
+        runner.sys,
+        "argv",
+        [str(_PROFILE_SCRIPT), "evaluation", "--show-command"],
+    )
+
+    assert runner.main() == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload[:3] == [executable, "-m", "pytest"]
+    assert all(isinstance(item, str) for item in payload)
 
 
 def test_repeated_profile_uses_distinct_hash_seeds_and_five_minute_budget(

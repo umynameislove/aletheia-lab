@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -159,7 +160,8 @@ def test_named_profiles_resolve_without_collecting_tests() -> None:
             text=True,
         )
         assert completed.returncode == 0, completed.stderr
-        assert " -m pytest " in completed.stdout
+        command = json.loads(completed.stdout)
+        assert command[:3] == [sys.executable, "-m", "pytest"]
 
 
 def test_full_profile_preserves_coverage_floor() -> None:
