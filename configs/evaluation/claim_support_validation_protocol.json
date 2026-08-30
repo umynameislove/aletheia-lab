@@ -1,0 +1,60 @@
+{
+  "schema_version": "claim-support-validation-protocol/v1",
+  "protocol_id": "claim-support-instrument-validation-v1",
+  "frozen_before_main_outcomes": true,
+  "source_partition": "development",
+  "sample_minimum": 150,
+  "sample_target": 200,
+  "sample_maximum": 250,
+  "automatic_label_quota": 50,
+  "sampling_algorithm": "balanced-label-round-robin-hash/v1",
+  "stratification_dimensions": [
+    "automatic_label",
+    "claim_type",
+    "evidence_condition",
+    "variant"
+  ],
+  "maximum_claims_per_family_per_label": 5,
+  "maximum_claims_per_output_per_label": 2,
+  "independent_rater_count": 2,
+  "adjudicator_count": 1,
+  "adjudication_required_for_disagreement": true,
+  "adjudication_required_if_either_rater_marks_contradicted": true,
+  "ordered_labels": [
+    "contradicted",
+    "unsupported",
+    "partially_supported",
+    "fully_supported"
+  ],
+  "rater_visible_fields": [
+    "blind_claim_id",
+    "claim_text",
+    "visible_evidence"
+  ],
+  "rater_withheld_fields": [
+    "automatic_label",
+    "claim_id",
+    "output_id",
+    "case_family_id",
+    "claim_type",
+    "evidence_condition",
+    "variant",
+    "mechanism",
+    "hidden_ground_truth"
+  ],
+  "false_supported_denominator": "automatic_supported_predictions",
+  "contradicted_to_supported_denominator": "adjudicated_contradicted_claims",
+  "cluster_unit": "case_family_id",
+  "bootstrap_replicates": 2000,
+  "bootstrap_seed": 73021,
+  "main_or_sealed_outcomes_forbidden": true,
+  "model_as_human_rater_forbidden": true,
+  "synthetic_or_padded_claims_forbidden": true,
+  "thresholds": {
+    "minimum_quadratic_weighted_kappa": 0.7,
+    "minimum_automatic_macro_f1": 0.8,
+    "maximum_false_supported_rate": 0.1,
+    "maximum_contradicted_to_supported_rate": 0.05
+  },
+  "protocol_sha256": "71c3f36c71e6d6294e6dba9b4e12db6c53148f718a17bf7f347e77cc49bae77d"
+}

@@ -1,0 +1,13 @@
+{
+  "schema_version": "claim-support-preparation-receipt/v1",
+  "protocol_sha256": "71c3f36c71e6d6294e6dba9b4e12db6c53148f718a17bf7f347e77cc49bae77d",
+  "preparation_scope": "protocol_and_packet_generator_only",
+  "development_claim_pool_materialized": false,
+  "validation_sample_materialized": false,
+  "human_annotations_collected": false,
+  "validation_metrics_generated": false,
+  "main_or_sealed_outcomes_opened": false,
+  "independent_human_validation_required": true,
+  "status": "outcome_blind_preparation_complete_human_validation_pending",
+  "receipt_sha256": "dc06dffa504669b79944c74b1eb9580a0ca1aaef4d3daae422b0ac98e7ce5b1d"
+}
