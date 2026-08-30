@@ -1,0 +1,39 @@
+{
+  "schema_version": "p4-p5-mechanism-filter-manifest/1",
+  "disposition_policy_sha256": "5493ee0b90cde95f39878141a42d6aab95c90029d9e3a381cae646266fb1d63c",
+  "mechanism_inventory": [
+    "data_drift",
+    "preprocessing_mismatch",
+    "label_noise"
+  ],
+  "primary_causal_diagnosis_track": [],
+  "assumption_limited_abstention_track": ["label_noise"],
+  "instrument_rejection_track": ["data_drift", "preprocessing_mismatch"],
+  "evidence_accountability_track": [
+    "data_drift",
+    "preprocessing_mismatch",
+    "label_noise"
+  ],
+  "permitted_assumption_limited_endpoints": [
+    "abstention_correctness",
+    "evidence_sufficiency",
+    "faithfulness",
+    "provenance_sufficiency",
+    "leakage",
+    "reproducibility"
+  ],
+  "permitted_rejection_endpoints": [
+    "false_admission_rate",
+    "rejection_correctness",
+    "evidence_sufficiency",
+    "faithfulness",
+    "provenance_sufficiency",
+    "leakage",
+    "reproducibility"
+  ],
+  "causal_diagnosis_scoring_for_non_admitted_forbidden": true,
+  "family_clustered_primary_statistics_require_nonempty_admitted_track": true,
+  "empty_primary_result_must_be_published": true,
+  "pooling_or_denominator_substitution_forbidden": true,
+  "p4_p5_outcomes_may_change_filter": false
+}

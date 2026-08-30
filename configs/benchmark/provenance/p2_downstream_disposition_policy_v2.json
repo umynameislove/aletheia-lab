@@ -1,0 +1,91 @@
+{
+  "schema_version": "p2-downstream-disposition-policy/2",
+  "predecessor_policy_sha256": "ddd5fdabff327ba42c4a4e175954c1e82df2ca2d6ec0029bcfd6403eac8ca32b",
+  "p2r_publication_summary_sha256": "e8595547c26f73f81d20fd53d00e5e876bb3a3c4f4044027bf8c9c6205fedd2e",
+  "evidence_snapshot_commit": "4765f5811f9e7cc025db0bebf65b4fdc602d0c3a",
+  "reconciled_before_p4_p5_outcomes": true,
+  "mechanisms": [
+    {
+      "mechanism_id": "data_drift",
+      "implementation_merged": true,
+      "scientific_status": "rejected",
+      "terminal_disposition": "rejected",
+      "all_prespecified_admission_gates_passed": false,
+      "cross_dataset_claim_allowed": false,
+      "diagnostic_ground_truth_eligible": false,
+      "evidence": {
+        "study_id": "p2r-data-drift-confirmatory-v1.2",
+        "protocol_sha256": "1d811be01d2faf2500b79d21bbd034752a2e8e9d349dbcd11bf8cfa0af6c24b3",
+        "execution_protocol_sha256": "b4a9e07570c856ebefa421f8c5a43ee11dd0874dc47633fcf6569021b53e133d",
+        "terminal_store_sha256": "7b920ef15cc5683965652a3dc02cef06bf514d8c85e1954c3094c1c441919956",
+        "terminal_artifact_sha256": "da6f8a5d49b2b9352dbaacdc1803aa5c9ae94a7225f547b1ca5ce38a155199ce",
+        "mechanism_closeout_sha256": "dd133e20b28205a04ffc2f442a08b588edc4079be83c00727229542b65ffcc70",
+        "registered_study_completed": true
+      }
+    },
+    {
+      "mechanism_id": "preprocessing_mismatch",
+      "implementation_merged": true,
+      "scientific_status": "rejected",
+      "terminal_disposition": "rejected",
+      "all_prespecified_admission_gates_passed": false,
+      "cross_dataset_claim_allowed": false,
+      "diagnostic_ground_truth_eligible": false,
+      "evidence": {
+        "study_id": "p2r-preprocessing-mismatch-confirmatory-v1.2",
+        "protocol_sha256": "59ebbec62f2e34258b1d39617cfad65ac993bd19fd2167255c78e313c5ad4993",
+        "execution_protocol_sha256": "f9da209a3790fc831963a05a3ab19023392a3a4747bbd8b622813de6c20af7c5",
+        "terminal_store_sha256": "7b920ef15cc5683965652a3dc02cef06bf514d8c85e1954c3094c1c441919956",
+        "terminal_artifact_sha256": "da6f8a5d49b2b9352dbaacdc1803aa5c9ae94a7225f547b1ca5ce38a155199ce",
+        "mechanism_closeout_sha256": "5724de89debc2ba99e7c962a0728cdb71dc326c358e9999163da6fc1c44a8cc1",
+        "registered_study_completed": true
+      }
+    },
+    {
+      "mechanism_id": "label_noise",
+      "implementation_merged": true,
+      "scientific_status": "assumption_limited",
+      "terminal_disposition": "assumption_limited",
+      "all_prespecified_admission_gates_passed": false,
+      "cross_dataset_claim_allowed": false,
+      "diagnostic_ground_truth_eligible": false,
+      "evidence": {
+        "study_id": "p2-label-noise-shift-factorial-v3.3",
+        "protocol_sha256": "5fa057e17203b00fa78fc86d58ce5b324bb30cebf916ebb94a3d6b389f30b456",
+        "execution_protocol_sha256": null,
+        "terminal_store_sha256": "d2a4537de7f25a069cd23c7942d0e3d3cef9c6e4fea826a7080d61a04f95f152",
+        "terminal_artifact_sha256": "9b8d87cbd3e52dc5c6da50066c6816d5620457a3d8ac8094fafc8136560339c4",
+        "mechanism_closeout_sha256": null,
+        "registered_study_completed": true
+      }
+    }
+  ],
+  "denominators": {
+    "mechanism_inventory": [
+      "data_drift",
+      "preprocessing_mismatch",
+      "label_noise"
+    ],
+    "primary_admitted_track": [],
+    "assumption_limited_track": ["label_noise"],
+    "rejected_track": ["data_drift", "preprocessing_mismatch"],
+    "pending_confirmatory_track": [],
+    "diagnostic_ground_truth_track": [],
+    "validity_behavior_track": [
+      "data_drift",
+      "preprocessing_mismatch",
+      "label_noise"
+    ],
+    "pooling_across_tracks_forbidden": true,
+    "empty_primary_track_must_be_reported": true
+  },
+  "admission_governance": {
+    "implementation_or_ci_is_not_admission": true,
+    "every_prespecified_gate_must_pass": true,
+    "p4_or_p5_outcomes_may_change_status": false,
+    "retrospective_threshold_or_denominator_changes_forbidden": true,
+    "predecessor_policy_remains_immutable": true,
+    "future_studies_require_new_independent_protocol_and_evidence": true,
+    "rerunning_p2r_v1_2_forbidden": true
+  }
+}

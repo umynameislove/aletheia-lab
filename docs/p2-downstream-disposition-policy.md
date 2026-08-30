@@ -1,5 +1,9 @@
 # P2 downstream mechanism disposition policy
 
+> Historical frozen policy (v1). Its evidence and original statuses remain
+> immutable. The current post-P2R operational policy is
+> [P2 downstream disposition policy v2](p2-downstream-disposition-policy-v2.md).
+
 ## Purpose
 
 This policy freezes the distinction between engineering completion and scientific

@@ -93,7 +93,10 @@ experiment artifacts remain local and are independently validated before use.
 - P1 establishes a bounded feasibility result, not broad superiority.
 - P2 implements three candidate mechanism types. Scientific admission remains
   separate from implementation/merge/CI status and is reconciled only through
-  registered terminal studies.
+  registered terminal studies. All three studies are now terminal: label noise
+  is `assumption_limited`, while data drift and preprocessing mismatch are
+  `rejected` by P2R v1.2. The admitted diagnostic denominator is therefore zero;
+  this valid negative result is reported explicitly rather than pooled away.
 - The P3 core persistence-lineage vertical slice is closed at merge `31f6c58`.
   Delete/purge, the prospective temporal seal, the version-pinned Projmem bridge
   and a sanctioned non-synthetic sample audit remain separately gated obligations.
@@ -369,6 +372,8 @@ documentation, and reproducible artifacts.
 - [P2R v1.1 replication-failure and intervention-support audit](docs/p2r-v1-1-replication-failure.md)
 - [P2R v1.2 outcome-blind methodological amendment](docs/p2r-v1-2-methodological-amendment.md)
 - [P2R v1.2 registered execution and closeout](docs/p2r-v1-2-execution.md)
+- [P2R v1.2 terminal results and preservation](docs/p2r-v1-2-results.md)
+- [P2 downstream disposition policy v2](docs/p2-downstream-disposition-policy-v2.md)
 - [Related work and research positioning](docs/related-work.md)
 - [Architecture decisions](docs/adr/)
 
