@@ -52,7 +52,7 @@ def prepare_gateway_request(
     response_schema: dict[str, object],
     runtime_policy: RuntimePolicyReference,
 ) -> GatewayRequest:
-    """Bind exact outbound content to immutable K7-A identity before adapter access."""
+    """Bind exact outbound content to immutable execution identity before adapter access."""
 
     response_schema_json = canonical_project_json(response_schema)
     _validate_schema_shape(response_schema)

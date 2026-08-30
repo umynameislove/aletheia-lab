@@ -13,6 +13,7 @@ Run the profile nearest to the code being changed while iterating:
 python scripts/run_test_profile.py fast
 python scripts/run_test_profile.py project
 python scripts/run_test_profile.py research
+python scripts/run_test_profile.py evaluation
 ```
 
 - `fast` runs ordinary unit tests and excludes integration, property, frozen
@@ -21,6 +22,10 @@ python scripts/run_test_profile.py research
   boundary across unit, integration, and property directories.
 - `research` runs frozen benchmark/scientific regression tests without adding
   coverage instrumentation.
+- `evaluation` runs the provider-neutral execution, visibility, immutable-store,
+  structural-closeout, leakage, project/evidence, reproducibility, and CI
+  contract tests. It always reports the 20 slowest tests and has a five-minute
+  hard timeout.
 
 Additional pytest arguments may follow `--`, for example:
 
@@ -50,6 +55,30 @@ The full profile enforces the 88 percent coverage floor. Large-artifact tests
 remain part of this profile when their ignored local evidence stores are
 available; they are never silently removed from the default suite.
 
+Before changing evaluation infrastructure, run its reproducibility gate three
+times under distinct process hash seeds:
+
+```bash
+python scripts/run_test_profile.py evaluation --repeat 3
+```
+
+The intended budget is at most five minutes per evaluation run on a reasonable
+Windows development machine. Ordinary unit/property tests target two seconds,
+and deterministic fixture-provider integration paths target 15 seconds. The
+profile output is the runtime report; investigate its top 20 entries rather than
+reducing property examples or removing regression tests.
+
+Record the exact resolved environment and run the controlled guard audit with:
+
+```bash
+python scripts/report_dependency_inventory.py
+python scripts/run_evaluation_mutation_audit.py
+```
+
+The inventory is canonical, path-free, and self-hashing. The mutation audit uses
+temporary source copies and requires the mapped regression test to detect every
+mutation; it never edits tracked source.
+
 ## Continuous integration
 
 Pull requests run the full suite on Python 3.11 and an uninstrumented full
@@ -57,6 +86,9 @@ compatibility run on Python 3.12. Coverage is measured once on Python 3.11,
 where the 88 percent threshold remains blocking. Pushes to feature branches do
 not duplicate an open pull request's matrix; pushes to `main` remain fully
 validated. New commits cancel stale in-progress runs for the same pull request.
+The evaluation profile repeats on both matrix interpreters and runs once in the
+blocking Windows job. Pip caches are keyed from `pyproject.toml`; dependency
+audit logs include the exact resolved inventory digest.
 
 ## Runtime interpretation
 

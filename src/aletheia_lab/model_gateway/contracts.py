@@ -226,7 +226,7 @@ class UsageMetadata(_StrictFrozenModel):
 
 
 class GatewayRequest(_StrictFrozenModel):
-    """One immutable outbound request prepared from K7-A and K7-B contracts."""
+    """One immutable outbound request prepared from execution and context contracts."""
 
     schema_version: Literal["model-gateway-request/v1"] = GATEWAY_REQUEST_SCHEMA_VERSION
     initial_attempt: AttemptIdentity

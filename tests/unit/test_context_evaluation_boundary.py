@@ -6,7 +6,7 @@ import socket
 from typing import Literal
 
 import pytest
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from aletheia_lab.context.evaluation_context import (
     ContextBoundaryError,
@@ -202,10 +202,10 @@ def test_context_identity_changes_when_the_projection_input_mutates() -> None:
 @pytest.mark.parametrize(
     "payload",
     [
-    {"condition_label": "answer"},
-    {"source_id": "condition-answer"},
-    {"source_id": "variant-answer"},
-    {"source_id": "v\u0430riant-answer"},
+        {"condition_label": "answer"},
+        {"source_id": "condition-answer"},
+        {"source_id": "variant-answer"},
+        {"source_id": "v\u0430riant-answer"},
         {"outer": [{"hidden_label": "answer"}]},
         {"evaluator_rubric": "gold rationale"},
         {"api_key": "not-permitted"},
@@ -302,7 +302,9 @@ def test_prohibited_p3_source_value_returns_a_structured_blocker() -> None:
     assert "variant-answer" not in str(captured.value)
 
 
-def test_context_builder_performs_no_open_or_network_access(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_context_builder_performs_no_open_or_network_access(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     view = _view()
 
     def _forbidden_access(*args: object, **kwargs: object) -> object:
@@ -376,3 +378,63 @@ def test_matched_variants_must_receive_equal_information() -> None:
                 ),
             )
         )
+
+
+class _SafeNestedModel(BaseModel):
+    evidence: str
+
+
+def test_visibility_scanner_handles_paths_models_and_unknown_values() -> None:
+    assert find_visibility_violation(r"C:\\private\\artifact.json") == "absolute_path"
+    assert find_visibility_violation({1: "opaque"}) == "nonstring_mapping_key"
+    assert find_visibility_violation(_SafeNestedModel(evidence="opaque value")) is None
+    assert find_visibility_violation(object()) == "unsupported_outbound_value"
+
+
+def test_context_payload_rejects_ambiguous_evidence_partitions_and_identities() -> None:
+    view = _view()
+    context = build_evaluation_context(
+        case=_case(view),
+        evidence_view=view,
+        selected_evidence_ids=_selected(view),
+    )
+    first, second = context.selected_evidence
+
+    duplicate_ids = context.model_dump(mode="python")
+    duplicate_ids["selected_evidence"] = (first, first)
+    with pytest.raises(ValidationError, match="must be unique"):
+        EvaluationContextPayload.model_validate(duplicate_ids)
+
+    duplicate_sources = context.model_dump(mode="python")
+    duplicate_sources["selected_evidence"] = (
+        first,
+        second.model_copy(update={"source_sha256": first.source_sha256}),
+    )
+    with pytest.raises(ValidationError, match="source aliases"):
+        EvaluationContextPayload.model_validate(duplicate_sources)
+
+    with_omission = build_evaluation_context(
+        case=_case(view),
+        evidence_view=view,
+        selected_evidence_ids=(view.items[0].evidence_id,),
+    )
+    duplicate_omissions = with_omission.model_dump(mode="python")
+    duplicate_omissions["omitted_evidence_ids"] = (
+        with_omission.omitted_evidence_ids[0],
+        with_omission.omitted_evidence_ids[0],
+    )
+    with pytest.raises(ValidationError, match="must be unique"):
+        EvaluationContextPayload.model_validate(duplicate_omissions)
+
+    overlap = with_omission.model_dump(mode="python")
+    overlap["omitted_evidence_ids"] = (
+        with_omission.omitted_evidence_ids[0],
+        with_omission.selected_evidence[0].evidence_id,
+    )
+    with pytest.raises(ValidationError, match="must not overlap"):
+        EvaluationContextPayload.model_validate(overlap)
+
+    mismatched_identifier = context.model_dump(mode="python")
+    mismatched_identifier["context_id"] = _opaque("0")
+    with pytest.raises(ValidationError, match="context_id"):
+        EvaluationContextPayload.model_validate(mismatched_identifier)

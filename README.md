@@ -82,6 +82,9 @@ Aletheia currently provides:
 - a deterministic P3 core that binds authorized imports, mapped project bundles,
   immutable snapshots, causally unverified regression evidence, content-addressed
   persistence and visibility-safe non-causal lineage into one closeout receipt.
+- provider-neutral evaluation readiness contracts with visibility-safe context,
+  a deterministic fixture adapter, immutable attempt storage, and offline
+  uninterpreted structural closeout.
 
 Aletheia Lab is research software, not a production incident-response system.
 The repository includes the complete deterministic benchmark, evidence-store,
@@ -348,8 +351,10 @@ src/aletheia_lab/
   baseline/      seeded splits, preprocessing, model training, metrics, artifacts
   benchmark/     fault injectors, signals, manifests, and validators
   evidence/      evidence contracts, persistence, and leakage detection
+  context/       visibility-safe outbound evaluation context
   diagnosis/     diagnosis variants, prompts, and structured output contracts
-  evaluation/    correctness, faithfulness, abstention, agreement, and statistics
+  model_gateway/ provider-neutral execution contracts and deterministic fixtures
+  evaluation/    metrics plus immutable execution storage and structural closeout
   reporting/     reusable result tables and plots
 ```
 
@@ -363,6 +368,7 @@ documentation, and reproducible artifacts.
 - [Benchmark protocol](docs/benchmark-protocol.md)
 - [Evidence contract](docs/evidence-contract.md)
 - [Evaluation protocol](docs/evaluation-protocol.md)
+- [Evaluation readiness and trust boundaries](docs/evaluation-readiness.md)
 - [Dataset card](docs/dataset-card.md)
 - [Phase 1 feasibility report](docs/p1-feasibility-report.md)
 - [Phase 1 frozen closeout package](reports/p1/README.md)

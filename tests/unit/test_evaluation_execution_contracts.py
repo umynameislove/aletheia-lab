@@ -8,6 +8,7 @@ import json
 import pytest
 from pydantic import ValidationError
 
+import aletheia_lab.evaluation as evaluation_package
 from aletheia_lab.evaluation.execution_contracts import (
     EXECUTION_CANONICAL_SCHEMA_VERSION,
     AttemptIdentity,
@@ -390,3 +391,102 @@ def test_platform_independent_contract_serialization_has_no_machine_path_input()
     )
 
     assert first == second
+
+
+def test_lazy_public_exports_resolve_without_import_cycles() -> None:
+    assert evaluation_package.ImmutableAttemptStore.__name__ == "ImmutableAttemptStore"
+    assert evaluation_package.StructuralCloseoutPlan.__name__ == "StructuralCloseoutPlan"
+    with pytest.raises(AttributeError):
+        evaluation_package.__getattr__("unknown_evaluation_export")
+
+
+def test_contract_defense_in_depth_rejects_forged_nested_bindings() -> None:
+    manifest = _manifest()
+    case = _case(manifest)
+    policy = _policy(manifest)
+    attempt = _attempt(manifest, case, policy)
+    assert all(
+        (manifest.canonical_sha256(), case.canonical_sha256(), policy.canonical_sha256(), attempt.canonical_sha256())
+    )
+
+    for changed_case, changed_policy, message in (
+        (case.model_copy(update={"project_id": _project("6")}), policy, "same project"),
+        (case.model_copy(update={"snapshot_id": _snapshot("7")}), policy, "same snapshot"),
+        (
+            case.model_copy(update={"authorization_ref": _opaque("8")}),
+            policy,
+            "same authorization",
+        ),
+    ):
+        forged = attempt.model_copy(update={"case": changed_case, "model_policy": changed_policy})
+        with pytest.raises(ValueError, match=message):
+            forged._references_and_hashes_reconcile()
+
+    wrong_schema = attempt.model_copy(update={"response_schema_sha256": _sha256("0")})
+    with pytest.raises(ValueError, match="response schema"):
+        wrong_schema._references_and_hashes_reconcile()
+
+
+def test_reference_and_issue_identity_guards_reject_forged_hashes() -> None:
+    manifest = _manifest()
+    case = _case(manifest)
+    policy = _policy(manifest)
+    attempt = _attempt(manifest, case, policy)
+
+    for model, field, message in (
+        (case, "reference_id", "case reference_id"),
+        (policy, "reference_id", "model-policy reference_id"),
+        (attempt, "attempt_identity_sha256", "attempt_identity_sha256"),
+        (attempt, "attempt_id", "attempt_id"),
+    ):
+        payload = model.model_dump(mode="python")
+        payload[field] = _opaque("0") if field.endswith("id") else _sha256("0")
+        with pytest.raises(ValidationError, match=message):
+            type(model).model_validate(payload)
+
+    issue = TechnicalIssue.build(
+        code="integrity_error",
+        stage="contract_validation",
+        severity="blocker",
+        subject_reference_id=_opaque("1"),
+        message="opaque",
+        authorization_ref=_opaque("2"),
+        provenance_sha256=_sha256("3"),
+        visibility="public",
+    )
+    for field, value, message in (
+        ("subject_reference_id", _opaque("4"), "subject_reference_id"),
+        ("issue_sha256", _sha256("5"), "issue_sha256"),
+        ("issue_id", _opaque("6"), "issue_id"),
+    ):
+        payload = issue.model_dump(mode="python")
+        payload[field] = value
+        with pytest.raises(ValidationError, match=message):
+            TechnicalIssue.model_validate(payload)
+
+
+def test_calendar_timestamp_and_duplicate_case_variant_fail_closed() -> None:
+    invalid_timestamp = _manifest().model_dump(mode="python")
+    invalid_timestamp["created_at"] = "2026-02-30T00:00:00Z"
+    with pytest.raises(ValidationError, match="calendar"):
+        EvaluationManifestReference.model_validate(invalid_timestamp)
+
+    manifest = _manifest()
+    case = _case(manifest)
+    duplicate_variant = EvaluationCaseReference.build(
+        manifest=manifest,
+        **{
+            **case.model_dump(
+                mode="python",
+                include={
+                    "case_id", "family_id", "mechanism_id", "dataset_id", "variant_id",
+                    "variant_content_sha256", "case_content_sha256", "evidence_bundle_id",
+                    "evidence_content_sha256", "lineage_graph_id", "lineage_sha256",
+                    "visibility_projection_sha256", "provenance_sha256", "visibility",
+                },
+            ),
+            "case_content_sha256": _sha256("9"),
+        },
+    )
+    with pytest.raises(EvaluationContractError, match="case/variant"):
+        validate_unique_case_references((case, duplicate_variant))

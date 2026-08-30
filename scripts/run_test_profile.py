@@ -39,6 +39,7 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_evaluation_structural_closeout.py",
         "tests/integration/test_evaluation_structural_closeout_reproducibility.py",
         "tests/integration/test_evaluation_pipeline_reproducibility.py",
+        "tests/integration/test_evaluation_readiness_flow.py",
         "tests/unit/test_leakage_guard.py",
         "tests/unit/test_project_bundle_contract.py",
         "tests/unit/test_evidence_contract_v2.py",

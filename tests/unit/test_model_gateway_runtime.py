@@ -611,3 +611,218 @@ def test_result_contract_rejects_terminal_status_attempt_mismatch() -> None:
 
     with pytest.raises(ValidationError, match="terminal status"):
         GatewayExecutionResult.model_validate(forged)
+
+
+@pytest.mark.parametrize(
+    ("input_tokens", "output_tokens", "total_tokens", "cost_amount", "currency", "message"),
+    [
+        (-1, None, None, None, None, "non-negative"),
+        (None, None, None, Decimal("-0.01"), _opaque("d"), "finite and non-negative"),
+        (None, None, None, Decimal("0.01"), None, "known together"),
+    ],
+)
+def test_usage_contract_rejects_invalid_known_values(
+    input_tokens: int | None,
+    output_tokens: int | None,
+    total_tokens: int | None,
+    cost_amount: Decimal | None,
+    currency: str | None,
+    message: str,
+) -> None:
+    with pytest.raises(ValidationError, match=message):
+        UsageMetadata(
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=total_tokens,
+            cost_amount=cost_amount,
+            cost_currency_ref=currency,
+        )
+
+
+def test_fake_contract_rejects_incomplete_or_ambiguous_steps() -> None:
+    with pytest.raises(ValidationError, match="raw content"):
+        FakeStep(kind="valid_response", raw_content=None, usage=None)
+    with pytest.raises(ValidationError, match="no content"):
+        FakeStep(kind="empty_response", raw_content=b"{}", usage=_unknown_usage())
+    with pytest.raises(ValidationError, match="cannot carry"):
+        FakeStep(kind="timeout", raw_content=b"{}", usage=_unknown_usage())
+    with pytest.raises(ValidationError, match="must contain"):
+        FakeFixture(request_identity_sha256=_sha("1"), steps=())
+
+
+def test_fake_adapter_rejects_duplicate_fixture_keys_and_unknown_requests() -> None:
+    request = _request()
+    fixture = FakeFixture(
+        request_identity_sha256=request.initial_attempt.request_identity_sha256,
+        steps=(_response("valid_response"),),
+    )
+    with pytest.raises(ValueError, match="unique"):
+        DeterministicFakeAdapter(
+            binding=ProviderBinding.from_model_policy(request.initial_attempt.model_policy),
+            fixtures=(fixture, fixture),
+        )
+
+    unmatched = DeterministicFakeAdapter(
+        binding=ProviderBinding.from_model_policy(request.initial_attempt.model_policy),
+        fixtures=(
+            FakeFixture(
+                request_identity_sha256=_sha("f"),
+                steps=(_response("valid_response"),),
+            ),
+        ),
+    )
+    result = execute_gateway_request(
+        request,
+        adapter=unmatched,
+        clock=_Clock(),
+        cancellation=_Cancellation(),
+    )
+    assert result.status == "provider_failed"
+    assert result.issue is not None and result.issue.code == "permanent_provider_error"
+
+
+def test_gateway_rejects_invalid_unicode_before_adapter_access() -> None:
+    request = _request()
+
+    with pytest.raises(GatewayContractError, match="invalid Unicode"):
+        prepare_gateway_request(
+            manifest=request.initial_attempt.manifest,
+            case=request.initial_attempt.case,
+            model_policy=request.initial_attempt.model_policy,
+            context=request.context,
+            prompt_text="\ud800",
+            response_schema=_SCHEMA,
+            runtime_policy=request.runtime_policy,
+        )
+
+
+def test_gateway_handles_cancellation_and_unreadable_adapter_binding() -> None:
+    request = _request()
+    cancelled = execute_gateway_request(
+        request,
+        adapter=_adapter(request, (_response("valid_response"),)),
+        clock=_Clock(),
+        cancellation=_Cancellation((True,)),
+    )
+    assert cancelled.status == "cancelled"
+    assert cancelled.issue is not None
+    assert cancelled.issue.code == "cancelled_before_adapter"
+
+    unreadable_binding = _TrapAdapter(binding=object())
+    rejected = execute_gateway_request(
+        request,
+        adapter=unreadable_binding,
+        clock=_Clock(),
+        cancellation=_Cancellation(),
+    )
+    assert rejected.status == "identity_rejected"
+    assert not unreadable_binding.invoked
+
+
+@pytest.mark.parametrize(
+    "invalid_schema",
+    [
+        {"type": "object", "unexpected": True},
+        {"type": "object", "required": "value"},
+        {"type": "object", "required": ["missing"], "properties": {}},
+        {
+            "type": "object",
+            "properties": {"value": {"type": "unsupported"}},
+        },
+    ],
+)
+def test_response_schema_shape_rejects_unsupported_constraints(
+    invalid_schema: dict[str, object],
+) -> None:
+    request = _request()
+
+    with pytest.raises(GatewayContractError, match="response schema"):
+        prepare_gateway_request(
+            manifest=request.initial_attempt.manifest,
+            case=request.initial_attempt.case,
+            model_policy=request.initial_attempt.model_policy,
+            context=request.context,
+            prompt_text=request.prompt_text,
+            response_schema=invalid_schema,
+            runtime_policy=request.runtime_policy,
+        )
+
+
+def test_nonfinite_response_and_terminal_artifact_mismatches_fail_closed() -> None:
+    nonfinite = _execute(_request(), (_response("malformed_response", b'{"value":NaN}'),))
+    assert nonfinite.status == "parse_failed"
+
+    parsed = _execute(_request(), (_response("valid_response"),))
+    missing_parsed = parsed.model_dump(mode="python")
+    missing_parsed["parsed_response"] = None
+    with pytest.raises(ValidationError, match="parsed result"):
+        GatewayExecutionResult.model_validate(missing_parsed)
+
+    parse_failed = _execute(_request(), (_response("malformed_response", b"{"),))
+    missing_raw = parse_failed.model_dump(mode="python")
+    missing_raw["raw_response"] = None
+    with pytest.raises(ValidationError, match="parse failure"):
+        GatewayExecutionResult.model_validate(missing_raw)
+
+    oversized = _execute(
+        _request(max_response_bytes=8),
+        (_response("oversized_response", b'{"value":"too-large"}'),),
+    )
+    oversized_missing_raw = oversized.model_dump(mode="python")
+    oversized_missing_raw["raw_response"] = None
+    with pytest.raises(ValidationError, match="oversized result"):
+        GatewayExecutionResult.model_validate(oversized_missing_raw)
+
+    timed_out = _execute(_request(), (_error("timeout"),))
+    timed_out_with_raw = timed_out.model_dump(mode="python")
+    timed_out_with_raw["raw_response"] = parsed.raw_response.model_dump(mode="python")
+    with pytest.raises(ValidationError, match="cannot publish raw"):
+        GatewayExecutionResult.model_validate(timed_out_with_raw)
+
+
+def test_low_level_gateway_guards_reject_in_memory_contract_forgery() -> None:
+    parsed = _execute(_request(), (_response("valid_response"),))
+    assert parsed.raw_response is not None and parsed.parsed_response is not None
+
+    with pytest.raises(ValueError, match="exact bytes"):
+        parsed.raw_response.model_copy(
+            update={"byte_count": parsed.raw_response.byte_count + 1}
+        )._content_matches_reference()
+    with pytest.raises(ValueError, match="canonical payload"):
+        parsed.parsed_response.model_copy(
+            update={"content_sha256": _sha("0")}
+        )._content_matches_reference()
+
+    response_record = parsed.attempts[0]
+    with pytest.raises(ValueError, match="timing"):
+        response_record.timing.model_copy(update={"latency_ns": 99})._latency_reconciles()
+    with pytest.raises(ValueError, match="requires provider metadata"):
+        response_record.model_copy(update={"provider_attempt_ref": None})._outcome_shape_is_consistent()
+
+    parse_failed = _execute(_request(), (_response("malformed_response", b"{"),))
+    with pytest.raises(ValueError, match="retain metadata"):
+        parse_failed.attempts[0].model_copy(update={"issue": None})._outcome_shape_is_consistent()
+
+    timed_out = _execute(_request(), (_error("timeout"),))
+    with pytest.raises(ValueError, match="cannot contain response metadata"):
+        timed_out.attempts[0].model_copy(
+            update={"response_mode": "structured"}
+        )._outcome_shape_is_consistent()
+    with pytest.raises(ValueError, match="at least one attempt"):
+        parsed.model_copy(update={"attempts": ()})._terminal_shape_is_consistent()
+    wrong_ordinal = response_record.attempt.model_copy(update={"attempt_ordinal": 2})
+    with pytest.raises(ValueError, match="sequence"):
+        parsed.model_copy(
+            update={"attempts": (response_record.model_copy(update={"attempt": wrong_ordinal}),)}
+        )._terminal_shape_is_consistent()
+    with pytest.raises(ValueError, match="cannot contain parsed content"):
+        timed_out.model_copy(
+            update={"parsed_response": parsed.parsed_response}
+        )._terminal_shape_is_consistent()
+
+    with pytest.raises(ValueError, match="retryability"):
+        AdapterInvocationError(
+            code="transient_provider_error",
+            retryable=False,
+            provider_attempt_ref=_opaque("f"),
+        )

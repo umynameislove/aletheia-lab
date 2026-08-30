@@ -19,7 +19,10 @@ from aletheia_lab.evaluation.execution_contracts import (
 from aletheia_lab.evaluation.structural_closeout import (
     StructuralAuthorizationCheck,
     StructuralCloseoutPlan,
+    StructuralCloseoutReceipt,
     StructuralRequestExpectation,
+    StructuralRequestReceipt,
+    assert_no_scientific_closeout_fields,
     reduce_structural_closeout,
 )
 from aletheia_lab.model_gateway import (
@@ -179,9 +182,7 @@ def _usage() -> UsageMetadata:
 def _result(
     request: GatewayRequest,
     *,
-    kind: Literal["valid_response", "abstention", "malformed_response"] = (
-        "valid_response"
-    ),
+    kind: Literal["valid_response", "abstention", "malformed_response"] = ("valid_response"),
 ) -> GatewayExecutionResult:
     raw = b"{" if kind == "malformed_response" else b'{"value":"ok"}'
     adapter = DeterministicFakeAdapter(
@@ -283,8 +284,7 @@ def test_complete_store_has_deterministic_permutation_invariant_read_only_receip
     abstention_receipt = next(
         item
         for item in first_receipt.requests
-        if item.request_identity_sha256
-        == second_request.initial_attempt.request_identity_sha256
+        if item.request_identity_sha256 == second_request.initial_attempt.request_identity_sha256
     )
     assert abstention_receipt.response_mode == "abstention"
     assert store.store_sha256() == store_before
@@ -347,9 +347,7 @@ def test_unexpected_same_manifest_terminal_is_duplicate_or_replay(tmp_path: Path
     receipt = reduce_structural_closeout(plan, store=store)
 
     assert receipt.structural_state == "duplicate_or_replay"
-    assert {finding.code for finding in receipt.findings} == {
-        "unexpected_terminal_same_manifest"
-    }
+    assert {finding.code for finding in receipt.findings} == {"unexpected_terminal_same_manifest"}
 
 
 def test_terminal_attempt_count_mismatch_is_incomplete(tmp_path: Path) -> None:
@@ -382,9 +380,7 @@ def test_cross_manifest_terminal_is_invalid_provenance(tmp_path: Path) -> None:
     receipt = reduce_structural_closeout(plan, store=store)
 
     assert receipt.structural_state == "invalid_provenance"
-    assert "unexpected_terminal_cross_manifest" in {
-        finding.code for finding in receipt.findings
-    }
+    assert "unexpected_terminal_cross_manifest" in {finding.code for finding in receipt.findings}
 
 
 def test_manifest_supplied_context_equality_rule_is_enforced(tmp_path: Path) -> None:
@@ -421,9 +417,7 @@ def test_corrupt_content_addressed_object_is_technical_failure(tmp_path: Path) -
     _record_terminal(store, request, result)
     plan = _plan(manifest, (_expectation(request, attempt_count=1),))
     object_path = next(
-        path
-        for path in (tmp_path / "objects" / "sha256").glob("*/*")
-        if path.is_file()
+        path for path in (tmp_path / "objects" / "sha256").glob("*/*") if path.is_file()
     )
     object_path.write_bytes(b"forged")
 
@@ -466,6 +460,65 @@ def test_current_authorization_is_explicit_and_can_block_closeout(tmp_path: Path
 
     assert receipt.structural_state == "not_authorized"
     assert "authorization_not_current" in {item.code for item in receipt.findings}
+
+
+def test_structural_contract_rejects_forged_expectations_and_empty_plans() -> None:
+    manifest = _manifest()
+    request = _request(manifest, case_character="7", prompt="contract")
+    expectation = _expectation(request, attempt_count=1)
+
+    forged_expectation = expectation.model_dump(mode="python")
+    forged_expectation["expectation_sha256"] = _sha("0")
+    with pytest.raises(ValueError, match="expectation identity"):
+        StructuralRequestExpectation.model_validate(forged_expectation)
+
+    plan = _plan(manifest, (expectation,))
+    empty_plan = plan.model_dump(mode="python")
+    empty_plan["requests"] = ()
+    with pytest.raises(ValueError, match="requires expected requests"):
+        StructuralCloseoutPlan.model_validate(empty_plan)
+
+
+def test_structural_receipt_rejects_inconsistent_counts_and_artifacts(tmp_path: Path) -> None:
+    manifest = _manifest()
+    request = _request(manifest, case_character="7", prompt="receipt-contract")
+    result = _result(request)
+    store = ImmutableAttemptStore(tmp_path, clock=_Clock())
+    _record_terminal(store, request, result)
+    receipt = reduce_structural_closeout(
+        _plan(manifest, (_expectation(request, attempt_count=1),)),
+        store=store,
+    )
+
+    forged_count = receipt.model_dump(mode="python")
+    forged_count["expected_request_count"] = 2
+    with pytest.raises(ValueError, match="expected request count"):
+        StructuralCloseoutReceipt.model_validate(forged_count)
+
+    forged_identity = receipt.model_dump(mode="python")
+    forged_identity["receipt_id"] = _opaque("0")
+    with pytest.raises(ValueError, match="receipt identity"):
+        StructuralCloseoutReceipt.model_validate(forged_identity)
+
+    missing = StructuralRequestReceipt(
+        request_identity_sha256=request.initial_attempt.request_identity_sha256,
+        reconciliation="missing",
+        expected_attempt_count=1,
+        observed_attempt_count=None,
+        terminal_inventory_sha256=None,
+        gateway_status=None,
+        response_mode=None,
+        raw_response_sha256=None,
+        parsed_response_sha256=None,
+        issue_sha256=None,
+    )
+    forged_missing = missing.model_dump(mode="python")
+    forged_missing["observed_attempt_count"] = 1
+    with pytest.raises(ValueError, match="cannot contain terminal inventory"):
+        StructuralRequestReceipt.model_validate(forged_missing)
+
+    with pytest.raises(ValueError, match="forbidden scientific"):
+        assert_no_scientific_closeout_fields({"threshold": "not-authorized"})
 
 
 def test_reducer_does_not_open_network_or_reinvoke_provider(
