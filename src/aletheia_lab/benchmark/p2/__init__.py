@@ -558,6 +558,14 @@ from aletheia_lab.benchmark.p2.downstream_disposition import (
     load_downstream_disposition_policy,
     verify_frozen_downstream_policy,
 )
+from aletheia_lab.benchmark.p2.downstream_disposition_v2 import (
+    DownstreamDispositionPolicyV2,
+    P4P5MechanismFilterManifest,
+    load_downstream_disposition_policy_v2,
+    load_p4_p5_filter_manifest,
+    verify_p4_p5_filter_manifest,
+    verify_reconciled_downstream_policy,
+)
 from aletheia_lab.benchmark.p2.evidence_conditions import (
     EVIDENCE_BUNDLE_HASH_SCHEMA_VERSION,
     EVIDENCE_BUNDLE_ID_PATTERN,
@@ -948,6 +956,19 @@ from aletheia_lab.benchmark.p2.p2r_v1_2_protocol import (
     verify_p2r_v1_2_protocol,
     verify_p2r_v1_2_protocol_pair,
 )
+from aletheia_lab.benchmark.p2.p2r_v1_2_results import (
+    P2RV12DatasetResultSummary,
+    P2RV12MechanismResultSummary,
+    P2RV12PreservationReceipt,
+    P2RV12PublicationSummary,
+    load_p2r_v1_2_publication_summary,
+    preserve_p2r_v1_2_evidence,
+    verify_p2r_v1_2_publication_summary,
+    verify_preserved_p2r_v1_2,
+)
+from aletheia_lab.benchmark.p2.p2r_v1_2_results import (
+    preservation_destination as p2r_v1_2_preservation_destination,
+)
 from aletheia_lab.benchmark.p2.preprocessing_controls import (
     BENIGN_EVIDENCE_SCHEMA_VERSION,
     ENCODER_REPAIR_ARTIFACT_DIGEST_SCHEMA_VERSION,
@@ -1080,6 +1101,12 @@ __all__ = [
     "MechanismDisposition",
     "load_downstream_disposition_policy",
     "verify_frozen_downstream_policy",
+    "DownstreamDispositionPolicyV2",
+    "P4P5MechanismFilterManifest",
+    "load_downstream_disposition_policy_v2",
+    "load_p4_p5_filter_manifest",
+    "verify_p4_p5_filter_manifest",
+    "verify_reconciled_downstream_policy",
     "CANDIDATE_CENSUS_SCHEMA_VERSION",
     "MECHANISM_COVERAGE_SCHEMA_VERSION",
     "CandidateCensus",
@@ -1255,6 +1282,15 @@ __all__ = [
     "p2r_v1_2_registration_from_release",
     "verify_p2r_v1_2_registration_pair",
     "write_p2r_v1_2_marker_exclusive",
+    "P2RV12DatasetResultSummary",
+    "P2RV12MechanismResultSummary",
+    "P2RV12PreservationReceipt",
+    "P2RV12PublicationSummary",
+    "load_p2r_v1_2_publication_summary",
+    "preserve_p2r_v1_2_evidence",
+    "p2r_v1_2_preservation_destination",
+    "verify_p2r_v1_2_publication_summary",
+    "verify_preserved_p2r_v1_2",
     "ALPHA_DATA_DRIFT_FEATURE",
     "ALPHA_PLAN_SCHEMA_VERSION",
     "ALPHA_PREPROCESSING_TRANSFORM",
