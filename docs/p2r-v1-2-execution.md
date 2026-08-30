@@ -102,3 +102,15 @@ PYTHONPATH=src python scripts/p2r_v1_2_confirmatory.py verify
 Verification rejects missing, extra, replayed, wrong-size, or hash-mismatched
 artifacts and supports both the original v1 registration schema and the v1.2
 amendment registration schema without weakening either identity contract.
+
+## Completed registered result
+
+The single paired attempt completed with no technical failure. Both mechanisms
+achieved the declared 0.20 manipulation magnitude, but both failed the
+prespecified target-effect, direction, and paired-instrument admission chain.
+Data drift and preprocessing mismatch are therefore `rejected`; `n_admitted =
+0`. The terminal store is immutable and must not be rerun.
+
+See [P2R v1.2 terminal results and preservation](p2r-v1-2-results.md) for the
+complete bounded interpretation, compact summary, external preservation path,
+and downstream denominator consequences.

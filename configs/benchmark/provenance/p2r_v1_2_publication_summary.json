@@ -1,0 +1,128 @@
+{
+  "schema_version": "p2r-v1-2-publication-summary/1",
+  "study_id": "p2r-confirmatory-v1.2",
+  "execution_commit": "4765f5811f9e7cc025db0bebf65b4fdc602d0c3a",
+  "terminal_store_sha256": "7b920ef15cc5683965652a3dc02cef06bf514d8c85e1954c3094c1c441919956",
+  "terminal_artifact_sha256": "da6f8a5d49b2b9352dbaacdc1803aa5c9ae94a7225f547b1ca5ce38a155199ce",
+  "sealed_marker_sha256": "c8c16f56146031d136e6256359e34a1a555acdfacc96ed0f6340bad4656e5638",
+  "measurement_census_sha256": "a07a44e6b15407e69750b073c7293079f146b71ce2c59b095688d9bdd08cc2f9",
+  "paired_observation_census_sha256": "5b70d1114ff4557a2ff0a838beebc712a585dd508e84a7474b8a82f4861707d0",
+  "instrument_audit_sha256": "dafe8d38c0296ae9e4518669e8d127d85e841bfbb1eafd00f106e4bb27989f90",
+  "n_mechanisms": 2,
+  "n_admitted": 0,
+  "n_datasets": 2,
+  "n_registered_seeds_per_mechanism_dataset": 5,
+  "n_measurements": 20,
+  "n_paired_observations": 10,
+  "outcomes_released_together": true,
+  "rerun_forbidden": true,
+  "independent_new_dataset_replication": false,
+  "mechanisms": [
+    {
+      "mechanism": "data_drift",
+      "amendment_protocol_sha256": "1d811be01d2faf2500b79d21bbd034752a2e8e9d349dbcd11bf8cfa0af6c24b3",
+      "execution_protocol_sha256": "b4a9e07570c856ebefa421f8c5a43ee11dd0874dc47633fcf6569021b53e133d",
+      "registration_sha256": "15271aec2086a26b309847c7950179ebc2f67b35482e60cc48ada44a5138f4de",
+      "mechanism_closeout_sha256": "dd133e20b28205a04ffc2f442a08b588edc4079be83c00727229542b65ffcc70",
+      "disposition": "rejected",
+      "admitted": false,
+      "paired_instrument_pass": false,
+      "cross_dataset_claim_allowed": false,
+      "declared_manipulation_magnitude": 0.2,
+      "achieved_manipulation_minimum": 0.2,
+      "achieved_manipulation_maximum": 0.2,
+      "minimum_practical_effect": 0.01,
+      "minimum_expected_direction_fraction": 0.8,
+      "instrument_reason_codes": [
+        "mechanism_direction_unstable",
+        "no_dominant_cause_candidate"
+      ],
+      "eligible_candidate_count": 0,
+      "dataset_results": [
+        {
+          "dataset_id": "uci_default_of_credit_card_clients",
+          "dataset_role": "primary",
+          "n_seeds": 5,
+          "median_target_effect": 0.0,
+          "median_nuisance_effect": 0.0001666666666666483,
+          "expected_direction_fraction": 0.0,
+          "manipulation_fidelity_pass": true,
+          "target_effect_pass": false,
+          "direction_pass": false,
+          "dominance_pass": false,
+          "passed": false,
+          "decision_sha256": "437de9715d15674a8289f31f4948dbd7416e7f84fde1bbac7a3262ace943b078"
+        },
+        {
+          "dataset_id": "uci_online_shoppers_purchasing_intention",
+          "dataset_role": "external_replication",
+          "n_seeds": 5,
+          "median_target_effect": 0.0,
+          "median_nuisance_effect": 0.0,
+          "expected_direction_fraction": 0.0,
+          "manipulation_fidelity_pass": true,
+          "target_effect_pass": false,
+          "direction_pass": false,
+          "dominance_pass": true,
+          "passed": false,
+          "decision_sha256": "882d5179fb4a7baac39151f37b87642ba973f39bdad019cd29a9bd713705bc58"
+        }
+      ]
+    },
+    {
+      "mechanism": "preprocessing_bug",
+      "amendment_protocol_sha256": "59ebbec62f2e34258b1d39617cfad65ac993bd19fd2167255c78e313c5ad4993",
+      "execution_protocol_sha256": "f9da209a3790fc831963a05a3ab19023392a3a4747bbd8b622813de6c20af7c5",
+      "registration_sha256": "ba5f42828d2297345e60aa2156838695a17f7bbb09dfd183887764ff66fcfd63",
+      "mechanism_closeout_sha256": "5724de89debc2ba99e7c962a0728cdb71dc326c358e9999163da6fc1c44a8cc1",
+      "disposition": "rejected",
+      "admitted": false,
+      "paired_instrument_pass": false,
+      "cross_dataset_claim_allowed": false,
+      "declared_manipulation_magnitude": 0.2,
+      "achieved_manipulation_minimum": 0.2,
+      "achieved_manipulation_maximum": 0.2,
+      "minimum_practical_effect": 0.01,
+      "minimum_expected_direction_fraction": 0.8,
+      "instrument_reason_codes": [
+        "mechanism_direction_unstable",
+        "no_dominant_cause_candidate"
+      ],
+      "eligible_candidate_count": 0,
+      "dataset_results": [
+        {
+          "dataset_id": "uci_default_of_credit_card_clients",
+          "dataset_role": "primary",
+          "n_seeds": 5,
+          "median_target_effect": 0.0003333333333332966,
+          "median_nuisance_effect": 0.0,
+          "expected_direction_fraction": 0.0,
+          "manipulation_fidelity_pass": true,
+          "target_effect_pass": false,
+          "direction_pass": false,
+          "dominance_pass": true,
+          "passed": false,
+          "decision_sha256": "b72a3b3912e56b14a5edd2d7c2427f28a02b034731b513386881b42fb00b178f"
+        },
+        {
+          "dataset_id": "uci_online_shoppers_purchasing_intention",
+          "dataset_role": "external_replication",
+          "n_seeds": 5,
+          "median_target_effect": 0.0,
+          "median_nuisance_effect": 0.0,
+          "expected_direction_fraction": 0.0,
+          "manipulation_fidelity_pass": true,
+          "target_effect_pass": false,
+          "direction_pass": false,
+          "dominance_pass": true,
+          "passed": false,
+          "decision_sha256": "32fc98a011bbbb59f9ca8cb7a3bc9ebf3b51af12030db6626dcdbb4dcd9b26b5"
+        }
+      ]
+    }
+  ],
+  "scientific_interpretation": "manipulation_fidelity_passed_but_target_direction_and_paired_instrument_gates_failed",
+  "claim_boundary": "both_mechanisms_rejected_zero_admitted_no_cross_dataset_or_diagnostic_ground_truth_claim",
+  "external_content_address": "sha256-7b920ef15cc5683965652a3dc02cef06bf514d8c85e1954c3094c1c441919956",
+  "terminal_store_excluded_from_git": true
+}
