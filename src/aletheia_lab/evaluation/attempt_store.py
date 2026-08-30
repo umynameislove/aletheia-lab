@@ -18,9 +18,12 @@ from aletheia_lab.evaluation.execution_contracts import (
     canonical_execution_sha256,
 )
 from aletheia_lab.model_gateway.contracts import (
+    AttemptOutcome,
     AttemptRecord,
     GatewayExecutionResult,
     GatewayRequest,
+    ResponseMode,
+    TerminalStatus,
 )
 from aletheia_lab.project.identity import (
     SHA256_PATTERN,
@@ -38,6 +41,9 @@ STORE_RECEIPT_SCHEMA_VERSION: Final[Literal["evaluation-store-receipt/v1"]] = (
 FAILURE_RECEIPT_SCHEMA_VERSION: Final[Literal["evaluation-store-failure/v1"]] = (
     "evaluation-store-failure/v1"
 )
+TERMINAL_INVENTORY_SCHEMA_VERSION: Final[
+    Literal["evaluation-terminal-inventory/v1"]
+] = "evaluation-terminal-inventory/v1"
 
 _OPAQUE_PATTERN: Final[str] = r"^ev-[0-9a-f]{64}$"
 _CODE_PATTERN: Final[str] = r"^[a-z][a-z0-9_.-]{0,63}$"
@@ -231,6 +237,81 @@ class StoreLedgerEntry(_StrictFrozenModel):
             raise ValueError("result linkage is invalid before parsed_or_failed state")
         if self.partial_publication:
             raise ValueError("ledger entries must never represent partial publication")
+        return self
+
+
+class TerminalExecutionInventory(_StrictFrozenModel):
+    """Canonical read-only projection of one completely published request."""
+
+    schema_version: Literal["evaluation-terminal-inventory/v1"] = (
+        TERMINAL_INVENTORY_SCHEMA_VERSION
+    )
+    inventory_id: OpaqueReference
+    inventory_sha256: Sha256
+    request_identity_sha256: Sha256
+    manifest_reference_id: OpaqueReference
+    manifest_content_sha256: Sha256
+    case_reference_id: OpaqueReference
+    case_content_sha256: Sha256
+    family_id: OpaqueReference
+    variant_content_sha256: Sha256
+    snapshot_id: SnapshotId
+    evidence_content_sha256: Sha256
+    visibility_projection_sha256: Sha256
+    context_sha256: Sha256
+    prompt_sha256: Sha256
+    response_schema_sha256: Sha256
+    model_policy_sha256: Sha256
+    provider_ref: OpaqueReference
+    model_ref: OpaqueReference
+    model_version_ref: OpaqueReference
+    resource_policy_ref: OpaqueReference
+    retry_policy_ref: OpaqueReference
+    attempt_record_sha256: tuple[Sha256, ...]
+    attempt_outcomes: tuple[AttemptOutcome, ...]
+    attempt_response_modes: tuple[ResponseMode | None, ...]
+    gateway_status: TerminalStatus
+    raw_response_ref: OpaqueReference | None
+    raw_response_sha256: Sha256 | None
+    parsed_response_ref: OpaqueReference | None
+    parsed_response_sha256: Sha256 | None
+    issue_ref: OpaqueReference | None
+    issue_sha256: Sha256 | None
+    result_object_sha256: Sha256
+    terminal_entry_sha256: Sha256
+    ledger_entry_count: int = Field(gt=0)
+
+    def identity_payload(self) -> dict[str, object]:
+        payload = self.model_dump(
+            mode="json", exclude={"inventory_id", "inventory_sha256"}
+        )
+        return {str(key): value for key, value in payload.items()}
+
+    @model_validator(mode="after")
+    def _identity_and_outcome_reconcile(self) -> Self:
+        expected = canonical_execution_sha256(self.identity_payload())
+        if self.inventory_sha256 != expected or self.inventory_id != f"ev-{expected}":
+            raise ValueError("terminal inventory identity does not match canonical fields")
+        if not self.attempt_record_sha256:
+            raise ValueError("terminal inventory requires at least one attempt")
+        if not (
+            len(self.attempt_record_sha256)
+            == len(self.attempt_outcomes)
+            == len(self.attempt_response_modes)
+        ):
+            raise ValueError("terminal attempt inventory lengths do not reconcile")
+        if (self.raw_response_ref is None) != (self.raw_response_sha256 is None):
+            raise ValueError("terminal raw response linkage must be complete or absent")
+        if (self.parsed_response_ref is None) != (self.parsed_response_sha256 is None):
+            raise ValueError("terminal parsed response linkage must be complete or absent")
+        if (self.issue_ref is None) != (self.issue_sha256 is None):
+            raise ValueError("terminal issue linkage must be complete or absent")
+        if (self.parsed_response_ref is None) == (self.issue_ref is None):
+            raise ValueError("terminal inventory requires exactly one technical outcome")
+        if (self.gateway_status == "parsed") != (self.parsed_response_ref is not None):
+            raise ValueError("terminal gateway status does not match parsed outcome")
+        if self.gateway_status == "parsed" and self.attempt_response_modes[-1] is None:
+            raise ValueError("parsed terminal inventory must retain response mode")
         return self
 
 
@@ -491,6 +572,15 @@ class ImmutableAttemptStore:
     def list_terminal_requests(self) -> tuple[str, ...]:
         self.verify_integrity()
         return tuple(sorted(path.stem for path in self.terminal_root.glob("*.json")))
+
+    def terminal_inventories(self) -> tuple[TerminalExecutionInventory, ...]:
+        """Return canonical sealed inventories without exposing partial ledgers."""
+
+        self.verify_integrity()
+        request_hashes = tuple(
+            sorted(path.stem for path in self.terminal_root.glob("*.json"))
+        )
+        return tuple(self._terminal_inventory(request_hash) for request_hash in request_hashes)
 
     def record_failure(
         self,
@@ -1051,6 +1141,84 @@ class ImmutableAttemptStore:
                 "integrity_error", "ledger entry serialization is not canonical"
             )
         return entry
+
+    def _terminal_inventory(self, request_hash: str) -> TerminalExecutionInventory:
+        entries, terminal = self._load_chain(request_hash)
+        if terminal is None or not entries:
+            raise AttemptStoreTransitionError(
+                "invalid_transition", "request has no completely published terminal inventory"
+            )
+        outcome = next(
+            (entry for entry in entries if entry.state == "parsed_or_failed"),
+            None,
+        )
+        if outcome is None or outcome.result_object_sha256 is None:
+            raise AttemptStoreIntegrityError(
+                "integrity_error", "terminal request has no parsed-or-failed inventory"
+            )
+        response = next(
+            (entry for entry in entries if entry.state == "response_recorded"),
+            None,
+        )
+        attempt_hashes = tuple(
+            entry.attempt_record_sha256
+            for entry in entries
+            if entry.state == "attempt_recorded"
+            and entry.attempt_record_sha256 is not None
+        )
+        attempt_records = tuple(
+            AttemptRecord.model_validate_json(self._read_object(digest))
+            for digest in attempt_hashes
+        )
+        result_inventory = self._read_result_inventory(outcome.result_object_sha256)
+        first = entries[0]
+        fields: dict[str, object] = {
+            "schema_version": TERMINAL_INVENTORY_SCHEMA_VERSION,
+            "request_identity_sha256": request_hash,
+            "manifest_reference_id": first.manifest_reference_id,
+            "manifest_content_sha256": first.manifest_content_sha256,
+            "case_reference_id": first.case_reference_id,
+            "case_content_sha256": first.case_content_sha256,
+            "family_id": first.family_id,
+            "variant_content_sha256": first.variant_content_sha256,
+            "snapshot_id": first.snapshot_id,
+            "evidence_content_sha256": first.evidence_content_sha256,
+            "visibility_projection_sha256": first.visibility_projection_sha256,
+            "context_sha256": first.context_sha256,
+            "prompt_sha256": first.prompt_sha256,
+            "response_schema_sha256": first.response_schema_sha256,
+            "model_policy_sha256": first.model_policy_sha256,
+            "provider_ref": first.provider_ref,
+            "model_ref": first.model_ref,
+            "model_version_ref": first.model_version_ref,
+            "resource_policy_ref": first.resource_policy_ref,
+            "retry_policy_ref": first.retry_policy_ref,
+            "attempt_record_sha256": attempt_hashes,
+            "attempt_outcomes": tuple(record.outcome for record in attempt_records),
+            "attempt_response_modes": tuple(
+                record.response_mode for record in attempt_records
+            ),
+            "gateway_status": cast(TerminalStatus, result_inventory["status"]),
+            "raw_response_ref": response.raw_response_ref if response is not None else None,
+            "raw_response_sha256": (
+                response.raw_response_sha256 if response is not None else None
+            ),
+            "parsed_response_ref": outcome.parsed_response_ref,
+            "parsed_response_sha256": outcome.parsed_response_sha256,
+            "issue_ref": outcome.issue_ref,
+            "issue_sha256": outcome.issue_sha256,
+            "result_object_sha256": outcome.result_object_sha256,
+            "terminal_entry_sha256": content_sha256(_entry_bytes(terminal)),
+            "ledger_entry_count": terminal.sequence,
+        }
+        inventory_sha = canonical_execution_sha256(fields)
+        return TerminalExecutionInventory.model_validate(
+            {
+                "inventory_id": f"ev-{inventory_sha}",
+                "inventory_sha256": inventory_sha,
+                **fields,
+            }
+        )
 
     def _write_object(self, payload: bytes) -> str:
         digest = content_sha256(payload)
