@@ -148,6 +148,21 @@ object. Missing usage or cost fields remain `null`; they are never converted to
 zero. Parse failure, timeout, cancellation, and provider failure remain visible
 technical outcomes.
 
+Every adapter invocation runs behind a gateway-owned monotonic deadline. The
+gateway returns a structured timeout by that deadline even if an adapter blocks,
+and it discards any response that arrives after timeout or in-flight
+cancellation. A timeout may retry only up to the immutable attempt limit.
+Caller cancellation after adapter start has one canonical public result whether
+it races with adapter completion or response validation; provider metadata and
+late response bytes are not published from that race.
+
+Python cannot safely terminate arbitrary code inside a thread. The supervisor
+therefore uses a daemon worker to guarantee the gateway return boundary while a
+production adapter must also apply the identical timeout to its network client
+and release abandoned transport work. The readiness layer has no production
+adapter, so this transport-level requirement must be demonstrated by adapter
+conformance tests before any external-provider execution is authorized.
+
 ## Retry invariants
 
 Every retry reconstructs an attempt from the immutable initial request. The
@@ -256,6 +271,9 @@ Run the reproducibility gate three times with distinct process hash seeds:
 python scripts/run_test_profile.py evaluation --repeat 3
 ```
 
+`--show-command` emits a JSON argv array rather than shell text. This preserves
+Unicode, Windows separators, and interpreter paths containing whitespace.
+
 Each evaluation run has a five-minute hard timeout and always reports the 20
 slowest tests. Ordinary unit and property tests target two seconds; a complete
 fixture-provider integration path targets 15 seconds. The authoritative full
@@ -269,6 +287,8 @@ python scripts/run_evaluation_mutation_audit.py
 ```
 
 No mutated source is written back to the repository.
+The mutation audit is also a blocking CI quality step; it includes explicit
+mutations for the adapter deadline and in-flight cancellation guards.
 
 ## What this infrastructure does not decide
 

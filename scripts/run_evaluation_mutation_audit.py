@@ -68,6 +68,38 @@ _MUTATIONS: Final = (
         ),
     ),
     _Mutation(
+        name="adapter_hard_deadline_removed",
+        source="aletheia_lab/model_gateway/runtime.py",
+        replacements=(
+            (
+                "        if remaining_ns <= 0:\n"
+                '            return _SupervisedInvocation("timed_out")\n',
+                "        if remaining_ns <= 0:\n"
+                "            remaining_ns = 1_000_000_000\n",
+            ),
+        ),
+        target=(
+            "tests/unit/test_model_gateway_runtime.py::"
+            "test_blocking_adapter_returns_by_hard_deadline_and_discards_late_response"
+        ),
+    ),
+    _Mutation(
+        name="inflight_cancellation_removed",
+        source="aletheia_lab/model_gateway/runtime.py",
+        replacements=(
+            (
+                "            if cancellation.is_cancelled():\n"
+                '                return _SupervisedInvocation("cancelled")\n',
+                "            if False and cancellation.is_cancelled():\n"
+                '                return _SupervisedInvocation("cancelled")\n',
+            ),
+        ),
+        target=(
+            "tests/unit/test_model_gateway_runtime.py::"
+            "test_cancellation_interrupts_gateway_wait_for_blocking_adapter"
+        ),
+    ),
+    _Mutation(
         name="immutable_overwrite_allowed",
         source="aletheia_lab/evaluation/attempt_store.py",
         replacements=(

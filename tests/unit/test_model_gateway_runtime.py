@@ -492,7 +492,7 @@ def test_cancellation_interrupts_gateway_wait_for_blocking_adapter() -> None:
 
     assert elapsed < 0.25
     assert result.status == "cancelled"
-    assert result.issue is not None and result.issue.code == "cancelled_during_adapter"
+    assert result.issue is not None and result.issue.code == "cancelled_after_adapter_start"
     assert result.raw_response is None
     assert result.parsed_response is None
 
@@ -526,7 +526,7 @@ def test_cancellation_after_response_prevents_publication() -> None:
     assert result.status == "cancelled"
     assert result.raw_response is None
     assert result.parsed_response is None
-    assert result.issue is not None and result.issue.code == "cancelled_before_publication"
+    assert result.issue is not None and result.issue.code == "cancelled_after_adapter_start"
 
 
 def test_cancellation_immediately_before_success_publication_is_honored() -> None:
@@ -539,6 +539,38 @@ def test_cancellation_immediately_before_success_publication_is_honored() -> Non
     assert result.status == "cancelled"
     assert result.raw_response is None
     assert result.parsed_response is None
+    assert result.issue is not None and result.issue.code == "cancelled_after_adapter_start"
+
+
+def test_cancellation_race_has_one_canonical_public_result() -> None:
+    request = _request(timeout_ns=1_000_000_000)
+    after_response = _execute(
+        request,
+        (_response("valid_response"),),
+        cancellation=_Cancellation((False, True)),
+    )
+
+    adapter = _blocking_adapter(request)
+    cancellation = _EventCancellation()
+
+    def cancel_after_start() -> None:
+        assert adapter.started.wait(timeout=0.25)
+        cancellation.cancelled.set()
+
+    canceller = threading.Thread(target=cancel_after_start, daemon=True)
+    canceller.start()
+    try:
+        during_adapter = execute_gateway_request(
+            request,
+            adapter=adapter,
+            clock=_Clock(),
+            cancellation=cancellation,
+        )
+    finally:
+        adapter.release.set()
+        canceller.join(timeout=0.25)
+
+    assert during_adapter.model_dump_json() == after_response.model_dump_json()
 
 
 @dataclass

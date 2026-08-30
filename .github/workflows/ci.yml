@@ -121,6 +121,8 @@ jobs:
           python -m pip install -e ".[dev]"
       - name: Lint
         run: ruff check src tests scripts
+      - name: Test evaluation guard mutations
+        run: python scripts/run_evaluation_mutation_audit.py
       - name: Repo hygiene
         run: python scripts/check_repo_hygiene.py
 

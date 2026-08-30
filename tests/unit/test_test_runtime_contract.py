@@ -112,6 +112,23 @@ def test_evaluation_reproducibility_runs_on_both_supported_interpreters() -> Non
     assert evaluation_steps[0].get("continue-on-error") is None
 
 
+def test_evaluation_mutation_audit_is_a_blocking_quality_gate() -> None:
+    jobs = _workflow().get("jobs")
+    assert isinstance(jobs, dict)
+    quality_job = jobs.get("quality")
+    assert isinstance(quality_job, dict)
+    steps = quality_job.get("steps")
+    assert isinstance(steps, list)
+    mutation_steps = [
+        step
+        for step in steps
+        if isinstance(step, dict)
+        and "run_evaluation_mutation_audit.py" in str(step.get("run", ""))
+    ]
+    assert len(mutation_steps) == 1
+    assert mutation_steps[0].get("continue-on-error") is None
+
+
 def test_windows_evaluation_profile_is_a_blocking_gate() -> None:
     jobs = _workflow().get("jobs")
     assert isinstance(jobs, dict)

@@ -172,7 +172,7 @@ def execute_gateway_request(
                 ended_ns=ended,
                 latency_ns=ended - started,
             )
-            issue = _issue(attempt, "cancelled_during_adapter")
+            issue = _issue(attempt, "cancelled_after_adapter_start")
             records.append(_record(attempt, "cancelled", timing, issue=issue))
             return _result(checked, "cancelled", tuple(records), issue=issue)
 
@@ -334,13 +334,12 @@ def _validate_response_boundary(
         )
         return _result(checked, status, tuple(records), issue=issue)
     if cancellation.is_cancelled():
-        issue = _issue(attempt, "cancelled_before_publication")
+        issue = _issue(attempt, "cancelled_after_adapter_start")
         records.append(
             _record(
                 attempt,
                 "cancelled",
                 timing,
-                provider_attempt_ref=envelope.provider_attempt_ref,
                 issue=issue,
             )
         )
@@ -392,13 +391,12 @@ def _validate_response_boundary(
 
     parsed_artifact = ParsedResponseArtifact.from_payload(parsed)
     if cancellation.is_cancelled():
-        issue = _issue(attempt, "cancelled_before_publication")
+        issue = _issue(attempt, "cancelled_after_adapter_start")
         records.append(
             _record(
                 attempt,
                 "cancelled",
                 timing,
-                provider_attempt_ref=envelope.provider_attempt_ref,
                 issue=issue,
             )
         )
