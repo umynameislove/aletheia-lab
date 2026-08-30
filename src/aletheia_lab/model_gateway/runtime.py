@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 import json
+import queue
 import re
+import threading
+import time
+from dataclasses import dataclass
 from typing import Literal, cast
 
 from pydantic import ValidationError
@@ -40,6 +44,15 @@ from aletheia_lab.project.identity import canonical_project_json, content_sha256
 
 _STAGE = "model_gateway"
 _OPAQUE_REFERENCE = re.compile(r"^ev-[0-9a-f]{64}$")
+_CANCELLATION_POLL_SECONDS = 0.005
+
+
+@dataclass(frozen=True)
+class _SupervisedInvocation:
+    """One bounded adapter outcome; late worker results are never consumed."""
+
+    state: Literal["returned", "raised", "timed_out", "cancelled"]
+    value: object | None = None
 
 
 def prepare_gateway_request(
@@ -131,8 +144,47 @@ def execute_gateway_request(
             runtime_policy=checked.runtime_policy,
         )
         started = clock.now_ns()
+        supervised = _invoke_with_deadline(
+            adapter=adapter,
+            call=call,
+            timeout_ns=checked.runtime_policy.timeout_ns,
+            cancellation=cancellation,
+        )
+        if supervised.state == "timed_out":
+            timing = AttemptTiming(
+                started_ns=started,
+                ended_ns=started + checked.runtime_policy.timeout_ns,
+                latency_ns=checked.runtime_policy.timeout_ns,
+            )
+            exhausted = ordinal == checked.runtime_policy.max_attempts and ordinal > 1
+            issue = _issue(attempt, "retry_exhausted" if exhausted else "provider_timeout")
+            records.append(_record(attempt, "timeout", timing, issue=issue))
+            if ordinal < checked.runtime_policy.max_attempts:
+                continue
+            terminal_status: TerminalStatus = (
+                "retry_exhausted" if exhausted else "timed_out"
+            )
+            return _result(checked, terminal_status, tuple(records), issue=issue)
+        if supervised.state == "cancelled":
+            ended = clock.now_ns()
+            timing = AttemptTiming(
+                started_ns=started,
+                ended_ns=ended,
+                latency_ns=ended - started,
+            )
+            issue = _issue(attempt, "cancelled_during_adapter")
+            records.append(_record(attempt, "cancelled", timing, issue=issue))
+            return _result(checked, "cancelled", tuple(records), issue=issue)
+
         try:
-            returned = adapter.invoke(call)
+            if supervised.state == "raised":
+                error = supervised.value
+                if not isinstance(error, Exception):
+                    raise RuntimeError("adapter raised unsupported control-flow exception")
+                raise error
+            returned = supervised.value
+            if not isinstance(returned, ProviderEnvelope):
+                raise TypeError("adapter returned an invalid provider envelope")
             envelope = ProviderEnvelope.model_validate(returned.model_dump(mode="python"))
         except AdapterInvocationError as exc:
             ended = clock.now_ns()
@@ -187,6 +239,52 @@ def execute_gateway_request(
             return terminal
 
     raise AssertionError("bounded gateway loop ended without a terminal result")
+
+
+def _invoke_with_deadline(
+    *,
+    adapter: ProviderAdapter,
+    call: ProviderCall,
+    timeout_ns: int,
+    cancellation: CancellationProbe,
+) -> _SupervisedInvocation:
+    """Return by the authorized deadline even when an adapter blocks indefinitely.
+
+    Python cannot safely terminate an arbitrary thread. The worker is therefore
+    daemonized and its one-shot result queue becomes unreachable to the gateway
+    after timeout or cancellation. A real adapter must additionally bind the same
+    timeout to its transport so abandoned work is released by the provider client.
+    """
+
+    outcomes: queue.Queue[tuple[Literal["returned", "raised"], object]] = queue.Queue(
+        maxsize=1
+    )
+
+    def invoke() -> None:
+        try:
+            outcomes.put_nowait(("returned", adapter.invoke(call)))
+        except BaseException as exc:  # noqa: BLE001 - transported to the caller boundary
+            outcomes.put_nowait(("raised", exc))
+
+    worker = threading.Thread(
+        target=invoke,
+        name=f"model-gateway-{call.attempt_identity_sha256[:12]}",
+        daemon=True,
+    )
+    deadline_ns = time.monotonic_ns() + timeout_ns
+    worker.start()
+    while True:
+        remaining_ns = deadline_ns - time.monotonic_ns()
+        if remaining_ns <= 0:
+            return _SupervisedInvocation("timed_out")
+        wait_seconds = min(remaining_ns / 1_000_000_000, _CANCELLATION_POLL_SECONDS)
+        try:
+            state, value = outcomes.get(timeout=wait_seconds)
+        except queue.Empty:
+            if cancellation.is_cancelled():
+                return _SupervisedInvocation("cancelled")
+            continue
+        return _SupervisedInvocation(state, value)
 
 
 def _validate_response_boundary(

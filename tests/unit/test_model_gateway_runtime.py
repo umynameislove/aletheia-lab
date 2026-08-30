@@ -5,6 +5,8 @@ from __future__ import annotations
 import builtins
 import os
 import socket
+import threading
+import time
 from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
@@ -80,7 +82,7 @@ def _known_usage() -> UsageMetadata:
 def _request(
     *,
     max_attempts: int = 1,
-    timeout_ns: int = 100,
+    timeout_ns: int = 1_000_000_000,
     max_response_bytes: int = 256,
 ) -> GatewayRequest:
     manifest = EvaluationManifestReference.build(
@@ -377,9 +379,120 @@ def test_provider_terminal_errors_do_not_mint_success(step: FakeStep, status: st
 
 
 def test_elapsed_timeout_discards_late_response() -> None:
-    result = _execute(_request(timeout_ns=5), (_response("valid_response"),), clock_step=6)
+    result = _execute(
+        _request(timeout_ns=1_000_000_000),
+        (_response("valid_response"),),
+        clock_step=1_000_000_001,
+    )
 
     assert result.status == "timed_out"
+    assert result.raw_response is None
+    assert result.parsed_response is None
+
+
+@dataclass
+class _BlockingAdapter:
+    binding: ProviderBinding
+    delegate: DeterministicFakeAdapter
+    release: threading.Event
+    started: threading.Event
+    invocation_count: int = 0
+
+    def invoke(self, call: ProviderCall) -> ProviderEnvelope:
+        self.invocation_count += 1
+        self.started.set()
+        self.release.wait(timeout=2)
+        return self.delegate.invoke(call)
+
+
+class _EventCancellation:
+    def __init__(self) -> None:
+        self.cancelled = threading.Event()
+
+    def is_cancelled(self) -> bool:
+        return self.cancelled.is_set()
+
+
+def _blocking_adapter(request: GatewayRequest) -> _BlockingAdapter:
+    delegate = _adapter(request, (_response("valid_response"),) * request.runtime_policy.max_attempts)
+    return _BlockingAdapter(
+        binding=delegate.binding,
+        delegate=delegate,
+        release=threading.Event(),
+        started=threading.Event(),
+    )
+
+
+def test_blocking_adapter_returns_by_hard_deadline_and_discards_late_response() -> None:
+    request = _request(timeout_ns=25_000_000)
+    adapter = _blocking_adapter(request)
+    started = time.monotonic()
+    try:
+        result = execute_gateway_request(
+            request,
+            adapter=adapter,
+            clock=_Clock(),
+            cancellation=_Cancellation(),
+        )
+        elapsed = time.monotonic() - started
+    finally:
+        adapter.release.set()
+
+    assert adapter.started.is_set()
+    assert elapsed < 0.25
+    assert result.status == "timed_out"
+    assert result.attempts[0].outcome == "timeout"
+    assert result.attempts[0].timing.latency_ns == request.runtime_policy.timeout_ns
+    assert result.raw_response is None
+    assert result.parsed_response is None
+
+
+def test_blocking_adapter_timeout_retries_only_to_registered_attempt_limit() -> None:
+    request = _request(max_attempts=2, timeout_ns=20_000_000)
+    adapter = _blocking_adapter(request)
+    try:
+        result = execute_gateway_request(
+            request,
+            adapter=adapter,
+            clock=_Clock(),
+            cancellation=_Cancellation(),
+        )
+    finally:
+        adapter.release.set()
+
+    assert result.status == "retry_exhausted"
+    assert adapter.invocation_count == 2
+    assert [record.outcome for record in result.attempts] == ["timeout", "timeout"]
+    assert result.issue is not None and result.issue.code == "retry_exhausted"
+
+
+def test_cancellation_interrupts_gateway_wait_for_blocking_adapter() -> None:
+    request = _request(timeout_ns=1_000_000_000)
+    adapter = _blocking_adapter(request)
+    cancellation = _EventCancellation()
+
+    def cancel_after_start() -> None:
+        assert adapter.started.wait(timeout=0.25)
+        cancellation.cancelled.set()
+
+    canceller = threading.Thread(target=cancel_after_start, daemon=True)
+    canceller.start()
+    started = time.monotonic()
+    try:
+        result = execute_gateway_request(
+            request,
+            adapter=adapter,
+            clock=_Clock(),
+            cancellation=cancellation,
+        )
+        elapsed = time.monotonic() - started
+    finally:
+        adapter.release.set()
+        canceller.join(timeout=0.25)
+
+    assert elapsed < 0.25
+    assert result.status == "cancelled"
+    assert result.issue is not None and result.issue.code == "cancelled_during_adapter"
     assert result.raw_response is None
     assert result.parsed_response is None
 

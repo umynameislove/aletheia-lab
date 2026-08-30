@@ -153,7 +153,7 @@ def _request(
         manifest=manifest,
         model_policy=policy,
         retry_policy_ref=_opaque("b"),
-        timeout_ns=100,
+        timeout_ns=1_000_000_000,
         max_attempts=2,
         max_response_bytes=256,
         provenance_sha256=_sha("c"),
