@@ -93,8 +93,64 @@ def test_windows_project_boundary_is_a_blocking_ci_gate() -> None:
     assert boundary_steps[0].get("continue-on-error") is None
 
 
+def test_evaluation_reproducibility_runs_on_both_supported_interpreters() -> None:
+    jobs = _workflow().get("jobs")
+    assert isinstance(jobs, dict)
+    test_job = jobs.get("test")
+    assert isinstance(test_job, dict)
+    steps = test_job.get("steps")
+    assert isinstance(steps, list)
+    evaluation_steps = [
+        step
+        for step in steps
+        if isinstance(step, dict)
+        and "run_test_profile.py evaluation --repeat 3" in str(step.get("run", ""))
+    ]
+    assert len(evaluation_steps) == 1
+    assert evaluation_steps[0].get("if") is None
+    assert evaluation_steps[0].get("continue-on-error") is None
+
+
+def test_windows_evaluation_profile_is_a_blocking_gate() -> None:
+    jobs = _workflow().get("jobs")
+    assert isinstance(jobs, dict)
+    windows_job = jobs.get("windows-project")
+    assert isinstance(windows_job, dict)
+    steps = windows_job.get("steps")
+    assert isinstance(steps, list)
+    evaluation_steps = [
+        step
+        for step in steps
+        if isinstance(step, dict)
+        and "run_test_profile.py evaluation" in str(step.get("run", ""))
+    ]
+    assert len(evaluation_steps) == 1
+    assert evaluation_steps[0].get("continue-on-error") is None
+
+
+def test_pip_caches_bind_the_dependency_input() -> None:
+    jobs = _workflow().get("jobs")
+    assert isinstance(jobs, dict)
+    cached_setup_steps = []
+    for job in jobs.values():
+        assert isinstance(job, dict)
+        steps = job.get("steps")
+        assert isinstance(steps, list)
+        for step in steps:
+            if not isinstance(step, dict):
+                continue
+            inputs = step.get("with")
+            if isinstance(inputs, dict) and inputs.get("cache") == "pip":
+                cached_setup_steps.append(inputs)
+    assert len(cached_setup_steps) == 2
+    assert all(
+        inputs.get("cache-dependency-path") == "pyproject.toml"
+        for inputs in cached_setup_steps
+    )
+
+
 def test_named_profiles_resolve_without_collecting_tests() -> None:
-    for profile in ("fast", "project", "research", "full"):
+    for profile in ("fast", "project", "research", "evaluation", "full"):
         completed = subprocess.run(
             [sys.executable, str(_PROFILE_SCRIPT), profile, "--show-command"],
             cwd=_ROOT,

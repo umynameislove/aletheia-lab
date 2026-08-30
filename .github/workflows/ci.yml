@@ -36,12 +36,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
+          cache-dependency-path: pyproject.toml
       - name: Install
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
       - name: Prepare pinned test dataset
         run: python scripts/download_dataset.py all --config configs/project.yaml
+      - name: Test evaluation reproducibility
+        run: python scripts/run_test_profile.py evaluation --repeat 3
       - name: Test with blocking coverage
         if: matrix.python-version == '3.11'
         run: >-
@@ -61,9 +64,11 @@ jobs:
           src/aletheia_lab/baseline
           src/aletheia_lab/data
           src/aletheia_lab/benchmark
+          src/aletheia_lab/context
           src/aletheia_lab/diagnosis
           src/aletheia_lab/evidence
           src/aletheia_lab/evaluation
+          src/aletheia_lab/model_gateway
           src/aletheia_lab/project
           src/aletheia_lab/reporting
           --exclude src/aletheia_lab/benchmark/p2
@@ -79,12 +84,15 @@ jobs:
         with:
           python-version: "3.11"
           cache: "pip"
+          cache-dependency-path: pyproject.toml
       - name: Install
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
       - name: Test Windows project boundary
         run: python scripts/run_test_profile.py project -- --durations=20
+      - name: Test Windows evaluation boundary
+        run: python scripts/run_test_profile.py evaluation
       - name: Test Windows immutable-store publication
         run: >-
           pytest
