@@ -104,7 +104,11 @@ experiment artifacts remain local and are independently validated before use.
   denominator and analysis policy must be frozen before those outcomes exist.
 
 See the [P3 scope amendment](docs/p3-scope-amendment.md) for the exact boundary
-and [related work](docs/related-work.md) for the bounded novelty position.
+and [related work](docs/related-work.md) for the bounded novelty position. The
+[public-claim governance contract](docs/claim-evidence-governance.md) binds every
+current statement to evidence and denominators. The
+[claim-support validation protocol](docs/claim-support-instrument-validation.md)
+is outcome-blind preparation only; independent human validation is still pending.
 
 ## Installation
 
@@ -374,6 +378,8 @@ documentation, and reproducible artifacts.
 - [P2R v1.2 registered execution and closeout](docs/p2r-v1-2-execution.md)
 - [P2R v1.2 terminal results and preservation](docs/p2r-v1-2-results.md)
 - [P2 downstream disposition policy v2](docs/p2-downstream-disposition-policy-v2.md)
+- [Public claim and evidence governance](docs/claim-evidence-governance.md)
+- [Claim-support instrument validation protocol](docs/claim-support-instrument-validation.md)
 - [Related work and research positioning](docs/related-work.md)
 - [Architecture decisions](docs/adr/)
 
