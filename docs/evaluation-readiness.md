@@ -22,10 +22,12 @@ The readiness layer can:
 - publish terminal state only after every required store transition succeeds;
 - reduce terminal inventories into a deterministic structural receipt.
 
-The layer has no production entry point for a real provider. A future provider
-implementation must remain outside the adapter-neutral contracts until a
-separate, immutable scientific manifest supplies the required policy values and
-execution authorization.
+The layer includes a production OpenAI transport adapter but no command that
+implicitly authorizes a provider send. Constructing that adapter requires an
+explicit, immutable model-policy reference, a transport policy derived from that
+same research policy, the exact SDK version, the official API endpoint and a
+process-local API key. A separate scientific manifest and execution
+authorization remain mandatory.
 
 ## Architecture
 
@@ -45,6 +47,8 @@ canonical context + immutable request identity
 provider-neutral adapter boundary
         |
         +---- deterministic fixture adapter (tests only)
+        |
+        +---- pinned OpenAI Chat Completions adapter (explicit execution only)
         |
         v
 raw response / parsed response / technical issue
@@ -148,6 +152,37 @@ object. Missing usage or cost fields remain `null`; they are never converted to
 zero. Parse failure, timeout, cancellation, and provider failure remain visible
 technical outcomes.
 
+### Production OpenAI transport
+
+`OpenAIChatCompletionsGatewayAdapter` implements the same provider-neutral
+boundary for the frozen OpenAI Chat Completions policy. It is deliberately a
+transport implementation, not an execution authority or a scientific variant.
+The adapter:
+
+- verifies that the immutable model-policy reference binds the exact scientific
+  model-policy hash before a client can be used, while keeping the richer
+  transport-policy hash separately reproducible;
+- pins `gpt-4.1-2025-04-14`, `openai==2.46.0`, the official API base URL,
+  temperature, top-p, seed, output limit, timeout and provider-attempt ceiling;
+- disables SDK retries so the gateway remains the only retry authority;
+- sends one strict JSON-schema response contract and enables no provider tools,
+  retrieval, web access, streaming or provider-side response storage;
+- rejects a silent model switch, multiple choices, truncation, refusal,
+  malformed usage or an incompatible response envelope;
+- maps timeout, cancellation, transient and permanent provider failures into the
+  public-safe gateway taxonomy without retaining provider messages, secrets or
+  raw provider request identifiers; and
+- records unknown usage and cost as `null` rather than fabricating zero-valued
+  observations or a volatile price estimate.
+
+The request shape follows the official
+[Chat Completions API](https://platform.openai.com/docs/api-reference/chat/create),
+while the adapter's retry classification follows the documented
+[API error guidance](https://developers.openai.com/api/docs/guides/error-codes/).
+The optional `llm` dependency group is required only for an explicitly
+authorized live send; importing and testing the provider-neutral package does
+not import the OpenAI SDK or access the network.
+
 Every adapter invocation runs behind a gateway-owned monotonic deadline. The
 gateway returns a structured timeout by that deadline even if an adapter blocks,
 and it discards any response that arrives after timeout or in-flight
@@ -157,11 +192,11 @@ it races with adapter completion or response validation; provider metadata and
 late response bytes are not published from that race.
 
 Python cannot safely terminate arbitrary code inside a thread. The supervisor
-therefore uses a daemon worker to guarantee the gateway return boundary while a
-production adapter must also apply the identical timeout to its network client
-and release abandoned transport work. The readiness layer has no production
-adapter, so this transport-level requirement must be demonstrated by adapter
-conformance tests before any external-provider execution is authorized.
+therefore uses a daemon worker to guarantee the gateway return boundary. The
+production adapter applies the identical timeout to the OpenAI transport and
+disables hidden SDK retries, so abandoned work remains bounded by both the
+gateway and the client. Conformance tests exercise that translation without a
+live request; they do not authorize external-provider execution.
 
 ## Retry invariants
 

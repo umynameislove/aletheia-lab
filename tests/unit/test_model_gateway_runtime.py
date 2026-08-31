@@ -700,7 +700,7 @@ def test_adapter_call_exposes_no_case_mechanism_or_manifest_object() -> None:
         {"type": "array"},
         {
             "type": "object",
-            "properties": {"value": {"type": "string", "enum": ["x"]}},
+            "properties": {"value": {"type": "array"}},
         },
     ],
 )
@@ -891,6 +891,83 @@ def test_response_schema_shape_rejects_unsupported_constraints(
             response_schema=invalid_schema,
             runtime_policy=request.runtime_policy,
         )
+
+
+def test_nested_array_enum_and_const_schema_is_validated_recursively() -> None:
+    request = _request()
+    schema: dict[str, object] = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "schema_version": {"type": "string", "const": "diagnosis-output/2"},
+            "labels": {
+                "type": "array",
+                "items": {"type": "string", "enum": ["supported", "unsupported"]},
+            },
+        },
+        "required": ["schema_version", "labels"],
+    }
+    schema_json = canonical_project_json(schema)
+    policy = request.initial_attempt.model_policy.model_copy(
+        update={"response_schema_sha256": content_sha256(schema_json.encode())}
+    )
+    policy_payload = policy.model_dump(mode="python")
+    policy_payload.pop("reference_id")
+    rebuilt_policy = ModelPolicyReference.build(
+        manifest=request.initial_attempt.manifest,
+        **{
+            key: value
+            for key, value in policy_payload.items()
+            if key
+            not in {
+                "schema_version",
+                "manifest_reference_id",
+                "manifest_content_sha256",
+                "project_id",
+                "snapshot_id",
+                "authorization_ref",
+            }
+        },
+    )
+    runtime = RuntimePolicyReference.build(
+        manifest=request.initial_attempt.manifest,
+        model_policy=rebuilt_policy,
+        retry_policy_ref=request.runtime_policy.retry_policy_ref,
+        timeout_ns=request.runtime_policy.timeout_ns,
+        max_attempts=request.runtime_policy.max_attempts,
+        max_response_bytes=request.runtime_policy.max_response_bytes,
+        provenance_sha256=request.runtime_policy.provenance_sha256,
+    )
+    nested = prepare_gateway_request(
+        manifest=request.initial_attempt.manifest,
+        case=request.initial_attempt.case,
+        model_policy=rebuilt_policy,
+        context=request.context,
+        prompt_text=request.prompt_text,
+        response_schema=schema,
+        runtime_policy=runtime,
+    )
+    valid = _execute(
+        nested,
+        (
+            _response(
+                "valid_response",
+                b'{"labels":["supported"],"schema_version":"diagnosis-output/2"}',
+            ),
+        ),
+    )
+    invalid = _execute(
+        nested,
+        (
+            _response(
+                "valid_response",
+                b'{"labels":["other"],"schema_version":"diagnosis-output/2"}',
+            ),
+        ),
+    )
+
+    assert valid.status == "parsed"
+    assert invalid.status == "parse_failed"
 
 
 def test_nonfinite_response_and_terminal_artifact_mismatches_fail_closed() -> None:

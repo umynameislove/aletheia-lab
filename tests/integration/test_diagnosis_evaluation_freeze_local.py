@@ -24,7 +24,7 @@ def _expected_feasibility_blockers() -> list[str]:
     """Compute blockers for either a source-only checkout or a local data checkout."""
 
     raw = json.loads(FEASIBILITY_PLAN.read_text(encoding="utf-8"))
-    blockers = {"runtime.production-gateway-adapter"}
+    blockers: set[str] = set()
     for artifact in raw["artifacts"]:
         relative = Path(artifact["relative_path"])
         candidate = ROOT / relative

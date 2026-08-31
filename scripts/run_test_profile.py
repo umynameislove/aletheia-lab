@@ -34,6 +34,7 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/property/test_context_visibility_properties.py",
         "tests/integration/test_context_p3_projection.py",
         "tests/unit/test_model_gateway_runtime.py",
+        "tests/unit/test_openai_gateway_adapter.py",
         "tests/integration/test_model_gateway_hash_seed.py",
         "tests/unit/test_evaluation_attempt_store.py",
         "tests/integration/test_evaluation_attempt_store_reproducibility.py",
