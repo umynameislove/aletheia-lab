@@ -1,4 +1,4 @@
-"""Post-P2R mechanism reconciliation and fail-closed P4/P5 filter policy."""
+"""Post-study mechanism reconciliation and fail-closed evaluation routing."""
 
 from __future__ import annotations
 
@@ -185,7 +185,7 @@ class DownstreamDispositionPolicyV2(_StrictFrozenModel):
 
 
 class P4P5MechanismFilterManifest(_StrictFrozenModel):
-    """Machine-enforced denominator routing for the post-P2R evaluation phases."""
+    """Machine-enforced denominator routing for downstream evaluation."""
 
     schema_version: Literal["p4-p5-mechanism-filter-manifest/1"] = FILTER_MANIFEST_SCHEMA_VERSION
     disposition_policy_sha256: Sha256
@@ -256,7 +256,7 @@ class P4P5MechanismFilterManifest(_StrictFrozenModel):
             or self.permitted_assumption_limited_endpoints != assumption_endpoints
             or self.permitted_rejection_endpoints != rejection_endpoints
         ):
-            raise ValueError("P4/P5 filter routing differs from the terminal mechanism states")
+            raise ValueError("evaluation routing differs from the terminal mechanism states")
         return self
 
     def canonical_sha256(self) -> str:
@@ -282,7 +282,9 @@ def load_p4_p5_filter_manifest(
             Path(path).read_text(encoding="utf-8")
         )
     except (OSError, ValueError) as exc:
-        raise V3RuntimeError("P4/P5 mechanism filter manifest is unavailable or invalid") from exc
+        raise V3RuntimeError(
+            "diagnosis mechanism routing manifest is unavailable or invalid"
+        ) from exc
 
 
 def verify_reconciled_downstream_policy(
@@ -365,7 +367,7 @@ def verify_p4_p5_filter_manifest(
         policy or load_downstream_disposition_policy_v2()
     )
     if checked.disposition_policy_sha256 != disposition.canonical_sha256():
-        raise V3RuntimeError("P4/P5 filter is bound to another disposition policy")
+        raise V3RuntimeError("evaluation routing is bound to another disposition policy")
     if (
         checked.primary_causal_diagnosis_track
         != disposition.denominators.diagnostic_ground_truth_track
@@ -373,5 +375,5 @@ def verify_p4_p5_filter_manifest(
         != disposition.denominators.assumption_limited_track
         or checked.instrument_rejection_track != disposition.denominators.rejected_track
     ):
-        raise V3RuntimeError("P4/P5 filter denominators differ from the reconciled policy")
+        raise V3RuntimeError("evaluation routing denominators differ from the reconciled policy")
     return checked

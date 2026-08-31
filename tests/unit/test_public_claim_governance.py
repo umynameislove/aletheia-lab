@@ -34,7 +34,7 @@ def _validate(payload: dict[str, object]) -> PublicClaimRegistry:
     return PublicClaimRegistry.model_validate_json(json.dumps(payload))
 
 
-def test_tracked_public_claim_registry_reconciles_terminal_evidence() -> None:
+def test_versioned_public_claim_registry_reconciles_terminal_evidence() -> None:
     registry = load_public_claim_registry(REGISTRY_PATH)
     audit = audit_public_claim_registry(
         root=ROOT,
@@ -71,7 +71,7 @@ def test_zero_admitted_claim_cannot_substitute_another_denominator() -> None:
     payload = _payload()
     claims = payload["claims"]
     assert isinstance(claims, list)
-    admission = next(claim for claim in claims if claim["claim_id"] == "C2-P2-ADMISSION")
+    admission = next(claim for claim in claims if claim["claim_id"] == "C2-B-MECHANISM-ADMISSION")
     admission["denominator"] = "3 implemented mechanisms"
 
     with pytest.raises(ValueError, match="zero admitted denominator"):

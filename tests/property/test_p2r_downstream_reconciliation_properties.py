@@ -38,7 +38,7 @@ def test_any_inventory_reordering_fails_closed(order: tuple[str, ...]) -> None:
 def test_no_non_admitted_mechanism_can_leak_into_primary_track(mechanism: str) -> None:
     payload = load_p4_p5_filter_manifest().model_dump(mode="json")
     payload["primary_causal_diagnosis_track"] = [mechanism]
-    with pytest.raises(ValidationError, match="filter routing"):
+    with pytest.raises(ValidationError, match="evaluation routing"):
         P4P5MechanismFilterManifest.model_validate_json(json.dumps(payload))
 
 

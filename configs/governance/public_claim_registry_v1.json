@@ -12,22 +12,22 @@
   "terminal_store_sha256": "7b920ef15cc5683965652a3dc02cef06bf514d8c85e1954c3094c1c441919956",
   "claims": [
     {
-      "claim_id": "C0-P3-CORE",
+      "claim_id": "C0-PROJECT-CORE",
       "claim_class": "engineering",
       "claim_level": "implemented_core",
-      "claim_text": "Aletheia implements a deterministic visibility-safe P3 core from authorized import through non-causal lineage closeout.",
+      "claim_text": "Aletheia implements a deterministic visibility-safe project core from authorized import through non-causal lineage closeout.",
       "minimum_evidence": [
         "merged eight-role closeout contract",
         "hash, visibility, tamper and cross-platform gates"
       ],
-      "unit_of_analysis": "one named persisted P3 generation",
+      "unit_of_analysis": "one named persisted project generation",
       "denominator": "the eight required generation roles",
       "status": "implemented",
-      "scope_boundary": "This is an engineering closeout for the P3 core; retention, purge, prospective sealing, Projmem integration and causal correctness are excluded.",
+      "scope_boundary": "This is an engineering closeout for the project core; retention, purge, prospective sealing, Projmem integration and causal correctness are excluded.",
       "falsifier_or_downgrade": "Any unreconciled role, stale hash, cross-project edge, visibility inversion or causal lineage edge blocks the closeout claim.",
-      "allowed_wording": "The named release implements and verifies the documented P3 core persistence-lineage contract.",
+      "allowed_wording": "The named release implements and verifies the documented project-core persistence-lineage contract.",
       "forbidden_wording": [
-        "P3 is fully complete",
+        "the project lifecycle is fully complete",
         "lineage proves causality"
       ],
       "primary_artifacts": [
@@ -37,10 +37,10 @@
       "decision_owner": "research lead"
     },
     {
-      "claim_id": "C1-P1",
+      "claim_id": "C1-DIAGNOSIS-PILOT",
       "claim_class": "scientific",
       "claim_level": "feasibility",
-      "claim_text": "Evidence-conditioned diagnosis was technically feasible in the frozen P1 directional pilot.",
+      "claim_text": "Evidence-conditioned diagnosis was technically feasible in the frozen directional pilot.",
       "minimum_evidence": [
         "frozen five-family, fifteen-context, thirty-output closeout",
         "machine and independent human reconciliation"
@@ -62,7 +62,7 @@
       "decision_owner": "research lead"
     },
     {
-      "claim_id": "C2-LABEL",
+      "claim_id": "C2-A-LABEL-NOISE",
       "claim_class": "scientific",
       "claim_level": "assumption_limited",
       "claim_text": "Label-noise evidence is assumption-limited after the registered v3.3 outcome.",
@@ -87,7 +87,7 @@
       "decision_owner": "research lead"
     },
     {
-      "claim_id": "C2-P2-ADMISSION",
+      "claim_id": "C2-B-MECHANISM-ADMISSION",
       "claim_class": "scientific",
       "claim_level": "confirmatory_admission",
       "claim_text": "The terminal primary causal-diagnosis track is empty because no implemented mechanism passed every prespecified mechanism-specific admission gate.",
@@ -99,7 +99,7 @@
       "denominator": "0 admitted mechanisms",
       "status": "empty_primary_track",
       "scope_boundary": "Implementation, merge and CI status do not constitute scientific admission; non-admitted mechanisms cannot enter causal-diagnosis scoring.",
-      "falsifier_or_downgrade": "Any mismatch among terminal outcomes, disposition policy and P4/P5 filter manifest blocks downstream evaluation rather than changing the denominator.",
+      "falsifier_or_downgrade": "Any mismatch among terminal outcomes, disposition policy and the diagnosis mechanism routing manifest blocks downstream evaluation rather than changing the denominator.",
       "allowed_wording": "The terminal admitted set is empty and the empty primary track must be reported.",
       "forbidden_wording": [
         "two mechanisms were admitted because their code merged",
@@ -112,7 +112,7 @@
       "decision_owner": "research lead"
     },
     {
-      "claim_id": "C2-P2-INSTRUMENT",
+      "claim_id": "C2-C-INSTRUMENT-CONTRACT",
       "claim_class": "engineering",
       "claim_level": "instrument_contract",
       "claim_text": "Three mechanism types have implemented fail-closed candidate, intervention, evidence and lifecycle contracts.",
@@ -137,10 +137,10 @@
       "decision_owner": "research lead"
     },
     {
-      "claim_id": "C2-P2R-V12",
+      "claim_id": "C2-D-INSTRUMENT-STUDY-V12",
       "claim_class": "scientific",
       "claim_level": "instrument_rejection",
-      "claim_text": "P2R v1.2 achieved its registered manipulation dose, but neither studied mechanism passed the target-effect, direction and paired-instrument admission chain.",
+      "claim_text": "The registered instrument-validity study v1.2 achieved its manipulation dose, but neither studied mechanism passed the target-effect, direction and paired-instrument admission chain.",
       "minimum_evidence": [
         "immutable v1.2 protocols and registrations",
         "complete terminal store, measurement census and mechanism closeouts"
@@ -152,7 +152,7 @@
       "falsifier_or_downgrade": "Any terminal-store hash mismatch, incomplete paired census, protocol deviation or partial outcome release invalidates the negative-result claim.",
       "allowed_wording": "Both registered instruments were rejected within the named study, yielding a valid negative construct-validity result.",
       "forbidden_wording": [
-        "P2R v1.2 was a technical failure",
+        "the registered instrument-validity study v1.2 was a technical failure",
         "the mechanisms are universally ineffective",
         "zero of two means the benchmark system failed"
       ],
@@ -202,13 +202,13 @@
     },
     {
       "rule_id": "FW-02",
-      "pattern": "\\bP2R v1\\.2 (?:is|was) (?:a )?technical failure\\b",
+      "pattern": "\\b(?:P2R|the registered instrument-validity study) v1\\.2 (?:is|was) (?:a )?technical failure\\b",
       "rationale": "The completed v1.2 terminal study is a valid negative scientific result."
     },
     {
       "rule_id": "FW-03",
-      "pattern": "\\bP3 is fully complete\\b",
-      "rationale": "Only the named P3 core generation has closed."
+      "pattern": "\\bthe project lifecycle is fully complete\\b",
+      "rationale": "Only the named project-core generation has closed."
     },
     {
       "rule_id": "FW-04",
@@ -223,8 +223,8 @@
     {
       "rule_id": "FW-06",
       "pattern": "\\bAletheia(?: lineage| lineage edges?)? prove(?:s|d)? causality\\b",
-      "rationale": "P3 lineage is explicitly non-causal."
+      "rationale": "Project lineage is explicitly non-causal."
     }
   ],
-  "registry_sha256": "707c8cdbcc010c4d8a57f7ac1fca0b9185dc110cb3b5a159deec73e72a2cf0a8"
+  "registry_sha256": "23b6f6e4f22d35f2802f2e2c906dc440e84d87c0c153014fdbcd04086a539a3c"
 }
