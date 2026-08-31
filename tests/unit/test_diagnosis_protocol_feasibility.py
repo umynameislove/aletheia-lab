@@ -98,7 +98,7 @@ def _ready_plan(tmp_path: Path) -> DiagnosisProtocolFeasibilityPlan:
     )
 
 
-def test_versioned_plan_is_outcome_blind_and_blocks_missing_production_adapter() -> None:
+def test_versioned_plan_is_outcome_blind_with_a_hash_bound_production_adapter() -> None:
     plan = load_diagnosis_feasibility_plan(VERSIONED_PLAN)
     receipt = audit_diagnosis_feasibility(
         plan,
@@ -107,10 +107,12 @@ def test_versioned_plan_is_outcome_blind_and_blocks_missing_production_adapter()
 
     assert receipt.protected_outcomes_opened is False
     assert receipt.execution_authorized is False
-    assert receipt.status == "blocked_before_registration"
-    expected_blockers = _expected_versioned_artifact_blockers(plan) | {
-        "runtime.production-gateway-adapter"
-    }
+    expected_blockers = _expected_versioned_artifact_blockers(plan)
+    assert receipt.status == (
+        "blocked_before_registration"
+        if expected_blockers
+        else "ready_for_registration_not_execution_authorized"
+    )
     assert set(receipt.blocker_codes) == expected_blockers
     checks = {item.code: item for item in receipt.checks}
     for artifact in plan.artifacts:
@@ -124,8 +126,11 @@ def test_versioned_plan_is_outcome_blind_and_blocks_missing_production_adapter()
         item.status == "pass"
         for item in receipt.checks
         if not item.code.startswith("artifact.")
-        and item.code != "runtime.production-gateway-adapter"
     )
+    production = next(
+        item for item in plan.artifacts if item.artifact_id == "production-gateway-adapter"
+    )
+    assert production.expected_sha256 == _sha((ROOT / production.relative_path).read_bytes())
 
 
 def test_complete_fixture_plan_is_ready_but_does_not_authorize_execution(
@@ -223,7 +228,7 @@ def test_receipt_hash_and_blocker_census_cannot_be_forged() -> None:
         repository_root=ROOT,
     )
     forged = receipt.model_dump(mode="json")
-    forged["blocker_codes"] = []
+    forged["blocker_codes"] = ["forged.blocker"]
 
     with pytest.raises(ValidationError):
         DiagnosisFeasibilityReceipt.model_validate_json(json.dumps(forged))

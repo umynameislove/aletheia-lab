@@ -31,14 +31,13 @@ The lint covers five independent surfaces.
 | Attempt semantics | Exactly one registered execution is permitted; bounded provider retries preserve the original request identity and are not new registered runs | Reject the plan or block closeout |
 | Closeout | Complete request census, current authorization, terminal inventory and technical/scientific status separation are mandatory | Fail closed; never infer a scientific pass |
 
-When both registered dataset archives are present and hash-valid, the current
-feasibility receipt contains one implementation blocker:
-`runtime.production-gateway-adapter`. The deterministic fixture path is ready,
-but the legacy pilot provider adapter does not implement the new provider-neutral
-gateway contract. A source-only checkout, including CI, additionally reports the
-archive `present` and `hash` checks as blockers. These are valid environment
-readiness failures; they are not suppressed or replaced by network downloads.
-Therefore diagnosis evaluation execution is not authorized in either environment.
+When both registered dataset archives are present and hash-valid, every
+feasibility check now passes. The production gateway artifact is hash-bound and
+its import resolves, but that state means only that the transport contract is
+ready for registration. It does not authorize execution or open an outcome. A
+source-only checkout, including CI, reports the archive `present` and `hash`
+checks as blockers. These are valid environment-readiness failures; they are not
+suppressed or replaced by network downloads.
 
 ### One execution versus provider retry
 
@@ -106,11 +105,10 @@ PYTHONPATH=src python scripts/diagnosis_evaluation_freeze.py all
 
 Expected status at this commit is
 `diagnosis_freezes_verified_with_execution_blockers`. With both registered
-dataset archives present and hash-valid, there are exactly two implementation
-blocker codes:
+dataset archives present and hash-valid, there is exactly one implementation
+blocker code:
 
-1. `runtime.production-gateway-adapter`;
-2. `implementation_artifacts_resolve`.
+1. `implementation_artifacts_resolve`.
 
 In a source-only checkout, the receipt also includes the `present` and `hash`
 blockers for each absent registered archive. The blocker count is therefore
@@ -130,9 +128,7 @@ separate outcome-opening authority remain later steps.
 
 ## Next implementation order
 
-1. Implement and test the provider-neutral production adapter without changing
-   the frozen model policy.
-2. Implement A1/A2, B0/B2, B3, CodeGraph and FULL against the frozen interfaces.
-3. Re-run the evaluation profile three times under distinct process hash seeds.
-4. Re-run this audit with `--require-ready`.
-5. Only then prepare the immutable diagnosis evaluation registration and execution authorization.
+1. Implement A1/A2, B0/B2, B3, CodeGraph and FULL against the frozen interfaces.
+2. Re-run the evaluation profile three times under distinct process hash seeds.
+3. Re-run this audit with `--require-ready`.
+4. Only then prepare the immutable diagnosis evaluation registration and execution authorization.

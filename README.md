@@ -83,8 +83,8 @@ Aletheia currently provides:
   immutable snapshots, causally unverified regression evidence, content-addressed
   persistence and visibility-safe non-causal lineage into one closeout receipt.
 - provider-neutral evaluation readiness contracts with visibility-safe context,
-  a deterministic fixture adapter, immutable attempt storage, and offline
-  uninterpreted structural closeout.
+  a deterministic fixture adapter, a policy-bound OpenAI production adapter,
+  immutable attempt storage, and offline uninterpreted structural closeout.
 
 Aletheia Lab is research software, not a production incident-response system.
 The repository includes the complete deterministic benchmark, evidence-store,

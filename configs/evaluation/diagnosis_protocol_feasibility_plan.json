@@ -38,6 +38,12 @@
       "expected_sha256": "2972e6184d3ad7beaaa831d9fc2b059dc3ee29df69d1ec593c466a5cd8485d14"
     },
     {
+      "artifact_id": "production-gateway-adapter",
+      "role": "runtime",
+      "relative_path": "src/aletheia_lab/model_gateway/openai.py",
+      "expected_sha256": "c535adf782c37b1323d1b0f82497a6275ee2664e6d612f62a652a68e5cb7c2c4"
+    },
+    {
       "artifact_id": "structural-closeout",
       "role": "closeout",
       "relative_path": "src/aletheia_lab/evaluation/structural_closeout.py",
@@ -62,9 +68,9 @@
     {
       "capability_id": "production-gateway-adapter",
       "required": true,
-      "state": "pending",
-      "import_reference": null,
-      "evidence": "the legacy pilot OpenAI adapter does not yet implement the provider-neutral gateway adapter contract"
+      "state": "ready",
+      "import_reference": "aletheia_lab.model_gateway:OpenAIChatCompletionsGatewayAdapter",
+      "evidence": "the pinned OpenAI adapter implements provider-neutral identity, transport timeout, explicit retry, structured-output and public-safe error contracts"
     },
     {
       "capability_id": "structural-closeout",

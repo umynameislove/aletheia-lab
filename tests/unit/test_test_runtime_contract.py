@@ -181,6 +181,19 @@ def test_named_profiles_resolve_without_collecting_tests() -> None:
         assert command[:3] == [sys.executable, "-m", "pytest"]
 
 
+def test_evaluation_profile_includes_the_production_gateway_contract() -> None:
+    completed = subprocess.run(
+        [sys.executable, str(_PROFILE_SCRIPT), "evaluation", "--show-command"],
+        cwd=_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    command = json.loads(completed.stdout)
+    assert "tests/unit/test_model_gateway_runtime.py" in command
+    assert "tests/unit/test_openai_gateway_adapter.py" in command
+
+
 def test_full_profile_preserves_coverage_floor() -> None:
     completed = subprocess.run(
         [sys.executable, str(_PROFILE_SCRIPT), "full", "--show-command"],
