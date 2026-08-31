@@ -79,7 +79,7 @@ Aletheia currently provides:
 - CLI commands for data preparation, baseline training, verification, and
   contract validation;
 - automated linting, repository-hygiene checks, and tests in CI.
-- a deterministic P3 core that binds authorized imports, mapped project bundles,
+- a deterministic project-provenance core that binds authorized imports, mapped project bundles,
   immutable snapshots, causally unverified regression evidence, content-addressed
   persistence and visibility-safe non-causal lineage into one closeout receipt.
 - provider-neutral evaluation readiness contracts with visibility-safe context,
@@ -93,20 +93,20 @@ experiment artifacts remain local and are independently validated before use.
 
 ## Current research and delivery status
 
-- P1 establishes a bounded feasibility result, not broad superiority.
-- P2 implements three candidate mechanism types. Scientific admission remains
+- The matched diagnosis pilot establishes a bounded feasibility result, not broad superiority.
+- The mechanism-validity program implements three candidate mechanism types. Scientific admission remains
   separate from implementation/merge/CI status and is reconciled only through
   registered terminal studies. All three studies are now terminal: label noise
   is `assumption_limited`, while data drift and preprocessing mismatch are
-  `rejected` by P2R v1.2. The admitted diagnostic denominator is therefore zero;
+  `rejected` by the registered instrument-validity study v1.2. The admitted diagnostic denominator is therefore zero;
   this valid negative result is reported explicitly rather than pooled away.
-- The P3 core persistence-lineage vertical slice is closed at merge `31f6c58`.
+- The project persistence-lineage vertical slice is closed at merge `31f6c58`.
   Delete/purge, the prospective temporal seal, the version-pinned Projmem bridge
   and a sanctioned non-synthetic sample audit remain separately gated obligations.
-- P4/P5 main outcomes are not yet authorized. Instrument, model, prompt,
+- Main diagnosis and statistical outcomes are not yet authorized. Instrument, model, prompt,
   denominator and analysis policy must be frozen before those outcomes exist.
 
-See the [P3 scope amendment](docs/p3-scope-amendment.md) for the exact boundary
+See the [project scope amendment](docs/p3-scope-amendment.md) for the exact boundary
 and [related work](docs/related-work.md) for the bounded novelty position. The
 [public-claim governance contract](docs/claim-evidence-governance.md) binds every
 current statement to evidence and denominators. The
@@ -167,7 +167,7 @@ PYTHONPATH=src python -m aletheia_lab benchmark validate-p1-evidence \
 ```
 
 The evidence-store machine gate intentionally reports human review separately.
-The completed P1 decision is recorded in the final-closeout layer rather than
+The completed matched-pilot decision is recorded in the final-closeout layer rather than
 rewriting the earlier machine-only artifact.
 
 Exercise and validate the matched diagnosis runtime without making an external
@@ -266,7 +266,7 @@ PYTHONPATH=src python -m aletheia_lab benchmark evaluate-p1-pilot \
 For any external output, also pass `--openai-config` and `--preflight` so the
 evaluator identifies and revalidates its smoke or full execution authorization.
 The deterministic cause
-matcher is an auditable P1 baseline and explicitly requires final human semantic
+matcher is an auditable pilot baseline and explicitly requires final human semantic
 review; it is not presented as a general-purpose semantic judge.
 
 After evaluating a complete external matrix, freeze its exact source and result
@@ -315,7 +315,7 @@ These closeout commands never construct a provider client or read an API key.
 They fail closed for stale, missing, extra, symlinked, or byte-modified source
 and report artifacts.
 
-Validate the completed P1 decision, including both bound human reviews:
+Validate the completed matched-pilot decision, including both bound human reviews:
 
 ```bash
 PYTHONPATH=src python -m aletheia_lab benchmark validate-p1-final \
@@ -331,7 +331,7 @@ PYTHONPATH=src python -m aletheia_lab benchmark validate-p1-final \
 ```
 
 This command is also offline. It verifies the 5/15/30 census, packet bindings,
-review-file hashes, disclosed machine–human disagreement, and final P1 decision.
+review-file hashes, disclosed machine–human disagreement, and the final pilot decision.
 
 Run the complete local quality check:
 
@@ -369,21 +369,22 @@ documentation, and reproducible artifacts.
 - [Evidence contract](docs/evidence-contract.md)
 - [Evaluation protocol](docs/evaluation-protocol.md)
 - [Evaluation readiness and trust boundaries](docs/evaluation-readiness.md)
+- [Diagnosis evaluation feasibility and fairness freeze](docs/diagnosis-evaluation-freeze.md)
 - [Dataset card](docs/dataset-card.md)
-- [Phase 1 feasibility report](docs/p1-feasibility-report.md)
-- [Phase 1 frozen closeout package](reports/p1/README.md)
-- [P3 core closeout](docs/p3-closeout.md)
-- [P3 scope amendment and deferred gates](docs/p3-scope-amendment.md)
-- [P2R instrument-validity and empty-evidence contract](docs/p2r-instrument-validity.md)
-- [P2R registered confirmatory execution](docs/p2r-confirmatory-execution.md)
-- [P2R v1 archive-readiness recovery](docs/p2r-v1-archive-readiness-recovery.md)
-- [P2R v1.1 registered recovery protocol](docs/p2r-v1-1-recovery-protocol.md)
-- [P2R v1.1 recovery execution and closeout](docs/p2r-v1-1-execution.md)
-- [P2R v1.1 replication-failure and intervention-support audit](docs/p2r-v1-1-replication-failure.md)
-- [P2R v1.2 outcome-blind methodological amendment](docs/p2r-v1-2-methodological-amendment.md)
-- [P2R v1.2 registered execution and closeout](docs/p2r-v1-2-execution.md)
-- [P2R v1.2 terminal results and preservation](docs/p2r-v1-2-results.md)
-- [P2 downstream disposition policy v2](docs/p2-downstream-disposition-policy-v2.md)
+- [Matched-diagnosis feasibility report](docs/p1-feasibility-report.md)
+- [Matched-diagnosis frozen closeout package](reports/p1/README.md)
+- [Project persistence-lineage closeout](docs/p3-closeout.md)
+- [Project scope amendment and deferred gates](docs/p3-scope-amendment.md)
+- [Instrument-validity and empty-evidence contract](docs/p2r-instrument-validity.md)
+- [Registered instrument-validity execution](docs/p2r-confirmatory-execution.md)
+- [Instrument-validity archive-readiness recovery](docs/p2r-v1-archive-readiness-recovery.md)
+- [Registered recovery protocol v1.1](docs/p2r-v1-1-recovery-protocol.md)
+- [Recovery execution and closeout v1.1](docs/p2r-v1-1-execution.md)
+- [Replication-failure and intervention-support audit](docs/p2r-v1-1-replication-failure.md)
+- [Outcome-blind methodological amendment v1.2](docs/p2r-v1-2-methodological-amendment.md)
+- [Registered execution and closeout v1.2](docs/p2r-v1-2-execution.md)
+- [Terminal results and preservation v1.2](docs/p2r-v1-2-results.md)
+- [Downstream mechanism disposition policy](docs/p2-downstream-disposition-policy-v2.md)
 - [Public claim and evidence governance](docs/claim-evidence-governance.md)
 - [Claim-support instrument validation protocol](docs/claim-support-instrument-validation.md)
 - [Related work and research positioning](docs/related-work.md)

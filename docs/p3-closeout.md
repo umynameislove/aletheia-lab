@@ -1,11 +1,11 @@
-# P3 core ingestion, snapshot, persistence and lineage closeout
+# Project ingestion, snapshot, persistence and lineage closeout
 
-The P3 core vertical slice closes only when an exact persisted generation can be
+The project-provenance vertical slice closes only when an exact persisted generation can be
 reconciled from mapped project imports through a non-causal lineage graph. A
 merge, passing unit test or valid SQLite file by itself is not sufficient.
 
 This receipt does not claim that every product-release or prospective-case
-obligation originally scheduled near P3 is complete. Retention/delete/purge,
+adjacent product or prospective-case obligation is complete. Retention/delete/purge,
 the prospective temporal seal/access ledger, the version-pinned Projmem bridge,
 and a sanctioned non-synthetic sample audit remain separately gated work. Their
 scope, dependencies and stop conditions are recorded in
@@ -37,11 +37,12 @@ artifact payload, metric value, configuration value or secret.
 
 ## Scientific boundary
 
-P3 establishes reproducible observation and provenance. It does not establish a
+This closeout establishes reproducible observation and provenance. It does not establish a
 hidden cause. A closeable regression event must retain
 `causal_status="unverified"`, and the lineage vocabulary deliberately has no
-`causes` edge. Mechanism admission remains a registered P2/P2R responsibility;
-diagnosis evaluation remains a frozen P4/P5 responsibility.
+`causes` edge. Mechanism admission remains the responsibility of registered
+instrument-validity studies; diagnosis evaluation remains governed by its own
+outcome-blind freeze.
 
 ## Visibility and dashboard contract
 
@@ -78,7 +79,7 @@ acceptance additionally requires the project profile, Python 3.11/3.12 full test
 matrix, Windows project job, coverage threshold, Ruff, strict mypy, hygiene,
 Bandit and dependency audit to pass.
 
-Passing this closeout is therefore evidence for the P3 core persistence-lineage
+Passing this closeout is therefore evidence for the project persistence-lineage
 generation only. It is not a deletion receipt, a prospective-holdout seal, a
 Projmem compatibility report, a real-project effectiveness result, or a product
 release authorization.

@@ -1,8 +1,8 @@
-# P2R v1.2 terminal results and preservation
+# Instrument-validity study v1.2: terminal results and preservation
 
 ## Terminal status
 
-P2R v1.2 completed its single registered paired execution. This is a valid
+The instrument-validity study v1.2 completed its single registered paired execution. This is a valid
 scientific negative result, not a technical failure. The atomic terminal store
 has SHA-256
 `7b920ef15cc5683965652a3dc02cef06bf514d8c85e1954c3094c1c441919956`,
@@ -97,5 +97,5 @@ tracks:
 
 All three mechanisms remain eligible for evidence-accountability and validity-
 behavior evaluation. None is eligible for positive causal-diagnosis scoring.
-P4/P5 must publish the empty primary result rather than substitute another
+Downstream diagnosis and statistical evaluation must publish the empty primary result rather than substitute another
 denominator or pool tracks.

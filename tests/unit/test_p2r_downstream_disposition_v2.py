@@ -110,14 +110,14 @@ def test_filter_routes_non_admitted_mechanisms_only_to_validity_endpoints() -> N
 def test_filter_rejects_denominator_substitution_and_rubric_erosion() -> None:
     payload = _filter_payload()
     payload["primary_causal_diagnosis_track"] = ["data_drift"]
-    with pytest.raises(ValidationError, match="filter routing"):
+    with pytest.raises(ValidationError, match="evaluation routing"):
         P4P5MechanismFilterManifest.model_validate_json(json.dumps(payload))
 
     payload = _filter_payload()
     endpoints = payload["permitted_rejection_endpoints"]
     assert isinstance(endpoints, list)
     endpoints.pop()
-    with pytest.raises(ValidationError, match="filter routing"):
+    with pytest.raises(ValidationError, match="evaluation routing"):
         P4P5MechanismFilterManifest.model_validate_json(json.dumps(payload))
 
 

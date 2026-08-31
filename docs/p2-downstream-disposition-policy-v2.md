@@ -1,9 +1,9 @@
-# P2 downstream disposition policy v2
+# Downstream mechanism disposition policy v2
 
 ## Purpose and precedence
 
-This policy reconciles the frozen P2 mechanism inventory after the registered
-P2R v1.2 terminal result and before P4/P5 outcomes. It supersedes the operational
+This policy reconciles the frozen mechanism inventory after the registered
+instrument-validity v1.2 terminal result and before downstream outcomes. It supersedes the operational
 status table in v1 without deleting or rewriting that historical policy.
 
 The machine-readable sources of truth are:
@@ -14,7 +14,7 @@ The machine-readable sources of truth are:
 
 The v2 policy is bound to predecessor policy SHA-256
 `ddd5fdabff327ba42c4a4e175954c1e82df2ca2d6ec0029bcfd6403eac8ca32b`
-and P2R publication-summary SHA-256
+and instrument-validity publication-summary SHA-256
 `e8595547c26f73f81d20fd53d00e5e876bb3a3c4f4044027bf8c9c6205fedd2e`.
 
 ## Terminal inventory
@@ -37,7 +37,7 @@ Consequently:
 These counts measure different constructs and cannot be pooled, renamed, or
 substituted. The empty admitted track is itself a required result.
 
-## P4/P5 routing
+## Downstream evaluation routing
 
 The primary causal-diagnosis track is empty. Family-clustered primary causal
 statistics require a non-empty admitted track and therefore must not be
@@ -57,8 +57,8 @@ mechanism may be scored as positive causal-diagnosis ground truth.
 
 ## Governance
 
-P4/P5 outcomes cannot modify a mechanism state, threshold, or denominator.
-Implementation or CI success cannot substitute for admission. P2R v1.2 cannot
+Downstream outcomes cannot modify a mechanism state, threshold, or denominator.
+Implementation or CI success cannot substitute for admission. The registered v1.2 study cannot
 be rerun. A later status change requires a new independent protocol and new
 content-addressed evidence, followed by another superseding policy that keeps
 v1 and v2 available for audit.

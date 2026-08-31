@@ -200,9 +200,7 @@ class ForbiddenWordingFinding(_StrictFrozenModel):
 
 
 class ClaimRegistryAudit(_StrictFrozenModel):
-    schema_version: Literal["public-claim-registry-audit/v1"] = (
-        "public-claim-registry-audit/v1"
-    )
+    schema_version: Literal["public-claim-registry-audit/v1"] = "public-claim-registry-audit/v1"
     registry_sha256: Sha256
     claim_count: int = Field(gt=0)
     current_scientific_claim_count: int = Field(ge=0)
@@ -276,7 +274,9 @@ def _scan_forbidden_wording(
         try:
             lines = path.read_text(encoding="utf-8").splitlines()
         except OSError as exc:
-            raise ClaimRegistryError(f"public claim surface is unavailable: {relative_path}") from exc
+            raise ClaimRegistryError(
+                f"public claim surface is unavailable: {relative_path}"
+            ) from exc
         for rule in registry.forbidden_public_patterns:
             compiled = re.compile(rule.pattern, re.IGNORECASE)
             for line_number, line in enumerate(lines, start=1):
@@ -302,7 +302,7 @@ def audit_public_claim_registry(
 ) -> ClaimRegistryAudit:
     """Reconcile registry, terminal denominators, artifacts and public wording."""
 
-    mechanism_filter = _load_json(mechanism_filter_path, "P4/P5 mechanism filter")
+    mechanism_filter = _load_json(mechanism_filter_path, "diagnosis mechanism routing manifest")
     p2r_summary = _load_json(p2r_summary_path, "P2R publication summary")
     observed_denominators = _denominators_from_filter(mechanism_filter)
     denominator_reconciled = observed_denominators == registry.mechanism_denominators

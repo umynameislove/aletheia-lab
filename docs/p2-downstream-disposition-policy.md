@@ -7,7 +7,7 @@
 ## Purpose
 
 This policy freezes the distinction between engineering completion and scientific
-admission before P4/P5 outcomes exist. A merged implementation, green CI, an alpha
+admission before downstream evaluation outcomes exist. A merged implementation, green CI, an alpha
 family, or an eligible candidate is not confirmatory admission.
 
 The machine-readable source of truth is
@@ -44,7 +44,7 @@ manufacturing a primary aggregate.
 
 A mechanism changes to `admitted` only after its own registered confirmatory study
 produces content-addressed terminal evidence and passes every prespecified outcome,
-control, provenance, and cross-environment assumption gate. P4/P5 answers, scores,
+control, provenance, and cross-environment assumption gate. Downstream answers, scores,
 or dashboard behavior cannot change a mechanism status. Thresholds, denominators,
 and gate meanings cannot be relaxed after those outcomes are observed.
 
