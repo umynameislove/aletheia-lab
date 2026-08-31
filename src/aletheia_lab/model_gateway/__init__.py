@@ -1,4 +1,4 @@
-"""Provider-neutral evaluation adapter contracts and deterministic fake runtime."""
+"""Provider-neutral evaluation contracts with offline and pinned production adapters."""
 
 from aletheia_lab.model_gateway.contracts import (
     AdapterInvocationError,
@@ -23,9 +23,17 @@ from aletheia_lab.model_gateway.fake import (
     FakeFixture,
     FakeStep,
 )
+from aletheia_lab.model_gateway.openai import (
+    OPENAI_API_BASE_URL,
+    OPENAI_GATEWAY_ADAPTER_VERSION,
+    OpenAIChatCompletionsGatewayAdapter,
+    OpenAIGatewayConfigurationError,
+    OpenAIGatewayPolicy,
+)
 from aletheia_lab.model_gateway.runtime import (
     execute_gateway_request,
     prepare_gateway_request,
+    validate_response_schema,
 )
 
 __all__ = [
@@ -40,6 +48,11 @@ __all__ = [
     "GatewayContractError",
     "GatewayExecutionResult",
     "GatewayRequest",
+    "OPENAI_API_BASE_URL",
+    "OPENAI_GATEWAY_ADAPTER_VERSION",
+    "OpenAIChatCompletionsGatewayAdapter",
+    "OpenAIGatewayConfigurationError",
+    "OpenAIGatewayPolicy",
     "ParsedResponseArtifact",
     "ProviderAdapter",
     "ProviderBinding",
@@ -50,4 +63,5 @@ __all__ = [
     "UsageMetadata",
     "execute_gateway_request",
     "prepare_gateway_request",
+    "validate_response_schema",
 ]
