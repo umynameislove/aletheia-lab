@@ -5,7 +5,7 @@ authorized evaluation for safe execution and offline structural closeout. The
 infrastructure is outcome-blind: it binds caller-supplied policy references and
 checks technical integrity without choosing or interpreting scientific policy.
 
-> This readiness infrastructure does not authorize P4 execution, freeze
+> This readiness infrastructure does not authorize registered evaluation, freeze
 > scientific policy, admit any mechanism, or establish a scientific result.
 
 ## Scope
@@ -33,7 +33,7 @@ execution authorization.
 authorized manifest reference
         |
         v
-P3 project/snapshot/evidence references
+typed project, snapshot, and evidence references
         |
         v
 visibility allowlist + recursive leakage scan
@@ -95,7 +95,7 @@ retry policy, endpoint, threshold, denominator, or missingness rule.
 
 ### Project and evidence boundary
 
-The context builder accepts only typed P3 references and a
+The context builder accepts only typed project references and a
 `ProjectEvidenceView`. It does not open project files, query a store, inspect a
 database, follow links, or perform network access. The caller must provide the
 exact visibility projection that was authorized for the case.
@@ -310,3 +310,8 @@ This infrastructure does not decide:
 
 All such values must come from separately authorized, immutable research
 artifacts. Missing scientific policy is never filled by a production default.
+
+The outcome-blind diagnosis feasibility lint and the complete B0--B3, A1--A3, FULL
+and CodeGraph policy census are defined separately in
+[`diagnosis-evaluation-freeze.md`](diagnosis-evaluation-freeze.md). This freeze
+adds scientific policy without weakening any trust boundary in this document.

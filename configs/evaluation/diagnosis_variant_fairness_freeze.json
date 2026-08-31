@@ -1,0 +1,354 @@
+{
+  "schema_version": "diagnosis-variant-fairness-freeze/v1",
+  "freeze_status": "outcome_blind_policy_freeze",
+  "protected_outcomes_opened": false,
+  "execution_authorized": false,
+  "registered_execution_attempts": 1,
+  "model_policies": {
+    "main_llm_v1": {
+      "provider": "openai",
+      "model": "gpt-4.1",
+      "model_version": "gpt-4.1-2025-04-14",
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "seed": 17,
+      "max_output_tokens": 600,
+      "timeout_seconds": 60.0,
+      "provider_attempt_ceiling": 2,
+      "silent_provider_or_model_switch": false
+    }
+  },
+  "information_budgets": {
+    "external_native_v1": {
+      "observable_corpus_ref": "logdx-ci-pinned-native-corpus/v1",
+      "maximum_context_tokens": 12000,
+      "maximum_retrieved_items": 32,
+      "maximum_turns": 1,
+      "diagnosis_question_ref": "logdx-ci-native-task/v1",
+      "hidden_ground_truth_visible": false,
+      "evaluator_metadata_visible": false
+    },
+    "main_matched_v1": {
+      "observable_corpus_ref": "diagnosis-visible-corpus/v1",
+      "maximum_context_tokens": 12000,
+      "maximum_retrieved_items": 32,
+      "maximum_turns": 3,
+      "diagnosis_question_ref": "frozen-diagnosis-question/v1",
+      "hidden_ground_truth_visible": false,
+      "evaluator_metadata_visible": false
+    },
+    "rule_reference_v1": {
+      "observable_corpus_ref": "diagnosis-declared-visible-features/v1",
+      "maximum_context_tokens": 4096,
+      "maximum_retrieved_items": 0,
+      "maximum_turns": 1,
+      "diagnosis_question_ref": "frozen-diagnosis-question/v1",
+      "hidden_ground_truth_visible": false,
+      "evaluator_metadata_visible": false
+    },
+    "system_extended_v1": {
+      "observable_corpus_ref": "diagnosis-visible-corpus-plus-registered-lineage/v1",
+      "maximum_context_tokens": 12000,
+      "maximum_retrieved_items": 32,
+      "maximum_turns": 3,
+      "diagnosis_question_ref": "frozen-diagnosis-question/v1",
+      "hidden_ground_truth_visible": false,
+      "evaluator_metadata_visible": false
+    }
+  },
+  "tool_policies": {
+    "codegraph_only_v1": {
+      "retrieval": true,
+      "code_graph": true,
+      "web": false,
+      "shell": false,
+      "project_execution": false,
+      "tool_ledger_required": true
+    },
+    "full_registered_v1": {
+      "retrieval": true,
+      "code_graph": true,
+      "web": false,
+      "shell": false,
+      "project_execution": false,
+      "tool_ledger_required": true
+    },
+    "native_external_v1": {
+      "retrieval": false,
+      "code_graph": false,
+      "web": false,
+      "shell": false,
+      "project_execution": false,
+      "tool_ledger_required": true
+    },
+    "no_tools_v1": {
+      "retrieval": false,
+      "code_graph": false,
+      "web": false,
+      "shell": false,
+      "project_execution": false,
+      "tool_ledger_required": false
+    },
+    "rag_only_v1": {
+      "retrieval": true,
+      "code_graph": false,
+      "web": false,
+      "shell": false,
+      "project_execution": false,
+      "tool_ledger_required": true
+    }
+  },
+  "evidence_policies": {
+    "citation_abstention_v1": {
+      "structure": "structured",
+      "citation_required": true,
+      "abstention_required": true,
+      "provenance_required": false,
+      "lineage_visible": false,
+      "conversation_audit_visible": false
+    },
+    "citation_v1": {
+      "structure": "structured",
+      "citation_required": true,
+      "abstention_required": false,
+      "provenance_required": false,
+      "lineage_visible": false,
+      "conversation_audit_visible": false
+    },
+    "full_system_v1": {
+      "structure": "structured",
+      "citation_required": true,
+      "abstention_required": true,
+      "provenance_required": true,
+      "lineage_visible": true,
+      "conversation_audit_visible": true
+    },
+    "native_external_v1": {
+      "structure": "native_external",
+      "citation_required": false,
+      "abstention_required": false,
+      "provenance_required": true,
+      "lineage_visible": false,
+      "conversation_audit_visible": false
+    },
+    "plain_v1": {
+      "structure": "plain",
+      "citation_required": false,
+      "abstention_required": false,
+      "provenance_required": false,
+      "lineage_visible": false,
+      "conversation_audit_visible": false
+    },
+    "structured_v1": {
+      "structure": "structured",
+      "citation_required": false,
+      "abstention_required": false,
+      "provenance_required": false,
+      "lineage_visible": false,
+      "conversation_audit_visible": false
+    }
+  },
+  "prompt_policies": {
+    "A1": {
+      "prompt_version": "diagnosis-a1/1",
+      "instruction_contract": "Use only the structured visible evidence. Return observations and one bounded hypothesis. Citations and abstention are optional.",
+      "response_schema_ref": "diagnosis-output/2",
+      "prompt_content_sha256": "a93ccfc4dcf921a04edb728aa75d3a8916f6bafa9c91615560310974e0c9d46b"
+    },
+    "A2": {
+      "prompt_version": "diagnosis-a2/1",
+      "instruction_contract": "Use only the structured visible evidence. Every diagnostic claim must cite visible evidence IDs. Do not invent missing evidence.",
+      "response_schema_ref": "diagnosis-output/2",
+      "prompt_content_sha256": "82c92b349c0bf08a19aa04eac9f02ee0b032ee2e7e74832d19ebb7581f3d1124"
+    },
+    "A3": {
+      "prompt_version": "diagnosis-a3/1",
+      "instruction_contract": "Use only the structured visible evidence. Cite every diagnostic claim and abstain or request evidence when decisive support is missing.",
+      "response_schema_ref": "diagnosis-output/2",
+      "prompt_content_sha256": "573cf96780e3ab2ea1bf1c34cdcf8677a9535b1a2b453ca67af8c13e9870ef53"
+    },
+    "B0": {
+      "prompt_version": "diagnosis-b0/1",
+      "instruction_contract": "Apply only the frozen deterministic rules to declared visible features. Emit the rule trace and bounded result.",
+      "response_schema_ref": "deterministic-diagnosis/1",
+      "prompt_content_sha256": "18f2a5da4a919022dbda98452199854c789fa4b27feb59c05fdc8f51eb8238e6"
+    },
+    "B1": {
+      "prompt_version": "diagnosis-b1/1",
+      "instruction_contract": "Answer the frozen diagnosis question from the visible facts in plain text. Do not use tools or hidden metadata.",
+      "response_schema_ref": "diagnosis-output/2",
+      "prompt_content_sha256": "7602a769f57f99fd02ec8e94e5e5a3e5ba0a4c2f9507ecc49e095ba613561408"
+    },
+    "B2": {
+      "prompt_version": "diagnosis-b2/1",
+      "instruction_contract": "Use the registered multi-turn retrieval path over the same visible corpus and budget. Preserve every query, retrieved item and turn.",
+      "response_schema_ref": "diagnosis-output/2",
+      "prompt_content_sha256": "becaf179dfc76c97994715f5b8fac01ce4a8ab6d13245df2b87954689b40da99"
+    },
+    "B3": {
+      "prompt_version": "diagnosis-b3/1",
+      "instruction_contract": "Run the pinned LogDx-CI native task and preserve its native output and metric schema without pooling.",
+      "response_schema_ref": "logdx-native-output/1",
+      "prompt_content_sha256": "2b3870701475ef2653d39c74e0e6247ff2621538410462aaafdfba8090ebda92"
+    },
+    "CodeGraph": {
+      "prompt_version": "diagnosis-codegraph/1",
+      "instruction_contract": "Use only registered CodeGraph nodes retrieved from the same visible corpus. Preserve node, edge, query and evidence provenance.",
+      "response_schema_ref": "diagnosis-output/2",
+      "prompt_content_sha256": "cc7271c7ac8951e36bce71139f682d08cc6e972ffcedc9171ae56f6984f0b337"
+    },
+    "FULL": {
+      "prompt_version": "diagnosis-full/1",
+      "instruction_contract": "Use registered provenance-aware retrieval, lineage and conversation records. Cite claims and abstain when evidence is insufficient.",
+      "response_schema_ref": "diagnosis-output/2",
+      "prompt_content_sha256": "da5e10ba0a1938a75c928a1f3d4553c4b02faa86ac262cf4cd2d071ea5a3eee5"
+    }
+  },
+  "variants": [
+    {
+      "variant_id": "A1",
+      "role": "structured evidence-only ablation",
+      "comparison_class": "matched_main",
+      "implementation_state": "pending",
+      "implementation_reference": null,
+      "model_policy_ref": "main_llm_v1",
+      "information_budget_ref": "main_matched_v1",
+      "tool_policy_ref": "no_tools_v1",
+      "evidence_policy_ref": "structured_v1",
+      "prompt_policy_ref": "A1",
+      "fallback_policy": "forbidden",
+      "pooling_policy": "matched_primary",
+      "effect_attribution": "structured rendering only"
+    },
+    {
+      "variant_id": "A2",
+      "role": "structured evidence plus mandatory citation ablation",
+      "comparison_class": "matched_main",
+      "implementation_state": "pending",
+      "implementation_reference": null,
+      "model_policy_ref": "main_llm_v1",
+      "information_budget_ref": "main_matched_v1",
+      "tool_policy_ref": "no_tools_v1",
+      "evidence_policy_ref": "citation_v1",
+      "prompt_policy_ref": "A2",
+      "fallback_policy": "forbidden",
+      "pooling_policy": "matched_primary",
+      "effect_attribution": "citation requirement relative to A1"
+    },
+    {
+      "variant_id": "A3",
+      "role": "citation and abstention core method",
+      "comparison_class": "matched_main",
+      "implementation_state": "ready",
+      "implementation_reference": "aletheia_lab.diagnosis.prompts:system_prompt_for",
+      "model_policy_ref": "main_llm_v1",
+      "information_budget_ref": "main_matched_v1",
+      "tool_policy_ref": "no_tools_v1",
+      "evidence_policy_ref": "citation_abstention_v1",
+      "prompt_policy_ref": "A3",
+      "fallback_policy": "forbidden",
+      "pooling_policy": "matched_primary",
+      "effect_attribution": "abstention contract relative to A2 and evidence-accountability relative to B1"
+    },
+    {
+      "variant_id": "B0",
+      "role": "deterministic non-LLM reference",
+      "comparison_class": "deterministic_reference",
+      "implementation_state": "pending",
+      "implementation_reference": null,
+      "model_policy_ref": null,
+      "information_budget_ref": "rule_reference_v1",
+      "tool_policy_ref": "no_tools_v1",
+      "evidence_policy_ref": "plain_v1",
+      "prompt_policy_ref": "B0",
+      "fallback_policy": "forbidden",
+      "pooling_policy": "separate",
+      "effect_attribution": "deterministic lower reference only"
+    },
+    {
+      "variant_id": "B1",
+      "role": "matched plain LLM baseline",
+      "comparison_class": "matched_main",
+      "implementation_state": "ready",
+      "implementation_reference": "aletheia_lab.diagnosis.prompts:system_prompt_for",
+      "model_policy_ref": "main_llm_v1",
+      "information_budget_ref": "main_matched_v1",
+      "tool_policy_ref": "no_tools_v1",
+      "evidence_policy_ref": "plain_v1",
+      "prompt_policy_ref": "B1",
+      "fallback_policy": "forbidden",
+      "pooling_policy": "matched_primary",
+      "effect_attribution": "plain LLM comparator"
+    },
+    {
+      "variant_id": "B2",
+      "role": "generic multi-turn RAG baseline",
+      "comparison_class": "matched_main",
+      "implementation_state": "pending",
+      "implementation_reference": null,
+      "model_policy_ref": "main_llm_v1",
+      "information_budget_ref": "main_matched_v1",
+      "tool_policy_ref": "rag_only_v1",
+      "evidence_policy_ref": "plain_v1",
+      "prompt_policy_ref": "B2",
+      "fallback_policy": "forbidden",
+      "pooling_policy": "matched_primary",
+      "effect_attribution": "generic retrieval and multi-turn system effect"
+    },
+    {
+      "variant_id": "B3",
+      "role": "pinned LogDx-CI native external transfer",
+      "comparison_class": "external_transfer",
+      "implementation_state": "pending",
+      "implementation_reference": null,
+      "model_policy_ref": null,
+      "information_budget_ref": "external_native_v1",
+      "tool_policy_ref": "native_external_v1",
+      "evidence_policy_ref": "native_external_v1",
+      "prompt_policy_ref": "B3",
+      "fallback_policy": "forbidden",
+      "pooling_policy": "external_only",
+      "effect_attribution": "external transfer only; native and Aletheia metrics remain separate"
+    },
+    {
+      "variant_id": "CodeGraph",
+      "role": "code-graph retrieval and index component baseline",
+      "comparison_class": "retrieval_component",
+      "implementation_state": "pending",
+      "implementation_reference": null,
+      "model_policy_ref": "main_llm_v1",
+      "information_budget_ref": "system_extended_v1",
+      "tool_policy_ref": "codegraph_only_v1",
+      "evidence_policy_ref": "citation_v1",
+      "prompt_policy_ref": "CodeGraph",
+      "fallback_policy": "forbidden",
+      "pooling_policy": "separate",
+      "effect_attribution": "registered code-graph system configuration; no universal component claim"
+    },
+    {
+      "variant_id": "FULL",
+      "role": "provenance-aware Aletheia system configuration",
+      "comparison_class": "system_configuration",
+      "implementation_state": "pending",
+      "implementation_reference": null,
+      "model_policy_ref": "main_llm_v1",
+      "information_budget_ref": "system_extended_v1",
+      "tool_policy_ref": "full_registered_v1",
+      "evidence_policy_ref": "full_system_v1",
+      "prompt_policy_ref": "FULL",
+      "fallback_policy": "forbidden",
+      "pooling_policy": "separate",
+      "effect_attribution": "whole-system configuration effect when information access differs"
+    }
+  ],
+  "cross_variant_rules": [
+    "B1 B2 A1 A2 and A3 use the exact main model and generation policy",
+    "B1 B2 A1 A2 and A3 use the same observable corpus and context ceiling",
+    "retrieval queries turns selected IDs and omitted IDs are preserved whenever retrieval is enabled",
+    "no provider model prompt retrieval or tool fallback is permitted",
+    "B0 B3 FULL and CodeGraph are reported separately from matched primary effects",
+    "B3 native and Aletheia semantic metrics are never collapsed",
+    "FULL and CodeGraph gains cannot be attributed to one component when their information path differs",
+    "hidden ground truth evaluator metadata web shell and project execution are forbidden for every variant"
+  ]
+}
