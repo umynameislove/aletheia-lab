@@ -1,0 +1,105 @@
+{
+  "schema_version": "diagnosis-protocol-feasibility-plan/v1",
+  "plan_status": "outcome_blind_candidate",
+  "protected_outcomes_opened": false,
+  "execution_authorized": false,
+  "supported_python_minors": ["3.11", "3.12"],
+  "test_profile": "evaluation",
+  "test_profile_timeout_seconds": 300,
+  "artifacts": [
+    {
+      "artifact_id": "attempt-store",
+      "role": "runtime",
+      "relative_path": "src/aletheia_lab/evaluation/attempt_store.py",
+      "expected_sha256": "fe4f46eb1846c7d0c6b8a097190203d0a76dc72eda9646557cea419d55b9a1d7"
+    },
+    {
+      "artifact_id": "claim-validation-protocol",
+      "role": "protocol",
+      "relative_path": "configs/evaluation/claim_support_validation_protocol.json",
+      "expected_sha256": "ab41d8c3d6d1b35336d0939928752b35266aefd4cb933fa60b10c55cefbf3dbe"
+    },
+    {
+      "artifact_id": "credit-default-archive",
+      "role": "dataset",
+      "relative_path": "data/raw/p2-v3/uci-default-of-credit-card-clients.zip",
+      "expected_sha256": "56c885f84457f6680f8438f02bfcdac9579323d8a94465ee5f26e32baa727602"
+    },
+    {
+      "artifact_id": "mechanism-filter",
+      "role": "governance",
+      "relative_path": "configs/benchmark/provenance/p4_p5_mechanism_filter_manifest.json",
+      "expected_sha256": "c3dfba15265361730bb5a3ef9cb96651592c43130ea484f1726a9e0f545c8597"
+    },
+    {
+      "artifact_id": "online-shoppers-archive",
+      "role": "dataset",
+      "relative_path": "data/raw/p2-v3/uci-online-shoppers-purchasing-intention.zip",
+      "expected_sha256": "2972e6184d3ad7beaaa831d9fc2b059dc3ee29df69d1ec593c466a5cd8485d14"
+    },
+    {
+      "artifact_id": "structural-closeout",
+      "role": "closeout",
+      "relative_path": "src/aletheia_lab/evaluation/structural_closeout.py",
+      "expected_sha256": "b8675d91624c8d200fce51f6dea5aeb9ab432b5ae95492ca19dc7ad5b3eab23b"
+    }
+  ],
+  "runtime_capabilities": [
+    {
+      "capability_id": "deterministic-fixture-adapter",
+      "required": true,
+      "state": "ready",
+      "import_reference": "aletheia_lab.model_gateway:DeterministicFakeAdapter",
+      "evidence": "offline provider-neutral fixture path is implemented and regression tested"
+    },
+    {
+      "capability_id": "immutable-attempt-store",
+      "required": true,
+      "state": "ready",
+      "import_reference": "aletheia_lab.evaluation.attempt_store:ImmutableAttemptStore",
+      "evidence": "append-only content-addressed store and atomic terminal index are implemented"
+    },
+    {
+      "capability_id": "production-gateway-adapter",
+      "required": true,
+      "state": "pending",
+      "import_reference": null,
+      "evidence": "the legacy pilot OpenAI adapter does not yet implement the provider-neutral gateway adapter contract"
+    },
+    {
+      "capability_id": "structural-closeout",
+      "required": true,
+      "state": "ready",
+      "import_reference": "aletheia_lab.evaluation.structural_closeout:reduce_structural_closeout",
+      "evidence": "offline structural reducer reconciles the complete terminal inventory"
+    }
+  ],
+  "output_paths": {
+    "staging_root": "artifacts/evaluation/diagnosis/staging",
+    "object_root": "artifacts/evaluation/diagnosis/objects",
+    "terminal_root": "artifacts/evaluation/diagnosis/terminal",
+    "paths_are_repository_relative": true,
+    "content_addressed_objects": true,
+    "create_only_publication": true,
+    "atomic_terminal_publication": true,
+    "partial_outcome_publication_forbidden": true
+  },
+  "attempt_policy": {
+    "maximum_registered_executions": 1,
+    "provider_attempt_ceiling": 2,
+    "provider_retry_is_not_registered_rerun": true,
+    "initial_request_identity_immutable_across_retries": true,
+    "registered_rerun_forbidden": true,
+    "identical_replay_is_idempotent": true,
+    "conflicting_replay_fails_closed": true
+  },
+  "closeout_policy": {
+    "reducer_import_reference": "aletheia_lab.evaluation.structural_closeout:reduce_structural_closeout",
+    "attempt_store_import_reference": "aletheia_lab.evaluation.attempt_store:ImmutableAttemptStore",
+    "complete_request_census_required": true,
+    "current_authorization_rechecked": true,
+    "terminal_inventory_reconciled": true,
+    "technical_and_scientific_status_separate": true,
+    "no_scientific_default_from_structural_pass": true
+  }
+}
