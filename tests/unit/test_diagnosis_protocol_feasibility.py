@@ -18,15 +18,50 @@ from aletheia_lab.evaluation.protocol_feasibility import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-TRACKED_PLAN = ROOT / "configs/evaluation/diagnosis_protocol_feasibility_plan.json"
+VERSIONED_PLAN = ROOT / "configs/evaluation/diagnosis_protocol_feasibility_plan.json"
 
 
 def _sha(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def _expected_versioned_artifact_blockers(
+    plan: DiagnosisProtocolFeasibilityPlan,
+) -> set[str]:
+    """Derive filesystem blockers without assuming local data archives exist."""
+
+    blockers: set[str] = set()
+    for artifact in plan.artifacts:
+        relative = Path(artifact.relative_path)
+        candidate = ROOT / relative
+        current = ROOT
+        has_symlink_component = False
+        for part in relative.parts:
+            current /= part
+            if current.is_symlink():
+                has_symlink_component = True
+                break
+        present = candidate.is_file() and not has_symlink_component
+        if artifact.role != "dataset":
+            assert present, f"versioned repository artifact is unavailable: {relative}"
+            assert _sha(candidate.read_bytes()) == artifact.expected_sha256, (
+                f"versioned repository artifact hash changed: {relative}"
+            )
+            continue
+        if not present:
+            blockers.update(
+                {
+                    f"artifact.{artifact.artifact_id}.present",
+                    f"artifact.{artifact.artifact_id}.hash",
+                }
+            )
+        elif _sha(candidate.read_bytes()) != artifact.expected_sha256:
+            blockers.add(f"artifact.{artifact.artifact_id}.hash")
+    return blockers
+
+
 def _ready_plan(tmp_path: Path) -> DiagnosisProtocolFeasibilityPlan:
-    source = load_diagnosis_feasibility_plan(TRACKED_PLAN)
+    source = load_diagnosis_feasibility_plan(VERSIONED_PLAN)
     roles = ("dataset", "protocol", "runtime", "closeout", "governance")
     artifacts: list[DiagnosisArtifactBinding] = []
     for index, role in enumerate(roles):
@@ -64,17 +99,32 @@ def _ready_plan(tmp_path: Path) -> DiagnosisProtocolFeasibilityPlan:
 
 
 def test_versioned_plan_is_outcome_blind_and_blocks_missing_production_adapter() -> None:
+    plan = load_diagnosis_feasibility_plan(VERSIONED_PLAN)
     receipt = audit_diagnosis_feasibility(
-        load_diagnosis_feasibility_plan(TRACKED_PLAN),
+        plan,
         repository_root=ROOT,
     )
 
     assert receipt.protected_outcomes_opened is False
     assert receipt.execution_authorized is False
     assert receipt.status == "blocked_before_registration"
-    assert receipt.blocker_codes == ("runtime.production-gateway-adapter",)
+    expected_blockers = _expected_versioned_artifact_blockers(plan) | {
+        "runtime.production-gateway-adapter"
+    }
+    assert set(receipt.blocker_codes) == expected_blockers
+    checks = {item.code: item for item in receipt.checks}
+    for artifact in plan.artifacts:
+        present_code = f"artifact.{artifact.artifact_id}.present"
+        hash_code = f"artifact.{artifact.artifact_id}.hash"
+        assert checks[present_code].status == (
+            "block" if present_code in expected_blockers else "pass"
+        )
+        assert checks[hash_code].status == ("block" if hash_code in expected_blockers else "pass")
     assert all(
-        item.status == "pass" for item in receipt.checks if item.code.startswith("artifact.")
+        item.status == "pass"
+        for item in receipt.checks
+        if not item.code.startswith("artifact.")
+        and item.code != "runtime.production-gateway-adapter"
     )
 
 
@@ -160,7 +210,7 @@ def test_symlinked_artifact_parent_fails_closed(tmp_path: Path) -> None:
 def test_outcome_opening_runtime_narrowing_and_path_overlap_are_rejected(
     mutation: dict[str, object],
 ) -> None:
-    payload = json.loads(TRACKED_PLAN.read_text(encoding="utf-8"))
+    payload = json.loads(VERSIONED_PLAN.read_text(encoding="utf-8"))
     payload.update(mutation)
 
     with pytest.raises(ValidationError):
@@ -169,7 +219,7 @@ def test_outcome_opening_runtime_narrowing_and_path_overlap_are_rejected(
 
 def test_receipt_hash_and_blocker_census_cannot_be_forged() -> None:
     receipt = audit_diagnosis_feasibility(
-        load_diagnosis_feasibility_plan(TRACKED_PLAN),
+        load_diagnosis_feasibility_plan(VERSIONED_PLAN),
         repository_root=ROOT,
     )
     forged = receipt.model_dump(mode="json")

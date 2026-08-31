@@ -31,10 +31,14 @@ The lint covers five independent surfaces.
 | Attempt semantics | Exactly one registered execution is permitted; bounded provider retries preserve the original request identity and are not new registered runs | Reject the plan or block closeout |
 | Closeout | Complete request census, current authorization, terminal inventory and technical/scientific status separation are mandatory | Fail closed; never infer a scientific pass |
 
-The current feasibility receipt intentionally contains one blocker:
+When both registered dataset archives are present and hash-valid, the current
+feasibility receipt contains one implementation blocker:
 `runtime.production-gateway-adapter`. The deterministic fixture path is ready,
 but the legacy pilot provider adapter does not implement the new provider-neutral
-gateway contract. Therefore diagnosis evaluation execution is not authorized.
+gateway contract. A source-only checkout, including CI, additionally reports the
+archive `present` and `hash` checks as blockers. These are valid environment
+readiness failures; they are not suppressed or replaced by network downloads.
+Therefore diagnosis evaluation execution is not authorized in either environment.
 
 ### One execution versus provider retry
 
@@ -101,10 +105,17 @@ PYTHONPATH=src python scripts/diagnosis_evaluation_freeze.py all
 ```
 
 Expected status at this commit is
-`diagnosis_freezes_verified_with_execution_blockers`, with exactly two blocker codes:
+`diagnosis_freezes_verified_with_execution_blockers`. With both registered
+dataset archives present and hash-valid, there are exactly two implementation
+blocker codes:
 
 1. `runtime.production-gateway-adapter`;
 2. `implementation_artifacts_resolve`.
+
+In a source-only checkout, the receipt also includes the `present` and `hash`
+blockers for each absent registered archive. The blocker count is therefore
+environment-sensitive by design, while the blocker identities and reconciliation
+remain deterministic for a given checkout.
 
 To use the same command as a registration gate:
 
@@ -112,7 +123,8 @@ To use the same command as a registration gate:
 PYTHONPATH=src python scripts/diagnosis_evaluation_freeze.py all --require-ready
 ```
 
-That command must return a blocking exit code until both blockers are removed.
+That command must return a blocking exit code until all implementation and
+environment-readiness blockers are removed.
 It still does not authorize execution: registration, immutable release and the
 separate outcome-opening authority remain later steps.
 
