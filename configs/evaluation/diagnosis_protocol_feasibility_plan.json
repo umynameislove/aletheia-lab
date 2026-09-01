@@ -59,7 +59,7 @@
       "artifact_id": "attempt-store-writer",
       "role": "runtime",
       "relative_path": "src/aletheia_lab/evaluation/_attempt_store/writer.py",
-      "expected_sha256": "44a59bb4caf2a18a24fddbba3fc575eb3f119bdbd0664eedd65b80fd27a08e4d"
+      "expected_sha256": "a49309f7aaeffbff93b531093ca6b55380afcd1fb4bc4c33d31048320dc93ae8"
     },
     {
       "artifact_id": "claim-validation-protocol",
@@ -72,6 +72,12 @@
       "role": "dataset",
       "relative_path": "data/raw/p2-v3/uci-default-of-credit-card-clients.zip",
       "expected_sha256": "56c885f84457f6680f8438f02bfcdac9579323d8a94465ee5f26e32baa727602"
+    },
+    {
+      "artifact_id": "filesystem-publication-core",
+      "role": "runtime",
+      "relative_path": "src/aletheia_lab/filesystem.py",
+      "expected_sha256": "b1848cba56f316c35dfc376e244e4cac75f09640112ddefb9b34d5efc290c54f"
     },
     {
       "artifact_id": "mechanism-filter",

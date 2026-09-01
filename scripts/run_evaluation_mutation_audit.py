@@ -74,8 +74,7 @@ _MUTATIONS: Final = (
             (
                 "        if remaining_ns <= 0:\n"
                 '            return _SupervisedInvocation("timed_out")\n',
-                "        if remaining_ns <= 0:\n"
-                "            remaining_ns = 1_000_000_000\n",
+                "        if remaining_ns <= 0:\n            remaining_ns = 1_000_000_000\n",
             ),
         ),
         target=(
@@ -101,13 +100,13 @@ _MUTATIONS: Final = (
     ),
     _Mutation(
         name="immutable_overwrite_allowed",
-        source="aletheia_lab/evaluation/_attempt_store/writer.py",
+        source="aletheia_lab/filesystem.py",
         replacements=(
             (
-                "            raise AttemptStoreConflictError(\n"
-                '                "conflict", "refusing to overwrite non-identical immutable bytes"\n'
-                "            )\n",
-                '            destination.write_bytes(payload)\n            return "created"\n',
+                "    raise ImmutablePublicationConflictError(\n"
+                '        f"refusing to overwrite non-identical immutable bytes: {destination}"\n'
+                "    )\n",
+                '    destination.write_bytes(payload)\n    return "created"\n',
             ),
         ),
         target=(
