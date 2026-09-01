@@ -85,6 +85,9 @@ Aletheia currently provides:
 - provider-neutral evaluation readiness contracts with visibility-safe context,
   a deterministic fixture adapter, a policy-bound OpenAI production adapter,
   immutable attempt storage, and offline uninterpreted structural closeout.
+- a complete outcome-blind registry for B0--B3, A1--A3, FULL and CodeGraph that
+  content-binds every implementation to its frozen model, information, tool,
+  evidence and prompt policies before a runner can select it.
 
 Aletheia Lab is research software, not a production incident-response system.
 The repository includes the complete deterministic benchmark, evidence-store,

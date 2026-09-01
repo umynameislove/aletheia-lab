@@ -198,6 +198,22 @@ disables hidden SDK retries, so abandoned work remains bounded by both the
 gateway and the client. Conformance tests exercise that translation without a
 live request; they do not authorize external-provider execution.
 
+### Diagnosis variant registry
+
+The complete evaluation census is resolved before any development runner or
+provider call can select a variant. B0--B3, A1--A3, FULL and CodeGraph each have
+a distinct package-local factory and a versioned capability envelope. Registry
+construction binds the implementation source to the frozen model, information,
+tool, evidence, prompt and response-schema policies and rejects missing,
+duplicated, aliased or policy-incompatible factories.
+
+Request bindings carry the registry and variant hashes, implementation version
+and source hash, all policy hashes, context hash, evidence-content hash and the
+tool-ledger hash required by retrieval-capable paths. Web, shell, project
+execution and silent fallback remain unrepresentable. This registry establishes
+implementation and fairness readiness only; it does not run a model, perform
+retrieval or establish a scientific result.
+
 ## Retry invariants
 
 Every retry reconstructs an attempt from the immutable initial request. The

@@ -60,7 +60,7 @@ def _assert_reconciled_blockers(payload: dict[str, object]) -> None:
     assert isinstance(feasibility, dict)
     assert isinstance(fairness, dict)
     expected_feasibility = _expected_feasibility_blockers()
-    expected_fairness = ["implementation_artifacts_resolve"]
+    expected_fairness: list[str] = []
     assert feasibility["blocker_codes"] == expected_feasibility
     assert fairness["blocker_codes"] == expected_fairness
     assert payload["blocker_count"] == len(expected_feasibility) + len(expected_fairness)
@@ -76,13 +76,18 @@ def test_versioned_diagnosis_freezes_are_outcome_blind_and_fail_closed() -> None
     )
     payload = json.loads(completed.stdout)
 
-    assert payload["status"] == "diagnosis_freezes_verified_with_execution_blockers"
+    expected_status = (
+        "diagnosis_freezes_verified_with_execution_blockers"
+        if _expected_feasibility_blockers()
+        else "diagnosis_freezes_verified_ready_for_registration"
+    )
+    assert payload["status"] == expected_status
     assert payload["protected_outcomes_opened"] is False
     assert payload["execution_authorized"] is False
     _assert_reconciled_blockers(payload)
 
 
-def test_require_ready_exits_nonzero_while_blockers_remain() -> None:
+def test_require_ready_exit_code_matches_local_environment_readiness() -> None:
     completed = subprocess.run(
         [sys.executable, "scripts/diagnosis_evaluation_freeze.py", "all", "--require-ready"],
         cwd=ROOT,
@@ -91,6 +96,6 @@ def test_require_ready_exits_nonzero_while_blockers_remain() -> None:
         text=True,
     )
 
-    assert completed.returncode == 2
+    assert completed.returncode == (2 if _expected_feasibility_blockers() else 0)
     payload = json.loads(completed.stdout)
     _assert_reconciled_blockers(payload)

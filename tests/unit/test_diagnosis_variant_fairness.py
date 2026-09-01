@@ -27,16 +27,17 @@ def _payload() -> dict[str, object]:
     return payload
 
 
-def test_versioned_freeze_has_complete_census_and_honest_implementation_blocker() -> None:
+def test_versioned_freeze_has_complete_census_and_resolved_implementations() -> None:
     receipt = audit_diagnosis_variant_fairness(load_diagnosis_variant_freeze(TRACKED_FREEZE))
 
     assert receipt.variant_ids == REQUIRED_VARIANTS
-    assert receipt.status == "fairness_policy_frozen_execution_blocked"
-    assert receipt.blocker_codes == ("implementation_artifacts_resolve",)
+    assert receipt.status == "fairness_policy_frozen_ready_for_registration"
+    assert receipt.blocker_codes == ()
     finding = next(
         item for item in receipt.findings if item.code == "implementation_artifacts_resolve"
     )
-    assert finding.variants == ("A1", "A2", "B0", "B2", "B3", "CodeGraph", "FULL")
+    assert finding.status == "pass"
+    assert finding.variants == REQUIRED_VARIANTS
     assert receipt.protected_outcomes_opened is False
     assert receipt.execution_authorized is False
 
@@ -133,25 +134,39 @@ def test_noncomparable_variant_cannot_be_reclassified_into_primary_pool() -> Non
         DiagnosisVariantFairnessFreeze.model_validate_json(json.dumps(payload))
 
 
-def test_ready_implementations_remove_only_execution_artifact_blocker() -> None:
-    freeze = load_diagnosis_variant_freeze(TRACKED_FREEZE)
-    variants = tuple(
-        item.model_copy(
-            update={
-                "implementation_state": "ready",
-                "implementation_reference": (
-                    item.implementation_reference
-                    or "aletheia_lab.diagnosis.prompts:system_prompt_for"
-                ),
-            }
-        )
-        for item in freeze.variants
+def test_wrong_factory_variant_id_is_an_execution_artifact_blocker() -> None:
+    payload = _payload()
+    variants = payload["variants"]
+    assert isinstance(variants, list)
+    a1 = next(item for item in variants if item["variant_id"] == "A1")
+    a1["implementation_reference"] = (
+        "aletheia_lab.diagnosis.variant_registry:build_a2_variant"
     )
-    ready = freeze.model_copy(update={"variants": variants})
+    freeze = DiagnosisVariantFairnessFreeze.model_validate_json(json.dumps(payload))
 
-    receipt = audit_diagnosis_variant_fairness(ready)
-    assert receipt.status == "fairness_policy_frozen_ready_for_registration"
-    assert receipt.blocker_codes == ()
+    receipt = audit_diagnosis_variant_fairness(freeze)
+    assert receipt.status == "fairness_policy_frozen_execution_blocked"
+    assert receipt.blocker_codes == ("implementation_artifacts_resolve",)
+    finding = next(
+        item for item in receipt.findings if item.code == "implementation_artifacts_resolve"
+    )
+    assert finding.variants == ("A1",)
+
+
+def test_policy_mismatch_is_an_execution_artifact_blocker() -> None:
+    payload = _payload()
+    variants = payload["variants"]
+    assert isinstance(variants, list)
+    a1 = next(item for item in variants if item["variant_id"] == "A1")
+    a1["tool_policy_ref"] = "rag_only_v1"
+    freeze = DiagnosisVariantFairnessFreeze.model_validate_json(json.dumps(payload))
+
+    receipt = audit_diagnosis_variant_fairness(freeze)
+    assert receipt.blocker_codes == ("implementation_artifacts_resolve",)
+    finding = next(
+        item for item in receipt.findings if item.code == "implementation_artifacts_resolve"
+    )
+    assert finding.variants == REQUIRED_VARIANTS
 
 
 def test_external_and_extended_paths_are_never_pooled_as_matched_primary() -> None:
@@ -167,7 +182,7 @@ def test_external_and_extended_paths_are_never_pooled_as_matched_primary() -> No
 def test_receipt_blockers_and_hash_cannot_be_forged() -> None:
     receipt = audit_diagnosis_variant_fairness(load_diagnosis_variant_freeze(TRACKED_FREEZE))
     forged = receipt.model_dump(mode="json")
-    forged["blocker_codes"] = []
+    forged["blocker_codes"] = ["implementation_artifacts_resolve"]
 
     with pytest.raises(ValidationError):
         DiagnosisVariantFairnessReceipt.model_validate_json(json.dumps(forged))
