@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import json
 from pathlib import Path
 from typing import Final, Literal, Self
@@ -278,6 +279,38 @@ def load_diagnosis_variant_freeze(path: str | Path) -> DiagnosisVariantFairnessF
     return DiagnosisVariantFairnessFreeze.model_validate_json(raw_text)
 
 
+def _implementation_resolves(variant: DiagnosisVariantSpec) -> bool:
+    reference = variant.implementation_reference
+    if variant.implementation_state != "ready" or reference is None:
+        return False
+    if not reference.startswith("aletheia_lab.") or reference.count(":") != 1:
+        return False
+    module_name, attribute = reference.split(":")
+    try:
+        candidate = getattr(importlib.import_module(module_name), attribute)
+    except (ImportError, AttributeError):
+        return False
+    if not callable(candidate):
+        return False
+    try:
+        implementation = candidate()
+    except Exception:
+        return False
+    return getattr(implementation, "variant_id", None) == variant.variant_id
+
+
+def _registry_reconciles(freeze: DiagnosisVariantFairnessFreeze) -> bool:
+    """Resolve complete policy bindings without creating an import cycle."""
+
+    try:
+        from aletheia_lab.diagnosis.variant_registry import build_variant_registry
+
+        build_variant_registry(freeze)
+    except (ImportError, ValueError):
+        return False
+    return True
+
+
 def audit_diagnosis_variant_fairness(
     freeze: DiagnosisVariantFairnessFreeze,
 ) -> DiagnosisVariantFairnessReceipt:
@@ -353,8 +386,10 @@ def audit_diagnosis_variant_fairness(
     )
 
     pending = tuple(
-        item.variant_id for item in freeze.variants if item.implementation_state != "ready"
+        item.variant_id for item in freeze.variants if not _implementation_resolves(item)
     )
+    if not pending and not _registry_reconciles(freeze):
+        pending = REQUIRED_VARIANTS
     findings.append(
         _finding(
             "implementation_artifacts_resolve",
@@ -363,7 +398,10 @@ def audit_diagnosis_variant_fairness(
             (
                 "pending implementations: " + ",".join(pending)
                 if pending
-                else "every implementation reference is present"
+                else (
+                    "every implementation reference resolves to the registered variant "
+                    "and reconciles with its frozen policies"
+                )
             ),
         )
     )

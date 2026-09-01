@@ -87,13 +87,21 @@ fallback. The main LLM variants freeze OpenAI `gpt-4.1-2025-04-14`, temperature
 0, top-p 1, seed 17, 600 output tokens, a 60-second request deadline and at most
 two provider attempts for the same immutable request.
 
-### Current implementation blocker
+### Resolved implementation registry
 
-B1 and A3 reuse the existing matched-pilot prompt implementation. A1, A2, B0,
-B2, B3, CodeGraph and FULL remain explicitly `pending`. The fairness policy is
-therefore frozen, but execution stays blocked. A pending implementation may be
-made ready only by adding a resolvable `module:attribute` reference and passing
-the same freeze audit; it may not change a frozen budget or prompt contract.
+Every frozen variant now resolves to a distinct, package-local implementation
+factory. The canonical registry verifies the exact nine-variant census, rejects
+factory aliases and wrong variant identities, and reconciles each implementation
+against its frozen model, information, tool, evidence, prompt and response-schema
+policies. Each resolved variant carries an implementation version, source-file
+SHA-256 and a derived content hash.
+
+The registry is still outcome-blind and execution-free. It describes the only
+permitted strategy and capability envelope; it does not call a provider, perform
+retrieval, open a protected outcome or authorize a registered attempt. A future
+request must carry a content-addressed binding for its variant, implementation,
+context, evidence and, when required, tool ledger. Missing or ambient tool access
+fails closed.
 
 ## Verification
 
@@ -103,12 +111,9 @@ Run the outcome-blind audit:
 PYTHONPATH=src python scripts/diagnosis_evaluation_freeze.py all
 ```
 
-Expected status at this commit is
-`diagnosis_freezes_verified_with_execution_blockers`. With both registered
-dataset archives present and hash-valid, there is exactly one implementation
-blocker code:
-
-1. `implementation_artifacts_resolve`.
+With both registered dataset archives present and hash-valid, expected status is
+`diagnosis_freezes_verified_ready_for_registration`: the fairness receipt has no
+implementation blocker and the feasibility receipt has no environment blocker.
 
 In a source-only checkout, the receipt also includes the `present` and `hash`
 blockers for each absent registered archive. The blocker count is therefore
@@ -121,14 +126,18 @@ To use the same command as a registration gate:
 PYTHONPATH=src python scripts/diagnosis_evaluation_freeze.py all --require-ready
 ```
 
-That command must return a blocking exit code until all implementation and
+That command returns a blocking exit code until all implementation and
 environment-readiness blockers are removed.
 It still does not authorize execution: registration, immutable release and the
 separate outcome-opening authority remain later steps.
 
 ## Next implementation order
 
-1. Implement A1/A2, B0/B2, B3, CodeGraph and FULL against the frozen interfaces.
-2. Re-run the evaluation profile three times under distinct process hash seeds.
-3. Re-run this audit with `--require-ready`.
-4. Only then prepare the immutable diagnosis evaluation registration and execution authorization.
+1. Build the development-only runner and append-only artifact lifecycle around
+   these immutable request bindings.
+2. Exercise every variant with deterministic or synthetic development fixtures;
+   do not open the main outcome.
+3. Re-run the fairness audit and evaluation profile under distinct process hash
+   seeds after runner integration.
+4. Audit execution-path parity before preparing any immutable diagnosis
+   evaluation registration or outcome-opening authorization.
