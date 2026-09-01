@@ -179,6 +179,34 @@ _MUTATIONS: Final = (
             "test_complete_store_has_deterministic_permutation_invariant_read_only_receipt"
         ),
     ),
+    _Mutation(
+        name="development_response_validation_removed",
+        source="aletheia_lab/diagnosis/development.py",
+        replacements=(
+            (
+                "                validate_response_against_authority(request, response, variant, case)\n",
+                "                pass\n",
+            ),
+        ),
+        target=(
+            "tests/unit/test_diagnosis_development_runner.py::"
+            "test_malformed_builtin_response_fails_without_terminal_publication"
+        ),
+    ),
+    _Mutation(
+        name="development_context_budget_understated",
+        source="aletheia_lab/diagnosis/development.py",
+        replacements=(
+            (
+                "        context_tokens_upper_bound=len(context_bytes),\n",
+                "        context_tokens_upper_bound=(len(context_bytes) + 3) // 4,\n",
+            ),
+        ),
+        target=(
+            "tests/unit/test_diagnosis_development_runner.py::"
+            "test_records_preserve_tool_ledgers_and_development_boundary"
+        ),
+    ),
 )
 
 

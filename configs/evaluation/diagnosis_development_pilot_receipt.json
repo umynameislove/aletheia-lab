@@ -1,0 +1,203 @@
+{
+  "schema_version": "diagnosis-development-audit/v1",
+  "run_id": "devrun-01a91d1e57b96643a77016dc8619eb7d47b29e4206d0e19f3e605910a2077951",
+  "plan_sha256": "d176750f7e09db4ce1544c685714a90e7a9ccce61caa5b6b1310c4f392773665",
+  "freeze_sha256": "9ca32cde2441592c26050656c43703cbe7ab8e92441b87797b8cc4071254ae57",
+  "registry_sha256": "30d92eec4f32d1a5196c0754b00531bdd141fa8df38bc3aad6e8bf040005b5fa",
+  "manifest_sha256": "01a91d1e57b96643a77016dc8619eb7d47b29e4206d0e19f3e605910a2077951",
+  "variant_ids": [
+    "A1",
+    "A2",
+    "A3",
+    "B0",
+    "B1",
+    "B2",
+    "B3",
+    "CodeGraph",
+    "FULL"
+  ],
+  "case_count": 3,
+  "record_count": 27,
+  "expected_record_count": 27,
+  "findings": [
+    {
+      "schema_version": "diagnosis-development-audit-finding/v1",
+      "code": "implementation_artifacts_resolve",
+      "status": "pass",
+      "scope": [
+        "A1",
+        "A2",
+        "A3",
+        "B0",
+        "B1",
+        "B2",
+        "B3",
+        "CodeGraph",
+        "FULL"
+      ],
+      "evidence": "all frozen factories resolve through the authoritative nine-variant registry"
+    },
+    {
+      "schema_version": "diagnosis-development-audit-finding/v1",
+      "code": "complete_variant_matrix",
+      "status": "pass",
+      "scope": [
+        "devcase-stable-signal",
+        "devcase-conflicting-signals",
+        "devcase-insufficient-trace"
+      ],
+      "evidence": "27 of 27 development records are terminal"
+    },
+    {
+      "schema_version": "diagnosis-development-audit-finding/v1",
+      "code": "request_authority_binding",
+      "status": "pass",
+      "scope": [
+        "A1",
+        "A2",
+        "A3",
+        "B0",
+        "B1",
+        "B2",
+        "B3",
+        "CodeGraph",
+        "FULL"
+      ],
+      "evidence": "every persisted request reconciles with the plan, case, freeze and registry"
+    },
+    {
+      "schema_version": "diagnosis-development-audit-finding/v1",
+      "code": "content_addressed_artifacts",
+      "status": "pass",
+      "scope": [
+        "objects",
+        "manifest",
+        "terminal"
+      ],
+      "evidence": "the referenced object census is exact and the store verified every byte hash"
+    },
+    {
+      "schema_version": "diagnosis-development-audit-finding/v1",
+      "code": "response_contracts",
+      "status": "pass",
+      "scope": [
+        "A1",
+        "A2",
+        "A3",
+        "B0",
+        "B1",
+        "B2",
+        "B3",
+        "CodeGraph",
+        "FULL"
+      ],
+      "evidence": "every synthetic response satisfies its registered capability envelope"
+    },
+    {
+      "schema_version": "diagnosis-development-audit-finding/v1",
+      "code": "matched_model_parity",
+      "status": "pass",
+      "scope": [
+        "A1",
+        "A2",
+        "A3",
+        "B1",
+        "B2"
+      ],
+      "evidence": "matched variants share one frozen provider and model policy hash"
+    },
+    {
+      "schema_version": "diagnosis-development-audit-finding/v1",
+      "code": "matched_information_parity",
+      "status": "pass",
+      "scope": [
+        "A1",
+        "A2",
+        "A3",
+        "B1",
+        "B2"
+      ],
+      "evidence": "matched variants share one frozen information-budget hash"
+    },
+    {
+      "schema_version": "diagnosis-development-audit-finding/v1",
+      "code": "matched_context_parity",
+      "status": "pass",
+      "scope": [
+        "A1",
+        "A2",
+        "A3",
+        "B1",
+        "B2"
+      ],
+      "evidence": "matched requests share case-level context and evidence identities"
+    },
+    {
+      "schema_version": "diagnosis-development-audit-finding/v1",
+      "code": "resource_budget_compliance",
+      "status": "pass",
+      "scope": [
+        "A1",
+        "A2",
+        "A3",
+        "B0",
+        "B1",
+        "B2",
+        "B3",
+        "CodeGraph",
+        "FULL"
+      ],
+      "evidence": "observed context, retrieval, turn, tool and provider counts stay within policy"
+    },
+    {
+      "schema_version": "diagnosis-development-audit-finding/v1",
+      "code": "tool_ledger_and_fallback_policy",
+      "status": "pass",
+      "scope": [
+        "A1",
+        "A2",
+        "A3",
+        "B0",
+        "B1",
+        "B2",
+        "B3",
+        "CodeGraph",
+        "FULL"
+      ],
+      "evidence": "required ledgers are exact; web, shell, project execution and fallback are absent"
+    },
+    {
+      "schema_version": "diagnosis-development-audit-finding/v1",
+      "code": "reporting_strata_preserved",
+      "status": "pass",
+      "scope": [
+        "A1",
+        "A2",
+        "A3",
+        "B0",
+        "B1",
+        "B2",
+        "B3",
+        "CodeGraph",
+        "FULL"
+      ],
+      "evidence": "matched, reference, external and system configurations retain separate pooling"
+    },
+    {
+      "schema_version": "diagnosis-development-audit-finding/v1",
+      "code": "development_only_boundary",
+      "status": "pass",
+      "scope": [
+        "synthetic fixtures"
+      ],
+      "evidence": "no live provider, protected outcome, registered attempt or scientific result exists"
+    }
+  ],
+  "blocker_codes": [],
+  "status": "development_pilot_validated",
+  "protected_outcomes_opened": false,
+  "live_provider_calls": 0,
+  "registered_attempts_consumed": 0,
+  "scientific_interpretation_permitted": false,
+  "audit_sha256": "acdadb30ee1aa4d924b6485790437ec7a782ceb62d658cdc3a6de4474411a885"
+}

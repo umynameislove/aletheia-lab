@@ -1,0 +1,116 @@
+{
+  "schema_version": "diagnosis-development-plan/v1",
+  "mode": "development_synthetic",
+  "plan_version": "diagnosis-development/1",
+  "freeze_sha256": "9ca32cde2441592c26050656c43703cbe7ab8e92441b87797b8cc4071254ae57",
+  "registry_sha256": "30d92eec4f32d1a5196c0754b00531bdd141fa8df38bc3aad6e8bf040005b5fa",
+  "variant_ids": [
+    "A1",
+    "A2",
+    "A3",
+    "B0",
+    "B1",
+    "B2",
+    "B3",
+    "CodeGraph",
+    "FULL"
+  ],
+  "cases": [
+    {
+      "schema_version": "diagnosis-development-case/v1",
+      "case_id": "devcase-stable-signal",
+      "source": "synthetic_fixture",
+      "protected_outcome_visible": false,
+      "evaluator_metadata_visible": false,
+      "expected_evidence_state": "sufficient",
+      "evidence": [
+        {
+          "evidence_id": "devev-latency-rise",
+          "kind": "metric",
+          "title": "Latency series",
+          "content": "The synthetic validation latency increases after revision three.",
+          "content_sha256": "e50ea76bc07c46b3f130aa58966cafe80906351532e06cdeca401b4b843019d3"
+        },
+        {
+          "evidence_id": "devev-config-change",
+          "kind": "config",
+          "title": "Configuration revision",
+          "content": "Revision three changes one declared preprocessing option.",
+          "content_sha256": "a4635423e3cefdb584153f5e206ec578189b8c5d9d1843be984414737c62bb94"
+        },
+        {
+          "evidence_id": "devev-lineage-link",
+          "kind": "lineage",
+          "title": "Lineage relation",
+          "content": "The metric series and configuration revision share one synthetic run lineage.",
+          "content_sha256": "bca97136548ac1648ecacba570e845feb71933095640660508384919e7e84859"
+        }
+      ],
+      "case_sha256": "4b596b57a0099c089e1a0144f1d8d75b6e85cc1dbe81de86899840136e4f6688"
+    },
+    {
+      "schema_version": "diagnosis-development-case/v1",
+      "case_id": "devcase-conflicting-signals",
+      "source": "synthetic_fixture",
+      "protected_outcome_visible": false,
+      "evaluator_metadata_visible": false,
+      "expected_evidence_state": "conflicting",
+      "evidence": [
+        {
+          "evidence_id": "devev-error-rate",
+          "kind": "metric",
+          "title": "Error-rate series",
+          "content": "The synthetic error rate rises in the final interval.",
+          "content_sha256": "11c49cd6750598562ab5557183f4bdc9619284990933759f7924c6a548c5b857"
+        },
+        {
+          "evidence_id": "devev-control-log",
+          "kind": "log",
+          "title": "Control log",
+          "content": "A control execution reports stable behavior in the same interval.",
+          "content_sha256": "de6c931f438fdf056e2185e844775e4d9bbe46482eb3d2c67e9b73971ef072e6"
+        },
+        {
+          "evidence_id": "devev-run-artifact",
+          "kind": "artifact",
+          "title": "Run artifact",
+          "content": "The synthetic run artifact preserves both observations without resolving them.",
+          "content_sha256": "35405701a3f483b3aa12fbe6c94c733c65510c1688de6e9d49aaad87ba8329c5"
+        }
+      ],
+      "case_sha256": "6afa26dff0defaa2b978d5ab6f8f3b6f555e3ce4c39259fc44cdcc396004726a"
+    },
+    {
+      "schema_version": "diagnosis-development-case/v1",
+      "case_id": "devcase-insufficient-trace",
+      "source": "synthetic_fixture",
+      "protected_outcome_visible": false,
+      "evaluator_metadata_visible": false,
+      "expected_evidence_state": "insufficient",
+      "evidence": [
+        {
+          "evidence_id": "devev-alert-only",
+          "kind": "log",
+          "title": "Isolated alert",
+          "content": "One synthetic alert is present without a corroborating metric or trace.",
+          "content_sha256": "2d33d728ed4c40a89d4d34923c568b16e16850ef01d4cb72af6d5567770d012d"
+        },
+        {
+          "evidence_id": "devev-missing-window",
+          "kind": "human_note",
+          "title": "Coverage note",
+          "content": "The development fixture intentionally omits the adjacent observation window.",
+          "content_sha256": "d1eee1c3d127b9a2ac801d4cd9c467d8d6a4b652a30a0e6cf54bd0277821c37d"
+        }
+      ],
+      "case_sha256": "f1bba59d1ca878715835e0e97dd040bb9805d7d071743d2e4adc71170655c951"
+    }
+  ],
+  "executor_identity": "deterministic-development-executor/1",
+  "external_network_permitted": false,
+  "live_provider_calls_permitted": false,
+  "protected_outcomes_opened": false,
+  "registered_attempts_consumed": 0,
+  "scientific_interpretation_permitted": false,
+  "plan_sha256": "d176750f7e09db4ce1544c685714a90e7a9ccce61caa5b6b1310c4f392773665"
+}
