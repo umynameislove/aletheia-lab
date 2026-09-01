@@ -75,6 +75,12 @@ The implementation is split across four packages:
   `aletheia_lab.evaluation.structural_closeout` own immutable persistence and
   offline reconciliation.
 
+The attempt-store import remains a stable facade. Its implementation separates
+contracts, lifecycle transitions, publication, reading, integrity verification
+and request/result reconciliation. In particular, the read-only verifier has no
+dependency on the writer, so it cannot validate persisted state by replaying the
+same publication path. ADR 0003 records and machine-checks this boundary.
+
 ## Trust boundaries
 
 ### Manifest authority

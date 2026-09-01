@@ -8,10 +8,58 @@
   "test_profile_timeout_seconds": 300,
   "artifacts": [
     {
-      "artifact_id": "attempt-store",
+      "artifact_id": "attempt-store-contracts",
+      "role": "runtime",
+      "relative_path": "src/aletheia_lab/evaluation/_attempt_store/contracts.py",
+      "expected_sha256": "cf3e14e8e220ded304f4018531409608916f5962c86cbe9f534b048599024608"
+    },
+    {
+      "artifact_id": "attempt-store-facade",
       "role": "runtime",
       "relative_path": "src/aletheia_lab/evaluation/attempt_store.py",
-      "expected_sha256": "fe4f46eb1846c7d0c6b8a097190203d0a76dc72eda9646557cea419d55b9a1d7"
+      "expected_sha256": "be53cda3907f65ff19def3fd6185c0d34bf13f1af920561af1e0ce8eed55aa5f"
+    },
+    {
+      "artifact_id": "attempt-store-integrity",
+      "role": "runtime",
+      "relative_path": "src/aletheia_lab/evaluation/_attempt_store/integrity.py",
+      "expected_sha256": "bec76012d068b7cfab956af6d552a5d7d69a4a75b66f7c13c929ac75edd3920e"
+    },
+    {
+      "artifact_id": "attempt-store-orchestrator",
+      "role": "runtime",
+      "relative_path": "src/aletheia_lab/evaluation/_attempt_store/store.py",
+      "expected_sha256": "f9dfe27f87d35484f9edfe2de7cd51e66a43cb2f838e9816954eb330476816a8"
+    },
+    {
+      "artifact_id": "attempt-store-package",
+      "role": "runtime",
+      "relative_path": "src/aletheia_lab/evaluation/_attempt_store/__init__.py",
+      "expected_sha256": "ee267bf55d241e4ca035f290674cee8ea183639566eb0e389a12d805b8588f06"
+    },
+    {
+      "artifact_id": "attempt-store-reader",
+      "role": "runtime",
+      "relative_path": "src/aletheia_lab/evaluation/_attempt_store/reader.py",
+      "expected_sha256": "18d7169fca7049146b43c9ea08291a57e00ce6fdd4fc4b5979550c7db17c58ea"
+    },
+    {
+      "artifact_id": "attempt-store-reconciliation",
+      "role": "runtime",
+      "relative_path": "src/aletheia_lab/evaluation/_attempt_store/reconciliation.py",
+      "expected_sha256": "3818cf0f58178ad73fdbc615a450aee13850f28317770c5b51d0aa039b0e9efe"
+    },
+    {
+      "artifact_id": "attempt-store-transitions",
+      "role": "runtime",
+      "relative_path": "src/aletheia_lab/evaluation/_attempt_store/transitions.py",
+      "expected_sha256": "6d7a49453d11da22452f4ba9e65f05d0830059be2b22cbeeeb90ce1d72199e89"
+    },
+    {
+      "artifact_id": "attempt-store-writer",
+      "role": "runtime",
+      "relative_path": "src/aletheia_lab/evaluation/_attempt_store/writer.py",
+      "expected_sha256": "44a59bb4caf2a18a24fddbba3fc575eb3f119bdbd0664eedd65b80fd27a08e4d"
     },
     {
       "artifact_id": "claim-validation-protocol",

@@ -31,6 +31,11 @@ The lint covers five independent surfaces.
 | Attempt semantics | Exactly one registered execution is permitted; bounded provider retries preserve the original request identity and are not new registered runs | Reject the plan or block closeout |
 | Closeout | Complete request census, current authorization, terminal inventory and technical/scientific status separation are mandatory | Fail closed; never infer a scientific pass |
 
+The feasibility manifest binds every module of the isolated attempt-store
+implementation, rather than binding only its public facade. This preserves
+outcome-blind reviewability while preventing an internal writer, reader,
+transition or verifier change from escaping the runtime hash census.
+
 When both registered dataset archives are present and hash-valid, every
 feasibility check now passes. The production gateway artifact is hash-bound and
 its import resolves, but that state means only that the transport contract is

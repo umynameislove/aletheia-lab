@@ -539,7 +539,10 @@ def test_atomic_terminal_failure_leaves_closeout_pending(
     def fail_link(*args: object, **kwargs: object) -> None:
         raise OSError("synthetic atomic publication failure")
 
-    monkeypatch.setattr("aletheia_lab.evaluation.attempt_store.os.link", fail_link)
+    monkeypatch.setattr(
+        "aletheia_lab.evaluation._attempt_store.writer.os.link",
+        fail_link,
+    )
     with pytest.raises(OSError, match="synthetic"):
         store.publish_terminal(request, result)
 
