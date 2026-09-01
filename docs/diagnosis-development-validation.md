@@ -34,6 +34,11 @@ protected outcomes are absent by construction.
 
 ## Execution boundary
 
+The implementation boundaries and permitted dependency direction are recorded
+in [ADR 0002](adr/0002-diagnosis-development-boundaries.md). The stable public
+API remains `aletheia_lab.diagnosis.development`; execution, independent
+validation and artifact publication are separate internal authorities.
+
 [`diagnosis_development_pilot.py`](../scripts/diagnosis_development_pilot.py)
 runs a deterministic local executor. It does not invoke the production model
 gateway, make a provider call, access the network, execute a project, consume a

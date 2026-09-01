@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-import aletheia_lab.diagnosis.development as development_module
+import aletheia_lab.diagnosis._development.store as development_store
 from aletheia_lab.diagnosis.development import (
     DeterministicDevelopmentExecutor,
     DevelopmentArtifactStore,
@@ -270,8 +270,8 @@ def test_tree_sync_never_reopens_regular_payloads_for_fsync(
         synced_directories.append(file_descriptor)
         original_fsync(file_descriptor)
 
-    monkeypatch.setattr(development_module.os, "fsync", directory_only_fsync)
-    development_module._fsync_tree(root)
+    monkeypatch.setattr(development_store.os, "fsync", directory_only_fsync)
+    development_store._fsync_tree(root)
 
     if hasattr(os, "O_DIRECTORY"):
         assert len(synced_directories) == 3
