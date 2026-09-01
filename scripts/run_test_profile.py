@@ -15,6 +15,16 @@ _ROOT: Final = Path(__file__).resolve().parents[1]
 _EVALUATION_TIMEOUT_SECONDS: Final = 300
 _REPRODUCIBILITY_HASH_SEEDS: Final = ("1", "104729", "209759")
 _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
+    "contract": (
+        "tests/unit/test_filesystem_publication.py",
+        "tests/unit/test_evaluation_attempt_store_architecture.py",
+        "tests/unit/test_diagnosis_development_architecture.py",
+        "tests/unit/test_maintainability_contract.py",
+        "tests/unit/test_test_runtime_contract.py",
+        "tests/unit/test_ci_quality_contract.py",
+        "tests/unit/test_security_ci_contract.py",
+        "--durations=20",
+    ),
     "fast": (
         "-m",
         "not integration and not property and not research_regression and not large_artifact",
@@ -60,6 +70,19 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_security_ci_contract.py",
         "tests/unit/test_test_runtime_contract.py",
         "tests/unit/test_evaluation_runtime_gates.py",
+        "--durations=20",
+    ),
+    "windows-publication": (
+        "tests/unit/test_filesystem_publication.py",
+        "tests/unit/test_evidence_store.py",
+        "tests/unit/test_matched_diagnosis_pilot.py",
+        "tests/unit/test_p1_closeout.py",
+        "tests/unit/test_pilot_evaluator.py",
+        "tests/unit/test_p2r_recovery_execution.py",
+        "tests/unit/test_p2_evidence_bundle_duplicates.py",
+        "tests/unit/test_project_persistence.py",
+        "tests/unit/test_evaluation_attempt_store.py",
+        "tests/unit/test_diagnosis_development_runner.py",
         "--durations=20",
     ),
     "full": (
