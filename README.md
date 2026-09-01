@@ -88,6 +88,10 @@ Aletheia currently provides:
 - a complete outcome-blind registry for B0--B3, A1--A3, FULL and CodeGraph that
   content-binds every implementation to its frozen model, information, tool,
   evidence and prompt policies before a runner can select it.
+- an offline, content-addressed development runner that exercises all nine
+  configurations over sufficient, conflicting and insufficient synthetic
+  evidence; its independent audit validates the complete 27-record matrix and
+  frozen fairness constraints without provider calls or protected outcomes.
 
 Aletheia Lab is research software, not a production incident-response system.
 The repository includes the complete deterministic benchmark, evidence-store,
@@ -373,6 +377,7 @@ documentation, and reproducible artifacts.
 - [Evaluation protocol](docs/evaluation-protocol.md)
 - [Evaluation readiness and trust boundaries](docs/evaluation-readiness.md)
 - [Diagnosis evaluation feasibility and fairness freeze](docs/diagnosis-evaluation-freeze.md)
+- [Diagnosis development validation](docs/diagnosis-development-validation.md)
 - [Dataset card](docs/dataset-card.md)
 - [Matched-diagnosis feasibility report](docs/p1-feasibility-report.md)
 - [Matched-diagnosis frozen closeout package](reports/p1/README.md)

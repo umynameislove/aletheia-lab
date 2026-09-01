@@ -131,13 +131,25 @@ environment-readiness blockers are removed.
 It still does not authorize execution: registration, immutable release and the
 separate outcome-opening authority remain later steps.
 
-## Next implementation order
+## Development validation status
 
-1. Build the development-only runner and append-only artifact lifecycle around
-   these immutable request bindings.
-2. Exercise every variant with deterministic or synthetic development fixtures;
-   do not open the main outcome.
-3. Re-run the fairness audit and evaluation profile under distinct process hash
-   seeds after runner integration.
-4. Audit execution-path parity before preparing any immutable diagnosis
-   evaluation registration or outcome-opening authorization.
+The offline development runner and immutable artifact lifecycle now exercise
+the complete three-case by nine-configuration matrix. Independent validation
+reconciles stored requests, responses, ledgers and records against this freeze,
+and the `implementation_artifacts_resolve` finding passes for all nine
+factories. The terminal and audit identities reproduce across distinct process
+hash seeds.
+
+See [`diagnosis-development-validation.md`](diagnosis-development-validation.md)
+for the executable boundary and tracked receipt. This result does not authorize
+the main evaluation and contains no scientific outcome.
+
+The remaining order is:
+
+1. materialize and freeze the real claim census without opening diagnosis
+   outcomes;
+2. complete evaluator onboarding and independent blind instrument validation;
+3. resolve every prespecified human-validation gate;
+4. publish a separate immutable registration and main-run manifest;
+5. audit execution-path parity immediately before outcome-opening authority is
+   considered.

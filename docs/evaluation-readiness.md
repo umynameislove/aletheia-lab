@@ -366,3 +366,10 @@ The outcome-blind diagnosis feasibility lint and the complete B0--B3, A1--A3, FU
 and CodeGraph policy census are defined separately in
 [`diagnosis-evaluation-freeze.md`](diagnosis-evaluation-freeze.md). This freeze
 adds scientific policy without weakening any trust boundary in this document.
+
+The complete registry is exercised offline by the development validation
+described in
+[`diagnosis-development-validation.md`](diagnosis-development-validation.md).
+Its content-addressed store, exact 27-record matrix and independent fairness
+audit are engineering evidence only: they use synthetic fixtures, make no live
+provider calls, open no protected outcomes and consume no registered attempt.

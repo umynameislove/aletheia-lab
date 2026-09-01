@@ -42,6 +42,15 @@ if TYPE_CHECKING:
         TechnicalFailureReceipt,
         TerminalExecutionInventory,
     )
+    from aletheia_lab.evaluation.development_audit import (
+        DEVELOPMENT_AUDIT_FINDING_SCHEMA_VERSION,
+        DEVELOPMENT_AUDIT_SCHEMA_VERSION,
+        DevelopmentAuditFinding,
+        DevelopmentPilotAuditError,
+        DevelopmentPilotAuditReceipt,
+        audit_development_pilot,
+        require_development_pilot_ready,
+    )
     from aletheia_lab.evaluation.protocol_feasibility import (
         FEASIBILITY_PLAN_SCHEMA_VERSION,
         FEASIBILITY_RECEIPT_SCHEMA_VERSION,
@@ -109,6 +118,18 @@ _ATTEMPT_STORE_EXPORTS = frozenset(
     }
 )
 
+_DEVELOPMENT_AUDIT_EXPORTS = frozenset(
+    {
+        "DEVELOPMENT_AUDIT_FINDING_SCHEMA_VERSION",
+        "DEVELOPMENT_AUDIT_SCHEMA_VERSION",
+        "DevelopmentAuditFinding",
+        "DevelopmentPilotAuditError",
+        "DevelopmentPilotAuditReceipt",
+        "audit_development_pilot",
+        "require_development_pilot_ready",
+    }
+)
+
 _STRUCTURAL_CLOSEOUT_EXPORTS = frozenset(
     {
         "AUTHORIZATION_CHECK_SCHEMA_VERSION",
@@ -171,6 +192,8 @@ def __getattr__(name: str) -> object:
 
     if name in _ATTEMPT_STORE_EXPORTS:
         module_name = "aletheia_lab.evaluation.attempt_store"
+    elif name in _DEVELOPMENT_AUDIT_EXPORTS:
+        module_name = "aletheia_lab.evaluation.development_audit"
     elif name in _STRUCTURAL_CLOSEOUT_EXPORTS:
         module_name = "aletheia_lab.evaluation.structural_closeout"
     elif name in _PROTOCOL_FEASIBILITY_EXPORTS:
@@ -209,6 +232,11 @@ __all__ = [
     "ModelPolicyReference",
     "MATCHED_MODEL_VARIANTS",
     "DiagnosisArtifactBinding",
+    "DEVELOPMENT_AUDIT_FINDING_SCHEMA_VERSION",
+    "DEVELOPMENT_AUDIT_SCHEMA_VERSION",
+    "DevelopmentAuditFinding",
+    "DevelopmentPilotAuditError",
+    "DevelopmentPilotAuditReceipt",
     "DiagnosisAttemptPolicy",
     "DiagnosisCloseoutPolicy",
     "DiagnosisEvidencePolicy",
@@ -248,12 +276,14 @@ __all__ = [
     "assert_no_scientific_closeout_fields",
     "audit_diagnosis_feasibility",
     "audit_diagnosis_variant_fairness",
+    "audit_development_pilot",
     "canonical_execution_json",
     "canonical_execution_sha256",
     "evaluate_matched_pilot",
     "load_diagnosis_feasibility_plan",
     "load_diagnosis_variant_freeze",
     "reduce_structural_closeout",
+    "require_development_pilot_ready",
     "validate_unique_case_references",
     "write_evaluation_report",
 ]
