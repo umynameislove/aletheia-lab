@@ -181,7 +181,7 @@ _MUTATIONS: Final = (
     ),
     _Mutation(
         name="development_response_validation_removed",
-        source="aletheia_lab/diagnosis/development.py",
+        source="aletheia_lab/diagnosis/_development/runner.py",
         replacements=(
             (
                 "                validate_response_against_authority(request, response, variant, case)\n",
@@ -195,7 +195,7 @@ _MUTATIONS: Final = (
     ),
     _Mutation(
         name="development_context_budget_understated",
-        source="aletheia_lab/diagnosis/development.py",
+        source="aletheia_lab/diagnosis/_development/resources.py",
         replacements=(
             (
                 "        context_tokens_upper_bound=len(context_bytes),\n",
