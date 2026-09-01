@@ -36,4 +36,8 @@ print(open(terminal, encoding="utf-8").read(), end="")
 
 
 def test_store_is_reproducible_across_process_hash_seeds(tmp_path: Path) -> None:
-    assert _store_fingerprint(tmp_path, "1") == _store_fingerprint(tmp_path, "918273")
+    first = _store_fingerprint(tmp_path, "1")
+    assert first == _store_fingerprint(tmp_path, "918273")
+    assert first.splitlines()[0] == (
+        "f268f5e6fdc996e93d8d2d939496ab6a525dcf0507944bb754739d481cd0fbce"
+    )
