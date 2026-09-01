@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import os
+import stat
 from pathlib import Path
 
 import pytest
 
+import aletheia_lab.diagnosis.development as development_module
 from aletheia_lab.diagnosis.development import (
     DeterministicDevelopmentExecutor,
     DevelopmentArtifactStore,
@@ -248,6 +251,32 @@ def test_missing_object_is_reported_as_structured_fail_closed_audit(
         audit_development_pilot(
             plan, freeze, registry, store, run_id  # type: ignore[arg-type]
         )
+
+
+def test_tree_sync_never_reopens_regular_payloads_for_fsync(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = tmp_path / "stage"
+    nested = root / "objects" / "sha256"
+    nested.mkdir(parents=True)
+    (nested / "payload").write_bytes(b"immutable\n")
+    synced_directories: list[int] = []
+    original_fsync = os.fsync
+
+    def directory_only_fsync(file_descriptor: int) -> None:
+        mode = os.fstat(file_descriptor).st_mode
+        assert stat.S_ISDIR(mode)
+        synced_directories.append(file_descriptor)
+        original_fsync(file_descriptor)
+
+    monkeypatch.setattr(development_module.os, "fsync", directory_only_fsync)
+    development_module._fsync_tree(root)
+
+    if hasattr(os, "O_DIRECTORY"):
+        assert len(synced_directories) == 3
+    else:
+        assert synced_directories == []
 
 
 def test_untracked_file_blocks_store_integrity(tmp_path: Path) -> None:

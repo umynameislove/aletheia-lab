@@ -954,7 +954,9 @@ def run_development_pilot(
         )
         if isinstance(exc, DevelopmentPilotError):
             raise
-        raise DevelopmentPilotError("development pilot failed closed") from exc
+        raise DevelopmentPilotError(
+            f"development pilot failed closed at {stage}"
+        ) from exc
 
 
 def load_run_record(
@@ -1273,10 +1275,11 @@ def _atomic_create(path: Path, payload: bytes) -> None:
 
 
 def _fsync_tree(root: Path) -> None:
-    for path in root.rglob("*"):
-        if path.is_file():
-            with path.open("rb") as handle:
-                os.fsync(handle.fileno())
+    # Every payload is already flushed and fsynced by ``_write_new_file``.
+    # Reopening those files read-only and calling ``fsync`` again is redundant
+    # and is not portable to the Windows CRT, where committing a read-only
+    # descriptor may fail.  Directory fsync is retained on platforms that
+    # expose the required flag so namespace publication remains durable.
     if hasattr(os, "O_DIRECTORY"):
         for directory in sorted(
             (path for path in root.rglob("*") if path.is_dir()),
