@@ -4,8 +4,10 @@ This document freezes the preparation and analysis contract for validating the
 automatic atomic-claim support instrument against independent human judgment.
 It prepares a study; it does not report human agreement or scientific validity.
 
-The complete PR1–PR4 and AH-02A/B–AH-03 delivery order is tracked in
-[`claim-support-delivery-roadmap.md`](claim-support-delivery-roadmap.md).
+Repository documentation intentionally separates this scientific protocol from
+internal scheduling and personnel assignments. A real study remains unauthorized
+until an immutable development-corpus closeout and private-rater readiness review
+both pass.
 
 ## Registered sample
 

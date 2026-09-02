@@ -163,5 +163,6 @@ The remaining order is:
 
 The source and non-adaptive contingency contract is documented in
 [`claim-support-corpus-protocol.md`](claim-support-corpus-protocol.md).
-The executable PR and human-run sequence is documented in
-[`claim-support-delivery-roadmap.md`](claim-support-delivery-roadmap.md).
+Internal scheduling and personnel assignments remain outside the repository.
+Their completion cannot replace any machine-readable readiness or scientific
+gate described here.

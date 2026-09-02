@@ -128,10 +128,9 @@ current statement to evidence and denominators. The
 is outcome-blind preparation only; its
 [development corpus contract](docs/claim-support-corpus-protocol.md) currently
 blocks materialization until the missing family and implementation manifests are
-frozen. The tracked
-[delivery roadmap](docs/claim-support-delivery-roadmap.md) separates readiness,
-development-corpus materialization, private rater onboarding, 200-claim blind
-annotation and adjudication. Independent human validation is still pending.
+frozen. Corpus readiness, development-only materialization and independent human
+validation remain separate gated stages. Independent human validation is still
+pending.
 
 ## Installation
 

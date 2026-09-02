@@ -9,8 +9,10 @@ before provider calls or claim materialization.
 This is a design and feasibility result. It contains no diagnosis output, no
 automatic support label, no human judgment and no main or sealed outcome.
 
-The implementation sequence, task IDs and transition gates are maintained in
-[`claim-support-delivery-roadmap.md`](claim-support-delivery-roadmap.md).
+Repository documentation intentionally records the scientific contract rather
+than internal scheduling or personnel assignments. Materialization requires a
+separate prospective readiness closeout after every blocker in the tracked
+feasibility receipt is cleared.
 
 ## Scientific purpose
 
