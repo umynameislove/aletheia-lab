@@ -248,6 +248,21 @@ def test_evaluation_profile_includes_the_production_gateway_contract() -> None:
     assert "tests/unit/test_openai_gateway_adapter.py" in command
 
 
+def test_evaluation_profile_includes_claim_corpus_and_human_validation_contracts() -> None:
+    completed = subprocess.run(
+        [sys.executable, str(_PROFILE_SCRIPT), "evaluation", "--show-command"],
+        cwd=_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    command = json.loads(completed.stdout)
+    assert "tests/unit/test_claim_support_corpus_protocol.py" in command
+    assert "tests/property/test_claim_support_corpus_protocol_properties.py" in command
+    assert "tests/integration/test_claim_support_corpus_protocol_local.py" in command
+    assert "tests/unit/test_claim_support_instrument_validation.py" in command
+
+
 def test_full_profile_preserves_coverage_floor() -> None:
     completed = subprocess.run(
         [sys.executable, str(_PROFILE_SCRIPT), "full", "--show-command"],

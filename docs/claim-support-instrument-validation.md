@@ -4,6 +4,9 @@ This document freezes the preparation and analysis contract for validating the
 automatic atomic-claim support instrument against independent human judgment.
 It prepares a study; it does not report human agreement or scientific validity.
 
+The complete PR1–PR4 and AH-02A/B–AH-03 delivery order is tracked in
+[`claim-support-delivery-roadmap.md`](claim-support-delivery-roadmap.md).
+
 ## Registered sample
 
 The source is a development-only claim pool produced after the automatic system
@@ -22,6 +25,14 @@ The four ordinal labels, from least to most supported, are:
 
 Claims cannot be synthesized or duplicated to fill a quota. If the development
 pool cannot supply the frozen target and caps, preparation fails closed.
+
+The prospective source population is governed separately by
+[`claim-support-corpus-protocol.md`](claim-support-corpus-protocol.md). That
+contract freezes 15 primary and six reserve families, the eight comparable
+diagnosis variants, schema-native atomic extraction, automatic-label semantics
+and non-adaptive contingency rules before provider calls. Its current receipt
+correctly blocks materialization because only five of the required family
+settings and neither required implementation manifest are present.
 
 ## Blinding and adjudication
 
@@ -54,6 +65,16 @@ valid bootstrap census blocks the report.
 
 ## Claim boundary and next gate
 
+First verify the outcome-blind corpus source contract:
+
+```bash
+PYTHONPATH=src python scripts/verify_claim_support_corpus_protocol.py verify
+```
+
+`corpus_protocol_frozen_source_expansion_required` is the correct current
+status. It is not a scientific failure: it proves that missing family diversity
+cannot be hidden by padding, adaptive execution or a changed sampling cap.
+
 Run the outcome-blind verification with:
 
 ```bash
@@ -63,7 +84,8 @@ PYTHONPATH=src python scripts/prepare_claim_support_validation.py verify
 The current valid status is
 `outcome_blind_preparation_complete_human_validation_pending`. It means the
 protocol, deterministic sampler, packet schemas and analysis gates are ready.
-It does **not** mean that agreement, macro-F1 or either error-rate gate passed.
+It does **not** mean that the corpus is materialization-ready or that agreement,
+macro-F1 or either error-rate gate passed.
 Those statements require a real development claim pool, two completed human
 packets, adjudication and a frozen validation report. Failure of any gate blocks
 confirmatory support-rate claims; thresholds cannot be changed after results.

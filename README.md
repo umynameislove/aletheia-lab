@@ -95,6 +95,10 @@ Aletheia currently provides:
 - a cross-platform create-only publication core with bounded Windows recovery,
   immutable-byte reconciliation, and blocking complexity, module-size, hash and
   architecture budgets.
+- an outcome-blind claim-corpus protocol that content-binds the development
+  source population, family-diversity requirements, comparable diagnosis
+  variants, atomic-claim boundary, automatic support semantics and
+  non-adaptive contingency rules before provider calls or claim extraction.
 
 Aletheia Lab is research software, not a production incident-response system.
 The repository includes the complete deterministic benchmark, evidence-store,
@@ -121,7 +125,13 @@ and [related work](docs/related-work.md) for the bounded novelty position. The
 [public-claim governance contract](docs/claim-evidence-governance.md) binds every
 current statement to evidence and denominators. The
 [claim-support validation protocol](docs/claim-support-instrument-validation.md)
-is outcome-blind preparation only; independent human validation is still pending.
+is outcome-blind preparation only; its
+[development corpus contract](docs/claim-support-corpus-protocol.md) currently
+blocks materialization until the missing family and implementation manifests are
+frozen. The tracked
+[delivery roadmap](docs/claim-support-delivery-roadmap.md) separates readiness,
+development-corpus materialization, private rater onboarding, 200-claim blind
+annotation and adjudication. Independent human validation is still pending.
 
 ## Installation
 
