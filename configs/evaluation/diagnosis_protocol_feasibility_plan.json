@@ -59,7 +59,7 @@
       "artifact_id": "attempt-store-writer",
       "role": "runtime",
       "relative_path": "src/aletheia_lab/evaluation/_attempt_store/writer.py",
-      "expected_sha256": "a49309f7aaeffbff93b531093ca6b55380afcd1fb4bc4c33d31048320dc93ae8"
+      "expected_sha256": "d5664a8773dc74b849f77ac8f3c2d8d7f9afb2e93e39734bf55f8e5a9260d5e5"
     },
     {
       "artifact_id": "claim-validation-protocol",
