@@ -301,16 +301,19 @@ and Windows/POSIX path representations.
 ### Windows and POSIX operation
 
 Store paths are constructed with `pathlib` and public identities never contain
-the local store root or a platform separator. Atomic create uses a temporary
-sibling followed by a create-only link, so callers must keep each store on one
-filesystem and must not share a request directory between concurrent hosts.
-Both Windows and POSIX runs treat leftover stage files as nonterminal crash
-artifacts. Directory `fsync` is attempted where the operating system exposes a
-supported directory handle; correctness never depends on it being available.
+the local store root or a platform separator. Immutable files use one shared
+temporary-sibling and create-only-link primitive. Concurrent byte-identical
+writers converge idempotently; different bytes fail closed without replacement.
+Bounded retries address transient Windows access denials. Both Windows and POSIX
+runs remove temporary stages after success or failure. Directory `fsync` is
+performed where the operating system exposes a supported directory handle;
+correctness never depends on it being available.
 
 The blocking CI configuration runs the complete suite on Python 3.11 and 3.12.
-The evaluation profile runs on both interpreters and on the blocking Windows
-job. Pip cache keys bind `pyproject.toml`. The dependency-audit workflow prints
+The evaluation profile repeats on Python 3.11, runs once on Python 3.12, and
+runs on the blocking Windows job. A dedicated Windows publication profile covers
+the shared primitive and all immutable-store consumers. Pip cache keys bind
+`pyproject.toml`. The dependency-audit workflow prints
 a canonical resolved-distribution inventory and its SHA-256 before running the
 vulnerability audit.
 
@@ -341,11 +344,14 @@ one guard mutation at a time, and requires the mapped regression test to fail:
 
 ```bash
 python scripts/run_evaluation_mutation_audit.py
+python scripts/check_maintainability.py
 ```
 
 No mutated source is written back to the repository.
 The mutation audit is also a blocking CI quality step; it includes explicit
 mutations for the adapter deadline and in-flight cancellation guards.
+The maintainability audit separately blocks new complexity, oversized modules,
+direct hash duplication, and filesystem-publication ownership drift.
 
 ## What this infrastructure does not decide
 

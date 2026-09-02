@@ -69,7 +69,9 @@ def test_python_312_still_runs_the_complete_unfiltered_suite() -> None:
     compatibility = [
         step
         for step in steps
-        if isinstance(step, dict) and step.get("if") == "matrix.python-version == '3.12'"
+        if isinstance(step, dict)
+        and step.get("if") == "matrix.python-version == '3.12'"
+        and str(step.get("run", "")).startswith("pytest ")
     ]
     assert len(compatibility) == 1
     run = str(compatibility[0].get("run", ""))
@@ -94,7 +96,7 @@ def test_windows_project_boundary_is_a_blocking_ci_gate() -> None:
     assert boundary_steps[0].get("continue-on-error") is None
 
 
-def test_evaluation_reproducibility_runs_on_both_supported_interpreters() -> None:
+def test_evaluation_reproducibility_and_compatibility_are_distinct_gates() -> None:
     jobs = _workflow().get("jobs")
     assert isinstance(jobs, dict)
     test_job = jobs.get("test")
@@ -108,8 +110,18 @@ def test_evaluation_reproducibility_runs_on_both_supported_interpreters() -> Non
         and "run_test_profile.py evaluation --repeat 3" in str(step.get("run", ""))
     ]
     assert len(evaluation_steps) == 1
-    assert evaluation_steps[0].get("if") is None
+    assert evaluation_steps[0].get("if") == "matrix.python-version == '3.11'"
     assert evaluation_steps[0].get("continue-on-error") is None
+    compatibility_steps = [
+        step
+        for step in steps
+        if isinstance(step, dict)
+        and "run_test_profile.py evaluation" in str(step.get("run", ""))
+        and "--repeat" not in str(step.get("run", ""))
+    ]
+    assert len(compatibility_steps) == 1
+    assert compatibility_steps[0].get("if") == "matrix.python-version == '3.12'"
+    assert compatibility_steps[0].get("continue-on-error") is None
 
 
 def test_evaluation_mutation_audit_is_a_blocking_quality_gate() -> None:
@@ -129,6 +141,23 @@ def test_evaluation_mutation_audit_is_a_blocking_quality_gate() -> None:
     assert mutation_steps[0].get("continue-on-error") is None
 
 
+def test_maintainability_audit_is_a_blocking_quality_gate() -> None:
+    jobs = _workflow().get("jobs")
+    assert isinstance(jobs, dict)
+    quality_job = jobs.get("quality")
+    assert isinstance(quality_job, dict)
+    steps = quality_job.get("steps")
+    assert isinstance(steps, list)
+    matches = [
+        step
+        for step in steps
+        if isinstance(step, dict)
+        and str(step.get("run", "")) == "python scripts/check_maintainability.py"
+    ]
+    assert len(matches) == 1
+    assert matches[0].get("continue-on-error") is None
+
+
 def test_windows_evaluation_profile_is_a_blocking_gate() -> None:
     jobs = _workflow().get("jobs")
     assert isinstance(jobs, dict)
@@ -144,6 +173,23 @@ def test_windows_evaluation_profile_is_a_blocking_gate() -> None:
     ]
     assert len(evaluation_steps) == 1
     assert evaluation_steps[0].get("continue-on-error") is None
+
+
+def test_windows_publication_profile_is_a_blocking_gate() -> None:
+    jobs = _workflow().get("jobs")
+    assert isinstance(jobs, dict)
+    windows_job = jobs.get("windows-project")
+    assert isinstance(windows_job, dict)
+    steps = windows_job.get("steps")
+    assert isinstance(steps, list)
+    matches = [
+        step
+        for step in steps
+        if isinstance(step, dict)
+        and "run_test_profile.py windows-publication" in str(step.get("run", ""))
+    ]
+    assert len(matches) == 1
+    assert matches[0].get("continue-on-error") is None
 
 
 def test_pip_caches_bind_the_dependency_input() -> None:
@@ -168,7 +214,15 @@ def test_pip_caches_bind_the_dependency_input() -> None:
 
 
 def test_named_profiles_resolve_without_collecting_tests() -> None:
-    for profile in ("fast", "project", "research", "evaluation", "full"):
+    for profile in (
+        "contract",
+        "fast",
+        "project",
+        "research",
+        "evaluation",
+        "windows-publication",
+        "full",
+    ):
         completed = subprocess.run(
             [sys.executable, str(_PROFILE_SCRIPT), profile, "--show-command"],
             cwd=_ROOT,
@@ -204,3 +258,18 @@ def test_full_profile_preserves_coverage_floor() -> None:
     )
     assert "--cov=aletheia_lab" in completed.stdout
     assert "--cov-fail-under=88" in completed.stdout
+
+
+def test_publication_profile_resolves_the_shared_core_and_all_immutable_stores() -> None:
+    completed = subprocess.run(
+        [sys.executable, str(_PROFILE_SCRIPT), "windows-publication", "--show-command"],
+        cwd=_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    command = json.loads(completed.stdout)
+    assert "tests/unit/test_filesystem_publication.py" in command
+    assert "tests/unit/test_evaluation_attempt_store.py" in command
+    assert "tests/unit/test_diagnosis_development_runner.py" in command
+    assert "tests/unit/test_project_persistence.py" in command

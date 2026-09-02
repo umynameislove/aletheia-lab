@@ -92,6 +92,9 @@ Aletheia currently provides:
   configurations over sufficient, conflicting and insufficient synthetic
   evidence; its independent audit validates the complete 27-record matrix and
   frozen fairness constraints without provider calls or protected outcomes.
+- a cross-platform create-only publication core with bounded Windows recovery,
+  immutable-byte reconciliation, and blocking complexity, module-size, hash and
+  architecture budgets.
 
 Aletheia Lab is research software, not a production incident-response system.
 The repository includes the complete deterministic benchmark, evidence-store,

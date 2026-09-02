@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import re
 import shutil
 import tempfile
@@ -23,7 +22,14 @@ from aletheia_lab.diagnosis._development.contracts import (
     DevelopmentVariantResponse,
 )
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
-from aletheia_lab.filesystem import publish_staged_directory
+from aletheia_lab.filesystem import (
+    ImmutablePublicationConflictError,
+    ImmutablePublicationIntegrityError,
+    fsync_directory_tree,
+    publish_immutable_file,
+    publish_staged_directory,
+    write_new_file,
+)
 from aletheia_lab.project.identity import SHA256_PATTERN, canonical_project_json, content_sha256
 
 _OBJECT_BUCKET = re.compile(r"^[0-9a-f]{2}$")
@@ -89,9 +95,9 @@ class DevelopmentArtifactStore:
             ):
                 target = object_root / digest[:2] / digest[2:]
                 target.parent.mkdir(parents=True, exist_ok=True)
-                _write_new_file(target, payload)
-            _write_new_file(stage / "terminal.json", _canonical_model_bytes(terminal))
-            _fsync_tree(stage)
+                write_new_file(target, payload)
+            write_new_file(stage / "terminal.json", _canonical_model_bytes(terminal))
+            fsync_directory_tree(stage)
             try:
                 publish_staged_directory(stage, destination)
             except FileExistsError as exc:
@@ -136,10 +142,15 @@ class DevelopmentArtifactStore:
                 "failure_sha256": digest,
             }
         )
-        _atomic_create(
-            self.failures_root / f"{receipt.failure_id}.json",
-            _canonical_model_bytes(receipt),
-        )
+        try:
+            publish_immutable_file(
+                self.failures_root / f"{receipt.failure_id}.json",
+                _canonical_model_bytes(receipt),
+            )
+        except ImmutablePublicationConflictError as exc:
+            raise DevelopmentPilotError("immutable development receipt conflict") from exc
+        except ImmutablePublicationIntegrityError as exc:
+            raise DevelopmentPilotError(str(exc)) from exc
         return receipt
 
     def load_terminal(self, run_id: str) -> DevelopmentTerminalReceipt:
@@ -267,51 +278,6 @@ def _store_model_object(objects: dict[str, bytes], model: BaseModel) -> str:
         raise DevelopmentPilotError("development object hash collision")
     objects[digest] = payload
     return digest
-
-
-def _write_new_file(path: Path, payload: bytes) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("xb") as handle:
-        handle.write(payload)
-        handle.flush()
-        os.fsync(handle.fileno())
-
-
-def _atomic_create(path: Path, payload: bytes) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, raw_stage = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
-    stage = Path(raw_stage)
-    try:
-        with os.fdopen(fd, "wb") as handle:
-            handle.write(payload)
-            handle.flush()
-            os.fsync(handle.fileno())
-        try:
-            os.link(stage, path)
-        except FileExistsError as exc:
-            if _read_regular_file(path) != payload:
-                raise DevelopmentPilotError("immutable development receipt conflict") from exc
-    finally:
-        stage.unlink(missing_ok=True)
-
-
-def _fsync_tree(root: Path) -> None:
-    # Every payload is already flushed and fsynced by ``_write_new_file``.
-    # Reopening those files read-only and calling ``fsync`` again is redundant
-    # and is not portable to the Windows CRT, where committing a read-only
-    # descriptor may fail.  Directory fsync is retained on platforms that
-    # expose the required flag so namespace publication remains durable.
-    if hasattr(os, "O_DIRECTORY"):
-        for directory in sorted(
-            (path for path in root.rglob("*") if path.is_dir()),
-            key=lambda item: len(item.parts),
-            reverse=True,
-        ) + [root]:
-            fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
-            try:
-                os.fsync(fd)
-            finally:
-                os.close(fd)
 
 
 def _read_regular_file(path: Path) -> bytes:

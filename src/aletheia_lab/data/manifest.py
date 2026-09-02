@@ -19,9 +19,7 @@ escape an output root through an absolute, traversing or symlinked path.
 from __future__ import annotations
 
 import math
-import os
 import re
-import tempfile
 import unicodedata
 from collections.abc import Sequence
 from pathlib import Path, PurePosixPath, PureWindowsPath
@@ -34,6 +32,10 @@ from aletheia_lab.benchmark.manifest import Split
 from aletheia_lab.benchmark.p2.contracts import FamilyCensus
 from aletheia_lab.data.download import sha256_file
 from aletheia_lab.evidence.schema import canonical_json, sha256_text
+from aletheia_lab.filesystem import (
+    ImmutablePublicationConflictError,
+    publish_immutable_file,
+)
 
 # --------------------------------------------------------------------------- #
 # Versioned domains and frozen project policy
@@ -664,28 +666,10 @@ def write_manifest(
 
     payload = manifest_artifact_bytes(manifest)
     _, destination = _safe_destination(output_root, relative_path, create_parents=True)
-    if destination.exists():
-        if destination.is_file() and destination.read_bytes() == payload:
-            return destination
-        raise FileExistsError("refusing to overwrite a non-identical immutable manifest")
-
-    fd, stage_name = tempfile.mkstemp(
-        prefix=f".{destination.name}.", suffix=".stage", dir=destination.parent
-    )
-    stage = Path(stage_name)
     try:
-        with os.fdopen(fd, "wb") as handle:
-            handle.write(payload)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.link(os.fspath(stage), os.fspath(destination), follow_symlinks=False)
-    except BaseException:
-        stage.unlink(missing_ok=True)
-        raise
-    finally:
-        stage.unlink(missing_ok=True)
-    if destination.read_bytes() != payload:
-        raise OSError("persisted manifest bytes differ from the validated payload")
+        publish_immutable_file(destination, payload)
+    except ImmutablePublicationConflictError as exc:
+        raise FileExistsError("refusing to overwrite a non-identical immutable manifest") from exc
     return destination
 
 
@@ -727,34 +711,20 @@ def write_manifest_set(
             raise FileExistsError("refusing to overwrite a non-identical immutable manifest")
         missing.append((payload, destination))
 
-    stages: list[Path] = []
     created: list[Path] = []
     try:
         for payload, destination in missing:
-            fd, stage_name = tempfile.mkstemp(
-                prefix=f".{destination.name}.",
-                suffix=".stage",
-                dir=destination.parent,
-            )
-            stage = Path(stage_name)
-            stages.append(stage)
-            with os.fdopen(fd, "wb") as handle:
-                handle.write(payload)
-                handle.flush()
-                os.fsync(handle.fileno())
-
-        for (payload, destination), stage in zip(missing, stages, strict=True):
-            os.link(os.fspath(stage), os.fspath(destination), follow_symlinks=False)
-            created.append(destination)
-            if destination.read_bytes() != payload:
-                raise OSError("persisted manifest bytes differ from the validated payload")
+            disposition = publish_immutable_file(destination, payload)
+            if disposition == "created":
+                created.append(destination)
+    except ImmutablePublicationConflictError as exc:
+        for destination in reversed(created):
+            destination.unlink(missing_ok=True)
+        raise FileExistsError("refusing to overwrite a non-identical immutable manifest") from exc
     except BaseException:
         for destination in reversed(created):
             destination.unlink(missing_ok=True)
         raise
-    finally:
-        for stage in stages:
-            stage.unlink(missing_ok=True)
 
     return tuple(destination for _, destination in prepared)
 

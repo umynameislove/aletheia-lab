@@ -311,9 +311,7 @@ def test_simultaneous_writers_count_one_created_event(tmp_path: Path) -> None:
     second = ImmutableAttemptStore(tmp_path, clock=clock)
 
     with ThreadPoolExecutor(max_workers=2) as executor:
-        receipts = tuple(
-            executor.map(lambda store: store.prepare(request), (first, second))
-        )
+        receipts = tuple(executor.map(lambda store: store.prepare(request), (first, second)))
 
     assert sorted(receipt.disposition for receipt in receipts) == ["created", "idempotent"]
     assert receipts[0].event_sha256 == receipts[1].event_sha256
@@ -540,7 +538,7 @@ def test_atomic_terminal_failure_leaves_closeout_pending(
         raise OSError("synthetic atomic publication failure")
 
     monkeypatch.setattr(
-        "aletheia_lab.evaluation._attempt_store.writer.os.link",
+        "aletheia_lab.filesystem.os.link",
         fail_link,
     )
     with pytest.raises(OSError, match="synthetic"):
@@ -548,6 +546,25 @@ def test_atomic_terminal_failure_leaves_closeout_pending(
 
     assert store.current_state(result.request_identity_sha256) == "closeout_pending"
     assert not store.is_terminal(result.request_identity_sha256)
+    assert not tuple(tmp_path.rglob("*.stage"))
+
+
+def test_post_link_byte_mismatch_preserves_the_io_error_contract(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = ImmutableAttemptStore(tmp_path, clock=_Clock())
+    destination = tmp_path / "failures" / f"{'2' * 64}.json"
+
+    def publish_wrong_bytes(_stage: str, final: str, **_kwargs: object) -> None:
+        Path(final).write_bytes(b"wrong bytes\n")
+
+    monkeypatch.setattr("aletheia_lab.filesystem.os.link", publish_wrong_bytes)
+
+    with pytest.raises(AttemptStoreIntegrityError, match="differ") as error:
+        store._atomic_create(destination, b"expected bytes\n")
+
+    assert error.value.code == "io_error"
     assert not tuple(tmp_path.rglob("*.stage"))
 
 

@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import sqlite3
-import tempfile
 from collections.abc import Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -15,6 +13,11 @@ from typing import Final, Literal, TypeAlias, cast
 
 from pydantic import BaseModel
 
+from aletheia_lab.filesystem import (
+    ImmutablePublicationConflictError,
+    ImmutablePublicationIntegrityError,
+    publish_immutable_file,
+)
 from aletheia_lab.project.contracts import ProjectBundle
 from aletheia_lab.project.identity import canonical_project_sha256, content_sha256
 from aletheia_lab.project.lineage import ProjectLineageGraph
@@ -277,20 +280,10 @@ class ProjectStore:
         destination.parent.mkdir(parents=True, exist_ok=True)
         if destination.parent.is_symlink() or not destination.parent.is_dir():
             raise ProjectStoreError("content-addressed object bucket must be a real directory")
-        if destination.exists():
-            if destination.is_symlink() or destination.read_bytes() != payload:
-                raise ProjectStoreError("content-addressed object conflicts with stored bytes")
-        else:
-            fd, temporary = tempfile.mkstemp(dir=destination.parent, prefix=".object-", suffix=".part")
-            try:
-                with os.fdopen(fd, "wb") as handle:
-                    handle.write(payload)
-                    handle.flush()
-                    os.fsync(handle.fileno())
-                os.replace(temporary, destination)
-            except BaseException:
-                Path(temporary).unlink(missing_ok=True)
-                raise
+        try:
+            publish_immutable_file(destination, payload)
+        except (ImmutablePublicationConflictError, ImmutablePublicationIntegrityError) as exc:
+            raise ProjectStoreError("content-addressed object conflicts with stored bytes") from exc
         return ImmutableObject(
             sha256=digest,
             byte_size=len(payload),
@@ -334,7 +327,9 @@ class ProjectStore:
                 "canonical_sha256, object_sha256) VALUES (?, ?, ?, ?, ?, ?)",
                 (record_id, project_id, record_type, schema_version, canonical_sha, value.sha256),
             )
-        return StoredRecord(record_id, project_id, record_type, schema_version, canonical_sha, value.sha256)
+        return StoredRecord(
+            record_id, project_id, record_type, schema_version, canonical_sha, value.sha256
+        )
 
     def _index_lineage(self, graph: ProjectLineageGraph) -> None:
         existing_nodes = self._connection.execute(

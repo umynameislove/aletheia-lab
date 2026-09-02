@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
-import os
-import tempfile
 from pathlib import Path
 from typing import Literal
 
+from aletheia_lab.filesystem import (
+    ImmutablePublicationConflictError,
+    ImmutablePublicationIntegrityError,
+    publish_immutable_file,
+)
 from aletheia_lab.project.identity import content_sha256
 
 from .contracts import (
@@ -47,43 +50,11 @@ class AttemptStoreWriter:
         return digest
 
     def _atomic_create(self, destination: Path, payload: bytes) -> Literal["created", "identical"]:
-        if destination.is_symlink():
-            raise AttemptStoreIntegrityError(
-                "integrity_error", "immutable destination must not be a symlink"
-            )
-        if destination.exists():
-            if destination.is_file() and destination.read_bytes() == payload:
-                return "identical"
-            raise AttemptStoreConflictError(
-                "conflict", "refusing to overwrite non-identical immutable bytes"
-            )
-        fd, stage_name = tempfile.mkstemp(
-            dir=destination.parent,
-            prefix=f".{destination.name}.",
-            suffix=".stage",
-        )
-        stage = Path(stage_name)
         try:
-            with os.fdopen(fd, "wb") as handle:
-                handle.write(payload)
-                handle.flush()
-                os.fsync(handle.fileno())
-            try:
-                os.link(os.fspath(stage), os.fspath(destination), follow_symlinks=False)
-            except FileExistsError:
-                if (
-                    not destination.is_symlink()
-                    and destination.is_file()
-                    and destination.read_bytes() == payload
-                ):
-                    return "identical"
-                raise AttemptStoreConflictError(
-                    "conflict", "concurrent writer published different immutable bytes"
-                ) from None
-        finally:
-            stage.unlink(missing_ok=True)
-        if destination.read_bytes() != payload:
-            raise AttemptStoreIntegrityError(
-                "io_error", "persisted immutable bytes differ from staged bytes"
-            )
-        return "created"
+            return publish_immutable_file(destination, payload)
+        except ImmutablePublicationConflictError as exc:
+            raise AttemptStoreConflictError("conflict", str(exc)) from exc
+        except ImmutablePublicationIntegrityError as exc:
+            if "persisted immutable bytes differ" in str(exc):
+                raise AttemptStoreIntegrityError("io_error", str(exc)) from exc
+            raise AttemptStoreIntegrityError("integrity_error", str(exc)) from exc

@@ -1,0 +1,119 @@
+{
+  "complexity": {
+    "maximum_single_score": 42,
+    "maximum_total_violations": 83,
+    "package_violation_budgets": {
+      "benchmark": 49,
+      "context": 3,
+      "data": 1,
+      "diagnosis": 4,
+      "evaluation": 8,
+      "evidence": 6,
+      "model_gateway": 4,
+      "project": 8
+    },
+    "rule": "C901"
+  },
+  "hash_ownership": {
+    "package_direct_sha256_budgets": {
+      "baseline": 2,
+      "benchmark": 47,
+      "data": 1,
+      "diagnosis": 3,
+      "evaluation": 7,
+      "evidence": 3,
+      "project": 4
+    }
+  },
+  "module_size": {
+    "exemptions": {
+      "src/aletheia_lab/benchmark/p2/__init__.py": {
+        "maximum_lines": 1947,
+        "rationale": "Frozen P2 compatibility export surface; split only under a separately reviewed migration."
+      },
+      "src/aletheia_lab/benchmark/p2/alpha_execution.py": {
+        "maximum_lines": 806,
+        "rationale": "Frozen registered alpha execution implementation."
+      },
+      "src/aletheia_lab/benchmark/p2/confirmatory_execution.py": {
+        "maximum_lines": 845,
+        "rationale": "Frozen registered confirmatory execution implementation."
+      },
+      "src/aletheia_lab/benchmark/p2/confirmatory_v3_protocol.py": {
+        "maximum_lines": 801,
+        "rationale": "Frozen preregistered protocol implementation."
+      },
+      "src/aletheia_lab/benchmark/p2/confirmatory_v3_runtime.py": {
+        "maximum_lines": 1455,
+        "rationale": "Frozen preregistered runtime retained for reproducibility."
+      },
+      "src/aletheia_lab/benchmark/p2/contracts.py": {
+        "maximum_lines": 911,
+        "rationale": "Frozen P2 schema and cross-artifact contract collection."
+      },
+      "src/aletheia_lab/benchmark/p2/data_drift.py": {
+        "maximum_lines": 1495,
+        "rationale": "Frozen data-drift mechanism implementation."
+      },
+      "src/aletheia_lab/benchmark/p2/human_validity_review.py": {
+        "maximum_lines": 1212,
+        "rationale": "Frozen human-validity protocol and receipt implementation."
+      },
+      "src/aletheia_lab/benchmark/p2/label_controls.py": {
+        "maximum_lines": 1297,
+        "rationale": "Frozen label-control implementation."
+      },
+      "src/aletheia_lab/benchmark/p2/label_noise.py": {
+        "maximum_lines": 946,
+        "rationale": "Frozen label-noise mechanism implementation."
+      },
+      "src/aletheia_lab/benchmark/p2/p2r_closeout.py": {
+        "maximum_lines": 884,
+        "rationale": "Frozen P2R closeout verifier retained for reproducibility."
+      },
+      "src/aletheia_lab/benchmark/p2/preprocessing_controls.py": {
+        "maximum_lines": 1378,
+        "rationale": "Frozen preprocessing-control implementation."
+      },
+      "src/aletheia_lab/benchmark/p2/preprocessing_family.py": {
+        "maximum_lines": 852,
+        "rationale": "Frozen preprocessing family packaging implementation."
+      },
+      "src/aletheia_lab/benchmark/p2/preprocessing_intervention.py": {
+        "maximum_lines": 1032,
+        "rationale": "Frozen preprocessing intervention implementation."
+      },
+      "src/aletheia_lab/benchmark/p2/validation.py": {
+        "maximum_lines": 869,
+        "rationale": "Frozen P2 cross-artifact validation implementation."
+      },
+      "src/aletheia_lab/project/contracts.py": {
+        "maximum_lines": 807,
+        "rationale": "Accepted project schema compatibility surface."
+      },
+      "src/aletheia_lab/project/importer.py": {
+        "maximum_lines": 1231,
+        "rationale": "Security-sensitive project import boundary pending isolated decomposition."
+      },
+      "src/aletheia_lab/project/regression.py": {
+        "maximum_lines": 843,
+        "rationale": "Accepted project regression contract and comparison implementation."
+      }
+    },
+    "maximum_lines_without_exemption": 800
+  },
+  "publication_ownership": {
+    "allowed_atomic_create_delegates": [
+      "src/aletheia_lab/evaluation/_attempt_store/store.py",
+      "src/aletheia_lab/evaluation/_attempt_store/writer.py"
+    ],
+    "immutable_file_primitive_owner": "src/aletheia_lab/filesystem.py",
+    "required_immutable_file_consumers": [
+      "src/aletheia_lab/data/manifest.py",
+      "src/aletheia_lab/diagnosis/_development/store.py",
+      "src/aletheia_lab/evaluation/_attempt_store/writer.py",
+      "src/aletheia_lab/project/persistence.py"
+    ]
+  },
+  "schema_version": "maintainability-budget/v1"
+}
