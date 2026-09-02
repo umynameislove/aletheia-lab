@@ -1,0 +1,45 @@
+{
+  "schema_version": "claim-support-corpus-feasibility-receipt/v1",
+  "protocol_sha256": "b7381f9b4c855d87f21143f4fe7278c3c00cc15aa40e3e5b633fe1f79d6c5867",
+  "mechanism_census": [
+    {
+      "mechanism": "data_drift",
+      "declared_primary_families": 5,
+      "required_primary_families": 5,
+      "required_reserve_families": 2
+    },
+    {
+      "mechanism": "preprocessing_mismatch",
+      "declared_primary_families": 0,
+      "required_primary_families": 5,
+      "required_reserve_families": 2
+    },
+    {
+      "mechanism": "label_noise",
+      "declared_primary_families": 0,
+      "required_primary_families": 5,
+      "required_reserve_families": 2
+    }
+  ],
+  "current_declared_family_total": 5,
+  "required_primary_family_total": 15,
+  "required_reserve_family_total": 6,
+  "current_maximum_selectable_claims_per_label": 25,
+  "target_claims_per_label": 50,
+  "blocker_codes": [
+    "automatic_instrument_manifest_pending",
+    "diagnosis_output_v2_schema_pending",
+    "insufficient_development_family_census",
+    "label_noise_family_manifest_pending",
+    "preprocessing_family_manifest_pending",
+    "reserve_family_census_pending"
+  ],
+  "materialization_ready": false,
+  "development_claim_pool_materialized": false,
+  "validation_sample_materialized": false,
+  "automatic_labels_generated": false,
+  "human_annotations_collected": false,
+  "main_or_sealed_outcomes_opened": false,
+  "status": "corpus_protocol_frozen_source_expansion_required",
+  "receipt_sha256": "193405388eea03cc8f5a702aff08a9b4fb5616150565f1c5bb9272483a8b0c8f"
+}

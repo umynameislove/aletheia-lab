@@ -151,10 +151,18 @@ the main evaluation and contains no scientific outcome.
 
 The remaining order is:
 
-1. materialize and freeze the real claim census without opening diagnosis
-   outcomes;
-2. complete evaluator onboarding and independent blind instrument validation;
-3. resolve every prespecified human-validation gate;
-4. publish a separate immutable registration and main-run manifest;
-5. audit execution-path parity immediately before outcome-opening authority is
+1. clear the frozen claim-corpus family, atomic-schema and automatic-instrument
+   blockers without provider calls;
+2. freeze the complete primary and reserve request census, then materialize the
+   real development claim pool without opening main or sealed outcomes;
+3. complete evaluator onboarding and independent blind instrument validation;
+4. resolve every prespecified human-validation gate;
+5. publish a separate immutable registration and main-run manifest;
+6. audit execution-path parity immediately before outcome-opening authority is
    considered.
+
+The source and non-adaptive contingency contract is documented in
+[`claim-support-corpus-protocol.md`](claim-support-corpus-protocol.md).
+Internal scheduling and personnel assignments remain outside the repository.
+Their completion cannot replace any machine-readable readiness or scientific
+gate described here.

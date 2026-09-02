@@ -1,0 +1,185 @@
+{
+  "schema_version": "claim-support-corpus-protocol/v1",
+  "protocol_id": "claim-support-development-corpus-v1",
+  "freeze_status": "outcome_blind_protocol_freeze",
+  "frozen_before_provider_calls": true,
+  "provider_calls_executed": false,
+  "development_claim_pool_materialized": false,
+  "automatic_labels_generated": false,
+  "human_annotations_collected": false,
+  "main_or_sealed_outcomes_opened": false,
+  "parent_validation_protocol_sha256": "71c3f36c71e6d6294e6dba9b4e12db6c53148f718a17bf7f347e77cc49bae77d",
+  "bound_artifacts": [
+    {
+      "role": "validation_protocol",
+      "path": "configs/evaluation/claim_support_validation_protocol.json",
+      "content_sha256": "ab41d8c3d6d1b35336d0939928752b35266aefd4cb933fa60b10c55cefbf3dbe"
+    },
+    {
+      "role": "variant_fairness_freeze",
+      "path": "configs/evaluation/diagnosis_variant_fairness_freeze.json",
+      "content_sha256": "687021e778cb4ebfd05c6a66270fde77b1ba38d74ccab94826f6833fe2c2593b"
+    },
+    {
+      "role": "mechanism_filter",
+      "path": "configs/benchmark/provenance/p4_p5_mechanism_filter_manifest.json",
+      "content_sha256": "c3dfba15265361730bb5a3ef9cb96651592c43130ea484f1726a9e0f545c8597"
+    },
+    {
+      "role": "fault_family_inventory",
+      "path": "configs/benchmark/fault_types.yaml",
+      "content_sha256": "1073fe5e3e738da5632244a1570b43d8be5fbf120567e989f69493c7d0a80247"
+    }
+  ],
+  "source_boundary": {
+    "source_partition": "development",
+    "permitted_endpoint": "evidence_accountability",
+    "mechanism_inventory": [
+      "data_drift",
+      "preprocessing_mismatch",
+      "label_noise"
+    ],
+    "causal_diagnosis_scoring_permitted": false,
+    "admitted_causal_track_required": false,
+    "preserve_mechanism_disposition": true,
+    "synthetic_claims_forbidden": true,
+    "padded_claims_forbidden": true,
+    "main_outcomes_forbidden": true,
+    "sealed_outcomes_forbidden": true
+  },
+  "family_census": {
+    "mechanism_plans": [
+      {
+        "mechanism": "data_drift",
+        "primary_family_count": 5,
+        "reserve_family_count": 2,
+        "evidence_conditions": [
+          "full",
+          "missing_key",
+          "noisy"
+        ],
+        "family_manifest_required_before_materialization": true
+      },
+      {
+        "mechanism": "preprocessing_mismatch",
+        "primary_family_count": 5,
+        "reserve_family_count": 2,
+        "evidence_conditions": [
+          "full",
+          "missing_key",
+          "noisy"
+        ],
+        "family_manifest_required_before_materialization": true
+      },
+      {
+        "mechanism": "label_noise",
+        "primary_family_count": 5,
+        "reserve_family_count": 2,
+        "evidence_conditions": [
+          "full",
+          "missing_key",
+          "noisy"
+        ],
+        "family_manifest_required_before_materialization": true
+      }
+    ],
+    "primary_family_total": 15,
+    "reserve_family_total": 6,
+    "minimum_distinct_families_per_automatic_label": 10,
+    "minimum_eligible_outputs_per_automatic_label": 25,
+    "target_claims_per_automatic_label": 50,
+    "maximum_claims_per_family_per_label": 5,
+    "maximum_claims_per_output_per_label": 2,
+    "family_identity_bound_before_provider_call": true,
+    "complete_primary_request_census_before_provider_call": true
+  },
+  "variant_eligibility": {
+    "eligible_variants": [
+      "A1",
+      "A2",
+      "A3",
+      "B0",
+      "B1",
+      "B2",
+      "CodeGraph",
+      "FULL"
+    ],
+    "excluded_variant": "B3",
+    "exclusion_reason": "external_native_output_is_not_comparable_to_the_atomic_claim_evidence_contract",
+    "excluded_output_pooling_forbidden": true,
+    "each_eligible_variant_requires_normalized_claim_adapter": true,
+    "fairness_freeze_must_remain_unchanged": true
+  },
+  "atomic_claim_policy": {
+    "normalized_schema_ref": "diagnosis-output/2",
+    "required_schema_manifest_path": "configs/evaluation/diagnosis_output_v2_schema.json",
+    "allowed_claim_types": [
+      "cause_assertion",
+      "evidence_statement",
+      "uncertainty_statement",
+      "recommended_action",
+      "other"
+    ],
+    "extraction_source": "schema_native_atomic_claim_fields_only",
+    "punctuation_or_sentence_splitting_forbidden": true,
+    "free_text_fallback_forbidden": true,
+    "maximum_atomic_claims_per_output": 5,
+    "visible_evidence_ids_required": true,
+    "source_record_sha256_required": true
+  },
+  "automatic_label_policy": {
+    "ordered_labels": [
+      "contradicted",
+      "unsupported",
+      "partially_supported",
+      "fully_supported"
+    ],
+    "precedence": [
+      {
+        "label": "contradicted",
+        "decision_rule": "visible_evidence_conflicts_with_any_material_claim_part"
+      },
+      {
+        "label": "unsupported",
+        "decision_rule": "visible_evidence_supports_no_material_claim_part"
+      },
+      {
+        "label": "partially_supported",
+        "decision_rule": "visible_evidence_supports_some_but_not_all_material_claim_parts"
+      },
+      {
+        "label": "fully_supported",
+        "decision_rule": "visible_evidence_supports_all_material_claim_parts_without_conflict"
+      }
+    ],
+    "permitted_input_fields": [
+      "claim_text",
+      "claim_type",
+      "visible_evidence"
+    ],
+    "withheld_input_fields": [
+      "mechanism",
+      "evidence_condition",
+      "variant",
+      "hidden_ground_truth",
+      "human_judgment",
+      "main_outcome"
+    ],
+    "required_implementation_manifest_path": "configs/evaluation/claim_support_automatic_instrument_manifest.json",
+    "implementation_frozen_before_claim_materialization": true,
+    "human_judgment_may_rewrite_automatic_label": false,
+    "model_as_human_rater_forbidden": true
+  },
+  "contingency_policy": {
+    "reserve_use": "pre_execution_technical_ineligibility_only",
+    "reserve_order": "mechanism_local_registered_order",
+    "automatic_label_may_trigger_reserve": false,
+    "human_judgment_may_trigger_reserve": false,
+    "output_driven_early_stopping_forbidden": true,
+    "label_specific_expansion_forbidden": true,
+    "adaptive_family_generation_forbidden": true,
+    "quota_or_threshold_change_after_output_forbidden": true,
+    "insufficient_completed_stratum_action": "block_without_padding_or_replacement"
+  },
+  "protocol_sha256": "b7381f9b4c855d87f21143f4fe7278c3c00cc15aa40e3e5b633fe1f79d6c5867"
+}
