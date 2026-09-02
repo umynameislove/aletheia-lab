@@ -55,5 +55,6 @@ class AttemptStoreWriter:
         except ImmutablePublicationConflictError as exc:
             raise AttemptStoreConflictError("conflict", str(exc)) from exc
         except ImmutablePublicationIntegrityError as exc:
-            code = "io_error" if "persisted immutable bytes differ" in str(exc) else "integrity_error"
-            raise AttemptStoreIntegrityError(code, str(exc)) from exc
+            if "persisted immutable bytes differ" in str(exc):
+                raise AttemptStoreIntegrityError("io_error", str(exc)) from exc
+            raise AttemptStoreIntegrityError("integrity_error", str(exc)) from exc
