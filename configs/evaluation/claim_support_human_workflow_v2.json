@@ -1,0 +1,30 @@
+{
+  "schema_version": "claim-support-human-workflow/v1",
+  "workflow_id": "claim-support-independent-human-workflow-v2",
+  "validation_protocol_path": "configs/evaluation/claim_support_validation_protocol.json",
+  "validation_protocol_sha256": "71c3f36c71e6d6294e6dba9b4e12db6c53148f718a17bf7f347e77cc49bae77d",
+  "rater_guide_path": "docs/claim-support-rater-guide-v2.md",
+  "rater_guide_sha256": "6c171ded1f202560adf475878294619b149272fe61146ba22e407a7d88de0ac6",
+  "onboarding_fixture_path": "configs/evaluation/claim_support_onboarding_fixture_v2.json",
+  "onboarding_fixture_sha256": "c31285ed8822ec41f5f56371541892156cb2423af52fbf2898a0d424a0c37e3e",
+  "onboarding_case_count": 20,
+  "onboarding_quota_per_label": 5,
+  "onboarding_minimum_macro_f1": 0.8,
+  "onboarding_maximum_critical_false_support_count": 0,
+  "main_claim_count": 200,
+  "rater_slots": [
+    "rater_1",
+    "rater_2"
+  ],
+  "required_attestations": [
+    "completed_by_human",
+    "worked_independently",
+    "model_assistance_used_false",
+    "rubric_read_before_rating"
+  ],
+  "evaluator_mapping_withheld_until_both_packets_locked": true,
+  "onboarding_excluded_from_scientific_denominators": true,
+  "main_or_sealed_outcomes_forbidden": true,
+  "human_annotations_collected": false,
+  "workflow_sha256": "f65434be6ae464578958f571a560ffb91025f03503c51d06047f11c949795401"
+}

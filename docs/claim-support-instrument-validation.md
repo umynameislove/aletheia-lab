@@ -95,11 +95,21 @@ Those statements require a real development claim pool, two completed human
 packets, adjudication and a frozen validation report. Failure of any gate blocks
 confirmatory support-rate claims; thresholds cannot be changed after results.
 
-Verify the operational human boundary without creating an annotation:
+The original onboarding workflow remains immutable historical qualification
+evidence. Its rubric left the precedence between material conflict and partial
+support ambiguous in three synthetic controls. It is retained and verifiable,
+but no new rater qualification uses it. Version 2 clarifies that direct conflict
+with any material claim part takes precedence over partial support and uses a
+fresh 20-case fixture so feedback from the earlier exercise cannot leak into a
+new qualification attempt.
+
+Verify the active version 2 human boundary without creating an annotation:
 
 ```bash
-PYTHONPATH=src python scripts/claim_support_human_workflow.py verify
-PYTHONPATH=src python scripts/claim_support_human_workflow.py dry-run
+PYTHONPATH=src python scripts/claim_support_human_workflow.py verify \
+  --workflow configs/evaluation/claim_support_human_workflow_v2.json
+PYTHONPATH=src python scripts/claim_support_human_workflow.py dry-run \
+  --workflow configs/evaluation/claim_support_human_workflow_v2.json
 ```
 
 The dry-run prepares the balanced 20-case synthetic onboarding material in
@@ -110,17 +120,33 @@ combined when sent to raters:
 
 ```bash
 PYTHONPATH=src python scripts/claim_support_human_workflow.py \
-  prepare-onboarding --output-dir /private/path/claim-support-onboarding
+  prepare-onboarding \
+  --workflow configs/evaluation/claim_support_human_workflow_v2.json \
+  --output-dir /private/path/claim-support-onboarding-v2
 ```
 
-After a rater fills only the submission template, validate and lock it against
-the unchanged blind packet. The output must also stay outside the repository:
+After a rater fills only the submission template, run the outcome-blind
+submission precheck. It validates packet binding, exact coverage, order,
+citations, rationales and attestations without opening the answer key or writing
+an artifact:
+
+```bash
+PYTHONPATH=src python scripts/claim_support_human_workflow.py \
+  validate-submission \
+  --workflow configs/evaluation/claim_support_human_workflow_v2.json \
+  --packet /private/path/claim-support-onboarding-v2/rater-1/blind-packet.json \
+  --submission /private/path/rater-1-completed-submission.json
+```
+
+The coordinator then locks the unchanged submission. The output must also stay
+outside the repository:
 
 ```bash
 PYTHONPATH=src python scripts/claim_support_human_workflow.py lock-submission \
-  --packet /private/path/rater-1/blind-packet.json \
-  --submission /private/path/rater-1/completed-submission.json \
-  --output /private/path/locked/rater-1-completed.json
+  --workflow configs/evaluation/claim_support_human_workflow_v2.json \
+  --packet /private/path/claim-support-onboarding-v2/rater-1/blind-packet.json \
+  --submission /private/path/rater-1-completed-submission.json \
+  --output /private/path/locked-v2/rater-1-completed.json
 ```
 
 Incomplete coverage, reordered IDs, a wrong rater slot, a foreign evidence ID,
@@ -131,3 +157,11 @@ until both rater packets are locked.
 Onboarding results are qualification evidence only and are excluded from every
 scientific denominator. Passing onboarding does not materialize the 200-claim
 sample, open the evaluator mapping or authorize main evaluation.
+
+The retired version 1 boundary remains reproducible with an explicit workflow
+path:
+
+```bash
+PYTHONPATH=src python scripts/claim_support_human_workflow.py verify \
+  --workflow configs/evaluation/claim_support_human_workflow.json
+```

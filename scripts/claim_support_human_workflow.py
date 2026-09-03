@@ -31,7 +31,7 @@ from aletheia_lab.filesystem import (
     write_new_file,
 )
 
-DEFAULT_WORKFLOW = Path("configs/evaluation/claim_support_human_workflow.json")
+DEFAULT_WORKFLOW = Path("configs/evaluation/claim_support_human_workflow_v2.json")
 
 
 def _json_bytes(payload: object) -> bytes:
@@ -162,11 +162,40 @@ def _lock(
     }
 
 
+def _validate_submission(
+    root: Path,
+    workflow_path: Path,
+    packet_path: Path,
+    submission_path: Path,
+) -> dict[str, object]:
+    """Validate one submission without opening the answer key or writing an artifact."""
+
+    workflow = load_human_workflow(root, workflow_path)
+    packet = _load_packet(_resolve(root, packet_path))
+    submission = load_rater_submission(_resolve(root, submission_path))
+    completed = lock_completed_packet(packet, submission, workflow)
+    return {
+        "status": "human_submission_precheck_passed_no_artifact_written",
+        "phase": completed.phase,
+        "rater_slot": completed.rater_slot,
+        "claim_count": completed.claim_count,
+        "candidate_completed_packet_sha256": completed.completed_packet_sha256,
+        "answer_key_opened": False,
+        "artifacts_written": False,
+    }
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "command",
-        choices=("verify", "dry-run", "prepare-onboarding", "lock-submission"),
+        choices=(
+            "verify",
+            "dry-run",
+            "prepare-onboarding",
+            "validate-submission",
+            "lock-submission",
+        ),
     )
     parser.add_argument("--root", type=Path, default=Path("."))
     parser.add_argument("--workflow", type=Path, default=DEFAULT_WORKFLOW)
@@ -190,6 +219,15 @@ def main() -> int:
         if args.output_dir is None:
             parser.error("prepare-onboarding requires --output-dir")
         result = _prepare_onboarding(root, args.workflow, args.output_dir)
+    elif args.command == "validate-submission":
+        if args.packet is None or args.submission is None:
+            parser.error("validate-submission requires --packet and --submission")
+        result = _validate_submission(
+            root,
+            args.workflow,
+            args.packet,
+            args.submission,
+        )
     else:
         if args.packet is None or args.submission is None or args.output is None:
             parser.error("lock-submission requires --packet, --submission, and --output")
