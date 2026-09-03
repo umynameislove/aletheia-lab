@@ -72,7 +72,7 @@ class RepositoryExecutionState(_StrictFrozenModel):
 
     branch: str
     head_commit: str = Field(pattern=r"^[0-9a-f]{40}$")
-    origin_main_commit: str = Field(pattern=r"^[0-9a-f]{40}$")
+    origin_main_commit: Annotated[str, Field(pattern=r"^[0-9a-f]{40}$")] | None
     clean: bool
 
     @property
@@ -80,6 +80,7 @@ class RepositoryExecutionState(_StrictFrozenModel):
         return (
             self.branch == "main"
             and self.clean
+            and self.origin_main_commit is not None
             and self.head_commit == self.origin_main_commit
         )
 
@@ -355,11 +356,24 @@ def inspect_repository_state(root: Path) -> RepositoryExecutionState:
         )
         return completed.stdout.strip()
 
+    def optional_git(*arguments: str) -> str | None:
+        completed = subprocess.run(
+            ("git", *arguments),
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if completed.returncode != 0:
+            return None
+        value = completed.stdout.strip()
+        return value or None
+
     try:
         return RepositoryExecutionState(
             branch=git("branch", "--show-current"),
             head_commit=git("rev-parse", "HEAD"),
-            origin_main_commit=git("rev-parse", "origin/main"),
+            origin_main_commit=optional_git("rev-parse", "--verify", "origin/main"),
             clean=not bool(git("status", "--porcelain")),
         )
     except (OSError, subprocess.CalledProcessError, ValidationError) as exc:

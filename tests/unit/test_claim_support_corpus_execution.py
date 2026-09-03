@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import subprocess
 from collections import Counter
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from aletheia_lab.evaluation.claim_corpus_execution import (
     build_execution_plan,
     build_execution_preflight,
     canonical_json_bytes,
+    inspect_repository_state,
     plan_resume_actions,
     rehearse_execution,
 )
@@ -85,6 +87,51 @@ def test_preflight_adds_environment_and_repository_blockers() -> None:
     assert "credential_missing" in receipt.live_blockers
     assert "repository_not_clean_synchronized_main" in receipt.live_blockers
     assert not receipt.clean_synchronized_main
+
+
+def test_missing_origin_main_is_reported_as_a_blocker_without_losing_preflight() -> None:
+    receipt = build_execution_preflight(
+        ROOT,
+        repository_state=RepositoryExecutionState(
+            branch="",
+            head_commit="1" * 40,
+            origin_main_commit=None,
+            clean=True,
+        ),
+        credential_present=True,
+    )
+
+    assert receipt.credential_present
+    assert "repository_not_clean_synchronized_main" in receipt.live_blockers
+    assert not receipt.clean_synchronized_main
+    assert not receipt.provider_calls_executed
+
+
+def test_repository_inspection_tolerates_checkout_without_origin_main(
+    tmp_path: Path,
+) -> None:
+    subprocess.run(("git", "init", "--quiet"), cwd=tmp_path, check=True)
+    subprocess.run(
+        (
+            "git",
+            "-c",
+            "user.name=Aletheia Test",
+            "-c",
+            "user.email=test@example.invalid",
+            "commit",
+            "--allow-empty",
+            "--quiet",
+            "--message=fixture",
+        ),
+        cwd=tmp_path,
+        check=True,
+    )
+
+    state = inspect_repository_state(tmp_path)
+
+    assert state.origin_main_commit is None
+    assert state.clean
+    assert not state.synchronized_main
 
 
 def test_resume_skips_terminal_requests_and_rejects_partial_attempts() -> None:
