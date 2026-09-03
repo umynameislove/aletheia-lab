@@ -133,13 +133,44 @@ skip and fail-closed treatment of a partial request. It does not construct a
 diagnosis input, call a provider, parse an output or consume the one registered
 execution.
 
-The visible-evidence and automatic-relation implementations are now complete
-and bound prospectively. The live gate remains closed because the 45 real
-observed evidence contexts have not yet been captured and the fairness freeze
-still records `execution_authorized=false`. A candidate evidence census can be
-supplied to preflight with `--evidence-census`; it clears only the evidence
-blocker after exact reconciliation with the frozen request census. Exact token
-and cost calculation, explicit authorization and a clean synchronized `main`
-remain mandatory before an external send. Synthetic evidence, intervention
-labels, arbitrary relation metadata and post-output patches cannot clear the
-gate.
+The visible-evidence and automatic-relation implementations are complete and
+bound prospectively. The measured census now contains exactly 45 contexts: 15
+primary families under `full`, `missing_key` and `noisy` conditions. Every
+context is rebuilt from the registered Telco development partition and fitted
+baseline, is bound to an immutable source-projection SHA-256, remains below 32
+items and 12,000 canonical UTF-8 bytes, and excludes evaluator-side family,
+mechanism, condition and outcome fields from its model-visible payload.
+
+Verify the independently reconstructable census and accounting receipt with:
+
+```bash
+PYTHONPATH=src python scripts/claim_support_observed_evidence.py verify
+```
+
+The tracked receipt records 45 contexts, 15 source projections, 315
+model-backed diagnosis requests and 296,071 input tokens. This token count is
+exact for the pinned `tiktoken==0.14.0`, `o200k_base` and two-message local chat
+serialization contract. It is not claimed to be the provider-billed token
+count, which is unavailable until a provider call occurs. At the frozen rates,
+the measured diagnosis-input estimate is USD 0.592142. The USD 53.944142
+one-attempt total is a deliberately conservative safety ceiling that also
+assumes maximum diagnosis and per-claim relation outputs; it is not expected
+spend. The receipt pins the USD 2.00 input and USD 8.00 output rates observed
+for GPT-4.1 on 2026-09-03 from the
+[official model page](https://developers.openai.com/api/docs/models/gpt-4.1),
+so a later price change cannot silently rewrite this estimate.
+
+Supply both immutable artifacts to execution preflight:
+
+```bash
+PYTHONPATH=src python scripts/claim_support_corpus_execution.py preflight \
+  --evidence-census configs/evaluation/claim_support_observed_evidence_census.json \
+  --evidence-receipt configs/evaluation/claim_support_observed_evidence_receipt.json
+```
+
+Exact reconciliation removes `observed_evidence_census_pending` and exposes the
+frozen-input count and cost ceiling. It does not authorize an external send.
+The fairness freeze still records `execution_authorized=false`; explicit
+authorization and a clean synchronized `main` remain mandatory. Synthetic
+fixtures, intervention labels, arbitrary relation metadata and post-output
+patches cannot clear the gate.
