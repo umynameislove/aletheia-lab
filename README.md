@@ -135,6 +135,12 @@ hash-bound workflow provide synthetic onboarding, private packet delivery and
 fail-closed completed-packet validation for two independent human raters.
 No provider output or real claim has been materialized. Development execution,
 corpus freezing and independent human validation remain separate gated stages.
+The development execution preflight now proves the 360-request schedule as 315
+model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
+replay without provider access. The live gate remains closed until real visible
+evidence, automatic relation assignment and explicit execution authorization are
+bound prospectively; see the materialization-readiness document for the exact
+blockers and verification commands.
 
 ## Installation
 

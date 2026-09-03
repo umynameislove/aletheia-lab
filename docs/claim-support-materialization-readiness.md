@@ -85,3 +85,32 @@ receipt form a separate forward-linked identity chain.
 Readiness is not scientific admission and is not permission to run the main
 evaluation. Development provider execution, real claim materialization, human
 validation and the main-run manifest remain separate gates.
+
+## Development execution preflight
+
+The next boundary is inspected without a provider call:
+
+```bash
+PYTHONPATH=src python scripts/claim_support_corpus_execution.py preflight
+PYTHONPATH=src python scripts/claim_support_corpus_execution.py rehearse
+```
+
+The canonical primary schedule contains 360 requests, but only 315 are
+model-backed. The 45 `B0` requests are deterministic local executions. The
+frozen two-attempt ceiling therefore permits at most 315 provider calls on a
+one-attempt pass and 630 only if every model-backed request consumes its retry.
+No reserve request is scheduled.
+
+The offline rehearsal proves the complete census, route split, terminal replay
+skip and fail-closed treatment of a partial request. It does not construct a
+diagnosis input, call a provider, parse an output or consume the one registered
+execution.
+
+The live gate currently remains closed for three substantive reasons: an
+executable visible-evidence boundary has not been implemented, the automatic
+relation instrument has no pre-outcome relation-assignment implementation, and
+the fairness freeze still records `execution_authorized=false`. Exact input
+tokens and cost also cannot be calculated before the real visible-evidence
+payloads exist. These findings block an external send; they must not be bypassed
+with synthetic evidence, intervention labels, arbitrary relation metadata or a
+post-output patch.
