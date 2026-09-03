@@ -1,0 +1,150 @@
+{
+  "schema_version": "claim-support-onboarding-fixture/v1",
+  "fixture_id": "claim-support-synthetic-onboarding-v1",
+  "purpose": "rater_training_and_qualification_only",
+  "synthetic_only": true,
+  "eligible_for_scientific_analysis": false,
+  "cases": [
+    {
+      "case_id": "onboarding-case-01",
+      "claim_text": "API latency increased by 40 percent during the incident.",
+      "visible_evidence": [{"evidence_id": "training-evidence-01", "artifact_ref": "synthetic/onboarding/latency.json", "excerpt": "The incident window p95 latency was 12 percent lower than the preceding baseline."}],
+      "reference_label": "contradicted",
+      "teaching_note": "The measured direction conflicts with the material increase claim."
+    },
+    {
+      "case_id": "onboarding-case-02",
+      "claim_text": "Feature scaling was disabled in the failing preprocessing run.",
+      "visible_evidence": [{"evidence_id": "training-evidence-02", "artifact_ref": "synthetic/onboarding/preprocessing.json", "excerpt": "Run configuration: standard_scaler.enabled=true; fitted columns=18."}],
+      "reference_label": "contradicted",
+      "teaching_note": "The configuration explicitly shows that scaling was enabled."
+    },
+    {
+      "case_id": "onboarding-case-03",
+      "claim_text": "Duplicate rows were introduced into the evaluation dataset.",
+      "visible_evidence": [{"evidence_id": "training-evidence-03", "artifact_ref": "synthetic/onboarding/dataset-audit.json", "excerpt": "Row count=4,000; unique row hashes=4,000; duplicate count=0."}],
+      "reference_label": "contradicted",
+      "teaching_note": "The complete row-hash audit directly rules out duplicates."
+    },
+    {
+      "case_id": "onboarding-case-04",
+      "claim_text": "A memory leak exhausted the worker and caused the outage.",
+      "visible_evidence": [{"evidence_id": "training-evidence-04", "artifact_ref": "synthetic/onboarding/resources.json", "excerpt": "Resident memory stayed between 41 and 43 percent; the terminal event was disk quota exceeded."}],
+      "reference_label": "contradicted",
+      "teaching_note": "Stable memory and a different terminal resource failure conflict with the claimed cause."
+    },
+    {
+      "case_id": "onboarding-case-05",
+      "claim_text": "A schema change caused the test failure.",
+      "visible_evidence": [{"evidence_id": "training-evidence-05", "artifact_ref": "synthetic/onboarding/test-run.json", "excerpt": "Input and expected schema hashes are identical; the run terminated on a network connection reset."}],
+      "reference_label": "contradicted",
+      "teaching_note": "Identical schema identities rule out the asserted schema change."
+    },
+    {
+      "case_id": "onboarding-case-06",
+      "claim_text": "Database saturation caused the elevated request error rate.",
+      "visible_evidence": [{"evidence_id": "training-evidence-06", "artifact_ref": "synthetic/onboarding/requests.json", "excerpt": "HTTP 5xx responses increased from 0.2 to 4.1 percent between 10:10 and 10:20."}],
+      "reference_label": "unsupported",
+      "teaching_note": "The excerpt establishes errors but contains no database measurement or causal evidence."
+    },
+    {
+      "case_id": "onboarding-case-07",
+      "claim_text": "The deployment at 09:00 caused the incident at 09:12.",
+      "visible_evidence": [{"evidence_id": "training-evidence-07", "artifact_ref": "synthetic/onboarding/timeline.json", "excerpt": "Deployment completed at 09:00. The first alert fired at 09:12."}],
+      "reference_label": "unsupported",
+      "teaching_note": "Temporal order alone does not establish a causal relationship."
+    },
+    {
+      "case_id": "onboarding-case-08",
+      "claim_text": "The legacy parser is no longer used by any request path.",
+      "visible_evidence": [{"evidence_id": "training-evidence-08", "artifact_ref": "synthetic/onboarding/repository.json", "excerpt": "The legacy parser module remains present in the source tree."}],
+      "reference_label": "unsupported",
+      "teaching_note": "Source presence does not establish runtime use or non-use."
+    },
+    {
+      "case_id": "onboarding-case-09",
+      "claim_text": "All users experienced the authentication failure.",
+      "visible_evidence": [{"evidence_id": "training-evidence-09", "artifact_ref": "synthetic/onboarding/region-sample.json", "excerpt": "A sample of 80 requests from region-east contained 21 authentication failures."}],
+      "reference_label": "unsupported",
+      "teaching_note": "A single-region sample cannot establish a universal population claim."
+    },
+    {
+      "case_id": "onboarding-case-10",
+      "claim_text": "Increasing the cache size will reduce p95 latency below 200 milliseconds.",
+      "visible_evidence": [{"evidence_id": "training-evidence-10", "artifact_ref": "synthetic/onboarding/cache.json", "excerpt": "Current cache hit rate is 71 percent and current p95 latency is 260 milliseconds."}],
+      "reference_label": "unsupported",
+      "teaching_note": "Current measurements do not establish the effect or magnitude of an untested intervention."
+    },
+    {
+      "case_id": "onboarding-case-11",
+      "claim_text": "Data drift was the sole cause of every classification failure.",
+      "visible_evidence": [{"evidence_id": "training-evidence-11", "artifact_ref": "synthetic/onboarding/drift.json", "excerpt": "Population stability index exceeded the registered threshold; three failures also used an invalid category mapping."}],
+      "reference_label": "partially_supported",
+      "teaching_note": "Drift is established, but sole causation and every failure are not."
+    },
+    {
+      "case_id": "onboarding-case-12",
+      "claim_text": "The service remained degraded for 30 minutes.",
+      "visible_evidence": [{"evidence_id": "training-evidence-12", "artifact_ref": "synthetic/onboarding/degradation.json", "excerpt": "The registered degradation threshold was exceeded continuously from 14:02 through 14:20."}],
+      "reference_label": "partially_supported",
+      "teaching_note": "Degradation is supported, but the measured duration is only 18 minutes."
+    },
+    {
+      "case_id": "onboarding-case-13",
+      "claim_text": "Accuracy fell by ten percentage points in every customer segment.",
+      "visible_evidence": [{"evidence_id": "training-evidence-13", "artifact_ref": "synthetic/onboarding/segments.json", "excerpt": "Overall accuracy fell from 84 to 74 percent; enterprise and education segments changed by less than one point."}],
+      "reference_label": "partially_supported",
+      "teaching_note": "The aggregate magnitude is supported but the every-segment scope is not."
+    },
+    {
+      "case_id": "onboarding-case-14",
+      "claim_text": "An upstream timeout triggered a retry storm that exhausted the worker pool.",
+      "visible_evidence": [{"evidence_id": "training-evidence-14", "artifact_ref": "synthetic/onboarding/retries.json", "excerpt": "Timeouts and retry volume rose together; worker utilization reached 96 percent. Trace linkage between the timeout requests and retries was unavailable."}],
+      "reference_label": "partially_supported",
+      "teaching_note": "The components co-occur, but the full causal chain is not established."
+    },
+    {
+      "case_id": "onboarding-case-15",
+      "claim_text": "Evicting the cache resolved the incident.",
+      "visible_evidence": [{"evidence_id": "training-evidence-15", "artifact_ref": "synthetic/onboarding/remediation.json", "excerpt": "Errors fell after cache eviction; a configuration rollback completed in the same minute."}],
+      "reference_label": "partially_supported",
+      "teaching_note": "Resolution followed the eviction, but a simultaneous intervention prevents full attribution."
+    },
+    {
+      "case_id": "onboarding-case-16",
+      "claim_text": "The incident-window p95 latency exceeded the registered 500 millisecond threshold.",
+      "visible_evidence": [{"evidence_id": "training-evidence-16", "artifact_ref": "synthetic/onboarding/threshold.json", "excerpt": "Registered p95 threshold=500 ms; incident-window p95=684 ms."}],
+      "reference_label": "fully_supported",
+      "teaching_note": "The evidence establishes the metric, window, threshold, and exceedance."
+    },
+    {
+      "case_id": "onboarding-case-17",
+      "claim_text": "The downloaded artifact differs from the registered artifact bytes.",
+      "visible_evidence": [{"evidence_id": "training-evidence-17", "artifact_ref": "synthetic/onboarding/checksums.json", "excerpt": "Registered SHA-256=1111; downloaded SHA-256=9999; both hashes were computed over the complete file."}],
+      "reference_label": "fully_supported",
+      "teaching_note": "Different complete-file content hashes establish different bytes."
+    },
+    {
+      "case_id": "onboarding-case-18",
+      "claim_text": "The parser rejected the file because the required customer_id column was absent.",
+      "visible_evidence": [{"evidence_id": "training-evidence-18", "artifact_ref": "synthetic/onboarding/parser.json", "excerpt": "Manifest requires customer_id; observed columns omit customer_id; terminal parser code=MISSING_REQUIRED_COLUMN."}],
+      "reference_label": "fully_supported",
+      "teaching_note": "Requirement, absence, and matching terminal reason establish the complete claim."
+    },
+    {
+      "case_id": "onboarding-case-19",
+      "claim_text": "Rolling back release 42 restored the request error rate to its pre-release baseline.",
+      "visible_evidence": [{"evidence_id": "training-evidence-19", "artifact_ref": "synthetic/onboarding/rollback.json", "excerpt": "No other change occurred in the window. Error rate was 0.3 percent before release 42, 5.8 percent after release, and 0.3 percent after rollback."}],
+      "reference_label": "fully_supported",
+      "teaching_note": "The bounded before-after intervention evidence establishes the stated restoration."
+    },
+    {
+      "case_id": "onboarding-case-20",
+      "claim_text": "The TLS certificate had expired before the first failed handshake.",
+      "visible_evidence": [{"evidence_id": "training-evidence-20", "artifact_ref": "synthetic/onboarding/tls.json", "excerpt": "Certificate notAfter=2026-08-29T00:00:00Z; first failed handshake=2026-08-29T00:04:12Z; verifier code=CERTIFICATE_EXPIRED."}],
+      "reference_label": "fully_supported",
+      "teaching_note": "The timestamps and verifier code establish expiry before the first failure."
+    }
+  ],
+  "fixture_sha256": "ca375f2066e39511e35a80de0fe58ab4b046cba42a2f6b3c78fe256a50aa2e50"
+}

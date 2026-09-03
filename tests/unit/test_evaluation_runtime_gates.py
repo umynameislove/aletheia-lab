@@ -60,6 +60,8 @@ def test_evaluation_profile_has_required_boundaries_without_deselection() -> Non
         "tests/property/test_claim_support_corpus_materialization_properties.py",
         "tests/integration/test_claim_support_corpus_readiness_local.py",
         "tests/unit/test_claim_support_instrument_validation.py",
+        "tests/unit/test_claim_support_human_workflow.py",
+        "tests/integration/test_claim_support_human_workflow_local.py",
         "tests/unit/test_leakage_guard.py",
         "tests/unit/test_project_bundle_contract.py",
         "tests/unit/test_evidence_contract_v2.py",

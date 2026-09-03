@@ -130,6 +130,9 @@ is outcome-blind preparation only; its
 the original insufficient-source receipt, while the separate
 [materialization-readiness closeout](docs/claim-support-materialization-readiness.md)
 binds 15 primary families, six reserves and 504 zero-authorization requests.
+The separate [human-rating guide](docs/claim-support-rater-guide.md) and its
+hash-bound workflow provide synthetic onboarding, private packet delivery and
+fail-closed completed-packet validation for two independent human raters.
 No provider output or real claim has been materialized. Development execution,
 corpus freezing and independent human validation remain separate gated stages.
 

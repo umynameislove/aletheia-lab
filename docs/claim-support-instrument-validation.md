@@ -29,19 +29,22 @@ Claims cannot be synthesized or duplicated to fill a quota. If the development
 pool cannot supply the frozen target and caps, preparation fails closed.
 
 The prospective source population is governed separately by
-[`claim-support-corpus-protocol.md`](claim-support-corpus-protocol.md). That
-contract freezes 15 primary and six reserve families, the eight comparable
-diagnosis variants, schema-native atomic extraction, automatic-label semantics
-and non-adaptive contingency rules before provider calls. Its current receipt
-correctly blocks materialization because only five of the required family
-settings and neither required implementation manifest are present.
+[`claim-support-corpus-protocol.md`](claim-support-corpus-protocol.md). The
+forward-linked materialization closeout now binds 15 primary and six reserve
+families, the eight comparable diagnosis variants, schema-native atomic
+extraction, automatic-label semantics and non-adaptive contingency rules before
+provider calls. The earlier five-family blocked receipt remains immutable
+historical evidence and is not rewritten.
 
 ## Blinding and adjudication
 
 Two independent human raters receive the same randomly ordered blind claims and
 visible evidence. They do not receive the automatic label, original IDs, family,
 condition, variant, mechanism or hidden ground truth. A separate evaluator-only
-mapping is opened after both ratings are locked.
+mapping is opened after both ratings are locked. The hash-bound human workflow
+validates exact claim coverage, packet identity, rater-slot separation,
+visible-evidence citations and human independence attestations before accepting
+either completed packet.
 
 One adjudicator resolves every disagreement and every case where either rater
 marks `contradicted`. A model or model-as-judge cannot replace either independent
@@ -91,3 +94,40 @@ macro-F1 or either error-rate gate passed.
 Those statements require a real development claim pool, two completed human
 packets, adjudication and a frozen validation report. Failure of any gate blocks
 confirmatory support-rate claims; thresholds cannot be changed after results.
+
+Verify the operational human boundary without creating an annotation:
+
+```bash
+PYTHONPATH=src python scripts/claim_support_human_workflow.py verify
+PYTHONPATH=src python scripts/claim_support_human_workflow.py dry-run
+```
+
+The dry-run prepares the balanced 20-case synthetic onboarding material in
+memory and writes no artifact. Real onboarding delivery requires an explicit
+destination outside the repository. The command creates separate rater
+directories and a coordinator-only answer key; the directories must never be
+combined when sent to raters:
+
+```bash
+PYTHONPATH=src python scripts/claim_support_human_workflow.py \
+  prepare-onboarding --output-dir /private/path/claim-support-onboarding
+```
+
+After a rater fills only the submission template, validate and lock it against
+the unchanged blind packet. The output must also stay outside the repository:
+
+```bash
+PYTHONPATH=src python scripts/claim_support_human_workflow.py lock-submission \
+  --packet /private/path/rater-1/blind-packet.json \
+  --submission /private/path/rater-1/completed-submission.json \
+  --output /private/path/locked/rater-1-completed.json
+```
+
+Incomplete coverage, reordered IDs, a wrong rater slot, a foreign evidence ID,
+an inaccurate attestation, altered packet binding or a non-identical replay is
+rejected before a completed artifact exists. The evaluator mapping stays closed
+until both rater packets are locked.
+
+Onboarding results are qualification evidence only and are excluded from every
+scientific denominator. Passing onboarding does not materialize the 200-claim
+sample, open the evaluator mapping or authorize main evaluation.
