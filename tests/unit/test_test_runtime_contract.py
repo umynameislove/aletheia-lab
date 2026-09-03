@@ -175,6 +175,26 @@ def test_windows_evaluation_profile_is_a_blocking_gate() -> None:
     assert evaluation_steps[0].get("continue-on-error") is None
 
 
+def test_windows_prepares_pinned_dataset_before_evaluation() -> None:
+    jobs = _workflow().get("jobs")
+    assert isinstance(jobs, dict)
+    windows_job = jobs.get("windows-project")
+    assert isinstance(windows_job, dict)
+    steps = windows_job.get("steps")
+    assert isinstance(steps, list)
+    commands = [
+        str(step.get("run", ""))
+        for step in steps
+        if isinstance(step, dict)
+    ]
+    dataset_index = commands.index(
+        "python scripts/download_dataset.py all --config configs/project.yaml"
+    )
+    evaluation_index = commands.index("python scripts/run_test_profile.py evaluation")
+
+    assert dataset_index < evaluation_index
+
+
 def test_windows_publication_profile_is_a_blocking_gate() -> None:
     jobs = _workflow().get("jobs")
     assert isinstance(jobs, dict)

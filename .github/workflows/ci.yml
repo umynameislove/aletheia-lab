@@ -97,6 +97,8 @@ jobs:
           python -m pip install -e ".[dev]"
       - name: Test Windows project boundary
         run: python scripts/run_test_profile.py project -- --durations=20
+      - name: Prepare pinned test dataset
+        run: python scripts/download_dataset.py all --config configs/project.yaml
       - name: Test Windows evaluation boundary
         run: python scripts/run_test_profile.py evaluation
       - name: Test Windows filesystem publication
