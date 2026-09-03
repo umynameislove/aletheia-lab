@@ -475,6 +475,8 @@ def _future_manifest_matches(path: Path, required_fields: dict[str, object]) -> 
 def audit_claim_support_corpus_protocol(
     protocol: ClaimSupportCorpusProtocol,
     root: Path,
+    *,
+    include_future_manifests: bool = True,
 ) -> ClaimSupportCorpusFeasibilityReceipt:
     """Recompute source feasibility without materializing claims or outcomes."""
 
@@ -491,7 +493,7 @@ def audit_claim_support_corpus_protocol(
     if sum(counts.values()) < 21:
         blockers.append("reserve_family_census_pending")
     schema_path = root / protocol.atomic_claim_policy.required_schema_manifest_path
-    if not _future_manifest_matches(
+    if not include_future_manifests or not _future_manifest_matches(
         schema_path,
         {
             "schema_version": "diagnosis-output-schema-manifest/v1",
@@ -502,7 +504,7 @@ def audit_claim_support_corpus_protocol(
     ):
         blockers.append("diagnosis_output_v2_schema_pending")
     instrument_path = root / protocol.automatic_label_policy.required_implementation_manifest_path
-    if not _future_manifest_matches(
+    if not include_future_manifests or not _future_manifest_matches(
         instrument_path,
         {
             "schema_version": "claim-support-automatic-instrument-manifest/v1",
@@ -563,7 +565,14 @@ def verify_tracked_claim_support_corpus_protocol(
 
     protocol = load_claim_support_corpus_protocol(protocol_path)
     tracked = load_claim_support_corpus_feasibility_receipt(receipt_path)
-    recomputed = audit_claim_support_corpus_protocol(protocol, root)
+    # The tracked PR1 receipt is a historical zero-artifact baseline.  Later
+    # prospective manifests must not rewrite that evidence in place; PR2 has a
+    # distinct readiness chain that verifies the live artifacts.
+    recomputed = audit_claim_support_corpus_protocol(
+        protocol,
+        root,
+        include_future_manifests=False,
+    )
     if tracked != recomputed:
         _fail("tracked corpus feasibility receipt does not match repository state")
     return recomputed

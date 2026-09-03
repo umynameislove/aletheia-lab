@@ -80,6 +80,20 @@ def test_family_census_proves_current_inventory_cannot_fill_the_sample() -> None
     assert "insufficient_development_family_census" in receipt.blocker_codes
 
 
+def test_historical_receipt_is_preserved_after_future_manifests_exist() -> None:
+    protocol = _protocol()
+    live = audit_claim_support_corpus_protocol(protocol, ROOT)
+    historical = verify_tracked_claim_support_corpus_protocol(
+        ROOT, PROTOCOL_PATH, RECEIPT_PATH
+    )
+
+    assert "diagnosis_output_v2_schema_pending" not in live.blocker_codes
+    assert "automatic_instrument_manifest_pending" not in live.blocker_codes
+    assert "diagnosis_output_v2_schema_pending" in historical.blocker_codes
+    assert "automatic_instrument_manifest_pending" in historical.blocker_codes
+    assert historical.status == "corpus_protocol_frozen_source_expansion_required"
+
+
 def test_variant_boundary_excludes_only_incomparable_external_native_output() -> None:
     policy = _protocol().variant_eligibility
 
