@@ -50,6 +50,30 @@ semantic fixtures cover contradiction precedence, polarity, neutral evidence,
 partial scope and complete scope. Fixtures test behavior only and are ineligible
 for the 200-claim validation corpus.
 
+## Observed evidence and blind semantic assignment
+
+Every primary family-condition pair must have one observed, content-addressed
+evidence binding before live execution: 15 families x three conditions = 45
+contexts. A binding records evaluator-side family and condition provenance, but
+its model-visible projection contains only canonical evidence IDs, kinds,
+titles, content and hashes. Explicit answer keys, condition labels, automatic
+labels, human judgments and protected outcomes fail closed at this boundary.
+
+The relation-assignment request is built separately for each schema-native
+atomic claim and includes exactly three provider fields: claim text, claim type
+and the evidence IDs cited by that claim with their immutable visible content.
+The provider returns only support polarity and scope for those IDs. Local code
+requires every cited ID exactly once and in request order, binds the response to
+the source output and claim, then joins the relation back to the stored evidence
+text. A response from another claim, output, family or condition cannot be
+replayed as a valid label.
+
+The relation rubric, structured response schema, exact model snapshot,
+temperature, seed, retry policy and implementation bytes are frozen in
+`claim_support_evidence_semantics_policy.json`. No provider call or automatic
+label was produced while creating this policy. Human raters remain independent;
+the semantic model is part of the automatic instrument, not a human rater.
+
 ## Materializer, store and independent audit
 
 The materializer consumes already persisted outputs; it has no model or provider
@@ -95,22 +119,27 @@ PYTHONPATH=src python scripts/claim_support_corpus_execution.py preflight
 PYTHONPATH=src python scripts/claim_support_corpus_execution.py rehearse
 ```
 
-The canonical primary schedule contains 360 requests, but only 315 are
-model-backed. The 45 `B0` requests are deterministic local executions. The
-frozen two-attempt ceiling therefore permits at most 315 provider calls on a
-one-attempt pass and 630 only if every model-backed request consumes its retry.
-No reserve request is scheduled.
+The canonical primary schedule contains 360 diagnosis requests, but only 315
+are model-backed. The 45 `B0` requests are deterministic local executions. A
+completed output may contain up to five atomic claims, and relation assignment
+is one request per claim. The prospective upper bound is therefore 1,800
+relation requests, 2,115 total provider calls on a no-retry pass, and 4,230 if
+every eligible call consumes the two-attempt ceiling. These are safety ceilings,
+not expected usage; exact input tokens and cost must be computed from the 45
+observed contexts before authorization. No reserve request is scheduled.
 
 The offline rehearsal proves the complete census, route split, terminal replay
 skip and fail-closed treatment of a partial request. It does not construct a
 diagnosis input, call a provider, parse an output or consume the one registered
 execution.
 
-The live gate currently remains closed for three substantive reasons: an
-executable visible-evidence boundary has not been implemented, the automatic
-relation instrument has no pre-outcome relation-assignment implementation, and
-the fairness freeze still records `execution_authorized=false`. Exact input
-tokens and cost also cannot be calculated before the real visible-evidence
-payloads exist. These findings block an external send; they must not be bypassed
-with synthetic evidence, intervention labels, arbitrary relation metadata or a
-post-output patch.
+The visible-evidence and automatic-relation implementations are now complete
+and bound prospectively. The live gate remains closed because the 45 real
+observed evidence contexts have not yet been captured and the fairness freeze
+still records `execution_authorized=false`. A candidate evidence census can be
+supplied to preflight with `--evidence-census`; it clears only the evidence
+blocker after exact reconciliation with the frozen request census. Exact token
+and cost calculation, explicit authorization and a clean synchronized `main`
+remain mandatory before an external send. Synthetic evidence, intervention
+labels, arbitrary relation metadata and post-output patches cannot clear the
+gate.

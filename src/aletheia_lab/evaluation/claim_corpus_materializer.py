@@ -11,7 +11,13 @@ from aletheia_lab.evaluation.claim_corpus_contracts import (
     ClaimCorpusContractError,
     ClaimCorpusRequest,
     ClaimSupportCorpusEntry,
-    VisibleEvidenceRelation,
+)
+from aletheia_lab.evaluation.claim_evidence_semantics import (
+    ClaimEvidenceBinding,
+    ClaimRelationAssignmentResponse,
+    build_relation_assignment_request,
+    validate_request_evidence_binding,
+    visible_relations_from_assignment,
 )
 from aletheia_lab.evaluation.claim_support_instrument import classify_visible_support
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
@@ -20,7 +26,8 @@ from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha2
 def materialize_request_claims(
     request: ClaimCorpusRequest,
     output_payload: Mapping[str, object],
-    visible_evidence: Sequence[VisibleEvidenceRelation],
+    evidence_binding: ClaimEvidenceBinding,
+    relation_assignments: Mapping[str, ClaimRelationAssignmentResponse],
     *,
     reserve_activated_before_execution: bool = False,
 ) -> tuple[ClaimSupportCorpusEntry, ...]:
@@ -35,16 +42,32 @@ def materialize_request_claims(
         raise ClaimCorpusContractError("reserve family was not activated before execution")
     output = normalize_variant_output(checked_request.variant, output_payload)
     if output.output_status != "completed":
+        if relation_assignments:
+            raise ClaimCorpusContractError(
+                "terminal output without claims cannot carry relation assignments"
+            )
         return ()
-    evidence_by_id = {item.evidence_id: item for item in visible_evidence}
-    if len(evidence_by_id) != len(visible_evidence):
-        raise ClaimCorpusContractError("visible evidence IDs must be unique")
+    binding = validate_request_evidence_binding(checked_request, evidence_binding)
+    expected_claim_ids = tuple(claim.claim_local_id for claim in output.atomic_claims)
+    if set(relation_assignments) != set(expected_claim_ids):
+        raise ClaimCorpusContractError(
+            "relation assignments must exactly cover completed output claims"
+        )
 
     entries: list[ClaimSupportCorpusEntry] = []
     for claim in output.atomic_claims:
-        if not set(claim.visible_evidence_ids).issubset(evidence_by_id):
-            raise ClaimCorpusContractError("claim cites unavailable visible evidence")
-        selected = tuple(evidence_by_id[item] for item in claim.visible_evidence_ids)
+        assignment_request = build_relation_assignment_request(
+            source_output_sha256=output.output_sha256,
+            claim_local_id=claim.claim_local_id,
+            claim_text=claim.claim_text,
+            claim_type=claim.claim_type,
+            cited_evidence_ids=claim.visible_evidence_ids,
+            evidence_binding=binding,
+        )
+        selected = visible_relations_from_assignment(
+            assignment_request,
+            relation_assignments[claim.claim_local_id],
+        )
         label = classify_visible_support(
             claim_text=claim.claim_text,
             claim_type=claim.claim_type,
@@ -87,13 +110,10 @@ def reconcile_materialized_entries(
     """Validate a deterministic, duplicate-free entry sequence."""
 
     checked = tuple(
-        ClaimSupportCorpusEntry.model_validate(item.model_dump(mode="python"))
-        for item in entries
+        ClaimSupportCorpusEntry.model_validate(item.model_dump(mode="python")) for item in entries
     )
     identities = tuple(item.entry_sha256 for item in checked)
-    source_claims = tuple(
-        (item.source_record_sha256, item.claim_local_id) for item in checked
-    )
+    source_claims = tuple((item.source_record_sha256, item.claim_local_id) for item in checked)
     if len(identities) != len(set(identities)):
         raise ClaimCorpusContractError("materialized entries contain duplicate identities")
     if len(source_claims) != len(set(source_claims)):

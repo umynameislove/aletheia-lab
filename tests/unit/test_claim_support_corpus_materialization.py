@@ -20,6 +20,14 @@ from aletheia_lab.evaluation.claim_corpus_readiness import (
     verify_readiness,
 )
 from aletheia_lab.evaluation.claim_corpus_store import ClaimCorpusArtifactStore
+from aletheia_lab.evaluation.claim_evidence_semantics import (
+    ClaimEvidenceBinding,
+    ClaimRelationAssignmentResponse,
+    build_evidence_binding,
+    build_relation_assignment_request,
+    build_visible_evidence_item,
+    parse_relation_assignment,
+)
 from aletheia_lab.evaluation.claim_support_instrument import classify_visible_support
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
 
@@ -52,9 +60,7 @@ def _output(source_record_sha256: str = "2" * 64) -> dict[str, object]:
                 "claim_local_id": "claim-1",
                 "claim_type": "cause_assertion",
                 "claim_text": "The bounded drift is consistent with the visible metric change.",
-                "material_parts": (
-                    {"part_id": "part-drift", "text": "A bounded drift occurred."},
-                ),
+                "material_parts": ({"part_id": "part-drift", "text": "A bounded drift occurred."},),
                 "visible_evidence_ids": ("evidence-visible",),
             },
         ),
@@ -78,6 +84,53 @@ def _evidence(
                 "relation_scope": scope,
             }
         ),
+    )
+
+
+def _binding(request: ClaimCorpusRequest | None = None) -> ClaimEvidenceBinding:
+    selected_request = request or _request()
+    item = build_visible_evidence_item(
+        evidence_id="evidence-visible",
+        kind="metric",
+        title="Observed metric comparison",
+        content="The visible metric changed after the registered operation.",
+        source_content_sha256="5" * 64,
+    )
+    return build_evidence_binding(
+        selected_request,
+        items=(item,),
+        source_projection_sha256="6" * 64,
+    )
+
+
+def _assignment(
+    request: ClaimCorpusRequest,
+    output: dict[str, object],
+    binding: ClaimEvidenceBinding,
+    *,
+    polarity: str = "supports",
+    scope: str = "entire",
+) -> ClaimRelationAssignmentResponse:
+    claim = output["atomic_claims"][0]  # type: ignore[index]
+    relation_request = build_relation_assignment_request(
+        source_output_sha256=output["output_sha256"],  # type: ignore[arg-type]
+        claim_local_id=claim["claim_local_id"],  # type: ignore[index]
+        claim_text=claim["claim_text"],  # type: ignore[index]
+        claim_type=claim["claim_type"],  # type: ignore[index]
+        cited_evidence_ids=claim["visible_evidence_ids"],  # type: ignore[index]
+        evidence_binding=binding,
+    )
+    return parse_relation_assignment(
+        relation_request,
+        {
+            "decisions": (
+                {
+                    "evidence_id": "evidence-visible",
+                    "relation_polarity": polarity,
+                    "relation_scope": scope,
+                },
+            )
+        },
     )
 
 
@@ -195,8 +248,12 @@ def test_adapter_rejects_b3_and_free_text_fallback() -> None:
 
 
 def test_materializer_is_deterministic_and_visibility_bounded() -> None:
-    first = materialize_request_claims(_request(), _output(), _evidence())
-    second = materialize_request_claims(_request(), _output(), _evidence())
+    request = _request()
+    output = _output()
+    binding = _binding(request)
+    assignments = {"claim-1": _assignment(request, output, binding)}
+    first = materialize_request_claims(request, output, binding, assignments)
+    second = materialize_request_claims(request, output, binding, assignments)
 
     assert first == second
     assert len(first) == 1
@@ -207,18 +264,31 @@ def test_materializer_is_deterministic_and_visibility_bounded() -> None:
 
 
 def test_materializer_rejects_missing_evidence_and_unactivated_reserve() -> None:
-    with pytest.raises(ClaimCorpusContractError, match="unavailable visible evidence"):
-        materialize_request_claims(_request(), _output(), ())
+    request = _request()
+    output = _output()
+    binding = _binding(request)
+    with pytest.raises(ClaimCorpusContractError, match="exactly cover"):
+        materialize_request_claims(request, output, binding, {})
+    reserve = _request(role="reserve")
     with pytest.raises(ClaimCorpusContractError, match="reserve family"):
         materialize_request_claims(
-            _request(role="reserve"),
-            _output(),
-            _evidence(),
+            reserve,
+            output,
+            _binding(reserve),
+            {},
         )
 
 
 def test_store_replay_and_independent_audit_are_idempotent(tmp_path: Path) -> None:
-    entry = materialize_request_claims(_request(), _output(), _evidence())[0]
+    request = _request()
+    output = _output()
+    binding = _binding(request)
+    entry = materialize_request_claims(
+        request,
+        output,
+        binding,
+        {"claim-1": _assignment(request, output, binding)},
+    )[0]
     store = ClaimCorpusArtifactStore(tmp_path)
     kwargs = {
         "protocol_sha256": "3" * 64,
@@ -238,7 +308,15 @@ def test_store_replay_and_independent_audit_are_idempotent(tmp_path: Path) -> No
 
 
 def test_independent_audit_detects_missing_and_untracked_objects(tmp_path: Path) -> None:
-    entry = materialize_request_claims(_request(), _output(), _evidence())[0]
+    request = _request()
+    output = _output()
+    binding = _binding(request)
+    entry = materialize_request_claims(
+        request,
+        output,
+        binding,
+        {"claim-1": _assignment(request, output, binding)},
+    )[0]
     store = ClaimCorpusArtifactStore(tmp_path)
     receipt = store.publish(
         protocol_sha256="3" * 64,

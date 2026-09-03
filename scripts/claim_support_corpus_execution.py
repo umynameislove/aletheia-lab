@@ -12,6 +12,7 @@ from aletheia_lab.evaluation.claim_corpus_execution import (
     ClaimCorpusExecutionError,
     build_execution_preflight,
     inspect_repository_state,
+    load_execution_evidence_census,
     rehearse_execution,
 )
 
@@ -23,6 +24,11 @@ def _parser() -> argparse.ArgumentParser:
         choices=("preflight", "rehearse", "require-live-ready"),
     )
     parser.add_argument("--root", type=Path, default=Path("."))
+    parser.add_argument(
+        "--evidence-census",
+        type=Path,
+        help="local observed-evidence census used only by live preflight",
+    )
     return parser
 
 
@@ -33,10 +39,16 @@ def main() -> int:
         if args.command == "rehearse":
             result = rehearse_execution(root)
         else:
+            evidence_census = (
+                load_execution_evidence_census(root, args.evidence_census)
+                if args.evidence_census is not None
+                else None
+            )
             result = build_execution_preflight(
                 root,
                 repository_state=inspect_repository_state(root),
                 credential_present=bool(os.environ.get("OPENAI_API_KEY")),
+                evidence_census=evidence_census,
             )
     except ClaimCorpusExecutionError as exc:
         print(
