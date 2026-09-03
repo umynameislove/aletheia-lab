@@ -155,7 +155,8 @@ The remaining order is:
    automatic-instrument and request-census identity chain without provider calls;
 2. separately authorize and materialize the real development claim pool without
    opening main or sealed outcomes;
-3. complete evaluator onboarding and independent blind instrument validation;
+3. use the hash-bound private human workflow to complete synthetic evaluator
+   onboarding and independent blind instrument validation;
 4. resolve every prespecified human-validation gate;
 5. publish a separate immutable registration and main-run manifest;
 6. audit execution-path parity immediately before outcome-opening authority is
