@@ -15,6 +15,7 @@ from aletheia_lab.evaluation.claim_corpus_execution import (
     load_execution_evidence_census,
     rehearse_execution,
 )
+from aletheia_lab.evaluation.observed_evidence_receipt import ObservedEvidenceReceipt
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -28,6 +29,11 @@ def _parser() -> argparse.ArgumentParser:
         "--evidence-census",
         type=Path,
         help="local observed-evidence census used only by live preflight",
+    )
+    parser.add_argument(
+        "--evidence-receipt",
+        type=Path,
+        help="token and cost receipt bound to the observed-evidence census",
     )
     return parser
 
@@ -44,13 +50,19 @@ def main() -> int:
                 if args.evidence_census is not None
                 else None
             )
+            evidence_receipt = (
+                ObservedEvidenceReceipt.model_validate_json(args.evidence_receipt.read_bytes())
+                if args.evidence_receipt is not None
+                else None
+            )
             result = build_execution_preflight(
                 root,
                 repository_state=inspect_repository_state(root),
                 credential_present=bool(os.environ.get("OPENAI_API_KEY")),
                 evidence_census=evidence_census,
+                evidence_receipt=evidence_receipt,
             )
-    except ClaimCorpusExecutionError as exc:
+    except (ClaimCorpusExecutionError, OSError, ValueError) as exc:
         print(
             json.dumps(
                 {"status": "claim_corpus_execution_preflight_failed", "error": str(exc)},
