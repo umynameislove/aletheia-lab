@@ -264,6 +264,8 @@ def test_evaluation_profile_includes_claim_corpus_and_human_validation_contracts
     assert "tests/property/test_claim_support_corpus_materialization_properties.py" in command
     assert "tests/integration/test_claim_support_corpus_readiness_local.py" in command
     assert "tests/unit/test_claim_support_instrument_validation.py" in command
+    assert "tests/unit/test_claim_support_human_workflow.py" in command
+    assert "tests/integration/test_claim_support_human_workflow_local.py" in command
 
 
 def test_full_profile_preserves_coverage_floor() -> None:
