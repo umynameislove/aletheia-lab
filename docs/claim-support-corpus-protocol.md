@@ -135,9 +135,8 @@ Run the source-only verifier:
 PYTHONPATH=src python scripts/verify_claim_support_corpus_protocol.py verify
 ```
 
-The expected status is
-`corpus_protocol_frozen_source_expansion_required`. The exact current blockers
-are:
+The historical PR1 status is
+`corpus_protocol_frozen_source_expansion_required`. Its exact blockers were:
 
 - `automatic_instrument_manifest_pending`;
 - `diagnosis_output_v2_schema_pending`;
@@ -158,12 +157,14 @@ The future diagnosis-output schema and automatic-instrument manifests must be
 self-hashing, must declare that no provider call or claim materialization has
 occurred, and must bind this corpus protocol where applicable. Mere file
 existence cannot clear either blocker. The receipt is then recomputed from
-repository state. A green structural audit
-does not itself authorize provider calls, claim extraction, human packets or a
-main evaluation.
+repository state only for a live audit. The tracked PR1 feasibility receipt
+remains the immutable record of the source-only freeze and is always verified
+against that historical boundary. A green structural audit does not itself
+authorize provider calls, claim extraction, human packets or a main evaluation.
 
-Expanding the family inventory changes a content-bound scientific input. It
-therefore requires a prospective protocol amendment with a new protocol hash
-and feasibility receipt while every outcome flag is still false. The current
-freeze is retained as the auditable reason for that amendment rather than being
-silently rewritten after outputs exist.
+Expanding the family inventory changes a content-bound scientific input. The
+prospective family inventory, complete request census and zero-outcome readiness
+chain are therefore recorded separately in
+[`claim-support-materialization-readiness.md`](claim-support-materialization-readiness.md).
+The original insufficient-source receipt remains immutable historical evidence;
+it is not silently rewritten after the additional source contract exists.

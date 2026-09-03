@@ -260,6 +260,9 @@ def test_evaluation_profile_includes_claim_corpus_and_human_validation_contracts
     assert "tests/unit/test_claim_support_corpus_protocol.py" in command
     assert "tests/property/test_claim_support_corpus_protocol_properties.py" in command
     assert "tests/integration/test_claim_support_corpus_protocol_local.py" in command
+    assert "tests/unit/test_claim_support_corpus_materialization.py" in command
+    assert "tests/property/test_claim_support_corpus_materialization_properties.py" in command
+    assert "tests/integration/test_claim_support_corpus_readiness_local.py" in command
     assert "tests/unit/test_claim_support_instrument_validation.py" in command
 
 

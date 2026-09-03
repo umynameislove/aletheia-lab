@@ -126,11 +126,12 @@ and [related work](docs/related-work.md) for the bounded novelty position. The
 current statement to evidence and denominators. The
 [claim-support validation protocol](docs/claim-support-instrument-validation.md)
 is outcome-blind preparation only; its
-[development corpus contract](docs/claim-support-corpus-protocol.md) currently
-blocks materialization until the missing family and implementation manifests are
-frozen. Corpus readiness, development-only materialization and independent human
-validation remain separate gated stages. Independent human validation is still
-pending.
+[development corpus contract](docs/claim-support-corpus-protocol.md) preserves
+the original insufficient-source receipt, while the separate
+[materialization-readiness closeout](docs/claim-support-materialization-readiness.md)
+binds 15 primary families, six reserves and 504 zero-authorization requests.
+No provider output or real claim has been materialized. Development execution,
+corpus freezing and independent human validation remain separate gated stages.
 
 ## Installation
 
