@@ -102,6 +102,10 @@ Aletheia currently provides:
 - a content-addressed observed-evidence boundary and blind relation-assignment
   policy that expose only claim text, claim type and cited visible evidence,
   while rejecting cross-claim replay and evaluator metadata leakage.
+- a measured 45-context development evidence census covering 15 registered
+  families under full, missing-key and noisy conditions, with immutable source
+  projections, exact frozen-input token accounting and a conservative API cost
+  ceiling; no provider output or protected outcome is present in this census.
 
 Aletheia Lab is research software, not a production incident-response system.
 The repository includes the complete deterministic benchmark, evidence-store,
@@ -141,10 +145,11 @@ corpus freezing and independent human validation remain separate gated stages.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation
-semantics are now bound prospectively. The live gate remains closed until all
-45 real development evidence contexts are captured, exact tokens and cost are
-computed, and execution is explicitly authorized; see the materialization-
-readiness document for the exact blockers and verification commands.
+semantics are bound prospectively. The 45-context measured evidence census and
+its frozen-input accounting receipt are complete, but the live gate remains
+closed until execution is explicitly authorized from a clean synchronized
+`main`; see the materialization-readiness document for the exact boundary and
+verification commands.
 
 ## Installation
 

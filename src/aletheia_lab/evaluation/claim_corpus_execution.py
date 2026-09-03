@@ -41,6 +41,14 @@ from aletheia_lab.evaluation.claim_evidence_semantics import (
 )
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
 from aletheia_lab.evaluation.human_workflow import load_human_workflow
+from aletheia_lab.evaluation.observed_evidence import (
+    ObservedEvidenceMaterializationError,
+)
+from aletheia_lab.evaluation.observed_evidence_receipt import (
+    ObservedEvidenceReceipt,
+    build_observed_evidence_receipt,
+    validate_observed_evidence_receipt,
+)
 from aletheia_lab.evaluation.variant_fairness import load_diagnosis_variant_freeze
 from aletheia_lab.project.identity import SHA256_PATTERN
 
@@ -195,8 +203,11 @@ class ClaimCorpusExecutionPreflight(_StrictFrozenModel):
     reserve_request_count_scheduled: Literal[0]
     observed_evidence_context_count: Literal[0, 45]
     observed_evidence_census_sha256: Sha256 | None
-    exact_input_token_count_known: Literal[False] = False
-    exact_cost_estimate_available: Literal[False] = False
+    observed_evidence_receipt_sha256: Sha256 | None
+    exact_input_token_count_known: bool
+    exact_input_token_count: int | None = Field(ge=1)
+    exact_cost_estimate_available: bool
+    one_attempt_total_cost_ceiling_usd: float | None = Field(ge=0.0)
     provider_calls_executed: Literal[False] = False
     outputs_generated: Literal[False] = False
     claims_materialized: Literal[False] = False
@@ -215,6 +226,15 @@ class ClaimCorpusExecutionPreflight(_StrictFrozenModel):
             raise ValueError("live-ready preflight cannot retain blockers")
         if self.status != "claim_corpus_live_execution_ready" and not self.live_blockers:
             raise ValueError("blocked preflight must name at least one blocker")
+        receipt_present = self.observed_evidence_receipt_sha256 is not None
+        if receipt_present != self.exact_input_token_count_known:
+            raise ValueError("exact input-token status differs from receipt presence")
+        if receipt_present != self.exact_cost_estimate_available:
+            raise ValueError("cost-estimate status differs from receipt presence")
+        if receipt_present != (self.exact_input_token_count is not None):
+            raise ValueError("exact input-token value differs from receipt presence")
+        if receipt_present != (self.one_attempt_total_cost_ceiling_usd is not None):
+            raise ValueError("cost ceiling differs from receipt presence")
         if self.preflight_sha256 != canonical_execution_sha256(self.identity_payload()):
             raise ValueError("preflight identity does not match canonical content")
         return self
@@ -392,6 +412,7 @@ def build_execution_preflight(
     repository_state: RepositoryExecutionState,
     credential_present: bool,
     evidence_census: ObservedEvidenceCensus | None = None,
+    evidence_receipt: ObservedEvidenceReceipt | None = None,
 ) -> ClaimCorpusExecutionPreflight:
     """Build a public-safe live-readiness receipt without reading a secret value."""
 
@@ -405,6 +426,24 @@ def build_execution_preflight(
         except ClaimCorpusContractError as exc:
             raise ClaimCorpusExecutionError(
                 "observed evidence census does not match the execution census"
+            ) from exc
+    checked_receipt: ObservedEvidenceReceipt | None = None
+    if evidence_receipt is not None:
+        if checked_evidence is None:
+            raise ClaimCorpusExecutionError(
+                "observed evidence receipt requires its verified evidence census"
+            )
+        try:
+            checked_receipt = validate_observed_evidence_receipt(
+                checked_evidence, evidence_receipt
+            )
+            if checked_receipt != build_observed_evidence_receipt(root, checked_evidence):
+                raise ClaimCorpusContractError(
+                    "observed-evidence receipt differs from independent token accounting"
+                )
+        except (ClaimCorpusContractError, ObservedEvidenceMaterializationError) as exc:
+            raise ClaimCorpusExecutionError(
+                "observed evidence receipt does not match the execution census"
             ) from exc
     blockers: list[LiveBlocker] = ["variant_execution_authorization_pending"]
     if checked_evidence is None:
@@ -432,8 +471,21 @@ def build_execution_preflight(
         "observed_evidence_census_sha256": (
             checked_evidence.census_sha256 if checked_evidence is not None else None
         ),
-        "exact_input_token_count_known": False,
-        "exact_cost_estimate_available": False,
+        "observed_evidence_receipt_sha256": (
+            checked_receipt.receipt_sha256 if checked_receipt is not None else None
+        ),
+        "exact_input_token_count_known": checked_receipt is not None,
+        "exact_input_token_count": (
+            checked_receipt.diagnosis_input_token_count_exact
+            if checked_receipt is not None
+            else None
+        ),
+        "exact_cost_estimate_available": checked_receipt is not None,
+        "one_attempt_total_cost_ceiling_usd": (
+            checked_receipt.one_attempt_total_cost_ceiling_usd
+            if checked_receipt is not None
+            else None
+        ),
         "provider_calls_executed": False,
         "outputs_generated": False,
         "claims_materialized": False,
