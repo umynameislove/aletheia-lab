@@ -124,8 +124,12 @@ truth, human judgment or main outcome. The decision precedence is:
 4. `fully_supported` when every material part is supported and none conflicts.
 
 The implementation manifest and its test corpus must be frozen before real
-claim extraction. Human judgments evaluate the automatic label; they never
-rewrite it. A model cannot stand in for either independent human rater.
+claim extraction. The prospective semantic policy additionally binds the exact
+visible-evidence schema, blind relation prompt, structured response, model
+snapshot and implementation bytes. Each relation response is tied to one
+source output and atomic claim before the deterministic precedence rule emits a
+label. Human judgments evaluate the automatic label; they never rewrite it. A
+model cannot stand in for either independent human rater.
 
 ## Current feasibility result
 

@@ -10,7 +10,9 @@ ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts/claim_support_corpus_execution.py"
 
 
-def _run(command: str, seed: int, *, credential: str | None = None) -> subprocess.CompletedProcess[bytes]:
+def _run(
+    command: str, seed: int, *, credential: str | None = None
+) -> subprocess.CompletedProcess[bytes]:
     environment = os.environ.copy()
     environment["PYTHONPATH"] = str(ROOT / "src")
     environment["PYTHONHASHSEED"] = str(seed)
@@ -49,5 +51,6 @@ def test_live_gate_fails_closed_and_never_prints_the_credential() -> None:
     assert secret.encode() not in completed.stdout
     payload = json.loads(completed.stdout)
     assert payload["credential_present"] is True
-    assert "executable_evidence_boundary_not_implemented" in payload["live_blockers"]
+    assert "observed_evidence_census_pending" in payload["live_blockers"]
+    assert payload["relation_assignment_request_ceiling"] == 1800
     assert payload["provider_calls_executed"] is False

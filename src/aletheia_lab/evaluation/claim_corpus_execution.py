@@ -22,6 +22,7 @@ from aletheia_lab.diagnosis.variant_registry import (
     build_variant_registry,
 )
 from aletheia_lab.evaluation.claim_corpus_contracts import (
+    ClaimCorpusContractError,
     ClaimCorpusRequest,
     ClaimCorpusRequestCensus,
 )
@@ -29,6 +30,14 @@ from aletheia_lab.evaluation.claim_corpus_readiness import (
     FAIRNESS_PATH,
     REQUEST_CENSUS_PATH,
     verify_readiness,
+)
+from aletheia_lab.evaluation.claim_evidence_census import (
+    ObservedEvidenceCensus,
+    load_observed_evidence_census,
+    validate_observed_evidence_census,
+)
+from aletheia_lab.evaluation.claim_evidence_semantics import (
+    load_evidence_semantics_policy,
 )
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
 from aletheia_lab.evaluation.human_workflow import load_human_workflow
@@ -45,9 +54,8 @@ ExecutionRoute = Literal["deterministic_local", "model_gateway"]
 ResumeState = Literal["absent", "terminal", "partial"]
 ResumeAction = Literal["execute", "skip_terminal"]
 LiveBlocker = Literal[
-    "automatic_relation_assignment_not_implemented",
     "credential_missing",
-    "executable_evidence_boundary_not_implemented",
+    "observed_evidence_census_pending",
     "repository_not_clean_synchronized_main",
     "variant_execution_authorization_pending",
 ]
@@ -109,15 +117,9 @@ class ScheduledClaimCorpusRequest(_StrictFrozenModel):
                 raise ValueError("only B0 may use the deterministic local route")
             if self.model_policy_sha256 is not None:
                 raise ValueError("the deterministic route cannot bind a model policy")
-        elif (
-            self.variant == "B0"
-            or self.maximum_attempts != 2
-            or self.model_policy_sha256 is None
-        ):
+        elif self.variant == "B0" or self.maximum_attempts != 2 or self.model_policy_sha256 is None:
             raise ValueError("model-backed requests require the frozen two-attempt policy")
-        if self.schedule_entry_sha256 != canonical_execution_sha256(
-            self.identity_payload()
-        ):
+        if self.schedule_entry_sha256 != canonical_execution_sha256(self.identity_payload()):
             raise ValueError("schedule entry identity does not match canonical content")
         return self
 
@@ -125,14 +127,13 @@ class ScheduledClaimCorpusRequest(_StrictFrozenModel):
 class ClaimCorpusExecutionPlan(_StrictFrozenModel):
     """Canonical dry-run plan for the 360-request primary census."""
 
-    schema_version: Literal["claim-corpus-execution-plan/v1"] = (
-        EXECUTION_PLAN_SCHEMA_VERSION
-    )
+    schema_version: Literal["claim-corpus-execution-plan/v1"] = EXECUTION_PLAN_SCHEMA_VERSION
     readiness_plan_sha256: Sha256
     request_census_sha256: Sha256
     fairness_freeze_sha256: Sha256
     variant_registry_sha256: Sha256
     human_workflow_sha256: Sha256
+    evidence_semantics_policy_sha256: Sha256
     model: Literal["gpt-4.1"]
     model_snapshot: Literal["gpt-4.1-2025-04-14"]
     maximum_output_tokens_per_model_request: Literal[600]
@@ -141,13 +142,14 @@ class ClaimCorpusExecutionPlan(_StrictFrozenModel):
     deterministic_request_count: Literal[45]
     reserve_request_count_scheduled: Literal[0]
     maximum_provider_attempts_per_request: Literal[2]
-    one_attempt_provider_call_ceiling: Literal[315]
-    retry_ceiling_provider_call_count: Literal[630]
-    one_attempt_output_token_ceiling: Literal[189000]
-    retry_output_token_ceiling: Literal[378000]
-    requests: tuple[ScheduledClaimCorpusRequest, ...] = Field(
-        min_length=360, max_length=360
-    )
+    relation_assignment_request_ceiling: Literal[1800]
+    one_attempt_provider_call_ceiling: Literal[2115]
+    retry_ceiling_provider_call_count: Literal[4230]
+    generation_output_token_ceiling: Literal[189000]
+    relation_output_token_ceiling: Literal[1080000]
+    one_attempt_output_token_ceiling: Literal[1269000]
+    retry_output_token_ceiling: Literal[2538000]
+    requests: tuple[ScheduledClaimCorpusRequest, ...] = Field(min_length=360, max_length=360)
     provider_calls_executed: Literal[False] = False
     outputs_generated: Literal[False] = False
     claims_materialized: Literal[False] = False
@@ -189,7 +191,10 @@ class ClaimCorpusExecutionPreflight(_StrictFrozenModel):
     primary_request_count: Literal[360]
     model_request_count: Literal[315]
     deterministic_request_count: Literal[45]
+    relation_assignment_request_ceiling: Literal[1800]
     reserve_request_count_scheduled: Literal[0]
+    observed_evidence_context_count: Literal[0, 45]
+    observed_evidence_census_sha256: Sha256 | None
     exact_input_token_count_known: Literal[False] = False
     exact_cost_estimate_available: Literal[False] = False
     provider_calls_executed: Literal[False] = False
@@ -210,9 +215,7 @@ class ClaimCorpusExecutionPreflight(_StrictFrozenModel):
             raise ValueError("live-ready preflight cannot retain blockers")
         if self.status != "claim_corpus_live_execution_ready" and not self.live_blockers:
             raise ValueError("blocked preflight must name at least one blocker")
-        if self.preflight_sha256 != canonical_execution_sha256(
-            self.identity_payload()
-        ):
+        if self.preflight_sha256 != canonical_execution_sha256(self.identity_payload()):
             raise ValueError("preflight identity does not match canonical content")
         return self
 
@@ -244,9 +247,7 @@ class ClaimCorpusExecutionRehearsal(_StrictFrozenModel):
 
     @model_validator(mode="after")
     def _identity_reconciles(self) -> Self:
-        if self.rehearsal_sha256 != canonical_execution_sha256(
-            self.identity_payload()
-        ):
+        if self.rehearsal_sha256 != canonical_execution_sha256(self.identity_payload()):
             raise ValueError("rehearsal identity does not match canonical content")
         return self
 
@@ -298,6 +299,7 @@ def build_execution_plan(root: Path) -> ClaimCorpusExecutionPlan:
     freeze = load_diagnosis_variant_freeze(checked_root / FAIRNESS_PATH)
     registry = build_variant_registry(freeze)
     workflow = load_human_workflow(checked_root, Path(HUMAN_WORKFLOW_PATH))
+    semantics_policy = load_evidence_semantics_policy(checked_root)
     model_policy = freeze.model_policies.get("main_llm_v1")
     if model_policy is None:
         raise ClaimCorpusExecutionError("frozen main model policy is unavailable")
@@ -320,6 +322,7 @@ def build_execution_plan(root: Path) -> ClaimCorpusExecutionPlan:
         "fairness_freeze_sha256": registry.freeze_sha256,
         "variant_registry_sha256": registry.registry_sha256,
         "human_workflow_sha256": workflow.workflow_sha256,
+        "evidence_semantics_policy_sha256": semantics_policy.policy_sha256,
         "model": "gpt-4.1",
         "model_snapshot": "gpt-4.1-2025-04-14",
         "maximum_output_tokens_per_model_request": 600,
@@ -328,10 +331,13 @@ def build_execution_plan(root: Path) -> ClaimCorpusExecutionPlan:
         "deterministic_request_count": 45,
         "reserve_request_count_scheduled": 0,
         "maximum_provider_attempts_per_request": 2,
-        "one_attempt_provider_call_ceiling": 315,
-        "retry_ceiling_provider_call_count": 630,
-        "one_attempt_output_token_ceiling": 189000,
-        "retry_output_token_ceiling": 378000,
+        "relation_assignment_request_ceiling": 1800,
+        "one_attempt_provider_call_ceiling": 2115,
+        "retry_ceiling_provider_call_count": 4230,
+        "generation_output_token_ceiling": 189000,
+        "relation_output_token_ceiling": 1080000,
+        "one_attempt_output_token_ceiling": 1269000,
+        "retry_output_token_ceiling": 2538000,
         "requests": tuple(item.model_dump(mode="json") for item in requests),
         "provider_calls_executed": False,
         "outputs_generated": False,
@@ -385,15 +391,24 @@ def build_execution_preflight(
     *,
     repository_state: RepositoryExecutionState,
     credential_present: bool,
+    evidence_census: ObservedEvidenceCensus | None = None,
 ) -> ClaimCorpusExecutionPreflight:
     """Build a public-safe live-readiness receipt without reading a secret value."""
 
     plan = build_execution_plan(root)
-    blockers: list[LiveBlocker] = [
-        "automatic_relation_assignment_not_implemented",
-        "executable_evidence_boundary_not_implemented",
-        "variant_execution_authorization_pending",
-    ]
+    checked_evidence: ObservedEvidenceCensus | None = None
+    if evidence_census is not None:
+        try:
+            checked_evidence = validate_observed_evidence_census(
+                _load_census(root), evidence_census
+            )
+        except ClaimCorpusContractError as exc:
+            raise ClaimCorpusExecutionError(
+                "observed evidence census does not match the execution census"
+            ) from exc
+    blockers: list[LiveBlocker] = ["variant_execution_authorization_pending"]
+    if checked_evidence is None:
+        blockers.append("observed_evidence_census_pending")
     if not repository_state.synchronized_main:
         blockers.append("repository_not_clean_synchronized_main")
     if not credential_present:
@@ -411,7 +426,12 @@ def build_execution_preflight(
         "primary_request_count": 360,
         "model_request_count": 315,
         "deterministic_request_count": 45,
+        "relation_assignment_request_ceiling": 1800,
         "reserve_request_count_scheduled": 0,
+        "observed_evidence_context_count": 45 if checked_evidence is not None else 0,
+        "observed_evidence_census_sha256": (
+            checked_evidence.census_sha256 if checked_evidence is not None else None
+        ),
         "exact_input_token_count_known": False,
         "exact_cost_estimate_available": False,
         "provider_calls_executed": False,
@@ -423,6 +443,17 @@ def build_execution_preflight(
     return ClaimCorpusExecutionPreflight.model_validate(
         {**payload, "preflight_sha256": canonical_execution_sha256(payload)}
     )
+
+
+def load_execution_evidence_census(root: Path, path: Path) -> ObservedEvidenceCensus:
+    """Load the evidence census used to clear the live execution blocker."""
+
+    try:
+        return load_observed_evidence_census(path, _load_census(root))
+    except ClaimCorpusContractError as exc:
+        raise ClaimCorpusExecutionError(
+            "observed evidence census is unavailable or invalid"
+        ) from exc
 
 
 def plan_resume_actions(
@@ -511,6 +542,7 @@ __all__ = [
     "build_execution_preflight",
     "canonical_json_bytes",
     "inspect_repository_state",
+    "load_execution_evidence_census",
     "plan_resume_actions",
     "rehearse_execution",
 ]

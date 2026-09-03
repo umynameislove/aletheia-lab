@@ -418,6 +418,8 @@ def implementation_manifest(root: Path, parent_protocol_sha256: str) -> dict[str
     relative_paths = (
         "src/aletheia_lab/evaluation/claim_corpus_contracts.py",
         "src/aletheia_lab/evaluation/claim_corpus_adapters.py",
+        "src/aletheia_lab/evaluation/claim_evidence_semantics.py",
+        "src/aletheia_lab/evaluation/claim_evidence_census.py",
         "src/aletheia_lab/evaluation/claim_support_instrument.py",
         "src/aletheia_lab/evaluation/claim_corpus_materializer.py",
         "src/aletheia_lab/evaluation/claim_corpus_store.py",

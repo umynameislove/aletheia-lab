@@ -99,6 +99,9 @@ Aletheia currently provides:
   source population, family-diversity requirements, comparable diagnosis
   variants, atomic-claim boundary, automatic support semantics and
   non-adaptive contingency rules before provider calls or claim extraction.
+- a content-addressed observed-evidence boundary and blind relation-assignment
+  policy that expose only claim text, claim type and cited visible evidence,
+  while rejecting cross-claim replay and evaluator metadata leakage.
 
 Aletheia Lab is research software, not a production incident-response system.
 The repository includes the complete deterministic benchmark, evidence-store,
@@ -137,10 +140,11 @@ No provider output or real claim has been materialized. Development execution,
 corpus freezing and independent human validation remain separate gated stages.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
-replay without provider access. The live gate remains closed until real visible
-evidence, automatic relation assignment and explicit execution authorization are
-bound prospectively; see the materialization-readiness document for the exact
-blockers and verification commands.
+replay without provider access. The visible-evidence and automatic-relation
+semantics are now bound prospectively. The live gate remains closed until all
+45 real development evidence contexts are captured, exact tokens and cost are
+computed, and execution is explicitly authorized; see the materialization-
+readiness document for the exact blockers and verification commands.
 
 ## Installation
 
