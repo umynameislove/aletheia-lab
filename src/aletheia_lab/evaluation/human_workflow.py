@@ -40,6 +40,14 @@ Sha256 = Annotated[str, Field(pattern=SHA256_PATTERN)]
 RaterSlot = Literal["rater_1", "rater_2"]
 StudyPhase = Literal["onboarding", "main"]
 OnboardingStatus = Literal["ready_for_main_annotation", "retraining_required"]
+WorkflowId = Literal[
+    "claim-support-independent-human-workflow-v1",
+    "claim-support-independent-human-workflow-v2",
+]
+FixtureId = Literal[
+    "claim-support-synthetic-onboarding-v1",
+    "claim-support-synthetic-onboarding-v2",
+]
 
 
 class HumanWorkflowError(ValueError):
@@ -69,7 +77,7 @@ def _relative_path(value: str) -> str:
 
 class HumanWorkflowProtocol(_StrictFrozenModel):
     schema_version: Literal["claim-support-human-workflow/v1"] = HUMAN_WORKFLOW_SCHEMA_VERSION
-    workflow_id: Literal["claim-support-independent-human-workflow-v1"]
+    workflow_id: WorkflowId
     validation_protocol_path: str
     validation_protocol_sha256: Sha256
     rater_guide_path: str
@@ -121,7 +129,7 @@ class HumanWorkflowProtocol(_StrictFrozenModel):
 
 
 class OnboardingEvidence(_StrictFrozenModel):
-    evidence_id: str = Field(pattern=r"^training-evidence-[0-9]{2}$")
+    evidence_id: str = Field(pattern=r"^training(?:-v2)?-evidence-[0-9]{2}$")
     artifact_ref: str
     excerpt: str
 
@@ -137,7 +145,7 @@ class OnboardingEvidence(_StrictFrozenModel):
 
 
 class OnboardingCase(_StrictFrozenModel):
-    case_id: str = Field(pattern=r"^onboarding-case-[0-9]{2}$")
+    case_id: str = Field(pattern=r"^onboarding(?:-v2)?-case-[0-9]{2}$")
     claim_text: str
     visible_evidence: tuple[OnboardingEvidence, ...] = Field(min_length=1, max_length=3)
     reference_label: SupportLabel
@@ -165,7 +173,7 @@ class OnboardingFixture(_StrictFrozenModel):
     schema_version: Literal["claim-support-onboarding-fixture/v1"] = (
         ONBOARDING_FIXTURE_SCHEMA_VERSION
     )
-    fixture_id: Literal["claim-support-synthetic-onboarding-v1"]
+    fixture_id: FixtureId
     purpose: Literal["rater_training_and_qualification_only"]
     synthetic_only: Literal[True] = True
     eligible_for_scientific_analysis: Literal[False] = False
@@ -185,6 +193,20 @@ class OnboardingFixture(_StrictFrozenModel):
         census = Counter(item.reference_label for item in self.cases)
         if census != Counter({label: 5 for label in LABEL_ORDER}):
             raise ValueError("onboarding fixture must contain five cases per support label")
+        case_prefix = (
+            "onboarding-case-"
+            if self.fixture_id == "claim-support-synthetic-onboarding-v1"
+            else "onboarding-v2-case-"
+        )
+        evidence_prefix = (
+            "training-evidence-"
+            if self.fixture_id == "claim-support-synthetic-onboarding-v1"
+            else "training-v2-evidence-"
+        )
+        if any(not identifier.startswith(case_prefix) for identifier in identifiers):
+            raise ValueError("onboarding case IDs must match the fixture version")
+        if any(not identifier.startswith(evidence_prefix) for identifier in evidence_ids):
+            raise ValueError("onboarding evidence IDs must match the fixture version")
         payload = self.model_dump(mode="json", exclude={"fixture_sha256"})
         if self.fixture_sha256 != canonical_sha256(payload):
             raise ValueError("onboarding fixture hash does not match canonical content")
@@ -372,6 +394,24 @@ def load_human_workflow(root: Path, path: Path) -> HumanWorkflowProtocol:
         _fail("human workflow rater-guide bytes differ from the frozen binding")
     if fixture.fixture_sha256 != workflow.onboarding_fixture_sha256:
         _fail("human workflow onboarding fixture differs from the frozen binding")
+    version = workflow.workflow_id.rsplit("-", maxsplit=1)[-1]
+    expected_paths = {
+        "v1": (
+            "docs/claim-support-rater-guide.md",
+            "configs/evaluation/claim_support_onboarding_fixture.json",
+        ),
+        "v2": (
+            "docs/claim-support-rater-guide-v2.md",
+            "configs/evaluation/claim_support_onboarding_fixture_v2.json",
+        ),
+    }
+    if (workflow.rater_guide_path, workflow.onboarding_fixture_path) != expected_paths[version]:
+        _fail("human workflow version uses mismatched guide or fixture paths")
+    expected_fixture_id = workflow.workflow_id.replace(
+        "independent-human-workflow", "synthetic-onboarding"
+    )
+    if fixture.fixture_id != expected_fixture_id:
+        _fail("human workflow and onboarding fixture versions differ")
     return workflow
 
 

@@ -17,6 +17,7 @@ from aletheia_lab.evaluation.instrument_validation import BlindAnnotationPacket
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts/claim_support_human_workflow.py"
+V2_WORKFLOW = ROOT / "configs/evaluation/claim_support_human_workflow_v2.json"
 
 
 def _run(command: str, *extra: str, hash_seed: str = "1") -> dict[str, object]:
@@ -45,6 +46,30 @@ def test_verify_and_dry_run_are_outcome_free_and_hash_seed_stable() -> None:
     assert first["main_or_sealed_outcomes_opened"] is False
     assert dry_run["status"] == "synthetic_onboarding_preparation_dry_run_passed"
     assert dry_run["artifacts_written"] is False
+
+
+def test_v2_verify_and_private_materials_are_hash_seed_stable(tmp_path: Path) -> None:
+    first = _run("verify", "--workflow", str(V2_WORKFLOW), hash_seed="1")
+    second = _run("verify", "--workflow", str(V2_WORKFLOW), hash_seed="104729")
+    destination = tmp_path / "human-onboarding-v2"
+    prepared = _run(
+        "prepare-onboarding",
+        "--workflow",
+        str(V2_WORKFLOW),
+        "--output-dir",
+        str(destination),
+    )
+
+    assert first == second
+    assert first["workflow_sha256"] == prepared["workflow_sha256"]
+    assert first["onboarding_case_count"] == 20
+    assert (destination / "coordinator-private/onboarding-answer-key.json").is_file()
+    for rater in ("rater-1", "rater-2"):
+        public_text = "\n".join(
+            path.read_text(encoding="utf-8") for path in sorted((destination / rater).iterdir())
+        )
+        assert "reference_label" not in public_text
+        assert "teaching_note" not in public_text
 
 
 def test_prepare_onboarding_separates_raters_from_private_answer_key(tmp_path: Path) -> None:
@@ -101,6 +126,19 @@ def test_completed_submission_locks_through_the_cli(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     output_path = tmp_path / "locked/completed.json"
+
+    precheck = _run(
+        "validate-submission",
+        "--packet",
+        str(packet_path),
+        "--submission",
+        str(submission_path),
+    )
+
+    assert precheck["status"] == "human_submission_precheck_passed_no_artifact_written"
+    assert precheck["answer_key_opened"] is False
+    assert precheck["artifacts_written"] is False
+    assert not output_path.exists()
 
     result = _run(
         "lock-submission",

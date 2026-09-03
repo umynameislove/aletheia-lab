@@ -1,0 +1,270 @@
+{
+  "schema_version": "claim-support-onboarding-fixture/v1",
+  "fixture_id": "claim-support-synthetic-onboarding-v2",
+  "purpose": "rater_training_and_qualification_only",
+  "synthetic_only": true,
+  "eligible_for_scientific_analysis": false,
+  "cases": [
+    {
+      "case_id": "onboarding-v2-case-01",
+      "claim_text": "The backup completed before deployment began.",
+      "visible_evidence": [
+        {
+          "evidence_id": "training-v2-evidence-01",
+          "artifact_ref": "synthetic/onboarding-v2/deployment-timeline.json",
+          "excerpt": "Deployment began at 10:05 UTC; the backup completed at 10:18 UTC."
+        }
+      ],
+      "reference_label": "contradicted",
+      "teaching_note": "The observed ordering directly conflicts with the claimed before-deployment completion."
+    },
+    {
+      "case_id": "onboarding-v2-case-02",
+      "claim_text": "Every normalized feature value was within the closed interval from zero to one.",
+      "visible_evidence": [
+        {
+          "evidence_id": "training-v2-evidence-02",
+          "artifact_ref": "synthetic/onboarding-v2/feature-profile.json",
+          "excerpt": "The complete normalized-feature profile reported minimum=-0.12 and maximum=0.94."
+        }
+      ],
+      "reference_label": "contradicted",
+      "teaching_note": "The complete profile contains a value below zero, directly refuting the universal range claim."
+    },
+    {
+      "case_id": "onboarding-v2-case-03",
+      "claim_text": "The executed request policy allowed exactly five retries.",
+      "visible_evidence": [
+        {
+          "evidence_id": "training-v2-evidence-03",
+          "artifact_ref": "synthetic/onboarding-v2/runtime-policy.json",
+          "excerpt": "Resolved runtime policy: retry_limit=2; the logged policy hash matches the executed request."
+        }
+      ],
+      "reference_label": "contradicted",
+      "teaching_note": "The executed policy binds an exact retry limit of two rather than five."
+    },
+    {
+      "case_id": "onboarding-v2-case-04",
+      "claim_text": "TLS certificate expiry caused the captured payment failures.",
+      "visible_evidence": [
+        {
+          "evidence_id": "training-v2-evidence-04",
+          "artifact_ref": "synthetic/onboarding-v2/payment-failures.json",
+          "excerpt": "TLS verification succeeded for every captured failure; each terminal trace ended with DB_DEADLOCK."
+        }
+      ],
+      "reference_label": "contradicted",
+      "teaching_note": "Successful TLS verification and a different terminal cause directly conflict with the asserted cause."
+    },
+    {
+      "case_id": "onboarding-v2-case-05",
+      "claim_text": "The evaluation read records from the sealed test partition.",
+      "visible_evidence": [
+        {
+          "evidence_id": "training-v2-evidence-05",
+          "artifact_ref": "synthetic/onboarding-v2/partition-access.json",
+          "excerpt": "Execution manifest source_partition=development; sealed partition access count=0 for the complete run."
+        }
+      ],
+      "reference_label": "contradicted",
+      "teaching_note": "The complete access record directly rules out reading the sealed partition."
+    },
+    {
+      "case_id": "onboarding-v2-case-06",
+      "claim_text": "Worker memory usage will exceed 90 percent during the next hour.",
+      "visible_evidence": [
+        {
+          "evidence_id": "training-v2-evidence-06",
+          "artifact_ref": "synthetic/onboarding-v2/current-memory.json",
+          "excerpt": "Worker memory ranged from 47 to 49 percent during the most recent ten-minute window."
+        }
+      ],
+      "reference_label": "unsupported",
+      "teaching_note": "A short current observation neither establishes nor rules out the stated future value."
+    },
+    {
+      "case_id": "onboarding-v2-case-07",
+      "claim_text": "Creating the new database index caused the subsequent latency reduction.",
+      "visible_evidence": [
+        {
+          "evidence_id": "training-v2-evidence-07",
+          "artifact_ref": "synthetic/onboarding-v2/index-timeline.json",
+          "excerpt": "The index was created at 11:00 UTC; median latency was lower in the measurement taken at 11:20 UTC."
+        }
+      ],
+      "reference_label": "unsupported",
+      "teaching_note": "Temporal order and a later measurement do not establish the asserted causal relationship."
+    },
+    {
+      "case_id": "onboarding-v2-case-08",
+      "claim_text": "All European customers prefer annual billing.",
+      "visible_evidence": [
+        {
+          "evidence_id": "training-v2-evidence-08",
+          "artifact_ref": "synthetic/onboarding-v2/apac-survey.json",
+          "excerpt": "A voluntary survey recorded billing preferences for 25 respondents located in the APAC region."
+        }
+      ],
+      "reference_label": "unsupported",
+      "teaching_note": "An APAC convenience sample provides no support or direct counterevidence for a universal European claim."
+    },
+    {
+      "case_id": "onboarding-v2-case-09",
+      "claim_text": "Hidden target leakage produced the observed macro-F1 increase.",
+      "visible_evidence": [
+        {
+          "evidence_id": "training-v2-evidence-09",
+          "artifact_ref": "synthetic/onboarding-v2/model-metrics.json",
+          "excerpt": "Macro-F1 increased from 0.61 to 0.69 between the two recorded model runs."
+        }
+      ],
+      "reference_label": "unsupported",
+      "teaching_note": "The metric change contains no feature audit or causal evidence about target leakage."
+    },
+    {
+      "case_id": "onboarding-v2-case-10",
+      "claim_text": "Removing debug logging will reduce monthly infrastructure cost by 15 percent.",
+      "visible_evidence": [
+        {
+          "evidence_id": "training-v2-evidence-10",
+          "artifact_ref": "synthetic/onboarding-v2/log-volume.json",
+          "excerpt": "Debug logs currently occupy 180 gigabytes of storage; no logging intervention or cost model was evaluated."
+        }
+      ],
+      "reference_label": "unsupported",
+      "teaching_note": "Current volume alone establishes neither the intervention effect nor the claimed cost magnitude."
+    },
+    {
+      "case_id": "onboarding-v2-case-11",
+      "claim_text": "Timeouts increased during the incident and were concentrated in checkout requests.",
+      "visible_evidence": [
+        {
+          "evidence_id": "training-v2-evidence-11",
+          "artifact_ref": "synthetic/onboarding-v2/timeout-summary.json",
+          "excerpt": "Timeout count increased from 17 to 63 during the incident; endpoint-level counts were not collected."
+        }
+      ],
+      "reference_label": "partially_supported",
+      "teaching_note": "The increase is established, while the checkout concentration remains unmeasured and is not contradicted."
+    },
+    {
+      "case_id": "onboarding-v2-case-12",
+      "claim_text": "The model artifact was rebuilt from commit a1b2c3 and signed by the release bot.",
+      "visible_evidence": [
+        {
+          "evidence_id": "training-v2-evidence-12",
+          "artifact_ref": "synthetic/onboarding-v2/model-build.json",
+          "excerpt": "Build metadata records source_commit=a1b2c3; signer metadata is unavailable."
+        }
+      ],
+      "reference_label": "partially_supported",
+      "teaching_note": "The source commit is established, while the signer remains unestablished without conflicting evidence."
+    },
+    {
+      "case_id": "onboarding-v2-case-13",
+      "claim_text": "Schema drift added two columns and caused parser warnings.",
+      "visible_evidence": [
+        {
+          "evidence_id": "training-v2-evidence-13",
+          "artifact_ref": "synthetic/onboarding-v2/schema-comparison.json",
+          "excerpt": "The observed schema contains two columns absent from the reference schema; parser logs were not retained."
+        }
+      ],
+      "reference_label": "partially_supported",
+      "teaching_note": "The two added columns are established, while parser warnings and their cause remain unestablished."
+    },
+    {
+      "case_id": "onboarding-v2-case-14",
+      "claim_text": "The controlled cache eviction reduced the error rate and restored p95 latency.",
+      "visible_evidence": [
+        {
+          "evidence_id": "training-v2-evidence-14",
+          "artifact_ref": "synthetic/onboarding-v2/cache-intervention.json",
+          "excerpt": "Cache eviction was the only intervention; error rate fell from 5.0 to 1.0 percent. No latency measurement was recorded."
+        }
+      ],
+      "reference_label": "partially_supported",
+      "teaching_note": "The bounded intervention supports the error-rate effect, while latency restoration remains unmeasured."
+    },
+    {
+      "case_id": "onboarding-v2-case-15",
+      "claim_text": "The incident affected the API and the worker queue for 25 minutes.",
+      "visible_evidence": [
+        {
+          "evidence_id": "training-v2-evidence-15",
+          "artifact_ref": "synthetic/onboarding-v2/incident-window.json",
+          "excerpt": "The API exceeded its degradation threshold continuously for 25 minutes; worker-queue telemetry is unavailable."
+        }
+      ],
+      "reference_label": "partially_supported",
+      "teaching_note": "The API impact and duration are established, while worker-queue impact remains unestablished."
+    },
+    {
+      "case_id": "onboarding-v2-case-16",
+      "claim_text": "The downloaded model artifact exactly matches the registered artifact bytes.",
+      "visible_evidence": [
+        {
+          "evidence_id": "training-v2-evidence-16",
+          "artifact_ref": "synthetic/onboarding-v2/artifact-integrity.json",
+          "excerpt": "Registered SHA-256=8abc; downloaded SHA-256=8abc; both digests cover the complete file bytes."
+        }
+      ],
+      "reference_label": "fully_supported",
+      "teaching_note": "Matching complete-file digests establish byte identity for the two artifacts."
+    },
+    {
+      "case_id": "onboarding-v2-case-17",
+      "claim_text": "Rolling back configuration revision 17 restored the error rate to its registered baseline.",
+      "visible_evidence": [
+        {
+          "evidence_id": "training-v2-evidence-17",
+          "artifact_ref": "synthetic/onboarding-v2/configuration-rollback.json",
+          "excerpt": "Registered baseline error rate=0.4 percent; pre-rollback rate=6.2 percent; post-rollback rate=0.4 percent; no other intervention occurred."
+        }
+      ],
+      "reference_label": "fully_supported",
+      "teaching_note": "The isolated rollback and matching post-intervention baseline establish the complete bounded claim."
+    },
+    {
+      "case_id": "onboarding-v2-case-18",
+      "claim_text": "The executed preprocessing path used median imputation for the age column.",
+      "visible_evidence": [
+        {
+          "evidence_id": "training-v2-evidence-18",
+          "artifact_ref": "synthetic/onboarding-v2/preprocessing-trace.json",
+          "excerpt": "Executed step=median_imputer; fitted column=age; trace status=completed; execution hash matches the run manifest."
+        }
+      ],
+      "reference_label": "fully_supported",
+      "teaching_note": "The bound execution trace establishes the method, column, and executed status."
+    },
+    {
+      "case_id": "onboarding-v2-case-19",
+      "claim_text": "The complete evaluation dataset contains exactly 27 duplicate rows.",
+      "visible_evidence": [
+        {
+          "evidence_id": "training-v2-evidence-19",
+          "artifact_ref": "synthetic/onboarding-v2/duplicate-audit.json",
+          "excerpt": "Complete-dataset duplicate audit: row_count=6,000; duplicate_row_count=27; rows_scanned=6,000."
+        }
+      ],
+      "reference_label": "fully_supported",
+      "teaching_note": "The complete census establishes both the exact duplicate count and its dataset scope."
+    },
+    {
+      "case_id": "onboarding-v2-case-20",
+      "claim_text": "Incident-window p99 latency exceeded the registered 750 millisecond threshold.",
+      "visible_evidence": [
+        {
+          "evidence_id": "training-v2-evidence-20",
+          "artifact_ref": "synthetic/onboarding-v2/latency-threshold.json",
+          "excerpt": "Registered incident p99 threshold=750 ms; measured incident-window p99=903 ms."
+        }
+      ],
+      "reference_label": "fully_supported",
+      "teaching_note": "The registered threshold and measured value establish the metric, window, and exceedance."
+    }
+  ],
+  "fixture_sha256": "c31285ed8822ec41f5f56371541892156cb2423af52fbf2898a0d424a0c37e3e"
+}
