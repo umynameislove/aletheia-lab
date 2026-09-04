@@ -150,8 +150,10 @@ replay without provider access. The visible-evidence and automatic-relation
 semantics are bound prospectively. The 45-context measured evidence census and
 its frozen-input accounting receipt are complete, but the live gate remains
 closed until execution is explicitly authorized from a clean synchronized
-`main`; see the materialization-readiness document for the exact boundary and
-verification commands.
+`main`. The live execution boundary now provides create-only authorization, an
+immutable per-request attempt store, terminal replay semantics and a
+credential-safe CLI; see the materialization-readiness document for the exact
+authorization and execution commands.
 
 ## Installation
 

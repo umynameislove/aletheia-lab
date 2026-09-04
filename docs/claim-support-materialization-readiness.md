@@ -174,3 +174,64 @@ The fairness freeze still records `execution_authorized=false`; explicit
 authorization and a clean synchronized `main` remain mandatory. Synthetic
 fixtures, intervention labels, arbitrary relation metadata and post-output
 patches cannot clear the gate.
+
+## Authorized diagnosis execution
+
+The live boundary is deliberately split into authorization and execution.
+Authorization is permitted only from a clean checkout of synchronized `main`
+and binds the commit, 360-request plan, 45-context census, token receipt,
+pinned GPT-4.1 snapshot, retry ceiling and conservative cost ceiling. The
+authorization file, lease, attempt store and terminal receipt must remain in a
+private directory outside the repository.
+
+First create the immutable authorization without making a provider call. Copy
+the exact `execution_plan_sha256` printed by preflight into the confirmation
+argument:
+
+```bash
+CLAIM_RUN_DIR="/absolute/private/claim-support-live-run"
+CLAIM_PLAN_SHA256="replace-with-exact-preflight-value"
+PYTHONPATH=src python scripts/claim_support_corpus_execution.py authorize \
+  --evidence-census configs/evaluation/claim_support_observed_evidence_census.json \
+  --evidence-receipt configs/evaluation/claim_support_observed_evidence_receipt.json \
+  --confirm-plan-sha256 "$CLAIM_PLAN_SHA256" \
+  --output "$CLAIM_RUN_DIR/authorization.json"
+```
+
+After setting `OPENAI_API_KEY`, require the complete gate to pass:
+
+```bash
+PYTHONPATH=src python scripts/claim_support_corpus_execution.py require-live-ready \
+  --evidence-census configs/evaluation/claim_support_observed_evidence_census.json \
+  --evidence-receipt configs/evaluation/claim_support_observed_evidence_receipt.json \
+  --authorization "$CLAIM_RUN_DIR/authorization.json"
+```
+
+Only then execute the registered diagnosis run, confirming the exact
+`authorization_sha256` printed by the authorization command:
+
+```bash
+CLAIM_AUTHORIZATION_SHA256="replace-with-exact-authorization-value"
+caffeinate -dimsu env PYTHONPATH=src \
+  python scripts/claim_support_corpus_execution.py execute \
+  --evidence-census configs/evaluation/claim_support_observed_evidence_census.json \
+  --evidence-receipt configs/evaluation/claim_support_observed_evidence_receipt.json \
+  --authorization "$CLAIM_RUN_DIR/authorization.json" \
+  --confirm-authorization-sha256 "$CLAIM_AUTHORIZATION_SHA256" \
+  --store "$CLAIM_RUN_DIR/attempt-store" \
+  --lease "$CLAIM_RUN_DIR/execution-lease.json" \
+  --output "$CLAIM_RUN_DIR/diagnosis-execution-receipt.json"
+```
+
+The runner constructs exactly 315 provider-backed requests and 45 local B0
+requests. Provider-visible prompt and context bytes are exactly those used by
+the frozen token receipt. Every raw response, parsed technical result, retry
+record and terminal state is content-addressed. A terminal replay is an
+idempotent no-op; any partial request blocks continuation. Per-request shards
+retain the existing immutable-store verifier while avoiding a quadratic scan
+of all 360 ledgers after every state transition.
+
+Completion of this command is technical diagnosis closeout only. It does not
+assign claim/evidence relations, materialize or select 200 claims, create
+automatic support labels, consume human annotations, or open main/sealed
+evaluation outcomes.
