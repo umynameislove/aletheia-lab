@@ -163,6 +163,11 @@ technical outcomes.
 `OpenAIChatCompletionsGatewayAdapter` implements the same provider-neutral
 boundary for the frozen OpenAI Chat Completions policy. It is deliberately a
 transport implementation, not an execution authority or a scientific variant.
+
+Provider neutrality is not model interchangeability. A different model family,
+dated snapshot or moving alias requires a separately frozen model policy,
+execution manifest and authorization. It cannot be selected as a fallback or
+used to repair an existing registered attempt.
 The adapter:
 
 - verifies that the immutable model-policy reference binds the exact scientific

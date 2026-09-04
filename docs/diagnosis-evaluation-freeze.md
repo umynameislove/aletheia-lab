@@ -92,6 +92,17 @@ fallback. The main LLM variants freeze OpenAI `gpt-4.1-2025-04-14`, temperature
 0, top-p 1, seed 17, 600 output tokens, a 60-second request deadline and at most
 two provider attempts for the same immutable request.
 
+### Prospective model-family replication boundary
+
+This GPT-4.1 freeze remains the primary model contract. A provider-neutral
+adapter does not authorize model substitution. Any GPT-5.6 Terra evaluation is
+a separately preregistered post-core replication using, at minimum,
+B1/A1/A2/A3 over the same 45 contexts (180 provider-backed requests). It cannot
+rescue, overwrite or be pooled with the GPT-4.1 attempt. Confirmatory status
+requires an immutable Terra snapshot; alias-only execution is explicitly
+time-bounded exploratory. B2, CodeGraph and FULL require their own named
+cross-model research question and budget.
+
 ### Resolved implementation registry
 
 Every frozen variant now resolves to a distinct, package-local implementation
