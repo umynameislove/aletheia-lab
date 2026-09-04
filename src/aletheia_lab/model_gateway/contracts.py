@@ -9,6 +9,7 @@ from typing import Annotated, Final, Literal, Protocol, Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from aletheia_lab.context.evaluation_context import EvaluationContextPayload
+from aletheia_lab.evaluation.claim_evidence_semantics import ModelVisibleEvidenceContext
 from aletheia_lab.evaluation.execution_contracts import (
     ATTEMPT_IDENTITY_SCHEMA_VERSION,
     AttemptIdentity,
@@ -230,7 +231,7 @@ class GatewayRequest(_StrictFrozenModel):
 
     schema_version: Literal["model-gateway-request/v1"] = GATEWAY_REQUEST_SCHEMA_VERSION
     initial_attempt: AttemptIdentity
-    context: EvaluationContextPayload
+    context: EvaluationContextPayload | ModelVisibleEvidenceContext
     prompt_text: str
     response_schema_json: str
     runtime_policy: RuntimePolicyReference
@@ -240,9 +241,10 @@ class GatewayRequest(_StrictFrozenModel):
         attempt = self.initial_attempt
         if attempt.attempt_ordinal != 1:
             raise ValueError("gateway request initial attempt ordinal must be one")
-        if (
-            self.context.context_sha256 != attempt.context_sha256
-            or self.context.case_reference_id != attempt.case.reference_id
+        if self.context.context_sha256 != attempt.context_sha256:
+            raise ValueError("gateway context does not match immutable attempt identity")
+        if isinstance(self.context, EvaluationContextPayload) and (
+            self.context.case_reference_id != attempt.case.reference_id
             or self.context.project_id != attempt.case.project_id
             or self.context.snapshot_id != attempt.case.snapshot_id
             or self.context.evidence_bundle_id != attempt.case.evidence_bundle_id
@@ -250,6 +252,12 @@ class GatewayRequest(_StrictFrozenModel):
             != attempt.case.visibility_projection_sha256
         ):
             raise ValueError("gateway context does not match immutable attempt identity")
+        if isinstance(self.context, ModelVisibleEvidenceContext) and (
+            self.context.context_sha256 != attempt.case.evidence_content_sha256
+            or self.context.context_sha256
+            != attempt.case.visibility_projection_sha256
+        ):
+            raise ValueError("visible evidence differs from the bound case projection")
         try:
             prompt_sha256 = content_sha256(self.prompt_text.encode("utf-8", errors="strict"))
             schema_sha256 = content_sha256(
@@ -293,12 +301,21 @@ class ProviderCall(_StrictFrozenModel):
 
     @model_validator(mode="after")
     def _content_matches_attempt(self) -> Self:
+        context: EvaluationContextPayload | ModelVisibleEvidenceContext
         try:
             wrapper = json.loads(self.context_json)
             if not isinstance(wrapper, dict):
                 raise ValueError("provider context wrapper must be an object")
-            payload_json = json.dumps(wrapper.get("payload"), ensure_ascii=False)
-            context = EvaluationContextPayload.model_validate_json(payload_json)
+            raw_payload = wrapper.get("payload")
+            if not isinstance(raw_payload, dict):
+                raise ValueError("provider context payload must be an object")
+            payload_json = json.dumps(raw_payload, ensure_ascii=False)
+            if raw_payload.get("schema_version") == "evaluation-context/v1":
+                context = EvaluationContextPayload.model_validate_json(payload_json)
+            elif raw_payload.get("schema_version") == "claim-visible-evidence-context/v1":
+                context = ModelVisibleEvidenceContext.model_validate_json(payload_json)
+            else:
+                raise ValueError("provider context schema is not authorized")
         except (TypeError, ValueError) as exc:
             raise ValueError("provider call contains an invalid context") from exc
         if self.context_json != canonical_execution_json(context.model_dump(mode="json")):

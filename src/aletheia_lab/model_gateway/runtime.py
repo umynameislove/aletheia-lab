@@ -13,12 +13,14 @@ from typing import Literal, cast
 from pydantic import ValidationError
 
 from aletheia_lab.context.evaluation_context import EvaluationContextPayload
+from aletheia_lab.evaluation.claim_evidence_semantics import ModelVisibleEvidenceContext
 from aletheia_lab.evaluation.execution_contracts import (
     AttemptIdentity,
     EvaluationCaseReference,
     EvaluationManifestReference,
     ModelPolicyReference,
     TechnicalIssue,
+    canonical_execution_json,
 )
 from aletheia_lab.model_gateway.contracts import (
     AdapterInvocationError,
@@ -60,7 +62,7 @@ def prepare_gateway_request(
     manifest: EvaluationManifestReference,
     case: EvaluationCaseReference,
     model_policy: ModelPolicyReference,
-    context: EvaluationContextPayload,
+    context: EvaluationContextPayload | ModelVisibleEvidenceContext,
     prompt_text: str,
     response_schema: dict[str, object],
     runtime_policy: RuntimePolicyReference,
@@ -138,7 +140,11 @@ def execute_gateway_request(
             context_sha256=attempt.context_sha256,
             prompt_sha256=attempt.prompt_sha256,
             response_schema_sha256=attempt.response_schema_sha256,
-            context_json=checked.context.canonical_json(),
+            context_json=(
+                checked.context.canonical_json()
+                if isinstance(checked.context, EvaluationContextPayload)
+                else canonical_execution_json(checked.context.model_payload())
+            ),
             prompt_text=checked.prompt_text,
             response_schema_json=checked.response_schema_json,
             runtime_policy=checked.runtime_policy,
