@@ -5,15 +5,16 @@ primary census into one canonical execution schedule, proves the deterministic
 versus model-backed split, and exposes unresolved live-run blockers without
 manufacturing evidence or scientific outcomes.
 """
-
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 from collections import Counter
 from collections.abc import Mapping
+from datetime import datetime
 from pathlib import Path
-from typing import Annotated, Final, Literal, Self
+from typing import Annotated, Final, Literal, Self, cast
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
@@ -55,7 +56,9 @@ from aletheia_lab.project.identity import SHA256_PATTERN
 EXECUTION_PLAN_SCHEMA_VERSION: Final = "claim-corpus-execution-plan/v1"
 EXECUTION_PREFLIGHT_SCHEMA_VERSION: Final = "claim-corpus-execution-preflight/v1"
 EXECUTION_REHEARSAL_SCHEMA_VERSION: Final = "claim-corpus-execution-rehearsal/v1"
-HUMAN_WORKFLOW_PATH: Final = "configs/evaluation/claim_support_human_workflow.json"
+EXECUTION_AUTHORIZATION_SCHEMA_VERSION: Final = "claim-corpus-execution-authorization/v1"
+HUMAN_WORKFLOW_PATH: Final = "configs/evaluation/claim_support_human_workflow_v2.json"
+_UTC_TIMESTAMP = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 
 Sha256 = Annotated[str, Field(pattern=SHA256_PATTERN)]
 ExecutionRoute = Literal["deterministic_local", "model_gateway"]
@@ -177,6 +180,61 @@ class ClaimCorpusExecutionPlan(_StrictFrozenModel):
             raise ValueError("execution route census differs from the frozen variants")
         if self.plan_sha256 != canonical_execution_sha256(self.identity_payload()):
             raise ValueError("execution plan identity does not match canonical content")
+        return self
+
+
+class ClaimCorpusExecutionAuthorization(_StrictFrozenModel):
+    schema_version: Literal["claim-corpus-execution-authorization/v1"] = (
+        EXECUTION_AUTHORIZATION_SCHEMA_VERSION
+    )
+    authorization_ref: str = Field(pattern=r"^ev-[0-9a-f]{64}$")
+    authorization_state: Literal["authorized"] = "authorized"
+    authorization_scope: Literal["development_claim_corpus_primary_census"] = (
+        "development_claim_corpus_primary_census"
+    )
+    authorized_at: str
+    source_commit_ref: str = Field(pattern=r"^[0-9a-f]{40}$")
+    execution_plan_sha256: Sha256
+    observed_evidence_census_sha256: Sha256
+    observed_evidence_receipt_sha256: Sha256
+    model: Literal["gpt-4.1"]
+    model_snapshot: Literal["gpt-4.1-2025-04-14"]
+    primary_request_count: Literal[360]
+    model_request_count: Literal[315]
+    deterministic_request_count: Literal[45]
+    reserve_request_count_scheduled: Literal[0]
+    relation_assignment_request_ceiling: Literal[1800]
+    maximum_provider_attempts_per_request: Literal[2]
+    one_attempt_provider_call_ceiling: Literal[2115]
+    retry_ceiling_provider_call_count: Literal[4230]
+    one_attempt_total_cost_ceiling_usd: float = Field(ge=0.0)
+    registered_execution_attempts: Literal[1] = 1
+    development_only: Literal[True] = True
+    credential_stored: Literal[False] = False
+    human_annotations_collected: Literal[False] = False
+    main_or_sealed_outcomes_opened: Literal[False] = False
+    authorization_sha256: Sha256
+
+    def identity_payload(self) -> dict[str, object]:
+        return self.model_dump(
+            mode="json",
+            exclude={"authorization_ref", "authorization_sha256"},
+        )
+
+    @model_validator(mode="after")
+    def _identity_and_time_reconcile(self) -> Self:
+        if _UTC_TIMESTAMP.fullmatch(self.authorized_at) is None:
+            raise ValueError("authorization timestamp must use canonical UTC seconds")
+        try:
+            datetime.fromisoformat(self.authorized_at[:-1] + "+00:00")
+        except ValueError as exc:
+            raise ValueError("authorization timestamp is invalid") from exc
+        expected = canonical_execution_sha256(self.identity_payload())
+        if (
+            self.authorization_sha256 != expected
+            or self.authorization_ref != f"ev-{expected}"
+        ):
+            raise ValueError("execution authorization identity does not match content")
         return self
 
 
@@ -413,6 +471,7 @@ def build_execution_preflight(
     credential_present: bool,
     evidence_census: ObservedEvidenceCensus | None = None,
     evidence_receipt: ObservedEvidenceReceipt | None = None,
+    authorization: ClaimCorpusExecutionAuthorization | None = None,
 ) -> ClaimCorpusExecutionPreflight:
     """Build a public-safe live-readiness receipt without reading a secret value."""
 
@@ -445,17 +504,37 @@ def build_execution_preflight(
             raise ClaimCorpusExecutionError(
                 "observed evidence receipt does not match the execution census"
             ) from exc
-    blockers: list[LiveBlocker] = ["variant_execution_authorization_pending"]
-    if checked_evidence is None:
-        blockers.append("observed_evidence_census_pending")
-    if not repository_state.synchronized_main:
-        blockers.append("repository_not_clean_synchronized_main")
-    if not credential_present:
-        blockers.append("credential_missing")
+    initial_blockers = cast(
+        tuple[LiveBlocker, ...],
+        ("observed_evidence_census_pending",) * (checked_evidence is None)
+        + ("repository_not_clean_synchronized_main",)
+        * (not repository_state.synchronized_main)
+        + ("credential_missing",) * (not credential_present),
+    )
+    blockers = list(initial_blockers)
+    if authorization is None:
+        blockers.append("variant_execution_authorization_pending")
+    else:
+        if checked_evidence is None or checked_receipt is None:
+            raise ClaimCorpusExecutionError(
+                "execution authorization requires verified evidence and accounting"
+            )
+        validate_execution_authorization(
+            authorization,
+            plan=plan,
+            repository_state=repository_state,
+            evidence_census=checked_evidence,
+            evidence_receipt=checked_receipt,
+        )
     canonical_blockers = tuple(sorted(set(blockers)))
+    status = (
+        "claim_corpus_live_execution_ready"
+        if not canonical_blockers
+        else "claim_corpus_rehearsal_ready_live_blocked"
+    )
     payload: dict[str, object] = {
         "schema_version": EXECUTION_PREFLIGHT_SCHEMA_VERSION,
-        "status": "claim_corpus_rehearsal_ready_live_blocked",
+        "status": status,
         "execution_plan_sha256": plan.plan_sha256,
         "source_commit_ref": repository_state.head_commit,
         "clean_synchronized_main": repository_state.synchronized_main,
@@ -495,6 +574,123 @@ def build_execution_preflight(
     return ClaimCorpusExecutionPreflight.model_validate(
         {**payload, "preflight_sha256": canonical_execution_sha256(payload)}
     )
+
+
+def build_execution_authorization(
+    root: Path,
+    *,
+    repository_state: RepositoryExecutionState,
+    evidence_census: ObservedEvidenceCensus,
+    evidence_receipt: ObservedEvidenceReceipt,
+    authorized_at: str,
+) -> ClaimCorpusExecutionAuthorization:
+    if not repository_state.synchronized_main:
+        raise ClaimCorpusExecutionError(
+            "execution authorization requires a clean synchronized main checkout"
+        )
+    plan = build_execution_plan(root)
+    checked_preflight = build_execution_preflight(
+        root,
+        repository_state=repository_state,
+        credential_present=True,
+        evidence_census=evidence_census,
+        evidence_receipt=evidence_receipt,
+    )
+    if checked_preflight.live_blockers != (
+        "variant_execution_authorization_pending",
+    ):
+        raise ClaimCorpusExecutionError(
+            "execution inputs retain blockers beyond operator authorization"
+        )
+    payload: dict[str, object] = {
+        "schema_version": EXECUTION_AUTHORIZATION_SCHEMA_VERSION,
+        "authorization_state": "authorized",
+        "authorization_scope": "development_claim_corpus_primary_census",
+        "authorized_at": authorized_at,
+        "source_commit_ref": repository_state.head_commit,
+        "execution_plan_sha256": plan.plan_sha256,
+        "observed_evidence_census_sha256": evidence_census.census_sha256,
+        "observed_evidence_receipt_sha256": evidence_receipt.receipt_sha256,
+        "model": plan.model,
+        "model_snapshot": plan.model_snapshot,
+        "primary_request_count": plan.primary_request_count,
+        "model_request_count": plan.model_request_count,
+        "deterministic_request_count": plan.deterministic_request_count,
+        "reserve_request_count_scheduled": plan.reserve_request_count_scheduled,
+        "relation_assignment_request_ceiling": plan.relation_assignment_request_ceiling,
+        "maximum_provider_attempts_per_request": (
+            plan.maximum_provider_attempts_per_request
+        ),
+        "one_attempt_provider_call_ceiling": plan.one_attempt_provider_call_ceiling,
+        "retry_ceiling_provider_call_count": plan.retry_ceiling_provider_call_count,
+        "one_attempt_total_cost_ceiling_usd": (
+            evidence_receipt.one_attempt_total_cost_ceiling_usd
+        ),
+        "registered_execution_attempts": 1,
+        "development_only": True,
+        "credential_stored": False,
+        "human_annotations_collected": False,
+        "main_or_sealed_outcomes_opened": False,
+    }
+    digest = canonical_execution_sha256(payload)
+    return ClaimCorpusExecutionAuthorization.model_validate(
+        {
+            **payload,
+            "authorization_ref": f"ev-{digest}",
+            "authorization_sha256": digest,
+        }
+    )
+
+
+def validate_execution_authorization(
+    authorization: ClaimCorpusExecutionAuthorization,
+    *,
+    plan: ClaimCorpusExecutionPlan,
+    repository_state: RepositoryExecutionState,
+    evidence_census: ObservedEvidenceCensus,
+    evidence_receipt: ObservedEvidenceReceipt,
+) -> ClaimCorpusExecutionAuthorization:
+    checked = ClaimCorpusExecutionAuthorization.model_validate(
+        authorization.model_dump(mode="python")
+    )
+    expected = {
+        "source_commit_ref": repository_state.head_commit,
+        "execution_plan_sha256": plan.plan_sha256,
+        "observed_evidence_census_sha256": evidence_census.census_sha256,
+        "observed_evidence_receipt_sha256": evidence_receipt.receipt_sha256,
+        "model": plan.model,
+        "model_snapshot": plan.model_snapshot,
+        "primary_request_count": plan.primary_request_count,
+        "model_request_count": plan.model_request_count,
+        "deterministic_request_count": plan.deterministic_request_count,
+        "reserve_request_count_scheduled": plan.reserve_request_count_scheduled,
+        "relation_assignment_request_ceiling": plan.relation_assignment_request_ceiling,
+        "maximum_provider_attempts_per_request": (
+            plan.maximum_provider_attempts_per_request
+        ),
+        "one_attempt_provider_call_ceiling": plan.one_attempt_provider_call_ceiling,
+        "retry_ceiling_provider_call_count": plan.retry_ceiling_provider_call_count,
+        "one_attempt_total_cost_ceiling_usd": (
+            evidence_receipt.one_attempt_total_cost_ceiling_usd
+        ),
+    }
+    actual = {field: getattr(checked, field) for field in expected}
+    if actual != expected or not repository_state.synchronized_main:
+        raise ClaimCorpusExecutionError(
+            "execution authorization differs from the current clean-main inputs"
+        )
+    return checked
+
+
+def load_execution_authorization(path: Path) -> ClaimCorpusExecutionAuthorization:
+    try:
+        if path.is_symlink() or not path.resolve(strict=True).is_file():
+            raise OSError("authorization path is not a regular file")
+        return ClaimCorpusExecutionAuthorization.model_validate_json(path.read_bytes())
+    except (OSError, ValidationError) as exc:
+        raise ClaimCorpusExecutionError(
+            "execution authorization is unavailable or invalid"
+        ) from exc
 
 
 def load_execution_evidence_census(root: Path, path: Path) -> ObservedEvidenceCensus:
@@ -585,16 +781,20 @@ def canonical_json_bytes(model: BaseModel) -> bytes:
 
 __all__ = [
     "ClaimCorpusExecutionError",
+    "ClaimCorpusExecutionAuthorization",
     "ClaimCorpusExecutionPlan",
     "ClaimCorpusExecutionPreflight",
     "ClaimCorpusExecutionRehearsal",
     "RepositoryExecutionState",
     "ScheduledClaimCorpusRequest",
+    "build_execution_authorization",
     "build_execution_plan",
     "build_execution_preflight",
     "canonical_json_bytes",
     "inspect_repository_state",
     "load_execution_evidence_census",
+    "load_execution_authorization",
     "plan_resume_actions",
     "rehearse_execution",
+    "validate_execution_authorization",
 ]
