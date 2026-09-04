@@ -339,10 +339,12 @@ python scripts/run_test_profile.py evaluation --repeat 3
 `--show-command` emits a JSON argv array rather than shell text. This preserves
 Unicode, Windows separators, and interpreter paths containing whitespace.
 
-Each evaluation run has a five-minute hard timeout and always reports the 20
-slowest tests. Ordinary unit and property tests target two seconds; a complete
-fixture-provider integration path targets 15 seconds. The authoritative full
-suite remains separate and preserves the global 88 percent coverage gate.
+Each evaluation run has a five-minute POSIX timeout and a twelve-minute Windows
+timeout, and always reports the 20 slowest tests. The larger Windows ceiling
+keeps the same durable immutable-file coverage rather than deselecting tests.
+Ordinary unit and property tests target two seconds; a complete fixture-provider
+integration path targets 15 seconds. The authoritative full suite remains
+separate and preserves the global 88 percent coverage gate.
 
 The controlled mutation audit copies source into a temporary directory, applies
 one guard mutation at a time, and requires the mapped regression test to fail:

@@ -106,7 +106,7 @@ def test_show_command_round_trips_executable_paths_without_shell_splitting(
     assert all(isinstance(item, str) for item in payload)
 
 
-def test_repeated_profile_uses_distinct_hash_seeds_and_five_minute_budget(
+def test_repeated_profile_uses_distinct_hash_seeds_and_posix_budget(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     runner = _runner_module()
@@ -123,6 +123,23 @@ def test_repeated_profile_uses_distinct_hash_seeds_and_five_minute_budget(
     seeds = [str(call["env"]["PYTHONHASHSEED"]) for call in calls]
     assert seeds == ["1", "104729", "209759"]
     assert len(set(seeds)) == 3
+
+
+def test_windows_evaluation_budget_accounts_for_durable_filesystem_cost(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runner = _runner_module()
+    calls: list[dict[str, object]] = []
+
+    def fake_run(*_args: object, **kwargs: object) -> SimpleNamespace:
+        calls.append(kwargs)
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(runner.os, "name", "nt")
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+
+    assert runner.run_profile("evaluation") == 0
+    assert [call["timeout"] for call in calls] == [720]
 
 
 def test_profile_timeout_is_a_blocking_failure(

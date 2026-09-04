@@ -13,6 +13,7 @@ from typing import Final
 
 _ROOT: Final = Path(__file__).resolve().parents[1]
 _EVALUATION_TIMEOUT_SECONDS: Final = 300
+_WINDOWS_EVALUATION_TIMEOUT_SECONDS: Final = 720
 _REPRODUCIBILITY_HASH_SEEDS: Final = ("1", "104729", "209759")
 _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
     "contract": (
@@ -134,6 +135,14 @@ def _hash_seed(run_index: int) -> str:
     return str(209759 + (run_index - 2) * 104729)
 
 
+def _evaluation_timeout_seconds() -> int:
+    """Return the platform budget for the filesystem-heavy evaluation suite."""
+
+    if os.name == "nt":
+        return _WINDOWS_EVALUATION_TIMEOUT_SECONDS
+    return _EVALUATION_TIMEOUT_SECONDS
+
+
 def run_profile(
     profile: str,
     extra: tuple[str, ...] = (),
@@ -143,7 +152,7 @@ def run_profile(
     """Run a profile, enforcing the evaluation budget and repeat seeds."""
 
     command = profile_command(profile, extra)
-    timeout = _EVALUATION_TIMEOUT_SECONDS if profile == "evaluation" else None
+    timeout = _evaluation_timeout_seconds() if profile == "evaluation" else None
     for run_index in range(repeat):
         environment = None
         if repeat > 1:
