@@ -235,3 +235,43 @@ Completion of this command is technical diagnosis closeout only. It does not
 assign claim/evidence relations, materialize or select 200 claims, create
 automatic support labels, consume human annotations, or open main/sealed
 evaluation outcomes.
+
+## Post-execution reserve decision and reconciliation
+
+Reserve eligibility is decided from execution timing, not output quality. A
+reserve family may replace a primary family only when that primary family is
+technically ineligible before any request starts. Provider failures observed
+after a request starts remain terminal records in the authorized denominator;
+they cannot activate a reserve, be silently excluded, or be repaired by a new
+request.
+
+Run the independent read-only reconciliation after the live receipt exists:
+
+```bash
+PYTHONPATH=src python scripts/claim_support_execution_reconciliation.py \
+  --evidence-census configs/evaluation/claim_support_observed_evidence_census.json \
+  --authorization "$CLAIM_RUN_DIR/authorization.json" \
+  --lease "$CLAIM_RUN_DIR/execution-lease.json" \
+  --live-receipt "$CLAIM_RUN_DIR/diagnosis-execution-receipt.json" \
+  --store "$CLAIM_RUN_DIR/attempt-store" \
+  --reserve-output "$CLAIM_RUN_DIR/reserve-activation-receipt.json" \
+  --reconciliation-output "$CLAIM_RUN_DIR/request-reconciliation-receipt.json"
+```
+
+The verifier has no provider adapter, credential access, materializer, relation
+instrument, or human-workflow dependency. It independently checks all 360
+authority files and request shards, the immutable object and ledger chains,
+terminal coverage, evidence and schedule bindings, attempt counts, issue
+census, and the aggregate store hash. Both output receipts are canonical,
+content-addressed, create-only private artifacts; exact replay is idempotent and
+different bytes conflict.
+
+The registered GPT-4.1 execution passed this reconciliation with 360/360
+terminal requests: 258 parsed and 102 `provider_failed`. All 315 provider-backed
+requests and all 45 deterministic requests started, so no family met the
+pre-execution reserve rule and zero reserve requests were activated. The
+provider failures remain denominator-visible. Output normalization is the next
+separate gate. At this point `outputs_normalized`, `claims_materialized`,
+`automatic_labels_generated`, `blind_packets_generated`,
+`human_annotations_collected`, and `main_or_sealed_outcomes_opened` all remain
+false.

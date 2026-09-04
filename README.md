@@ -142,18 +142,28 @@ hash-bound version 2 workflow provide unambiguous synthetic qualification,
 private packet delivery and fail-closed completed-packet validation for two
 independent human raters. The original guide, workflow and fixture remain
 byte-frozen historical inputs and cannot be mixed with version 2 packets.
-No provider output or real claim has been materialized. Development execution,
-corpus freezing and independent human validation remain separate gated stages.
+The registered development execution is terminal-complete on source commit
+`ef2f31a`: all 360 authorized requests have terminal records, with 258 parsed
+responses and 102 provider failures. No automatic label, claim-corpus entry,
+human validation judgment, main outcome or sealed outcome has been materialized.
+Provider failures remain in the denominator; independent reconciliation and
+reserve audit now reconcile all 360 authority files, immutable request shards,
+attempts and terminal records. Because every primary request started, the 102
+post-start provider failures do not qualify for reserve replacement and zero
+reserve requests were activated. The attempt must not be rerun or repaired
+manually. Output normalization and corpus-feasibility audit remain mandatory
+before any claim-corpus freeze.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation
 semantics are bound prospectively. The 45-context measured evidence census and
-its frozen-input accounting receipt are complete, but the live gate remains
-closed until execution is explicitly authorized from a clean synchronized
-`main`. The live execution boundary now provides create-only authorization, an
+its frozen-input accounting receipt are complete. The live execution boundary
+provided create-only authorization, an
 immutable per-request attempt store, terminal replay semantics and a
 credential-safe CLI; see the materialization-readiness document for the exact
-authorization and execution commands.
+authorization and execution contract. Any future model-family study, including
+GPT-5.6 Terra, requires a separate prospective protocol and cannot replace,
+rescue or be pooled with this GPT-4.1 attempt.
 
 ## Installation
 
