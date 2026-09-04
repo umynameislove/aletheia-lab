@@ -28,7 +28,9 @@ python scripts/run_test_profile.py evaluation
 - `evaluation` runs the provider-neutral execution, visibility, immutable-store,
   structural-closeout, leakage, project/evidence, reproducibility, and CI
   contract tests. It always reports the 20 slowest tests and has a five-minute
-  hard timeout.
+  POSIX timeout. Windows receives a twelve-minute ceiling for the same
+  undeselected suite because durable immutable-file operations are substantially
+  slower there.
 - `windows-publication` exercises the shared filesystem primitive and every
   immutable store whose durability behavior differs across Windows and POSIX.
 
@@ -68,10 +70,11 @@ python scripts/run_test_profile.py evaluation --repeat 3
 ```
 
 The intended budget is at most five minutes per evaluation run on a reasonable
-Windows development machine. Ordinary unit/property tests target two seconds,
-and deterministic fixture-provider integration paths target 15 seconds. The
-profile output is the runtime report; investigate its top 20 entries rather than
-reducing property examples or removing regression tests.
+POSIX development or CI machine and twelve minutes on Windows CI. Ordinary
+unit/property tests target two seconds, and deterministic fixture-provider
+integration paths target 15 seconds. The profile output is the runtime report;
+investigate its top 20 entries rather than reducing property examples or
+removing regression tests.
 
 Record the exact resolved environment and run the controlled guard audit with:
 

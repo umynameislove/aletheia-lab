@@ -163,6 +163,11 @@ technical outcomes.
 `OpenAIChatCompletionsGatewayAdapter` implements the same provider-neutral
 boundary for the frozen OpenAI Chat Completions policy. It is deliberately a
 transport implementation, not an execution authority or a scientific variant.
+
+Provider neutrality is not model interchangeability. A different model family,
+dated snapshot or moving alias requires a separately frozen model policy,
+execution manifest and authorization. It cannot be selected as a fallback or
+used to repair an existing registered attempt.
 The adapter:
 
 - verifies that the immutable model-policy reference binds the exact scientific
@@ -334,10 +339,12 @@ python scripts/run_test_profile.py evaluation --repeat 3
 `--show-command` emits a JSON argv array rather than shell text. This preserves
 Unicode, Windows separators, and interpreter paths containing whitespace.
 
-Each evaluation run has a five-minute hard timeout and always reports the 20
-slowest tests. Ordinary unit and property tests target two seconds; a complete
-fixture-provider integration path targets 15 seconds. The authoritative full
-suite remains separate and preserves the global 88 percent coverage gate.
+Each evaluation run has a five-minute POSIX timeout and a twelve-minute Windows
+timeout, and always reports the 20 slowest tests. The larger Windows ceiling
+keeps the same durable immutable-file coverage rather than deselecting tests.
+Ordinary unit and property tests target two seconds; a complete fixture-provider
+integration path targets 15 seconds. The authoritative full suite remains
+separate and preserves the global 88 percent coverage gate.
 
 The controlled mutation audit copies source into a temporary directory, applies
 one guard mutation at a time, and requires the mapped regression test to fail:

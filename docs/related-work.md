@@ -94,9 +94,26 @@ The related work requires the following comparison structure:
 - B2 generic multi-turn RAG;
 - B3 pinned LogDx-CI external transfer;
 - A1/A2/A3 Aletheia ablations; and
+- CodeGraph as a registered graph-index component result; and
 - FULL provenance-aware retrieval/conversation, reported separately when its information path differs.
 
 LogDx-CI results remain separate from the controlled ML benchmark. The prospective Projmem case is a real-project ecological-validity study, not a replacement baseline and not part of the controlled denominator.
+
+## Model-family and version robustness
+
+The frozen primary study uses `gpt-4.1-2025-04-14`. Provider-neutral transport
+does not make model substitution scientifically neutral: model family, dated
+version, endpoint behavior and runtime policy are experimental factors.
+
+A future GPT-5.6 Terra study is therefore a separate prospective replication,
+not a repair or extension of the current attempt. Its minimum registered matrix
+is B1/A1/A2/A3 across the same 45 evidence contexts (180 provider-backed
+requests). Effects are estimated within each model and cross-model
+heterogeneity is reported without pooling calls, outputs or repeated case
+families as independent observations. Confirmatory wording requires an
+immutable provider snapshot; if only a moving alias is available, the result is
+time-bounded exploratory. B2, CodeGraph and FULL are added only for a separate
+preregistered research question.
 
 ## Research contribution boundary
 
@@ -142,6 +159,11 @@ abstention rather than a forced single label.
 - [Construct Validation of Experimental Manipulations in Social Psychology](https://pmc.ncbi.nlm.nih.gov/articles/PMC7954782/)
 - [CodeGraph](https://github.com/codegraph-ai/CodeGraph) — project/system
   documentation only; self-reported capabilities are not scientific results.
+- [HELM](https://crfm.stanford.edu/helm/)
+- [How Is ChatGPT's Behavior Changing over Time?](https://arxiv.org/abs/2307.09009)
+- [Reproducible Evaluation of Large Language Models](https://arxiv.org/abs/2405.14782)
+- [The Reproducibility Crisis in LLM-based Software Engineering](https://arxiv.org/abs/2512.00651)
+- [GPT-5.6 Terra model documentation](https://developers.openai.com/api/docs/models/gpt-5.6-terra) — product documentation used only for prospective feasibility and runtime policy.
 
 The exact LogDx-CI version and adapter must be pinned before comparative evaluation.
 
