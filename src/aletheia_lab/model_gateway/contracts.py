@@ -6,10 +6,14 @@ import json
 from decimal import Decimal
 from typing import Annotated, Final, Literal, Protocol, Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from aletheia_lab.context.evaluation_context import EvaluationContextPayload
-from aletheia_lab.evaluation.claim_evidence_semantics import ModelVisibleEvidenceContext
+from aletheia_lab.evaluation.claim_corpus_contracts import ClaimType
+from aletheia_lab.evaluation.claim_evidence_semantics import (
+    ModelVisibleEvidenceContext,
+    ModelVisibleEvidenceItem,
+)
 from aletheia_lab.evaluation.execution_contracts import (
     ATTEMPT_IDENTITY_SCHEMA_VERSION,
     AttemptIdentity,
@@ -19,7 +23,7 @@ from aletheia_lab.evaluation.execution_contracts import (
     canonical_execution_json,
     canonical_execution_sha256,
 )
-from aletheia_lab.project.identity import SHA256_PATTERN, content_sha256
+from aletheia_lab.project.identity import SHA256_PATTERN, content_sha256, normalize_text
 
 RUNTIME_POLICY_SCHEMA_VERSION: Final[Literal["model-gateway-runtime-policy/v1"]] = (
     "model-gateway-runtime-policy/v1"
@@ -226,12 +230,71 @@ class UsageMetadata(_StrictFrozenModel):
         return self
 
 
+class ClaimRelationProviderContext(_StrictFrozenModel):
+    """Exact blind relation payload allowed to cross the provider boundary."""
+
+    schema_version: Literal["claim-relation-provider-context/v1"] = (
+        "claim-relation-provider-context/v1"
+    )
+    claim_text: str = Field(min_length=1, max_length=2048)
+    claim_type: ClaimType
+    visible_evidence: tuple[ModelVisibleEvidenceItem, ...] = Field(
+        min_length=1, max_length=32
+    )
+    context_sha256: Sha256
+
+    @field_validator("claim_text")
+    @classmethod
+    def _claim_text_is_bounded(cls, value: str) -> str:
+        return normalize_text(value, label="relation context claim", max_length=2048)
+
+    def model_payload(self) -> dict[str, object]:
+        return {
+            "claim_text": self.claim_text,
+            "claim_type": self.claim_type,
+            "visible_evidence": tuple(
+                item.model_dump(mode="json") for item in self.visible_evidence
+            ),
+        }
+
+    @model_validator(mode="after")
+    def _identity_reconciles(self) -> Self:
+        evidence_ids = tuple(item.evidence_id for item in self.visible_evidence)
+        if len(evidence_ids) != len(set(evidence_ids)):
+            raise ValueError("relation context evidence identities must be unique")
+        if self.context_sha256 != canonical_execution_sha256(self.model_payload()):
+            raise ValueError("relation context identity does not match provider payload")
+        return self
+
+    @classmethod
+    def from_provider_payload(
+        cls, payload: dict[str, object]
+    ) -> ClaimRelationProviderContext:
+        fields = dict(payload)
+        if set(fields) != {"claim_text", "claim_type", "visible_evidence"}:
+            raise ValueError("relation provider payload contains unauthorized fields")
+        return cls.model_validate_json(
+            json.dumps(
+                {
+                    "schema_version": "claim-relation-provider-context/v1",
+                    **fields,
+                    "context_sha256": canonical_execution_sha256(fields),
+                },
+                ensure_ascii=False,
+            )
+        )
+
+
 class GatewayRequest(_StrictFrozenModel):
     """One immutable outbound request prepared from execution and context contracts."""
 
     schema_version: Literal["model-gateway-request/v1"] = GATEWAY_REQUEST_SCHEMA_VERSION
     initial_attempt: AttemptIdentity
-    context: EvaluationContextPayload | ModelVisibleEvidenceContext
+    context: (
+        EvaluationContextPayload
+        | ModelVisibleEvidenceContext
+        | ClaimRelationProviderContext
+    )
     prompt_text: str
     response_schema_json: str
     runtime_policy: RuntimePolicyReference
@@ -258,6 +321,12 @@ class GatewayRequest(_StrictFrozenModel):
             != attempt.case.visibility_projection_sha256
         ):
             raise ValueError("visible evidence differs from the bound case projection")
+        if isinstance(self.context, ClaimRelationProviderContext) and (
+            self.context.context_sha256 != attempt.case.evidence_content_sha256
+            or self.context.context_sha256
+            != attempt.case.visibility_projection_sha256
+        ):
+            raise ValueError("relation payload differs from the bound case projection")
         try:
             prompt_sha256 = content_sha256(self.prompt_text.encode("utf-8", errors="strict"))
             schema_sha256 = content_sha256(
@@ -301,7 +370,11 @@ class ProviderCall(_StrictFrozenModel):
 
     @model_validator(mode="after")
     def _content_matches_attempt(self) -> Self:
-        context: EvaluationContextPayload | ModelVisibleEvidenceContext
+        context: (
+            EvaluationContextPayload
+            | ModelVisibleEvidenceContext
+            | ClaimRelationProviderContext
+        )
         try:
             wrapper = json.loads(self.context_json)
             if not isinstance(wrapper, dict):
@@ -314,11 +387,18 @@ class ProviderCall(_StrictFrozenModel):
                 context = EvaluationContextPayload.model_validate_json(payload_json)
             elif raw_payload.get("schema_version") == "claim-visible-evidence-context/v1":
                 context = ModelVisibleEvidenceContext.model_validate_json(payload_json)
+            elif set(raw_payload) == {"claim_text", "claim_type", "visible_evidence"}:
+                context = ClaimRelationProviderContext.from_provider_payload(raw_payload)
             else:
                 raise ValueError("provider context schema is not authorized")
         except (TypeError, ValueError) as exc:
             raise ValueError("provider call contains an invalid context") from exc
-        if self.context_json != canonical_execution_json(context.model_dump(mode="json")):
+        canonical_payload = (
+            context.model_payload()
+            if isinstance(context, ClaimRelationProviderContext)
+            else context.model_dump(mode="json")
+        )
+        if self.context_json != canonical_execution_json(canonical_payload):
             raise ValueError("provider call context is not canonical")
         expected_attempt_sha256 = canonical_execution_sha256(
             {

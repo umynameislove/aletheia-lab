@@ -28,6 +28,7 @@ from aletheia_lab.model_gateway.contracts import (
     AttemptRecord,
     AttemptTiming,
     CancellationProbe,
+    ClaimRelationProviderContext,
     Clock,
     GatewayContractError,
     GatewayExecutionResult,
@@ -62,7 +63,11 @@ def prepare_gateway_request(
     manifest: EvaluationManifestReference,
     case: EvaluationCaseReference,
     model_policy: ModelPolicyReference,
-    context: EvaluationContextPayload | ModelVisibleEvidenceContext,
+    context: (
+        EvaluationContextPayload
+        | ModelVisibleEvidenceContext
+        | ClaimRelationProviderContext
+    ),
     prompt_text: str,
     response_schema: dict[str, object],
     runtime_policy: RuntimePolicyReference,
