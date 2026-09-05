@@ -17,6 +17,9 @@ from aletheia_lab.evaluation.attempt_store import (
     AttemptStoreTransitionError,
     ImmutableAttemptStore,
 )
+from aletheia_lab.evaluation.claim_corpus_terminal_reader import (
+    ClaimCorpusTerminalReader,
+)
 from aletheia_lab.evaluation.execution_contracts import (
     EvaluationCaseReference,
     EvaluationManifestReference,
@@ -281,7 +284,14 @@ def test_terminal_parsed_payload_is_read_only_and_hash_verified(tmp_path: Path) 
     store = ImmutableAttemptStore(tmp_path, clock=_Clock())
     _record_until(store, request, result, "terminal_published")
 
-    assert store.terminal_parsed_payload(result.request_identity_sha256) == {
+    verifier = ClaimCorpusTerminalReader(
+        root=store.root,
+        object_root=store.object_root,
+        request_root=store.request_root,
+        terminal_root=store.terminal_root,
+        failure_root=store.failure_root,
+    )
+    assert verifier.terminal_parsed_payload(result.request_identity_sha256) == {
         "value": "ok"
     }
 
