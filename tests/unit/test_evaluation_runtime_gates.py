@@ -116,6 +116,7 @@ def test_repeated_profile_uses_distinct_hash_seeds_and_posix_budget(
         calls.append(kwargs)
         return SimpleNamespace(returncode=0)
 
+    monkeypatch.setattr(runner.os, "name", "posix")
     monkeypatch.setattr(runner.subprocess, "run", fake_run)
     assert runner.run_profile("evaluation", repeat=3) == 0
 
@@ -151,6 +152,7 @@ def test_profile_timeout_is_a_blocking_failure(
     def raise_timeout(*args: object, **kwargs: object) -> None:
         raise subprocess.TimeoutExpired(args[0], kwargs["timeout"])
 
+    monkeypatch.setattr(runner.os, "name", "posix")
     monkeypatch.setattr(runner.subprocess, "run", raise_timeout)
     assert runner.run_profile("evaluation") == 124
     assert "300-second runtime budget" in capsys.readouterr().err
