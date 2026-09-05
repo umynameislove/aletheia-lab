@@ -34,6 +34,7 @@ from aletheia_lab.model_gateway.openai import (
 from aletheia_lab.model_gateway.runtime import (
     execute_gateway_request,
     prepare_gateway_request,
+    validate_response_payload,
     validate_response_schema,
 )
 
@@ -65,5 +66,6 @@ __all__ = [
     "UsageMetadata",
     "execute_gateway_request",
     "prepare_gateway_request",
+    "validate_response_payload",
     "validate_response_schema",
 ]

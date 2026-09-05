@@ -43,11 +43,31 @@ from aletheia_lab.model_gateway.contracts import (
     TerminalStatus,
     UsageMetadata,
 )
+from aletheia_lab.model_gateway.schema import (
+    validate_response_payload as _validate_response_payload,
+)
+from aletheia_lab.model_gateway.schema import (
+    validate_response_schema as _validate_response_schema,
+)
 from aletheia_lab.project.identity import canonical_project_json, content_sha256
 
 _STAGE = "model_gateway"
 _OPAQUE_REFERENCE = re.compile(r"^ev-[0-9a-f]{64}$")
 _CANCELLATION_POLL_SECONDS = 0.005
+
+
+def validate_response_schema(schema: dict[str, object]) -> None:
+    """Validate a schema through the isolated gateway schema interpreter."""
+
+    _validate_response_schema(schema)
+
+
+def validate_response_payload(
+    payload: dict[str, object], schema: dict[str, object]
+) -> None:
+    """Validate a payload through the same interpreter used during parsing."""
+
+    _validate_response_payload(payload, schema)
 
 
 @dataclass(frozen=True)
@@ -456,206 +476,11 @@ def _parse_json_object(
     if not isinstance(payload, dict):
         raise GatewayContractError("provider response must be a JSON object")
     checked_payload = cast(dict[str, object], payload)
-    _validate_object_schema(checked_payload, response_schema_json)
-    return checked_payload
-
-
-def _validate_object_schema(payload: dict[str, object], schema_json: str) -> None:
-    schema = json.loads(schema_json)
+    schema = json.loads(response_schema_json)
     if not isinstance(schema, dict):
         raise GatewayContractError("response schema must be a JSON object")
-    _validate_schema_shape(cast(dict[str, object], schema))
-    _validate_json_value(payload, schema)
-
-
-def _validate_schema_shape(schema: dict[str, object]) -> None:
-    if schema.get("type") != "object":
-        raise GatewayContractError("response schema must describe one JSON object")
-    _validate_json_schema_node(schema, location="$", depth=0)
-
-
-def validate_response_schema(schema: dict[str, object]) -> None:
-    """Validate one response schema against the gateway's closed safe subset."""
-
-    _validate_schema_shape(schema)
-
-
-def _validate_json_schema_node(
-    schema: dict[str, object],
-    *,
-    location: str,
-    depth: int,
-) -> None:
-    """Validate the deliberately small structured-output schema language.
-
-    The gateway supports the constraints required by diagnosis outputs while
-    rejecting references, combinators, patterns and annotations whose behavior
-    could differ between provider and local validation.  Recursive depth is
-    bounded so an untrusted schema cannot exhaust the interpreter stack.
-    """
-
-    if depth > 8:
-        raise GatewayContractError("response schema nesting exceeds the gateway limit")
-    allowed_fields = {
-        "additionalProperties",
-        "const",
-        "enum",
-        "items",
-        "properties",
-        "required",
-        "type",
-    }
-    if any(key not in allowed_fields for key in schema):
-        raise GatewayContractError(
-            f"response schema uses an unsupported constraint at {location}"
-        )
-    supported_types = {
-        "array",
-        "boolean",
-        "integer",
-        "null",
-        "number",
-        "object",
-        "string",
-    }
-    schema_type = schema.get("type")
-    if not isinstance(schema_type, str) or schema_type not in supported_types:
-        raise GatewayContractError("response schema property type is unsupported")
-
-    if "const" in schema and not _is_json_scalar(schema["const"]):
-        raise GatewayContractError("response schema const must be a finite JSON scalar")
-    if "enum" in schema:
-        enum = schema["enum"]
-        if (
-            not isinstance(enum, list)
-            or not enum
-            or len(enum) != len({_canonical_scalar(value) for value in enum})
-            or any(not _is_json_scalar(value) for value in enum)
-        ):
-            raise GatewayContractError("response schema enum must contain unique JSON scalars")
-        if any(not _json_type_matches(value, schema_type) for value in enum):
-            raise GatewayContractError("response schema enum value contradicts its type")
-    if "const" in schema and not _json_type_matches(schema["const"], schema_type):
-        raise GatewayContractError("response schema const contradicts its type")
-
-    object_fields = {"additionalProperties", "properties", "required"}
-    array_fields = {"items"}
-    if schema_type != "object" and any(field in schema for field in object_fields):
-        raise GatewayContractError("response schema object constraints require object type")
-    if schema_type != "array" and any(field in schema for field in array_fields):
-        raise GatewayContractError("response schema items require array type")
-
-    if schema_type == "object":
-        required = schema.get("required", [])
-        properties = schema.get("properties", {})
-        if (
-            not isinstance(required, list)
-            or not all(isinstance(value, str) for value in required)
-            or len(required) != len(set(required))
-            or not isinstance(properties, dict)
-            or not all(
-                isinstance(key, str) and key and isinstance(value, dict)
-                for key, value in properties.items()
-            )
-        ):
-            raise GatewayContractError("response schema has invalid object constraints")
-        if any(value not in properties for value in required):
-            raise GatewayContractError(
-                "response schema required fields lack property definitions"
-            )
-        if "additionalProperties" in schema and not isinstance(
-            schema["additionalProperties"], bool
-        ):
-            raise GatewayContractError(
-                "response schema additionalProperties must be boolean"
-            )
-        for key, child in properties.items():
-            _validate_json_schema_node(
-                cast(dict[str, object], child),
-                location=f"{location}.{key}",
-                depth=depth + 1,
-            )
-    elif schema_type == "array":
-        items = schema.get("items")
-        if not isinstance(items, dict):
-            raise GatewayContractError("response schema array requires one item schema")
-        _validate_json_schema_node(
-            cast(dict[str, object], items),
-            location=f"{location}[]",
-            depth=depth + 1,
-        )
-
-
-def _validate_json_value(value: object, schema: dict[str, object]) -> None:
-    schema_type = cast(str, schema["type"])
-    if not _json_type_matches(value, schema_type):
-        raise GatewayContractError("provider response field does not match schema type")
-    if "const" in schema and not _json_scalar_equal(value, schema["const"]):
-        raise GatewayContractError("provider response field does not match schema const")
-    if "enum" in schema and not any(
-        _json_scalar_equal(value, candidate) for candidate in cast(list[object], schema["enum"])
-    ):
-        raise GatewayContractError("provider response field does not match schema enum")
-
-    if schema_type == "object":
-        checked = cast(dict[str, object], value)
-        properties = cast(dict[str, dict[str, object]], schema.get("properties", {}))
-        required = cast(list[str], schema.get("required", []))
-        if any(key not in checked for key in required):
-            raise GatewayContractError("provider response is missing a required field")
-        if schema.get("additionalProperties") is False and any(
-            key not in properties for key in checked
-        ):
-            raise GatewayContractError("provider response contains an unknown field")
-        for key, child_value in checked.items():
-            child_schema = properties.get(key)
-            if child_schema is not None:
-                _validate_json_value(child_value, child_schema)
-    elif schema_type == "array":
-        items = cast(dict[str, object], schema["items"])
-        for item in cast(list[object], value):
-            _validate_json_value(item, items)
-
-
-def _json_type_matches(value: object, schema_type: str) -> bool:
-    expected_python_types: dict[str, type[object]] = {
-        "array": list,
-        "boolean": bool,
-        "integer": int,
-        "object": dict,
-        "string": str,
-    }
-    if schema_type == "null":
-        return value is None
-    if schema_type == "number":
-        return (
-            isinstance(value, int | float)
-            and not isinstance(value, bool)
-            and (not isinstance(value, float) or value == value)
-            and value not in {float("inf"), float("-inf")}
-        )
-    expected = expected_python_types.get(schema_type)
-    if expected is None or not isinstance(value, expected):
-        return False
-    return schema_type != "integer" or not isinstance(value, bool)
-
-
-def _is_json_scalar(value: object) -> bool:
-    return value is None or isinstance(value, str | bool | int) or (
-        isinstance(value, float)
-        and value == value
-        and value not in {float("inf"), float("-inf")}
-    )
-
-
-def _canonical_scalar(value: object) -> str:
-    if not _is_json_scalar(value):
-        raise GatewayContractError("response schema enum contains a non-scalar value")
-    return json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
-
-
-def _json_scalar_equal(left: object, right: object) -> bool:
-    return type(left) is type(right) and left == right
+    validate_response_payload(checked_payload, cast(dict[str, object], schema))
+    return checked_payload
 
 
 def _retry_attempt(request: GatewayRequest, ordinal: int) -> AttemptIdentity:

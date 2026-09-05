@@ -320,3 +320,21 @@ The construction code and its synthetic conformance tests are present, but no
 real output normalization, relation-assignment run, automatic label or corpus
 entry is published by that implementation change. Those actions require the
 merged source, private artifacts and their separately reviewed execution gate.
+
+## Normalization recovery boundary
+
+Applying the construction boundary to the completed first attempt yielded 49
+normalized outputs and rejected 209 parsed outputs, leaving 152 candidate
+claims. The fixed 200-claim target is therefore infeasible from that attempt.
+The 102 provider failures and 209 schema rejections remain part of the original
+360-request denominator; no rejected response is repaired or selectively
+reused.
+
+The separately frozen
+[normalization-recovery contract](claim-support-normalization-recovery.md)
+changes only the provider response boundary. It preserves the model snapshot,
+evidence contexts, request census, variants, budgets and selection policy. The
+new schema removes provider-authored structural IDs, applies exact claim and
+array bounds, and restricts citations to evidence visible in each request. A
+new authorization and isolated attempt store are still required before any
+paid recovery execution.
