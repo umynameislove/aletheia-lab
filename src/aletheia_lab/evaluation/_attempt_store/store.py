@@ -246,6 +246,11 @@ class ImmutableAttemptStore:
         request_hashes = tuple(sorted(path.stem for path in self.terminal_root.glob("*.json")))
         return tuple(self._terminal_inventory(request_hash) for request_hash in request_hashes)
 
+    def terminal_parsed_payload(self, request_identity_sha256: str) -> dict[str, object] | None:
+        """Read a verified parsed terminal payload without exposing raw bytes."""
+
+        return self._verifier.terminal_parsed_payload(request_identity_sha256)
+
     def record_failure(
         self,
         request: GatewayRequest,

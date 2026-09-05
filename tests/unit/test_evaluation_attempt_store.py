@@ -275,6 +275,17 @@ def test_complete_lifecycle_has_explicit_states_and_atomic_terminal_index(
     assert store.prepare(request).disposition == "idempotent"
 
 
+def test_terminal_parsed_payload_is_read_only_and_hash_verified(tmp_path: Path) -> None:
+    request = _request()
+    result = _result(request)
+    store = ImmutableAttemptStore(tmp_path, clock=_Clock())
+    _record_until(store, request, result, "terminal_published")
+
+    assert store.terminal_parsed_payload(result.request_identity_sha256) == {
+        "value": "ok"
+    }
+
+
 def test_identical_replay_is_noop_and_does_not_count_an_attempt(tmp_path: Path) -> None:
     request = _request()
     result = _result(request)
