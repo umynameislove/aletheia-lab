@@ -62,6 +62,7 @@ def test_evaluation_profile_has_required_boundaries_without_deselection() -> Non
         "tests/unit/test_claim_support_corpus_execution.py",
         "tests/unit/test_claim_support_live_execution.py",
         "tests/unit/test_claim_support_execution_reconciliation.py",
+        "tests/unit/test_claim_support_pool_construction.py",
         "tests/integration/test_claim_support_corpus_execution_local.py",
         "tests/unit/test_claim_support_observed_evidence.py",
         "tests/integration/test_claim_support_observed_evidence_local.py",
@@ -116,6 +117,7 @@ def test_repeated_profile_uses_distinct_hash_seeds_and_posix_budget(
         calls.append(kwargs)
         return SimpleNamespace(returncode=0)
 
+    monkeypatch.setattr(runner.os, "name", "posix")
     monkeypatch.setattr(runner.subprocess, "run", fake_run)
     assert runner.run_profile("evaluation", repeat=3) == 0
 
@@ -151,6 +153,7 @@ def test_profile_timeout_is_a_blocking_failure(
     def raise_timeout(*args: object, **kwargs: object) -> None:
         raise subprocess.TimeoutExpired(args[0], kwargs["timeout"])
 
+    monkeypatch.setattr(runner.os, "name", "posix")
     monkeypatch.setattr(runner.subprocess, "run", raise_timeout)
     assert runner.run_profile("evaluation") == 124
     assert "300-second runtime budget" in capsys.readouterr().err
