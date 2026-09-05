@@ -151,8 +151,11 @@ reserve audit now reconcile all 360 authority files, immutable request shards,
 attempts and terminal records. Because every primary request started, the 102
 post-start provider failures do not qualify for reserve replacement and zero
 reserve requests were activated. The attempt must not be rerun or repaired
-manually. Output normalization and corpus-feasibility audit remain mandatory
-before any claim-corpus freeze.
+manually. A fail-closed construction boundary is available for independently
+verified normalization, schema-native claim extraction, blind relation binding
+and content-addressed full-pool publication. It has not yet been applied to the
+real terminal outputs: output normalization, relation assignment and the
+corpus-feasibility audit remain mandatory before any claim-corpus freeze.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation

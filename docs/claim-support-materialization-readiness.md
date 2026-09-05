@@ -275,3 +275,48 @@ separate gate. At this point `outputs_normalized`, `claims_materialized`,
 `automatic_labels_generated`, `blind_packets_generated`,
 `human_annotations_collected`, and `main_or_sealed_outcomes_opened` all remain
 false.
+
+## Post-reconciliation claim-pool construction boundary
+
+The construction implementation reads only independently verified terminal
+objects. It cannot access raw provider bytes, credentials or a provider
+adapter. It accepts the registered `diagnosis-provider-output/1` envelope only,
+normalizes schema-valid terminal outputs to `diagnosis-output/2`, and preserves
+every technical or schema failure in the immutable 360-request census. It does
+not recover claims from prose or split sentences and punctuation into claims.
+
+The read-only preflight reproduces the reserve decision and request
+reconciliation before it exposes any parsed payload:
+
+```bash
+PYTHONPATH=src python scripts/claim_support_pool_construction.py preflight \
+  --evidence-census configs/evaluation/claim_support_observed_evidence_census.json \
+  --authorization "$CLAIM_RUN_DIR/authorization.json" \
+  --lease "$CLAIM_RUN_DIR/execution-lease.json" \
+  --live-receipt "$CLAIM_RUN_DIR/diagnosis-execution-receipt.json" \
+  --reserve-receipt "$CLAIM_RUN_DIR/reserve-activation-receipt.json" \
+  --reconciliation-receipt "$CLAIM_RUN_DIR/request-reconciliation-receipt.json" \
+  --attempt-store "$CLAIM_RUN_DIR/attempt-store"
+```
+
+After preflight, `prepare` can publish a create-only private preparation
+artifact outside the repository. That artifact binds one normalization record
+to every authorized request and an exact relation-assignment request to every
+schema-native claim. The provider-visible relation context contains exactly
+`claim_text`, `claim_type` and `visible_evidence`; mechanism, evidence
+condition, variant, hidden truth, human judgment and outcomes cannot cross the
+gateway contract.
+
+Full-pool publication is a later, separate action. It requires a result for
+every frozen relation request, exact preparation and policy hashes, and zero
+unresolved relation terminals. The deterministic support instrument is then
+applied once and the resulting entries, manifest and receipt are published to
+the existing content-addressed create-only store. Identical replay is
+idempotent; missing, reordered, forged, conflicting or tampered inputs fail
+closed. This boundary never selects the 200-claim validation sample or creates
+human packets.
+
+The construction code and its synthetic conformance tests are present, but no
+real output normalization, relation-assignment run, automatic label or corpus
+entry is published by that implementation change. Those actions require the
+merged source, private artifacts and their separately reviewed execution gate.
