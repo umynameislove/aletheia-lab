@@ -84,7 +84,9 @@ def _request(
     max_attempts: int = 1,
     timeout_ns: int = 1_000_000_000,
     max_response_bytes: int = 256,
+    response_schema: dict[str, object] | None = None,
 ) -> GatewayRequest:
+    schema = _SCHEMA if response_schema is None else response_schema
     manifest = EvaluationManifestReference.build(
         project_id=f"p3-project-{_sha('1')}",
         snapshot_id=f"p3-snapshot-{_sha('2')}",
@@ -114,7 +116,7 @@ def _request(
         provenance_sha256=_sha("3"),
         visibility="diagnosis",
     )
-    schema_text = canonical_project_json(_SCHEMA)
+    schema_text = canonical_project_json(schema)
     policy = ModelPolicyReference.build(
         manifest=manifest,
         policy_content_sha256=_sha("4"),
@@ -166,7 +168,7 @@ def _request(
         model_policy=policy,
         context=context,
         prompt_text="opaque fixture prompt",
-        response_schema=_SCHEMA,
+        response_schema=schema,
         runtime_policy=runtime_policy,
     )
 
@@ -414,7 +416,9 @@ class _EventCancellation:
 
 
 def _blocking_adapter(request: GatewayRequest) -> _BlockingAdapter:
-    delegate = _adapter(request, (_response("valid_response"),) * request.runtime_policy.max_attempts)
+    delegate = _adapter(
+        request, (_response("valid_response"),) * request.runtime_policy.max_attempts
+    )
     return _BlockingAdapter(
         binding=delegate.binding,
         delegate=delegate,
@@ -874,6 +878,31 @@ def test_gateway_handles_cancellation_and_unreadable_adapter_binding() -> None:
             "type": "object",
             "properties": {"value": {"type": "unsupported"}},
         },
+        {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "minItems": 2,
+                    "maxItems": 1,
+                }
+            },
+        },
+        {
+            "type": "object",
+            "properties": {"value": {"type": "string", "pattern": "["}},
+        },
+        {
+            "type": "object",
+            "properties": {
+                "value": {"type": "array", "items": {"type": "string"}, "maxItems": None}
+            },
+        },
+        {
+            "type": "object",
+            "properties": {"value": {"anyOf": [{"type": "string"}]}},
+        },
     ],
 )
 def test_response_schema_shape_rejects_unsupported_constraints(
@@ -970,6 +999,66 @@ def test_nested_array_enum_and_const_schema_is_validated_recursively() -> None:
     assert invalid.status == "parse_failed"
 
 
+def test_pattern_array_bounds_and_nested_any_of_are_enforced_locally() -> None:
+    schema: dict[str, object] = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "result": {
+                "anyOf": [
+                    {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "properties": {
+                            "kind": {"type": "string", "const": "values"},
+                            "values": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string",
+                                    "pattern": "^[a-z]{2}$",
+                                },
+                                "minItems": 1,
+                                "maxItems": 2,
+                            },
+                        },
+                        "required": ["kind", "values"],
+                    },
+                    {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "properties": {"kind": {"type": "string", "const": "empty"}},
+                        "required": ["kind"],
+                    },
+                ]
+            }
+        },
+        "required": ["result"],
+    }
+    request = _request(response_schema=schema)
+
+    accepted = _execute(
+        request,
+        (_response("valid_response", b'{"result":{"kind":"values","values":["ab"]}}'),),
+    )
+    bad_pattern = _execute(
+        request,
+        (_response("valid_response", b'{"result":{"kind":"values","values":["A"]}}'),),
+    )
+    too_many = _execute(
+        request,
+        (
+            _response(
+                "valid_response",
+                b'{"result":{"kind":"values","values":["ab","cd","ef"]}}',
+            ),
+        ),
+    )
+
+    assert accepted.status == "parsed"
+    assert bad_pattern.status == "parse_failed"
+    assert too_many.status == "parse_failed"
+
+
 def test_nonfinite_response_and_terminal_artifact_mismatches_fail_closed() -> None:
     nonfinite = _execute(_request(), (_response("malformed_response", b'{"value":NaN}'),))
     assert nonfinite.status == "parse_failed"
@@ -1019,7 +1108,9 @@ def test_low_level_gateway_guards_reject_in_memory_contract_forgery() -> None:
     with pytest.raises(ValueError, match="timing"):
         response_record.timing.model_copy(update={"latency_ns": 99})._latency_reconciles()
     with pytest.raises(ValueError, match="requires provider metadata"):
-        response_record.model_copy(update={"provider_attempt_ref": None})._outcome_shape_is_consistent()
+        response_record.model_copy(
+            update={"provider_attempt_ref": None}
+        )._outcome_shape_is_consistent()
 
     parse_failed = _execute(_request(), (_response("malformed_response", b"{"),))
     with pytest.raises(ValueError, match="retain metadata"):
