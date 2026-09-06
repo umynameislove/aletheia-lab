@@ -72,7 +72,25 @@ def _policy() -> OpenAIGatewayPolicy:
     return OpenAIGatewayPolicy.from_fairness_policy(freeze.model_policies["main_llm_v1"])
 
 
-def _request() -> GatewayRequest:
+def test_recovery_output_budget_is_versioned_without_mutating_fairness_policy() -> None:
+    frozen = _policy()
+    amended = frozen.with_recovery_output_budget()
+    assert (frozen.schema_version, frozen.max_output_tokens) == (
+        "openai-gateway-policy/v1",
+        600,
+    )
+    assert (amended.schema_version, amended.max_output_tokens) == (
+        "openai-gateway-policy/v2",
+        2048,
+    )
+    assert amended.model_dump(exclude={"schema_version", "max_output_tokens"}) == (
+        frozen.model_dump(exclude={"schema_version", "max_output_tokens"})
+    )
+    assert amended.model_policy_sha256() != frozen.model_policy_sha256()
+
+
+def _request(policy: OpenAIGatewayPolicy | None = None) -> GatewayRequest:
+    selected_policy = policy or _policy()
     manifest = EvaluationManifestReference.build(
         project_id=f"p3-project-{_sha('1')}",
         snapshot_id=f"p3-snapshot-{_sha('2')}",
@@ -105,7 +123,7 @@ def _request() -> GatewayRequest:
     schema_json = canonical_project_json(SCHEMA)
     model_policy = ModelPolicyReference.build(
         manifest=manifest,
-        policy_content_sha256=_policy().model_policy_sha256(),
+        policy_content_sha256=selected_policy.model_policy_sha256(),
         provider_ref=_opaque("5"),
         model_ref=_opaque("6"),
         model_version_ref=_opaque("7"),
@@ -368,6 +386,21 @@ def test_adapter_sends_the_exact_bounded_payload_and_returns_raw_content() -> No
     assert isinstance(schema_block, dict)
     assert schema_block["strict"] is True
     assert schema_block["schema"] == SCHEMA
+
+
+def test_adapter_sends_the_registered_recovery_output_budget() -> None:
+    policy = _policy().with_recovery_output_budget()
+    request = _request(policy)
+    completions = _CapturingCompletions()
+    adapter = OpenAIChatCompletionsGatewayAdapter(
+        client=_Client(completions),
+        model_policy=request.initial_attempt.model_policy,
+        policy=policy,
+    )
+
+    adapter.invoke(_call(request))
+
+    assert completions.calls[0]["max_tokens"] == 2048
 
 
 def test_explicit_model_abstention_is_preserved_as_response_metadata() -> None:

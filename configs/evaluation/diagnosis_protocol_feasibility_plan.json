@@ -95,7 +95,7 @@
       "artifact_id": "production-gateway-adapter",
       "role": "runtime",
       "relative_path": "src/aletheia_lab/model_gateway/openai.py",
-      "expected_sha256": "c535adf782c37b1323d1b0f82497a6275ee2664e6d612f62a652a68e5cb7c2c4"
+      "expected_sha256": "011a3ff9342a8e7a39a57224019755ffe4aab614b271e3a393911bd37c19e2df"
     },
     {
       "artifact_id": "structural-closeout",
