@@ -67,6 +67,11 @@ TerminalStatus = Literal[
     "parse_failed",
 ]
 ProviderErrorCode = Literal[
+    "provider_output_truncated",
+    "provider_refusal",
+    "provider_invalid_envelope",
+    "provider_http_error",
+    "provider_schema_incompatible",
     "transient_provider_error",
     "permanent_provider_error",
     "provider_timeout",

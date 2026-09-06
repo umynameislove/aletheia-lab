@@ -12,7 +12,7 @@ import time
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Annotated, Final, Literal, Self
+from typing import Annotated, Final, Literal, Protocol, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -102,9 +102,7 @@ class ClaimCorpusExecutionLease(_StrictFrozenModel):
 class ClaimCorpusLiveReceipt(_StrictFrozenModel):
     """Terminal technical inventory for diagnosis generation only."""
 
-    schema_version: Literal["claim-corpus-live-execution-receipt/v1"] = (
-        LIVE_RECEIPT_SCHEMA_VERSION
-    )
+    schema_version: Literal["claim-corpus-live-execution-receipt/v1"] = LIVE_RECEIPT_SCHEMA_VERSION
     status: Literal["claim_corpus_diagnosis_execution_complete"]
     authorization_sha256: Sha256
     execution_plan_sha256: Sha256
@@ -140,9 +138,11 @@ class ClaimCorpusLiveReceipt(_StrictFrozenModel):
             != self.newly_executed_request_count
         ):
             raise ValueError("execution route counts do not match newly executed requests")
-        if sum(self.gateway_status_counts.values()) != 360 or any(
-            count < 0 for count in self.gateway_status_counts.values()
-        ) or self.technical_attempt_count != self.provider_attempt_count + 45:
+        if (
+            sum(self.gateway_status_counts.values()) != 360
+            or any(count < 0 for count in self.gateway_status_counts.values())
+            or self.technical_attempt_count != self.provider_attempt_count + 45
+        ):
             raise ValueError("gateway status counts do not cover every terminal request")
         if self.receipt_sha256 != canonical_execution_sha256(self.identity_payload()):
             raise ValueError("live execution receipt identity does not match content")
@@ -225,6 +225,12 @@ class SystemMonotonicClock:
 class NeverCancelled:
     def is_cancelled(self) -> bool:
         return False
+
+
+class ExecutionAuthority(Protocol):
+    authorization_sha256: str
+    execution_plan_sha256: str
+    source_commit_ref: str
 
 
 def _opaque(payload: object) -> str:
@@ -442,21 +448,81 @@ def build_live_requests(
 ) -> tuple[PreparedClaimCorpusRequest, ...]:
     """Build all 360 immutable requests without invoking a provider."""
 
-    plan = build_execution_plan(root)
-    validate_execution_authorization(
-        authorization,
-        plan=plan,
+    return _build_live_requests(
+        root,
         repository_state=repository_state,
+        authorization=authorization,
         evidence_census=evidence_census,
         evidence_receipt=evidence_receipt,
+    )
+
+
+def _resolve_request_manifest(
+    root: Path,
+    *,
+    repository_state: RepositoryExecutionState,
+    authorization: ClaimCorpusExecutionAuthorization | None,
+    evidence_census: ObservedEvidenceCensus,
+    evidence_receipt: ObservedEvidenceReceipt,
+    recovery: bool,
+    recovery_manifest: EvaluationManifestReference | None,
+) -> tuple[ClaimCorpusExecutionPlan, EvaluationManifestReference]:
+    plan = build_execution_plan(root)
+    if recovery_manifest is None:
+        if recovery or authorization is None:
+            raise ClaimCorpusExecutionError("recovery requires its own execution manifest")
+        validate_execution_authorization(
+            authorization,
+            plan=plan,
+            repository_state=repository_state,
+            evidence_census=evidence_census,
+            evidence_receipt=evidence_receipt,
+        )
+        return plan, _manifest(plan, authorization, evidence_census)
+    if not recovery or authorization is not None:
+        raise ClaimCorpusExecutionError("recovery cannot mint a predecessor authorization")
+    if (
+        not repository_state.synchronized_main
+        or recovery_manifest.source_commit_ref != repository_state.head_commit
+        or evidence_receipt.census_sha256 != evidence_census.census_sha256
+        or evidence_receipt.request_census_sha256 != plan.request_census_sha256
+    ):
+        raise ClaimCorpusExecutionError("recovery inputs differ from clean synchronized main")
+    return plan, recovery_manifest
+
+
+def _build_live_requests(
+    root: Path,
+    *,
+    repository_state: RepositoryExecutionState,
+    authorization: ClaimCorpusExecutionAuthorization | None,
+    evidence_census: ObservedEvidenceCensus,
+    evidence_receipt: ObservedEvidenceReceipt,
+    recovery: bool = False,
+    recovery_manifest: EvaluationManifestReference | None = None,
+) -> tuple[PreparedClaimCorpusRequest, ...]:
+    # Recovery authorization is checked by the recovery-owned entrypoint.
+    from aletheia_lab.evaluation.claim_corpus_normalization_recovery import (
+        RECOVERY_SEMANTIC_INSTRUCTION,
+        load_recovery_protocol,
+        provider_response_schema_v2,
+    )
+
+    if recovery:
+        load_recovery_protocol(root)
+    plan, manifest = _resolve_request_manifest(
+        root,
+        repository_state=repository_state,
+        authorization=authorization,
+        evidence_census=evidence_census,
+        evidence_receipt=evidence_receipt,
+        recovery=recovery,
+        recovery_manifest=recovery_manifest,
     )
     census = _load_request_census(root)
     freeze = load_diagnosis_variant_freeze(root / FAIRNESS_PATH)
     registry = build_variant_registry(freeze)
-    openai_policy = OpenAIGatewayPolicy.from_fairness_policy(
-        freeze.model_policies["main_llm_v1"]
-    )
-    manifest = _manifest(plan, authorization, evidence_census)
+    openai_policy = OpenAIGatewayPolicy.from_fairness_policy(freeze.model_policies["main_llm_v1"])
     bindings = {
         (item.family_id, item.evidence_condition): item for item in evidence_census.bindings
     }
@@ -466,6 +532,10 @@ def build_live_requests(
         if scheduled.request_sha256 != frozen.request_sha256:
             raise ClaimCorpusExecutionError("execution schedule differs from request census")
         binding = bindings[(frozen.family_id, frozen.evidence_condition)]
+        if recovery:
+            response_schema = provider_response_schema_v2(
+                tuple(item.evidence_id for item in binding.visible_context.items)
+            )
         context = ModelVisibleEvidenceContext.model_validate(
             binding.visible_context.model_dump(mode="python")
         )
@@ -517,6 +587,8 @@ def build_live_requests(
             provenance_sha256=scheduled.schedule_entry_sha256,
         )
         prompt = freeze.prompt_policies[frozen.variant].instruction_contract
+        if recovery:
+            prompt = prompt + "\n\n" + RECOVERY_SEMANTIC_INSTRUCTION
         request = prepare_gateway_request(
             manifest=manifest,
             case=case,
@@ -534,9 +606,10 @@ def build_live_requests(
                 request=request,
             )
         )
-    if len(prepared) != 360 or len(
-        {item.request.initial_attempt.request_identity_sha256 for item in prepared}
-    ) != 360:
+    if (
+        len(prepared) != 360
+        or len({item.request.initial_attempt.request_identity_sha256 for item in prepared}) != 360
+    ):
         raise ClaimCorpusExecutionError("live request construction lost census identity")
     return tuple(prepared)
 
@@ -554,26 +627,35 @@ class _DeterministicB0Adapter:
         context = self._request.context
         if not isinstance(context, ModelVisibleEvidenceContext):
             raise ClaimCorpusExecutionError("B0 requires measured visible evidence")
+        recovery = '"diagnosis-provider-output/2"' in call.response_schema_json
         claims = []
         for index, item in enumerate(context.items, start=1):
             text = f"The observed evidence includes the measured item titled '{item.title}'."
             claims.append(
                 {
-                    "claim_local_id": f"claim-{index}",
+                    **({} if recovery else {"claim_local_id": f"claim-{index}"}),
                     "claim_type": "evidence_statement",
                     "claim_text": text,
-                    "material_parts": [{"part_id": "part-observation", "text": text}],
+                    "material_parts": [
+                        {"text": text}
+                        if recovery
+                        else {"part_id": "part-observation", "text": text}
+                    ],
                     "visible_evidence_ids": [item.evidence_id],
                 }
             )
-        raw = canonical_project_json(
-            {
-                "schema_version": PROVIDER_OUTPUT_SCHEMA_VERSION,
-                "output_status": "completed",
-                "atomic_claims": claims,
-                "abstention_reason": "",
+        payload: dict[str, object] = {
+            "schema_version": PROVIDER_OUTPUT_SCHEMA_VERSION,
+            "output_status": "completed",
+            "atomic_claims": claims,
+            "abstention_reason": "",
+        }
+        if recovery:
+            payload = {
+                "schema_version": "diagnosis-provider-output/2",
+                "result": {"output_status": "completed", "atomic_claims": claims},
             }
-        ).encode("utf-8")
+        raw = canonical_project_json(payload).encode("utf-8")
         return ProviderEnvelope(
             request_identity_sha256=call.request_identity_sha256,
             binding=self.binding,
@@ -598,7 +680,7 @@ class _DeterministicB0Adapter:
 def run_live_execution(
     prepared: tuple[PreparedClaimCorpusRequest, ...],
     *,
-    authorization: ClaimCorpusExecutionAuthorization,
+    authorization: ExecutionAuthority,
     evidence_census: ObservedEvidenceCensus,
     store: ClaimCorpusAttemptStore,
     model_adapter: ProviderAdapter,
@@ -608,17 +690,22 @@ def run_live_execution(
 
     identities = {item.request.initial_attempt.request_identity_sha256 for item in prepared}
     routes = Counter(item.route for item in prepared)
-    if len(prepared) != 360 or len(identities) != 360 or routes != {
-        "model_gateway": 315,
-        "deterministic_local": 45,
-    }:
+    if (
+        len(prepared) != 360
+        or len(identities) != 360
+        or routes
+        != {
+            "model_gateway": 315,
+            "deterministic_local": 45,
+        }
+    ):
         raise ClaimCorpusExecutionError("live execution requires the exact frozen route census")
     active_clock = clock or SystemMonotonicClock()
     shards = store.shards(prepared)
-    states = {
-        identity: shards[identity].current_state(identity) for identity in shards
-    }
-    partial = tuple(key for key, state in states.items() if state not in {None, "terminal_published"})
+    states = {identity: shards[identity].current_state(identity) for identity in shards}
+    partial = tuple(
+        key for key, state in states.items() if state not in {None, "terminal_published"}
+    )
     if partial:
         raise ClaimCorpusExecutionError(
             "partial request state forbids continuation under one-attempt semantics"
@@ -653,9 +740,7 @@ def run_live_execution(
         shard.mark_closeout_pending(item.request, result)
         shard.publish_terminal(item.request, result)
     inventories = store.terminal_inventories(shards)
-    expected = {
-        item.request.initial_attempt.request_identity_sha256 for item in prepared
-    }
+    expected = {item.request.initial_attempt.request_identity_sha256 for item in prepared}
     if {item.request_identity_sha256 for item in inventories} != expected:
         raise ClaimCorpusExecutionError("terminal store does not exactly match live schedule")
     status_counts = dict(sorted(Counter(item.gateway_status for item in inventories).items()))
@@ -684,9 +769,7 @@ def run_live_execution(
             for item in inventories
             if item.request_identity_sha256 in provider_identities
         ),
-        "technical_attempt_count": sum(
-            len(item.attempt_outcomes) for item in inventories
-        ),
+        "technical_attempt_count": sum(len(item.attempt_outcomes) for item in inventories),
         "gateway_status_counts": status_counts,
         "relation_assignments_generated": False,
         "claims_materialized": False,
