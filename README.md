@@ -163,6 +163,11 @@ attempt remains retired and denominator-complete. A separate
 prospectively replaces provider-authored structural IDs with deterministic IDs,
 binds citations to each visible context and enforces downstream array bounds;
 it is frozen but not yet authorized or executed.
+The corresponding recovery executor is implemented with an isolated
+three-schema synthetic compatibility gate, phase-specific one-use authority,
+lease and store, and independent terminal normalization audit. No recovery
+provider call has been made; live use remains contingent on merge, green CI,
+a clean synchronized `main` checkout and explicit operator cost authorization.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation
