@@ -359,9 +359,7 @@ def test_adapter_sends_the_exact_bounded_payload_and_returns_raw_content() -> No
     assert payload["n"] == 1
     assert payload["store"] is False
     assert payload["stream"] is False
-    assert payload["extra_headers"] == {
-        "X-Client-Request-Id": request.initial_attempt.attempt_id
-    }
+    assert payload["extra_headers"] == {"X-Client-Request-Id": request.initial_attempt.attempt_id}
     assert not ({"tools", "web_search", "retrieval"} & set(payload))
     response_format = payload["response_format"]
     assert isinstance(response_format, dict)
@@ -572,6 +570,7 @@ def test_environment_factory_fails_closed_without_exposing_secret(
     elif environment == "wrong_sdk":
         monkeypatch.setattr(importlib.metadata, "version", lambda _name: "2.45.0")
     else:
+
         def fail_import(_name: str) -> object:
             raise ImportError("synthetic broken installation")
 
@@ -634,3 +633,100 @@ def test_gateway_retries_one_transient_failure_without_changing_identity() -> No
         {"X-Client-Request-Id": result.attempts[0].attempt.attempt_id},
         {"X-Client-Request-Id": result.attempts[1].attempt.attempt_id},
     ]
+
+
+@pytest.mark.parametrize(
+    "finish,refusal,model,code",
+    [
+        ("length", None, "gpt-4.1-2025-04-14", "provider_output_truncated"),
+        ("stop", "private refusal text", "gpt-4.1-2025-04-14", "provider_refusal"),
+        ("content_filter", None, "gpt-4.1-2025-04-14", "provider_refusal"),
+        ("stop", None, "wrong-model", "provider_invalid_envelope"),
+        ("tool_calls", None, "gpt-4.1-2025-04-14", "provider_invalid_envelope"),
+    ],
+)
+def test_recovery_reasons_survive_terminal_publication_without_content(
+    finish: str,
+    refusal: str | None,
+    model: str,
+    code: str,
+    tmp_path: Path,
+) -> None:
+    from aletheia_lab.evaluation.attempt_store import ImmutableAttemptStore
+    from aletheia_lab.model_gateway.openai_recovery import OpenAIRecoveryAdapter
+
+    request = _request()
+    completions = _CapturingCompletions(
+        _response(
+            finish_reason=finish,
+            refusal=refusal,
+            model=model,
+        )
+    )
+    adapter = OpenAIRecoveryAdapter(
+        client=_Client(completions),
+        model_policy=request.initial_attempt.model_policy,
+        policy=_policy(),
+    )
+    result = execute_gateway_request(
+        request,
+        adapter=adapter,
+        clock=_Clock(),
+        cancellation=_NeverCancelled(),
+    )
+    assert result.status == "provider_failed"
+    assert result.issue is not None and result.issue.code == code
+    assert len(result.attempts) == 1 and len(completions.calls) == 1
+    assert result.raw_response is None and result.parsed_response is None
+    assert "private refusal text" not in result.model_dump_json()
+    store = ImmutableAttemptStore(tmp_path / "store", clock=_Clock())
+    store.prepare(request)
+    store.start(request)
+    for attempt in result.attempts:
+        store.record_attempt(request, attempt)
+    store.record_parsed_or_failed(request, result)
+    store.mark_closeout_pending(request, result)
+    store.publish_terminal(request, result)
+    assert store.terminal_inventories()[0].gateway_status == "provider_failed"
+    contents = [p.read_bytes() for p in (tmp_path / "store").rglob("*") if p.is_file()]
+    assert any(f'"code":"{code}"'.encode() in content for content in contents)
+    assert all(b"private refusal text" not in content for content in contents)
+
+
+def test_recovery_http_error_retains_non_retryable_policy_and_hides_message() -> None:
+    from aletheia_lab.model_gateway.openai_recovery import OpenAIRecoveryAdapter
+
+    class BadRequestError(RuntimeError):
+        status_code = 400
+
+    request = _request()
+    completions = _CapturingCompletions(error=BadRequestError("private provider detail"))
+    adapter = OpenAIRecoveryAdapter(
+        client=_Client(completions),
+        model_policy=request.initial_attempt.model_policy,
+        policy=_policy(),
+    )
+    result = execute_gateway_request(
+        request,
+        adapter=adapter,
+        clock=_Clock(),
+        cancellation=_NeverCancelled(),
+    )
+    assert result.issue is not None and result.issue.code == "provider_http_error"
+    assert len(completions.calls) == 1
+    assert "private provider detail" not in result.model_dump_json()
+
+
+def test_recovery_success_keeps_exact_predecessor_transport_settings() -> None:
+    from aletheia_lab.model_gateway.openai_recovery import OpenAIRecoveryAdapter
+
+    request = _request()
+    recovery_client = _CapturingCompletions()
+    predecessor_client = _CapturingCompletions()
+    recovery = OpenAIRecoveryAdapter(
+        client=_Client(recovery_client),
+        model_policy=request.initial_attempt.model_policy,
+        policy=_policy(),
+    )
+    assert recovery.invoke(_call(request)) == _adapter(predecessor_client).invoke(_call(request))
+    assert recovery_client.calls == predecessor_client.calls

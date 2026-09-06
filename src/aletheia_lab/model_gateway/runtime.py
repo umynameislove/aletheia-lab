@@ -507,7 +507,7 @@ def _error_disposition(
     if error.code == "provider_cancelled":
         return "cancelled", "cancelled", "provider_cancelled"
     if error.code == "permanent_provider_error" or not error.retryable:
-        return "provider_failed", "permanent_error", "permanent_provider_error"
+        return "provider_failed", "permanent_error", error.code
     outcome: AttemptOutcome = (
         "timeout" if error.code == "provider_timeout" else "transient_error"
     )

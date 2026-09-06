@@ -112,16 +112,71 @@ citation binding, bad structural fields, excessive claims, missing parts,
 blank text, ambiguous terminal shapes, hash-seed stability and preservation of
 the zero-outcome boundary.
 
-## Next gate
+## Recovery execution boundary
 
-A later change may add the recovery execution plan, create-only authorization,
-lease and isolated attempt-store wiring. That work must reproduce this
-registration exactly on a clean synchronized `main` checkout. Paid execution
-remains forbidden until that implementation is merged, CI is green, a fresh
-preflight reports no blocker other than explicit operator authorization, and
-the operator approves the new one-attempt cost ceiling.
+The recovery entrypoint now implements two strictly ordered, separately
+authorized phases:
 
-Offline schema tests do not prove provider acceptance of every schema constraint
-or prevent refusal, truncation, or transport failure. Provider compatibility must
-be checked before authorizing the full recovery; none of those failures may be
-silently converted into successful normalized outputs.
+1. `compatibility` sends three synthetic requests, one for each distinct frozen
+   response schema. It contains no observed family evidence and cannot create a
+   scientific claim corpus.
+2. `diagnosis` schedules the complete 360-request recovery only after an
+   independently regenerated compatibility receipt proves all three synthetic
+   responses parsed and normalized.
+
+Each phase has its own immutable authorization, lease, attempt store and
+receipt. Their directory must be outside both the repository and the preserved
+predecessor run. A lease can be created once; any partial state blocks restart.
+The independent verifier rebuilds terminal counts, failure categories,
+normalization counts, candidates and the store identity from immutable shards.
+Provider failures remain in the denominator.
+
+```bash
+PYTHONPATH=src python scripts/claim_support_recovery.py rehearse
+PYTHONPATH=src python scripts/claim_support_recovery.py audit-predecessor \
+  --predecessor-store /absolute/path/to/preserved/attempt-store
+```
+
+After this implementation is merged and CI is green, the operator must run the
+phases in order: authorize, `require-live-ready`, execute once, then verify.
+The authorization command requires the current rehearsal SHA and an explicit
+cost ceiling; execution requires the resulting authorization SHA. The CLI
+checks the pinned SDK and credential without printing the credential. Exact
+operator commands must use a clean synchronized `main` checkout and private
+absolute destinations.
+
+The command sequence is intentionally manual at each paid boundary:
+
+```bash
+export CLAIM_RECOVERY_DIR=/absolute/private/path/claim-support-recovery-run
+export CLAIM_PREDECESSOR_STORE=/absolute/private/path/predecessor/attempt-store
+
+# Copy the displayed rehearsal SHA into the authorization confirmation.
+PYTHONPATH=src python scripts/claim_support_recovery.py rehearse
+PYTHONPATH=src python scripts/claim_support_recovery.py authorize \
+  --phase compatibility --run-dir "$CLAIM_RECOVERY_DIR" \
+  --predecessor-store "$CLAIM_PREDECESSOR_STORE" \
+  --cost-ceiling-usd COMPATIBILITY_CEILING \
+  --confirm-rehearsal-sha256 REHEARSAL_SHA
+PYTHONPATH=src python scripts/claim_support_recovery.py require-live-ready \
+  --phase compatibility --run-dir "$CLAIM_RECOVERY_DIR" \
+  --predecessor-store "$CLAIM_PREDECESSOR_STORE"
+PYTHONPATH=src python scripts/claim_support_recovery.py execute \
+  --phase compatibility --run-dir "$CLAIM_RECOVERY_DIR" \
+  --predecessor-store "$CLAIM_PREDECESSOR_STORE" \
+  --confirm-authorization-sha256 COMPATIBILITY_AUTHORIZATION_SHA
+PYTHONPATH=src python scripts/claim_support_recovery.py verify \
+  --phase compatibility --run-dir "$CLAIM_RECOVERY_DIR"
+```
+
+Only a verified `recovery_compatibility_pass` permits repeating that four-step
+authorize/preflight/execute/verify sequence with `--phase diagnosis`, a new
+diagnosis cost ceiling and the diagnosis authorization SHA. Placeholder values
+must be replaced explicitly; no command infers, reuses or auto-confirms them.
+
+Offline tests still do not prove live provider acceptance. The synthetic phase
+is therefore a real paid compatibility check, but it is not a scientific
+attempt. A failed compatibility phase remains recorded and blocks diagnosis;
+it is never reclassified as success. Diagnosis completion likewise reports all
+technical failures and candidate counts without guaranteeing 200 eligible
+claims or constituting scientific admission.
