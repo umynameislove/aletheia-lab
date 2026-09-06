@@ -24,9 +24,15 @@ from aletheia_lab.evaluation.claim_corpus_recovery_authorization import (
     RecoveryAuthorization,
     RecoveryPhase,
     acquire_recovery_lease,
+    checked_private_path,
     checked_run_directory,
     destination_sha256,
     publish_recovery_json,
+)
+from aletheia_lab.evaluation.claim_corpus_recovery_budget import (
+    AMENDED_MAX_OUTPUT_TOKENS,
+    audit_retired_compatibility_run,
+    load_recovery_output_budget_amendment,
 )
 from aletheia_lab.evaluation.claim_corpus_recovery_execution import prepare_recovery_rehearsal
 from aletheia_lab.evaluation.claim_corpus_recovery_probe import build_compatibility_requests
@@ -45,7 +51,11 @@ CENSUS_PATH = "configs/evaluation/claim_support_observed_evidence_census.json"
 RECEIPT_PATH = "configs/evaluation/claim_support_observed_evidence_receipt.json"
 
 
-def estimate_schedule_cost(prepared: tuple[PreparedClaimCorpusRequest, ...]) -> float:
+def estimate_schedule_cost(
+    prepared: tuple[PreparedClaimCorpusRequest, ...],
+    *,
+    maximum_output_tokens: int = AMENDED_MAX_OUTPUT_TOKENS,
+) -> float:
     """Frozen rates, all authorized retries, max output, and 1024 overhead tokens/call.
 
     This is a conservative local estimate, NOT a provider billing guarantee.
@@ -61,7 +71,9 @@ def estimate_schedule_cost(prepared: tuple[PreparedClaimCorpusRequest, ...]) -> 
             encoding, request.prompt_text,
             canonical_project_json(request.context.model_dump(mode="json")),
         ) + len(encoding.encode(request.response_schema_json)) + 1024
-        total += request.runtime_policy.max_attempts * (tokens * 2 + 600 * 8) / 1_000_000
+        total += request.runtime_policy.max_attempts * (
+            tokens * 2 + maximum_output_tokens * 8
+        ) / 1_000_000
     return round(total, 6)
 
 
@@ -69,9 +81,19 @@ def make_recovery_authorization(
     root: Path, *, state: RepositoryExecutionState, run_dir: Path,
     predecessor_store: Path, phase: RecoveryPhase, authorized_at: str,
     operator_cost_ceiling_usd: float,
+    retired_compatibility_run: Path,
 ) -> RecoveryAuthorization:
     run = checked_run_directory(root, run_dir, predecessor_store)
+    retired_run = checked_private_path(retired_compatibility_run, root)
+    if (
+        run == retired_run
+        or run.is_relative_to(retired_run)
+        or retired_run.is_relative_to(run)
+    ):
+        raise ValueError("new recovery destination overlaps the retired compatibility run")
     predecessor = audit_predecessor_provider_failures(predecessor_store)
+    retired = audit_retired_compatibility_run(root, retired_run)
+    amendment = load_recovery_output_budget_amendment(root)
     templates, rehearsal = prepare_recovery_rehearsal(root)
     evidence = load_execution_evidence_census(root, root / CENSUS_PATH)
     receipt = ObservedEvidenceReceipt.model_validate_json((root / RECEIPT_PATH).read_bytes())
@@ -88,7 +110,7 @@ def make_recovery_authorization(
         compatibility_hash = compatibility["receipt_sha256"]
     schedule = build_compatibility_requests(templates) if phase == "compatibility" else templates
     payload: dict[str, object] = {
-        "schema_version": "claim-corpus-recovery-authorization/v1",
+        "schema_version": "claim-corpus-recovery-authorization/v2",
         "phase": phase, "authorized_at": authorized_at,
         "source_commit_ref": state.head_commit,
         "execution_plan_sha256": plan.plan_sha256,
@@ -99,8 +121,11 @@ def make_recovery_authorization(
         "model_request_count": plan.model_request_count,
         "deterministic_request_count": plan.deterministic_request_count,
         "maximum_provider_attempts_per_request": plan.maximum_provider_attempts_per_request,
-        "maximum_output_tokens_per_model_request": plan.maximum_output_tokens_per_model_request,
+        "maximum_output_tokens_per_model_request": AMENDED_MAX_OUTPUT_TOKENS,
         "protocol_sha256": rehearsal["protocol_sha256"],
+        "output_budget_amendment_sha256": amendment.amendment_sha256,
+        "failed_compatibility_receipt_sha256": retired["receipt_sha256"],
+        "failed_compatibility_store_sha256": retired["terminal_store_sha256"],
         "rehearsal_sha256": rehearsal["receipt_sha256"],
         "destination_sha256": destination_sha256(run),
         "predecessor_store_sha256": predecessor["terminal_store_sha256"],
@@ -153,6 +178,7 @@ def authorized_recovery_requests(
         root, repository_state=state, authorization=None,
         evidence_census=evidence, evidence_receipt=receipt,
         recovery=True, recovery_manifest=manifest,
+        recovery_max_output_tokens=checked.maximum_output_tokens_per_model_request,
     )
     if checked.phase == "compatibility":
         prepared = build_compatibility_requests(prepared)
@@ -163,7 +189,7 @@ def authorized_recovery_requests(
 
 def validate_recovery_execution(
     root: Path, *, state: RepositoryExecutionState, run_dir: Path,
-    predecessor_store: Path, phase: RecoveryPhase,
+    predecessor_store: Path, phase: RecoveryPhase, retired_compatibility_run: Path,
 ) -> tuple[RecoveryAuthorization, tuple[PreparedClaimCorpusRequest, ...]]:
     run = checked_run_directory(root, run_dir, predecessor_store)
     authorization = load_recovery_authorization(run, phase)
@@ -171,6 +197,7 @@ def validate_recovery_execution(
         root, state=state, run_dir=run, predecessor_store=predecessor_store,
         phase=phase, authorized_at=authorization.authorized_at,
         operator_cost_ceiling_usd=authorization.operator_cost_ceiling_usd,
+        retired_compatibility_run=retired_compatibility_run,
     )
     if authorization != expected:
         raise ValueError("recovery authorization differs from verified inputs")
@@ -186,10 +213,11 @@ def validate_recovery_execution(
 def execute_recovery(
     root: Path, *, state: RepositoryExecutionState, run_dir: Path,
     predecessor_store: Path, phase: RecoveryPhase, confirm_authorization_sha256: str,
-    adapter: ProviderAdapter,
+    adapter: ProviderAdapter, retired_compatibility_run: Path,
 ) -> dict[str, object]:
     authorization, prepared = validate_recovery_execution(
-        root, state=state, run_dir=run_dir, predecessor_store=predecessor_store, phase=phase
+        root, state=state, run_dir=run_dir, predecessor_store=predecessor_store,
+        phase=phase, retired_compatibility_run=retired_compatibility_run,
     )
     if confirm_authorization_sha256 != authorization.authorization_sha256:
         raise ValueError("recovery authorization confirmation differs")

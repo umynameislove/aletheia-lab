@@ -79,9 +79,15 @@ Only the provider response contract changes. The following remain unchanged:
 - the 360-request primary census;
 - the eight-variant matrix;
 - the GPT-4.1 model and `gpt-4.1-2025-04-14` snapshot;
-- context, tool, evidence, retry and output-token budgets;
+- context, tool, evidence and retry budgets;
 - the target of 200 claims and every later selection rule;
 - the separation between automatic relations and independent human ratings.
+
+The original recovery registration held the 600-token output ceiling fixed.
+After all three synthetic compatibility probes terminated at that ceiling,
+the separately hashed [CSR-03R technical amendment](claim-support-recovery-output-budget-amendment.md)
+raises only the recovery output ceiling to 2,048 tokens. It applies uniformly
+to every model-backed variant and requires new request identities and authority.
 
 The recovery runs the complete matrix as 315 model-backed requests and 45
 deterministic requests. It does not reuse any predecessor output. Request
@@ -148,22 +154,26 @@ absolute destinations.
 The command sequence is intentionally manual at each paid boundary:
 
 ```bash
-export CLAIM_RECOVERY_DIR=/absolute/private/path/claim-support-recovery-run
+export CLAIM_RECOVERY_DIR=/absolute/private/path/claim-support-recovery-run-v2
 export CLAIM_PREDECESSOR_STORE=/absolute/private/path/predecessor/attempt-store
+export CLAIM_RETIRED_COMPATIBILITY_RUN=/absolute/private/path/claim-support-recovery-run
 
 # Copy the displayed rehearsal SHA into the authorization confirmation.
 PYTHONPATH=src python scripts/claim_support_recovery.py rehearse
 PYTHONPATH=src python scripts/claim_support_recovery.py authorize \
   --phase compatibility --run-dir "$CLAIM_RECOVERY_DIR" \
   --predecessor-store "$CLAIM_PREDECESSOR_STORE" \
+  --retired-compatibility-run "$CLAIM_RETIRED_COMPATIBILITY_RUN" \
   --cost-ceiling-usd COMPATIBILITY_CEILING \
   --confirm-rehearsal-sha256 REHEARSAL_SHA
 PYTHONPATH=src python scripts/claim_support_recovery.py require-live-ready \
   --phase compatibility --run-dir "$CLAIM_RECOVERY_DIR" \
-  --predecessor-store "$CLAIM_PREDECESSOR_STORE"
+  --predecessor-store "$CLAIM_PREDECESSOR_STORE" \
+  --retired-compatibility-run "$CLAIM_RETIRED_COMPATIBILITY_RUN"
 PYTHONPATH=src python scripts/claim_support_recovery.py execute \
   --phase compatibility --run-dir "$CLAIM_RECOVERY_DIR" \
   --predecessor-store "$CLAIM_PREDECESSOR_STORE" \
+  --retired-compatibility-run "$CLAIM_RETIRED_COMPATIBILITY_RUN" \
   --confirm-authorization-sha256 COMPATIBILITY_AUTHORIZATION_SHA
 PYTHONPATH=src python scripts/claim_support_recovery.py verify \
   --phase compatibility --run-dir "$CLAIM_RECOVERY_DIR"

@@ -20,6 +20,12 @@ Neither changing the response schema nor increasing a token budget would prove
 that the historical failures were diagnosed or resolved. The frozen resource
 budget must not be changed silently.
 
+The later CSR-03 synthetic compatibility run is distinct from this predecessor
+audit. Its three probes all recorded `provider_output_truncated` at the
+registered 600-token ceiling, so truncation is established for those three
+synthetic probes only. It must not be generalized to the 102 predecessor
+failures.
+
 ## Recovery requirement
 
 Before authorizing another full run, the recovery adapter must distinguish safe

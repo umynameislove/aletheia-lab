@@ -31,12 +31,14 @@ from aletheia_lab.model_gateway.contracts import (
 from aletheia_lab.model_gateway.runtime import validate_response_schema
 
 OPENAI_GATEWAY_POLICY_SCHEMA_VERSION: Final = "openai-gateway-policy/v1"
+OPENAI_RECOVERY_GATEWAY_POLICY_SCHEMA_VERSION: Final = "openai-gateway-policy/v2"
 OPENAI_API_BASE_URL: Final = "https://api.openai.com/v1"
 OPENAI_GATEWAY_ADAPTER_VERSION: Final = "openai-chat-completions-gateway/1.0.0"
 OPENAI_SDK_VERSION: Final = "2.46.0"
 OPENAI_MODEL_FAMILY: Final = "gpt-4.1"
 OPENAI_SEED: Final = 17
 OPENAI_MAX_OUTPUT_TOKENS: Final = 600
+OPENAI_RECOVERY_MAX_OUTPUT_TOKENS: Final = 2048
 OPENAI_TIMEOUT_SECONDS: Final = 60.0
 OPENAI_PROVIDER_ATTEMPT_CEILING: Final = 2
 _SCHEMA_NAME: Final = "aletheia_diagnosis_output"
@@ -58,7 +60,7 @@ class _StrictFrozenModel(BaseModel):
 class OpenAIGatewayPolicy(_StrictFrozenModel):
     """Exact provider settings copied from the outcome-blind fairness freeze."""
 
-    schema_version: Literal["openai-gateway-policy/v1"] = (
+    schema_version: Literal["openai-gateway-policy/v1", "openai-gateway-policy/v2"] = (
         OPENAI_GATEWAY_POLICY_SCHEMA_VERSION
     )
     provider: Literal["openai"]
@@ -69,7 +71,7 @@ class OpenAIGatewayPolicy(_StrictFrozenModel):
     temperature: float
     top_p: float
     seed: Literal[17]
-    max_output_tokens: Literal[600]
+    max_output_tokens: Literal[600, 2048]
     timeout_seconds: float
     provider_attempt_ceiling: Literal[2]
     hidden_sdk_retries: Literal[0] = 0
@@ -84,6 +86,13 @@ class OpenAIGatewayPolicy(_StrictFrozenModel):
             raise ValueError("top_p differs from the frozen gateway policy")
         if type(self.timeout_seconds) is not float or self.timeout_seconds != 60.0:
             raise ValueError("timeout differs from the frozen gateway policy")
+        expected_output_tokens = (
+            OPENAI_MAX_OUTPUT_TOKENS
+            if self.schema_version == OPENAI_GATEWAY_POLICY_SCHEMA_VERSION
+            else OPENAI_RECOVERY_MAX_OUTPUT_TOKENS
+        )
+        if self.max_output_tokens != expected_output_tokens:
+            raise ValueError("output budget differs from its versioned gateway policy")
         return self
 
     @classmethod
@@ -117,6 +126,16 @@ class OpenAIGatewayPolicy(_StrictFrozenModel):
         """Hash the complete adapter-specific transport policy."""
 
         return canonical_execution_sha256(self.model_dump(mode="json"))
+
+    def with_recovery_output_budget(self) -> OpenAIGatewayPolicy:
+        """Apply only the registered CSR-03R output-cap amendment."""
+
+        payload = self.model_dump(mode="python")
+        payload.update(
+            schema_version=OPENAI_RECOVERY_GATEWAY_POLICY_SCHEMA_VERSION,
+            max_output_tokens=OPENAI_RECOVERY_MAX_OUTPUT_TOKENS,
+        )
+        return OpenAIGatewayPolicy.model_validate(payload)
 
     def model_policy_sha256(self) -> str:
         """Hash exactly the research-owned model policy represented by this lock."""

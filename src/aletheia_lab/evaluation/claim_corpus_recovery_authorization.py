@@ -23,7 +23,7 @@ class RecoveryAuthorization(BaseModel):
     """A separate explicit authority; the nested legacy binding never authorizes recovery."""
 
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
-    schema_version: Literal["claim-corpus-recovery-authorization/v1"]
+    schema_version: Literal["claim-corpus-recovery-authorization/v2"]
     phase: RecoveryPhase
     authorized_at: str
     source_commit_ref: str = Field(pattern=r"^[0-9a-f]{40}$")
@@ -36,8 +36,11 @@ class RecoveryAuthorization(BaseModel):
     model_request_count: Literal[315]
     deterministic_request_count: Literal[45]
     maximum_provider_attempts_per_request: Literal[2]
-    maximum_output_tokens_per_model_request: Literal[600]
+    maximum_output_tokens_per_model_request: Literal[2048]
     protocol_sha256: Sha256
+    output_budget_amendment_sha256: Sha256
+    failed_compatibility_receipt_sha256: Sha256
+    failed_compatibility_store_sha256: Sha256
     rehearsal_sha256: Sha256
     destination_sha256: Sha256
     predecessor_store_sha256: Sha256

@@ -165,9 +165,13 @@ binds citations to each visible context and enforces downstream array bounds;
 it is frozen but not yet authorized or executed.
 The corresponding recovery executor is implemented with an isolated
 three-schema synthetic compatibility gate, phase-specific one-use authority,
-lease and store, and independent terminal normalization audit. No recovery
-provider call has been made; live use remains contingent on merge, green CI,
-a clean synchronized `main` checkout and explicit operator cost authorization.
+lease and store, and independent terminal normalization audit. The first
+compatibility attempt is preserved as a technical failure: all three probes
+hit the registered 600-token output ceiling. A separately hashed
+[CSR-03R output-budget amendment](docs/claim-support-recovery-output-budget-amendment.md)
+raises only the recovery ceiling to 2,048 tokens uniformly across all
+model-backed variants. It requires a new private directory, request identities
+and authorization; the retired attempt cannot be rerun.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation

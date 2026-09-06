@@ -500,6 +500,7 @@ def _build_live_requests(
     evidence_receipt: ObservedEvidenceReceipt,
     recovery: bool = False,
     recovery_manifest: EvaluationManifestReference | None = None,
+    recovery_max_output_tokens: Literal[600, 2048] = 600,
 ) -> tuple[PreparedClaimCorpusRequest, ...]:
     # Recovery authorization is checked by the recovery-owned entrypoint.
     from aletheia_lab.evaluation.claim_corpus_normalization_recovery import (
@@ -510,6 +511,8 @@ def _build_live_requests(
 
     if recovery:
         load_recovery_protocol(root)
+    elif recovery_max_output_tokens != 600:
+        raise ClaimCorpusExecutionError("output-budget amendments are recovery-only")
     plan, manifest = _resolve_request_manifest(
         root,
         repository_state=repository_state,
@@ -523,6 +526,8 @@ def _build_live_requests(
     freeze = load_diagnosis_variant_freeze(root / FAIRNESS_PATH)
     registry = build_variant_registry(freeze)
     openai_policy = OpenAIGatewayPolicy.from_fairness_policy(freeze.model_policies["main_llm_v1"])
+    if recovery_max_output_tokens == 2048:
+        openai_policy = openai_policy.with_recovery_output_budget()
     bindings = {
         (item.family_id, item.evidence_condition): item for item in evidence_census.bindings
     }

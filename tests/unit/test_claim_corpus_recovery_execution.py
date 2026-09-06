@@ -28,6 +28,11 @@ from aletheia_lab.evaluation.claim_corpus_recovery_authorization import (
     destination_sha256,
     publish_recovery_json,
 )
+from aletheia_lab.evaluation.claim_corpus_recovery_budget import (
+    AMENDED_MAX_OUTPUT_TOKENS,
+    RecoveryOutputBudgetAmendment,
+    load_recovery_output_budget_amendment,
+)
 from aletheia_lab.evaluation.claim_corpus_recovery_execution import prepare_recovery_rehearsal
 from aletheia_lab.evaluation.claim_corpus_recovery_probe import build_compatibility_requests
 from aletheia_lab.evaluation.claim_corpus_recovery_run import (
@@ -40,7 +45,9 @@ from aletheia_lab.evaluation.claim_corpus_recovery_run import (
 from aletheia_lab.evaluation.claim_evidence_semantics import ModelVisibleEvidenceContext
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
 from aletheia_lab.evaluation.observed_evidence_receipt import ObservedEvidenceReceipt
+from aletheia_lab.evaluation.variant_fairness import load_diagnosis_variant_freeze
 from aletheia_lab.model_gateway import (
+    OpenAIGatewayPolicy,
     ProviderBinding,
     ProviderCall,
     ProviderEnvelope,
@@ -66,11 +73,41 @@ def test_recovery_schedule_is_isolated_and_non_authorizing(rehearsal: Rehearsal)
     assert receipt["provider_calls_executed"] is False
     assert receipt["estimate_is_authorized_cost_ceiling"] is False
     assert receipt["provider_billed_input_tokens_known"] is False
+    assert receipt["maximum_output_tokens_per_model_request"] == 2048
+    assert receipt["output_budget_uniform_across_model_variants"] is True
+    assert receipt["model_policy_count"] == 1
     assert receipt["live_blockers"]
     assert receipt["diagnosis_maximum_attempt_cost_estimate_usd"] == (
         estimate_schedule_cost(prepared)
     )
     assert all('"diagnosis-provider-output/2"' in p.request.response_schema_json for p in prepared)
+    freeze = load_diagnosis_variant_freeze(
+        ROOT / "configs/evaluation/diagnosis_variant_fairness_freeze.json"
+    )
+    amended = OpenAIGatewayPolicy.from_fairness_policy(
+        freeze.model_policies["main_llm_v1"]
+    ).with_recovery_output_budget()
+    assert {
+        item.request.initial_attempt.model_policy.policy_content_sha256
+        for item in prepared
+        if item.route == "model_gateway"
+    } == {amended.model_policy_sha256()}
+
+
+def test_output_budget_amendment_is_self_authenticating_and_outcome_free() -> None:
+    amendment = load_recovery_output_budget_amendment(ROOT)
+    assert amendment.amended_maximum_output_tokens == 2048
+    assert amendment.prior_maximum_output_tokens == 600
+    assert amendment.failed_probe_count == 3
+    assert amendment.failed_probe_issue_code == "provider_output_truncated"
+    assert amendment.exact_truncated_output_content_known is False
+    assert amendment.output_budget_uniform_across_model_variants is True
+    assert amendment.provider_calls_executed is False
+    assert amendment.main_or_sealed_outcomes_opened is False
+    payload = amendment.model_dump(mode="python")
+    payload["amended_maximum_output_tokens"] = 1200
+    with pytest.raises(ValueError):
+        RecoveryOutputBudgetAmendment.model_validate(payload)
 
 
 class Clock:
@@ -211,9 +248,10 @@ def _authorization(run_dir: Path) -> RecoveryAuthorization:
         (ROOT / "configs/evaluation/claim_support_observed_evidence_receipt.json").read_bytes()
     )
     plan = build_execution_plan(ROOT)
+    amendment = load_recovery_output_budget_amendment(ROOT)
     _, rehearsal = prepare_recovery_rehearsal(ROOT)
     payload = {
-        "schema_version": "claim-corpus-recovery-authorization/v1",
+        "schema_version": "claim-corpus-recovery-authorization/v2",
         "phase": "compatibility", "authorized_at": "2000-01-01T00:00:00Z",
         "source_commit_ref": state.head_commit,
         "execution_plan_sha256": plan.plan_sha256,
@@ -224,8 +262,13 @@ def _authorization(run_dir: Path) -> RecoveryAuthorization:
         "model_request_count": plan.model_request_count,
         "deterministic_request_count": plan.deterministic_request_count,
         "maximum_provider_attempts_per_request": plan.maximum_provider_attempts_per_request,
-        "maximum_output_tokens_per_model_request": plan.maximum_output_tokens_per_model_request,
+        "maximum_output_tokens_per_model_request": AMENDED_MAX_OUTPUT_TOKENS,
         "protocol_sha256": rehearsal["protocol_sha256"],
+        "output_budget_amendment_sha256": amendment.amendment_sha256,
+        "failed_compatibility_receipt_sha256": (
+            amendment.failed_compatibility_receipt_sha256
+        ),
+        "failed_compatibility_store_sha256": amendment.failed_compatibility_store_sha256,
         "rehearsal_sha256": rehearsal["receipt_sha256"],
         "destination_sha256": destination_sha256(run_dir),
         "predecessor_store_sha256": PREDECESSOR_TERMINAL_STORE_SHA256,
@@ -281,10 +324,20 @@ def test_compatibility_executes_once_and_verifies_from_store(
         "aletheia_lab.evaluation.claim_corpus_recovery_run.audit_predecessor_provider_failures",
         lambda _path: {"terminal_store_sha256": PREDECESSOR_TERMINAL_STORE_SHA256},
     )
+    amendment = load_recovery_output_budget_amendment(ROOT)
+    monkeypatch.setattr(
+        "aletheia_lab.evaluation.claim_corpus_recovery_run.audit_retired_compatibility_run",
+        lambda _root, _path: {
+            "receipt_sha256": amendment.failed_compatibility_receipt_sha256,
+            "terminal_store_sha256": amendment.failed_compatibility_store_sha256,
+        },
+    )
+    retired = tmp_path / "retired"
     authorization = make_recovery_authorization(
         ROOT, state=state, run_dir=run_dir, predecessor_store=predecessor,
         phase="compatibility", authorized_at="2000-01-01T00:00:00Z",
         operator_cost_ceiling_usd=1.0,
+        retired_compatibility_run=retired,
     )
     publish_recovery_json(
         run_dir / "compatibility-authorization.json",
@@ -299,6 +352,7 @@ def test_compatibility_executes_once_and_verifies_from_store(
         phase="compatibility",
         confirm_authorization_sha256=authorization.authorization_sha256,
         adapter=adapter,
+        retired_compatibility_run=retired,
     )
     assert result["status"] == "recovery_compatibility_pass"
     assert result["terminal_request_count"] == 3
@@ -312,4 +366,5 @@ def test_compatibility_executes_once_and_verifies_from_store(
             phase="compatibility",
             confirm_authorization_sha256=authorization.authorization_sha256,
             adapter=adapter,
+            retired_compatibility_run=retired,
         )
