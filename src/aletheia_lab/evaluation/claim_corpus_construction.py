@@ -69,6 +69,9 @@ from aletheia_lab.evaluation.claim_evidence_semantics import (
     build_relation_assignment_request,
     load_evidence_semantics_policy,
 )
+from aletheia_lab.evaluation.claim_relation_recovery_contracts import (
+    ReconciledClaimRelationResultBundle,
+)
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
 from aletheia_lab.model_gateway.contracts import TerminalStatus
 from aletheia_lab.project.identity import canonical_project_json
@@ -357,15 +360,23 @@ def publish_claim_pool(
     root: Path,
     *,
     preparation: ClaimPoolPreparationLike,
-    relation_results: ClaimRelationResultBundle,
+    relation_results: ClaimRelationResultBundle | ReconciledClaimRelationResultBundle,
     store_root: Path,
 ) -> ClaimPoolPublicationCloseout:
     """Publish the claim pool only from a complete terminal relation run."""
 
     checked_preparation = _checked_preparation(preparation)
-    checked_results = ClaimRelationResultBundle.model_validate(
-        relation_results.model_dump(mode="python")
-    )
+    checked_results: ClaimRelationResultBundle | ReconciledClaimRelationResultBundle
+    if isinstance(relation_results, ReconciledClaimRelationResultBundle):
+        checked_results = ReconciledClaimRelationResultBundle.model_validate(
+            relation_results.model_dump(mode="python")
+        )
+        provider_attempt_count = checked_results.total_provider_attempt_count
+    else:
+        checked_results = ClaimRelationResultBundle.model_validate(
+            relation_results.model_dump(mode="python")
+        )
+        provider_attempt_count = checked_results.registered_attempt_count
     policy = load_evidence_semantics_policy(root.resolve())
     if (
         checked_results.preparation_sha256 != checked_preparation.preparation_sha256
@@ -433,7 +444,7 @@ def publish_claim_pool(
         protocol_sha256=protocol.protocol_sha256,
         census_sha256=census.census_sha256,
         entries=reconciled,
-        provider_calls_recorded=checked_results.registered_attempt_count,
+        provider_calls_recorded=provider_attempt_count,
     )
     payload: dict[str, object] = {
         "schema_version": POOL_CLOSEOUT_SCHEMA_VERSION,

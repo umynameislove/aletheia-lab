@@ -37,6 +37,9 @@ from aletheia_lab.evaluation.claim_corpus_recovery_closeout import (
     build_recovery_execution_closeout,
 )
 from aletheia_lab.evaluation.claim_evidence_census import ObservedEvidenceCensus
+from aletheia_lab.evaluation.claim_relation_recovery_contracts import (
+    ReconciledClaimRelationResultBundle,
+)
 from aletheia_lab.filesystem import publish_immutable_file
 from aletheia_lab.project.identity import canonical_project_json
 
@@ -285,9 +288,13 @@ def _publish_pool(args: argparse.Namespace, root: Path) -> dict[str, object]:
     pool_store = _outside_repository(root, args.pool_store, label="pool store")
     output = _outside_repository(root, args.output, label="publication closeout")
     preparation = _load_preparation(preparation_path)
-    relation_results = ClaimRelationResultBundle.model_validate(
-        _load_model(relation_path, ClaimRelationResultBundle).model_dump(mode="python")
-    )
+    relation_payload = json.loads(relation_path.read_bytes())
+    if not isinstance(relation_payload, dict):
+        raise ClaimPoolConstructionError("relation-result input is invalid")
+    if relation_payload.get("schema_version") == "claim-relation-reconciled-result-bundle/v1":
+        relation_results = ReconciledClaimRelationResultBundle.model_validate(relation_payload)
+    else:
+        relation_results = ClaimRelationResultBundle.model_validate(relation_payload)
     closeout = publish_claim_pool(
         root,
         preparation=preparation,

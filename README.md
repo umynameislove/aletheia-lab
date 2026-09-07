@@ -185,7 +185,12 @@ The blind relation executor adds a provider-free rehearsal, exact token and
 cost accounting, an explicit one-use lease, globally paced calls and an
 independent immutable-store verifier. It keeps provider failures and semantic
 validation failures separate and still performs no corpus publication or
-human-packet generation.
+human-packet generation. The registered relation run closed with 961/962 parsed
+relations and one request exhausted by two transient provider errors. A
+separately authorized one-request recovery preserves the original failed
+terminal and all 961 successes by hash, and permits full-pool publication only
+after an independently rebuilt 962/962 reconciled bundle has zero unresolved
+terminals.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation
