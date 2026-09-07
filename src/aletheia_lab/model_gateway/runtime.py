@@ -38,6 +38,7 @@ from aletheia_lab.model_gateway.contracts import (
     ProviderBinding,
     ProviderCall,
     ProviderEnvelope,
+    ProviderFailureDiagnostics,
     RawResponseArtifact,
     RuntimePolicyReference,
     TerminalStatus,
@@ -240,6 +241,7 @@ def execute_gateway_request(
                     timing,
                     provider_attempt_ref=exc.provider_attempt_ref,
                     issue=issue,
+                    failure_diagnostics=exc.diagnostics,
                 )
             )
             if status is None:
@@ -545,6 +547,7 @@ def _record(
     response_mode: Literal["structured", "abstention"] | None = None,
     usage: UsageMetadata | None = None,
     issue: TechnicalIssue | None = None,
+    failure_diagnostics: ProviderFailureDiagnostics | None = None,
 ) -> AttemptRecord:
     return AttemptRecord(
         attempt=attempt,
@@ -554,6 +557,7 @@ def _record(
         response_mode=response_mode,
         usage=usage,
         issue=issue,
+        failure_diagnostics=failure_diagnostics,
     )
 
 

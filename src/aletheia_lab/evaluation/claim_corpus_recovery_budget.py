@@ -20,6 +20,17 @@ PRIOR_MAX_OUTPUT_TOKENS: Final = 600
 
 Sha256 = Annotated[str, Field(pattern=SHA256_PATTERN)]
 
+# CSR-03R is retired, not overwritten by the CSR-03S transport amendment.
+CSR03R_FAILURE: Final = {
+    "failed_compatibility_authorization_sha256": "a547b7362ddbd978a87d723345a5d1b41e6be5d843ae8d73ec36ccb27190cbab",
+    "failed_compatibility_receipt_sha256": "9161d0a992aea2feb29c200e8466c6059c0d593c04ca78e410e70fdaaa79f7f9",
+    "failed_compatibility_store_sha256": "5bc30a3c1eb6e16719fab95a80dd03528456b2211911f5061b54cbddef5e32e7",
+    "failed_compatibility_rehearsal_sha256": "2b9d93a1b03de2fe1ba848cb394bcc33d1dbc64d0b42b351e271e14e1d9ccb3e",
+    "failed_compatibility_source_commit_ref": "bdc794f02b29515a02a0ce28609ac53e7d478bd2",
+    "predecessor_protocol_sha256": "71f0a9b311f2d93f1d6b48399b2509cc8c4f5ac5b5c95251b07bbc04a3164e0e",
+    "prior_maximum_output_tokens": 2048,
+}
+
 
 class RecoveryOutputBudgetAmendment(BaseModel):
     """Outcome-blind technical amendment justified by the retired probe failure."""
@@ -111,6 +122,16 @@ def audit_retired_compatibility_run(root: Path, run_dir: Path) -> dict[str, obje
     """Verify the immutable CSR-03 failure without rebuilding or rerunning it."""
 
     amendment = load_recovery_output_budget_amendment(root)
+    return _audit_retired_run(run_dir, amendment.model_dump(mode="json"))
+
+
+def audit_retired_structured_output_run(root: Path, run_dir: Path) -> dict[str, object]:
+    """Independently verify the second failure using pinned identities, never current requests."""
+    load_recovery_output_budget_amendment(root)
+    return _audit_retired_run(run_dir, dict(CSR03R_FAILURE))
+
+
+def _audit_retired_run(run_dir: Path, expected: dict[str, object]) -> dict[str, object]:
     if run_dir.is_symlink() or not run_dir.is_dir():
         raise ValueError("retired compatibility run must be a real directory")
     expected_members = {
@@ -130,14 +151,14 @@ def audit_retired_compatibility_run(root: Path, run_dir: Path) -> dict[str, obje
     authorization_identity.pop("authorization_sha256", None)
     if (
         authorization_sha != canonical_execution_sha256(authorization_identity)
-        or authorization_sha != amendment.failed_compatibility_authorization_sha256
+        or authorization_sha != expected["failed_compatibility_authorization_sha256"]
         or authorization.get("maximum_output_tokens_per_model_request")
-        != amendment.prior_maximum_output_tokens
-        or authorization.get("protocol_sha256") != amendment.predecessor_protocol_sha256
+        != expected["prior_maximum_output_tokens"]
+        or authorization.get("protocol_sha256") != expected["predecessor_protocol_sha256"]
         or authorization.get("rehearsal_sha256")
-        != amendment.failed_compatibility_rehearsal_sha256
+        != expected["failed_compatibility_rehearsal_sha256"]
         or authorization.get("source_commit_ref")
-        != amendment.failed_compatibility_source_commit_ref
+        != expected["failed_compatibility_source_commit_ref"]
         or authorization.get("phase") != "compatibility"
     ):
         raise ValueError("retired compatibility authorization differs")
@@ -154,7 +175,7 @@ def audit_retired_compatibility_run(root: Path, run_dir: Path) -> dict[str, obje
 
     store = run_dir / "compatibility-store"
     store_sha, status_counts, issue_counts, attempts = _audit_retired_store(store)
-    if store_sha != amendment.failed_compatibility_store_sha256:
+    if store_sha != expected["failed_compatibility_store_sha256"]:
         raise ValueError("retired compatibility store differs")
 
     receipt = _json_object(run_dir / "compatibility-receipt.json")
@@ -163,7 +184,7 @@ def audit_retired_compatibility_run(root: Path, run_dir: Path) -> dict[str, obje
     receipt_identity.pop("receipt_sha256", None)
     if (
         receipt_sha != canonical_execution_sha256(receipt_identity)
-        or receipt_sha != amendment.failed_compatibility_receipt_sha256
+        or receipt_sha != expected["failed_compatibility_receipt_sha256"]
         or receipt.get("authorization_sha256") != authorization_sha
         or receipt.get("terminal_store_sha256") != store_sha
         or receipt.get("gateway_status_counts") != dict(sorted(status_counts.items()))
@@ -183,7 +204,7 @@ def audit_retired_compatibility_run(root: Path, run_dir: Path) -> dict[str, obje
         "authorization_sha256": authorization_sha,
         "receipt_sha256": receipt_sha,
         "terminal_store_sha256": store_sha,
-        "prior_maximum_output_tokens": amendment.prior_maximum_output_tokens,
+        "prior_maximum_output_tokens": expected["prior_maximum_output_tokens"],
         "terminal_request_count": sum(status_counts.values()),
         "gateway_status_counts": dict(sorted(status_counts.items())),
         "provider_issue_code_counts": dict(sorted(issue_counts.items())),
@@ -207,6 +228,8 @@ def _audit_retired_store(
     if any(path.is_symlink() or not path.is_dir() for path in (authorities, requests)):
         raise ValueError("retired compatibility store bucket is invalid")
     authority_paths = sorted(authorities.iterdir())
+    if any(path.is_symlink() or not path.is_file() for path in authority_paths):
+        raise ValueError("retired compatibility authority is linked or invalid")
     shards = sorted(requests.iterdir())
     if len(shards) != 3 or {path.name for path in authority_paths} != {
         f"{shard.name}.json" for shard in shards

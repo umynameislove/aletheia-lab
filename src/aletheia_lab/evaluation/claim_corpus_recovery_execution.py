@@ -22,6 +22,7 @@ from aletheia_lab.evaluation.claim_corpus_live import (
 from aletheia_lab.evaluation.claim_corpus_normalization_recovery import load_recovery_protocol
 from aletheia_lab.evaluation.claim_corpus_recovery_budget import (
     AMENDED_MAX_OUTPUT_TOKENS,
+    CSR03R_FAILURE,
     RecoveryOutputBudgetAmendment,
     load_recovery_output_budget_amendment,
 )
@@ -36,6 +37,7 @@ from aletheia_lab.evaluation.observed_evidence_receipt import (
     ObservedEvidenceReceipt,
     _chat_input_tokens,
 )
+from aletheia_lab.model_gateway.recovery_transport import TRANSPORT_SHA256, wire_schema_json
 from aletheia_lab.project.identity import canonical_project_json, content_sha256
 
 
@@ -77,7 +79,8 @@ def prepare_recovery_rehearsal(
         evidence_receipt=receipt,
     )
     rehearsal_authority = canonical_execution_sha256(
-        {"purpose": "offline-recovery-rehearsal", "protocol": protocol.protocol_sha256}
+        {"purpose": "offline-recovery-rehearsal", "protocol": protocol.protocol_sha256,
+         "transport_sha256": TRANSPORT_SHA256}
     )
     recovery_manifest = EvaluationManifestReference.build(
         project_id=f"p3-project-{protocol.protocol_sha256}",
@@ -127,7 +130,7 @@ def prepare_recovery_rehearsal(
             request.prompt_text,
             canonical_project_json(request.context.model_dump(mode="json")),
         )
-        schemas += len(encoding.encode(request.response_schema_json))
+        schemas += len(encoding.encode(wire_schema_json(request.response_schema_json)))
     source_paths = (
         "src/aletheia_lab/evaluation/claim_corpus_recovery_execution.py",
         "src/aletheia_lab/evaluation/claim_corpus_recovery_authorization.py",
@@ -143,11 +146,28 @@ def prepare_recovery_rehearsal(
         "src/aletheia_lab/model_gateway/runtime.py",
         "src/aletheia_lab/model_gateway/contracts.py",
         "src/aletheia_lab/model_gateway/schema.py",
+        "src/aletheia_lab/model_gateway/recovery_transport.py",
     )
     payload: dict[str, object] = {
-        "schema_version": "claim-corpus-recovery-rehearsal/v2",
+        "schema_version": "claim-corpus-recovery-rehearsal/v3",
         "status": "recovery_rehearsed_live_execution_blocked",
-        "protocol_sha256": amendment.recovery_protocol_sha256,
+        "protocol_sha256": canonical_execution_sha256({
+            "schema_version": "claim-corpus-recovery-protocol/v3",
+            "predecessor_protocol_sha256": amendment.recovery_protocol_sha256,
+            "transport_sha256": TRANSPORT_SHA256,
+            "retired_structured_output_failure": CSR03R_FAILURE,
+        }),
+        "transport_sha256": TRANSPORT_SHA256,
+        "provider_wire_schema_set_sha256": canonical_execution_sha256(sorted({
+            wire_schema_json(item.request.response_schema_json)
+            for item in new if item.route == "model_gateway"
+        })),
+        "local_acceptance_schema_set_sha256": canonical_execution_sha256(sorted({
+            item.request.response_schema_json
+            for item in new if item.route == "model_gateway"
+        })),
+        "retired_structured_output_receipt_sha256": CSR03R_FAILURE["failed_compatibility_receipt_sha256"],
+        "retired_structured_output_store_sha256": CSR03R_FAILURE["failed_compatibility_store_sha256"],
         "predecessor_protocol_sha256": protocol.protocol_sha256,
         "output_budget_amendment_sha256": amendment.amendment_sha256,
         "failed_compatibility_receipt_sha256": (

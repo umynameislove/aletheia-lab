@@ -309,6 +309,19 @@ def _text_payload(evidence_id: str, field: str, text: str) -> dict[str, object]:
     return payload
 
 
+@pytest.mark.parametrize("field", ("claim_text", "part_text", "abstention_reason"))
+def test_normalizer_rejects_nfd_before_canonical_json_can_silently_repair_it(field: str) -> None:
+    request, evidence_ids = _request_and_evidence("FULL")
+    payload = _text_payload(evidence_ids[0], field, "e\u0301vidence")
+    before = json.dumps(payload)
+    with pytest.raises(ClaimCorpusContractError):
+        normalize_provider_output_v2(
+            request, payload, source_record_sha256="a" * 64,
+            visible_evidence_ids=evidence_ids,
+        )
+    assert json.dumps(payload) == before
+
+
 @pytest.mark.parametrize(
     "field,limit", (("claim_text", 2048), ("part_text", 1024), ("abstention_reason", 2048))
 )

@@ -294,11 +294,18 @@ class OpenAIChatCompletionsGatewayAdapter:
             "timeout": checked.runtime_policy.timeout_ns / 1_000_000_000,
             "extra_headers": {"X-Client-Request-Id": checked.attempt_id},
         }
+        payload = self._prepare_payload(checked, payload)
         try:
             response = self._client.chat.completions.create(**payload)
         except Exception as exc:
             raise _translated_provider_error(checked, exc) from exc
         return self._response_envelope(checked, response)
+
+    def _prepare_payload(
+        self, call: ProviderCall, payload: dict[str, object]
+    ) -> dict[str, object]:
+        """Keep legacy wire bytes; specialized adapters may bind a versioned projection."""
+        return payload
 
     def _verify_runtime_policy(self, call: ProviderCall) -> None:
         expected_timeout_ns = int(self.policy.timeout_seconds * 1_000_000_000)
@@ -410,6 +417,10 @@ def _openai_response_format(schema_json: str) -> dict[str, object]:
 def _ensure_openai_strict_schema(schema: dict[str, object], *, depth: int) -> None:
     if depth > 8:
         raise OpenAIGatewayConfigurationError("response schema exceeds adapter depth")
+    if "anyOf" in schema:
+        for alternative in cast(list[dict[str, object]], schema["anyOf"]):
+            _ensure_openai_strict_schema(alternative, depth=depth + 1)
+        return
     schema_type = schema.get("type")
     if schema_type == "object":
         properties = schema.get("properties")

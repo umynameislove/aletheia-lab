@@ -30,6 +30,7 @@ from aletheia_lab.evaluation.claim_corpus_recovery_authorization import (
 )
 from aletheia_lab.evaluation.claim_corpus_recovery_budget import (
     AMENDED_MAX_OUTPUT_TOKENS,
+    CSR03R_FAILURE,
     RecoveryOutputBudgetAmendment,
     load_recovery_output_budget_amendment,
 )
@@ -37,6 +38,7 @@ from aletheia_lab.evaluation.claim_corpus_recovery_execution import prepare_reco
 from aletheia_lab.evaluation.claim_corpus_recovery_probe import build_compatibility_requests
 from aletheia_lab.evaluation.claim_corpus_recovery_run import (
     _execute_compatibility,
+    authorized_recovery_requests,
     estimate_schedule_cost,
     execute_recovery,
     make_recovery_authorization,
@@ -251,7 +253,7 @@ def _authorization(run_dir: Path) -> RecoveryAuthorization:
     amendment = load_recovery_output_budget_amendment(ROOT)
     _, rehearsal = prepare_recovery_rehearsal(ROOT)
     payload = {
-        "schema_version": "claim-corpus-recovery-authorization/v2",
+        "schema_version": "claim-corpus-recovery-authorization/v3",
         "phase": "compatibility", "authorized_at": "2000-01-01T00:00:00Z",
         "source_commit_ref": state.head_commit,
         "execution_plan_sha256": plan.plan_sha256,
@@ -269,6 +271,9 @@ def _authorization(run_dir: Path) -> RecoveryAuthorization:
             amendment.failed_compatibility_receipt_sha256
         ),
         "failed_compatibility_store_sha256": amendment.failed_compatibility_store_sha256,
+        "transport_sha256": rehearsal["transport_sha256"],
+        "retired_structured_output_receipt_sha256": rehearsal["retired_structured_output_receipt_sha256"],
+        "retired_structured_output_store_sha256": rehearsal["retired_structured_output_store_sha256"],
         "rehearsal_sha256": rehearsal["receipt_sha256"],
         "destination_sha256": destination_sha256(run_dir),
         "predecessor_store_sha256": PREDECESSOR_TERMINAL_STORE_SHA256,
@@ -312,6 +317,27 @@ def test_recovery_authorization_detects_tampering(tmp_path: Path) -> None:
         RecoveryAuthorization.model_validate(payload)
 
 
+def test_retired_authority_version_and_rehashed_transport_tampering_are_rejected(tmp_path: Path) -> None:
+    run_dir = tmp_path / "run"
+    authority = _authorization(run_dir)
+    payload = authority.identity_payload()
+    payload["schema_version"] = "claim-corpus-recovery-authorization/v2"
+    with pytest.raises(ValueError):
+        RecoveryAuthorization.model_validate_json(json.dumps({
+            **payload, "authorization_sha256": canonical_execution_sha256(payload),
+        }))
+    payload = authority.identity_payload()
+    payload["transport_sha256"] = "f" * 64
+    forged = RecoveryAuthorization.model_validate_json(json.dumps({
+        **payload, "authorization_sha256": canonical_execution_sha256(payload),
+    }))
+    state = RepositoryExecutionState(
+        branch="main", head_commit="0" * 40, origin_main_commit="0" * 40, clean=True,
+    )
+    with pytest.raises(ValueError, match="does not match"):
+        authorized_recovery_requests(ROOT, state=state, authorization=forged, run_dir=run_dir)
+
+
 def test_compatibility_executes_once_and_verifies_from_store(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -333,11 +359,27 @@ def test_compatibility_executes_once_and_verifies_from_store(
         },
     )
     retired = tmp_path / "retired"
+    monkeypatch.setattr(
+        "aletheia_lab.evaluation.claim_corpus_recovery_run.audit_retired_structured_output_run",
+        lambda _root, _path: {
+            "receipt_sha256": CSR03R_FAILURE["failed_compatibility_receipt_sha256"],
+            "terminal_store_sha256": CSR03R_FAILURE["failed_compatibility_store_sha256"],
+        },
+    )
+    with pytest.raises(ValueError, match="overlaps"):
+        make_recovery_authorization(
+            ROOT, state=state, run_dir=tmp_path / "retired-r" / "child",
+            predecessor_store=predecessor, phase="compatibility",
+            authorized_at="2000-01-01T00:00:00Z", operator_cost_ceiling_usd=1.0,
+            retired_compatibility_run=retired,
+            retired_structured_output_run=tmp_path / "retired-r",
+        )
     authorization = make_recovery_authorization(
         ROOT, state=state, run_dir=run_dir, predecessor_store=predecessor,
         phase="compatibility", authorized_at="2000-01-01T00:00:00Z",
         operator_cost_ceiling_usd=1.0,
         retired_compatibility_run=retired,
+        retired_structured_output_run=tmp_path / "retired-r",
     )
     publish_recovery_json(
         run_dir / "compatibility-authorization.json",
@@ -353,6 +395,7 @@ def test_compatibility_executes_once_and_verifies_from_store(
         confirm_authorization_sha256=authorization.authorization_sha256,
         adapter=adapter,
         retired_compatibility_run=retired,
+        retired_structured_output_run=tmp_path / "retired-r",
     )
     assert result["status"] == "recovery_compatibility_pass"
     assert result["terminal_request_count"] == 3
@@ -367,4 +410,5 @@ def test_compatibility_executes_once_and_verifies_from_store(
             confirm_authorization_sha256=authorization.authorization_sha256,
             adapter=adapter,
             retired_compatibility_run=retired,
+            retired_structured_output_run=tmp_path / "retired-r",
         )

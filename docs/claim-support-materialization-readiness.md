@@ -323,6 +323,11 @@ merged source, private artifacts and their separately reviewed execution gate.
 
 ## Normalization recovery boundary
 
+Current recovery status: both synthetic compatibility attempts failed and remain
+retired. The [structured-output compatibility correction](claim-support-structured-output-compatibility.md)
+requires new authority and a verified three-probe live pass before diagnosis.
+Neither offline test success nor transport completion authorizes 200 blind claims.
+
 Applying the construction boundary to the completed first attempt yielded 49
 normalized outputs and rejected 209 parsed outputs, leaving 152 candidate
 claims. The fixed 200-claim target is therefore infeasible from that attempt.

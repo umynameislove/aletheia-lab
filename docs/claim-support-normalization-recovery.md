@@ -65,8 +65,10 @@ from the retired attempt.
 
 The gateway now validates the required Structured Outputs subset locally:
 `pattern`, `minItems`, `maxItems` and nested `anyOf`, in addition to the
-existing closed-object, type, enum and const rules. The local interpreter and
-the provider receive the same canonical JSON schema. OpenAI documents these
+existing closed-object, type, enum and const rules. The local interpreter retains
+the full schema. The current transport uses the separate
+[structured-output compatibility projection](claim-support-structured-output-compatibility.md)
+without string regexes; this does not relax local acceptance. OpenAI documents these
 constraints as supported for Structured Outputs, with the root remaining an
 object and nested `anyOf` permitted:
 <https://developers.openai.com/api/docs/guides/structured-outputs>.
@@ -154,9 +156,10 @@ absolute destinations.
 The command sequence is intentionally manual at each paid boundary:
 
 ```bash
-export CLAIM_RECOVERY_DIR=/absolute/private/path/claim-support-recovery-run-v2
+export CLAIM_RECOVERY_DIR=/absolute/private/path/claim-support-recovery-run-v3
 export CLAIM_PREDECESSOR_STORE=/absolute/private/path/predecessor/attempt-store
 export CLAIM_RETIRED_COMPATIBILITY_RUN=/absolute/private/path/claim-support-recovery-run
+export CLAIM_RETIRED_STRUCTURED_OUTPUT_RUN=/absolute/private/path/claim-support-recovery-run-v2
 
 # Copy the displayed rehearsal SHA into the authorization confirmation.
 PYTHONPATH=src python scripts/claim_support_recovery.py rehearse
@@ -165,15 +168,18 @@ PYTHONPATH=src python scripts/claim_support_recovery.py authorize \
   --predecessor-store "$CLAIM_PREDECESSOR_STORE" \
   --retired-compatibility-run "$CLAIM_RETIRED_COMPATIBILITY_RUN" \
   --cost-ceiling-usd COMPATIBILITY_CEILING \
+  --retired-structured-output-run "$CLAIM_RETIRED_STRUCTURED_OUTPUT_RUN" \
   --confirm-rehearsal-sha256 REHEARSAL_SHA
 PYTHONPATH=src python scripts/claim_support_recovery.py require-live-ready \
   --phase compatibility --run-dir "$CLAIM_RECOVERY_DIR" \
   --predecessor-store "$CLAIM_PREDECESSOR_STORE" \
-  --retired-compatibility-run "$CLAIM_RETIRED_COMPATIBILITY_RUN"
+  --retired-compatibility-run "$CLAIM_RETIRED_COMPATIBILITY_RUN" \
+  --retired-structured-output-run "$CLAIM_RETIRED_STRUCTURED_OUTPUT_RUN" &&
 PYTHONPATH=src python scripts/claim_support_recovery.py execute \
   --phase compatibility --run-dir "$CLAIM_RECOVERY_DIR" \
   --predecessor-store "$CLAIM_PREDECESSOR_STORE" \
   --retired-compatibility-run "$CLAIM_RETIRED_COMPATIBILITY_RUN" \
+  --retired-structured-output-run "$CLAIM_RETIRED_STRUCTURED_OUTPUT_RUN" \
   --confirm-authorization-sha256 COMPATIBILITY_AUTHORIZATION_SHA
 PYTHONPATH=src python scripts/claim_support_recovery.py verify \
   --phase compatibility --run-dir "$CLAIM_RECOVERY_DIR"
