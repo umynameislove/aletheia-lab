@@ -19,6 +19,9 @@ from typing import Annotated, Final, Literal, NoReturn, Self
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from aletheia_lab.benchmark.p2.canonical import canonical_sha256
+from aletheia_lab.evaluation.claim_sample_selection import (
+    select_balanced_validation_sample,
+)
 
 Sha256 = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
 SupportLabel = Literal[
@@ -440,75 +443,18 @@ def _rank(protocol_sha256: str, label: str, value: object) -> str:
     return canonical_sha256({"protocol_sha256": protocol_sha256, "label": label, "value": value})
 
 
-def _select_label_stratum(
-    entries: Sequence[ClaimPoolEntry],
-    *,
-    label: SupportLabel,
-    protocol: ClaimSupportValidationProtocol,
-) -> tuple[ClaimPoolEntry, ...]:
-    strata: dict[tuple[str, str, str], list[ClaimPoolEntry]] = defaultdict(list)
-    for entry in entries:
-        if entry.automatic_label == label:
-            strata[(entry.claim_type, entry.evidence_condition, entry.variant)].append(entry)
-    for key, values in strata.items():
-        values.sort(key=lambda item: _rank(protocol.protocol_sha256, "entry", item.entry_sha256))
-        strata[key] = values
-    ordered_keys = sorted(
-        strata,
-        key=lambda key: _rank(protocol.protocol_sha256, "stratum", key),
-    )
-    selected: list[ClaimPoolEntry] = []
-    family_counts: Counter[str] = Counter()
-    output_counts: Counter[str] = Counter()
-    while len(selected) < protocol.automatic_label_quota:
-        progress = False
-        for key in ordered_keys:
-            candidates = strata[key]
-            while candidates:
-                candidate = candidates.pop(0)
-                if (
-                    family_counts[candidate.case_family_id]
-                    >= protocol.maximum_claims_per_family_per_label
-                    or output_counts[candidate.output_id]
-                    >= protocol.maximum_claims_per_output_per_label
-                ):
-                    continue
-                selected.append(candidate)
-                family_counts[candidate.case_family_id] += 1
-                output_counts[candidate.output_id] += 1
-                progress = True
-                break
-            if len(selected) == protocol.automatic_label_quota:
-                break
-        if not progress:
-            _fail(f"insufficient eligible development claims for automatic label {label}")
-    return tuple(selected)
-
-
 def select_validation_sample(
     entries: Sequence[ClaimPoolEntry],
     protocol: ClaimSupportValidationProtocol,
 ) -> tuple[ClaimPoolEntry, ...]:
     """Select the exact frozen sample without padding or reading outcomes."""
 
-    if len(entries) < protocol.sample_target:
-        _fail("development claim pool is smaller than the frozen target")
-    if any(entry.source_partition != protocol.source_partition for entry in entries):
-        _fail("only development-partition claims may enter instrument validation")
-    claim_ids = [entry.claim_id for entry in entries]
-    entry_hashes = [entry.entry_sha256 for entry in entries]
-    if len(claim_ids) != len(set(claim_ids)) or len(entry_hashes) != len(set(entry_hashes)):
-        _fail("claim pool must not contain duplicate identities")
-    selected = tuple(
-        entry
-        for label in LABEL_ORDER
-        for entry in _select_label_stratum(entries, label=label, protocol=protocol)
-    )
-    return tuple(
-        sorted(
-            selected,
-            key=lambda item: _rank(protocol.protocol_sha256, "blind-order", item.entry_sha256),
-        )
+    return select_balanced_validation_sample(
+        entries,
+        protocol,
+        labels=LABEL_ORDER,
+        rank=_rank,
+        fail=_fail,
     )
 
 
@@ -554,7 +500,9 @@ def _annotation_packet(
 def prepare_validation_packets(
     entries: Sequence[ClaimPoolEntry],
     protocol: ClaimSupportValidationProtocol,
-) -> tuple[BlindAnnotationPacket, BlindAnnotationPacket, EvaluatorMappingPacket, PreparedStudyReceipt]:
+) -> tuple[
+    BlindAnnotationPacket, BlindAnnotationPacket, EvaluatorMappingPacket, PreparedStudyReceipt
+]:
     selected = select_validation_sample(entries, protocol)
     claims = tuple(_blind_claim(entry, protocol) for entry in selected)
     rater_1 = _annotation_packet(claims, rater_slot="rater_1", protocol=protocol)
@@ -612,7 +560,9 @@ def prepare_validation_packets(
     return rater_1, rater_2, mapping, receipt
 
 
-def _quadratic_weighted_kappa(first: Sequence[SupportLabel], second: Sequence[SupportLabel]) -> float:
+def _quadratic_weighted_kappa(
+    first: Sequence[SupportLabel], second: Sequence[SupportLabel]
+) -> float:
     if len(first) != len(second) or not first:
         _fail("weighted kappa requires equal non-empty rating sequences")
     size = len(LABEL_ORDER)
@@ -639,9 +589,15 @@ def _quadratic_weighted_kappa(first: Sequence[SupportLabel], second: Sequence[Su
 def _macro_f1(predicted: Sequence[SupportLabel], actual: Sequence[SupportLabel]) -> float:
     scores: list[float] = []
     for label in LABEL_ORDER:
-        true_positive = sum(p == label and a == label for p, a in zip(predicted, actual, strict=True))
-        false_positive = sum(p == label and a != label for p, a in zip(predicted, actual, strict=True))
-        false_negative = sum(p != label and a == label for p, a in zip(predicted, actual, strict=True))
+        true_positive = sum(
+            p == label and a == label for p, a in zip(predicted, actual, strict=True)
+        )
+        false_positive = sum(
+            p == label and a != label for p, a in zip(predicted, actual, strict=True)
+        )
+        false_negative = sum(
+            p != label and a == label for p, a in zip(predicted, actual, strict=True)
+        )
         denominator = 2 * true_positive + false_positive + false_negative
         scores.append(0.0 if denominator == 0 else (2 * true_positive) / denominator)
     return sum(scores) / len(scores)
@@ -654,7 +610,9 @@ def _metric_values(records: Sequence[FinalClaimJudgment]) -> tuple[float, float,
     adjudicated = [record.adjudicated_label for record in records]
     kappa = _quadratic_weighted_kappa(rater_1, rater_2)
     macro_f1 = _macro_f1(automatic, adjudicated)
-    automatic_supported = [record for record in records if record.automatic_label in SUPPORTED_LABELS]
+    automatic_supported = [
+        record for record in records if record.automatic_label in SUPPORTED_LABELS
+    ]
     if not automatic_supported:
         _fail("false-supported rate has an empty registered denominator")
     false_supported = sum(
@@ -742,9 +700,7 @@ def compile_validation_report(
     kappa_passed = estimates[0] >= protocol.thresholds.minimum_quadratic_weighted_kappa
     macro_f1_passed = estimates[1] >= protocol.thresholds.minimum_automatic_macro_f1
     false_supported_passed = estimates[2] <= protocol.thresholds.maximum_false_supported_rate
-    contradicted_passed = (
-        estimates[3] <= protocol.thresholds.maximum_contradicted_to_supported_rate
-    )
+    contradicted_passed = estimates[3] <= protocol.thresholds.maximum_contradicted_to_supported_rate
     report_payload: dict[str, object] = {
         "schema_version": "claim-support-instrument-validation/v1",
         "protocol_sha256": protocol.protocol_sha256,

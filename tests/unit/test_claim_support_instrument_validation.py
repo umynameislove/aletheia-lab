@@ -64,7 +64,20 @@ def _entry(index: int, label_index: int) -> ClaimPoolEntry:
 
 
 def _pool() -> tuple[ClaimPoolEntry, ...]:
-    return tuple(_entry(label_index * 1000 + offset, label_index) for label_index in range(4) for offset in range(60))
+    return tuple(
+        _entry(label_index * 1000 + offset, label_index)
+        for label_index in range(4)
+        for offset in range(60)
+    )
+
+
+def _with_claim_text(entry: ClaimPoolEntry, claim_text: str) -> ClaimPoolEntry:
+    payload = entry.model_dump(mode="python", exclude={"entry_sha256"})
+    payload["claim_text"] = claim_text
+    return ClaimPoolEntry(
+        **payload,
+        entry_sha256=canonical_sha256(payload),
+    )
 
 
 def _judgments(*, degraded: bool = False) -> tuple[FinalClaimJudgment, ...]:
@@ -122,6 +135,40 @@ def test_insufficient_label_stratum_fails_without_padding() -> None:
     protocol = load_validation_protocol(PROTOCOL_PATH)
     pool = tuple(entry for entry in _pool() if entry.automatic_label != "contradicted")
     pool += tuple(_entry(9000 + offset, 0) for offset in range(49))
+
+    with pytest.raises(InstrumentValidationError, match="insufficient eligible"):
+        select_validation_sample(pool, protocol)
+
+
+def test_sample_skips_repeated_canonical_claim_text_across_labels() -> None:
+    protocol = load_validation_protocol(PROTOCOL_PATH)
+    pool = list(_pool())
+    shared = tuple(pool[index].claim_text for index in range(10))
+    for label_index in range(1, 4):
+        for offset, claim_text in enumerate(shared):
+            index = label_index * 60 + offset
+            pool[index] = _with_claim_text(pool[index], claim_text)
+
+    selected = select_validation_sample(tuple(pool), protocol)
+    reversed_selected = select_validation_sample(tuple(reversed(pool)), protocol)
+
+    assert len(selected) == 200
+    assert len({entry.claim_text for entry in selected}) == 200
+    assert tuple(entry.entry_sha256 for entry in selected) == tuple(
+        entry.entry_sha256 for entry in reversed_selected
+    )
+
+
+def test_insufficient_unique_claim_text_fails_without_duplicate_padding() -> None:
+    protocol = load_validation_protocol(PROTOCOL_PATH)
+    pool = tuple(
+        _with_claim_text(
+            _entry(label_index * 1000 + offset, label_index),
+            f"Only unique canonical claim for label {label_index}.",
+        )
+        for label_index in range(4)
+        for offset in range(60)
+    )
 
     with pytest.raises(InstrumentValidationError, match="insufficient eligible"):
         select_validation_sample(pool, protocol)
