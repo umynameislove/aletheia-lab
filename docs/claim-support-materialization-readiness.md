@@ -364,3 +364,41 @@ four 50-claim label strata satisfy the frozen family/output caps. The selector
 also prevents the same canonical claim text from entering the human sample
 more than once; it fails closed rather than padding when 200 distinct eligible
 claims are unavailable. No blind packet is created by either recovery command.
+
+## Blind relation execution boundary
+
+The relation executor consumes the immutable recovery preparation as an exact
+962-request census. It sends only `claim_text`, `claim_type` and the cited
+`visible_evidence` to the frozen GPT-4.1 snapshot. A single global one-second
+minimum start interval applies to initial calls and retries. There is no model
+fallback, silent provider switch or repair of a failed terminal.
+
+Planning and rehearsal are read-only and provider-free:
+
+```bash
+PYTHONPATH=src python scripts/claim_support_relation_execution.py plan \
+  --preparation "$CLAIM_RECOVERY_DIR/claim-pool-recovery-preparation.json" \
+  --run-dir "$CLAIM_RELATION_DIR"
+
+PYTHONPATH=src python scripts/claim_support_relation_execution.py rehearse \
+  --preparation "$CLAIM_RECOVERY_DIR/claim-pool-recovery-preparation.json" \
+  --run-dir "$CLAIM_RELATION_DIR"
+```
+
+The observed preparation contains 962 unique assignment identities and
+437,982 exact message-input tokens. Its conservative two-attempt ceiling is
+2,846,140 input tokens plus 1,154,400 output tokens, or USD 14.927480 under the
+frozen pricing assumptions. This is a ceiling rather than an expected charge.
+Authorization must bind both the plan and rehearsal hashes on a clean,
+synchronized `main` checkout. `require-live-ready` then constructs all 962
+gateway requests and validates the pinned SDK, endpoint, credential shape,
+model policy and destination without making a provider call.
+
+Execution consumes a create-only one-attempt lease and writes an isolated
+sharded attempt store, relation-result bundle and receipt. Verification
+rebuilds the complete request census, lease, terminal-store hash, semantic
+relations and receipt from the immutable objects. Provider-terminal failures
+and locally rejected semantic responses are reported separately and both stay
+in the denominator. The run does not materialize automatic labels, publish a
+corpus, select the final 200 claims or create human packets; those remain later
+gates and require zero unresolved relation terminals.

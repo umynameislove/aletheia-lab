@@ -181,6 +181,11 @@ its pool preparation creates 962 blind relation requests while preserving all
 failures and recording 748 distinct canonical claim texts. Relation labels, the
 200-claim sample and human packets remain unmaterialized. The frozen selector
 now forbids repeated canonical claim text in the human sample.
+The blind relation executor adds a provider-free rehearsal, exact token and
+cost accounting, an explicit one-use lease, globally paced calls and an
+independent immutable-store verifier. It keeps provider failures and semantic
+validation failures separate and still performs no corpus publication or
+human-packet generation.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation
