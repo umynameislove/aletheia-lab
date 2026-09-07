@@ -279,6 +279,7 @@ def test_evaluation_profile_includes_claim_corpus_and_human_validation_contracts
     assert "tests/unit/test_claim_support_execution_reconciliation.py" in command
     assert "tests/unit/test_claim_support_pool_construction.py" in command
     assert "tests/unit/test_claim_corpus_recovery_closeout.py" in command
+    assert "tests/unit/test_claim_relation_execution.py" in command
     assert "tests/unit/test_claim_support_normalization_recovery.py" in command
     assert "tests/integration/test_claim_support_normalization_recovery_local.py" in command
     assert "tests/unit/test_claim_support_observed_evidence.py" in command
