@@ -29,6 +29,7 @@ from aletheia_lab.evaluation.claim_corpus_construction_contracts import (
     ClaimRelationResultBundle,
     NormalizationStatus,
     ProviderDiagnosisOutput,
+    RecoveryClaimPoolPreparation,
 )
 from aletheia_lab.evaluation.claim_corpus_contracts import (
     ClaimCorpusContractError,
@@ -72,6 +73,8 @@ from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha2
 from aletheia_lab.model_gateway.contracts import TerminalStatus
 from aletheia_lab.project.identity import canonical_project_json
 
+ClaimPoolPreparationLike = ClaimPoolPreparation | RecoveryClaimPoolPreparation
+
 
 def normalize_provider_output(
     request: ClaimCorpusRequest,
@@ -82,9 +85,7 @@ def normalize_provider_output(
     """Convert only the registered structured envelope to diagnosis-output/2."""
 
     try:
-        source = ProviderDiagnosisOutput.model_validate_json(
-            canonical_project_json(dict(payload))
-        )
+        source = ProviderDiagnosisOutput.model_validate_json(canonical_project_json(dict(payload)))
     except ValidationError as exc:
         raise ClaimCorpusContractError(
             "stored provider output is incompatible with the frozen schema"
@@ -92,9 +93,7 @@ def normalize_provider_output(
     target_payload: dict[str, object] = {
         "schema_version": "diagnosis-output/2",
         "output_status": source.output_status,
-        "atomic_claims": tuple(
-            item.model_dump(mode="python") for item in source.atomic_claims
-        ),
+        "atomic_claims": tuple(item.model_dump(mode="python") for item in source.atomic_claims),
         "abstention_reason": (
             source.abstention_reason if source.output_status == "abstained" else None
         ),
@@ -175,8 +174,7 @@ def build_claim_pool_preparation(
     )
     requests = census.primary_requests
     evidence_by_key = {
-        (item.family_id, item.evidence_condition): item
-        for item in evidence_census.bindings
+        (item.family_id, item.evidence_condition): item for item in evidence_census.bindings
     }
     identity_by_request = _load_authority_identities(store_root, requests)
     records: list[ClaimNormalizationRecord] = []
@@ -267,9 +265,7 @@ def build_claim_pool_preparation(
         )
     policy = load_evidence_semantics_policy(checked_root)
     outputs = tuple(
-        item.normalized_output
-        for item in records
-        if item.normalized_output is not None
+        item.normalized_output for item in records if item.normalized_output is not None
     )
     statuses = Counter(item.normalization_status for item in records)
     payload: dict[str, object] = {
@@ -291,18 +287,12 @@ def build_claim_pool_preparation(
         "normalization_rejection_count": (
             statuses["schema_rejected"] + statuses["claim_binding_rejected"]
         ),
-        "completed_output_count": sum(
-            item.output_status == "completed" for item in outputs
-        ),
-        "abstained_output_count": sum(
-            item.output_status == "abstained" for item in outputs
-        ),
+        "completed_output_count": sum(item.output_status == "completed" for item in outputs),
+        "abstained_output_count": sum(item.output_status == "abstained" for item in outputs),
         "claim_candidate_count": sum(len(item.atomic_claims) for item in outputs),
         "relation_request_count": len(relation_requests),
         "records": tuple(item.model_dump(mode="json") for item in records),
-        "relation_requests": tuple(
-            item.model_dump(mode="json") for item in relation_requests
-        ),
+        "relation_requests": tuple(item.model_dump(mode="json") for item in relation_requests),
         "failures_preserved_in_denominator": True,
         "free_text_recovery_performed": False,
         "automatic_labels_generated": False,
@@ -322,21 +312,17 @@ def build_claim_pool_preparation(
 
 
 def build_relation_result_bundle(
-    preparation: ClaimPoolPreparation,
+    preparation: ClaimPoolPreparationLike,
     results: Sequence[ClaimRelationResult],
 ) -> ClaimRelationResultBundle:
     """Bind externally executed relation results to one exact preparation."""
 
-    checked_preparation = ClaimPoolPreparation.model_validate(
-        preparation.model_dump(mode="python")
-    )
+    checked_preparation = _checked_preparation(preparation)
     checked_results = tuple(
-        ClaimRelationResult.model_validate(item.model_dump(mode="python"))
-        for item in results
+        ClaimRelationResult.model_validate(item.model_dump(mode="python")) for item in results
     )
     expected = tuple(
-        item.assignment_request_sha256
-        for item in checked_preparation.relation_requests
+        item.assignment_request_sha256 for item in checked_preparation.relation_requests
     )
     actual = tuple(item.assignment_request_sha256 for item in checked_results)
     if actual != expected:
@@ -370,15 +356,13 @@ def build_relation_result_bundle(
 def publish_claim_pool(
     root: Path,
     *,
-    preparation: ClaimPoolPreparation,
+    preparation: ClaimPoolPreparationLike,
     relation_results: ClaimRelationResultBundle,
     store_root: Path,
 ) -> ClaimPoolPublicationCloseout:
-    """Apply CSV-23 and publish CSV-24 only from a complete terminal relation run."""
+    """Publish the claim pool only from a complete terminal relation run."""
 
-    checked_preparation = ClaimPoolPreparation.model_validate(
-        preparation.model_dump(mode="python")
-    )
+    checked_preparation = _checked_preparation(preparation)
     checked_results = ClaimRelationResultBundle.model_validate(
         relation_results.model_dump(mode="python")
     )
@@ -390,12 +374,9 @@ def publish_claim_pool(
     ):
         raise ClaimPoolConstructionError("relation result policy or preparation differs")
     if checked_results.technical_failure_count:
-        raise ClaimPoolConstructionError(
-            "technical relation failures forbid full-pool publication"
-        )
+        raise ClaimPoolConstructionError("technical relation failures forbid full-pool publication")
     expected_relation_identities = tuple(
-        item.assignment_request_sha256
-        for item in checked_preparation.relation_requests
+        item.assignment_request_sha256 for item in checked_preparation.relation_requests
     )
     actual_relation_identities = tuple(
         item.assignment_request_sha256 for item in checked_results.results
@@ -404,26 +385,23 @@ def publish_claim_pool(
         raise ClaimPoolConstructionError(
             "relation result bundle differs from the frozen request census"
         )
-    responses = {
-        item.assignment_request_sha256: item.response
-        for item in checked_results.results
-    }
+    responses = {item.assignment_request_sha256: item.response for item in checked_results.results}
     request_by_output = {
         item.normalized_output.output_sha256: item
         for item in checked_preparation.records
-        if item.normalization_status == "normalized"
-        and item.normalized_output is not None
+        if item.normalization_status == "normalized" and item.normalized_output is not None
     }
     census = ClaimCorpusRequestCensus.model_validate_json(
         (root.resolve() / REQUEST_CENSUS_PATH).read_bytes()
     )
     frozen_requests = {item.request_sha256: item for item in census.primary_requests}
     evidence_census = ObservedEvidenceCensus.model_validate_json(
-        (root.resolve() / "configs/evaluation/claim_support_observed_evidence_census.json").read_bytes()
+        (
+            root.resolve() / "configs/evaluation/claim_support_observed_evidence_census.json"
+        ).read_bytes()
     )
     evidence = {
-        (item.family_id, item.evidence_condition): item
-        for item in evidence_census.bindings
+        (item.family_id, item.evidence_condition): item for item in evidence_census.bindings
     }
     relation_by_output: dict[str, dict[str, ClaimRelationAssignmentResponse]] = {}
     for assignment in checked_preparation.relation_requests:
@@ -449,10 +427,7 @@ def publish_claim_pool(
         )
     reconciled = reconcile_materialized_entries(entries)
     protocol = ClaimSupportCorpusProtocol.model_validate_json(
-        (
-            root.resolve()
-            / "configs/evaluation/claim_support_corpus_protocol.json"
-        ).read_bytes()
+        (root.resolve() / "configs/evaluation/claim_support_corpus_protocol.json").read_bytes()
     )
     store_receipt = ClaimCorpusArtifactStore(store_root).publish(
         protocol_sha256=protocol.protocol_sha256,
@@ -498,9 +473,7 @@ def _load_authority_identities(
             authority = ClaimCorpusRequestAuthority.model_validate_json(path.read_bytes())
         except (OSError, ValidationError) as exc:
             raise ClaimPoolConstructionError("authority record is invalid") from exc
-        expected_bytes = (
-            canonical_project_json(authority.model_dump(mode="json")) + "\n"
-        ).encode()
+        expected_bytes = (canonical_project_json(authority.model_dump(mode="json")) + "\n").encode()
         if (
             path.read_bytes() != expected_bytes
             or path.stem in identities.values()
@@ -511,6 +484,14 @@ def _load_authority_identities(
     if set(identities) != expected_requests:
         raise ClaimPoolConstructionError("authority records differ from request census")
     return identities
+
+
+def _checked_preparation(
+    preparation: ClaimPoolPreparationLike,
+) -> ClaimPoolPreparationLike:
+    if isinstance(preparation, RecoveryClaimPoolPreparation):
+        return RecoveryClaimPoolPreparation.model_validate(preparation.model_dump(mode="python"))
+    return ClaimPoolPreparation.model_validate(preparation.model_dump(mode="python"))
 
 
 def _read_terminal(
@@ -568,6 +549,7 @@ __all__ = [
     "ClaimNormalizationRecord",
     "ClaimPoolConstructionError",
     "ClaimPoolPreparation",
+    "RecoveryClaimPoolPreparation",
     "ClaimPoolPublicationCloseout",
     "ClaimRelationResult",
     "ClaimRelationResultBundle",

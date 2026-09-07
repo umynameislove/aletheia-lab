@@ -22,6 +22,7 @@ from aletheia_lab.model_gateway.contracts import TerminalStatus
 from aletheia_lab.project.identity import SHA256_PATTERN
 
 PREPARATION_SCHEMA_VERSION: Final = "claim-pool-preparation/v1"
+RECOVERY_PREPARATION_SCHEMA_VERSION: Final = "claim-pool-recovery-preparation/v1"
 RELATION_RESULT_BUNDLE_SCHEMA_VERSION: Final = "claim-relation-result-bundle/v1"
 POOL_CLOSEOUT_SCHEMA_VERSION: Final = "claim-pool-publication-closeout/v1"
 
@@ -79,11 +80,14 @@ class ClaimNormalizationRecord(_StrictFrozenModel):
     issue_sha256: Sha256 | None
     normalized_output: DiagnosisOutputV2 | None
     relation_request_sha256s: tuple[Sha256, ...]
-    blocker_code: Literal[
-        "technical_terminal",
-        "provider_schema_incompatible",
-        "claim_evidence_binding_invalid",
-    ] | None
+    blocker_code: (
+        Literal[
+            "technical_terminal",
+            "provider_schema_incompatible",
+            "claim_evidence_binding_invalid",
+        ]
+        | None
+    )
     record_sha256: Sha256
 
     def identity_payload(self) -> dict[str, object]:
@@ -161,9 +165,7 @@ class ClaimPoolPreparation(_StrictFrozenModel):
     abstained_output_count: int = Field(ge=0, le=360)
     claim_candidate_count: int = Field(ge=0, le=1800)
     relation_request_count: int = Field(ge=0, le=1800)
-    records: tuple[ClaimNormalizationRecord, ...] = Field(
-        min_length=360, max_length=360
-    )
+    records: tuple[ClaimNormalizationRecord, ...] = Field(min_length=360, max_length=360)
     relation_requests: tuple[ClaimRelationAssignmentRequest, ...]
     failures_preserved_in_denominator: Literal[True] = True
     free_text_recovery_performed: Literal[False] = False
@@ -181,15 +183,11 @@ class ClaimPoolPreparation(_StrictFrozenModel):
     def _census_and_identity_reconcile(self) -> Self:
         statuses = Counter(item.normalization_status for item in self.records)
         outputs = tuple(
-            item.normalized_output
-            for item in self.records
-            if item.normalized_output is not None
+            item.normalized_output for item in self.records if item.normalized_output is not None
         )
         request_hashes = tuple(item.request_sha256 for item in self.records)
         identities = tuple(item.request_identity_sha256 for item in self.records)
-        relation_hashes = tuple(
-            item.assignment_request_sha256 for item in self.relation_requests
-        )
+        relation_hashes = tuple(item.assignment_request_sha256 for item in self.relation_requests)
         row_relation_hashes = tuple(
             digest for item in self.records for digest in item.relation_request_sha256s
         )
@@ -209,8 +207,7 @@ class ClaimPoolPreparation(_StrictFrozenModel):
             != sum(item.output_status == "completed" for item in outputs)
             or self.abstained_output_count
             != sum(item.output_status == "abstained" for item in outputs)
-            or self.claim_candidate_count
-            != sum(len(item.atomic_claims) for item in outputs)
+            or self.claim_candidate_count != sum(len(item.atomic_claims) for item in outputs)
             or self.relation_request_count != len(self.relation_requests)
             or self.relation_request_count != len(relation_hashes)
             or len(set(relation_hashes)) != len(relation_hashes)
@@ -218,15 +215,102 @@ class ClaimPoolPreparation(_StrictFrozenModel):
         ):
             raise ValueError("claim-pool preparation census does not reconcile")
         known_outputs = {item.output_sha256 for item in outputs}
-        if any(
-            item.source_output_sha256 not in known_outputs
-            for item in self.relation_requests
-        ):
+        if any(item.source_output_sha256 not in known_outputs for item in self.relation_requests):
             raise ValueError("relation request references an unknown normalized output")
-        if self.preparation_sha256 != canonical_execution_sha256(
-            self.identity_payload()
-        ):
+        if self.preparation_sha256 != canonical_execution_sha256(self.identity_payload()):
             raise ValueError("claim-pool preparation identity does not match content")
+        return self
+
+
+class RecoveryClaimPoolPreparation(_StrictFrozenModel):
+    """Recovery-store normalization output and blind relation-request census.
+
+    Recovery evidence has different provenance from the original live attempt,
+    so it must not be squeezed into the live receipt/reserve fields of
+    :class:`ClaimPoolPreparation`.
+    """
+
+    schema_version: Literal["claim-pool-recovery-preparation/v1"] = (
+        RECOVERY_PREPARATION_SCHEMA_VERSION
+    )
+    source_commit_ref: str = Field(pattern=r"^[0-9a-f]{40}$")
+    authorization_sha256: Sha256
+    execution_plan_sha256: Sha256
+    recovery_receipt_sha256: Sha256
+    recovery_closeout_sha256: Sha256
+    recovery_terminal_store_sha256: Sha256
+    evidence_census_sha256: Sha256
+    evidence_semantics_policy_sha256: Sha256
+    terminal_request_count: Literal[360]
+    parsed_terminal_count: int = Field(ge=0, le=360)
+    technical_failure_terminal_count: int = Field(ge=0, le=360)
+    normalized_output_count: int = Field(ge=0, le=360)
+    normalization_rejection_count: int = Field(ge=0, le=360)
+    completed_output_count: int = Field(ge=0, le=360)
+    abstained_output_count: int = Field(ge=0, le=360)
+    claim_candidate_count: int = Field(ge=0, le=1800)
+    relation_request_count: int = Field(ge=0, le=1800)
+    canonical_claim_text_count: int = Field(ge=0, le=1800)
+    repeated_claim_instance_count: int = Field(ge=0, le=1800)
+    records: tuple[ClaimNormalizationRecord, ...] = Field(min_length=360, max_length=360)
+    relation_requests: tuple[ClaimRelationAssignmentRequest, ...]
+    failures_preserved_in_denominator: Literal[True] = True
+    recovery_rerun_performed: Literal[False] = False
+    free_text_recovery_performed: Literal[False] = False
+    automatic_labels_generated: Literal[False] = False
+    corpus_entries_materialized: Literal[False] = False
+    blind_packets_generated: Literal[False] = False
+    human_annotations_collected: Literal[False] = False
+    main_or_sealed_outcomes_opened: Literal[False] = False
+    preparation_sha256: Sha256
+
+    def identity_payload(self) -> dict[str, object]:
+        return self.model_dump(mode="json", exclude={"preparation_sha256"})
+
+    @model_validator(mode="after")
+    def _census_and_identity_reconcile(self) -> Self:
+        statuses = Counter(item.normalization_status for item in self.records)
+        outputs = tuple(
+            item.normalized_output for item in self.records if item.normalized_output is not None
+        )
+        claims = tuple(claim for output in outputs for claim in output.atomic_claims)
+        request_hashes = tuple(item.request_sha256 for item in self.records)
+        identities = tuple(item.request_identity_sha256 for item in self.records)
+        relation_hashes = tuple(item.assignment_request_sha256 for item in self.relation_requests)
+        row_relation_hashes = tuple(
+            digest for item in self.records for digest in item.relation_request_sha256s
+        )
+        canonical_texts = {claim.claim_text for claim in claims}
+        if (
+            len(set(request_hashes)) != 360
+            or len(set(identities)) != 360
+            or self.parsed_terminal_count + self.technical_failure_terminal_count != 360
+            or statuses["technical_failure"] != self.technical_failure_terminal_count
+            or self.parsed_terminal_count
+            != statuses["normalized"]
+            + statuses["schema_rejected"]
+            + statuses["claim_binding_rejected"]
+            or self.normalized_output_count != len(outputs)
+            or self.normalization_rejection_count
+            != statuses["schema_rejected"] + statuses["claim_binding_rejected"]
+            or self.completed_output_count
+            != sum(item.output_status == "completed" for item in outputs)
+            or self.abstained_output_count
+            != sum(item.output_status == "abstained" for item in outputs)
+            or self.claim_candidate_count != len(claims)
+            or self.relation_request_count != len(self.relation_requests)
+            or len(set(relation_hashes)) != len(relation_hashes)
+            or relation_hashes != row_relation_hashes
+            or self.canonical_claim_text_count != len(canonical_texts)
+            or self.repeated_claim_instance_count
+            != self.claim_candidate_count - self.canonical_claim_text_count
+        ):
+            raise ValueError("recovery claim-pool preparation census does not reconcile")
+        known_outputs = {item.output_sha256 for item in outputs}
+        if any(item.source_output_sha256 not in known_outputs for item in self.relation_requests):
+            raise ValueError("relation request references an unknown recovery output")
+        if self.preparation_sha256 != canonical_execution_sha256(self.identity_payload()):
+            raise ValueError("recovery preparation identity does not match content")
         return self
 
 
@@ -247,8 +331,7 @@ class ClaimRelationResult(_StrictFrozenModel):
             valid = (
                 self.response is not None
                 and self.issue_sha256 is None
-                and self.response.assignment_request_sha256
-                == self.assignment_request_sha256
+                and self.response.assignment_request_sha256 == self.assignment_request_sha256
             )
         else:
             valid = self.response is None and self.issue_sha256 is not None
@@ -283,12 +366,10 @@ class ClaimRelationResultBundle(_StrictFrozenModel):
         identities = tuple(item.assignment_request_sha256 for item in self.results)
         if (
             len(identities) != len(set(identities))
-            or self.parsed_count
-            != sum(item.terminal_status == "parsed" for item in self.results)
+            or self.parsed_count != sum(item.terminal_status == "parsed" for item in self.results)
             or self.technical_failure_count
             != sum(item.terminal_status == "technical_failure" for item in self.results)
-            or self.registered_attempt_count
-            != sum(item.attempt_count for item in self.results)
+            or self.registered_attempt_count != sum(item.attempt_count for item in self.results)
             or self.provider_calls_executed != bool(self.results)
         ):
             raise ValueError("relation-result bundle counts do not reconcile")
@@ -298,9 +379,7 @@ class ClaimRelationResultBundle(_StrictFrozenModel):
 
 
 class ClaimPoolPublicationCloseout(_StrictFrozenModel):
-    schema_version: Literal["claim-pool-publication-closeout/v1"] = (
-        POOL_CLOSEOUT_SCHEMA_VERSION
-    )
+    schema_version: Literal["claim-pool-publication-closeout/v1"] = POOL_CLOSEOUT_SCHEMA_VERSION
     preparation_sha256: Sha256
     relation_result_bundle_sha256: Sha256
     policy_sha256: Sha256
@@ -335,6 +414,7 @@ class ClaimPoolPublicationCloseout(_StrictFrozenModel):
 __all__ = [
     "POOL_CLOSEOUT_SCHEMA_VERSION",
     "PREPARATION_SCHEMA_VERSION",
+    "RECOVERY_PREPARATION_SCHEMA_VERSION",
     "RELATION_RESULT_BUNDLE_SCHEMA_VERSION",
     "ClaimNormalizationRecord",
     "ClaimPoolConstructionError",
@@ -344,4 +424,5 @@ __all__ = [
     "ClaimRelationResultBundle",
     "NormalizationStatus",
     "ProviderDiagnosisOutput",
+    "RecoveryClaimPoolPreparation",
 ]

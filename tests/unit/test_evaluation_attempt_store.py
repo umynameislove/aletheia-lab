@@ -291,9 +291,28 @@ def test_terminal_parsed_payload_is_read_only_and_hash_verified(tmp_path: Path) 
         terminal_root=store.terminal_root,
         failure_root=store.failure_root,
     )
-    assert verifier.terminal_parsed_payload(result.request_identity_sha256) == {
-        "value": "ok"
-    }
+    assert verifier.terminal_parsed_payload(result.request_identity_sha256) == {"value": "ok"}
+    assert verifier.terminal_issue(result.request_identity_sha256) is None
+
+
+def test_terminal_issue_is_read_only_and_hash_verified(tmp_path: Path) -> None:
+    request = _request()
+    result = _result(request, steps=(_step("permanent_error"),))
+    store = ImmutableAttemptStore(tmp_path, clock=_Clock())
+    _record_until(store, request, result, "terminal_published")
+
+    verifier = ClaimCorpusTerminalReader(
+        root=store.root,
+        object_root=store.object_root,
+        request_root=store.request_root,
+        terminal_root=store.terminal_root,
+        failure_root=store.failure_root,
+    )
+    issue = verifier.terminal_issue(result.request_identity_sha256)
+
+    assert issue is not None
+    assert issue.code == "permanent_provider_error"
+    assert verifier.terminal_parsed_payload(result.request_identity_sha256) is None
 
 
 def test_identical_replay_is_noop_and_does_not_count_an_attempt(tmp_path: Path) -> None:
