@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pydantic import ValidationError
+
 from aletheia_lab.evaluation._attempt_store.contracts import (
     AttemptStoreIntegrityError,
     AttemptStoreTransitionError,
@@ -10,7 +12,10 @@ from aletheia_lab.evaluation._attempt_store.contracts import (
 from aletheia_lab.evaluation._attempt_store.integrity import (
     AttemptStoreIntegrityVerifier,
 )
-from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
+from aletheia_lab.evaluation.execution_contracts import (
+    TechnicalIssue,
+    canonical_execution_sha256,
+)
 
 
 class ClaimCorpusTerminalReader(AttemptStoreIntegrityVerifier):
@@ -46,6 +51,33 @@ class ClaimCorpusTerminalReader(AttemptStoreIntegrityVerifier):
                 "integrity_error", "parsed response identity differs from ledger"
             )
         return parsed
+
+    def terminal_issue(self, request_hash: str) -> TechnicalIssue | None:
+        """Return the verified terminal technical issue, when one exists."""
+
+        entries, terminal = self._load_chain(request_hash)
+        if terminal is None:
+            raise AttemptStoreTransitionError(
+                "invalid_transition", "request has no published terminal result"
+            )
+        outcome = next(
+            (entry for entry in entries if entry.state == "parsed_or_failed"),
+            None,
+        )
+        if outcome is None:
+            raise AttemptStoreIntegrityError(
+                "integrity_error", "terminal request has no outcome entry"
+            )
+        if outcome.issue_object_sha256 is None:
+            return None
+        try:
+            return TechnicalIssue.model_validate_json(
+                self._read_object(outcome.issue_object_sha256)
+            )
+        except ValidationError as exc:
+            raise AttemptStoreIntegrityError(
+                "corrupt_artifact", "terminal technical issue is invalid"
+            ) from exc
 
 
 __all__ = ["ClaimCorpusTerminalReader"]

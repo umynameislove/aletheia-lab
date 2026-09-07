@@ -323,23 +323,44 @@ merged source, private artifacts and their separately reviewed execution gate.
 
 ## Normalization recovery boundary
 
-Current recovery status: both synthetic compatibility attempts failed and remain
-retired. The [structured-output compatibility correction](claim-support-structured-output-compatibility.md)
-requires new authority and a verified three-probe live pass before diagnosis.
-Neither offline test success nor transport completion authorizes 200 blind claims.
+The two failed synthetic attempts remain retired. The corrected structured
+transport subsequently passed its separately authorized compatibility gate and
+the registered diagnosis recovery reached terminal state on source commit
+`dcec23655f3234b01b54c1c3b3c2e50d7b09f513`. Its immutable 360-request store
+contains 282 parsed outputs and 78
+`retry_exhausted` terminals. Every parsed output independently normalizes under
+`diagnosis-output/2`, yielding 962 relation candidates without prose repair.
 
-Applying the construction boundary to the completed first attempt yielded 49
-normalized outputs and rejected 209 parsed outputs, leaving 152 candidate
-claims. The fixed 200-claim target is therefore infeasible from that attempt.
-The 102 provider failures and 209 schema rejections remain part of the original
-360-request denominator; no rejected response is repaired or selectively
-reused.
+Availability is not exchangeable across the registered mechanisms. Data drift
+ran first and retained 120/120 parsed requests; preprocessing mismatch retained
+83/120 and label noise retained 79/120. This is an execution-order confound, not
+evidence of relative mechanism performance. The 78 failures remain in the
+denominator, cannot activate reserves after execution, and cannot be retried as
+the same registered attempt.
 
-The separately frozen
-[normalization-recovery contract](claim-support-normalization-recovery.md)
-changes only the provider response boundary. It preserves the model snapshot,
-evidence contexts, request census, variants, budgets and selection policy. The
-new schema removes provider-authored structural IDs, applies exact claim and
-array bounds, and restricts citations to evidence visible in each request. A
-new authorization and isolated attempt store are still required before any
-paid recovery execution.
+The recovery closeout and preparation are provider-free, create-only private
+operations:
+
+```bash
+PYTHONPATH=src python scripts/claim_support_pool_construction.py recovery-closeout \
+  --recovery-run-dir "$CLAIM_RECOVERY_DIR" \
+  --output "$CLAIM_RECOVERY_DIR/recovery-closeout.json"
+
+PYTHONPATH=src python scripts/claim_support_pool_construction.py recovery-prepare \
+  --recovery-run-dir "$CLAIM_RECOVERY_DIR" \
+  --recovery-closeout "$CLAIM_RECOVERY_DIR/recovery-closeout.json" \
+  --output "$CLAIM_RECOVERY_DIR/claim-pool-recovery-preparation.json"
+```
+
+Closeout binds all 360 dispositions, the missingness tables, the execution
+receipt and the terminal-store hash. Preparation binds the 282 normalized
+outputs to exactly 962 blind relation requests and records 748 distinct
+canonical claim texts and 214 repeated instances. It does not discard, repair,
+label or sample any candidate.
+
+Relation assignment remains a separately authorized paid action. The final
+200-claim selection remains blocked until relation results reconcile and the
+four 50-claim label strata satisfy the frozen family/output caps. The selector
+also prevents the same canonical claim text from entering the human sample
+more than once; it fails closed rather than padding when 200 distinct eligible
+claims are unavailable. No blind packet is created by either recovery command.

@@ -13,6 +13,7 @@ from aletheia_lab.evaluation.claim_corpus_construction import (
     ClaimPoolConstructionError,
     ClaimPoolPreparation,
     ClaimRelationResultBundle,
+    RecoveryClaimPoolPreparation,
     build_claim_pool_preparation,
     publish_claim_pool,
     verify_construction_inputs,
@@ -30,6 +31,11 @@ from aletheia_lab.evaluation.claim_corpus_reconciliation import (
     ClaimCorpusRequestReconciliationReceipt,
     ClaimCorpusReserveDecisionReceipt,
 )
+from aletheia_lab.evaluation.claim_corpus_recovery_closeout import (
+    RecoveryExecutionCloseout,
+    build_recovery_claim_pool_preparation,
+    build_recovery_execution_closeout,
+)
 from aletheia_lab.evaluation.claim_evidence_census import ObservedEvidenceCensus
 from aletheia_lab.filesystem import publish_immutable_file
 from aletheia_lab.project.identity import canonical_project_json
@@ -37,7 +43,16 @@ from aletheia_lab.project.identity import canonical_project_json
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("preflight", "prepare", "publish"))
+    parser.add_argument(
+        "command",
+        choices=(
+            "preflight",
+            "prepare",
+            "recovery-closeout",
+            "recovery-prepare",
+            "publish",
+        ),
+    )
     parser.add_argument("--root", type=Path, default=Path("."))
     parser.add_argument("--evidence-census", type=Path)
     parser.add_argument("--authorization", type=Path)
@@ -50,6 +65,8 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--relation-results", type=Path)
     parser.add_argument("--pool-store", type=Path)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--recovery-run-dir", type=Path)
+    parser.add_argument("--recovery-closeout", type=Path)
     return parser
 
 
@@ -110,9 +127,9 @@ def _load_execution_inputs(
         _load_model(args.live_receipt, ClaimCorpusLiveReceipt).model_dump(mode="python")
     )
     reserve = ClaimCorpusReserveDecisionReceipt.model_validate(
-        _load_model(
-            args.reserve_receipt, ClaimCorpusReserveDecisionReceipt
-        ).model_dump(mode="python")
+        _load_model(args.reserve_receipt, ClaimCorpusReserveDecisionReceipt).model_dump(
+            mode="python"
+        )
     )
     reconciliation = ClaimCorpusRequestReconciliationReceipt.model_validate(
         _load_model(
@@ -125,15 +142,13 @@ def _load_execution_inputs(
 
 
 def _publish(path: Path, value: BaseModel) -> str:
-    payload = (
-        canonical_project_json(value.model_dump(mode="json")) + "\n"
-    ).encode("utf-8")
+    payload = (canonical_project_json(value.model_dump(mode="json")) + "\n").encode("utf-8")
     return publish_immutable_file(path, payload)
 
 
 def _preflight(args: argparse.Namespace, root: Path) -> dict[str, object]:
-    evidence, authorization, lease, live, reserve, reconciliation, store = (
-        _load_execution_inputs(args, root)
+    evidence, authorization, lease, live, reserve, reconciliation, store = _load_execution_inputs(
+        args, root
     )
     verify_construction_inputs(
         root,
@@ -149,9 +164,7 @@ def _preflight(args: argparse.Namespace, root: Path) -> dict[str, object]:
         "status": "claim_pool_construction_ready",
         "terminal_request_count": reconciliation.terminal_request_count,
         "parsed_terminal_count": reconciliation.parsed_terminal_count,
-        "technical_failure_terminal_count": (
-            reconciliation.technical_failure_terminal_count
-        ),
+        "technical_failure_terminal_count": (reconciliation.technical_failure_terminal_count),
         "failures_preserved_in_denominator": True,
         "provider_calls_executed": False,
         "claims_materialized": False,
@@ -164,8 +177,8 @@ def _preflight(args: argparse.Namespace, root: Path) -> dict[str, object]:
 
 def _prepare(args: argparse.Namespace, root: Path) -> dict[str, object]:
     _required(args, "output")
-    evidence, authorization, lease, live, reserve, reconciliation, store = (
-        _load_execution_inputs(args, root)
+    evidence, authorization, lease, live, reserve, reconciliation, store = _load_execution_inputs(
+        args, root
     )
     result = build_claim_pool_preparation(
         root,
@@ -196,19 +209,82 @@ def _prepare(args: argparse.Namespace, root: Path) -> dict[str, object]:
     }
 
 
+def _recovery_closeout(args: argparse.Namespace, root: Path) -> dict[str, object]:
+    _required(args, "recovery_run_dir", "output")
+    run_dir = _outside_repository(root, args.recovery_run_dir, label="recovery run directory")
+    output = _outside_repository(root, args.output, label="recovery closeout")
+    result = build_recovery_execution_closeout(root, run_dir=run_dir)
+    disposition = _publish(output, result)
+    return {
+        "status": result.status,
+        "output": str(output),
+        "publication_disposition": disposition,
+        "closeout_sha256": result.closeout_sha256,
+        "terminal_request_count": result.terminal_request_count,
+        "parsed_terminal_count": result.parsed_terminal_count,
+        "technical_failure_terminal_count": (result.technical_failure_terminal_count),
+        "claim_candidate_count": result.claim_candidate_count,
+        "missingness_exchangeability_status": (result.missingness_exchangeability_status),
+        "ready_for_recovery_pool_preparation": (result.ready_for_recovery_pool_preparation),
+        "provider_calls_executed": False,
+        "claims_materialized": result.claims_materialized,
+        "blind_packets_generated": result.blind_packets_generated,
+        "human_annotations_collected": result.human_annotations_collected,
+        "main_or_sealed_outcomes_opened": result.main_or_sealed_outcomes_opened,
+    }
+
+
+def _recovery_prepare(args: argparse.Namespace, root: Path) -> dict[str, object]:
+    _required(args, "recovery_run_dir", "recovery_closeout", "output")
+    run_dir = _outside_repository(root, args.recovery_run_dir, label="recovery run directory")
+    closeout_path = _outside_repository(
+        root, args.recovery_closeout, label="recovery closeout input"
+    )
+    output = _outside_repository(root, args.output, label="recovery preparation")
+    closeout = RecoveryExecutionCloseout.model_validate(
+        _load_model(closeout_path, RecoveryExecutionCloseout).model_dump(mode="python")
+    )
+    result = build_recovery_claim_pool_preparation(root, run_dir=run_dir, closeout=closeout)
+    disposition = _publish(output, result)
+    return {
+        "status": "claim_pool_recovery_preparation_complete",
+        "output": str(output),
+        "publication_disposition": disposition,
+        "preparation_sha256": result.preparation_sha256,
+        "normalized_output_count": result.normalized_output_count,
+        "normalization_rejection_count": result.normalization_rejection_count,
+        "claim_candidate_count": result.claim_candidate_count,
+        "canonical_claim_text_count": result.canonical_claim_text_count,
+        "repeated_claim_instance_count": result.repeated_claim_instance_count,
+        "relation_request_count": result.relation_request_count,
+        "technical_failure_terminal_count": result.technical_failure_terminal_count,
+        "provider_calls_executed": False,
+        "automatic_labels_generated": result.automatic_labels_generated,
+        "blind_packets_generated": result.blind_packets_generated,
+        "human_annotations_collected": result.human_annotations_collected,
+        "main_or_sealed_outcomes_opened": result.main_or_sealed_outcomes_opened,
+    }
+
+
+def _load_preparation(path: Path) -> ClaimPoolPreparation | RecoveryClaimPoolPreparation:
+    try:
+        payload = json.loads(path.read_bytes())
+    except (OSError, ValueError, TypeError) as exc:
+        raise ClaimPoolConstructionError("preparation input is invalid") from exc
+    if not isinstance(payload, dict):
+        raise ClaimPoolConstructionError("preparation input is invalid")
+    if payload.get("schema_version") == "claim-pool-recovery-preparation/v1":
+        return RecoveryClaimPoolPreparation.model_validate(payload)
+    return ClaimPoolPreparation.model_validate(payload)
+
+
 def _publish_pool(args: argparse.Namespace, root: Path) -> dict[str, object]:
     _required(args, "preparation", "relation_results", "pool_store", "output")
-    preparation_path = _outside_repository(
-        root, args.preparation, label="preparation input"
-    )
-    relation_path = _outside_repository(
-        root, args.relation_results, label="relation-result input"
-    )
+    preparation_path = _outside_repository(root, args.preparation, label="preparation input")
+    relation_path = _outside_repository(root, args.relation_results, label="relation-result input")
     pool_store = _outside_repository(root, args.pool_store, label="pool store")
     output = _outside_repository(root, args.output, label="publication closeout")
-    preparation = ClaimPoolPreparation.model_validate(
-        _load_model(preparation_path, ClaimPoolPreparation).model_dump(mode="python")
-    )
+    preparation = _load_preparation(preparation_path)
     relation_results = ClaimRelationResultBundle.model_validate(
         _load_model(relation_path, ClaimRelationResultBundle).model_dump(mode="python")
     )
@@ -240,6 +316,10 @@ def main() -> int:
             payload = _preflight(args, root)
         elif args.command == "prepare":
             payload = _prepare(args, root)
+        elif args.command == "recovery-closeout":
+            payload = _recovery_closeout(args, root)
+        elif args.command == "recovery-prepare":
+            payload = _recovery_prepare(args, root)
         else:
             payload = _publish_pool(args, root)
     except (ClaimPoolConstructionError, OSError, ValueError) as exc:
