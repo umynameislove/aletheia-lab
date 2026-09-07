@@ -9,6 +9,7 @@ provider call and it cannot reuse output from the retired attempt.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Annotated, Final, Literal, Self
@@ -355,7 +356,7 @@ def normalize_provider_output_v2(
             provider_response_schema_v2(visible_evidence_ids),
         )
         source = ProviderDiagnosisOutputV2.model_validate_json(
-            canonical_project_json(checked_payload)
+            json.dumps(checked_payload, ensure_ascii=True, allow_nan=False)
         )
     except (ValidationError, ValueError) as exc:
         raise ClaimCorpusContractError(

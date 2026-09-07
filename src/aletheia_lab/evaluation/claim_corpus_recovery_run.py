@@ -32,6 +32,7 @@ from aletheia_lab.evaluation.claim_corpus_recovery_authorization import (
 from aletheia_lab.evaluation.claim_corpus_recovery_budget import (
     AMENDED_MAX_OUTPUT_TOKENS,
     audit_retired_compatibility_run,
+    audit_retired_structured_output_run,
     load_recovery_output_budget_amendment,
 )
 from aletheia_lab.evaluation.claim_corpus_recovery_execution import prepare_recovery_rehearsal
@@ -45,6 +46,7 @@ from aletheia_lab.evaluation.observed_evidence_receipt import (
     _chat_input_tokens,
 )
 from aletheia_lab.model_gateway import ProviderAdapter, execute_gateway_request
+from aletheia_lab.model_gateway.recovery_transport import wire_schema_json
 from aletheia_lab.project.identity import canonical_project_json
 
 CENSUS_PATH = "configs/evaluation/claim_support_observed_evidence_census.json"
@@ -70,7 +72,7 @@ def estimate_schedule_cost(
         tokens = _chat_input_tokens(
             encoding, request.prompt_text,
             canonical_project_json(request.context.model_dump(mode="json")),
-        ) + len(encoding.encode(request.response_schema_json)) + 1024
+        ) + len(encoding.encode(wire_schema_json(request.response_schema_json))) + 1024
         total += request.runtime_policy.max_attempts * (
             tokens * 2 + maximum_output_tokens * 8
         ) / 1_000_000
@@ -82,6 +84,7 @@ def make_recovery_authorization(
     predecessor_store: Path, phase: RecoveryPhase, authorized_at: str,
     operator_cost_ceiling_usd: float,
     retired_compatibility_run: Path,
+    retired_structured_output_run: Path,
 ) -> RecoveryAuthorization:
     run = checked_run_directory(root, run_dir, predecessor_store)
     retired_run = checked_private_path(retired_compatibility_run, root)
@@ -93,6 +96,10 @@ def make_recovery_authorization(
         raise ValueError("new recovery destination overlaps the retired compatibility run")
     predecessor = audit_predecessor_provider_failures(predecessor_store)
     retired = audit_retired_compatibility_run(root, retired_run)
+    structured_run = checked_private_path(retired_structured_output_run, root)
+    if run == structured_run or run.is_relative_to(structured_run) or structured_run.is_relative_to(run):
+        raise ValueError("new recovery destination overlaps the retired structured-output run")
+    structured = audit_retired_structured_output_run(root, structured_run)
     amendment = load_recovery_output_budget_amendment(root)
     templates, rehearsal = prepare_recovery_rehearsal(root)
     evidence = load_execution_evidence_census(root, root / CENSUS_PATH)
@@ -110,7 +117,7 @@ def make_recovery_authorization(
         compatibility_hash = compatibility["receipt_sha256"]
     schedule = build_compatibility_requests(templates) if phase == "compatibility" else templates
     payload: dict[str, object] = {
-        "schema_version": "claim-corpus-recovery-authorization/v2",
+        "schema_version": "claim-corpus-recovery-authorization/v3",
         "phase": phase, "authorized_at": authorized_at,
         "source_commit_ref": state.head_commit,
         "execution_plan_sha256": plan.plan_sha256,
@@ -126,6 +133,9 @@ def make_recovery_authorization(
         "output_budget_amendment_sha256": amendment.amendment_sha256,
         "failed_compatibility_receipt_sha256": retired["receipt_sha256"],
         "failed_compatibility_store_sha256": retired["terminal_store_sha256"],
+        "transport_sha256": rehearsal["transport_sha256"],
+        "retired_structured_output_receipt_sha256": structured["receipt_sha256"],
+        "retired_structured_output_store_sha256": structured["terminal_store_sha256"],
         "rehearsal_sha256": rehearsal["receipt_sha256"],
         "destination_sha256": destination_sha256(run),
         "predecessor_store_sha256": predecessor["terminal_store_sha256"],
@@ -157,6 +167,9 @@ def authorized_recovery_requests(
     if (
         checked.rehearsal_sha256 != rehearsal["receipt_sha256"]
         or checked.protocol_sha256 != rehearsal["protocol_sha256"]
+        or checked.transport_sha256 != rehearsal["transport_sha256"]
+        or checked.retired_structured_output_receipt_sha256 != rehearsal["retired_structured_output_receipt_sha256"]
+        or checked.retired_structured_output_store_sha256 != rehearsal["retired_structured_output_store_sha256"]
         or checked.destination_sha256 != destination_sha256(run_dir)
     ):
         raise ValueError("recovery authority does not match current code, protocol or destination")
@@ -190,6 +203,7 @@ def authorized_recovery_requests(
 def validate_recovery_execution(
     root: Path, *, state: RepositoryExecutionState, run_dir: Path,
     predecessor_store: Path, phase: RecoveryPhase, retired_compatibility_run: Path,
+    retired_structured_output_run: Path,
 ) -> tuple[RecoveryAuthorization, tuple[PreparedClaimCorpusRequest, ...]]:
     run = checked_run_directory(root, run_dir, predecessor_store)
     authorization = load_recovery_authorization(run, phase)
@@ -198,6 +212,7 @@ def validate_recovery_execution(
         phase=phase, authorized_at=authorization.authorized_at,
         operator_cost_ceiling_usd=authorization.operator_cost_ceiling_usd,
         retired_compatibility_run=retired_compatibility_run,
+        retired_structured_output_run=retired_structured_output_run,
     )
     if authorization != expected:
         raise ValueError("recovery authorization differs from verified inputs")
@@ -214,10 +229,12 @@ def execute_recovery(
     root: Path, *, state: RepositoryExecutionState, run_dir: Path,
     predecessor_store: Path, phase: RecoveryPhase, confirm_authorization_sha256: str,
     adapter: ProviderAdapter, retired_compatibility_run: Path,
+    retired_structured_output_run: Path,
 ) -> dict[str, object]:
     authorization, prepared = validate_recovery_execution(
         root, state=state, run_dir=run_dir, predecessor_store=predecessor_store,
         phase=phase, retired_compatibility_run=retired_compatibility_run,
+        retired_structured_output_run=retired_structured_output_run,
     )
     if confirm_authorization_sha256 != authorization.authorization_sha256:
         raise ValueError("recovery authorization confirmation differs")
@@ -273,6 +290,7 @@ def _completed_receipt(
         "status": status, "phase": authorization.phase,
         "authorization_sha256": authorization.authorization_sha256,
         "protocol_sha256": authorization.protocol_sha256,
+        "transport_sha256": authorization.transport_sha256,
         "rehearsal_sha256": authorization.rehearsal_sha256,
         "source_commit_ref": authorization.source_commit_ref,
         "synthetic_only": authorization.phase == "compatibility",

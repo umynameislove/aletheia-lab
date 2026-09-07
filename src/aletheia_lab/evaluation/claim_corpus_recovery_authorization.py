@@ -23,7 +23,7 @@ class RecoveryAuthorization(BaseModel):
     """A separate explicit authority; the nested legacy binding never authorizes recovery."""
 
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
-    schema_version: Literal["claim-corpus-recovery-authorization/v2"]
+    schema_version: Literal["claim-corpus-recovery-authorization/v3"]
     phase: RecoveryPhase
     authorized_at: str
     source_commit_ref: str = Field(pattern=r"^[0-9a-f]{40}$")
@@ -41,6 +41,9 @@ class RecoveryAuthorization(BaseModel):
     output_budget_amendment_sha256: Sha256
     failed_compatibility_receipt_sha256: Sha256
     failed_compatibility_store_sha256: Sha256
+    transport_sha256: Sha256
+    retired_structured_output_receipt_sha256: Sha256
+    retired_structured_output_store_sha256: Sha256
     rehearsal_sha256: Sha256
     destination_sha256: Sha256
     predecessor_store_sha256: Sha256

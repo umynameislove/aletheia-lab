@@ -4,9 +4,17 @@ from __future__ import annotations
 
 import json
 from decimal import Decimal
-from typing import Annotated, Final, Literal, Protocol, Self
+from typing import Annotated, Final, Literal, Protocol, Self, cast
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SerializerFunctionWrapHandler,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
 
 from aletheia_lab.context.evaluation_context import EvaluationContextPayload
 from aletheia_lab.evaluation.claim_corpus_contracts import ClaimType
@@ -506,6 +514,24 @@ class AttemptTiming(_StrictFrozenModel):
         return self
 
 
+class ProviderFailureDiagnostics(_StrictFrozenModel):
+    """Bounded metadata only: no prompt, provider message, credential or partial text."""
+
+    schema_version: Literal["provider-failure-diagnostics/v1"] = "provider-failure-diagnostics/v1"
+    finish_reason: Literal["length", "stop", "content_filter", "tool_calls", "function_call", "unknown"]
+    configured_output_token_limit: int = Field(gt=0)
+    usage: UsageMetadata | None
+    content_utf8_bytes: int | None = Field(default=None, ge=0)
+    content_sha256: Sha256 | None = None
+    model_snapshot_matched: bool
+
+    @model_validator(mode="after")
+    def _content_pair(self) -> Self:
+        if (self.content_utf8_bytes is None) != (self.content_sha256 is None):
+            raise ValueError("content digest and byte count must be known together")
+        return self
+
+
 class AttemptRecord(_StrictFrozenModel):
     """Public-safe technical record for one provider invocation or cancellation."""
 
@@ -516,9 +542,19 @@ class AttemptRecord(_StrictFrozenModel):
     response_mode: ResponseMode | None
     usage: UsageMetadata | None
     issue: TechnicalIssue | None
+    failure_diagnostics: ProviderFailureDiagnostics | None = None
+
+    @model_serializer(mode="wrap")
+    def _preserve_legacy_bytes(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
+        payload = cast(dict[str, object], handler(self))
+        if self.failure_diagnostics is None:
+            payload.pop("failure_diagnostics", None)
+        return payload
 
     @model_validator(mode="after")
     def _outcome_shape_is_consistent(self) -> Self:
+        if self.failure_diagnostics is not None and self.outcome != "permanent_error":
+            raise ValueError("provider failure diagnostics require a permanent error")
         response_metadata = self.response_mode is not None and self.usage is not None
         if self.outcome == "response":
             if self.provider_attempt_ref is None or not response_metadata or self.issue is not None:
@@ -621,6 +657,7 @@ class AdapterInvocationError(RuntimeError):
         code: ProviderErrorCode,
         retryable: bool,
         provider_attempt_ref: str,
+        diagnostics: ProviderFailureDiagnostics | None = None,
     ) -> None:
         expected_retryable = code in {
             "transient_provider_error",
@@ -632,3 +669,4 @@ class AdapterInvocationError(RuntimeError):
         self.code = code
         self.retryable = retryable
         self.provider_attempt_ref = provider_attempt_ref
+        self.diagnostics = diagnostics

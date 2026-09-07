@@ -171,7 +171,12 @@ hit the registered 600-token output ceiling. A separately hashed
 [CSR-03R output-budget amendment](docs/claim-support-recovery-output-budget-amendment.md)
 raises only the recovery ceiling to 2,048 tokens uniformly across all
 model-backed variants. It requires a new private directory, request identities
-and authorization; the retired attempt cannot be rerun.
+and authorization; the retired attempt cannot be rerun. The second compatibility
+attempt also ended with three truncations. The current
+[structured-output compatibility correction](docs/claim-support-structured-output-compatibility.md)
+separates a regex-free provider schema from strict local acceptance, retains safe
+failure diagnostics, and requires fresh authority with both failed runs preserved.
+Live compatibility remains unverified; a larger budget is not treated as proof of a fix.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation

@@ -1,5 +1,10 @@
 # Claim-support recovery output-budget amendment
 
+Historical amendment: CSR-03R subsequently failed all three probes at 2,048
+configured tokens. Keep its registration and artifacts unchanged. Current work
+uses the [separate CSR-03S transport correction](claim-support-structured-output-compatibility.md),
+not another invocation of the failed run.
+
 ## Registered technical finding
 
 CSR-03 remains an immutable failed compatibility attempt. Its authorization,

@@ -17,6 +17,7 @@ from aletheia_lab.evaluation.claim_corpus_recovery_authorization import (
 )
 from aletheia_lab.evaluation.claim_corpus_recovery_budget import (
     audit_retired_compatibility_run,
+    audit_retired_structured_output_run,
 )
 from aletheia_lab.evaluation.claim_corpus_recovery_execution import prepare_recovery_rehearsal
 from aletheia_lab.evaluation.claim_corpus_recovery_run import (
@@ -38,6 +39,7 @@ def _parser() -> argparse.ArgumentParser:
             "rehearse",
             "audit-predecessor",
             "audit-retired-compatibility",
+            "audit-retired-structured-output",
             "authorize",
             "require-live-ready",
             "execute",
@@ -49,6 +51,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--run-dir", type=Path)
     parser.add_argument("--predecessor-store", type=Path)
     parser.add_argument("--retired-compatibility-run", type=Path)
+    parser.add_argument("--retired-structured-output-run", type=Path)
     parser.add_argument("--cost-ceiling-usd", type=float)
     parser.add_argument("--confirm-rehearsal-sha256")
     parser.add_argument("--confirm-authorization-sha256")
@@ -86,6 +89,9 @@ def main() -> int:
             result = audit_retired_compatibility_run(
                 root, args.retired_compatibility_run
             )
+        elif args.command == "audit-retired-structured-output":
+            _required(args, "retired_structured_output_run")
+            result = audit_retired_structured_output_run(root, args.retired_structured_output_run)
         elif args.command == "authorize":
             _required(
                 args,
@@ -95,6 +101,7 @@ def main() -> int:
                 "cost_ceiling_usd",
                 "confirm_rehearsal_sha256",
                 "retired_compatibility_run",
+                "retired_structured_output_run",
             )
             _, rehearsal = prepare_recovery_rehearsal(root)
             if args.confirm_rehearsal_sha256 != rehearsal["receipt_sha256"]:
@@ -111,6 +118,7 @@ def main() -> int:
                 ),
                 operator_cost_ceiling_usd=args.cost_ceiling_usd,
                 retired_compatibility_run=args.retired_compatibility_run,
+                retired_structured_output_run=args.retired_structured_output_run,
             )
             disposition = publish_recovery_json(
                 args.run_dir / f"{args.phase}-authorization.json",
@@ -137,6 +145,7 @@ def main() -> int:
                 "run_dir",
                 "predecessor_store",
                 "retired_compatibility_run",
+                "retired_structured_output_run",
             )
             authorization, prepared = validate_recovery_execution(
                 root,
@@ -145,6 +154,7 @@ def main() -> int:
                 predecessor_store=args.predecessor_store,
                 phase=cast(RecoveryPhase, args.phase),
                 retired_compatibility_run=args.retired_compatibility_run,
+                retired_structured_output_run=args.retired_structured_output_run,
             )
             adapter = _adapter(root, prepared)
             if args.command == "require-live-ready":
@@ -154,6 +164,10 @@ def main() -> int:
                     "phase": args.phase,
                     "authorization_sha256": authorization.authorization_sha256,
                     "protocol_sha256": authorization.protocol_sha256,
+                    "transport_sha256": authorization.transport_sha256,
+                    "retired_structured_output_receipt_sha256": (
+                        authorization.retired_structured_output_receipt_sha256
+                    ),
                     "output_budget_amendment_sha256": (
                         authorization.output_budget_amendment_sha256
                     ),
@@ -187,6 +201,7 @@ def main() -> int:
                     confirm_authorization_sha256=args.confirm_authorization_sha256,
                     adapter=adapter,
                     retired_compatibility_run=args.retired_compatibility_run,
+                    retired_structured_output_run=args.retired_structured_output_run,
                 )
     except (ValueError, OSError):
         # Paths, provider messages and credentials must not enter terminal output.
