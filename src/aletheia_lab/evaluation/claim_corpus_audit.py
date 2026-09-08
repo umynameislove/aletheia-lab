@@ -9,6 +9,7 @@ from typing import Annotated, Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from aletheia_lab.evaluation.claim_corpus_contracts import (
+    ClaimCorpusContractError,
     ClaimCorpusManifest,
     ClaimCorpusStoreReceipt,
     ClaimSupportCorpusEntry,
@@ -91,6 +92,49 @@ def audit_claim_corpus_run(store_root: Path, run_id: str) -> ClaimCorpusAuditRec
     _audit_unexpected_files(run_root, manifest, actual_paths, findings)
     _audit_entries(entries, findings)
     return _receipt(run_id, findings, entries)
+
+
+def load_audited_claim_corpus_run(
+    store_root: Path,
+    run_id: str,
+) -> tuple[
+    ClaimCorpusAuditReceipt,
+    ClaimCorpusManifest,
+    ClaimCorpusStoreReceipt,
+    tuple[ClaimSupportCorpusEntry, ...],
+]:
+    """Load one verified immutable snapshot without consulting writer state."""
+
+    audit = audit_claim_corpus_run(store_root, run_id)
+    if not audit.ready:
+        raise ClaimCorpusContractError("claim corpus failed independent byte audit")
+    loaded = _load_metadata(store_root / "runs" / run_id, run_id, [])
+    if loaded is None:
+        raise ClaimCorpusContractError("claim corpus metadata is unavailable")
+    manifest, receipt = loaded
+    object_root = store_root / "runs" / run_id / "objects" / "sha256"
+    entries: list[ClaimSupportCorpusEntry] = []
+    try:
+        for pointer in manifest.entries:
+            digest = pointer.object_sha256
+            path = object_root / digest[:2] / f"{digest[2:]}.json"
+            payload = path.read_bytes()
+            if content_sha256(payload) != digest:
+                raise ValueError("object content hash differs")
+            entry = ClaimSupportCorpusEntry.model_validate_json(payload)
+            if entry.entry_sha256 != pointer.entry_sha256:
+                raise ValueError("entry pointer differs")
+            entries.append(entry)
+    except (OSError, ValueError, ValidationError) as exc:
+        raise ClaimCorpusContractError("claim corpus changed after independent audit") from exc
+    if len(entries) != audit.entry_count:
+        raise ClaimCorpusContractError("audited claim corpus count differs")
+    return (
+        audit,
+        manifest,
+        receipt,
+        tuple(sorted(entries, key=lambda item: item.entry_sha256)),
+    )
 
 
 def _load_metadata(
@@ -254,4 +298,5 @@ __all__ = [
     "ClaimCorpusAuditFinding",
     "ClaimCorpusAuditReceipt",
     "audit_claim_corpus_run",
+    "load_audited_claim_corpus_run",
 ]

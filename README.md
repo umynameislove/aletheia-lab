@@ -191,6 +191,10 @@ separately authorized one-request recovery preserves the original failed
 terminal and all 961 successes by hash, and permits full-pool publication only
 after an independently rebuilt 962/962 reconciled bundle has zero unresolved
 terminals.
+The provider-free full-pool boundary adds a clean-main publication gate and an
+independent feasibility closeout that replays complete provenance, preserves
+diagnosis missingness, and evaluates the frozen 50-per-label selector without
+materializing a sample or human packet.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation

@@ -464,3 +464,40 @@ A successful recovery is still not a 200-claim sample and not a human packet.
 The reconciled 962-result bundle merely clears the technical prerequisite for
 provider-free full-pool publication and the subsequent frozen feasibility and
 sample-selection audits.
+
+## Independent full-pool feasibility closeout
+
+Full-pool publication and closeout are provider-free operations. Both require
+a clean checkout whose `main` commit equals `origin/main`, and every input and
+output path must remain outside the repository. Publication applies the frozen
+automatic instrument to all 962 reconciled request-local claims and writes a
+content-addressed, create-only run. Closeout independently reads the persisted
+bytes without trusting writer state, reconstructs every request, output, claim,
+relation, evidence and automatic-label binding, and then tests the frozen
+balanced selector without publishing a sample.
+
+```bash
+PYTHONPATH=src python scripts/claim_support_pool_construction.py publish \
+  --preparation "$CLAIM_RECOVERY_DIR/claim-pool-recovery-preparation.json" \
+  --relation-results "$CLAIM_RELATION_RECOVERY_DIR/reconciled-results.json" \
+  --pool-store "$CLAIM_POOL_DIR/store" \
+  --output "$CLAIM_POOL_DIR/publication-closeout.json"
+
+PYTHONPATH=src python scripts/claim_support_pool_construction.py closeout \
+  --preparation "$CLAIM_RECOVERY_DIR/claim-pool-recovery-preparation.json" \
+  --recovery-closeout "$CLAIM_RECOVERY_DIR/recovery-closeout.json" \
+  --relation-results "$CLAIM_RELATION_RECOVERY_DIR/reconciled-results.json" \
+  --pool-store "$CLAIM_POOL_DIR/store" \
+  --publication-closeout "$CLAIM_POOL_DIR/publication-closeout.json" \
+  --output "$CLAIM_POOL_DIR/feasibility-closeout.json"
+```
+
+The receipt carries both the diagnosis-source commit and the closeout-code
+commit, preserves the 78 technical diagnosis failures and the execution-order
+missingness warning, and reports all four label strata with distinct text,
+family and output coverage. Repeated request-local instances remain auditable
+in the full pool, while the selector excludes repeated canonical claim text and
+enforces the frozen per-family and per-output caps. If any label cannot supply
+50 distinct eligible claims from at least ten families and 25 outputs, closeout
+terminates as insufficient. It does not reduce the sample, pad a label, open a
+reserve, create a blind packet or authorize human validation.
