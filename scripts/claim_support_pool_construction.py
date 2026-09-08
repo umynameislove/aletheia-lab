@@ -17,8 +17,12 @@ from aletheia_lab.evaluation.claim_corpus_construction import (
     publish_claim_pool,
     verify_construction_inputs,
 )
+from aletheia_lab.evaluation.claim_corpus_construction_contracts import (
+    ClaimPoolPublicationCloseout,
+)
 from aletheia_lab.evaluation.claim_corpus_execution import (
     ClaimCorpusExecutionAuthorization,
+    inspect_repository_state,
     load_execution_authorization,
     load_execution_evidence_census,
 )
@@ -36,6 +40,9 @@ from aletheia_lab.evaluation.claim_corpus_recovery_closeout import (
     build_recovery_execution_closeout,
 )
 from aletheia_lab.evaluation.claim_evidence_census import ObservedEvidenceCensus
+from aletheia_lab.evaluation.claim_pool_closeout import (
+    build_claim_pool_feasibility_closeout,
+)
 from aletheia_lab.filesystem import publish_immutable_file
 from aletheia_lab.project.identity import canonical_project_json
 
@@ -50,6 +57,7 @@ def _parser() -> argparse.ArgumentParser:
             "recovery-closeout",
             "recovery-prepare",
             "publish",
+            "closeout",
         ),
     )
     parser.add_argument("--root", type=Path, default=Path("."))
@@ -64,6 +72,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--relation-results", type=Path)
     parser.add_argument("--pool-store", type=Path)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--publication-closeout", type=Path)
     parser.add_argument("--recovery-run-dir", type=Path)
     parser.add_argument("--recovery-closeout", type=Path)
     return parser
@@ -271,6 +280,11 @@ def _publish_pool(args: argparse.Namespace, root: Path) -> dict[str, object]:
     relation_path = _outside_repository(root, args.relation_results, label="relation-result input")
     pool_store = _outside_repository(root, args.pool_store, label="pool store")
     output = _outside_repository(root, args.output, label="publication closeout")
+    repository_state = inspect_repository_state(root)
+    if not repository_state.synchronized_main:
+        raise ClaimPoolConstructionError(
+            "official pool publication requires a clean synchronized main checkout"
+        )
     preparation = load_claim_pool_preparation(preparation_path)
     relation_results = load_claim_relation_results(relation_path)
     closeout = publish_claim_pool(
@@ -293,6 +307,76 @@ def _publish_pool(args: argparse.Namespace, root: Path) -> dict[str, object]:
     }
 
 
+def _closeout_pool(args: argparse.Namespace, root: Path) -> dict[str, object]:
+    _required(
+        args,
+        "preparation",
+        "relation_results",
+        "pool_store",
+        "publication_closeout",
+        "recovery_closeout",
+        "output",
+    )
+    preparation_path = _outside_repository(root, args.preparation, label="preparation input")
+    relation_path = _outside_repository(root, args.relation_results, label="relation-result input")
+    pool_store = _outside_repository(root, args.pool_store, label="pool store")
+    publication_path = _outside_repository(
+        root,
+        args.publication_closeout,
+        label="publication closeout input",
+    )
+    recovery_closeout_path = _outside_repository(
+        root,
+        args.recovery_closeout,
+        label="recovery execution closeout input",
+    )
+    output = _outside_repository(root, args.output, label="feasibility closeout")
+    repository_state = inspect_repository_state(root)
+    if not repository_state.synchronized_main:
+        raise ClaimPoolConstructionError(
+            "official pool closeout requires a clean synchronized main checkout"
+        )
+    preparation = load_claim_pool_preparation(preparation_path)
+    relation_results = load_claim_relation_results(relation_path)
+    publication = ClaimPoolPublicationCloseout.model_validate(
+        _load_model(publication_path, ClaimPoolPublicationCloseout).model_dump(mode="python")
+    )
+    recovery_closeout = RecoveryExecutionCloseout.model_validate(
+        _load_model(recovery_closeout_path, RecoveryExecutionCloseout).model_dump(mode="python")
+    )
+    closeout = build_claim_pool_feasibility_closeout(
+        root,
+        preparation=preparation,
+        relation_results=relation_results,
+        publication_closeout=publication,
+        store_root=pool_store,
+        closeout_source_commit_ref=repository_state.head_commit,
+        recovery_execution_closeout=recovery_closeout,
+    )
+    disposition = _publish(output, closeout)
+    return {
+        "status": closeout.status,
+        "output": str(output),
+        "publication_disposition": disposition,
+        "corpus_run_id": closeout.corpus_run_id,
+        "corpus_entry_count": closeout.corpus_entry_count,
+        "canonical_claim_text_count": closeout.canonical_claim_text_count,
+        "repeated_claim_text_instance_count": closeout.repeated_claim_text_instance_count,
+        "label_strata": tuple(item.model_dump(mode="json") for item in closeout.label_strata),
+        "exact_frozen_selection_feasible": closeout.exact_frozen_selection_feasible,
+        "blocking_strata": closeout.blocking_strata,
+        "missingness_exchangeability_status": (
+            closeout.missingness_exchangeability_status
+        ),
+        "next_authorized_action": closeout.next_authorized_action,
+        "closeout_sha256": closeout.closeout_sha256,
+        "sample_materialized": closeout.sample_materialized,
+        "blind_packets_generated": closeout.blind_packets_generated,
+        "human_annotations_collected": closeout.human_annotations_collected,
+        "main_or_sealed_outcomes_opened": closeout.main_or_sealed_outcomes_opened,
+    }
+
+
 def main() -> int:
     args = _parser().parse_args()
     root = args.root.resolve()
@@ -305,8 +389,10 @@ def main() -> int:
             payload = _recovery_closeout(args, root)
         elif args.command == "recovery-prepare":
             payload = _recovery_prepare(args, root)
-        else:
+        elif args.command == "publish":
             payload = _publish_pool(args, root)
+        else:
+            payload = _closeout_pool(args, root)
     except (ClaimPoolConstructionError, OSError, ValueError) as exc:
         payload = {"status": "claim_pool_construction_failed", "error": str(exc)}
         print(json.dumps(payload, indent=2, sort_keys=True))
