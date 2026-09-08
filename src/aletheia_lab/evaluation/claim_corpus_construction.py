@@ -9,6 +9,7 @@ repairs prose, selects the 200-claim sample, or exposes human/main outcomes.
 
 from __future__ import annotations
 
+import json
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -77,6 +78,45 @@ from aletheia_lab.model_gateway.contracts import TerminalStatus
 from aletheia_lab.project.identity import canonical_project_json
 
 ClaimPoolPreparationLike = ClaimPoolPreparation | RecoveryClaimPoolPreparation
+ClaimRelationResultBundleLike = (
+    ClaimRelationResultBundle | ReconciledClaimRelationResultBundle
+)
+
+
+def load_claim_pool_preparation(path: Path) -> ClaimPoolPreparationLike:
+    """Load either supported claim-pool preparation from canonical JSON."""
+
+    try:
+        encoded = path.read_bytes()
+        payload = json.loads(encoded)
+    except (OSError, ValueError, TypeError) as exc:
+        raise ClaimPoolConstructionError("preparation input is invalid") from exc
+    if not isinstance(payload, dict):
+        raise ClaimPoolConstructionError("preparation input is invalid")
+    try:
+        if payload.get("schema_version") == "claim-pool-recovery-preparation/v1":
+            return RecoveryClaimPoolPreparation.model_validate_json(encoded)
+        return ClaimPoolPreparation.model_validate_json(encoded)
+    except ValidationError as exc:
+        raise ClaimPoolConstructionError("preparation input is invalid") from exc
+
+
+def load_claim_relation_results(path: Path) -> ClaimRelationResultBundleLike:
+    """Load either supported relation-result bundle from canonical JSON."""
+
+    try:
+        encoded = path.read_bytes()
+        payload = json.loads(encoded)
+    except (OSError, ValueError, TypeError) as exc:
+        raise ClaimPoolConstructionError("relation-result input is invalid") from exc
+    if not isinstance(payload, dict):
+        raise ClaimPoolConstructionError("relation-result input is invalid")
+    try:
+        if payload.get("schema_version") == "claim-relation-reconciled-result-bundle/v1":
+            return ReconciledClaimRelationResultBundle.model_validate_json(encoded)
+        return ClaimRelationResultBundle.model_validate_json(encoded)
+    except ValidationError as exc:
+        raise ClaimPoolConstructionError("relation-result input is invalid") from exc
 
 
 def normalize_provider_output(
@@ -586,6 +626,8 @@ __all__ = [
     "ClaimRelationResultBundle",
     "build_claim_pool_preparation",
     "build_relation_result_bundle",
+    "load_claim_pool_preparation",
+    "load_claim_relation_results",
     "normalize_provider_output",
     "publish_claim_pool",
     "verify_construction_inputs",

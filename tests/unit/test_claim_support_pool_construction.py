@@ -12,6 +12,7 @@ from aletheia_lab.evaluation.claim_corpus_construction import (
     ClaimPoolPreparation,
     ClaimRelationResult,
     build_relation_result_bundle,
+    load_claim_relation_results,
     normalize_provider_output,
     publish_claim_pool,
 )
@@ -39,7 +40,6 @@ from aletheia_lab.model_gateway import (
     RuntimePolicyReference,
 )
 from aletheia_lab.project.identity import content_sha256
-from scripts.claim_support_pool_construction import _load_relation_results
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -519,7 +519,7 @@ def test_complete_relation_census_publishes_an_immutable_labeled_pool(
     assert first.corpus_entry_count == 1
     assert first.automatically_labeled_claim_count == 1
     assert first.corpus_store_receipt.entry_count == 1
-    assert _load_relation_results(bundle_path) == bundle
+    assert load_claim_relation_results(bundle_path) == bundle
     assert not first.blind_packets_generated
     assert not first.human_annotations_collected
     assert not first.main_or_sealed_outcomes_opened

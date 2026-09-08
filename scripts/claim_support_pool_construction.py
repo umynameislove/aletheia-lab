@@ -11,10 +11,9 @@ from pydantic import BaseModel, ValidationError
 
 from aletheia_lab.evaluation.claim_corpus_construction import (
     ClaimPoolConstructionError,
-    ClaimPoolPreparation,
-    ClaimRelationResultBundle,
-    RecoveryClaimPoolPreparation,
     build_claim_pool_preparation,
+    load_claim_pool_preparation,
+    load_claim_relation_results,
     publish_claim_pool,
     verify_construction_inputs,
 )
@@ -37,9 +36,6 @@ from aletheia_lab.evaluation.claim_corpus_recovery_closeout import (
     build_recovery_execution_closeout,
 )
 from aletheia_lab.evaluation.claim_evidence_census import ObservedEvidenceCensus
-from aletheia_lab.evaluation.claim_relation_recovery_contracts import (
-    ReconciledClaimRelationResultBundle,
-)
 from aletheia_lab.filesystem import publish_immutable_file
 from aletheia_lab.project.identity import canonical_project_json
 
@@ -269,42 +265,14 @@ def _recovery_prepare(args: argparse.Namespace, root: Path) -> dict[str, object]
     }
 
 
-def _load_preparation(path: Path) -> ClaimPoolPreparation | RecoveryClaimPoolPreparation:
-    try:
-        encoded = path.read_bytes()
-        payload = json.loads(encoded)
-    except (OSError, ValueError, TypeError) as exc:
-        raise ClaimPoolConstructionError("preparation input is invalid") from exc
-    if not isinstance(payload, dict):
-        raise ClaimPoolConstructionError("preparation input is invalid")
-    if payload.get("schema_version") == "claim-pool-recovery-preparation/v1":
-        return RecoveryClaimPoolPreparation.model_validate_json(encoded)
-    return ClaimPoolPreparation.model_validate_json(encoded)
-
-
-def _load_relation_results(
-    path: Path,
-) -> ClaimRelationResultBundle | ReconciledClaimRelationResultBundle:
-    try:
-        encoded = path.read_bytes()
-        payload = json.loads(encoded)
-    except (OSError, ValueError, TypeError) as exc:
-        raise ClaimPoolConstructionError("relation-result input is invalid") from exc
-    if not isinstance(payload, dict):
-        raise ClaimPoolConstructionError("relation-result input is invalid")
-    if payload.get("schema_version") == "claim-relation-reconciled-result-bundle/v1":
-        return ReconciledClaimRelationResultBundle.model_validate_json(encoded)
-    return ClaimRelationResultBundle.model_validate_json(encoded)
-
-
 def _publish_pool(args: argparse.Namespace, root: Path) -> dict[str, object]:
     _required(args, "preparation", "relation_results", "pool_store", "output")
     preparation_path = _outside_repository(root, args.preparation, label="preparation input")
     relation_path = _outside_repository(root, args.relation_results, label="relation-result input")
     pool_store = _outside_repository(root, args.pool_store, label="pool store")
     output = _outside_repository(root, args.output, label="publication closeout")
-    preparation = _load_preparation(preparation_path)
-    relation_results = _load_relation_results(relation_path)
+    preparation = load_claim_pool_preparation(preparation_path)
+    relation_results = load_claim_relation_results(relation_path)
     closeout = publish_claim_pool(
         root,
         preparation=preparation,

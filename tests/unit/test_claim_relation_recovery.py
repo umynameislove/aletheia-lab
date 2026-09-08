@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 import aletheia_lab.evaluation.claim_relation_recovery as recovery
 import aletheia_lab.evaluation.claim_relation_recovery_execution as recovery_execution
+from aletheia_lab.evaluation.claim_corpus_construction import load_claim_relation_results
 from aletheia_lab.evaluation.claim_corpus_construction_contracts import (
     ClaimRelationResult,
     ClaimRelationResultBundle,
@@ -41,7 +42,6 @@ from aletheia_lab.evaluation.claim_relation_recovery_execution import (
     finalize_targeted_recovery,
 )
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
-from scripts.claim_support_pool_construction import _load_relation_results
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -348,7 +348,7 @@ def test_reconciled_bundle_round_trips_through_publication_loader(
     path = tmp_path / "reconciled-results.json"
     path.write_text(reconciled.model_dump_json(), encoding="utf-8")
 
-    loaded = _load_relation_results(path)
+    loaded = load_claim_relation_results(path)
 
     assert loaded == reconciled
 

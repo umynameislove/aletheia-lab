@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from aletheia_lab.evaluation.claim_corpus_construction import load_claim_pool_preparation
 from aletheia_lab.evaluation.claim_corpus_construction_contracts import (
     ClaimNormalizationRecord,
     RecoveryClaimPoolPreparation,
@@ -16,7 +17,6 @@ from aletheia_lab.evaluation.claim_corpus_recovery_closeout import (
     _summaries,
 )
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
-from scripts.claim_support_pool_construction import _load_preparation
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -241,7 +241,7 @@ def test_recovery_preparation_round_trips_through_publication_loader(tmp_path: P
     path = tmp_path / "claim-pool-recovery-preparation.json"
     path.write_text(preparation.model_dump_json(), encoding="utf-8")
 
-    loaded = _load_preparation(path)
+    loaded = load_claim_pool_preparation(path)
 
     assert loaded == preparation
 
