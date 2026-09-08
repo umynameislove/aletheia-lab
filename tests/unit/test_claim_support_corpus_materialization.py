@@ -14,7 +14,10 @@ from aletheia_lab.evaluation.claim_corpus_contracts import (
     DiagnosisOutputV2,
     VisibleEvidenceRelation,
 )
-from aletheia_lab.evaluation.claim_corpus_materializer import materialize_request_claims
+from aletheia_lab.evaluation.claim_corpus_materializer import (
+    materialize_request_claims,
+    reconcile_materialized_entries,
+)
 from aletheia_lab.evaluation.claim_corpus_readiness import (
     build_readiness_artifacts,
     verify_readiness,
@@ -261,6 +264,69 @@ def test_materializer_is_deterministic_and_visibility_bounded() -> None:
     assert not first[0].hidden_ground_truth_present
     assert not first[0].human_judgment_present
     assert not first[0].main_outcome_present
+
+
+def test_materializer_accepts_typed_normalized_b0_output() -> None:
+    request = _request(variant="B0")
+    output_payload = _output()
+    output = DiagnosisOutputV2.model_validate(output_payload)
+    binding = _binding(request)
+    assignments = {"claim-1": _assignment(request, output_payload, binding)}
+
+    entries = materialize_request_claims(request, output, binding, assignments)
+
+    assert len(entries) == 1
+    assert entries[0].variant == "B0"
+    assert entries[0].automatic_label == "fully_supported"
+
+
+def test_reconciliation_preserves_same_source_claim_across_frozen_requests(
+    tmp_path: Path,
+) -> None:
+    first_request = _request()
+    request_payload = first_request.model_dump(
+        mode="python", exclude={"request_sha256"}
+    )
+    request_payload["evidence_condition"] = "noisy"
+    second_request = ClaimCorpusRequest.model_validate(
+        {
+            **request_payload,
+            "request_sha256": canonical_execution_sha256(request_payload),
+        }
+    )
+    output = _output()
+    first_binding = _binding(first_request)
+    second_binding = _binding(second_request)
+    first = materialize_request_claims(
+        first_request,
+        output,
+        first_binding,
+        {"claim-1": _assignment(first_request, output, first_binding)},
+    )[0]
+    second = materialize_request_claims(
+        second_request,
+        output,
+        second_binding,
+        {"claim-1": _assignment(second_request, output, second_binding)},
+    )[0]
+
+    reconciled = reconcile_materialized_entries((first, second))
+    receipt = ClaimCorpusArtifactStore(tmp_path).publish(
+        protocol_sha256="3" * 64,
+        census_sha256="4" * 64,
+        entries=reconciled,
+        provider_calls_recorded=2,
+    )
+    audit = audit_claim_corpus_run(tmp_path, receipt.run_id)
+
+    assert len(reconciled) == 2
+    assert {entry.request_sha256 for entry in reconciled} == {
+        first_request.request_sha256,
+        second_request.request_sha256,
+    }
+    assert {entry.source_record_sha256 for entry in reconciled} == {"2" * 64}
+    assert audit.ready
+    assert audit.entry_count == 2
 
 
 def test_materializer_rejects_missing_evidence_and_unactivated_reserve() -> None:

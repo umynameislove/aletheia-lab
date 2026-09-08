@@ -9,6 +9,7 @@ repairs prose, selects the 200-claim sample, or exposes human/main outcomes.
 
 from __future__ import annotations
 
+import json
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -77,6 +78,45 @@ from aletheia_lab.model_gateway.contracts import TerminalStatus
 from aletheia_lab.project.identity import canonical_project_json
 
 ClaimPoolPreparationLike = ClaimPoolPreparation | RecoveryClaimPoolPreparation
+ClaimRelationResultBundleLike = (
+    ClaimRelationResultBundle | ReconciledClaimRelationResultBundle
+)
+
+
+def load_claim_pool_preparation(path: Path) -> ClaimPoolPreparationLike:
+    """Load either supported claim-pool preparation from canonical JSON."""
+
+    try:
+        encoded = path.read_bytes()
+        payload = json.loads(encoded)
+    except (OSError, ValueError, TypeError) as exc:
+        raise ClaimPoolConstructionError("preparation input is invalid") from exc
+    if not isinstance(payload, dict):
+        raise ClaimPoolConstructionError("preparation input is invalid")
+    try:
+        if payload.get("schema_version") == "claim-pool-recovery-preparation/v1":
+            return RecoveryClaimPoolPreparation.model_validate_json(encoded)
+        return ClaimPoolPreparation.model_validate_json(encoded)
+    except ValidationError as exc:
+        raise ClaimPoolConstructionError("preparation input is invalid") from exc
+
+
+def load_claim_relation_results(path: Path) -> ClaimRelationResultBundleLike:
+    """Load either supported relation-result bundle from canonical JSON."""
+
+    try:
+        encoded = path.read_bytes()
+        payload = json.loads(encoded)
+    except (OSError, ValueError, TypeError) as exc:
+        raise ClaimPoolConstructionError("relation-result input is invalid") from exc
+    if not isinstance(payload, dict):
+        raise ClaimPoolConstructionError("relation-result input is invalid")
+    try:
+        if payload.get("schema_version") == "claim-relation-reconciled-result-bundle/v1":
+            return ReconciledClaimRelationResultBundle.model_validate_json(encoded)
+        return ClaimRelationResultBundle.model_validate_json(encoded)
+    except ValidationError as exc:
+        raise ClaimPoolConstructionError("relation-result input is invalid") from exc
 
 
 def normalize_provider_output(
@@ -396,47 +436,20 @@ def publish_claim_pool(
         raise ClaimPoolConstructionError(
             "relation result bundle differs from the frozen request census"
         )
-    responses = {item.assignment_request_sha256: item.response for item in checked_results.results}
-    request_by_output = {
-        item.normalized_output.output_sha256: item
-        for item in checked_preparation.records
-        if item.normalization_status == "normalized" and item.normalized_output is not None
-    }
     census = ClaimCorpusRequestCensus.model_validate_json(
         (root.resolve() / REQUEST_CENSUS_PATH).read_bytes()
     )
-    frozen_requests = {item.request_sha256: item for item in census.primary_requests}
     evidence_census = ObservedEvidenceCensus.model_validate_json(
         (
             root.resolve() / "configs/evaluation/claim_support_observed_evidence_census.json"
         ).read_bytes()
     )
-    evidence = {
-        (item.family_id, item.evidence_condition): item for item in evidence_census.bindings
-    }
-    relation_by_output: dict[str, dict[str, ClaimRelationAssignmentResponse]] = {}
-    for assignment in checked_preparation.relation_requests:
-        response = responses.get(assignment.assignment_request_sha256)
-        if response is None:
-            raise ClaimPoolConstructionError("relation result census is incomplete")
-        relation_by_output.setdefault(assignment.source_output_sha256, {})[
-            assignment.claim_local_id
-        ] = response
-    entries: list[ClaimSupportCorpusEntry] = []
-    for output_sha256, record in request_by_output.items():
-        output = record.normalized_output
-        if output is None or output.output_status != "completed":
-            continue
-        request = frozen_requests[record.request_sha256]
-        entries.extend(
-            materialize_request_claims(
-                request,
-                output.model_dump(mode="python"),
-                evidence[(request.family_id, request.evidence_condition)],
-                relation_by_output.get(output_sha256, {}),
-            )
-        )
-    reconciled = reconcile_materialized_entries(entries)
+    reconciled = _materialize_prepared_entries(
+        checked_preparation,
+        checked_results,
+        census,
+        evidence_census,
+    )
     protocol = ClaimSupportCorpusProtocol.model_validate_json(
         (root.resolve() / "configs/evaluation/claim_support_corpus_protocol.json").read_bytes()
     )
@@ -465,6 +478,53 @@ def publish_claim_pool(
     return ClaimPoolPublicationCloseout.model_validate(
         {**payload, "closeout_sha256": canonical_execution_sha256(payload)}
     )
+
+
+def _materialize_prepared_entries(
+    preparation: ClaimPoolPreparationLike,
+    results: ClaimRelationResultBundle | ReconciledClaimRelationResultBundle,
+    census: ClaimCorpusRequestCensus,
+    evidence_census: ObservedEvidenceCensus,
+) -> tuple[ClaimSupportCorpusEntry, ...]:
+    responses = {item.assignment_request_sha256: item.response for item in results.results}
+    relation_requests = {
+        item.assignment_request_sha256: item for item in preparation.relation_requests
+    }
+    frozen_requests = {item.request_sha256: item for item in census.primary_requests}
+    evidence = {
+        (item.family_id, item.evidence_condition): item for item in evidence_census.bindings
+    }
+    entries: list[ClaimSupportCorpusEntry] = []
+    for record in preparation.records:
+        output = record.normalized_output
+        if output is None or output.output_status != "completed":
+            continue
+        request = frozen_requests.get(record.request_sha256)
+        if request is None:
+            raise ClaimPoolConstructionError("normalized output has no frozen request")
+        assignments: dict[str, ClaimRelationAssignmentResponse] = {}
+        for assignment_sha256 in record.relation_request_sha256s:
+            assignment = relation_requests.get(assignment_sha256)
+            response = responses.get(assignment_sha256)
+            if assignment is None or response is None:
+                raise ClaimPoolConstructionError("relation result census is incomplete")
+            if (
+                assignment.source_output_sha256 != output.output_sha256
+                or assignment.claim_local_id in assignments
+            ):
+                raise ClaimPoolConstructionError(
+                    "relation result differs from its request-local claim"
+                )
+            assignments[assignment.claim_local_id] = response
+        entries.extend(
+            materialize_request_claims(
+                request,
+                output,
+                evidence[(request.family_id, request.evidence_condition)],
+                assignments,
+            )
+        )
+    return reconcile_materialized_entries(entries)
 
 
 def _load_authority_identities(
@@ -566,6 +626,8 @@ __all__ = [
     "ClaimRelationResultBundle",
     "build_claim_pool_preparation",
     "build_relation_result_bundle",
+    "load_claim_pool_preparation",
+    "load_claim_relation_results",
     "normalize_provider_output",
     "publish_claim_pool",
     "verify_construction_inputs",

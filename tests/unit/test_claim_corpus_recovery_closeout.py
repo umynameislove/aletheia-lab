@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from aletheia_lab.evaluation.claim_corpus_construction import load_claim_pool_preparation
 from aletheia_lab.evaluation.claim_corpus_construction_contracts import (
     ClaimNormalizationRecord,
     RecoveryClaimPoolPreparation,
@@ -233,6 +234,16 @@ def test_recovery_preparation_preserves_all_failed_requests_in_denominator() -> 
     assert preparation.technical_failure_terminal_count == 360
     assert preparation.relation_requests == ()
     assert preparation.failures_preserved_in_denominator
+
+
+def test_recovery_preparation_round_trips_through_publication_loader(tmp_path: Path) -> None:
+    preparation = _recovery_preparation()
+    path = tmp_path / "claim-pool-recovery-preparation.json"
+    path.write_text(preparation.model_dump_json(), encoding="utf-8")
+
+    loaded = load_claim_pool_preparation(path)
+
+    assert loaded == preparation
 
 
 def test_recovery_preparation_rejects_rehashed_duplicate_count_mismatch() -> None:

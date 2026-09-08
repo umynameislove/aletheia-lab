@@ -11,6 +11,7 @@ from aletheia_lab.evaluation.claim_corpus_contracts import (
     ClaimCorpusContractError,
     ClaimCorpusRequest,
     ClaimSupportCorpusEntry,
+    DiagnosisOutputV2,
 )
 from aletheia_lab.evaluation.claim_evidence_semantics import (
     ClaimEvidenceBinding,
@@ -25,7 +26,7 @@ from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha2
 
 def materialize_request_claims(
     request: ClaimCorpusRequest,
-    output_payload: Mapping[str, object],
+    output_payload: Mapping[str, object] | DiagnosisOutputV2,
     evidence_binding: ClaimEvidenceBinding,
     relation_assignments: Mapping[str, ClaimRelationAssignmentResponse],
     *,
@@ -40,7 +41,10 @@ def materialize_request_claims(
     checked_request = ClaimCorpusRequest.model_validate(request.model_dump(mode="python"))
     if checked_request.family_role == "reserve" and not reserve_activated_before_execution:
         raise ClaimCorpusContractError("reserve family was not activated before execution")
-    output = normalize_variant_output(checked_request.variant, output_payload)
+    if isinstance(output_payload, DiagnosisOutputV2):
+        output = DiagnosisOutputV2.model_validate(output_payload.model_dump(mode="python"))
+    else:
+        output = normalize_variant_output(checked_request.variant, output_payload)
     if output.output_status != "completed":
         if relation_assignments:
             raise ClaimCorpusContractError(
@@ -113,11 +117,13 @@ def reconcile_materialized_entries(
         ClaimSupportCorpusEntry.model_validate(item.model_dump(mode="python")) for item in entries
     )
     identities = tuple(item.entry_sha256 for item in checked)
-    source_claims = tuple((item.source_record_sha256, item.claim_local_id) for item in checked)
+    request_claims = tuple(
+        (item.request_sha256, item.output_sha256, item.claim_local_id) for item in checked
+    )
     if len(identities) != len(set(identities)):
         raise ClaimCorpusContractError("materialized entries contain duplicate identities")
-    if len(source_claims) != len(set(source_claims)):
-        raise ClaimCorpusContractError("one source claim was materialized more than once")
+    if len(request_claims) != len(set(request_claims)):
+        raise ClaimCorpusContractError("one request-local claim was materialized more than once")
     return tuple(sorted(checked, key=lambda item: item.entry_sha256))
 
 
