@@ -22,6 +22,7 @@ from aletheia_lab.evaluation.claim_corpus_construction_contracts import (
     RecoveryClaimPoolPreparation,
 )
 from aletheia_lab.evaluation.claim_corpus_contracts import (
+    AtomicClaimV2,
     ClaimCorpusContractError,
     ClaimCorpusRequestCensus,
     ClaimSupportCorpusEntry,
@@ -33,6 +34,9 @@ from aletheia_lab.evaluation.claim_corpus_recovery_closeout import (
 )
 from aletheia_lab.evaluation.claim_evidence_census import ObservedEvidenceCensus
 from aletheia_lab.evaluation.claim_evidence_semantics import (
+    ClaimRelationAssignmentRequest,
+    ClaimRelationAssignmentResponse,
+    ModelVisibleEvidenceItem,
     visible_relations_from_assignment,
 )
 from aletheia_lab.evaluation.claim_relation_recovery_contracts import (
@@ -541,14 +545,7 @@ def _verify_entry_provenance(
         evidence_by_id = {
             item.evidence_id: item for item in expected_binding.visible_context.items
         }
-        try:
-            expected_assignment_evidence = tuple(
-                evidence_by_id[evidence_id] for evidence_id in claim.visible_evidence_ids
-            )
-        except KeyError as exc:
-            raise ClaimPoolCloseoutError(
-                "pool claim cites evidence outside its frozen context"
-            ) from exc
+        expected_assignment_evidence = _resolve_assignment_evidence(claim, evidence_by_id)
         if (
             assignment.claim_text != claim.claim_text
             or assignment.claim_type != claim.claim_type
@@ -559,22 +556,21 @@ def _verify_entry_provenance(
             raise ClaimPoolCloseoutError(
                 "pool relation request differs from its frozen claim or evidence"
             )
-        expected_visible = visible_relations_from_assignment(assignment, result.response)
-        if (
-            entry.visible_evidence != expected_visible
-            or any(
-                evidence_by_id.get(item.evidence_id) is None
-                or evidence_by_id[item.evidence_id].content != item.text
-                for item in entry.visible_evidence
-            )
-            or classify_visible_support(
-                claim_text=entry.claim_text,
-                claim_type=entry.claim_type,
-                visible_evidence=entry.visible_evidence,
-            )
-            != entry.automatic_label
+        if not _entry_evidence_reconciles(
+            entry,
+            claim,
+            assignment,
+            result.response,
+            evidence_by_id,
         ):
             raise ClaimPoolCloseoutError("pool entry evidence or automatic label differs")
+    _verify_provenance_census_complete(preparation, seen)
+
+
+def _verify_provenance_census_complete(
+    preparation: ClaimPoolPreparationLike,
+    seen: set[tuple[str, str, str]],
+) -> None:
     expected = {
         (record.request_sha256, record.normalized_output.output_sha256, claim.claim_local_id)
         for record in preparation.records
@@ -584,6 +580,43 @@ def _verify_entry_provenance(
     }
     if seen != expected:
         raise ClaimPoolCloseoutError("pool entry provenance census is incomplete")
+
+
+def _resolve_assignment_evidence(
+    claim: AtomicClaimV2,
+    evidence_by_id: dict[str, ModelVisibleEvidenceItem],
+) -> tuple[ModelVisibleEvidenceItem, ...]:
+    try:
+        return tuple(evidence_by_id[item] for item in claim.visible_evidence_ids)
+    except KeyError as exc:
+        raise ClaimPoolCloseoutError(
+            "pool claim cites evidence outside its frozen context"
+        ) from exc
+
+
+def _entry_evidence_reconciles(
+    entry: ClaimSupportCorpusEntry,
+    claim: AtomicClaimV2,
+    assignment: ClaimRelationAssignmentRequest,
+    response: ClaimRelationAssignmentResponse,
+    evidence_by_id: dict[str, ModelVisibleEvidenceItem],
+) -> bool:
+    expected_visible = visible_relations_from_assignment(assignment, response)
+    source_text_matches = all(
+        item.evidence_id in evidence_by_id
+        and evidence_by_id[item.evidence_id].content == item.text
+        for item in entry.visible_evidence
+    )
+    expected_label = classify_visible_support(
+        claim_text=entry.claim_text,
+        claim_type=entry.claim_type,
+        visible_evidence=entry.visible_evidence,
+    )
+    return (
+        entry.visible_evidence == expected_visible
+        and source_text_matches
+        and expected_label == entry.automatic_label
+    )
 
 
 def _label_strata(
