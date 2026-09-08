@@ -41,6 +41,7 @@ from aletheia_lab.evaluation.claim_relation_recovery_execution import (
     finalize_targeted_recovery,
 )
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
+from scripts.claim_support_pool_construction import _load_relation_results
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -331,6 +332,25 @@ def test_recovery_plan_and_reconciled_bundle_reject_tampering(
     altered_binding["bundle_sha256"] = canonical_execution_sha256(altered_identity)
     with pytest.raises(ValidationError, match="reconciled relation result bundle differs"):
         type(reconciled).model_validate(altered_binding)
+
+
+def test_reconciled_bundle_round_trips_through_publication_loader(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    predecessor, preparation = _predecessor()
+    monkeypatch.setattr(recovery, "_verified_predecessor", lambda *_args: predecessor)
+    closeout = build_predecessor_closeout(
+        ROOT, preparation, predecessor_run=tmp_path / "predecessor"
+    )
+    recovered = _parsed_result(closeout.failed_assignment_request_sha256)
+    reconciled = build_reconciled_bundle(predecessor, closeout, recovered)
+    path = tmp_path / "reconciled-results.json"
+    path.write_text(reconciled.model_dump_json(), encoding="utf-8")
+
+    loaded = _load_relation_results(path)
+
+    assert loaded == reconciled
 
 
 def test_finalization_recovers_publication_without_another_provider_call(

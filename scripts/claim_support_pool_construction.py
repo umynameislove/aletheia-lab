@@ -271,14 +271,30 @@ def _recovery_prepare(args: argparse.Namespace, root: Path) -> dict[str, object]
 
 def _load_preparation(path: Path) -> ClaimPoolPreparation | RecoveryClaimPoolPreparation:
     try:
-        payload = json.loads(path.read_bytes())
+        encoded = path.read_bytes()
+        payload = json.loads(encoded)
     except (OSError, ValueError, TypeError) as exc:
         raise ClaimPoolConstructionError("preparation input is invalid") from exc
     if not isinstance(payload, dict):
         raise ClaimPoolConstructionError("preparation input is invalid")
     if payload.get("schema_version") == "claim-pool-recovery-preparation/v1":
-        return RecoveryClaimPoolPreparation.model_validate(payload)
-    return ClaimPoolPreparation.model_validate(payload)
+        return RecoveryClaimPoolPreparation.model_validate_json(encoded)
+    return ClaimPoolPreparation.model_validate_json(encoded)
+
+
+def _load_relation_results(
+    path: Path,
+) -> ClaimRelationResultBundle | ReconciledClaimRelationResultBundle:
+    try:
+        encoded = path.read_bytes()
+        payload = json.loads(encoded)
+    except (OSError, ValueError, TypeError) as exc:
+        raise ClaimPoolConstructionError("relation-result input is invalid") from exc
+    if not isinstance(payload, dict):
+        raise ClaimPoolConstructionError("relation-result input is invalid")
+    if payload.get("schema_version") == "claim-relation-reconciled-result-bundle/v1":
+        return ReconciledClaimRelationResultBundle.model_validate_json(encoded)
+    return ClaimRelationResultBundle.model_validate_json(encoded)
 
 
 def _publish_pool(args: argparse.Namespace, root: Path) -> dict[str, object]:
@@ -288,13 +304,7 @@ def _publish_pool(args: argparse.Namespace, root: Path) -> dict[str, object]:
     pool_store = _outside_repository(root, args.pool_store, label="pool store")
     output = _outside_repository(root, args.output, label="publication closeout")
     preparation = _load_preparation(preparation_path)
-    relation_payload = json.loads(relation_path.read_bytes())
-    if not isinstance(relation_payload, dict):
-        raise ClaimPoolConstructionError("relation-result input is invalid")
-    if relation_payload.get("schema_version") == "claim-relation-reconciled-result-bundle/v1":
-        relation_results = ReconciledClaimRelationResultBundle.model_validate(relation_payload)
-    else:
-        relation_results = ClaimRelationResultBundle.model_validate(relation_payload)
+    relation_results = _load_relation_results(relation_path)
     closeout = publish_claim_pool(
         root,
         preparation=preparation,

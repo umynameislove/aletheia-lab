@@ -39,6 +39,7 @@ from aletheia_lab.model_gateway import (
     RuntimePolicyReference,
 )
 from aletheia_lab.project.identity import content_sha256
+from scripts.claim_support_pool_construction import _load_relation_results
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -187,6 +188,130 @@ def _preparation() -> tuple[ClaimPoolPreparation, ClaimRelationAssignmentRequest
         }
     )
     return preparation, relation
+
+
+def _repeated_output_preparation() -> tuple[
+    ClaimPoolPreparation, tuple[ClaimRelationAssignmentRequest, ...]
+]:
+    census, evidence = _inputs()
+    selected = tuple(
+        request
+        for request in census.primary_requests
+        if request.variant == "B0"
+        and request.family_id == "ccf-data-drift-categorical-contract-shift-80-1"
+        and request.evidence_condition in {"full", "missing_key"}
+    )
+    assert len(selected) == 2
+    common_evidence_id = "ev-performance-summary"
+    normalized = {
+        request.request_sha256: normalize_provider_output(
+            request,
+            _provider_payload(request, common_evidence_id),
+            source_record_sha256="1" * 64,
+        )
+        for request in selected
+    }
+    assert len({output.output_sha256 for output in normalized.values()}) == 1
+
+    selected_by_sha = {request.request_sha256: request for request in selected}
+    records: list[ClaimNormalizationRecord] = []
+    relations: list[ClaimRelationAssignmentRequest] = []
+    for request in census.primary_requests:
+        output = normalized.get(request.request_sha256)
+        if output is None:
+            records.append(
+                _record(
+                    {
+                        "request_sha256": request.request_sha256,
+                        "request_identity_sha256": canonical_execution_sha256(
+                            {"request": request.request_sha256}
+                        ),
+                        "variant": request.variant,
+                        "gateway_status": "provider_failed",
+                        "normalization_status": "technical_failure",
+                        "source_record_sha256": None,
+                        "issue_sha256": "2" * 64,
+                        "normalized_output": None,
+                        "relation_request_sha256s": (),
+                        "blocker_code": "technical_terminal",
+                    }
+                )
+            )
+            continue
+        selected_request = selected_by_sha[request.request_sha256]
+        binding = next(
+            item
+            for item in evidence.bindings
+            if item.family_id == selected_request.family_id
+            and item.evidence_condition == selected_request.evidence_condition
+        )
+        claim = output.atomic_claims[0]
+        relation = build_relation_assignment_request(
+            source_output_sha256=output.output_sha256,
+            claim_local_id=claim.claim_local_id,
+            claim_text=claim.claim_text,
+            claim_type=claim.claim_type,
+            cited_evidence_ids=claim.visible_evidence_ids,
+            evidence_binding=binding,
+        )
+        relations.append(relation)
+        records.append(
+            _record(
+                {
+                    "request_sha256": request.request_sha256,
+                    "request_identity_sha256": canonical_execution_sha256(
+                        {"request": request.request_sha256}
+                    ),
+                    "variant": request.variant,
+                    "gateway_status": "parsed",
+                    "normalization_status": "normalized",
+                    "source_record_sha256": output.source_record_sha256,
+                    "issue_sha256": None,
+                    "normalized_output": output,
+                    "relation_request_sha256s": (relation.assignment_request_sha256,),
+                    "blocker_code": None,
+                }
+            )
+        )
+    policy = load_evidence_semantics_policy(ROOT)
+    payload: dict[str, object] = {
+        "schema_version": "claim-pool-preparation/v1",
+        "source_commit_ref": "3" * 40,
+        "authorization_sha256": "4" * 64,
+        "execution_plan_sha256": "5" * 64,
+        "live_receipt_sha256": "6" * 64,
+        "reconciliation_receipt_sha256": "7" * 64,
+        "reserve_receipt_sha256": "8" * 64,
+        "evidence_census_sha256": evidence.census_sha256,
+        "evidence_semantics_policy_sha256": policy.policy_sha256,
+        "terminal_request_count": 360,
+        "parsed_terminal_count": 2,
+        "technical_failure_terminal_count": 358,
+        "normalized_output_count": 2,
+        "normalization_rejection_count": 0,
+        "completed_output_count": 2,
+        "abstained_output_count": 0,
+        "claim_candidate_count": 2,
+        "relation_request_count": 2,
+        "records": tuple(item.model_dump(mode="json") for item in records),
+        "relation_requests": tuple(item.model_dump(mode="json") for item in relations),
+        "failures_preserved_in_denominator": True,
+        "free_text_recovery_performed": False,
+        "automatic_labels_generated": False,
+        "corpus_entries_materialized": False,
+        "blind_packets_generated": False,
+        "human_annotations_collected": False,
+        "main_or_sealed_outcomes_opened": False,
+    }
+    preparation = ClaimPoolPreparation.model_validate(
+        {
+            **payload,
+            "records": tuple(records),
+            "relation_requests": tuple(relations),
+            "preparation_sha256": canonical_execution_sha256(payload),
+        }
+    )
+    return preparation, tuple(relations)
 
 
 def _parsed_result(
@@ -374,6 +499,8 @@ def test_complete_relation_census_publishes_an_immutable_labeled_pool(
 ) -> None:
     preparation, relation = _preparation()
     bundle = build_relation_result_bundle(preparation, (_parsed_result(relation),))
+    bundle_path = tmp_path / "relation-results.json"
+    bundle_path.write_text(bundle.model_dump_json(), encoding="utf-8")
 
     first = publish_claim_pool(
         ROOT,
@@ -392,9 +519,32 @@ def test_complete_relation_census_publishes_an_immutable_labeled_pool(
     assert first.corpus_entry_count == 1
     assert first.automatically_labeled_claim_count == 1
     assert first.corpus_store_receipt.entry_count == 1
+    assert _load_relation_results(bundle_path) == bundle
     assert not first.blind_packets_generated
     assert not first.human_annotations_collected
     assert not first.main_or_sealed_outcomes_opened
+
+
+def test_publication_preserves_repeated_output_across_frozen_requests(
+    tmp_path: Path,
+) -> None:
+    preparation, relations = _repeated_output_preparation()
+    bundle = build_relation_result_bundle(
+        preparation,
+        tuple(_parsed_result(relation) for relation in relations),
+    )
+
+    closeout = publish_claim_pool(
+        ROOT,
+        preparation=preparation,
+        relation_results=bundle,
+        store_root=tmp_path / "pool",
+    )
+
+    assert closeout.candidate_claim_count == 2
+    assert closeout.automatically_labeled_claim_count == 2
+    assert closeout.corpus_entry_count == 2
+    assert closeout.corpus_store_receipt.entry_count == 2
 
 
 def test_relation_technical_failure_blocks_full_pool_publication(

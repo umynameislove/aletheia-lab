@@ -16,6 +16,7 @@ from aletheia_lab.evaluation.claim_corpus_recovery_closeout import (
     _summaries,
 )
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
+from scripts.claim_support_pool_construction import _load_preparation
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -233,6 +234,16 @@ def test_recovery_preparation_preserves_all_failed_requests_in_denominator() -> 
     assert preparation.technical_failure_terminal_count == 360
     assert preparation.relation_requests == ()
     assert preparation.failures_preserved_in_denominator
+
+
+def test_recovery_preparation_round_trips_through_publication_loader(tmp_path: Path) -> None:
+    preparation = _recovery_preparation()
+    path = tmp_path / "claim-pool-recovery-preparation.json"
+    path.write_text(preparation.model_dump_json(), encoding="utf-8")
+
+    loaded = _load_preparation(path)
+
+    assert loaded == preparation
 
 
 def test_recovery_preparation_rejects_rehashed_duplicate_count_mismatch() -> None:

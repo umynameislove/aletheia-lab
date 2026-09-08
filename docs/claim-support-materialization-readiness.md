@@ -78,14 +78,18 @@ the semantic model is part of the automatic instrument, not a human rater.
 
 The materializer consumes already persisted outputs; it has no model or provider
 dependency. It rejects B3, free text, non-atomic claims, missing evidence
-bindings, unactivated reserves and duplicated source claims.
+bindings, unactivated reserves and duplicated request-local claims. Identical
+output content observed under distinct frozen requests remains separate in the
+pool because its family, evidence condition and relation assignment can differ;
+the later 200-claim sampler still forbids repeated canonical claim text.
 
 The corpus store publishes canonical entry objects, a manifest and a terminal
 receipt through a create-only same-volume staging directory. Identical replay is
 idempotent and non-identical replay is rejected. The independent auditor reads
 persisted bytes directly and does not import or trust the writer. It detects
 missing or corrupt objects, partial publication, untracked files, duplicate
-entries, duplicate source claims, cross-source binding and visibility leakage.
+entries, duplicate request-local claims, cross-source binding and visibility
+leakage.
 
 ## Verification
 

@@ -189,7 +189,7 @@ def _audit_entries(
     findings: list[ClaimCorpusAuditFinding],
 ) -> None:
     identities: set[str] = set()
-    source_claims: set[tuple[str, str]] = set()
+    request_claims: set[tuple[str, str, str]] = set()
     source_outputs: dict[str, str] = {}
     for entry in entries:
         if entry.entry_sha256 in identities:
@@ -197,15 +197,19 @@ def _audit_entries(
                 ClaimCorpusAuditFinding(code="duplicate_entry", subject=entry.entry_sha256)
             )
         identities.add(entry.entry_sha256)
-        source_claim = (entry.source_record_sha256, entry.claim_local_id)
-        if source_claim in source_claims:
+        request_claim = (
+            entry.request_sha256,
+            entry.output_sha256,
+            entry.claim_local_id,
+        )
+        if request_claim in request_claims:
             findings.append(
                 ClaimCorpusAuditFinding(
                     code="duplicate_source_claim",
-                    subject=f"{source_claim[0]}:{source_claim[1]}",
+                    subject=f"{request_claim[0]}:{request_claim[2]}",
                 )
             )
-        source_claims.add(source_claim)
+        request_claims.add(request_claim)
         previous = source_outputs.setdefault(entry.source_record_sha256, entry.output_sha256)
         if previous != entry.output_sha256:
             findings.append(
