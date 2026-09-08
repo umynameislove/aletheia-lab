@@ -402,3 +402,61 @@ and locally rejected semantic responses are reported separately and both stay
 in the denominator. The run does not materialize automatic labels, publish a
 corpus, select the final 200 claims or create human packets; those remain later
 gates and require zero unresolved relation terminals.
+
+The registered run reached 962/962 terminal requests with 961 parsed relation
+responses and one `retry_exhausted` terminal. The sole unresolved request used
+both registered attempts and both attempts ended in transient provider errors;
+there was no semantic-validation failure. Re-executing the original run is
+forbidden. Its receipt, result bundle, terminal-store hash and failed terminal
+remain immutable historical evidence.
+
+## Targeted relation-terminal recovery
+
+The one unresolved transient terminal may be addressed only through the
+separate targeted-recovery boundary. Closeout independently verifies the full
+predecessor store, identifies exactly one eligible failure and binds its two
+transient attempts. Planning then freezes one request, the original GPT-4.1
+snapshot, prompt, visible payload, schema, 600-token output budget, two-attempt
+ceiling and one-second global pacing. The provider cannot see predecessor
+results, mechanism identity, evidence condition, hidden truth, human judgments
+or protected outcomes.
+
+The recovery has its own clean-main authorization, destination and create-only
+lease. Success replaces only the failed relation in a reconciled bundle; all
+961 predecessor successes must remain byte-equivalent and in their original
+order. The original failure remains linked in the closeout and recovery receipt,
+and total provider attempts include both predecessor and recovery histories.
+Failure of the recovery remains terminal and cannot be retried again.
+
+Provider-free preparation is:
+
+```bash
+PYTHONPATH=src python scripts/claim_support_relation_recovery.py closeout \
+  --preparation "$CLAIM_RECOVERY_DIR/claim-pool-recovery-preparation.json" \
+  --predecessor-run "$CLAIM_RELATION_DIR" \
+  --run-dir "$CLAIM_RELATION_RECOVERY_DIR"
+
+PYTHONPATH=src python scripts/claim_support_relation_recovery.py plan \
+  --preparation "$CLAIM_RECOVERY_DIR/claim-pool-recovery-preparation.json" \
+  --predecessor-run "$CLAIM_RELATION_DIR" \
+  --run-dir "$CLAIM_RELATION_RECOVERY_DIR"
+
+PYTHONPATH=src python scripts/claim_support_relation_recovery.py rehearse \
+  --preparation "$CLAIM_RECOVERY_DIR/claim-pool-recovery-preparation.json" \
+  --predecessor-run "$CLAIM_RELATION_DIR" \
+  --run-dir "$CLAIM_RELATION_RECOVERY_DIR"
+```
+
+Authorization must confirm the exact plan and rehearsal hashes printed by those
+commands. `require-live-ready` verifies the credential and frozen OpenAI SDK
+without sending a request. `execute` consumes the lease and can send only the
+single authorized request. `verify` reconstructs the target, terminal store,
+result, reconciled bundle and receipt without provider access. If a process
+stops after the terminal store is complete but before all closeout files are
+published, `finalize` safely reconstructs those files from the terminal store;
+it never invokes the provider and requires the same clean synchronized commit.
+
+A successful recovery is still not a 200-claim sample and not a human packet.
+The reconciled 962-result bundle merely clears the technical prerequisite for
+provider-free full-pool publication and the subsequent frozen feasibility and
+sample-selection audits.

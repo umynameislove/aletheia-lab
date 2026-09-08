@@ -416,7 +416,7 @@ def _reader(store_root: Path, identity: str) -> ClaimCorpusTerminalReader:
     )
 
 
-def _relation_result(item: PreparedRelationRequest, store_root: Path) -> ClaimRelationResult:
+def read_relation_result(item: PreparedRelationRequest, store_root: Path) -> ClaimRelationResult:
     identity = item.request.initial_attempt.request_identity_sha256
     reader = _reader(store_root, identity)
     inventory = reader.terminal_inventory(identity)
@@ -545,7 +545,7 @@ def execute_relation_census(
         shard.record_parsed_or_failed(request, result)
         shard.mark_closeout_pending(request, result)
         shard.publish_terminal(request, result)
-    results = tuple(_relation_result(item, store_root) for item in prepared)
+    results = tuple(read_relation_result(item, store_root) for item in prepared)
     bundle = build_relation_result_bundle(preparation, results)
     inventories = store.terminal_inventories(shards)
     counts: dict[str, int] = {
@@ -653,6 +653,15 @@ def _require_complete_relation_store(
         raise ClaimRelationExecutionError("relation attempt store is incomplete or unsafe") from exc
 
 
+def require_complete_relation_store(
+    store_root: Path,
+    prepared: tuple[PreparedRelationRequest, ...],
+) -> None:
+    """Verify exact immutable store membership for the supplied request census."""
+
+    _require_complete_relation_store(store_root, prepared)
+
+
 def verify_relation_execution(
     root: Path,
     preparation: RecoveryClaimPoolPreparation,
@@ -709,7 +718,7 @@ def verify_relation_execution(
     _require_complete_relation_store(store_root, prepared)
     store = ClaimCorpusAttemptStore(store_root, clock=SystemMonotonicClock())
     shards = store.shards(prepared)  # type: ignore[arg-type]
-    results = tuple(_relation_result(item, run_dir / "attempt-store") for item in prepared)
+    results = tuple(read_relation_result(item, run_dir / "attempt-store") for item in prepared)
     bundle = build_relation_result_bundle(preparation, results)
     inventories = store.terminal_inventories(shards)
     counts: dict[str, int] = {
@@ -756,6 +765,8 @@ __all__ = [
     "load_recovery_preparation",
     "load_relation_authorization",
     "publish_relation_result",
+    "read_relation_result",
     "rehearse_relation_execution",
+    "require_complete_relation_store",
     "verify_relation_execution",
 ]

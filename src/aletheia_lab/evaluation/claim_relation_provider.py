@@ -6,6 +6,7 @@ import threading
 import time
 from collections.abc import Callable
 from pathlib import Path
+from typing import Protocol
 
 from aletheia_lab.evaluation.claim_corpus_construction_contracts import (
     RecoveryClaimPoolPreparation,
@@ -19,7 +20,6 @@ from aletheia_lab.evaluation.claim_evidence_semantics import (
 from aletheia_lab.evaluation.claim_relation_execution_contracts import (
     EXPECTED_RELATION_REQUEST_COUNT,
     MINIMUM_PROVIDER_INTERVAL_MS,
-    ClaimRelationExecutionAuthorization,
     ClaimRelationExecutionError,
     ClaimRelationExecutionPlan,
     RelationRequestAuthority,
@@ -43,6 +43,13 @@ from aletheia_lab.model_gateway import (
     prepare_gateway_request,
 )
 from aletheia_lab.project.identity import canonical_project_json, content_sha256
+
+
+class RelationAuthorizationBinding(Protocol):
+    """Minimum authority fields embedded in provider-neutral request identity."""
+
+    authorization_ref: str
+    authorized_at: str
 
 
 class PreparedRelationRequest:
@@ -79,7 +86,7 @@ def build_relation_gateway_requests(
     root: Path,
     preparation: RecoveryClaimPoolPreparation,
     plan: ClaimRelationExecutionPlan,
-    authorization: ClaimRelationExecutionAuthorization,
+    authorization: RelationAuthorizationBinding,
 ) -> tuple[PreparedRelationRequest, ...]:
     policy = load_evidence_semantics_policy(root)
     gateway_policy = _provider_policy(root, policy)
@@ -218,5 +225,6 @@ class PacedProviderAdapter:
 __all__ = [
     "PacedProviderAdapter",
     "PreparedRelationRequest",
+    "RelationAuthorizationBinding",
     "build_relation_gateway_requests",
 ]
