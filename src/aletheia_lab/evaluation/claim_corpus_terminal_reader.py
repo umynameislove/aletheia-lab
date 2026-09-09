@@ -16,6 +16,7 @@ from aletheia_lab.evaluation.execution_contracts import (
     TechnicalIssue,
     canonical_execution_sha256,
 )
+from aletheia_lab.model_gateway.contracts import AttemptRecord
 
 
 class ClaimCorpusTerminalReader(AttemptStoreIntegrityVerifier):
@@ -78,6 +79,34 @@ class ClaimCorpusTerminalReader(AttemptStoreIntegrityVerifier):
             raise AttemptStoreIntegrityError(
                 "corrupt_artifact", "terminal technical issue is invalid"
             ) from exc
+
+    def terminal_attempt_records(self, request_hash: str) -> tuple[AttemptRecord, ...]:
+        """Return verified attempt records in their immutable ledger order."""
+
+        inventory = self._terminal_inventory(request_hash)
+        try:
+            records = tuple(
+                AttemptRecord.model_validate_json(self._read_object(digest))
+                for digest in inventory.attempt_record_sha256
+            )
+        except ValidationError as exc:
+            raise AttemptStoreIntegrityError(
+                "corrupt_artifact", "terminal attempt record is invalid"
+            ) from exc
+        if (
+            tuple(record.outcome for record in records) != inventory.attempt_outcomes
+            or tuple(record.response_mode for record in records)
+            != inventory.attempt_response_modes
+            or any(
+                record.attempt.request_identity_sha256 != request_hash
+                or record.attempt.attempt_ordinal != ordinal
+                for ordinal, record in enumerate(records, start=1)
+            )
+        ):
+            raise AttemptStoreIntegrityError(
+                "integrity_error", "terminal attempt records differ from inventory"
+            )
+        return records
 
 
 __all__ = ["ClaimCorpusTerminalReader"]

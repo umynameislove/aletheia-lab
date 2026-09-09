@@ -142,27 +142,15 @@ hash-bound version 2 workflow provide unambiguous synthetic qualification,
 private packet delivery and fail-closed completed-packet validation for two
 independent human raters. The original guide, workflow and fixture remain
 byte-frozen historical inputs and cannot be mixed with version 2 packets.
-The registered development execution is terminal-complete on source commit
+The original development execution is terminal-complete on source commit
 `ef2f31a`: all 360 authorized requests have terminal records, with 258 parsed
-responses and 102 provider failures. No automatic label, claim-corpus entry,
-human validation judgment, main outcome or sealed outcome has been materialized.
-Provider failures remain in the denominator; independent reconciliation and
-reserve audit now reconcile all 360 authority files, immutable request shards,
-attempts and terminal records. Because every primary request started, the 102
-post-start provider failures do not qualify for reserve replacement and zero
-reserve requests were activated. The attempt must not be rerun or repaired
-manually. A fail-closed construction boundary is available for independently
-verified normalization, schema-native claim extraction, blind relation binding
-and content-addressed full-pool publication. Preparation has been applied to
-the real terminal outputs; relation assignment and the corpus-feasibility
-audit have not been completed and no claim corpus is frozen.
-The observed preparation produced only 152 candidates because 209 parsed
-responses were incompatible with the original downstream schema. The first
-attempt remains retired and denominator-complete. A separate
+responses and 102 provider failures. The attempt remains immutable and was not
+silently repaired. Its observed preparation produced only 152 candidates
+because 209 parsed responses were incompatible with the original downstream
+schema. A separate
 [normalization-recovery contract](docs/claim-support-normalization-recovery.md)
 prospectively replaces provider-authored structural IDs with deterministic IDs,
-binds citations to each visible context and enforces downstream array bounds;
-it is frozen but not yet authorized or executed.
+binds citations to each visible context and enforces downstream array bounds.
 The corresponding recovery executor uses an isolated three-schema synthetic
 compatibility gate, phase-specific one-use authority, lease and store, and
 independent terminal normalization audit. The first compatibility attempt is
@@ -194,7 +182,15 @@ terminals.
 The provider-free full-pool boundary adds a clean-main publication gate and an
 independent feasibility closeout that replays complete provenance, preserves
 diagnosis missingness, and evaluates the frozen 50-per-label selector without
-materializing a sample or human packet.
+materializing a sample or human packet. That closeout is now terminal: the 962
+entries contain 842 `fully_supported`, 112 `partially_supported`, six
+`unsupported`, and two `contradicted` instances. The latter two strata cannot
+supply the frozen 50-per-label sample, so V1 closes as insufficient and no blind
+packet is created. The [prospective V2 protocol](docs/claim-support-validation-v2-protocol.md)
+binds the V1 failure audit, prohibits pooling or relabeling V1, changes the
+execution schedule to a balanced interleave, requires safe provider-failure
+subtypes plus paced bounded backoff, and pre-registers authentic evidence
+challenge frames for rare-label coverage. It authorizes no provider call.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation
@@ -482,6 +478,7 @@ documentation, and reproducible artifacts.
 - [Downstream mechanism disposition policy](docs/p2-downstream-disposition-policy-v2.md)
 - [Public claim and evidence governance](docs/claim-evidence-governance.md)
 - [Claim-support instrument validation protocol](docs/claim-support-instrument-validation.md)
+- [Claim-support V1 failure audit and prospective V2 protocol](docs/claim-support-validation-v2-protocol.md)
 - [Related work and research positioning](docs/related-work.md)
 - [Architecture decisions](docs/adr/)
 
