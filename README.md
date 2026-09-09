@@ -207,6 +207,12 @@ logic. Effective offline capacity is 360 natural cells, 240 withdrawal cells,
 240 partial-projection cells and 360 direct-counterevidence cells across all 15
 families. No API call, scientific claim, relation label or human packet was
 created; the next gate is a separately authorized seven-request qualification.
+That qualification is now implemented as a synthetic-only, one-use execution
+boundary with exact cost accounting, immutable per-request terminals and an
+independent receipt rebuild. Offline rehearsal proves that exact witnesses pass
+while changed values, unavailable evidence and abstention fail the qualification.
+No live qualification outcome exists yet; 7/7 parsed and locally accepted
+responses are required before the 360-request V2 cohort can be planned.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation
@@ -495,6 +501,7 @@ documentation, and reproducible artifacts.
 - [Public claim and evidence governance](docs/claim-evidence-governance.md)
 - [Claim-support instrument validation protocol](docs/claim-support-instrument-validation.md)
 - [Claim-support V1 failure audit and prospective V2 protocol](docs/claim-support-validation-v2-protocol.md)
+- [Claim-support V2 seven-request qualification](docs/claim-support-validation-v2-qualification.md)
 - [Related work and research positioning](docs/related-work.md)
 - [Architecture decisions](docs/adr/)
 
