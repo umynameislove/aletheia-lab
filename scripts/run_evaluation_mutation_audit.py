@@ -206,6 +206,45 @@ _MUTATIONS: Final = (
             "test_records_preserve_tool_ledgers_and_development_boundary"
         ),
     ),
+    _Mutation(
+        name="v2_uncategorized_retry_guard_removed",
+        source="aletheia_lab/model_gateway/runtime.py",
+        replacements=((
+            "                or (\n"
+            "                    retry_controller is not None\n"
+            "                    and exc.retryable\n"
+            "                    and exc.provider_failure_category is None\n"
+            "                )\n",
+            "",
+        ),),
+        target=(
+            "tests/unit/test_model_gateway_runtime.py::"
+            "test_v2_does_not_retry_uncategorized_legacy_transient_error"
+        ),
+    ),
+    _Mutation(
+        name="v2_global_pacing_wait_removed",
+        source="aletheia_lab/model_gateway/validation_v2.py",
+        replacements=(("                    self._sleep(remaining)\n",
+                       "                    self._sleep(0)\n"),),
+        target=(
+            "tests/unit/test_model_gateway_runtime.py::"
+            "test_pacing_applies_to_every_attempt_including_retries"
+        ),
+    ),
+    _Mutation(
+        name="v2_claim_scope_guard_removed",
+        source="aletheia_lab/evaluation/claim_validation_v2_frames.py",
+        replacements=((
+            "    if claim.claim_text != \"; \".join(part.text for part in claim.material_parts):\n"
+            "        return ()\n",
+            "",
+        ),),
+        target=(
+            "tests/unit/test_claim_validation_v2_runtime.py::"
+            "test_free_prose_does_not_become_an_asserted_quantitative_conflict"
+        ),
+    ),
 )
 
 

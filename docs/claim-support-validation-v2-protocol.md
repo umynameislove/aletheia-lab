@@ -192,11 +192,67 @@ access:
 PYTHONPATH=src python scripts/claim_support_validation_v2.py verify
 ```
 
-The expected status is
-`claim_support_validation_v2_protocol_frozen_implementation_pending`. The next
-separate change is the V2 runtime and authentic source-frame implementation. It
-must pass offline mutation, leakage, scheduling, retry and reproducibility tests
-before any small live qualification can be authorized.
+That historical protocol receipt retains the status
+`claim_support_validation_v2_protocol_frozen_implementation_pending`; it is not
+rewritten to represent later implementation progress. The separate offline
+runtime artifacts are reproduced with:
+
+```bash
+PYTHONPATH=src python scripts/claim_support_validation_v2_runtime.py verify
+```
+
+The runtime census binds 15 rounds of 24 unique diagnosis cells. Each round
+contains eight cells per mechanism, eight per evidence condition and three per
+variant; each family appears once or twice per round. The seven qualification
+projections bind synthetic context, prompt, exact response schema, snapshot and
+2,048-token ceiling. They contain no scientific evidence and are not executable
+authorizations. The CLI intentionally exposes only offline materialization and
+verification, not a provider execution command.
+
+The V2 adapter retains the registered recovery wire-schema projection and adds
+allowlisted failure categories. A single paced adapter instance must be shared
+by the cohort: starts are serialized with a monotonic one-second interval,
+including retries. The gateway's explicit V2 retry controller applies the
+five-second initial delay and bounded Retry-After. Its absence preserves legacy
+runtime behavior and legacy serialized records omit the new optional fields.
+The prospective feasibility plan's current adapter-file checksum is refreshed
+for the additive translation hook; historical run stores and receipts are not
+rewritten.
+
+### Structural frame eligibility is not a label guarantee
+
+The source inventory resolves only authenticated items from the 45 development
+contexts. A withdrawal removes the key-measurement item. A partial projection
+retains one prospectively selected item. Counterevidence candidates come from a
+different development family of the same mechanism and condition, with a
+different value at the same JSON measurement path, evidence ID, title and kind.
+Different hashes or incidental numbers do not establish conflict.
+
+Actual challenge eligibility is stricter than source capacity. Every material
+part must be an explicit numeric equality such as `observed.macro_f1 = 0.7`,
+and the claim text must be exactly those parts joined by `; `. All parts must
+be witnessed in the cited original evidence. This conservative implementation
+does not infer or erase a subject, qualifier or causal assertion from prose.
+Arbitrary prose remains eligible for its natural context but not automatically
+for a challenge. Withdrawal must remove a witnessed part while retaining cited
+evidence; a partial projection must cover a nonempty proper subset. Conflicting
+measurements are candidate design evidence, never assigned ground truth.
+
+Consequently, the inventory's family/cell counts are **structural capacity**,
+not a forecast that generated claims will satisfy this restricted witness rule,
+nor that 50 claims per label will exist. No output prompt is silently rewritten
+to force this grammar or a desired label. Ineligibility is recorded before any
+relation result, and no post-outcome replacement is allowed. Before any live
+qualification or full-cohort authorization, the operator must review this
+expressiveness limitation against the registered challenge-population objective.
+An amendment, if necessary, must precede new scientific outcomes rather than
+follow a failed label quota.
+
+The technical-admission reducer consumes independently audited terminal and
+parsed request IDs, keeps all 360 scheduled requests in its denominators, and
+checks the registered global and stratum thresholds. It does not authenticate a
+store, establish exchangeable missingness, or authorize sample selection. Those
+remain separate evidence and execution boundaries.
 
 The private V1 aggregate can be reproduced by additionally supplying the
 immutable recovery closeout, pool feasibility closeout and diagnosis store to

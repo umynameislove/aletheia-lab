@@ -69,6 +69,8 @@ def test_evaluation_profile_has_required_boundaries_without_deselection() -> Non
         "tests/unit/test_claim_corpus_recovery_closeout.py",
         "tests/unit/test_claim_relation_recovery.py",
         "tests/unit/test_claim_support_validation_v2.py",
+        "tests/unit/test_claim_validation_v2_runtime.py",
+        "tests/integration/test_claim_validation_v2_runtime_local.py",
         "tests/integration/test_claim_support_normalization_recovery_local.py",
         "tests/integration/test_claim_support_validation_v2_local.py",
         "tests/integration/test_claim_support_corpus_execution_local.py",
