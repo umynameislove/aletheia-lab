@@ -191,6 +191,12 @@ binds the V1 failure audit, prohibits pooling or relabeling V1, changes the
 execution schedule to a balanced interleave, requires safe provider-failure
 subtypes plus paced bounded backoff, and pre-registers authentic evidence
 challenge frames for rare-label coverage. It authorizes no provider call.
+The separate V2 runtime freeze now materializes all 360 new request identities
+in 15 balanced rounds, binds authentic structural source-frame capacity, and
+freezes seven synthetic qualification projections. Its provider adapter adds
+one-second global pacing, bounded Retry-After-aware backoff and public-safe
+failure categories. This remains offline readiness: it has not run the seven
+qualification calls, generated claims, or created human packets.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation

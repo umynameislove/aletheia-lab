@@ -298,8 +298,15 @@ class OpenAIChatCompletionsGatewayAdapter:
         try:
             response = self._client.chat.completions.create(**payload)
         except Exception as exc:
-            raise _translated_provider_error(checked, exc) from exc
+            raise self._translate_provider_error(checked, exc) from exc
         return self._response_envelope(checked, response)
+
+    def _translate_provider_error(
+        self, call: ProviderCall, error: Exception
+    ) -> AdapterInvocationError:
+        """Keep the V1 translation stable; versioned adapters may add safe metadata."""
+
+        return _translated_provider_error(call, error)
 
     def _prepare_payload(
         self, call: ProviderCall, payload: dict[str, object]

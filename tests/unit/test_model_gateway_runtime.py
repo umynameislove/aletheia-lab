@@ -30,12 +30,14 @@ from aletheia_lab.model_gateway import (
     GatewayContractError,
     GatewayExecutionResult,
     GatewayRequest,
+    GloballyPacedProviderAdapter,
     ProviderAdapter,
     ProviderBinding,
     ProviderCall,
     ProviderEnvelope,
     RuntimePolicyReference,
     UsageMetadata,
+    V2RetryController,
     execute_gateway_request,
     prepare_gateway_request,
 )
@@ -645,6 +647,116 @@ class _UnsafeTypedErrorAdapter:
             retryable=False,
             provider_attempt_ref="SYNTHETIC_SECRET",
         )
+
+
+@dataclass
+class _V2TransientAdapter:
+    binding: ProviderBinding
+    category: Literal["rate_limited"] | None = "rate_limited"
+
+    def invoke(self, call: ProviderCall) -> ProviderEnvelope:
+        raise AdapterInvocationError(
+            code="transient_provider_error", retryable=True,
+            provider_attempt_ref=_opaque("f"),
+            provider_failure_category=self.category,
+            retry_after_ms=12000 if self.category is not None else None,
+        )
+
+
+def test_v2_backoff_and_safe_category_survive_terminal_retry_exhaustion() -> None:
+    request = _request(max_attempts=2)
+    delays: list[float] = []
+    result = execute_gateway_request(
+        request,
+        adapter=_V2TransientAdapter(ProviderBinding.from_model_policy(request.initial_attempt.model_policy)),
+        clock=_Clock(), cancellation=_Cancellation(),
+        retry_controller=V2RetryController(sleep=delays.append),
+    )
+    assert result.status == "retry_exhausted"
+    assert delays == [12.0]
+    assert len(result.attempts) == 2
+    assert all(item.provider_failure_category == "rate_limited" for item in result.attempts)
+    assert all(item.retry_after_ms == 12000 for item in result.attempts)
+
+
+def test_v2_does_not_retry_uncategorized_legacy_transient_error() -> None:
+    request = _request(max_attempts=2)
+    delays: list[float] = []
+    result = execute_gateway_request(
+        request,
+        adapter=_V2TransientAdapter(ProviderBinding.from_model_policy(request.initial_attempt.model_policy), None),
+        clock=_Clock(), cancellation=_Cancellation(),
+        retry_controller=V2RetryController(sleep=delays.append),
+    )
+    assert result.status == "provider_failed"
+    assert delays == []
+    assert len(result.attempts) == 1
+
+
+@pytest.mark.parametrize(
+    ("step", "gateway_request", "clock_step", "status", "category"),
+    [
+        (_response("response_mutation"), _request(), 1, "identity_rejected", "invalid_envelope"),
+        (
+            _response("valid_response"),
+            _request(timeout_ns=1_000_000_000),
+            1_000_000_001,
+            "timed_out",
+            "timeout",
+        ),
+        (
+            _response("oversized_response", b'{"value":"too-large"}'),
+            _request(max_response_bytes=8),
+            1,
+            "oversized_response",
+            "invalid_envelope",
+        ),
+        (
+            _response("malformed_response", b"not-json"),
+            _request(),
+            1,
+            "parse_failed",
+            "invalid_envelope",
+        ),
+    ],
+)
+def test_v2_runtime_boundary_failures_receive_accurate_safe_categories(
+    step: FakeStep,
+    gateway_request: GatewayRequest,
+    clock_step: int,
+    status: str,
+    category: str,
+) -> None:
+    result = execute_gateway_request(
+        gateway_request,
+        adapter=_adapter(gateway_request, (step,)),
+        clock=_Clock(clock_step),
+        cancellation=_Cancellation(),
+        retry_controller=V2RetryController(sleep=lambda _: None),
+    )
+    assert result.status == status
+    assert result.attempts[0].provider_failure_category == category
+
+
+def test_pacing_applies_to_every_attempt_including_retries() -> None:
+    request = _request(max_attempts=2)
+    now = [0.0]
+    sleeps: list[float] = []
+
+    def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+        now[0] += seconds
+
+    adapter = GloballyPacedProviderAdapter(
+        _V2TransientAdapter(ProviderBinding.from_model_policy(request.initial_attempt.model_policy)),
+        minimum_interval_ms=1000, monotonic=lambda: now[0], sleep=sleep,
+    )
+    result = execute_gateway_request(
+        request, adapter=adapter, clock=_Clock(), cancellation=_Cancellation(),
+        retry_controller=V2RetryController(sleep=lambda _: None),
+    )
+    assert result.status == "retry_exhausted"
+    assert sleeps == [1.0]
 
 
 def test_invalid_typed_provider_metadata_is_not_persisted() -> None:
