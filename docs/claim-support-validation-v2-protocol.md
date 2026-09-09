@@ -248,6 +248,16 @@ expressiveness limitation against the registered challenge-population objective.
 An amendment, if necessary, must precede new scientific outcomes rather than
 follow a failed label quota.
 
+That prospective review is now complete in the separately versioned
+[`claim-support-validation-v2-expressiveness.md`](claim-support-validation-v2-expressiveness.md).
+The parent protocol and runtime artifacts above remain historical and unchanged.
+The amendment was derived from visible development evidence structure only; it
+did not read V1 relation outcomes or label frequencies. It requires a first,
+exact measurement-witness claim while preserving abstention and permitting
+subsequent variant-specific diagnosis claims. Its replacement synthetic probes
+must be used by the seven-request qualification. This review does not itself
+authorize that paid run or guarantee the final four label quotas.
+
 The technical-admission reducer consumes independently audited terminal and
 parsed request IDs, keeps all 360 scheduled requests in its denominators, and
 checks the registered global and stratum thresholds. It does not authenticate a

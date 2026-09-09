@@ -168,7 +168,8 @@ order is:
 1. verify and merge the separate prospective V2 protocol without provider calls;
 2. implement and adversarially test its interleaved runtime, safe failure
    taxonomy and authentic development evidence frames;
-3. pass the separately authorized seven-request provider qualification;
+3. freeze the outcome-blind source-claim expressiveness amendment and then pass
+   its separately authorized seven-request provider qualification;
 4. freeze exact costs and authorize the new V2 diagnosis and relation cohorts;
 5. publish a V2 pool and require exact balanced feasibility before generating
    any real onboarding or 200-claim blind packet;
@@ -183,6 +184,8 @@ Its zero-outcome implementation closeout is documented in
 [`claim-support-materialization-readiness.md`](claim-support-materialization-readiness.md).
 The V1 disposition and new prospective boundary are documented in
 [`claim-support-validation-v2-protocol.md`](claim-support-validation-v2-protocol.md).
+The completed prospective expressiveness review is documented in
+[`claim-support-validation-v2-expressiveness.md`](claim-support-validation-v2-expressiveness.md).
 Internal scheduling and personnel assignments remain outside the repository.
 Their completion cannot replace any machine-readable readiness or scientific
 gate described here.

@@ -197,6 +197,16 @@ freezes seven synthetic qualification projections. Its provider adapter adds
 one-second global pacing, bounded Retry-After-aware backoff and public-safe
 failure categories. This remains offline readiness: it has not run the seven
 qualification calls, generated claims, or created human packets.
+The subsequent
+[source-claim expressiveness amendment](docs/claim-support-validation-v2-expressiveness.md)
+closes the runtime's prospective review gate without changing that historical
+freeze in place. It binds one exact cited measurement witness before optional
+variant-specific diagnosis prose, replaces the ambiguous synthetic probes, and
+replays all 45 authentic contexts through the production challenge-witness
+logic. Effective offline capacity is 360 natural cells, 240 withdrawal cells,
+240 partial-projection cells and 360 direct-counterevidence cells across all 15
+families. No API call, scientific claim, relation label or human packet was
+created; the next gate is a separately authorized seven-request qualification.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation
