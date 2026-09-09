@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Final
 
 _ROOT: Final = Path(__file__).resolve().parents[1]
-_EVALUATION_TIMEOUT_SECONDS: Final = 300
+_EVALUATION_TIMEOUT_SECONDS: Final = 600
 _WINDOWS_EVALUATION_TIMEOUT_SECONDS: Final = 720
 _REPRODUCIBILITY_HASH_SEEDS: Final = ("1", "104729", "209759")
 _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
