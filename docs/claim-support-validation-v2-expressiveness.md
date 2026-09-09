@@ -87,8 +87,9 @@ The tracked amendment SHA-256 is recorded in
 `configs/evaluation/claim_support_validation_v2_expressiveness_amendment.json`;
 the 45-context receipt is recorded in
 `configs/evaluation/claim_support_validation_v2_expressiveness_review.json`.
-Neither file is a live authorization. The next allowed action is to implement
-and separately authorize the seven-request V2 qualification. Only 7/7 parsed
-and locally accepted responses may open exact planning for the new 360-request
-cohort. Label balance and final 200-claim feasibility remain unknown until their
-registered downstream gates.
+Neither file is a live authorization. The separately implemented qualification
+boundary is documented in
+[`claim-support-validation-v2-qualification.md`](claim-support-validation-v2-qualification.md).
+Only 7/7 parsed and locally accepted responses may open exact planning for the
+new 360-request cohort. Label balance and final 200-claim feasibility remain
+unknown until their registered downstream gates.

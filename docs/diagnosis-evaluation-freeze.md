@@ -186,6 +186,9 @@ The V1 disposition and new prospective boundary are documented in
 [`claim-support-validation-v2-protocol.md`](claim-support-validation-v2-protocol.md).
 The completed prospective expressiveness review is documented in
 [`claim-support-validation-v2-expressiveness.md`](claim-support-validation-v2-expressiveness.md).
+Its one-use seven-request execution and independent verification boundary are
+documented in
+[`claim-support-validation-v2-qualification.md`](claim-support-validation-v2-qualification.md).
 Internal scheduling and personnel assignments remain outside the repository.
 Their completion cannot replace any machine-readable readiness or scientific
 gate described here.
