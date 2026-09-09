@@ -245,6 +245,18 @@ _MUTATIONS: Final = (
             "test_free_prose_does_not_become_an_asserted_quantitative_conflict"
         ),
     ),
+    _Mutation(
+        name="v2_qualification_witness_acceptance_bypassed",
+        source="aletheia_lab/evaluation/claim_validation_v2_qualification.py",
+        replacements=((
+            "    return bool(selected and selected[0] == build_measurement_witness_claim(probe.context))\n",
+            "    return True\n",
+        ),),
+        target=(
+            "tests/unit/test_claim_validation_v2_qualification.py::"
+            "test_schema_valid_but_changed_witness_fails_the_entire_gate"
+        ),
+    ),
 )
 
 
