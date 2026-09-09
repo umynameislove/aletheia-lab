@@ -38,8 +38,10 @@ from aletheia_lab.model_gateway.contracts import (
     ProviderBinding,
     ProviderCall,
     ProviderEnvelope,
+    ProviderFailureCategory,
     ProviderFailureDiagnostics,
     RawResponseArtifact,
+    RetryController,
     RuntimePolicyReference,
     TerminalStatus,
     UsageMetadata,
@@ -129,6 +131,7 @@ def execute_gateway_request(
     adapter: ProviderAdapter,
     clock: Clock,
     cancellation: CancellationProbe,
+    retry_controller: RetryController | None = None,
 ) -> GatewayExecutionResult:
     """Execute within explicit bounds without fallback or scientific interpretation."""
 
@@ -190,8 +193,24 @@ def execute_gateway_request(
             )
             exhausted = ordinal == checked.runtime_policy.max_attempts and ordinal > 1
             issue = _issue(attempt, "retry_exhausted" if exhausted else "provider_timeout")
-            records.append(_record(attempt, "timeout", timing, issue=issue))
+            records.append(
+                _record(
+                    attempt,
+                    "timeout",
+                    timing,
+                    issue=issue,
+                    provider_failure_category=(
+                        "timeout" if retry_controller is not None else None
+                    ),
+                )
+            )
             if ordinal < checked.runtime_policy.max_attempts:
+                _wait_before_retry(
+                    retry_controller,
+                    completed_attempt_ordinal=ordinal,
+                    provider_failure_category="timeout",
+                    retry_after_ms=None,
+                )
                 continue
             terminal_status: TerminalStatus = (
                 "retry_exhausted" if exhausted else "timed_out"
@@ -228,6 +247,11 @@ def execute_gateway_request(
             if (
                 not isinstance(exc.provider_attempt_ref, str)
                 or _OPAQUE_REFERENCE.fullmatch(exc.provider_attempt_ref) is None
+                or (
+                    retry_controller is not None
+                    and exc.retryable
+                    and exc.provider_failure_category is None
+                )
             ):
                 issue = _issue(attempt, "invalid_provider_error_metadata")
                 records.append(_record(attempt, "permanent_error", timing, issue=issue))
@@ -242,9 +266,22 @@ def execute_gateway_request(
                     provider_attempt_ref=exc.provider_attempt_ref,
                     issue=issue,
                     failure_diagnostics=exc.diagnostics,
+                    provider_failure_category=exc.provider_failure_category,
+                    retry_after_ms=exc.retry_after_ms,
                 )
             )
             if status is None:
+                category = exc.provider_failure_category
+                if category is None:
+                    # Legacy adapters deliberately retain their immediate-retry
+                    # behavior when no versioned retry controller is supplied.
+                    continue
+                _wait_before_retry(
+                    retry_controller,
+                    completed_attempt_ordinal=ordinal,
+                    provider_failure_category=category,
+                    retry_after_ms=exc.retry_after_ms,
+                )
                 continue
             return _result(checked, status, tuple(records), issue=issue)
         except Exception:
@@ -267,9 +304,16 @@ def execute_gateway_request(
             timing=timing,
             records=records,
             cancellation=cancellation,
+            persist_safe_failure_category=retry_controller is not None,
         )
         if terminal is not None:
             return terminal
+        _wait_before_retry(
+            retry_controller,
+            completed_attempt_ordinal=ordinal,
+            provider_failure_category="timeout",
+            retry_after_ms=None,
+        )
 
     raise AssertionError("bounded gateway loop ended without a terminal result")
 
@@ -328,6 +372,7 @@ def _validate_response_boundary(
     timing: AttemptTiming,
     records: list[AttemptRecord],
     cancellation: CancellationProbe,
+    persist_safe_failure_category: bool,
 ) -> GatewayExecutionResult | None:
     expected_binding = ProviderBinding.from_model_policy(attempt.model_policy)
     if (
@@ -342,6 +387,9 @@ def _validate_response_boundary(
                 timing,
                 provider_attempt_ref=envelope.provider_attempt_ref,
                 issue=issue,
+                provider_failure_category=(
+                    "invalid_envelope" if persist_safe_failure_category else None
+                ),
             )
         )
         return _result(checked, "identity_rejected", tuple(records), issue=issue)
@@ -358,6 +406,9 @@ def _validate_response_boundary(
                 timing,
                 provider_attempt_ref=envelope.provider_attempt_ref,
                 issue=issue,
+                provider_failure_category=(
+                    "timeout" if persist_safe_failure_category else None
+                ),
             )
         )
         if attempt.attempt_ordinal < checked.runtime_policy.max_attempts:
@@ -390,6 +441,9 @@ def _validate_response_boundary(
                 response_mode=envelope.response_mode,
                 usage=envelope.usage,
                 issue=issue,
+                provider_failure_category=(
+                    "invalid_envelope" if persist_safe_failure_category else None
+                ),
             )
         )
         return _result(
@@ -412,6 +466,9 @@ def _validate_response_boundary(
                 response_mode=envelope.response_mode,
                 usage=envelope.usage,
                 issue=issue,
+                provider_failure_category=(
+                    "invalid_envelope" if persist_safe_failure_category else None
+                ),
             )
         )
         return _result(
@@ -548,6 +605,8 @@ def _record(
     usage: UsageMetadata | None = None,
     issue: TechnicalIssue | None = None,
     failure_diagnostics: ProviderFailureDiagnostics | None = None,
+    provider_failure_category: ProviderFailureCategory | None = None,
+    retry_after_ms: int | None = None,
 ) -> AttemptRecord:
     return AttemptRecord(
         attempt=attempt,
@@ -558,6 +617,24 @@ def _record(
         usage=usage,
         issue=issue,
         failure_diagnostics=failure_diagnostics,
+        provider_failure_category=provider_failure_category,
+        retry_after_ms=retry_after_ms,
+    )
+
+
+def _wait_before_retry(
+    controller: RetryController | None,
+    *,
+    completed_attempt_ordinal: int,
+    provider_failure_category: ProviderFailureCategory,
+    retry_after_ms: int | None,
+) -> None:
+    if controller is None:
+        return
+    controller.wait_before_retry(
+        completed_attempt_ordinal=completed_attempt_ordinal,
+        provider_failure_category=provider_failure_category,
+        retry_after_ms=retry_after_ms,
     )
 
 

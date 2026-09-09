@@ -15,7 +15,9 @@ from aletheia_lab.model_gateway.contracts import (
     ProviderBinding,
     ProviderCall,
     ProviderEnvelope,
+    ProviderFailureCategory,
     RawResponseArtifact,
+    RetryController,
     RuntimePolicyReference,
     UsageMetadata,
 )
@@ -37,6 +39,11 @@ from aletheia_lab.model_gateway.runtime import (
     validate_response_payload,
     validate_response_schema,
 )
+from aletheia_lab.model_gateway.validation_v2 import (
+    GloballyPacedProviderAdapter,
+    OpenAIValidationV2Adapter,
+    V2RetryController,
+)
 
 __all__ = [
     "AdapterInvocationError",
@@ -51,19 +58,24 @@ __all__ = [
     "GatewayContractError",
     "GatewayExecutionResult",
     "GatewayRequest",
+    "GloballyPacedProviderAdapter",
     "OPENAI_API_BASE_URL",
     "OPENAI_GATEWAY_ADAPTER_VERSION",
     "OpenAIChatCompletionsGatewayAdapter",
     "OpenAIGatewayConfigurationError",
     "OpenAIGatewayPolicy",
+    "OpenAIValidationV2Adapter",
     "ParsedResponseArtifact",
     "ProviderAdapter",
     "ProviderBinding",
     "ProviderCall",
     "ProviderEnvelope",
+    "ProviderFailureCategory",
     "RawResponseArtifact",
     "RuntimePolicyReference",
+    "RetryController",
     "UsageMetadata",
+    "V2RetryController",
     "execute_gateway_request",
     "prepare_gateway_request",
     "validate_response_payload",

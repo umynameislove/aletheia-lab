@@ -25,6 +25,7 @@ from aletheia_lab.model_gateway import (
     OpenAIChatCompletionsGatewayAdapter,
     OpenAIGatewayConfigurationError,
     OpenAIGatewayPolicy,
+    OpenAIValidationV2Adapter,
     ProviderBinding,
     ProviderCall,
     RuntimePolicyReference,
@@ -35,6 +36,31 @@ from aletheia_lab.project.identity import canonical_project_json, content_sha256
 
 ROOT = Path(__file__).resolve().parents[2]
 FAIRNESS_FREEZE = ROOT / "configs/evaluation/diagnosis_variant_fairness_freeze.json"
+
+
+@pytest.mark.parametrize("status,category,retryable", [
+    (429, "rate_limited", True), (503, "server_error", True),
+    (401, "request_rejected", False),
+])
+def test_v2_transport_preserves_only_safe_failure_metadata(status, category, retryable):
+    error = RuntimeError("sk-secret-credential-and-private-provider-body")
+    error.status_code = status
+    error.headers = {"Retry-After": "12"}
+    policy = _policy().with_recovery_output_budget()
+    request = _request(policy)
+    completions = _CapturingCompletions(error=error)
+    adapter = OpenAIValidationV2Adapter(
+        client=_Client(completions), model_policy=request.initial_attempt.model_policy,
+        policy=policy,
+    )
+    with pytest.raises(AdapterInvocationError) as captured:
+        adapter.invoke(_call(request))
+    assert captured.value.provider_failure_category == category
+    assert captured.value.retryable is retryable
+    assert captured.value.retry_after_ms == (12000 if retryable else None)
+    assert "sk-secret" not in str(captured.value)
+    assert len(completions.calls) == 1
+    assert completions.calls[0]["max_tokens"] == 2048
 SCHEMA: dict[str, object] = {
     "type": "object",
     "additionalProperties": False,

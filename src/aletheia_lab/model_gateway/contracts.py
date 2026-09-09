@@ -85,6 +85,20 @@ ProviderErrorCode = Literal[
     "provider_timeout",
     "provider_cancelled",
 ]
+ProviderFailureCategory = Literal[
+    "rate_limited",
+    "timeout",
+    "connection",
+    "http_408",
+    "http_409",
+    "http_425",
+    "server_error",
+    "request_rejected",
+    "refusal",
+    "truncated",
+    "invalid_envelope",
+    "schema_incompatible",
+]
 
 
 class GatewayContractError(ValueError):
@@ -543,12 +557,18 @@ class AttemptRecord(_StrictFrozenModel):
     usage: UsageMetadata | None
     issue: TechnicalIssue | None
     failure_diagnostics: ProviderFailureDiagnostics | None = None
+    provider_failure_category: ProviderFailureCategory | None = None
+    retry_after_ms: int | None = Field(default=None, ge=0, le=60000)
 
     @model_serializer(mode="wrap")
     def _preserve_legacy_bytes(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
         payload = cast(dict[str, object], handler(self))
         if self.failure_diagnostics is None:
             payload.pop("failure_diagnostics", None)
+        if self.provider_failure_category is None:
+            payload.pop("provider_failure_category", None)
+        if self.retry_after_ms is None:
+            payload.pop("retry_after_ms", None)
         return payload
 
     @model_validator(mode="after")
@@ -556,6 +576,10 @@ class AttemptRecord(_StrictFrozenModel):
         if self.failure_diagnostics is not None and self.outcome != "permanent_error":
             raise ValueError("provider failure diagnostics require a permanent error")
         response_metadata = self.response_mode is not None and self.usage is not None
+        if self.provider_failure_category is not None and self.outcome == "response":
+            raise ValueError("provider failure category cannot accompany a response")
+        if self.retry_after_ms is not None and self.provider_failure_category is None:
+            raise ValueError("Retry-After requires a public-safe failure category")
         if self.outcome == "response":
             if self.provider_attempt_ref is None or not response_metadata or self.issue is not None:
                 raise ValueError("response attempt requires provider metadata without an issue")
@@ -648,6 +672,18 @@ class CancellationProbe(Protocol):
     def is_cancelled(self) -> bool: ...
 
 
+class RetryController(Protocol):
+    """Injectable retry wait owned by a versioned execution policy."""
+
+    def wait_before_retry(
+        self,
+        *,
+        completed_attempt_ordinal: int,
+        provider_failure_category: ProviderFailureCategory,
+        retry_after_ms: int | None,
+    ) -> None: ...
+
+
 class AdapterInvocationError(RuntimeError):
     """Typed provider failure; arbitrary provider messages are never persisted."""
 
@@ -658,6 +694,8 @@ class AdapterInvocationError(RuntimeError):
         retryable: bool,
         provider_attempt_ref: str,
         diagnostics: ProviderFailureDiagnostics | None = None,
+        provider_failure_category: ProviderFailureCategory | None = None,
+        retry_after_ms: int | None = None,
     ) -> None:
         expected_retryable = code in {
             "transient_provider_error",
@@ -665,8 +703,32 @@ class AdapterInvocationError(RuntimeError):
         }
         if retryable != expected_retryable:
             raise ValueError("provider error retryability contradicts its taxonomy")
+        retryable_categories = {
+            "rate_limited",
+            "timeout",
+            "connection",
+            "http_408",
+            "http_409",
+            "http_425",
+            "server_error",
+        }
+        if (
+            provider_failure_category is not None
+            and retryable != (provider_failure_category in retryable_categories)
+        ):
+            raise ValueError("provider failure category contradicts retryability")
+        if retry_after_ms is not None and (
+            provider_failure_category is None
+            or not retryable
+            or isinstance(retry_after_ms, bool)
+            or not isinstance(retry_after_ms, int)
+            or not 0 <= retry_after_ms <= 60000
+        ):
+            raise ValueError("Retry-After metadata is unavailable or outside the V2 bound")
         super().__init__(code)
         self.code = code
         self.retryable = retryable
         self.provider_attempt_ref = provider_attempt_ref
         self.diagnostics = diagnostics
+        self.provider_failure_category = provider_failure_category
+        self.retry_after_ms = retry_after_ms
