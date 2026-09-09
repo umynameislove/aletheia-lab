@@ -501,3 +501,13 @@ enforces the frozen per-family and per-output caps. If any label cannot supply
 50 distinct eligible claims from at least ten families and 25 outputs, closeout
 terminates as insufficient. It does not reduce the sample, pad a label, open a
 reserve, create a blind packet or authorize human validation.
+
+The registered closeout terminated as `claim_pool_insufficient_label_stratum`.
+It observed 842 fully supported, 112 partially supported, six unsupported and
+two contradicted instances; unsupported and contradicted both failed the frozen
+quota and diversity requirements. V1 is therefore closed, non-poolable
+historical evidence. The separately versioned
+[`claim-support-validation-v2-protocol.md`](claim-support-validation-v2-protocol.md)
+records the exact failure audit and the prospective V2 design. No V1 output is
+eligible for the V2 sample, and neither the closeout nor the V2 protocol creates
+a blind packet or authorizes another provider execution.

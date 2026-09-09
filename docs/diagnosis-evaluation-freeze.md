@@ -160,23 +160,29 @@ See [`diagnosis-development-validation.md`](diagnosis-development-validation.md)
 for the executable boundary and tracked receipt. This result does not authorize
 the main evaluation and contains no scientific outcome.
 
-The remaining order is:
+The original claim-support cohort completed its technical pool audit but closed
+as insufficient for the frozen 50-per-label sample. Its outputs and failures
+remain historical and cannot be pooled into a replacement cohort. The remaining
+order is:
 
-1. verify the complete claim-corpus family, atomic-schema, adapter,
-   automatic-instrument and request-census identity chain without provider calls;
-2. separately authorize and materialize the real development claim pool without
-   opening main or sealed outcomes;
-3. use the hash-bound private human workflow to complete synthetic evaluator
-   onboarding and independent blind instrument validation;
-4. resolve every prespecified human-validation gate;
-5. publish a separate immutable registration and main-run manifest;
-6. audit execution-path parity immediately before outcome-opening authority is
+1. verify and merge the separate prospective V2 protocol without provider calls;
+2. implement and adversarially test its interleaved runtime, safe failure
+   taxonomy and authentic development evidence frames;
+3. pass the separately authorized seven-request provider qualification;
+4. freeze exact costs and authorize the new V2 diagnosis and relation cohorts;
+5. publish a V2 pool and require exact balanced feasibility before generating
+   any real onboarding or 200-claim blind packet;
+6. resolve every prespecified human-validation gate;
+7. publish a separate immutable registration and main-run manifest;
+8. audit execution-path parity immediately before outcome-opening authority is
    considered.
 
 The source and non-adaptive contingency contract is documented in
 [`claim-support-corpus-protocol.md`](claim-support-corpus-protocol.md).
 Its zero-outcome implementation closeout is documented in
 [`claim-support-materialization-readiness.md`](claim-support-materialization-readiness.md).
+The V1 disposition and new prospective boundary are documented in
+[`claim-support-validation-v2-protocol.md`](claim-support-validation-v2-protocol.md).
 Internal scheduling and personnel assignments remain outside the repository.
 Their completion cannot replace any machine-readable readiness or scientific
 gate described here.

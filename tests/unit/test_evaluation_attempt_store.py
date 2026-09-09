@@ -293,6 +293,9 @@ def test_terminal_parsed_payload_is_read_only_and_hash_verified(tmp_path: Path) 
     )
     assert verifier.terminal_parsed_payload(result.request_identity_sha256) == {"value": "ok"}
     assert verifier.terminal_issue(result.request_identity_sha256) is None
+    attempts = verifier.terminal_attempt_records(result.request_identity_sha256)
+    assert tuple(item.outcome for item in attempts) == ("response",)
+    assert attempts == result.attempts
 
 
 def test_terminal_issue_is_read_only_and_hash_verified(tmp_path: Path) -> None:
@@ -313,6 +316,28 @@ def test_terminal_issue_is_read_only_and_hash_verified(tmp_path: Path) -> None:
     assert issue is not None
     assert issue.code == "permanent_provider_error"
     assert verifier.terminal_parsed_payload(result.request_identity_sha256) is None
+
+
+def test_terminal_attempt_records_preserve_retry_order(tmp_path: Path) -> None:
+    request = _request()
+    result = _result(
+        request,
+        steps=(_step("transient_error"), _step("valid_response")),
+    )
+    store = ImmutableAttemptStore(tmp_path, clock=_Clock())
+    _record_until(store, request, result, "terminal_published")
+    verifier = ClaimCorpusTerminalReader(
+        root=store.root,
+        object_root=store.object_root,
+        request_root=store.request_root,
+        terminal_root=store.terminal_root,
+        failure_root=store.failure_root,
+    )
+
+    records = verifier.terminal_attempt_records(result.request_identity_sha256)
+
+    assert tuple(item.outcome for item in records) == ("transient_error", "response")
+    assert records[1].timing.started_ns >= records[0].timing.ended_ns
 
 
 def test_identical_replay_is_noop_and_does_not_count_an_attempt(tmp_path: Path) -> None:

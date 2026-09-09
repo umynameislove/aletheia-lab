@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Final
 
 _ROOT: Final = Path(__file__).resolve().parents[1]
-_EVALUATION_TIMEOUT_SECONDS: Final = 300
+_EVALUATION_TIMEOUT_SECONDS: Final = 600
 _WINDOWS_EVALUATION_TIMEOUT_SECONDS: Final = 720
 _REPRODUCIBILITY_HASH_SEEDS: Final = ("1", "104729", "209759")
 _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
@@ -80,9 +80,11 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_claim_corpus_recovery_closeout.py",
         "tests/unit/test_claim_relation_execution.py",
         "tests/unit/test_claim_relation_recovery.py",
+        "tests/unit/test_claim_support_validation_v2.py",
         "tests/unit/test_recovery_structured_transport.py",
         "tests/integration/test_claim_support_corpus_execution_local.py",
         "tests/integration/test_claim_support_normalization_recovery_local.py",
+        "tests/integration/test_claim_support_validation_v2_local.py",
         "tests/unit/test_claim_support_observed_evidence.py",
         "tests/integration/test_claim_support_observed_evidence_local.py",
         "tests/unit/test_claim_support_instrument_validation.py",
