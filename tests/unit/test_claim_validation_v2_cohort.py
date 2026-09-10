@@ -20,6 +20,8 @@ from aletheia_lab.evaluation.claim_validation_v2_cohort import (
 )
 from aletheia_lab.evaluation.claim_validation_v2_cohort_contracts import (
     V2CohortExecutionPlan,
+    V2CohortRehearsal,
+    V2CohortRequestProjection,
 )
 from aletheia_lab.evaluation.claim_validation_v2_qualification_contracts import (
     PROVIDER_VARIANTS,
@@ -95,30 +97,55 @@ def _qualification() -> V2QualificationReceipt:
     )
 
 
-def test_plan_freezes_exact_balanced_census_and_conservative_cost() -> None:
-    first = build_cohort_plan(
-        ROOT, source_commit_ref=COMMIT, qualification_receipt=_qualification()
+@pytest.fixture(scope="module")
+def qualification() -> V2QualificationReceipt:
+    return _qualification()
+
+
+@pytest.fixture(scope="module")
+def plan(qualification: V2QualificationReceipt) -> V2CohortExecutionPlan:
+    return build_cohort_plan(
+        ROOT, source_commit_ref=COMMIT, qualification_receipt=qualification
     )
+
+
+@pytest.fixture(scope="module")
+def rehearsal(
+    plan: V2CohortExecutionPlan,
+    qualification: V2QualificationReceipt,
+) -> V2CohortRehearsal:
+    return rehearse_cohort(ROOT, plan, qualification)
+
+
+@pytest.fixture(scope="module")
+def projections() -> tuple[V2CohortRequestProjection, ...]:
+    return _request_projections(ROOT)
+
+
+def test_plan_freezes_exact_balanced_census_and_conservative_cost(
+    plan: V2CohortExecutionPlan,
+    qualification: V2QualificationReceipt,
+) -> None:
     second = build_cohort_plan(
-        ROOT, source_commit_ref=COMMIT, qualification_receipt=_qualification()
+        ROOT, source_commit_ref=COMMIT, qualification_receipt=qualification
     )
 
-    assert first == second
-    assert first.diagnosis_request_count == 360
-    assert first.model_request_count == 315
-    assert first.deterministic_request_count == 45
-    assert len(set(first.request_projection_sha256s)) == 360
-    assert first.exact_message_input_token_count > 0
-    assert first.exact_response_schema_token_count > 0
-    assert first.provider_billed_input_tokens_known is False
-    assert first.estimated_upper_cost_usd < 36.09
-    assert first.provider_calls_executed is False
-    assert first.relation_execution_authorized is False
+    assert plan == second
+    assert plan.diagnosis_request_count == 360
+    assert plan.model_request_count == 315
+    assert plan.deterministic_request_count == 45
+    assert len(set(plan.request_projection_sha256s)) == 360
+    assert plan.exact_message_input_token_count > 0
+    assert plan.exact_response_schema_token_count > 0
+    assert plan.provider_billed_input_tokens_known is False
+    assert plan.estimated_upper_cost_usd < 36.09
+    assert plan.provider_calls_executed is False
+    assert plan.relation_execution_authorized is False
 
 
-def test_projection_routes_and_amended_provider_contracts_are_exact() -> None:
-    projections = _request_projections(ROOT)
-
+def test_projection_routes_and_amended_provider_contracts_are_exact(
+    projections: tuple[V2CohortRequestProjection, ...],
+) -> None:
     assert tuple(item.sequence for item in projections) == tuple(range(1, 361))
     assert {item.schedule_round for item in projections} == set(range(1, 16))
     model = tuple(item for item in projections if item.execution_route == "model_gateway")
@@ -133,10 +160,9 @@ def test_projection_routes_and_amended_provider_contracts_are_exact() -> None:
     assert all(item.prompt_sha256 is None for item in local)
 
 
-def test_plan_and_projection_tampering_fail_validation() -> None:
-    plan = build_cohort_plan(
-        ROOT, source_commit_ref=COMMIT, qualification_receipt=_qualification()
-    )
+def test_plan_and_projection_tampering_fail_validation(
+    plan: V2CohortExecutionPlan,
+) -> None:
     changed = plan.model_dump(mode="python")
     changed["model_request_count"] = 314
     with pytest.raises(ValidationError):
@@ -150,13 +176,13 @@ def test_plan_and_projection_tampering_fail_validation() -> None:
 
 def test_authorization_requires_clean_main_and_sufficient_ceiling(
     tmp_path: Path,
+    plan: V2CohortExecutionPlan,
+    rehearsal: V2CohortRehearsal,
 ) -> None:
-    qualification = _qualification()
-    plan = build_cohort_plan(
-        ROOT, source_commit_ref=COMMIT, qualification_receipt=qualification
-    )
-    rehearsal = rehearse_cohort(ROOT, plan, qualification)
     run_dir = checked_cohort_run_directory(ROOT, tmp_path / "cohort")
+
+    assert rehearsal.balanced_round_count == 15
+    assert rehearsal.exact_request_projections_rebuilt is True
 
     with pytest.raises(ClaimValidationV2CohortError, match="clean synchronized"):
         build_cohort_authorization(
@@ -196,12 +222,9 @@ def test_authorization_requires_clean_main_and_sufficient_ceiling(
 
 def test_preflight_fails_closed_without_authorization_credential_or_clean_main(
     tmp_path: Path,
+    plan: V2CohortExecutionPlan,
+    rehearsal: V2CohortRehearsal,
 ) -> None:
-    qualification = _qualification()
-    plan = build_cohort_plan(
-        ROOT, source_commit_ref=COMMIT, qualification_receipt=qualification
-    )
-    rehearsal = rehearse_cohort(ROOT, plan, qualification)
     preflight = build_cohort_preflight(
         plan,
         rehearsal,

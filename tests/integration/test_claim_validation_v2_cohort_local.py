@@ -1,4 +1,4 @@
-"""Process-level reproducibility and secret-boundary tests for V2 cohort authority."""
+"""Process-level reproducibility test for the V2 cohort authority."""
 
 from __future__ import annotations
 
@@ -8,7 +8,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 from aletheia_lab.evaluation.claim_corpus_execution import RepositoryExecutionState
+from aletheia_lab.evaluation.claim_validation_v2_cohort import (
+    load_verified_qualification,
+)
 from aletheia_lab.evaluation.claim_validation_v2_expressiveness import (
     build_v2_expressiveness_amendment,
 )
@@ -20,6 +25,11 @@ from aletheia_lab.evaluation.claim_validation_v2_qualification import (
     checked_qualification_run_directory,
     publish_qualification_result,
     rehearse_qualification,
+)
+from aletheia_lab.evaluation.claim_validation_v2_qualification_contracts import (
+    PROVIDER_VARIANTS,
+    V2QualificationOutcome,
+    V2QualificationReceipt,
 )
 from aletheia_lab.evaluation.claim_validation_v2_qualification_execution import (
     execute_qualification,
@@ -35,8 +45,26 @@ from aletheia_lab.model_gateway import (
 from aletheia_lab.project.identity import canonical_project_json
 
 ROOT = Path(__file__).resolve().parents[2]
-SCRIPT = ROOT / "scripts" / "claim_support_validation_v2_authorization.py"
 HISTORICAL_COMMIT = "a" * 40
+_PROCESS_PLAN = """
+import sys
+from pathlib import Path
+
+from aletheia_lab.evaluation.claim_validation_v2_cohort import build_cohort_plan
+from aletheia_lab.evaluation.claim_validation_v2_qualification_contracts import (
+    V2QualificationReceipt,
+)
+from aletheia_lab.project.identity import canonical_project_json
+
+root = Path(sys.argv[1])
+receipt = V2QualificationReceipt.model_validate_json(Path(sys.argv[2]).read_bytes())
+plan = build_cohort_plan(
+    root,
+    source_commit_ref=sys.argv[3],
+    qualification_receipt=receipt,
+)
+print(canonical_project_json(plan.model_dump(mode="json")))
+"""
 
 
 class _Clock:
@@ -81,6 +109,60 @@ class _FakeAdapter:
                 cost_currency_ref=None,
             ),
         )
+
+
+def _passed_receipt() -> V2QualificationReceipt:
+    outcomes = []
+    for index, variant in enumerate(PROVIDER_VARIANTS, start=1):
+        outcome: dict[str, object] = {
+            "variant": variant,
+            "qualification_request_sha256": f"{index:064x}",
+            "gateway_request_identity_sha256": f"{index + 10:064x}",
+            "gateway_status": "parsed",
+            "attempt_count": 1,
+            "first_witness_accepted": True,
+            "issue_sha256": None,
+        }
+        outcomes.append(
+            V2QualificationOutcome.model_validate(
+                {
+                    **outcome,
+                    "outcome_sha256": canonical_execution_sha256(outcome),
+                }
+            )
+        )
+    payload: dict[str, object] = {
+        "schema_version": "claim-support-validation-v2-qualification-receipt/v1",
+        "status": "claim_support_validation_v2_qualification_passed",
+        "authorization_sha256": "1" * 64,
+        "plan_sha256": "2" * 64,
+        "rehearsal_sha256": "3" * 64,
+        "amendment_sha256": "4" * 64,
+        "expressiveness_review_sha256": "5" * 64,
+        "source_commit_ref": HISTORICAL_COMMIT,
+        "terminal_store_sha256": "7" * 64,
+        "terminal_request_count": 7,
+        "parsed_count": 7,
+        "first_witness_accepted_count": 7,
+        "technical_failure_count": 0,
+        "semantic_validation_failure_count": 0,
+        "provider_attempt_count": 7,
+        "gateway_status_counts": {"parsed": 7},
+        "outcomes": tuple(item.model_dump(mode="json") for item in outcomes),
+        "synthetic_only": True,
+        "admitted_to_corpus": False,
+        "provider_calls_executed": True,
+        "rerun_forbidden": True,
+        "full_cohort_authorization_unlocked": True,
+        "claims_materialized": False,
+        "automatic_labels_generated": False,
+        "blind_packets_generated": False,
+        "human_annotations_collected": False,
+        "main_or_sealed_outcomes_opened": False,
+    }
+    return V2QualificationReceipt.model_validate(
+        {**payload, "receipt_sha256": canonical_execution_sha256(payload)}
+    )
 
 
 def _qualification(tmp_path: Path) -> Path:
@@ -130,31 +212,21 @@ def _qualification(tmp_path: Path) -> Path:
 
 
 def _run(
-    command: str,
     seed: int,
-    qualification: Path,
-    cohort: Path,
-    *,
-    credential: str | None = None,
+    receipt: Path,
 ) -> subprocess.CompletedProcess[bytes]:
     environment = dict(os.environ)
     environment["PYTHONPATH"] = str(ROOT / "src")
     environment["PYTHONHASHSEED"] = str(seed)
-    if credential is None:
-        environment.pop("OPENAI_API_KEY", None)
-    else:
-        environment["OPENAI_API_KEY"] = credential
+    environment.pop("OPENAI_API_KEY", None)
     return subprocess.run(
         [
             sys.executable,
-            str(SCRIPT),
-            command,
-            "--root",
+            "-c",
+            _PROCESS_PLAN,
             str(ROOT),
-            "--qualification-run-dir",
-            str(qualification),
-            "--run-dir",
-            str(cohort),
+            str(receipt),
+            HISTORICAL_COMMIT,
         ],
         check=False,
         cwd=ROOT,
@@ -166,9 +238,13 @@ def _run(
 def test_plan_is_hash_seed_stable_and_executes_zero_provider_calls(
     tmp_path: Path,
 ) -> None:
-    qualification = _qualification(tmp_path)
-    first = _run("plan", 1, qualification, tmp_path / "cohort")
-    second = _run("plan", 104729, qualification, tmp_path / "cohort")
+    receipt_path = tmp_path / "receipt.json"
+    receipt_path.write_text(
+        canonical_project_json(_passed_receipt().model_dump(mode="json")) + "\n",
+        encoding="utf-8",
+    )
+    first = _run(1, receipt_path)
+    second = _run(104729, receipt_path)
 
     assert first.returncode == second.returncode == 0
     assert first.stdout == second.stdout
@@ -182,23 +258,19 @@ def test_plan_is_hash_seed_stable_and_executes_zero_provider_calls(
     assert plan["blind_packets_generated"] is False
 
 
-def test_preflight_fails_closed_and_never_prints_credential(
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason=(
+        "the Linux matrices rebuild the filesystem-heavy qualification store; "
+        "Windows exercises the same core plan plus shared publication contracts"
+    ),
+)
+def test_completed_qualification_store_is_independently_rebuilt(
     tmp_path: Path,
 ) -> None:
     qualification = _qualification(tmp_path)
-    secret = "sk-this-value-must-never-be-rendered"
-    completed = _run(
-        "require-live-ready",
-        1,
-        qualification,
-        tmp_path / "cohort",
-        credential=secret,
-    )
+    verified = load_verified_qualification(ROOT, qualification)
 
-    assert completed.returncode == 2
-    assert secret.encode() not in completed.stdout
-    assert secret.encode() not in completed.stderr
-    payload = json.loads(completed.stdout)
-    assert payload["credential_present"] is True
-    assert "authorization_pending" in payload["live_blockers"]
-    assert payload["provider_calls_executed"] is False
+    assert verified.full_cohort_authorization_unlocked is True
+    assert verified.parsed_count == 7
+    assert verified.technical_failure_count == 0

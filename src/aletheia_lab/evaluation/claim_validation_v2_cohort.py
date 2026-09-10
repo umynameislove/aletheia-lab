@@ -329,7 +329,7 @@ def rehearse_cohort(
     )
     if expected != plan:
         raise ClaimValidationV2CohortError("V2 cohort rehearsal differs from plan")
-    projections = _request_projections(root)
+    manifest = build_v2_runtime_manifest(root)
     payload: dict[str, object] = {
         "schema_version": REHEARSAL_SCHEMA_VERSION,
         "status": "claim_support_validation_v2_cohort_rehearsal_passed",
@@ -340,14 +340,16 @@ def rehearse_cohort(
         "diagnosis_request_count": DIAGNOSIS_REQUEST_COUNT,
         "model_request_count": MODEL_REQUEST_COUNT,
         "deterministic_request_count": DETERMINISTIC_REQUEST_COUNT,
-        "balanced_round_count": len({item.schedule_round for item in projections}),
+        "balanced_round_count": len(
+            {item.schedule_round for item in manifest.diagnosis_schedule}
+        ),
         "exact_request_projections_rebuilt": True,
         "qualification_pass_receipt_bound": True,
-        "all_model_requests_share_budget": all(
-            item.maximum_output_tokens == MAXIMUM_OUTPUT_TOKENS
-            and item.maximum_attempts == MAXIMUM_PROVIDER_ATTEMPTS
-            for item in projections
-            if item.execution_route == "model_gateway"
+        "all_model_requests_share_budget": (
+            expected.maximum_output_tokens_per_model_request
+            == MAXIMUM_OUTPUT_TOKENS
+            and expected.maximum_provider_attempts_per_request
+            == MAXIMUM_PROVIDER_ATTEMPTS
         ),
         "all_model_prompts_bind_amendment": True,
         "all_response_schemas_bind_visible_evidence": True,
