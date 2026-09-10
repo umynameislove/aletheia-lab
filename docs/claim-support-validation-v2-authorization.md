@@ -138,3 +138,64 @@ terminal result for every deterministic `B0` request. Failures remain in their
 original denominators and retain public-safe categories. Passing this gate only
 unlocks prospective relation execution. It is not evidence that a balanced
 200-claim sample exists.
+
+## Post-cohort extraction closeout
+
+CV2-10 is a provider-free gate between technical admission and paid relation
+assignment. It independently verifies the immutable qualification and cohort
+stores, normalizes all 360 terminal payloads, applies the already frozen
+two-claims-per-output selector, and records one content-addressed extraction
+record for every scheduled cell. It never deduplicates source instances after
+observing outputs, builds no relation frame batch, sends no provider request,
+and creates neither a corpus nor a human packet.
+
+The completed V2 cohort passes its technical gate with 360/360 parsed
+terminals, but the extraction result blocks relation execution for two distinct
+reasons:
+
+- 362 selected source-claim instances contain only 112 distinct canonical
+  claim texts. Because the frozen final sample requires 200 claims and forbids
+  repeated canonical claim text, exact selection is already impossible;
+- the 360 normalized terminals contain only 116 distinct output-content
+  hashes. The frozen relation batch treats `(source_output_sha256,
+  claim_local_id)` as an instance key, so equal-content outputs from different
+  scheduled cells collide. That implementation cannot safely represent the
+  observed cohort without a separately versioned correction.
+
+Technical admission therefore remains a valid result, but
+`relation_execution_unlocked` must not be interpreted as scientific readiness.
+No paid relation run is warranted for this cohort. The historical runtime files
+remain unchanged so the completed cohort continues to verify against its
+original hashes. A future prospective design must bind claim instances to the
+scheduled request identity and establish enough source-claim diversity before
+another full cohort is authorized.
+
+An OpenAI dashboard screenshot may be bound as supplemental private evidence.
+Its `all - input tokens` count is an account-level UTC-day aggregate, not a
+cohort-exclusive usage receipt. Without provider output-token usage, it cannot
+support an exact realized-cost claim.
+
+After this extraction implementation is merged, prepare and independently
+verify the private closeout with:
+
+```bash
+export CLAIM_V2_QUAL_DIR="/absolute/path/to/memory/claim-support-validation-v2-qualification"
+export CLAIM_V2_COHORT_DIR="/absolute/path/to/memory/claim-support-validation-v2-cohort"
+export CLAIM_V2_EXTRACTION_DIR="/absolute/path/to/memory/claim-support-validation-v2-extraction"
+
+PYTHONPATH=src python scripts/claim_support_validation_v2_extraction.py prepare \
+  --qualification-run-dir "$CLAIM_V2_QUAL_DIR" \
+  --cohort-run-dir "$CLAIM_V2_COHORT_DIR" \
+  --run-dir "$CLAIM_V2_EXTRACTION_DIR" \
+  --dashboard-utc-date 2026-09-10 \
+  --dashboard-input-tokens 452573 \
+  --dashboard-evidence "/absolute/path/to/dashboard-screenshot.png"
+
+PYTHONPATH=src python scripts/claim_support_validation_v2_extraction.py verify \
+  --qualification-run-dir "$CLAIM_V2_QUAL_DIR" \
+  --cohort-run-dir "$CLAIM_V2_COHORT_DIR" \
+  --run-dir "$CLAIM_V2_EXTRACTION_DIR"
+```
+
+The destination must be outside the repository and is create-only. Omitting
+all three dashboard arguments is allowed; supplying only a subset fails closed.
