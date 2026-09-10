@@ -2,13 +2,22 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from datetime import datetime
 from typing import Annotated, Final, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from aletheia_lab.evaluation.claim_corpus_contracts import EligibleVariant
+from aletheia_lab.evaluation.claim_corpus_contracts import (
+    EligibleVariant,
+    EvidenceCondition,
+    Mechanism,
+)
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
+from aletheia_lab.model_gateway.contracts import (
+    ProviderFailureCategory,
+    TerminalStatus,
+)
 from aletheia_lab.project.identity import SHA256_PATTERN
 
 PLAN_SCHEMA_VERSION: Final = "claim-support-validation-v2-cohort-plan/v1"
@@ -17,6 +26,8 @@ AUTHORIZATION_SCHEMA_VERSION: Final = (
     "claim-support-validation-v2-cohort-authorization/v1"
 )
 PREFLIGHT_SCHEMA_VERSION: Final = "claim-support-validation-v2-cohort-preflight/v1"
+LEASE_SCHEMA_VERSION: Final = "claim-support-validation-v2-cohort-lease/v1"
+RECEIPT_SCHEMA_VERSION: Final = "claim-support-validation-v2-cohort-receipt/v1"
 DIAGNOSIS_REQUEST_COUNT: Final = 360
 MODEL_REQUEST_COUNT: Final = 315
 DETERMINISTIC_REQUEST_COUNT: Final = 45
@@ -325,23 +336,211 @@ class V2CohortPreflight(_StrictFrozenModel):
         return self
 
 
+class V2CohortLease(_StrictFrozenModel):
+    """Immutable registration of the one authorized cohort attempt."""
+
+    schema_version: Literal["claim-support-validation-v2-cohort-lease/v1"] = (
+        LEASE_SCHEMA_VERSION
+    )
+    authorization_sha256: Sha256
+    plan_sha256: Sha256
+    destination_sha256: Sha256
+    registered_attempts: Literal[1] = 1
+    lease_sha256: Sha256
+
+    def identity_payload(self) -> dict[str, object]:
+        return self.model_dump(mode="json", exclude={"lease_sha256"})
+
+    @model_validator(mode="after")
+    def _identity_reconciles(self) -> Self:
+        if self.lease_sha256 != canonical_execution_sha256(self.identity_payload()):
+            raise ValueError("V2 cohort lease identity differs")
+        return self
+
+
+class V2CohortTerminalOutcome(_StrictFrozenModel):
+    """Public-safe linkage from one frozen V2 cell to its terminal shard."""
+
+    sequence: int = Field(ge=1, le=DIAGNOSIS_REQUEST_COUNT)
+    schedule_round: int = Field(ge=1, le=15)
+    v2_request_sha256: Sha256
+    source_request_sha256: Sha256
+    gateway_request_identity_sha256: Sha256
+    mechanism: Mechanism
+    evidence_condition: EvidenceCondition
+    variant: EligibleVariant
+    execution_route: ExecutionRoute
+    gateway_status: TerminalStatus
+    attempt_count: int = Field(ge=1, le=MAXIMUM_PROVIDER_ATTEMPTS)
+    provider_failure_categories: tuple[ProviderFailureCategory, ...] = Field(
+        max_length=MAXIMUM_PROVIDER_ATTEMPTS
+    )
+    parsed_response_sha256: Sha256 | None
+    issue_sha256: Sha256 | None
+    outcome_sha256: Sha256
+
+    def identity_payload(self) -> dict[str, object]:
+        return self.model_dump(mode="json", exclude={"outcome_sha256"})
+
+    @model_validator(mode="after")
+    def _terminal_and_identity_reconcile(self) -> Self:
+        parsed = self.gateway_status == "parsed"
+        local = self.execution_route == "deterministic_local"
+        if (
+            local != (self.variant == "B0")
+            or parsed != (self.parsed_response_sha256 is not None)
+            or parsed == (self.issue_sha256 is not None)
+            or (local and self.attempt_count != 1)
+            or (local and self.provider_failure_categories)
+            or len(self.provider_failure_categories) > self.attempt_count
+            or self.outcome_sha256
+            != canonical_execution_sha256(self.identity_payload())
+        ):
+            raise ValueError("V2 cohort terminal outcome does not reconcile")
+        return self
+
+
+class V2CohortReceipt(_StrictFrozenModel):
+    """Independently reproducible terminal census and technical admission result."""
+
+    schema_version: Literal["claim-support-validation-v2-cohort-receipt/v1"] = (
+        RECEIPT_SCHEMA_VERSION
+    )
+    status: Literal[
+        "claim_support_validation_v2_cohort_complete_technical_admission_passed",
+        "claim_support_validation_v2_cohort_complete_technical_admission_failed",
+    ]
+    authorization_sha256: Sha256
+    plan_sha256: Sha256
+    rehearsal_sha256: Sha256
+    qualification_receipt_sha256: Sha256
+    protocol_sha256: Sha256
+    runtime_manifest_sha256: Sha256
+    source_commit_ref: str = Field(pattern=r"^[0-9a-f]{40}$")
+    terminal_store_sha256: Sha256
+    terminal_request_count: Literal[360]
+    parsed_count: int = Field(ge=0, le=DIAGNOSIS_REQUEST_COUNT)
+    technical_failure_count: int = Field(ge=0, le=DIAGNOSIS_REQUEST_COUNT)
+    model_request_count: Literal[315]
+    deterministic_request_count: Literal[45]
+    provider_attempt_count: int = Field(ge=MODEL_REQUEST_COUNT)
+    technical_attempt_count: int = Field(ge=DIAGNOSIS_REQUEST_COUNT)
+    gateway_status_counts: dict[TerminalStatus, int]
+    provider_failure_category_counts: dict[ProviderFailureCategory, int]
+    provider_usage_complete: bool
+    observed_provider_input_token_count: int | None = Field(default=None, ge=0)
+    observed_provider_output_token_count: int | None = Field(default=None, ge=0)
+    observed_provider_total_token_count: int | None = Field(default=None, ge=0)
+    outcomes: tuple[V2CohortTerminalOutcome, ...] = Field(
+        min_length=DIAGNOSIS_REQUEST_COUNT,
+        max_length=DIAGNOSIS_REQUEST_COUNT,
+    )
+    technical_admission_blockers: tuple[str, ...]
+    technical_admission_passed: bool
+    missingness_exchangeability_established: Literal[False] = False
+    relation_execution_unlocked: bool
+    provider_calls_executed: Literal[True] = True
+    rerun_forbidden: Literal[True] = True
+    claims_materialized: Literal[False] = False
+    automatic_labels_generated: Literal[False] = False
+    blind_packets_generated: Literal[False] = False
+    human_annotations_collected: Literal[False] = False
+    main_or_sealed_outcomes_opened: Literal[False] = False
+    receipt_sha256: Sha256
+
+    def identity_payload(self) -> dict[str, object]:
+        return self.model_dump(mode="json", exclude={"receipt_sha256"})
+
+    @model_validator(mode="after")
+    def _census_admission_and_identity_reconcile(self) -> Self:
+        parsed = sum(item.gateway_status == "parsed" for item in self.outcomes)
+        provider_attempts = sum(
+            item.attempt_count
+            for item in self.outcomes
+            if item.execution_route == "model_gateway"
+        )
+        technical_attempts = sum(item.attempt_count for item in self.outcomes)
+        statuses = dict(
+            sorted(Counter(item.gateway_status for item in self.outcomes).items())
+        )
+        categories = dict(
+            sorted(
+                Counter(
+                    category
+                    for item in self.outcomes
+                    for category in item.provider_failure_categories
+                ).items()
+            )
+        )
+        usage = (
+            self.observed_provider_input_token_count,
+            self.observed_provider_output_token_count,
+            self.observed_provider_total_token_count,
+        )
+        usage_sum_differs = False
+        usage_input, usage_output, usage_total = usage
+        if (
+            usage_input is not None
+            and usage_output is not None
+            and usage_total is not None
+        ):
+            usage_sum_differs = usage_total != usage_input + usage_output
+        passed = not self.technical_admission_blockers
+        expected_status = (
+            "claim_support_validation_v2_cohort_complete_technical_admission_passed"
+            if passed
+            else "claim_support_validation_v2_cohort_complete_technical_admission_failed"
+        )
+        if (
+            tuple(item.sequence for item in self.outcomes)
+            != tuple(range(1, DIAGNOSIS_REQUEST_COUNT + 1))
+            or len({item.v2_request_sha256 for item in self.outcomes})
+            != DIAGNOSIS_REQUEST_COUNT
+            or len({item.gateway_request_identity_sha256 for item in self.outcomes})
+            != DIAGNOSIS_REQUEST_COUNT
+            or parsed != self.parsed_count
+            or self.technical_failure_count != DIAGNOSIS_REQUEST_COUNT - parsed
+            or provider_attempts != self.provider_attempt_count
+            or technical_attempts != self.technical_attempt_count
+            or statuses != self.gateway_status_counts
+            or categories != self.provider_failure_category_counts
+            or (self.provider_usage_complete != all(value is not None for value in usage))
+            or (not self.provider_usage_complete and any(value is not None for value in usage))
+            or (self.provider_usage_complete and usage_sum_differs)
+            or tuple(sorted(set(self.technical_admission_blockers)))
+            != self.technical_admission_blockers
+            or self.technical_admission_passed != passed
+            or self.relation_execution_unlocked != passed
+            or self.status != expected_status
+            or self.receipt_sha256
+            != canonical_execution_sha256(self.identity_payload())
+        ):
+            raise ValueError("V2 cohort receipt census, admission or identity differs")
+        return self
+
+
 __all__ = [
     "AUTHORIZATION_SCHEMA_VERSION",
     "ClaimValidationV2CohortError",
     "DETERMINISTIC_REQUEST_COUNT",
     "DIAGNOSIS_REQUEST_COUNT",
     "INPUT_USD_PER_MILLION",
+    "LEASE_SCHEMA_VERSION",
     "MAXIMUM_OUTPUT_TOKENS",
     "MAXIMUM_PROVIDER_ATTEMPTS",
     "MODEL_REQUEST_COUNT",
     "OUTPUT_USD_PER_MILLION",
     "PLAN_SCHEMA_VERSION",
     "PREFLIGHT_SCHEMA_VERSION",
+    "RECEIPT_SCHEMA_VERSION",
     "REHEARSAL_SCHEMA_VERSION",
     "RESPONSE_FORMAT_OVERHEAD_ALLOWANCE",
     "V2CohortAuthorization",
     "V2CohortExecutionPlan",
+    "V2CohortLease",
     "V2CohortPreflight",
+    "V2CohortReceipt",
     "V2CohortRehearsal",
     "V2CohortRequestProjection",
+    "V2CohortTerminalOutcome",
 ]

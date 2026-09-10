@@ -64,7 +64,9 @@ from aletheia_lab.filesystem import publish_immutable_file
 from aletheia_lab.model_gateway.recovery_transport import wire_schema_json
 from aletheia_lab.project.identity import canonical_project_json, content_sha256
 
-_ALLOWED_RUN_ENTRIES: Final = frozenset({"authorization.json"})
+_ALLOWED_RUN_ENTRIES: Final = frozenset(
+    {"authorization.json", "lease.json", "attempt-store", "receipt.json"}
+)
 
 
 def load_verified_qualification(
@@ -570,6 +572,18 @@ def publish_cohort_authorization(path: Path, authorization: V2CohortAuthorizatio
     )
 
 
+def publish_cohort_result(path: Path, model: object) -> str:
+    """Publish one validated cohort artifact without allowing replacement."""
+
+    if not hasattr(model, "model_dump"):
+        raise TypeError("cohort publication requires a validated model")
+    payload = model.model_dump(mode="json")
+    return publish_immutable_file(
+        path,
+        (canonical_project_json(payload) + "\n").encode("utf-8"),
+    )
+
+
 __all__ = [
     "ClaimValidationV2CohortError",
     "V2CohortAuthorization",
@@ -584,6 +598,7 @@ __all__ = [
     "load_cohort_authorization",
     "load_verified_qualification",
     "publish_cohort_authorization",
+    "publish_cohort_result",
     "rehearse_cohort",
     "validate_cohort_authorization",
 ]
