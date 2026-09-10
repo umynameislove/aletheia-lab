@@ -80,3 +80,17 @@ Only a verified status of
 `full_cohort_authorization_unlocked: true` permits V2-4 exact cohort planning.
 Any other terminal status preserves the failure and requires a separately
 versioned prospective decision; it does not permit the 360-request run.
+
+## Registered outcome
+
+The one authorized qualification run completed with 7/7 parsed responses, 7/7
+locally accepted first witnesses, zero technical failures and zero semantic
+validation failures. Independent verification reproduced receipt SHA-256
+`ab0b82b59a392c2dc460fdf47b55b0e67292d641f43d7078f4bb6add4dbb6ae2`
+and terminal-store SHA-256
+`03e7f2d6cdb397b9ba57e739a44d7d94fbb1b868d69aa4317d3a308dce2f2f95`.
+
+This pass unlocks the separately versioned
+[diagnosis-cohort authorization boundary](claim-support-validation-v2-authorization.md).
+It does not admit the seven synthetic results to the corpus and does not by
+itself establish label balance or the feasibility of a 200-claim sample.

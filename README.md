@@ -191,12 +191,11 @@ binds the V1 failure audit, prohibits pooling or relabeling V1, changes the
 execution schedule to a balanced interleave, requires safe provider-failure
 subtypes plus paced bounded backoff, and pre-registers authentic evidence
 challenge frames for rare-label coverage. It authorizes no provider call.
-The separate V2 runtime freeze now materializes all 360 new request identities
+The separate V2 runtime freeze materializes all 360 new request identities
 in 15 balanced rounds, binds authentic structural source-frame capacity, and
 freezes seven synthetic qualification projections. Its provider adapter adds
 one-second global pacing, bounded Retry-After-aware backoff and public-safe
-failure categories. This remains offline readiness: it has not run the seven
-qualification calls, generated claims, or created human packets.
+failure categories.
 The subsequent
 [source-claim expressiveness amendment](docs/claim-support-validation-v2-expressiveness.md)
 closes the runtime's prospective review gate without changing that historical
@@ -205,14 +204,15 @@ variant-specific diagnosis prose, replaces the ambiguous synthetic probes, and
 replays all 45 authentic contexts through the production challenge-witness
 logic. Effective offline capacity is 360 natural cells, 240 withdrawal cells,
 240 partial-projection cells and 360 direct-counterevidence cells across all 15
-families. No API call, scientific claim, relation label or human packet was
-created; the next gate is a separately authorized seven-request qualification.
-That qualification is now implemented as a synthetic-only, one-use execution
-boundary with exact cost accounting, immutable per-request terminals and an
-independent receipt rebuild. Offline rehearsal proves that exact witnesses pass
-while changed values, unavailable evidence and abstention fail the qualification.
-No live qualification outcome exists yet; 7/7 parsed and locally accepted
-responses are required before the 360-request V2 cohort can be planned.
+families. The synthetic-only, one-use qualification has now completed with 7/7
+parsed and 7/7 locally accepted first witnesses, zero technical failures and
+zero semantic-validation failures. Its independently rebuilt receipt unlocks
+exact 360-request cohort planning, but the qualification remains excluded from
+study data and says nothing about label balance or corpus feasibility. The
+subsequent cohort-authorization boundary rebuilds all 360 projections, freezes
+token and cost ceilings, and requires clean synchronized `main` plus explicit
+one-use authorization. It contains no executor and has not generated V2 claims,
+relation labels or human packets.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation
@@ -502,6 +502,7 @@ documentation, and reproducible artifacts.
 - [Claim-support instrument validation protocol](docs/claim-support-instrument-validation.md)
 - [Claim-support V1 failure audit and prospective V2 protocol](docs/claim-support-validation-v2-protocol.md)
 - [Claim-support V2 seven-request qualification](docs/claim-support-validation-v2-qualification.md)
+- [Claim-support V2 diagnosis-cohort authorization](docs/claim-support-validation-v2-authorization.md)
 - [Related work and research positioning](docs/related-work.md)
 - [Architecture decisions](docs/adr/)
 
