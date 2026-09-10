@@ -3,13 +3,16 @@
 ## Purpose and boundary
 
 CV2-08 freezes the exact 360-request V2 diagnosis cohort after the separate
-seven-request qualification has passed. It implements planning, offline
-rehearsal, one-use authorization and live preflight only. It does not execute a
-provider call, run deterministic `B0`, create a claim, assign a relation label,
-materialize a sample or create a human packet.
+seven-request qualification has passed. CV2-09 adds the one-use cohort
+executor, immutable terminal store, independent verifier and technical
+admission reducer. The merged executor may consume a fresh prospective,
+source-commit-bound authorization; this implementation boundary itself sends
+no provider request.
 
-The authority is prospective and source-commit bound. CV2-09 may consume it to
-execute the registered cohort, but relation execution remains separately gated.
+Execution closes all 360 diagnosis terminals, including deterministic `B0`
+requests and explicit technical failures. It does not assign relation labels,
+select or materialize 200 claims, open protected outcomes, or create a human
+packet. Relation execution remains a separately authorized downstream stage.
 
 ## Admission evidence
 
@@ -79,13 +82,12 @@ PYTHONPATH=src python scripts/claim_support_validation_v2_authorization.py rehea
   --run-dir "$CLAIM_V2_COHORT_DIR"
 ```
 
-Do not create the authorization immediately after merging this planning
-boundary. CV2-09 must first implement, test and merge the cohort executor
-without provider access. Then synchronize `main`, rerun both commands and
-review their hashes and estimated upper cost. This ensures the authorization's
-`source_commit_ref` identifies the exact code that will execute the cohort,
-rather than the earlier planning-only commit. Authorization is an explicit
-operator action:
+Do not reuse the planning-only hashes or any feature-branch authorization.
+First merge CV2-09, synchronize a clean `main`, create a new empty private
+cohort directory, rerun both commands and review their hashes and estimated
+upper cost. This ensures the authorization's `source_commit_ref` identifies the
+exact code that will execute the cohort. Authorization is an explicit operator
+action:
 
 ```bash
 PYTHONPATH=src python scripts/claim_support_validation_v2_authorization.py authorize \
@@ -105,8 +107,34 @@ credential, a sufficient operator ceiling and exact hash confirmations. The
 credential is never persisted or printed. The authorization is create-only and
 binds one registered V2 diagnosis-cohort attempt to its private destination.
 
-There is intentionally no `execute` command in this boundary. Merging it
-unlocks CV2-09 implementation. Only after that executor is merged may a fresh
-plan, rehearsal, authorization and successful preflight authorize the live
-execution. None of those states is evidence that a balanced 200-claim sample
-exists.
+Only after a successful preflight may the operator explicitly consume that
+authorization:
+
+```bash
+caffeinate -dimsu env PYTHONPATH=src \
+  python scripts/claim_support_validation_v2_execution.py execute \
+  --qualification-run-dir "$CLAIM_V2_QUAL_DIR" \
+  --run-dir "$CLAIM_V2_COHORT_DIR" \
+  --confirm-authorization-sha256 <authorization-sha256>
+
+PYTHONPATH=src python scripts/claim_support_validation_v2_execution.py verify \
+  --qualification-run-dir "$CLAIM_V2_QUAL_DIR" \
+  --run-dir "$CLAIM_V2_COHORT_DIR"
+```
+
+The executor rebuilds the exact registered request census before taking the
+create-only lease. It uses the same provider binding, response schema, output
+budget, retry policy and global pacing across all model-backed variants. A
+sealed terminal may be replayed but never called again. After interruption,
+execution can continue only when completed shards are terminal and all
+remaining shards are untouched; a mid-shard partial state fails closed under
+the one-attempt contract. The verifier independently rebuilds the
+qualification, plan, authorization, lease, 360 terminal shards and receipt
+without provider access.
+
+Technical admission requires at least 95% parsed globally, at least 90% parsed
+within every mechanism, evidence condition and provider-backed variant, and a
+terminal result for every deterministic `B0` request. Failures remain in their
+original denominators and retain public-safe categories. Passing this gate only
+unlocks prospective relation execution. It is not evidence that a balanced
+200-claim sample exists.

@@ -211,8 +211,11 @@ exact 360-request cohort planning, but the qualification remains excluded from
 study data and says nothing about label balance or corpus feasibility. The
 subsequent cohort-authorization boundary rebuilds all 360 projections, freezes
 token and cost ceilings, and requires clean synchronized `main` plus explicit
-one-use authorization. It contains no executor and has not generated V2 claims,
-relation labels or human packets.
+one-use authorization. The subsequent CV2-09 boundary implements the exact
+cohort executor, create-only terminal store, terminal replay, independent
+verification and preregistered technical-admission reducer. No V2 provider run,
+relation label, materialized claim or human packet is included in that code
+boundary.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation

@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from pydantic import ValidationError
 
+from aletheia_lab.evaluation import (
+    claim_validation_v2_cohort_execution as cohort_execution,
+)
 from aletheia_lab.evaluation.claim_corpus_execution import RepositoryExecutionState
+from aletheia_lab.evaluation.claim_corpus_live import PreparedClaimCorpusRequest
 from aletheia_lab.evaluation.claim_validation_v2_cohort import (
     ClaimValidationV2CohortError,
     _request_projections,
@@ -19,16 +25,32 @@ from aletheia_lab.evaluation.claim_validation_v2_cohort import (
     rehearse_cohort,
 )
 from aletheia_lab.evaluation.claim_validation_v2_cohort_contracts import (
+    RECEIPT_SCHEMA_VERSION,
+    V2CohortAuthorization,
     V2CohortExecutionPlan,
+    V2CohortReceipt,
     V2CohortRehearsal,
     V2CohortRequestProjection,
+    V2CohortTerminalOutcome,
+)
+from aletheia_lab.evaluation.claim_validation_v2_cohort_execution import (
+    V2DeterministicB0Adapter,
+    build_cohort_lease,
+    build_v2_cohort_gateway_requests,
 )
 from aletheia_lab.evaluation.claim_validation_v2_qualification_contracts import (
     PROVIDER_VARIANTS,
     V2QualificationOutcome,
     V2QualificationReceipt,
 )
-from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
+from aletheia_lab.evaluation.claim_validation_v2_runtime import (
+    build_v2_runtime_manifest,
+)
+from aletheia_lab.evaluation.execution_contracts import (
+    canonical_execution_json,
+    canonical_execution_sha256,
+)
+from aletheia_lab.model_gateway import ProviderCall
 
 ROOT = Path(__file__).resolve().parents[2]
 COMMIT = "a" * 40
@@ -120,6 +142,26 @@ def rehearsal(
 @pytest.fixture(scope="module")
 def projections() -> tuple[V2CohortRequestProjection, ...]:
     return _request_projections(ROOT)
+
+
+@pytest.fixture(scope="module")
+def authorized_prepared(
+    tmp_path_factory: pytest.TempPathFactory,
+    plan: V2CohortExecutionPlan,
+    rehearsal: V2CohortRehearsal,
+) -> tuple[V2CohortAuthorization, tuple[PreparedClaimCorpusRequest, ...]]:
+    run_dir = checked_cohort_run_directory(
+        ROOT, tmp_path_factory.mktemp("v2-cohort")
+    )
+    authorization = build_cohort_authorization(
+        plan,
+        rehearsal,
+        repository_state=_state(),
+        run_dir=run_dir,
+        authorized_at="2026-09-10T00:00:00Z",
+        operator_cost_ceiling_usd=plan.estimated_upper_cost_usd,
+    )
+    return authorization, build_v2_cohort_gateway_requests(ROOT, plan, authorization)
 
 
 def test_plan_freezes_exact_balanced_census_and_conservative_cost(
@@ -253,3 +295,190 @@ def test_destination_must_be_private_and_create_only(tmp_path: Path) -> None:
     (run_dir / "unexpected.json").write_text("{}", encoding="utf-8")
     with pytest.raises(ClaimValidationV2CohortError, match="unknown"):
         checked_cohort_run_directory(ROOT, run_dir)
+
+
+def test_gateway_requests_exactly_bind_the_authorized_v2_census(
+    authorized_prepared: tuple[
+        V2CohortAuthorization, tuple[PreparedClaimCorpusRequest, ...]
+    ],
+) -> None:
+    authorization, prepared = authorized_prepared
+    manifest = build_v2_runtime_manifest(ROOT)
+
+    assert tuple(item.request_sha256 for item in prepared) == tuple(
+        item.v2_request_sha256 for item in manifest.diagnosis_schedule
+    )
+    assert sum(item.route == "model_gateway" for item in prepared) == 315
+    assert sum(item.route == "deterministic_local" for item in prepared) == 45
+    assert len(
+        {item.request.initial_attempt.request_identity_sha256 for item in prepared}
+    ) == 360
+    assert all(item.request.runtime_policy.max_attempts == 2 for item in prepared if item.route == "model_gateway")
+    assert all(item.request.runtime_policy.max_attempts == 1 for item in prepared if item.route == "deterministic_local")
+    assert all(
+        "mechanism" not in item.request.context.model_payload()
+        and "evidence_condition" not in item.request.context.model_payload()
+        and "family_id" not in item.request.context.model_payload()
+        for item in prepared
+    )
+    assert build_cohort_lease(authorization).registered_attempts == 1
+
+
+def test_deterministic_b0_emits_only_the_registered_measurement_witness(
+    authorized_prepared: tuple[
+        V2CohortAuthorization, tuple[PreparedClaimCorpusRequest, ...]
+    ],
+) -> None:
+    _, prepared = authorized_prepared
+    local = next(item for item in prepared if item.route == "deterministic_local")
+    request = local.request
+    attempt = request.initial_attempt
+    call = ProviderCall(
+        request_identity_sha256=attempt.request_identity_sha256,
+        attempt_id=attempt.attempt_id,
+        attempt_identity_sha256=attempt.attempt_identity_sha256,
+        attempt_ordinal=1,
+        context_sha256=attempt.context_sha256,
+        prompt_sha256=attempt.prompt_sha256,
+        response_schema_sha256=attempt.response_schema_sha256,
+        context_json=canonical_execution_json(request.context.model_payload()),
+        prompt_text=request.prompt_text,
+        response_schema_json=request.response_schema_json,
+        runtime_policy=request.runtime_policy,
+    )
+    envelope = V2DeterministicB0Adapter(local).invoke(call)
+    payload = json.loads(envelope.raw_response.content.decode("utf-8"))
+
+    assert payload["schema_version"] == "diagnosis-provider-output/2"
+    assert payload["result"]["output_status"] == "completed"
+    assert len(payload["result"]["atomic_claims"]) == 1
+    assert envelope.usage.input_tokens == 0
+    assert envelope.usage.output_tokens == 0
+
+
+def test_receipt_builder_accepts_all_strict_terminal_models(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    plan: V2CohortExecutionPlan,
+    rehearsal: V2CohortRehearsal,
+    authorized_prepared: tuple[
+        V2CohortAuthorization, tuple[PreparedClaimCorpusRequest, ...]
+    ],
+) -> None:
+    authorization, prepared = authorized_prepared
+    manifest = build_v2_runtime_manifest(ROOT)
+
+    class _Reader:
+        def terminal_inventory(self, _identity: str) -> SimpleNamespace:
+            return SimpleNamespace(
+                gateway_status="parsed",
+                parsed_response_sha256="8" * 64,
+                issue_sha256=None,
+            )
+
+        def terminal_attempt_records(
+            self, _identity: str
+        ) -> tuple[SimpleNamespace, ...]:
+            return (SimpleNamespace(provider_failure_category=None, usage=None),)
+
+    monkeypatch.setattr(
+        cohort_execution,
+        "verified_complete_claim_corpus_store_sha256",
+        lambda *_args: "9" * 64,
+    )
+    monkeypatch.setattr(cohort_execution, "_reader", lambda *_args: _Reader())
+    monkeypatch.setattr(
+        cohort_execution,
+        "_usage_census",
+        lambda *_args: (False, None, None, None),
+    )
+
+    receipt = cohort_execution.build_cohort_receipt(
+        manifest,
+        plan,
+        rehearsal,
+        authorization,
+        prepared,
+        tmp_path / "store",
+    )
+
+    assert receipt.parsed_count == 360
+    assert receipt.provider_attempt_count == 315
+    assert receipt.technical_admission_passed is True
+
+
+def test_terminal_receipt_is_fail_closed_and_content_addressed() -> None:
+    manifest = build_v2_runtime_manifest(ROOT)
+    outcomes = []
+    for scheduled in manifest.diagnosis_schedule:
+        payload: dict[str, object] = {
+            "sequence": scheduled.sequence,
+            "schedule_round": scheduled.schedule_round,
+            "v2_request_sha256": scheduled.v2_request_sha256,
+            "source_request_sha256": scheduled.source_request_sha256,
+            "gateway_request_identity_sha256": f"{scheduled.sequence:064x}",
+            "mechanism": scheduled.mechanism,
+            "evidence_condition": scheduled.evidence_condition,
+            "variant": scheduled.variant,
+            "execution_route": scheduled.execution_route,
+            "gateway_status": "parsed",
+            "attempt_count": 1,
+            "provider_failure_categories": (),
+            "parsed_response_sha256": f"{scheduled.sequence + 360:064x}",
+            "issue_sha256": None,
+        }
+        outcomes.append(
+            V2CohortTerminalOutcome.model_validate(
+                {
+                    **payload,
+                    "outcome_sha256": canonical_execution_sha256(payload),
+                }
+            )
+        )
+    payload = {
+        "schema_version": RECEIPT_SCHEMA_VERSION,
+        "status": "claim_support_validation_v2_cohort_complete_technical_admission_passed",
+        "authorization_sha256": "1" * 64,
+        "plan_sha256": "2" * 64,
+        "rehearsal_sha256": "3" * 64,
+        "qualification_receipt_sha256": "4" * 64,
+        "protocol_sha256": manifest.protocol_sha256,
+        "runtime_manifest_sha256": manifest.manifest_sha256,
+        "source_commit_ref": "5" * 40,
+        "terminal_store_sha256": "6" * 64,
+        "terminal_request_count": 360,
+        "parsed_count": 360,
+        "technical_failure_count": 0,
+        "model_request_count": 315,
+        "deterministic_request_count": 45,
+        "provider_attempt_count": 315,
+        "technical_attempt_count": 360,
+        "gateway_status_counts": {"parsed": 360},
+        "provider_failure_category_counts": {},
+        "provider_usage_complete": False,
+        "observed_provider_input_token_count": None,
+        "observed_provider_output_token_count": None,
+        "observed_provider_total_token_count": None,
+        "outcomes": tuple(item.model_dump(mode="python") for item in outcomes),
+        "technical_admission_blockers": (),
+        "technical_admission_passed": True,
+        "missingness_exchangeability_established": False,
+        "relation_execution_unlocked": True,
+        "provider_calls_executed": True,
+        "rerun_forbidden": True,
+        "claims_materialized": False,
+        "automatic_labels_generated": False,
+        "blind_packets_generated": False,
+        "human_annotations_collected": False,
+        "main_or_sealed_outcomes_opened": False,
+    }
+    receipt = V2CohortReceipt.model_validate(
+        {**payload, "receipt_sha256": canonical_execution_sha256(payload)}
+    )
+    changed = receipt.model_dump(mode="python")
+    changed["relation_execution_unlocked"] = False
+
+    assert receipt.technical_admission_passed is True
+    assert receipt.missingness_exchangeability_established is False
+    with pytest.raises(ValidationError):
+        V2CohortReceipt.model_validate(changed)

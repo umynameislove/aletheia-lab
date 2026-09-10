@@ -511,3 +511,29 @@ historical evidence. The separately versioned
 records the exact failure audit and the prospective V2 design. No V1 output is
 eligible for the V2 sample, and neither the closeout nor the V2 protocol creates
 a blind packet or authorizes another provider execution.
+
+## V2 diagnosis-cohort execution boundary
+
+CV2-09 implements, without executing, the registered 360-request V2 cohort.
+The executor rebuilds all 315 model-backed requests and 45 deterministic `B0`
+requests from authenticated frozen inputs. It binds the source commit,
+qualification, schedule, prompt, schema, visible evidence, provider snapshot,
+2,048-token output ceiling, two-attempt policy and global pacing before any
+terminal can be written.
+
+The private run uses a create-only lease and authenticated per-request terminal
+store. Completion requires exactly 360 terminal shards. Independent
+verification reconstructs the entire store and receipt without trusting writer
+state or invoking a provider. Completed terminal shards can be replayed, while
+a mid-shard partial state fails closed rather than risking a duplicate provider
+call. Provider failures retain public-safe categories, remain in all applicable
+denominators and cannot silently disappear through replay.
+
+The technical gate requires at least 95% parsed globally and at least 90%
+within each mechanism, evidence condition and provider-backed variant, while
+all deterministic `B0` requests must terminate. A pass unlocks only a separately
+authorized relation stage. It does not establish label balance, materialize a
+sample, or create blind human packets. At this code-boundary state, no V2 cohort
+provider calls or outcomes exist; execution requires a fresh plan, rehearsal,
+authorization and preflight on the exact clean synchronized `main` commit after
+merge.

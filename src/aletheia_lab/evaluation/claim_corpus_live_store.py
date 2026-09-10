@@ -11,6 +11,9 @@ from aletheia_lab.evaluation.attempt_store import (
     TerminalExecutionInventory,
 )
 from aletheia_lab.evaluation.claim_corpus_execution import ClaimCorpusExecutionError
+from aletheia_lab.evaluation.claim_corpus_terminal_reader import (
+    ClaimCorpusTerminalReader,
+)
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
 from aletheia_lab.filesystem import publish_immutable_file
 from aletheia_lab.project.identity import canonical_project_json, content_sha256
@@ -102,4 +105,99 @@ class ClaimCorpusAttemptStore:
         )
 
 
-__all__ = ["ClaimCorpusAttemptStore"]
+def verified_complete_claim_corpus_store_sha256(
+    root: Path,
+    prepared: tuple[PreparedClaimCorpusRequest, ...],
+) -> str:
+    """Verify exact sharded-store membership without invoking write primitives."""
+
+    expected = {
+        item.request.initial_attempt.request_identity_sha256: item for item in prepared
+    }
+    if len(expected) != len(prepared):
+        raise ClaimCorpusExecutionError(
+            "claim-corpus request identities are not unique"
+        )
+    if root.is_symlink() or not root.is_dir():
+        raise ClaimCorpusExecutionError(
+            "claim-corpus store root must be a real directory"
+        )
+    members = {path.name: path for path in root.iterdir()}
+    if set(members) != {"requests", "authorities"} or any(
+        path.is_symlink() or not path.is_dir() for path in members.values()
+    ):
+        raise ClaimCorpusExecutionError(
+            "claim-corpus store root membership does not reconcile"
+        )
+    request_root = members["requests"]
+    authority_root = members["authorities"]
+    request_members = {path.name: path for path in request_root.iterdir()}
+    authority_members = {path.name: path for path in authority_root.iterdir()}
+    if set(request_members) != set(expected) or set(authority_members) != {
+        f"{identity}.json" for identity in expected
+    }:
+        raise ClaimCorpusExecutionError(
+            "claim-corpus store does not contain the exact request census"
+        )
+    authority_hashes: list[tuple[str, str]] = []
+    shard_hashes: list[tuple[str, str]] = []
+    for identity, item in sorted(expected.items()):
+        authority_path = authority_members[f"{identity}.json"]
+        expected_authority = (
+            canonical_project_json(item.authority.model_dump(mode="json")) + "\n"
+        ).encode("utf-8")
+        if (
+            authority_path.is_symlink()
+            or not authority_path.is_file()
+            or authority_path.read_bytes() != expected_authority
+        ):
+            raise ClaimCorpusExecutionError(
+                "claim-corpus request authority differs from the frozen request"
+            )
+        shard = request_members[identity]
+        shard_directories = tuple(
+            shard / name for name in ("objects", "requests", "terminal", "failures")
+        )
+        if (
+            shard.is_symlink()
+            or not shard.is_dir()
+            or any(path.is_symlink() or not path.is_dir() for path in shard_directories)
+        ):
+            raise ClaimCorpusExecutionError(
+                "claim-corpus request shard contains an invalid directory"
+            )
+        reader = ClaimCorpusTerminalReader(
+            root=shard,
+            object_root=shard / "objects" / "sha256",
+            request_root=shard / "requests",
+            terminal_root=shard / "terminal",
+            failure_root=shard / "failures",
+        )
+        reader.verify_integrity()
+        terminal_names = tuple(
+            sorted(
+                path.stem
+                for path in (shard / "terminal").iterdir()
+                if not path.name.endswith(".stage")
+            )
+        )
+        if terminal_names != (identity,):
+            raise ClaimCorpusExecutionError(
+                "claim-corpus shard is not exactly terminal for its request"
+            )
+        reader.terminal_inventory(identity)
+        authority_hashes.append((identity, content_sha256(expected_authority)))
+        shard_hashes.append((identity, reader.store_sha256()))
+    return canonical_execution_sha256(
+        {
+            "schema_version": "claim-corpus-sharded-attempt-store/v1",
+            "authorities": tuple(authority_hashes),
+            "shards": tuple(shard_hashes),
+        }
+    )
+
+
+__all__ = [
+    "ClaimCorpusAttemptStore",
+    "verified_complete_claim_corpus_store_sha256",
+]
