@@ -74,6 +74,8 @@ def test_evaluation_profile_has_required_boundaries_without_deselection() -> Non
         "tests/unit/test_claim_validation_v2_qualification.py",
         "tests/unit/test_claim_validation_v2_cohort.py",
         "tests/unit/test_claim_validation_v2_extraction.py",
+        "tests/unit/test_claim_validation_v3.py",
+        "tests/integration/test_claim_validation_v3_local.py",
         "tests/integration/test_claim_validation_v2_runtime_local.py",
         "tests/integration/test_claim_validation_v2_expressiveness_local.py",
         "tests/integration/test_claim_validation_v2_qualification_local.py",
