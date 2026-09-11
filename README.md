@@ -234,9 +234,14 @@ scope text; all 12 relation probes passed. That immutable failed attempt is
 hash-bound and cannot be rerun. The prospective V3.1 amendment replaces
 provider-authored source prose with exact ordered target/value readings followed
 by deterministic scope, part and citation rendering. It requires a fresh
-33-request qualification before cohort planning and still authorizes no cohort
-or human packet. Its displayed-measurement scope does not support
-variant-superiority or free-form diagnosis claims.
+33-request qualification before cohort planning. The fresh V3.1 qualification
+completed at 33/33 parsed and accepted, with zero technical and semantic
+failures; its immutable receipt unlocks planning only. The separate V3.1 source
+cohort boundary now freezes 360 source cells (315 provider-backed and 45 local),
+720 source instances, exact token/cost accounting and one-use execution while
+keeping all 240 relation requests unauthorized. No source cohort, relation run,
+corpus or human packet is created by the offline plan. Its displayed-measurement
+scope does not support variant-superiority or free-form diagnosis claims.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation
@@ -527,6 +532,7 @@ documentation, and reproducible artifacts.
 - [Claim-support V1 failure audit and prospective V2 protocol](docs/claim-support-validation-v2-protocol.md)
 - [Claim-support V2 seven-request qualification](docs/claim-support-validation-v2-qualification.md)
 - [Claim-support V2 diagnosis-cohort authorization](docs/claim-support-validation-v2-authorization.md)
+- [Claim-support V3/V3.1 prospective measurement calibration](docs/claim-support-validation-v3.md)
 - [Related work and research positioning](docs/related-work.md)
 - [Architecture decisions](docs/adr/)
 
