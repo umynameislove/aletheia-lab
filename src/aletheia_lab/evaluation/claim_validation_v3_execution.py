@@ -18,6 +18,7 @@ from aletheia_lab.evaluation.claim_validation_v2_qualification import _openai_po
 from aletheia_lab.evaluation.claim_validation_v3_design import (
     build_probes,
     reduce_relations,
+    source_payload_issue,
 )
 from aletheia_lab.evaluation.claim_validation_v3_qualification import (
     FALSE_FLAGS,
@@ -59,21 +60,30 @@ def _reader(store: Path, identity: str) -> ClaimCorpusTerminalReader:
     )
 
 
-def _accepted(root: Path, probe: dict[str, Any], payload: dict[str, Any] | None) -> bool:
+def _semantic_issue(
+    root: Path, probe: dict[str, Any], payload: dict[str, Any] | None
+) -> str | None:
     if payload is None:
-        return False
+        return None
     if probe["kind"] == "source":
-        return source_roundtrip(root, probe, payload)
+        issue = source_payload_issue(payload, probe["expected"])
+        if issue is not None:
+            return issue
+        return None if source_roundtrip(root, probe, payload) else "source_normalization_mismatch"
     context = ModelVisibleEvidenceContext.model_validate_json(json.dumps(probe["context"]))
     try:
         reduce_relations(payload, 2, [i.evidence_id for i in context.items])
     except ValueError:
-        return False
+        return "relation_matrix_invalid"
 
     def key(row: dict[str, Any]) -> tuple[int, str]:
         return row["part"], row["evidence_id"]
 
-    return sorted(payload["relations"], key=key) == sorted(probe["expected"]["relations"], key=key)
+    return (
+        None
+        if sorted(payload["relations"], key=key) == sorted(probe["expected"]["relations"], key=key)
+        else "relation_expected_matrix_mismatch"
+    )
 
 
 def rebuild_receipt(
@@ -103,25 +113,31 @@ def rebuild_receipt(
             for d in diagnostics
             if d.get("provider_failure_category") is not None
         )
+        semantic_issue = (
+            _semantic_issue(root, probe, payload) if inventory.gateway_status == "parsed" else None
+        )
         rows.append(
             {
                 "probe_sha256": probe["probe_sha256"],
                 "kind": probe["kind"],
                 "gateway_request_identity_sha256": identity,
                 "gateway_status": inventory.gateway_status,
-                "accepted": inventory.gateway_status == "parsed"
-                and _accepted(root, probe, payload),
+                "accepted": inventory.gateway_status == "parsed" and semantic_issue is None,
+                "semantic_issue_code": semantic_issue,
                 "attempt_count": len(records),
                 "failure_categories": dict(categories),
             }
         )
     parsed = sum(row["gateway_status"] == "parsed" for row in rows)
     accepted = sum(row["accepted"] for row in rows)
+    semantic_issues = Counter(
+        row["semantic_issue_code"] for row in rows if row["semantic_issue_code"] is not None
+    )
     passed = parsed == accepted == 33
     return seal(
         {
-            "schema_version": "claim-support-v3-qualification-receipt/1",
-            "status": "v3_qualification_passed" if passed else "v3_qualification_failed",
+            "schema_version": "claim-support-v3-qualification-receipt/2",
+            "status": "v3_1_qualification_passed" if passed else "v3_1_qualification_failed",
             "plan_sha256": plan["plan_sha256"],
             "authorization_sha256": auth["authorization_sha256"],
             "terminal_store_sha256": store_hash,
@@ -130,6 +146,7 @@ def rebuild_receipt(
             "accepted_count": accepted,
             "technical_failure_count": len(rows) - parsed,
             "semantic_failure_count": parsed - accepted,
+            "semantic_issue_counts": dict(semantic_issues),
             "provider_attempt_count": sum(row["attempt_count"] for row in rows),
             "outcomes": rows,
             "source_commit_ref": plan["source_commit_ref"],

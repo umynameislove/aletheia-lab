@@ -20,19 +20,27 @@ from aletheia_lab.evaluation.claim_corpus_live import (
     _opaque,
     _request_authority,
 )
-from aletheia_lab.evaluation.claim_corpus_normalization_recovery import normalize_provider_output_v2
+from aletheia_lab.evaluation.claim_corpus_normalization_recovery import (
+    ProviderDiagnosisOutputV2,
+    normalize_provider_output_v2,
+)
 from aletheia_lab.evaluation.claim_corpus_readiness import FAIRNESS_PATH, REQUEST_CENSUS_PATH
+from aletheia_lab.evaluation.claim_corpus_terminal_reader import ClaimCorpusTerminalReader
 from aletheia_lab.evaluation.claim_evidence_semantics import ModelVisibleEvidenceContext
 from aletheia_lab.evaluation.claim_validation_v2_extraction import load_v2_extraction_closeout
 from aletheia_lab.evaluation.claim_validation_v2_qualification import _chat_tokens, _openai_policy
 from aletheia_lab.evaluation.claim_validation_v3_design import (
     PREDECESSOR_CLOSEOUT,
+    PREFIX,
     VERSION,
     accept_source,
     build_design,
     build_probes,
+    build_v3_probes,
     implementation_bindings,
+    legacy_source_payload,
     reduce_relations,
+    render_source_payload,
     source_instance_id,
     source_payload,
 )
@@ -46,10 +54,15 @@ from aletheia_lab.evaluation.execution_contracts import (
 from aletheia_lab.evaluation.variant_fairness import load_diagnosis_variant_freeze
 from aletheia_lab.filesystem import publish_immutable_file
 from aletheia_lab.model_gateway import RuntimePolicyReference, prepare_gateway_request
-from aletheia_lab.model_gateway.recovery_transport import wire_schema_json
 from aletheia_lab.project.identity import canonical_project_json
 
 PROTOCOL_PATH = "configs/evaluation/claim_support_validation_v3_protocol.json"
+FAILURE_CLOSEOUT_PATH = "configs/evaluation/claim_support_validation_v3_qualification_failure.json"
+FAILED_V3_PLAN_SHA256 = "a257d14d747d3d6b93dcfe2fa020c58a5bec1ef627aaf2edebfe8eb08f2ddc19"
+FAILED_V3_RECEIPT_SHA256 = "7e45169d1167e72a0e76eb3011c3e4495c7981780db26f84e8518e29123beec2"
+FAILED_V3_STORE_SHA256 = "e09d6ba632771d5b22d0fcdc840f898f96e096102593dec004361c088561920a"
+FAILED_V3_PROTOCOL_SHA256 = "076bd07d241f17d9d36ae738effed97feb980137ddd74df44471165c0c3b7627"
+FAILED_V3_SOURCE_COMMIT = "c472068e2287964f1970aacbd362a7f40776de42"
 MODEL_SNAPSHOT = "gpt-4.1-2025-04-14"
 FALSE_FLAGS = {
     "automatic_labels_generated": False,
@@ -94,13 +107,212 @@ def publish(path: Path, payload: dict[str, Any]) -> str:
     return publish_immutable_file(path, (canonical_project_json(payload) + "\n").encode())
 
 
+def build_failure_closeout() -> dict[str, Any]:
+    """Bind the terminal V3 result without reinterpreting it under V3.1."""
+    return seal(
+        {
+            "schema_version": "claim-support-v3-qualification-failure-closeout/1",
+            "status": "v3_qualification_closed_failed_source_representation",
+            "source_commit_ref": FAILED_V3_SOURCE_COMMIT,
+            "v3_protocol_sha256": FAILED_V3_PROTOCOL_SHA256,
+            "plan_sha256": FAILED_V3_PLAN_SHA256,
+            "receipt_sha256": FAILED_V3_RECEIPT_SHA256,
+            "terminal_store_sha256": FAILED_V3_STORE_SHA256,
+            "terminal_request_count": 33,
+            "accepted_count": 19,
+            "technical_failure_count": 0,
+            "semantic_failure_count": 14,
+            "source_accepted_count": 7,
+            "source_semantic_failure_count": 14,
+            "relation_accepted_count": 12,
+            "relation_semantic_failure_count": 0,
+            "failure_category_counts": {
+                "claim_text_repeated_scope_prefix_omission": 12,
+                "material_part_scope_prefix_omission": 14,
+            },
+            "measurement_values_correct_in_semantic_failures": 14,
+            "synthetic_only": True,
+            "provider_calls_executed": True,
+            "rerun_forbidden": True,
+            "cohort_planning_unlocked": False,
+            **FALSE_FLAGS,
+        },
+        "closeout_sha256",
+    )
+
+
+def verify_failure_closeout(root: Path) -> dict[str, Any]:
+    tracked = read_document(root / FAILURE_CLOSEOUT_PATH, "closeout_sha256")
+    expected = build_failure_closeout()
+    if tracked != expected:
+        raise ValueError("V3 qualification failure closeout differs from terminal audit")
+    return tracked
+
+
+def _retired_reader(store: Path, identity: str) -> ClaimCorpusTerminalReader:
+    shard = store / "requests" / identity
+    return ClaimCorpusTerminalReader(
+        root=shard,
+        object_root=shard / "objects/sha256",
+        request_root=shard / "requests",
+        terminal_root=shard / "terminal",
+        failure_root=shard / "failures",
+    )
+
+
+def _scope_only_difference(
+    payload: dict[str, Any], expected: list[dict[str, Any]]
+) -> tuple[bool, bool] | None:
+    """Classify the observed V3 prose omission without accepting it."""
+    try:
+        ProviderDiagnosisOutputV2.model_validate_json(json.dumps(payload))
+        actual = payload["result"]["atomic_claims"]
+    except (KeyError, TypeError, ValueError):
+        return None
+    if len(actual) != len(expected):
+        return None
+    part_omission = False
+    claim_omission = False
+    for observed, target in zip(actual, expected, strict=True):
+        if (
+            observed.get("claim_type") != target["claim_type"]
+            or observed.get("visible_evidence_ids") != target["visible_evidence_ids"]
+        ):
+            return None
+        observed_parts = observed.get("material_parts")
+        if not isinstance(observed_parts, list):
+            return None
+        part_texts: list[str] = []
+        for part in observed_parts:
+            if not isinstance(part, dict) or not isinstance(part.get("text"), str):
+                return None
+            part_texts.append(part["text"])
+        part_omission |= any(not text.startswith(PREFIX) for text in part_texts)
+        normalized_parts = [
+            text if text.startswith(PREFIX) else PREFIX + text for text in part_texts
+        ]
+        if normalized_parts != [part["text"] for part in target["material_parts"]]:
+            return None
+        claim_text = observed.get("claim_text")
+        if not isinstance(claim_text, str):
+            return None
+        segments = claim_text.split("; ")
+        claim_omission |= any(not segment.startswith(PREFIX) for segment in segments)
+        normalized_claim = "; ".join(
+            segment if segment.startswith(PREFIX) else PREFIX + segment for segment in segments
+        )
+        if normalized_claim != target["claim_text"]:
+            return None
+    return part_omission, claim_omission
+
+
+def _relation_cell_key(item: dict[str, Any]) -> tuple[int, str]:
+    return item["part"], item["evidence_id"]
+
+
+def _relation_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    rows = payload.get("relations")
+    if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+        raise ValueError("retired V3 relation payload differs")
+    return rows
+
+
+def _retired_audit_inputs(
+    root: Path, run: Path
+) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]], Path]:
+    if run.is_symlink() or not run.is_dir():
+        raise ValueError("retired V3 run must be a real directory")
+    receipt = read_document(run / "receipt.json", "receipt_sha256")
+    expected_core = {
+        "receipt_sha256": FAILED_V3_RECEIPT_SHA256,
+        "terminal_store_sha256": FAILED_V3_STORE_SHA256,
+        "plan_sha256": FAILED_V3_PLAN_SHA256,
+        "protocol_sha256": FAILED_V3_PROTOCOL_SHA256,
+        "source_commit_ref": FAILED_V3_SOURCE_COMMIT,
+        "terminal_request_count": 33,
+        "parsed_count": 33,
+        "accepted_count": 19,
+        "technical_failure_count": 0,
+        "semantic_failure_count": 14,
+        "rerun_forbidden": True,
+        "synthetic_only": True,
+        "cohort_planning_unlocked": False,
+    }
+    if any(receipt.get(key) != value for key, value in expected_core.items()):
+        raise ValueError("retired V3 receipt differs from registered failure")
+    outcomes = receipt.get("outcomes")
+    probes = {probe["probe_sha256"]: probe for probe in build_v3_probes(root)}
+    if not isinstance(outcomes, list) or len(outcomes) != 33 or len(probes) != 33:
+        raise ValueError("retired V3 outcome census differs")
+    identities = {row.get("gateway_request_identity_sha256") for row in outcomes}
+    store = run / "attempt-store"
+    request_names = {path.name for path in (store / "requests").iterdir()}
+    authority_names = {path.stem for path in (store / "authorities").glob("*.json")}
+    if None in identities or request_names != identities or authority_names != identities:
+        raise ValueError("retired V3 store membership differs")
+    return outcomes, probes, store
+
+
+def audit_failed_qualification(root: Path, run: Path) -> dict[str, Any]:
+    """Replay the retired V3 failure classification without changing its verdict."""
+    outcomes, probes, store = _retired_audit_inputs(root, run)
+    source_accepted = 0
+    relation_accepted = 0
+    source_failed = 0
+    part_omissions = 0
+    claim_omissions = 0
+    for row in outcomes:
+        probe_id = row.get("probe_sha256")
+        identity = row.get("gateway_request_identity_sha256")
+        if not isinstance(probe_id, str) or not isinstance(identity, str):
+            raise ValueError("retired V3 outcome identity differs")
+        probe = probes.get(probe_id)
+        if probe is None or row.get("gateway_status") != "parsed":
+            raise ValueError("retired V3 outcome binding differs")
+        reader = _retired_reader(store, identity)
+        inventory = reader.terminal_inventory(identity)
+        payload = reader.terminal_parsed_payload(identity)
+        if inventory.gateway_status != "parsed" or payload is None:
+            raise ValueError("retired V3 terminal is not parsed")
+        if probe["kind"] == "relation":
+            accepted = sorted(_relation_rows(payload), key=_relation_cell_key) == sorted(
+                _relation_rows(probe["expected"]), key=_relation_cell_key
+            )
+            relation_accepted += int(accepted)
+        else:
+            accepted = payload == legacy_source_payload(probe["expected"])
+            source_accepted += int(accepted)
+            if not accepted:
+                classification = _scope_only_difference(payload, probe["expected"])
+                if classification is None:
+                    raise ValueError("retired V3 source failure is not scope-only")
+                source_failed += 1
+                part_omissions += int(classification[0])
+                claim_omissions += int(classification[1])
+        if row.get("accepted") is not accepted:
+            raise ValueError("retired V3 receipt acceptance differs from terminal payload")
+    if (source_accepted, source_failed, relation_accepted, part_omissions, claim_omissions) != (
+        7,
+        14,
+        12,
+        14,
+        12,
+    ):
+        raise ValueError("retired V3 failure classification differs")
+    return verify_failure_closeout(root)
+
+
 def build_protocol(root: Path) -> dict[str, Any]:
     design = build_design(root)
+    failure = verify_failure_closeout(root)
     return seal(
         {
             "schema_version": VERSION,
             "predecessor_closeout_sha256": PREDECESSOR_CLOSEOUT,
             "design_sha256": design["design_sha256"],
+            "failed_qualification_closeout_sha256": failure["closeout_sha256"],
+            "failed_qualification_receipt_sha256": failure["receipt_sha256"],
+            "failed_qualification_terminal_store_sha256": failure["terminal_store_sha256"],
             "source_slot_count": design["source_slot_count"],
             "source_claim_instance_count": design["source_claim_instance_count"],
             "prospective_relation_request_count": design["relation_request_count"],
@@ -120,6 +332,9 @@ def build_protocol(root: Path) -> dict[str, Any]:
             "maximum_claims_per_output_per_label": 2,
             "global_canonical_text_uniqueness_required": True,
             "qualification_requires_all_parsed_and_exact": True,
+            "source_provider_schema_version": "claim-source-measurement-output/1",
+            "source_text_rendering": "deterministic_after_exact_reading_validation",
+            "prior_qualification_rerun_forbidden": True,
             "cohort_success_not_guaranteed_by_qualification": True,
             "scientific_amendment_after_development_observations": True,
             "scientific_scope_review_required_before_cohort": True,
@@ -153,14 +368,15 @@ def source_roundtrip(root: Path, probe: dict[str, Any], payload: dict[str, Any])
     """Exercise the real normalizer too; synthetic probes are never study entries."""
     if not accept_source(payload, probe["expected"]):
         return False
+    rendered = render_source_payload(payload, probe["expected"])
     census = ClaimCorpusRequestCensus.model_validate_json((root / REQUEST_CENSUS_PATH).read_bytes())
     request = next(r for r in census.primary_requests if r.variant == probe["variant"])
     context = ModelVisibleEvidenceContext.model_validate_json(json.dumps(probe["context"]))
     try:
         output = normalize_provider_output_v2(
             request,
-            payload,
-            source_record_sha256=digest(payload),
+            rendered,
+            source_record_sha256=digest({"provider_payload": payload, "rendered": rendered}),
             visible_evidence_ids=[i.evidence_id for i in context.items],
         )
     except ValueError:
@@ -193,8 +409,6 @@ def build_plan(
             encoding, prompt, canonical_project_json(context.model_payload())
         )
         schema = canonical_project_json(probe["schema"])
-        if probe["kind"] == "source":
-            schema = wire_schema_json(schema)
         schema_tokens += len(encoding.encode(schema))
     # Includes every maximum output on both attempts, schemas and wrapper allowance.
     input_ceiling = 2 * (message_tokens + schema_tokens + 512 * len(probes))
@@ -202,7 +416,7 @@ def build_plan(
     state = inspect_repository_state(root)
     return seal(
         {
-            "schema_version": "claim-support-v3-qualification-plan/1",
+            "schema_version": "claim-support-v3-qualification-plan/2",
             "source_commit_ref": source_commit or state.head_commit,
             "protocol_sha256": protocol["protocol_sha256"],
             "predecessor_closeout_sha256": closeout_sha,
@@ -231,7 +445,7 @@ def rehearse(plan: dict[str, Any], root: Path) -> dict[str, Any]:
         if probe["kind"] == "source":
             valid = source_payload(probe["expected"])
             invalid = json.loads(json.dumps(valid))
-            invalid["result"]["atomic_claims"][0]["claim_text"] += " "
+            invalid["readings"][0]["value"] += "0"
             if not source_roundtrip(root, probe, valid) or accept_source(
                 invalid, probe["expected"]
             ):
@@ -245,7 +459,7 @@ def rehearse(plan: dict[str, Any], root: Path) -> dict[str, Any]:
         raise ValueError("source-instance collision")
     return seal(
         {
-            "schema_version": "claim-support-v3-qualification-rehearsal/1",
+            "schema_version": "claim-support-v3-qualification-rehearsal/2",
             "plan_sha256": plan["plan_sha256"],
             "probe_count": len(probes),
             "same_content_distinct_request_identity": True,
@@ -286,7 +500,7 @@ def authorize(root: Path, run: Path, plan: dict[str, Any], ceiling: float) -> di
         raise ValueError("authorization requires a fresh empty destination")
     return seal(
         {
-            "schema_version": "claim-support-v3-qualification-authorization/1",
+            "schema_version": "claim-support-v3-qualification-authorization/2",
             "plan_sha256": plan["plan_sha256"],
             "source_commit_ref": state.head_commit,
             "rehearsal_sha256": rehearse(plan, root)["rehearsal_sha256"],
@@ -313,7 +527,7 @@ def validate_authority(
         raise ValueError("qualification plan differs from frozen inputs")
     conditions = (
         set(auth) == AUTHORIZATION_FIELDS,
-        auth.get("schema_version") == "claim-support-v3-qualification-authorization/1",
+        auth.get("schema_version") == "claim-support-v3-qualification-authorization/2",
         auth.get("credential_stored") is False,
         auth.get("plan_sha256") == plan["plan_sha256"],
         auth.get("source_commit_ref") == plan["source_commit_ref"],

@@ -1,9 +1,28 @@
-# Prospective V3 measurement calibration
+# Prospective V3.1 measurement calibration
 
 V3 is a separately versioned development calibration, designed after observing
 the V1 label shortfall and V2 extraction failure. Neither historical cohort is
 repaired, relabeled, pooled into V3, or reused as V3 model output. Existing
 protocols, terminal stores and failed attempts remain authoritative history.
+
+The first V3 qualification is terminal and failed: all 33 requests parsed with
+zero technical failures, but only 19 were accepted. All 12 relation probes
+passed. Fourteen of 21 source probes omitted the required displayed-report
+scope from at least one provider-authored material part; 12 also omitted the
+repeated scope in compound claim text. Their target values, evidence paths,
+citations and claim order were otherwise correct. The immutable closeout at
+`configs/evaluation/claim_support_validation_v3_qualification_failure.json`
+binds its source commit, protocol, plan, receipt and terminal-store hashes. That
+attempt remains failed and cannot be reinterpreted or rerun.
+
+V3.1 is a prospective source-representation amendment. It keeps the question,
+model, evidence, target allocation, relation instrument, budgets and all cohort
+quotas fixed. It removes provider-authored claim prose from the source boundary:
+the provider returns ordered target/value readings, exact local validation
+checks every value, and deterministic code renders canonical claim text,
+material parts and citations. This prevents formatting variance from being
+confounded with measurement correctness without accepting or repairing any
+wrong value.
 
 ## Question and limits
 
@@ -78,9 +97,13 @@ Identical outputs in different cells therefore remain separate provenance
 records. Repetition is retained in the execution denominator; repeated text
 cannot be padded into the human sample.
 
-Source acceptance requires the full local schema, exact target text, material
-parts, citations and order, followed by the existing real normalizer. A parsed
-but altered claim fails qualification; normalization is not a rescue step.
+Source acceptance requires the `claim-source-measurement-output/1` envelope,
+the complete ordered target census and exact byte-for-byte measurement values.
+Missing, duplicate, reordered, mistyped or foreign targets and changed values
+fail before claim construction. After acceptance, a deterministic renderer
+constructs the displayed-report scope, material parts and citations, and the
+existing real normalizer must still accept that rendered output. Provider prose
+from V3 is not accepted by the V3.1 boundary and no historical output is rescued.
 
 Relation output is a complete matrix of material parts × visible evidence IDs.
 Duplicate, missing, foreign and malformed cells fail. Support is the union
@@ -92,10 +115,24 @@ changed retrospectively.
 
 ## Qualification and execution safety
 
-The CLI `scripts/claim_support_validation_v3.py` implements **qualification
-only**, not the 360-cell cohort executor:
+The CLI `scripts/claim_support_validation_v3.py` implements **V3.1 qualification
+only**, not the 360-cell cohort executor. Before planning, the retired run can
+be audited read-only against every terminal shard:
 
-1. `verify-protocol`, `plan`, `rehearse`: provider-free reconstruction, exact
+```bash
+PYTHONPATH=src python scripts/claim_support_validation_v3.py \
+  audit-failed-qualification \
+  --retired-run /absolute/private/path/claim-support-validation-v3-qualification
+```
+
+This command requires the registered receipt/store hashes and proves the 14/12
+scope-omission classification. It never rewrites the run or reclassifies an
+old failure as accepted.
+
+The prospective workflow is:
+
+1. `verify-failure-closeout`, `verify-protocol`, `plan`, `rehearse`:
+   provider-free reconstruction, exact
    local token counts, frozen-rate cost bound and full request projection.
 2. After merge to clean synchronized main, `authorize` requires the exact plan
    and rehearsal hashes, a fresh private directory and an explicit cost ceiling.
@@ -106,7 +143,8 @@ only**, not the 360-cell cohort executor:
 5. `verify` independently rebuilds the receipt from all terminal shards and
    checks identities, raw/parsed artifacts, authorities and failure counts.
 
-There are 33 synthetic-only requests: 21 source requests (seven profiles ×
+V3.1 uses a fresh private destination and fresh authorization. There are 33
+synthetic-only requests: 21 source requests (seven profiles ×
 three conditions), then 12 relation requests (three synthetic examples × four
 frames). Every source must parse, match its targets and normalize. Every
 relation cell must match the synthetic numeric oracle, not merely its final
@@ -118,7 +156,7 @@ the existing bounded Retry-After-aware policy. Costs include wire schemas,
 wrapper allowance and maximum output on both attempts, at the frozen planning
 rates (USD 2/8 per million input/output tokens). This is not a provider bill or
 a claim that those rates are current. Read the freshly generated plan before
-authorizing. Qualification is approximately USD 1.27 under these assumptions.
+authorizing; do not copy plan or rehearsal hashes from this document.
 
 Provider failures preserve allowlisted categories and available usage/finish
 diagnostics, never credentials or arbitrary provider error bodies. Operational
@@ -128,9 +166,11 @@ unlocks **cohort planning only**, not a paid cohort, relation run or blind packe
 
 ## Verification coverage
 
-The unit suite exercises authentic source capacity, all 360 source-normalizer
+The unit suite exercises the bound V3 failure closeout, authentic source
+capacity, all 360 source-normalizer
 round trips, disjoint assignment limits, source/instance identity, frame
-semantics, complete part matrices, claim tampering, real adapter serialization
+semantics, complete part matrices, reading/value tampering, deterministic
+scope/citation rendering, rejection of the old prose envelope, real adapter serialization
 with a mocked HTTP response, one-use execution, failure denominators and
 independent read-only terminal replay. Integration tests verify cross-process
 hash stability and credential-safe CLI refusal. These are offline tests,
