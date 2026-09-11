@@ -35,6 +35,18 @@ def test_protocol_is_byte_stable_across_process_hash_seeds():
     assert json.loads(first.stdout)["capacity_passed"]
 
 
+def test_failed_qualification_closeout_is_byte_stable_across_hash_seeds():
+    first = _run("verify-failure-closeout", seed="1")
+    second = _run("verify-failure-closeout", seed="927")
+    assert first.returncode == second.returncode == 0
+    assert first.stdout == second.stdout
+    payload = json.loads(first.stdout)
+    assert payload["receipt_sha256"] == (
+        "7e45169d1167e72a0e76eb3011c3e4495c7981780db26f84e8518e29123beec2"
+    )
+    assert payload["rerun_forbidden"] is True
+
+
 def test_no_credential_or_paid_attempt_on_missing_predecessor(tmp_path):
     result = _run(
         "execute",

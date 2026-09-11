@@ -28,9 +28,12 @@ from aletheia_lab.evaluation.claim_validation_v3_design import (
     numeric_leaves,
     reduce_relations,
     relation_instance_id,
+    render_source_payload,
     source_bank,
     source_instance_id,
     source_payload,
+    source_payload_issue,
+    source_response_schema,
     structural_relations,
 )
 from aletheia_lab.evaluation.claim_validation_v3_execution import execute, verify
@@ -159,28 +162,58 @@ def test_relation_matrix_fails_closed(mutation):
 
 
 @pytest.mark.parametrize(
-    "mutation", ["space", "newline", "rounding", "citation", "order", "part", "abstain"]
+    "mutation", ["value", "target", "order", "missing", "extra", "bool", "schema"]
 )
-def test_source_schema_success_does_not_rescue_semantically_changed_claims(mutation):
+def test_source_readings_fail_closed_without_text_repair(mutation):
     expected = source_bank(make_synthetic_context(0, "full"))[:2]
     payload = source_payload(copy.deepcopy(expected))
     assert accept_source(payload, expected)
-    claim = payload["result"]["atomic_claims"][0]
-    if mutation == "space":
-        claim["claim_text"] += " "
-    if mutation == "newline":
-        claim["claim_text"] += "\n"
-    if mutation == "rounding":
-        claim["claim_text"] = claim["claim_text"].replace("-0.013", "-0.01")
-    if mutation == "citation":
-        claim["visible_evidence_ids"] = ["ev-unknown"]
+    if mutation == "value":
+        payload["readings"][0]["value"] += "0"
+    if mutation == "target":
+        payload["readings"][0]["target"] = 2
     if mutation == "order":
-        payload["result"]["atomic_claims"].reverse()
-    if mutation == "part":
-        claim["material_parts"].pop()
-    if mutation == "abstain":
-        payload["result"] = {"output_status": "abstained", "abstention_reason": "cannot establish"}
+        payload["readings"].reverse()
+    if mutation == "missing":
+        payload["readings"].pop()
+    if mutation == "extra":
+        payload["readings"][0]["explanation"] = "untrusted"
+    if mutation == "bool":
+        payload["readings"][0]["target"] = True
+    if mutation == "schema":
+        payload["schema_version"] = "foreign"
     assert not accept_source(payload, expected)
+    assert source_payload_issue(payload, expected) is not None
+
+
+def test_source_contract_renders_scope_parts_and_citations_deterministically():
+    expected = source_bank(make_synthetic_context(0, "full"))[:2]
+    provider_payload = source_payload(expected)
+    schema = source_response_schema(expected)
+    rendered = render_source_payload(provider_payload, expected)
+    assert set(provider_payload) == {"schema_version", "readings"}
+    assert "claim_text" not in json.dumps(provider_payload)
+    assert schema["properties"]["readings"]["minItems"] == 4
+    assert all(
+        part["text"].startswith("In the displayed measurement report, ")
+        for claim in rendered["result"]["atomic_claims"]
+        for part in claim["material_parts"]
+    )
+    assert all(
+        claim["claim_text"] == "; ".join(part["text"] for part in claim["material_parts"])
+        for claim in rendered["result"]["atomic_claims"]
+    )
+    assert source_payload_issue(provider_payload, expected) is None
+
+
+def test_provider_authored_v3_prose_cannot_enter_the_v3_1_source_boundary():
+    expected = source_bank(make_synthetic_context(0, "full"))[:2]
+    legacy = {
+        "schema_version": "diagnosis-provider-output/2",
+        "result": {"output_status": "completed", "atomic_claims": expected},
+    }
+    assert source_payload_issue(legacy, expected) == "source_envelope_invalid"
+    assert not accept_source(legacy, expected)
 
 
 def test_qualification_has_each_profile_condition_and_four_relation_frames():
@@ -311,7 +344,7 @@ def test_end_to_end_store_replay_and_failure_denominators(authorized):
     run, plan, auth, prepared, payloads = authorized
     target = prepared[0].request.initial_attempt.request_identity_sha256
     semantic_target = prepared[1].request.initial_attempt.request_identity_sha256
-    payloads[semantic_target]["result"]["atomic_claims"][0]["claim_text"] = "Incorrect measurement"
+    payloads[semantic_target]["readings"][0]["value"] = "999"
     adapter = FakeAdapter(prepared, payloads, target)
     receipt = execute(
         ROOT,
@@ -326,6 +359,8 @@ def test_end_to_end_store_replay_and_failure_denominators(authorized):
     assert receipt["accepted_count"] == 31
     assert receipt["technical_failure_count"] == 1
     assert receipt["semantic_failure_count"] == 1
+    assert receipt["semantic_issue_counts"] == {"source_value_mismatch": 1}
+    assert receipt["outcomes"][1]["semantic_issue_code"] == "source_value_mismatch"
     assert receipt["outcomes"][0]["failure_categories"] == {"request_rejected": 1}
     assert receipt["provider_attempt_count"] == 33
     assert receipt["cohort_planning_unlocked"] is False
@@ -535,7 +570,11 @@ def test_run_cannot_overlap_archive_or_repository(tmp_path):
 
 def test_protocol_file_rebuild_matches_local_code_and_qual_cost_is_bounded():
     p = qualification.verify_protocol(ROOT)
+    failure = qualification.verify_failure_closeout(ROOT)
+    assert failure == qualification.build_failure_closeout()
+    assert p["failed_qualification_closeout_sha256"] == failure["closeout_sha256"]
     assert p["capacity_passed"]
     assert p["global_canonical_text_uniqueness_required"]
     assert not p["variant_superiority_claims_permitted"]
     assert p["maximum_output_tokens"] == 2048
+    assert p["source_provider_schema_version"] == "claim-source-measurement-output/1"

@@ -227,10 +227,16 @@ execution.
 The [prospective V3 measurement calibration](docs/claim-support-validation-v3.md)
 separates observation identity from content identity, freezes disjoint target
 allocation and 240 preassigned relation cells, and evaluates support over a
-complete material-part/evidence matrix. Its 33-request synthetic qualification
-tool covers both source generation and relation assignment. It does not yet
-authorize a cohort or human packet, and its displayed-measurement scope does
-not support variant-superiority or free-form diagnosis claims.
+complete material-part/evidence matrix. Its first 33-request synthetic
+qualification parsed every response with zero technical failures, but failed
+source acceptance at 19/33 overall because 14 source outputs omitted required
+scope text; all 12 relation probes passed. That immutable failed attempt is
+hash-bound and cannot be rerun. The prospective V3.1 amendment replaces
+provider-authored source prose with exact ordered target/value readings followed
+by deterministic scope, part and citation rendering. It requires a fresh
+33-request qualification before cohort planning and still authorizes no cohort
+or human packet. Its displayed-measurement scope does not support
+variant-superiority or free-form diagnosis claims.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation

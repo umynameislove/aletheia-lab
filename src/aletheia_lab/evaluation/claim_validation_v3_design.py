@@ -33,7 +33,8 @@ from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha2
 from aletheia_lab.evaluation.variant_fairness import load_diagnosis_variant_freeze
 from aletheia_lab.project.identity import content_sha256
 
-VERSION = "claim-support-validation-v3/1"
+V3_VERSION = "claim-support-validation-v3/1"
+VERSION = "claim-support-validation-v3/2"
 VARIANTS = ("A1", "A2", "A3", "B1", "B2", "CodeGraph", "FULL")
 CONDITIONS = ("full", "missing_key", "noisy")
 FRAMES = ("natural", "withdrawal", "partial", "counter")
@@ -103,20 +104,110 @@ def source_bank(context: ModelVisibleEvidenceContext) -> list[dict[str, Any]]:
     return [witness([(a[0], a[1], data[a]), (b[0], b[1], data[b])]) for a, b in pairs]
 
 
+SOURCE_SCHEMA_VERSION = "claim-source-measurement-output/1"
+
+
+def _source_targets(expected: list[dict[str, Any]]) -> list[tuple[int, str, str, str]]:
+    """Flatten frozen claim parts into provider-visible target ordinals."""
+    return [
+        (target, evidence_id, pointer, value)
+        for target, (evidence_id, pointer, value) in enumerate(
+            (part for claim in expected for part in target_parts(claim)), start=1
+        )
+    ]
+
+
+def source_response_schema(expected: list[dict[str, Any]]) -> dict[str, Any]:
+    """Constrain transport structure without disclosing evaluator-side values."""
+    targets = _source_targets(expected)
+    row = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "target": {"type": "integer", "enum": [target for target, *_ in targets]},
+            "value": {"type": "string"},
+        },
+        "required": ["target", "value"],
+    }
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "schema_version": {"type": "string", "const": SOURCE_SCHEMA_VERSION},
+            "readings": {
+                "type": "array",
+                "items": row,
+                "minItems": len(targets),
+                "maxItems": len(targets),
+            },
+        },
+        "required": ["schema_version", "readings"],
+    }
+
+
 def source_payload(expected: list[dict[str, Any]]) -> dict[str, Any]:
+    """Return the exact provider payload expected by an offline rehearsal."""
+    return {
+        "schema_version": SOURCE_SCHEMA_VERSION,
+        "readings": [
+            {"target": target, "value": value} for target, _, _, value in _source_targets(expected)
+        ],
+    }
+
+
+def legacy_source_payload(expected: list[dict[str, Any]]) -> dict[str, Any]:
+    """Rebuild the retired V3 envelope for read-only failure audit."""
     return {
         "schema_version": "diagnosis-provider-output/2",
         "result": {"output_status": "completed", "atomic_claims": expected},
     }
 
 
+def render_source_payload(
+    payload: dict[str, Any], expected: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """Validate readings and deterministically render the frozen claim structure."""
+    issue = source_payload_issue(payload, expected)
+    if issue is not None:
+        raise ValueError(issue)
+    readings = payload["readings"]
+    values = [row["value"] for row in readings]
+    cursor = iter(values)
+    claims = []
+    for claim in expected:
+        parts = [(eid, pointer, next(cursor)) for eid, pointer, _ in target_parts(claim)]
+        claims.append(witness(parts))
+    rendered = {
+        "schema_version": "diagnosis-provider-output/2",
+        "result": {"output_status": "completed", "atomic_claims": claims},
+    }
+    ProviderDiagnosisOutputV2.model_validate_json(json.dumps(rendered))
+    return rendered
+
+
+def source_payload_issue(payload: dict[str, Any], expected: list[dict[str, Any]]) -> str | None:
+    """Return one stable, non-content-bearing semantic issue code."""
+    if not isinstance(payload, dict) or set(payload) != {"schema_version", "readings"}:
+        return "source_envelope_invalid"
+    if payload.get("schema_version") != SOURCE_SCHEMA_VERSION:
+        return "source_schema_version_mismatch"
+    readings = payload.get("readings")
+    targets = _source_targets(expected)
+    if not isinstance(readings, list) or len(readings) != len(targets):
+        return "source_reading_census_mismatch"
+    for row, (target, _, _, expected_value) in zip(readings, targets, strict=True):
+        if not isinstance(row, dict) or set(row) != {"target", "value"}:
+            return "source_reading_shape_invalid"
+        if type(row["target"]) is not int or row["target"] != target:
+            return "source_target_order_mismatch"
+        if not isinstance(row["value"], str) or row["value"] != expected_value:
+            return "source_value_mismatch"
+    return None
+
+
 def accept_source(payload: dict[str, Any], expected: list[dict[str, Any]]) -> bool:
-    """No normalization rescue: exact text, part decomposition, citations and order."""
-    try:
-        ProviderDiagnosisOutputV2.model_validate_json(json.dumps(payload))
-    except ValueError:
-        return False
-    return payload == source_payload(expected)
+    """Accept exact readings only; deterministic rendering never repairs a value."""
+    return source_payload_issue(payload, expected) is None
 
 
 def source_instance_id(protocol: str, scheduled_request: str, output: str, ordinal: int) -> str:
@@ -374,10 +465,12 @@ def build_relation_tasks(
     identity = {k: v for k, v in slot.items() if k != "slot_sha256"}
     if slot.get("slot_sha256") != digest({"version": VERSION, **identity}):
         raise ValueError("source slot binding mismatch")
-    if not accept_source(output, slot["expected"]):
-        raise ValueError("provider output differs from frozen source targets")
+    try:
+        rendered = render_source_payload(output, slot["expected"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("provider output differs from frozen source targets") from exc
     result = []
-    for ordinal, claim in enumerate(output["result"]["atomic_claims"], 1):
+    for ordinal, claim in enumerate(rendered["result"]["atomic_claims"], 1):
         instance = source_instance_id(protocol_sha, slot["slot_sha256"], digest(output), ordinal)
         frames = [
             row["frame"]
@@ -486,8 +579,8 @@ def make_synthetic_context(index: int, condition: str) -> ModelVisibleEvidenceCo
 def source_prompt(expected: list[dict[str, Any]], *, synthetic: bool = True) -> str:
     # Publish paths and formatting, never expected numbers or frame intents.
     targets = [
-        [{"evidence_id": eid, "json_pointer": path} for eid, path, _ in target_parts(c)]
-        for c in expected
+        {"target": target, "evidence_id": eid, "json_pointer": path}
+        for target, eid, path, _ in _source_targets(expected)
     ]
     return (
         (
@@ -496,13 +589,30 @@ def source_prompt(expected: list[dict[str, Any]], *, synthetic: bool = True) -> 
             else "Prospectively registered measurement calibration. "
         )
         + "For this calibration task, use the following output contract instead of free-form diagnosis. "
-        "Follow the source-output schema. "
-        "Return exactly two evidence_statement claims in target order. For each target copy its exact "
-        "base-10 numeric value from the visible evidence; do not calculate or round. Each material part "
-        "is 'In the displayed measurement report, <evidence_id>#<json_pointer> = <value>'. "
-        "Join material parts with '; ' to make claim_text. Cite sorted unique target evidence IDs. "
-        "Return completed only if every target is visible. These are measurement checks, not causal diagnosis. "
+        "Follow the source-measurement schema. Return one reading for every target in the listed order. "
+        "Copy each target's exact base-10 numeric value from the visible evidence; do not calculate, "
+        "round, reformat or add units. Use the listed target integer unchanged. Claim text, material-part "
+        "scope and citations are rendered deterministically after exact local validation. These are "
+        "measurement checks, not causal diagnosis. "
         "Targets: " + json.dumps(targets, sort_keys=True, separators=(",", ":"))
+    )
+
+
+def _legacy_source_prompt(expected: list[dict[str, Any]]) -> str:
+    targets = [
+        [{"evidence_id": eid, "json_pointer": path} for eid, path, _ in target_parts(c)]
+        for c in expected
+    ]
+    return (
+        "Synthetic transport calibration, excluded from study data. "
+        "For this calibration task, use the following output contract instead of free-form diagnosis. "
+        "Follow the source-output schema. Return exactly two evidence_statement claims in target order. "
+        "For each target copy its exact base-10 numeric value from the visible evidence; do not "
+        "calculate or round. Each material part is 'In the displayed measurement report, "
+        "<evidence_id>#<json_pointer> = <value>'. Join material parts with '; ' to make claim_text. "
+        "Cite sorted unique target evidence IDs. Return completed only if every target is visible. "
+        "These are measurement checks, not causal diagnosis. Targets: "
+        + json.dumps(targets, sort_keys=True, separators=(",", ":"))
     )
 
 
@@ -516,7 +626,7 @@ RELATION_PROMPT = (
 )
 
 
-def build_probes(root: Path | None = None) -> list[dict[str, Any]]:
+def _build_probes(root: Path | None, *, legacy: bool) -> list[dict[str, Any]]:
     freeze = load_diagnosis_variant_freeze(root / FAIRNESS_PATH) if root is not None else None
     probes = []
     for index, (condition, variant) in enumerate(itertools.product(CONDITIONS, VARIANTS)):
@@ -534,9 +644,13 @@ def build_probes(root: Path | None = None) -> list[dict[str, Any]]:
                     if freeze
                     else ""
                 )
-                + source_prompt(expected),
-                "schema": provider_response_schema_v2(
-                    visible_evidence_ids=tuple(i.evidence_id for i in context.items)
+                + (_legacy_source_prompt(expected) if legacy else source_prompt(expected)),
+                "schema": (
+                    provider_response_schema_v2(
+                        visible_evidence_ids=tuple(i.evidence_id for i in context.items)
+                    )
+                    if legacy
+                    else source_response_schema(expected)
                 ),
             }
         )
@@ -557,7 +671,17 @@ def build_probes(root: Path | None = None) -> list[dict[str, Any]]:
                     "schema": relation_schema(2, [i.evidence_id for i in ctx.items]),
                 }
             )
-    return [{**p, "probe_sha256": digest({"version": VERSION, **p})} for p in probes]
+    version = V3_VERSION if legacy else VERSION
+    return [{**p, "probe_sha256": digest({"version": version, **p})} for p in probes]
+
+
+def build_probes(root: Path | None = None) -> list[dict[str, Any]]:
+    return _build_probes(root, legacy=False)
+
+
+def build_v3_probes(root: Path | None = None) -> list[dict[str, Any]]:
+    """Rebuild only the retired synthetic census; never use it for a new call."""
+    return _build_probes(root, legacy=True)
 
 
 def implementation_bindings(root: Path) -> dict[str, str]:

@@ -12,6 +12,7 @@ from typing import Any
 from aletheia_lab.evaluation.claim_validation_v3_execution import adapter_for, execute, verify
 from aletheia_lab.evaluation.claim_validation_v3_qualification import (
     FALSE_FLAGS,
+    audit_failed_qualification,
     authorize,
     build_plan,
     checked_run,
@@ -20,6 +21,7 @@ from aletheia_lab.evaluation.claim_validation_v3_qualification import (
     read_document,
     rehearse,
     validate_authority,
+    verify_failure_closeout,
     verify_protocol,
 )
 
@@ -29,6 +31,8 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "command",
         choices=(
+            "audit-failed-qualification",
+            "verify-failure-closeout",
             "verify-protocol",
             "plan",
             "rehearse",
@@ -39,6 +43,7 @@ def _parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument("--root", type=Path, default=Path("."))
+    parser.add_argument("--retired-run", type=Path)
     parser.add_argument("--predecessor-closeout", type=Path)
     parser.add_argument("--run-dir", type=Path)
     parser.add_argument("--cost-ceiling-usd", type=float)
@@ -105,6 +110,14 @@ def main() -> int:
     root = args.root.resolve()
     run = None
     try:
+        if args.command == "audit-failed-qualification":
+            if args.retired_run is None:
+                raise ValueError("retired V3 run directory is required")
+            _print(audit_failed_qualification(root, args.retired_run.resolve()))
+            return 0
+        if args.command == "verify-failure-closeout":
+            _print(verify_failure_closeout(root))
+            return 0
         if args.command == "verify-protocol":
             _print(verify_protocol(root))
             return 0
@@ -137,7 +150,7 @@ def main() -> int:
             if args.command == "require-live-ready":
                 _print(
                     {
-                        "status": "v3_qualification_live_ready",
+                        "status": "v3_1_qualification_live_ready",
                         "request_count": 33,
                         "source_request_count": 21,
                         "relation_request_count": 12,
