@@ -27,10 +27,11 @@ python scripts/run_test_profile.py evaluation
   coverage instrumentation.
 - `evaluation` runs the provider-neutral execution, visibility, immutable-store,
   structural-closeout, leakage, project/evidence, reproducibility, and CI
-  contract tests. It always reports the 20 slowest tests and has a five-minute
-  POSIX timeout. Windows receives a twelve-minute ceiling for the same
-  undeselected suite because durable immutable-file operations are substantially
-  slower there.
+  contract tests. Two pytest-xdist workers run the complete profile, grouping
+  tests by module/class to reuse scoped fixtures. Verbose progress identifies
+  tests even when a timeout prevents the final slow-test report. The whole run
+  retains its ten-minute POSIX and twelve-minute Windows timeout; workers do not
+  receive separate budgets. Install the `dev` extra to include pytest-xdist.
 - `windows-publication` exercises the shared filesystem primitive and every
   immutable store whose durability behavior differs across Windows and POSIX.
 
@@ -69,7 +70,7 @@ times under distinct process hash seeds:
 python scripts/run_test_profile.py evaluation --repeat 3
 ```
 
-The intended budget is at most five minutes per evaluation run on a reasonable
+The enforced budget is at most ten minutes per evaluation run on a reasonable
 POSIX development or CI machine and twelve minutes on Windows CI. Ordinary
 unit/property tests target two seconds, and deterministic fixture-provider
 integration paths target 15 seconds. The profile output is the runtime report;

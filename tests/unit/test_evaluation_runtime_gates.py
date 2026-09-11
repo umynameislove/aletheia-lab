@@ -147,6 +147,32 @@ def test_repeated_profile_uses_distinct_hash_seeds_and_posix_budget(
     assert len(set(seeds)) == 3
 
 
+def test_evaluation_workers_preserve_the_complete_profile_and_scoped_fixtures() -> None:
+    runner = _runner_module()
+    command = runner.profile_command("evaluation")
+    assert (
+        command[3 : 3 + len(runner._PROFILE_ARGS["evaluation"])]
+        == (runner._PROFILE_ARGS["evaluation"])
+    )
+    assert command[-4:] == ("-n", "2", "--dist=loadscope", "-vv")
+    # Other profiles, especially authoritative coverage, remain sequential.
+    assert "-n" not in runner.profile_command("full")
+    assert "-n" not in runner.profile_command("contract")
+
+
+def test_worker_failure_stops_repeats_and_remains_blocking(monkeypatch) -> None:
+    runner = _runner_module()
+    calls = []
+
+    def failed_run(command, **kwargs):
+        calls.append(command)
+        return SimpleNamespace(returncode=1)
+
+    monkeypatch.setattr(runner.subprocess, "run", failed_run)
+    assert runner.run_profile("evaluation", repeat=3) == 1
+    assert len(calls) == 1
+
+
 def test_windows_evaluation_budget_accounts_for_durable_filesystem_cost(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -136,11 +136,15 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
 def profile_command(profile: str, extra: tuple[str, ...] = ()) -> tuple[str, ...]:
     """Build the interpreter-stable command for a named test profile."""
 
+    # Keep module-scoped fixtures together and bound concurrency on CI runners.
+    # Every evaluation test still runs once; the full coverage gate is unchanged.
+    workers = ("-n", "2", "--dist=loadscope", "-vv") if profile == "evaluation" else ()
     return (
         sys.executable,
         "-m",
         "pytest",
         *_PROFILE_ARGS[profile],
+        *workers,
         *extra,
     )
 
