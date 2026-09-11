@@ -160,6 +160,49 @@ def _retired_reader(store: Path, identity: str) -> ClaimCorpusTerminalReader:
     )
 
 
+def _material_part_texts(observed: dict[str, Any]) -> list[str] | None:
+    parts = observed.get("material_parts")
+    if not isinstance(parts, list):
+        return None
+    texts: list[str] = []
+    for part in parts:
+        if not isinstance(part, dict) or not isinstance(part.get("text"), str):
+            return None
+        texts.append(part["text"])
+    return texts
+
+
+def _claim_scope_only_difference(
+    observed: dict[str, Any], target: dict[str, Any]
+) -> tuple[bool, bool] | None:
+    if (
+        observed.get("claim_type") != target["claim_type"]
+        or observed.get("visible_evidence_ids") != target["visible_evidence_ids"]
+    ):
+        return None
+    part_texts = _material_part_texts(observed)
+    if part_texts is None:
+        return None
+    normalized_parts = [
+        text if text.startswith(PREFIX) else PREFIX + text for text in part_texts
+    ]
+    if normalized_parts != [part["text"] for part in target["material_parts"]]:
+        return None
+    claim_text = observed.get("claim_text")
+    if not isinstance(claim_text, str):
+        return None
+    segments = claim_text.split("; ")
+    normalized_claim = "; ".join(
+        segment if segment.startswith(PREFIX) else PREFIX + segment for segment in segments
+    )
+    if normalized_claim != target["claim_text"]:
+        return None
+    return (
+        any(not text.startswith(PREFIX) for text in part_texts),
+        any(not segment.startswith(PREFIX) for segment in segments),
+    )
+
+
 def _scope_only_difference(
     payload: dict[str, Any], expected: list[dict[str, Any]]
 ) -> tuple[bool, bool] | None:
@@ -171,39 +214,16 @@ def _scope_only_difference(
         return None
     if len(actual) != len(expected):
         return None
-    part_omission = False
-    claim_omission = False
-    for observed, target in zip(actual, expected, strict=True):
-        if (
-            observed.get("claim_type") != target["claim_type"]
-            or observed.get("visible_evidence_ids") != target["visible_evidence_ids"]
-        ):
-            return None
-        observed_parts = observed.get("material_parts")
-        if not isinstance(observed_parts, list):
-            return None
-        part_texts: list[str] = []
-        for part in observed_parts:
-            if not isinstance(part, dict) or not isinstance(part.get("text"), str):
-                return None
-            part_texts.append(part["text"])
-        part_omission |= any(not text.startswith(PREFIX) for text in part_texts)
-        normalized_parts = [
-            text if text.startswith(PREFIX) else PREFIX + text for text in part_texts
-        ]
-        if normalized_parts != [part["text"] for part in target["material_parts"]]:
-            return None
-        claim_text = observed.get("claim_text")
-        if not isinstance(claim_text, str):
-            return None
-        segments = claim_text.split("; ")
-        claim_omission |= any(not segment.startswith(PREFIX) for segment in segments)
-        normalized_claim = "; ".join(
-            segment if segment.startswith(PREFIX) else PREFIX + segment for segment in segments
-        )
-        if normalized_claim != target["claim_text"]:
-            return None
-    return part_omission, claim_omission
+    classifications = [
+        _claim_scope_only_difference(observed, target)
+        for observed, target in zip(actual, expected, strict=True)
+    ]
+    if any(classification is None for classification in classifications):
+        return None
+    return (
+        any(classification[0] for classification in classifications if classification),
+        any(classification[1] for classification in classifications if classification),
+    )
 
 
 def _relation_cell_key(item: dict[str, Any]) -> tuple[int, str]:
