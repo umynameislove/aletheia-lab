@@ -138,8 +138,14 @@ def profile_command(profile: str, extra: tuple[str, ...] = ()) -> tuple[str, ...
     """Build the interpreter-stable command for a named test profile."""
 
     # Keep module-scoped fixtures together and bound concurrency on CI runners.
-    # Every evaluation test still runs once; the full coverage gate is unchanged.
-    workers = ("-n", "2", "--dist=loadscope", "-vv") if profile == "evaluation" else ()
+    # Every selected test still runs exactly once, including under coverage.
+    workers = (
+        ("-n", "2", "--dist=loadscope", "-vv")
+        if profile == "evaluation"
+        else ("-n", "2", "--dist=loadscope")
+        if profile == "full"
+        else ()
+    )
     return (
         sys.executable,
         "-m",

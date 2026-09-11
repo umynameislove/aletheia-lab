@@ -156,8 +156,7 @@ def test_evaluation_workers_preserve_the_complete_profile_and_scoped_fixtures() 
         == (runner._PROFILE_ARGS["evaluation"])
     )
     assert command[-4:] == ("-n", "2", "--dist=loadscope", "-vv")
-    # Other profiles, especially authoritative coverage, remain sequential.
-    assert "-n" not in runner.profile_command("full")
+    assert runner.profile_command("full")[-3:] == ("-n", "2", "--dist=loadscope")
     assert "-n" not in runner.profile_command("contract")
 
 
