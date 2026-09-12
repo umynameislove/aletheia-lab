@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from pydantic import ValidationError
 
+from aletheia_lab.evaluation import claim_validation_v2_extraction as extraction
 from aletheia_lab.evaluation.claim_validation_v2_extraction import (
     build_dashboard_input_usage_observation,
     checked_extraction_run_directory,
@@ -176,3 +178,232 @@ def test_extraction_destination_must_be_private_and_known(tmp_path: Path) -> Non
     (destination / "unexpected.json").write_text("{}", encoding="utf-8")
     with pytest.raises(ClaimValidationV2ExtractionError, match="unknown"):
         checked_extraction_run_directory(repository, destination)
+
+
+def test_closeout_builder_derives_both_prerequisite_blockers_from_terminal_records(
+    monkeypatch,
+) -> None:
+    records = _records()
+    receipt = SimpleNamespace(
+        source_commit_ref="a" * 40,
+        authorization_sha256="3" * 64,
+        receipt_sha256="4" * 64,
+        terminal_store_sha256="5" * 64,
+        provider_attempt_count=315,
+        outcomes=(),
+        relation_execution_unlocked=True,
+    )
+    manifest = SimpleNamespace(manifest_sha256="2" * 64)
+    protocol = SimpleNamespace(
+        protocol_sha256="1" * 64,
+        sampling_policy=SimpleNamespace(repeated_canonical_claim_text_forbidden=True),
+    )
+    monkeypatch.setattr(
+        extraction,
+        "_normalized_records",
+        lambda *_args, **_kwargs: (receipt, manifest, records),
+    )
+    monkeypatch.setattr(
+        extraction,
+        "_load_inputs",
+        lambda _root: (protocol, SimpleNamespace(), SimpleNamespace()),
+    )
+
+    closeout = extraction.build_v2_extraction_closeout(
+        Path.cwd(),
+        qualification_run_dir=Path("qualification"),
+        cohort_run_dir=Path("cohort"),
+    )
+
+    assert closeout.status == "claim_support_validation_v2_extraction_relation_blocked"
+    assert closeout.distinct_canonical_claim_text_count == 112
+    assert closeout.distinct_normalized_output_count == 116
+    assert closeout.extraction_blockers == (
+        "insufficient_distinct_canonical_claim_texts",
+        "non_unique_source_output_identity_for_frozen_relation_batch",
+    )
+    assert closeout.relation_execution_ready is False
+    assert closeout.relation_execution_authorized is False
+
+
+def test_normalized_records_replay_terminal_bindings_without_post_output_deduplication(
+    monkeypatch,
+) -> None:
+    templates = _records()[:2]
+    parsed = [
+        {"schema_version": "diagnosis-provider-output/2", "result": {"ordinal": ordinal}}
+        for ordinal in (1, 2)
+    ]
+    parsed_hashes = [canonical_execution_sha256(item) for item in parsed]
+    schedules = tuple(
+        SimpleNamespace(
+            sequence=item.sequence,
+            schedule_round=item.schedule_round,
+            source_request_sha256=item.v2_request_sha256,
+            v2_request_sha256=_sha(item.sequence + 5000),
+            family_id=item.family_id,
+            mechanism=item.mechanism,
+            evidence_condition=item.evidence_condition,
+            variant=item.variant,
+        )
+        for item in templates
+    )
+    identities = [_sha(item.sequence + 6000) for item in templates]
+    context = SimpleNamespace(items=(SimpleNamespace(evidence_id="ev-visible"),))
+    prepared = tuple(
+        SimpleNamespace(
+            request=SimpleNamespace(
+                initial_attempt=SimpleNamespace(request_identity_sha256=identity),
+                context=context,
+            )
+        )
+        for identity in identities
+    )
+    terminals = tuple(
+        SimpleNamespace(
+            v2_request_sha256=schedule.v2_request_sha256,
+            gateway_request_identity_sha256=identity,
+            parsed_response_sha256=parsed_hash,
+            attempt_count=1,
+            provider_failure_categories=(),
+        )
+        for schedule, identity, parsed_hash in zip(
+            schedules, identities, parsed_hashes, strict=True
+        )
+    )
+    receipt = SimpleNamespace(
+        technical_admission_passed=True,
+        parsed_count=360,
+        technical_failure_count=0,
+        outcomes=terminals,
+    )
+    manifest = SimpleNamespace(diagnosis_schedule=schedules)
+    census = SimpleNamespace(
+        primary_requests=tuple(
+            SimpleNamespace(request_sha256=schedule.source_request_sha256) for schedule in schedules
+        )
+    )
+
+    class Reader:
+        def __init__(self, index):
+            self.index = index
+
+        def terminal_inventory(self, _identity):
+            return SimpleNamespace(
+                gateway_status="parsed",
+                parsed_response_sha256=parsed_hashes[self.index],
+            )
+
+        def terminal_parsed_payload(self, _identity):
+            return parsed[self.index]
+
+    normalized = SimpleNamespace(
+        output_sha256="7" * 64,
+        output_status="completed",
+        atomic_claims=(
+            SimpleNamespace(claim_local_id="claim-1", claim_text="First claim."),
+            SimpleNamespace(claim_local_id="claim-2", claim_text="Second claim."),
+        ),
+    )
+    monkeypatch.setattr(extraction, "verify_completed_v2_cohort", lambda *_a, **_k: receipt)
+    monkeypatch.setattr(
+        extraction,
+        "load_cohort_authorization",
+        lambda _path: SimpleNamespace(source_commit_ref="a" * 40),
+    )
+    monkeypatch.setattr(extraction, "load_verified_qualification", lambda *_a, **_k: object())
+    monkeypatch.setattr(extraction, "build_cohort_plan", lambda *_a, **_k: object())
+    monkeypatch.setattr(extraction, "build_v2_runtime_manifest", lambda _root: manifest)
+    monkeypatch.setattr(
+        extraction,
+        "_load_inputs",
+        lambda _root: (SimpleNamespace(), census, SimpleNamespace()),
+    )
+    monkeypatch.setattr(
+        extraction,
+        "build_v2_cohort_gateway_requests",
+        lambda *_a, **_k: prepared,
+    )
+    monkeypatch.setattr(extraction, "ModelVisibleEvidenceContext", SimpleNamespace)
+    monkeypatch.setattr(
+        extraction,
+        "_reader",
+        lambda _store, identity: Reader(identities.index(identity)),
+    )
+    monkeypatch.setattr(
+        extraction,
+        "normalize_provider_output_v2",
+        lambda *_a, **_k: normalized,
+    )
+    monkeypatch.setattr(extraction, "_selected_claims", lambda output: output.atomic_claims)
+
+    actual_receipt, actual_manifest, records = extraction._normalized_records(
+        Path.cwd(),
+        qualification_run_dir=Path("qualification"),
+        cohort_run_dir=Path("cohort"),
+    )
+
+    assert actual_receipt is receipt
+    assert actual_manifest is manifest
+    assert len(records) == 2
+    assert records[0].selected_claim_local_ids == ("claim-1", "claim-2")
+    assert records[0].source_record_sha256 == parsed_hashes[0]
+    assert records[0].record_sha256 != records[1].record_sha256
+
+
+def test_published_closeout_loads_and_verify_rebuilds_without_dashboard_evidence(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    closeout = _closeout(_closeout_payload())
+    disposition = extraction.publish_v2_extraction_closeout(tmp_path, closeout)
+    assert disposition == "created"
+    assert extraction.load_v2_extraction_closeout(tmp_path / "closeout.json") == closeout
+    repository = tmp_path.parent / "separate-repository"
+
+    monkeypatch.setattr(
+        extraction,
+        "build_v2_extraction_closeout",
+        lambda *_args, **_kwargs: closeout,
+    )
+    assert (
+        extraction.verify_v2_extraction_closeout(
+            repository,
+            qualification_run_dir=tmp_path / "qualification",
+            cohort_run_dir=tmp_path / "cohort",
+            extraction_run_dir=tmp_path,
+        )
+        == closeout
+    )
+
+    monkeypatch.setattr(
+        extraction,
+        "build_v2_extraction_closeout",
+        lambda *_args, **_kwargs: closeout.model_copy(update={"source_commit_ref": "b" * 40}),
+    )
+    with pytest.raises(ClaimValidationV2ExtractionError, match="differs"):
+        extraction.verify_v2_extraction_closeout(
+            repository,
+            qualification_run_dir=tmp_path / "qualification",
+            cohort_run_dir=tmp_path / "cohort",
+            extraction_run_dir=tmp_path,
+        )
+
+
+def test_extraction_loader_rejects_missing_and_linked_closeouts(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    missing = tmp_path / "missing.json"
+    with pytest.raises(ClaimValidationV2ExtractionError, match="unavailable"):
+        extraction.load_v2_extraction_closeout(missing)
+
+    linked = tmp_path / "linked.json"
+    original_is_symlink = Path.is_symlink
+    monkeypatch.setattr(
+        Path,
+        "is_symlink",
+        lambda path: path == linked or original_is_symlink(path),
+    )
+    with pytest.raises(ClaimValidationV2ExtractionError, match="unavailable"):
+        extraction.load_v2_extraction_closeout(linked)

@@ -84,6 +84,72 @@ def test_same_payload_different_requests_are_not_the_same_observation():
         source_instance_id("z" * 64, "1" * 64, "3" * 64, 1)
 
 
+def test_retired_failure_audit_reproduces_only_the_registered_scope_omissions(
+    monkeypatch,
+):
+    probes = qualification.build_v3_probes(ROOT)
+    payloads = {}
+    outcomes = []
+    source_index = 0
+    for sequence, probe in enumerate(probes, start=1):
+        identity = f"request-{sequence}"
+        if probe["kind"] == "relation":
+            payload = copy.deepcopy(probe["expected"])
+            accepted = True
+        else:
+            payload = copy.deepcopy(qualification.legacy_source_payload(probe["expected"]))
+            accepted = source_index < 7
+            if not accepted:
+                omit_claim_scope = source_index < 19
+                for claim in payload["result"]["atomic_claims"]:
+                    for part in claim["material_parts"]:
+                        part["text"] = part["text"].removeprefix(qualification.PREFIX)
+                    if omit_claim_scope:
+                        claim["claim_text"] = "; ".join(
+                            segment.removeprefix(qualification.PREFIX)
+                            for segment in claim["claim_text"].split("; ")
+                        )
+            source_index += 1
+        payloads[identity] = payload
+        outcomes.append(
+            {
+                "probe_sha256": probe["probe_sha256"],
+                "gateway_request_identity_sha256": identity,
+                "gateway_status": "parsed",
+                "accepted": accepted,
+            }
+        )
+
+    class Reader:
+        def __init__(self, identity):
+            self.identity = identity
+
+        def terminal_inventory(self, _identity):
+            return SimpleNamespace(gateway_status="parsed")
+
+        def terminal_parsed_payload(self, _identity):
+            return payloads[self.identity]
+
+    monkeypatch.setattr(
+        qualification,
+        "_retired_audit_inputs",
+        lambda _root, _run: (
+            outcomes,
+            {probe["probe_sha256"]: probe for probe in probes},
+            Path("unused"),
+        ),
+    )
+    monkeypatch.setattr(
+        qualification,
+        "_retired_reader",
+        lambda _store, identity: Reader(identity),
+    )
+    marker = {"status": "registered_failure_preserved"}
+    monkeypatch.setattr(qualification, "verify_failure_closeout", lambda _root: marker)
+
+    assert qualification.audit_failed_qualification(ROOT, Path("unused")) == marker
+
+
 def test_rfc6901_categorical_and_decimal_precision_not_lost():
     data = numeric_leaves(
         '{"payload":{"a/b~c":{"with space":0.123456789},"flag":true,"zero":0,"negative":-2}}'

@@ -87,6 +87,7 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_claim_validation_v2_cohort.py",
         "tests/unit/test_claim_validation_v2_extraction.py",
         "tests/unit/test_claim_validation_v3.py",
+        "tests/unit/test_claim_support_v3_cohort.py",
         "tests/integration/test_claim_validation_v3_local.py",
         "tests/integration/test_claim_validation_v2_runtime_local.py",
         "tests/integration/test_claim_validation_v2_expressiveness_local.py",
@@ -137,8 +138,14 @@ def profile_command(profile: str, extra: tuple[str, ...] = ()) -> tuple[str, ...
     """Build the interpreter-stable command for a named test profile."""
 
     # Keep module-scoped fixtures together and bound concurrency on CI runners.
-    # Every evaluation test still runs once; the full coverage gate is unchanged.
-    workers = ("-n", "2", "--dist=loadscope", "-vv") if profile == "evaluation" else ()
+    # Every selected test still runs exactly once, including under coverage.
+    workers = (
+        ("-n", "2", "--dist=loadscope", "-vv")
+        if profile == "evaluation"
+        else ("-n", "2", "--dist=loadscope")
+        if profile == "full"
+        else ()
+    )
     return (
         sys.executable,
         "-m",

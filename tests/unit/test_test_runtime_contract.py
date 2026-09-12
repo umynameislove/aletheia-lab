@@ -298,8 +298,11 @@ def test_full_profile_preserves_coverage_floor() -> None:
         capture_output=True,
         text=True,
     )
-    assert "--cov=aletheia_lab" in completed.stdout
-    assert "--cov-fail-under=88" in completed.stdout
+    command = json.loads(completed.stdout)
+    assert "--cov=aletheia_lab" in command
+    assert "--cov-fail-under=88" in command
+    assert command[-3:] == ["-n", "2", "--dist=loadscope"]
+    assert not {"-k", "-m", "--ignore", "--ignore-glob"} & set(command[3:])
 
 
 def test_publication_profile_resolves_the_shared_core_and_all_immutable_stores() -> None:

@@ -56,9 +56,10 @@ jobs:
         run: >-
           pytest --durations=20
           --cov=aletheia_lab --cov-report=term-missing --cov-fail-under=88
+          -n 2 --dist=loadscope
       - name: Test interpreter compatibility
         if: matrix.python-version == '3.12'
-        run: pytest --durations=20
+        run: pytest --durations=20 -n 2 --dist=loadscope
       - name: Type-check (strict)
         run: >-
           python -m mypy --strict --python-version ${{ matrix.python-version }}

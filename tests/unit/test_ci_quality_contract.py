@@ -128,6 +128,25 @@ def test_coverage_step_has_no_continue_on_error(test_job: Mapping[str, object]) 
             return
 
 
+def test_full_suite_steps_use_bounded_scope_preserving_workers(
+    test_job: Mapping[str, object],
+) -> None:
+    """Both complete suites keep module fixtures together on exactly two workers."""
+
+    runs = [
+        str(step.get("run", ""))
+        for step in _steps(test_job)
+        if "pytest --durations=20" in str(step.get("run", ""))
+    ]
+    assert len(runs) == 2
+    for run in runs:
+        tokens = run.split()
+        assert tokens.count("-n") == 1
+        assert tokens[tokens.index("-n") + 1] == "2"
+        assert "--dist=loadscope" in tokens
+        assert not {"-k", "-m", "--ignore", "--ignore-glob"} & set(tokens)
+
+
 # ---------------------------------------------------------------------------
 # Coverage threshold
 # ---------------------------------------------------------------------------

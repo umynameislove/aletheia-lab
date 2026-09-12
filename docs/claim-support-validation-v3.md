@@ -176,3 +176,40 @@ independent read-only terminal replay. Integration tests verify cross-process
 hash stability and credential-safe CLI refusal. These are offline tests,
 not evidence of successful live qualification or a guarantee of zero future
 provider failures. No timeout budget or historical acceptance rule is relaxed.
+
+## V3.1 authentic source-cohort boundary
+
+The successful V3.1 qualification is an immutable 33/33 calibration result:
+all 33 requests parsed and were accepted, with zero technical or semantic
+failure. That result removes the calibration blocker but does not itself create
+study claims. `scripts/claim_support_validation_v3_cohort.py` is the separately
+versioned source-cohort boundary. Its modules deliberately do not match the
+qualification implementation-binding glob, so adding the executor cannot
+retroactively change the protocol under which qualification passed.
+
+The source phase freezes exactly 360 scheduled cells before execution: 315
+provider-backed cells across the seven model variants and 45 deterministic B0
+cells. Every cell has two prespecified measurement targets, for 720 source
+instances. Request identity binds the V3.1 protocol, scheduled slot and phase;
+content identity is never used as observation identity. The plan binds the
+successful qualification receipt/store, all request projections and the cohort
+implementation files. Token counts and a conservative two-attempt cost ceiling
+are rebuilt locally.
+
+This authority intentionally excludes the 240 prospective relation cells.
+Relation requests are not constructed until an independently replayed source
+receipt proves 360/360 exact acceptance. Any technical or semantic failure is
+kept in the denominator and blocks relation planning; there is no adaptive
+replacement, post-result balancing or silent rerun. A completed source receipt
+still has all automatic-label, corpus, blind-packet and human-outcome flags
+false.
+
+The operator sequence is `plan`, `rehearse`, merge to clean synchronized main,
+then `authorize`, `require-live-ready`, `execute` and `verify`. Plan and
+rehearsal never load a provider adapter. Authorization requires their exact
+fresh hashes, a private empty destination and an explicit cost ceiling.
+Preflight validates the credential only by presence and never prints it.
+Execution reserves a create-only lease before the first call, permits only
+sealed-terminal resume, and refuses a partial unsealed request state. Repeating
+`execute` after closeout performs read-only verification rather than spending a
+second attempt.
