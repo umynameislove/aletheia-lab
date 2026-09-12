@@ -555,6 +555,7 @@ documentation, and reproducible artifacts.
 - [Claim-support V3/V3.1 calibration and source-cohort closeout](docs/claim-support-validation-v3.md)
 - [Claim-support V3.2 source-measurement role amendment](docs/claim-support-validation-v3.md#prospective-v32-source-measurement-role-amendment)
 - [Claim-support V3.2 relation qualification](docs/claim-support-validation-v3.md#v32-relation-qualification-boundary)
+- [Claim-support V3.2 prospective relation cohort](docs/claim-support-validation-v3.md#v32-prospective-relation-cohort)
 - [Related work and research positioning](docs/related-work.md)
 - [Architecture decisions](docs/adr/)
 
