@@ -213,3 +213,50 @@ Execution reserves a create-only lease before the first call, permits only
 sealed-terminal resume, and refuses a partial unsealed request state. Repeating
 `execute` after closeout performs read-only verification rather than spending a
 second attempt.
+
+## V3.1 source-cohort failure closeout
+
+The registered source cohort is now closed as a development failure, not as a
+partial success. All 360 scheduled requests reached authenticated parsed
+terminals, but only 355 passed the exact source-reading contract. The five
+failed sequences are 26, 53, 103, 232 and 307, leaving 710 rather than the
+required 720 source instances. There were no technical terminal failures. The
+original receipt and store remain immutable, the failed cells remain in the
+denominator, and rerun, relation construction, corpus admission and blind-packet
+generation remain forbidden.
+
+The public-safe terminal replay classifies eleven mismatched readings without
+publishing their expected or observed numeric values. Eight readings contain a
+target-ordinal token in the value field. Three readings copy a different
+visible numeric leaf: the observed branch was used where the frozen target
+pointed to the delta branch. There are no numeric-reformat-only cases. The
+stored structured payloads, request/slot identities and hashes all reproduce,
+so the evidence does not support a parser, serializer or evaluator mapping
+defect. It supports exact-reading noncompliance by the provider under the V3.1
+source-measurement role.
+
+The 70 rate-limited attempts are a separate transport observation. They belong
+to 70 requests that all succeeded on retry and all passed semantic acceptance;
+none overlaps the five failed requests. Provider usage is incomplete only
+because those rejected rate-limit attempts have no provider usage metadata.
+The 315 successful provider responses retain complete usage, totalling 382,931
+input and 17,737 output tokens (400,668 total). These are observed SDK records,
+not a reconstructed bill.
+
+The successful 33/33 synthetic qualification is not reinterpreted: it showed
+that the contract could be followed on the calibration set, not that every
+authentic cohort request was guaranteed to pass. Five failures are too few and
+too post-selected to support variant, condition or mechanism comparisons. The
+355 accepted results cannot be padded, repaired or admitted retrospectively;
+substituting evaluator-known values would change the measured behavior.
+
+The only next authorized action is a prospective V3.2 source-measurement role
+review and fresh qualification. That amendment must decide explicitly whether
+provider transcription is part of the scientific measurement or should be
+replaced by deterministic extraction. Either choice creates a new protocol and
+new request identities; it is not a repair or replay of V3.1. The immutable
+closeout is tracked at
+`configs/evaluation/claim_support_validation_v3_source_cohort_failure.json`.
+`scripts/claim_support_validation_v3_failure.py` independently verifies the
+historical receipt/store and then reproduces that closeout without provider
+access or write authority.

@@ -236,12 +236,18 @@ provider-authored source prose with exact ordered target/value readings followed
 by deterministic scope, part and citation rendering. It requires a fresh
 33-request qualification before cohort planning. The fresh V3.1 qualification
 completed at 33/33 parsed and accepted, with zero technical and semantic
-failures; its immutable receipt unlocks planning only. The separate V3.1 source
-cohort boundary now freezes 360 source cells (315 provider-backed and 45 local),
-720 source instances, exact token/cost accounting and one-use execution while
-keeping all 240 relation requests unauthorized. No source cohort, relation run,
-corpus or human packet is created by the offline plan. Its displayed-measurement
-scope does not support variant-superiority or free-form diagnosis claims.
+failures; its immutable receipt unlocked source-cohort planning only. The
+separate V3.1 source execution then completed all 360 terminals (315
+provider-backed and 45 local), but exact acceptance was 355/360. Five parsed
+outputs contain eleven wrong readings: eight target-ordinal tokens and three
+values copied from the wrong visible numeric leaf. An independent immutable
+closeout rules out rate-limit overlap, parser/serialization damage and numeric
+reformatting; 70 rate-limited attempts all recovered and passed. The failed
+cells remain in the denominator, all 240 relation requests remain unauthorized,
+and no corpus or human packet exists. Only a prospective V3.2
+source-measurement-role review is unlocked; V3.1 cannot be repaired, padded or
+rerun. Its displayed-measurement scope does not support variant-superiority,
+failure-rate generalization or free-form diagnosis claims.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation
@@ -532,7 +538,7 @@ documentation, and reproducible artifacts.
 - [Claim-support V1 failure audit and prospective V2 protocol](docs/claim-support-validation-v2-protocol.md)
 - [Claim-support V2 seven-request qualification](docs/claim-support-validation-v2-qualification.md)
 - [Claim-support V2 diagnosis-cohort authorization](docs/claim-support-validation-v2-authorization.md)
-- [Claim-support V3/V3.1 prospective measurement calibration](docs/claim-support-validation-v3.md)
+- [Claim-support V3/V3.1 calibration and source-cohort closeout](docs/claim-support-validation-v3.md)
 - [Related work and research positioning](docs/related-work.md)
 - [Architecture decisions](docs/adr/)
 
