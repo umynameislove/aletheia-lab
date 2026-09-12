@@ -477,6 +477,67 @@ def _validate_receipt(receipt: dict[str, Any]) -> list[dict[str, Any]]:
     return outcomes
 
 
+def _verified_terminal(
+    store: Path, outcome: dict[str, Any], slot: dict[str, Any]
+) -> tuple[dict[str, Any], tuple[Any, ...]]:
+    """Load one terminal and reconcile every receipt/design binding."""
+
+    identity = outcome["gateway_request_identity_sha256"]
+    reader = _reader(store, identity)
+    inventory = reader.terminal_inventory(identity)
+    payload = reader.terminal_parsed_payload(identity)
+    records = reader.terminal_attempt_records(identity)
+    if (
+        inventory.gateway_status != "parsed"
+        or payload is None
+        or len(records) != outcome["attempt_count"]
+        or content_sha256(canonical_project_json(payload).encode("utf-8"))
+        != outcome["parsed_payload_sha256"]
+        or slot["source_schedule"]["sequence"] != outcome["sequence"]
+        or slot["slot_sha256"] != outcome["slot_sha256"]
+    ):
+        raise ValueError("V3.1 source terminal binding differs")
+    issue = source_payload_issue(payload, slot["expected"])
+    if outcome["accepted"] is not (issue is None):
+        raise ValueError("V3.1 source receipt acceptance differs from payload")
+    return payload, records
+
+
+def _attempt_metrics(outcome: dict[str, Any], records: tuple[Any, ...]) -> dict[str, int]:
+    """Summarize transport and usage while enforcing the local-route contract."""
+
+    rate_limited_attempts = sum(
+        str(record.provider_failure_category) == "rate_limited" for record in records
+    )
+    if outcome["execution_route"] != "model_gateway":
+        if any(record.usage is None or record.usage.total_tokens != 0 for record in records):
+            raise ValueError("V3.1 deterministic usage record differs")
+        return {
+            "rate_limited_attempts": 0,
+            "rate_limited_requests": 0,
+            "rate_limited_accepted": 0,
+            "rate_limited_failure_overlap": 0,
+            "attempts_with_usage": 0,
+            "attempts_without_usage": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "total_tokens": 0,
+        }
+    usage = [record.usage for record in records if record.usage is not None]
+    rate_limited_request = int(rate_limited_attempts > 0)
+    return {
+        "rate_limited_attempts": rate_limited_attempts,
+        "rate_limited_requests": rate_limited_request,
+        "rate_limited_accepted": rate_limited_request * int(outcome["accepted"]),
+        "rate_limited_failure_overlap": rate_limited_request * int(not outcome["accepted"]),
+        "attempts_with_usage": len(usage),
+        "attempts_without_usage": len(records) - len(usage),
+        "input_tokens": sum(item.input_tokens or 0 for item in usage),
+        "output_tokens": sum(item.output_tokens or 0 for item in usage),
+        "total_tokens": sum(item.total_tokens or 0 for item in usage),
+    }
+
+
 def audit_failed_source_cohort(
     root: Path, run: Path, verified_receipt: dict[str, Any]
 ) -> dict[str, Any]:
@@ -498,45 +559,17 @@ def audit_failed_source_cohort(
     total_tokens = 0
     rate_limited_attempts = 0
     for outcome, slot in zip(outcomes, design["slots"], strict=True):
-        identity = outcome["gateway_request_identity_sha256"]
-        reader = _reader(store, identity)
-        inventory = reader.terminal_inventory(identity)
-        payload = reader.terminal_parsed_payload(identity)
-        records = reader.terminal_attempt_records(identity)
-        if (
-            inventory.gateway_status != "parsed"
-            or payload is None
-            or len(records) != outcome["attempt_count"]
-            or content_sha256(canonical_project_json(payload).encode("utf-8"))
-            != outcome["parsed_payload_sha256"]
-            or slot["source_schedule"]["sequence"] != outcome["sequence"]
-            or slot["slot_sha256"] != outcome["slot_sha256"]
-        ):
-            raise ValueError("V3.1 source terminal binding differs")
-        issue = source_payload_issue(payload, slot["expected"])
-        if outcome["accepted"] is not (issue is None):
-            raise ValueError("V3.1 source receipt acceptance differs from payload")
-        rate_limited = sum(
-            str(record.provider_failure_category) == "rate_limited" for record in records
-        )
-        if rate_limited:
-            rate_limited_requests += 1
-            rate_limited_accepted += int(outcome["accepted"])
-            rate_limited_failure_overlap += int(not outcome["accepted"])
-        if outcome["execution_route"] == "model_gateway":
-            for record in records:
-                rate_limited_attempts += int(
-                    str(record.provider_failure_category) == "rate_limited"
-                )
-                if record.usage is None:
-                    attempts_without_usage += 1
-                else:
-                    attempts_with_usage += 1
-                    input_tokens += record.usage.input_tokens or 0
-                    output_tokens += record.usage.output_tokens or 0
-                    total_tokens += record.usage.total_tokens or 0
-        elif any(record.usage is None or record.usage.total_tokens != 0 for record in records):
-            raise ValueError("V3.1 deterministic usage record differs")
+        payload, records = _verified_terminal(store, outcome, slot)
+        metrics = _attempt_metrics(outcome, records)
+        rate_limited_requests += metrics["rate_limited_requests"]
+        rate_limited_accepted += metrics["rate_limited_accepted"]
+        rate_limited_failure_overlap += metrics["rate_limited_failure_overlap"]
+        rate_limited_attempts += metrics["rate_limited_attempts"]
+        attempts_with_usage += metrics["attempts_with_usage"]
+        attempts_without_usage += metrics["attempts_without_usage"]
+        input_tokens += metrics["input_tokens"]
+        output_tokens += metrics["output_tokens"]
+        total_tokens += metrics["total_tokens"]
         if not outcome["accepted"]:
             failures.append(_analyze_failure_case(slot, outcome, payload))
     actual = _build_closeout(
