@@ -18,7 +18,7 @@ from typing import Any
 
 import tiktoken
 
-from aletheia_lab.diagnosis.variant_registry import build_variant_registry
+from aletheia_lab.diagnosis.variant_registry import VariantId, build_variant_registry
 from aletheia_lab.evaluation.claim_corpus_execution import inspect_repository_state
 from aletheia_lab.evaluation.claim_corpus_live import (
     PreparedClaimCorpusRequest,
@@ -91,7 +91,7 @@ PROTOCOL_PATH = "configs/evaluation/claim_support_validation_v3_2_relation_cohor
 REQUEST_COUNT = 240
 SOURCE_REQUEST_COUNT = 0
 RELATION_REQUEST_COUNT = 240
-INSTRUMENT_VARIANT = "FULL"
+INSTRUMENT_VARIANT: VariantId = "FULL"
 
 PROTECTED_FALSE_FLAGS = {
     "automatic_labels_generated": False,
