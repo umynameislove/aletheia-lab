@@ -256,6 +256,12 @@ target allocation and 240 relation assignments. It grants no execution
 authority: the next gate is a fresh 12-request synthetic relation
 qualification, followed by separately authorized relation planning only if all
 12 pass exactly.
+That relation-only qualification boundary is now frozen with three synthetic
+probes per relation frame, fresh V3.2 request identities, evaluator-only answer
+matrices, a create-only one-attempt lease and independent terminal replay. Its
+conservative two-attempt ceiling is derived from exact message and schema token
+counts. A 12/12 exact pass unlocks planning only; the 240 relation requests,
+200-claim materialization and blind packets remain separately gated.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation
@@ -548,6 +554,7 @@ documentation, and reproducible artifacts.
 - [Claim-support V2 diagnosis-cohort authorization](docs/claim-support-validation-v2-authorization.md)
 - [Claim-support V3/V3.1 calibration and source-cohort closeout](docs/claim-support-validation-v3.md)
 - [Claim-support V3.2 source-measurement role amendment](docs/claim-support-validation-v3.md#prospective-v32-source-measurement-role-amendment)
+- [Claim-support V3.2 relation qualification](docs/claim-support-validation-v3.md#v32-relation-qualification-boundary)
 - [Related work and research positioning](docs/related-work.md)
 - [Architecture decisions](docs/adr/)
 
