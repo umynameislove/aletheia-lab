@@ -357,3 +357,68 @@ Authorization must be created only after this implementation is merged and the
 operator has synchronized a clean `main`. The operator must bind the newly
 printed plan and rehearsal hashes and an explicit cost ceiling before the
 twelve paid calls can begin.
+
+## V3.2 prospective relation cohort
+
+The relation qualification completed with all twelve requests parsed and
+accepted, zero technical failures and zero semantic failures. That receipt is
+only a gate: it does not enter the study corpus and was not used to change the
+previously assigned cohort. Every cohort plan independently replays the private
+qualification terminal store and binds its authorization, receipt and store
+hashes before authority can be issued.
+
+The cohort contains exactly 240 provider-backed relation measurements and zero
+provider-backed source measurements. It reuses the prespecified 240 assignment
+set without replacement: 60 natural, 60 withdrawal, 60 partial and 60 counter
+frames. All 240 source-instance identities and canonical claim texts are
+distinct. The same qualified `FULL` relation instrument, frozen GPT-4.1
+snapshot, strict part-by-evidence schema, 2,048-token output ceiling,
+two-attempt ceiling and global one-second pacing apply to every request. The
+inherited source variant is retained in evaluator provenance only and never
+enters the provider message.
+
+Execution order is prospectively balanced to remove the order confounding seen
+in earlier development runs. Tasks are hash-ordered within frame, then
+interleaved so every consecutive four-request block contains exactly one task
+from each frame. This changes no claim, evidence context or assignment and uses
+no qualification or cohort outcome.
+
+The cohort semantic gate is intentionally structural rather than answer-key
+based. Missing, duplicate or foreign matrix cells are structural measurement
+failures. A well-formed polarity judgment that differs from the evaluator's
+structural oracle is retained as the model measurement; rejecting it would
+erase the disagreement that the human study is intended to measure. The
+evaluator matrices remain local and are absent from all provider messages.
+
+Execution is registered once before the first provider call. Every terminal
+request and retry is preserved in the immutable store, failures remain in the
+240-request denominator, selective reruns are forbidden, and the receipt is
+independently reconstructed from that store. Completion unlocks only a separate
+outcome-blind closeout. It does not yet generate automatic labels, materialize
+the 200-claim sample or create blind human packets.
+
+The tracked boundary is
+`configs/evaluation/claim_support_validation_v3_2_relation_cohort_protocol.json`.
+After this implementation is merged, reconstruct its plan and rehearsal from a
+clean synchronized `main` and the immutable qualification directory:
+
+```bash
+export CLAIM_V3_2_QUAL_DIR="/private/path/claim-support-v3-2-relation-qualification"
+export CLAIM_V3_2_COHORT_DIR="/private/path/claim-support-v3-2-relation-cohort"
+
+PYTHONPATH=src python scripts/claim_support_validation_v3_2_relation_cohort.py \
+  verify-protocol
+
+PYTHONPATH=src python scripts/claim_support_validation_v3_2_relation_cohort.py \
+  plan \
+  --qualification-run-dir "$CLAIM_V3_2_QUAL_DIR" \
+  --run-dir "$CLAIM_V3_2_COHORT_DIR"
+
+PYTHONPATH=src python scripts/claim_support_validation_v3_2_relation_cohort.py \
+  rehearse \
+  --qualification-run-dir "$CLAIM_V3_2_QUAL_DIR" \
+  --run-dir "$CLAIM_V3_2_COHORT_DIR"
+```
+
+Planning and rehearsal are offline. Authorization and the paid execution remain
+separate operator actions and must bind the hashes printed by clean `main`.
