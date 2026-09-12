@@ -260,3 +260,51 @@ closeout is tracked at
 `scripts/claim_support_validation_v3_failure.py` independently verifies the
 historical receipt/store and then reproduces that closeout without provider
 access or write authority.
+
+## Prospective V3.2 source-measurement role amendment
+
+V3.2 makes the source-role decision required by the V3.1 closeout. Provider
+transcription is not part of the bounded estimand: the study is intended to
+measure agreement between the part-coverage relation instrument and human
+judgments on authentic displayed-report claims. Asking a model to copy values
+introduced a separate upstream ability that the study does not claim to
+measure. V3.2 therefore constructs source claims deterministically from the
+authenticated visible evidence and leaves the provider responsible only for
+the later claim/evidence relation matrix.
+
+This is a prospective scientific amendment, not a repair. The V3.1 receipt,
+all five failed cells and its 355 accepted cells remain closed and none enters
+V3.2. The existing target allocation and 240 relation assignments are reused
+without selecting against observed V3.1 failures. V3.2 creates new source
+instance identities for all 720 planned claim instances; it does not overwrite
+or retrospectively admit any historical output.
+
+The deterministic census retains 360 source slots and two claims per slot. It
+contains 328 distinct canonical claim texts, 240 instances per evidence
+condition, 240 per mechanism and 90 per inherited schedule variant. Variant
+names are retained only as frozen provenance strata: V3.2 authorizes no model-
+variant comparison. Families remain the statistical dependence units, and the
+balanced challenge design still cannot estimate natural error prevalence.
+
+The relation instrument and its prespecified capacity remain unchanged: 60
+disjoint assignments for each of natural, withdrawal, partial and counter
+frames. A fresh V3.2 qualification is still required because its protocol and
+request identities are new. Source construction has zero provider requests and
+is exhaustively checked offline; qualification will contain only the 12
+synthetic relation probes and must accept all 12 exactly. A pass may unlock
+planning only—it cannot authorize the 240 relation calls, generate labels,
+materialize the 200-claim sample or create blind packets.
+
+The tracked protocol is
+`configs/evaluation/claim_support_validation_v3_2_protocol.json`. Rebuild and
+verify it without a credential or provider access:
+
+```bash
+PYTHONPATH=src python scripts/claim_support_validation_v3_2.py review
+PYTHONPATH=src python scripts/claim_support_validation_v3_2.py verify-protocol
+```
+
+The next authorized action after this freeze is implementation of the separate
+V3.2 relation-qualification boundary. Any authorization or paid execution must
+occur only after that implementation is merged and its plan and rehearsal are
+reconstructed from clean synchronized `main`.

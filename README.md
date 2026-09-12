@@ -248,6 +248,14 @@ and no corpus or human packet exists. Only a prospective V3.2
 source-measurement-role review is unlocked; V3.1 cannot be repaired, padded or
 rerun. Its displayed-measurement scope does not support variant-superiority,
 failure-rate generalization or free-form diagnosis claims.
+The prospective V3.2 role amendment now removes provider transcription from
+source construction because transcription is outside the bounded human-
+agreement estimand. It deterministically rebuilds all 720 source instances
+from authenticated visible evidence while retaining the outcome-independent
+target allocation and 240 relation assignments. It grants no execution
+authority: the next gate is a fresh 12-request synthetic relation
+qualification, followed by separately authorized relation planning only if all
+12 pass exactly.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation
@@ -539,6 +547,7 @@ documentation, and reproducible artifacts.
 - [Claim-support V2 seven-request qualification](docs/claim-support-validation-v2-qualification.md)
 - [Claim-support V2 diagnosis-cohort authorization](docs/claim-support-validation-v2-authorization.md)
 - [Claim-support V3/V3.1 calibration and source-cohort closeout](docs/claim-support-validation-v3.md)
+- [Claim-support V3.2 source-measurement role amendment](docs/claim-support-validation-v3.md#prospective-v32-source-measurement-role-amendment)
 - [Related work and research positioning](docs/related-work.md)
 - [Architecture decisions](docs/adr/)
 
