@@ -308,3 +308,52 @@ The next authorized action after this freeze is implementation of the separate
 V3.2 relation-qualification boundary. Any authorization or paid execution must
 occur only after that implementation is merged and its plan and rehearsal are
 reconstructed from clean synchronized `main`.
+
+## V3.2 relation qualification boundary
+
+The relation-only qualification is now implemented as a separate, prospective
+one-attempt boundary. It reuses the twelve prespecified synthetic relation
+stimuli without changing their claim, evidence, prompt, response schema or
+expected matrices. Their request and probe identities are rebound to the V3.2
+protocol. The prior relation-probe outcomes were not used to add, remove or
+modify a stimulus.
+
+The census contains three probes for each of `natural`, `withdrawal`, `partial`
+and `counter`. All use the frozen GPT-4.1 snapshot, `FULL` transport policy,
+2,048-token output ceiling, two-attempt retry ceiling and one-second global
+pacing. There are zero source-transcription calls. Expected matrices remain
+evaluator-only and are excluded from model-visible prompts and evidence.
+
+Qualification passes only when all twelve terminal requests parse and match
+their exact expected relation matrices. Any technical failure, missing or
+duplicate cell, foreign evidence ID, wrong polarity or other semantic mismatch
+closes the attempt as failed. The create-only lease forbids rerun, and the
+receipt is independently reconstructed from the immutable terminal store.
+
+A pass sets only `relation_planning_unlocked=true`. It does not authorize the
+240 relation requests, admit claims, generate automatic labels, materialize the
+200-claim sample or create blind packets. A failed attempt must be preserved;
+it cannot be selectively retried.
+
+The tracked boundary is
+`configs/evaluation/claim_support_validation_v3_2_qualification_protocol.json`.
+The offline checks below do not require a credential and execute no provider
+call:
+
+```bash
+export CLAIM_V3_2_QUAL_DIR="/private/path/claim-support-v3-2-relation-qualification"
+
+PYTHONPATH=src python scripts/claim_support_validation_v3_2_qualification.py \
+  verify-protocol
+
+PYTHONPATH=src python scripts/claim_support_validation_v3_2_qualification.py \
+  plan --run-dir "$CLAIM_V3_2_QUAL_DIR"
+
+PYTHONPATH=src python scripts/claim_support_validation_v3_2_qualification.py \
+  rehearse --run-dir "$CLAIM_V3_2_QUAL_DIR"
+```
+
+Authorization must be created only after this implementation is merged and the
+operator has synchronized a clean `main`. The operator must bind the newly
+printed plan and rehearsal hashes and an explicit cost ceiling before the
+twelve paid calls can begin.
