@@ -262,6 +262,12 @@ matrices, a create-only one-attempt lease and independent terminal replay. Its
 conservative two-attempt ceiling is derived from exact message and schema token
 counts. A 12/12 exact pass unlocks planning only; the 240 relation requests,
 200-claim materialization and blind packets remain separately gated.
+The separate V3.2 closeout now replays the completed cohort without provider
+access, preserves invalid matrices in its denominator, reduces only structurally
+valid judgments, and applies the fixed actual-label sampler once. Private packet
+preparation keeps a disjoint real-onboarding set and the main 200-claim set
+content-bound, while holding the main packets until independent human onboarding
+is complete. No automatic label or evaluator provenance enters a rater surface.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation
@@ -556,6 +562,7 @@ documentation, and reproducible artifacts.
 - [Claim-support V3.2 source-measurement role amendment](docs/claim-support-validation-v3.md#prospective-v32-source-measurement-role-amendment)
 - [Claim-support V3.2 relation qualification](docs/claim-support-validation-v3.md#v32-relation-qualification-boundary)
 - [Claim-support V3.2 prospective relation cohort](docs/claim-support-validation-v3.md#v32-prospective-relation-cohort)
+- [Claim-support V3.2 relation closeout and human packets](docs/claim-support-validation-v3.md#v32-relation-closeout-and-held-human-packets)
 - [Related work and research positioning](docs/related-work.md)
 - [Architecture decisions](docs/adr/)
 
