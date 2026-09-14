@@ -457,7 +457,13 @@ reference key.
 This closeout executes no provider call and grants no permission to deliver
 files, collect annotations, inspect main human outcomes, claim natural error
 prevalence, compare variants, or retrospectively admit V1–V3.1 artifacts. The
-offline commands are:
+later real-onboarding process incurred a disclosed sequencing deviation: both
+primary submissions existed before the independent human reference was locked.
+The [late-reference-freeze amendment](claim-support-v3-2-late-reference-freeze-amendment.md)
+records the resulting `PASS WITH GAP` disposition and preserves the original
+preparation artifacts. That amendment does not release the held main packets;
+a separate fail-closed release receipt is still required. The offline commands
+are:
 
 ```bash
 export CLAIM_V3_2_QUAL_DIR="/private/path/claim-support-v3-2-relation-qualification"
