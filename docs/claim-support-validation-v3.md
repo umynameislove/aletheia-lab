@@ -422,3 +422,59 @@ PYTHONPATH=src python scripts/claim_support_validation_v3_2_relation_cohort.py \
 
 Planning and rehearsal are offline. Authorization and the paid execution remain
 separate operator actions and must bind the hashes printed by clean `main`.
+
+## V3.2 relation closeout and held human packets
+
+After the single-use relation cohort is terminal, closeout independently
+replays its authorization, plan, immutable store and receipt before reading any
+relation judgment. The frozen part-coverage reducer assigns an automatic label
+only to structurally valid matrices. Invalid matrices stay in the original
+240-request denominator, receive structural diagnostics, and are never filled,
+repaired or selectively rerun. A valid judgment is retained even when it
+differs from its prospective frame; frame intent is provenance, not an answer
+key.
+
+The fixed `balanced-label-round-robin-hash/v1` selector is then applied once
+with the existing validation-protocol hash. Feasibility requires 200 globally
+unique canonical claim texts, exactly 50 per observed automatic label, no more
+than five claims per family per label, and no more than two claims per output
+per label. It may not search alternative seeds, substitute prospective frame
+labels, pad a deficient stratum or import a historical failed output. A
+disjoint 20-claim real onboarding set is selected from the remaining pool with
+five cases per observed label; it stays outside scientific denominators.
+
+Private preparation writes create-only, hash-bound artifacts outside the
+repository. Both raters receive the same ordered blind claims through distinct
+packet identities. Rater surfaces contain only claim text, authenticated
+visible evidence, blank decisions, the frozen v2 rubric and the V3.2 reading
+supplement. Automatic labels, frame, family, condition, inherited source
+variant, provider identity and coordinator mapping remain private. The main
+200-claim packets are held until a coordinator independently creates and locks
+a human reference key for the real onboarding set and both raters pass its
+registered qualification gates. Automatic labels must not be copied into that
+reference key.
+
+This closeout executes no provider call and grants no permission to deliver
+files, collect annotations, inspect main human outcomes, claim natural error
+prevalence, compare variants, or retrospectively admit V1–V3.1 artifacts. The
+offline commands are:
+
+```bash
+export CLAIM_V3_2_QUAL_DIR="/private/path/claim-support-v3-2-relation-qualification"
+export CLAIM_V3_2_COHORT_DIR="/private/path/claim-support-v3-2-relation-cohort"
+export CLAIM_V3_2_HUMAN_DIR="/private/path/claim-support-v3-2-human-preparation"
+
+PYTHONPATH=src python scripts/claim_support_validation_v3_2_closeout.py audit \
+  --qualification-run-dir "$CLAIM_V3_2_QUAL_DIR" \
+  --cohort-run-dir "$CLAIM_V3_2_COHORT_DIR"
+
+PYTHONPATH=src python scripts/claim_support_validation_v3_2_closeout.py prepare \
+  --qualification-run-dir "$CLAIM_V3_2_QUAL_DIR" \
+  --cohort-run-dir "$CLAIM_V3_2_COHORT_DIR" \
+  --output-dir "$CLAIM_V3_2_HUMAN_DIR"
+
+PYTHONPATH=src python scripts/claim_support_validation_v3_2_closeout.py verify \
+  --qualification-run-dir "$CLAIM_V3_2_QUAL_DIR" \
+  --cohort-run-dir "$CLAIM_V3_2_COHORT_DIR" \
+  --output-dir "$CLAIM_V3_2_HUMAN_DIR"
+```
