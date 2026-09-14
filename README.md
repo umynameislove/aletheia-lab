@@ -268,6 +268,12 @@ valid judgments, and applies the fixed actual-label sampler once. Private packet
 preparation keeps a disjoint real-onboarding set and the main 200-claim set
 content-bound, while holding the main packets until independent human onboarding
 is complete. No automatic label or evaluator provenance enters a rater surface.
+The subsequent
+[late-reference-freeze amendment](docs/claim-support-v3-2-late-reference-freeze-amendment.md)
+discloses that both primary onboarding submissions existed before the independent
+human reference was locked. Qualification is therefore `PASS WITH GAP`; the
+amendment preserves the frozen design and does not itself release either held
+main packet.
 The development execution preflight now proves the 360-request schedule as 315
 model-backed requests plus 45 deterministic `B0` requests and rehearses terminal
 replay without provider access. The visible-evidence and automatic-relation
@@ -563,6 +569,7 @@ documentation, and reproducible artifacts.
 - [Claim-support V3.2 relation qualification](docs/claim-support-validation-v3.md#v32-relation-qualification-boundary)
 - [Claim-support V3.2 prospective relation cohort](docs/claim-support-validation-v3.md#v32-prospective-relation-cohort)
 - [Claim-support V3.2 relation closeout and human packets](docs/claim-support-validation-v3.md#v32-relation-closeout-and-held-human-packets)
+- [Claim-support V3.2 late-reference-freeze amendment](docs/claim-support-v3-2-late-reference-freeze-amendment.md)
 - [Related work and research positioning](docs/related-work.md)
 - [Architecture decisions](docs/adr/)
 
