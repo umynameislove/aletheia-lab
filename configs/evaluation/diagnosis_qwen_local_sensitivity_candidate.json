@@ -1,0 +1,175 @@
+{
+  "schema_version": "diagnosis-qwen-local-sensitivity-candidate/v1",
+  "status": "identity_and_72_request_census_frozen_execution_blocked_on_local_calibration",
+  "created_on": "2026-09-20",
+  "protected_main_outcomes_opened": false,
+  "local_model_executed": false,
+  "execution_authorized": false,
+  "scientific_role": "secondary_model_family_sensitivity_reported_separately",
+  "model_family_comparison_role": "within_qwen_B1_vs_A3_only_not_cross_model_superiority",
+  "base_model": {
+    "repository": "Qwen/Qwen3-Coder-30B-A3B-Instruct",
+    "revision": "b2cff646eb4bb1d68355c01b18ae02e7cf42d120",
+    "license": "Apache-2.0",
+    "architecture": "Qwen3MoeForCausalLM",
+    "total_parameters_billion": 30.5,
+    "active_parameters_billion": 3.3,
+    "hidden_layers": 48,
+    "experts": 128,
+    "active_experts_per_token": 8,
+    "native_context_tokens": 262144,
+    "mode": "non_thinking_instruct_only",
+    "config_file_sha256": "e2c8d8eea39471785cd93379d8b48241ad7dcda299013155dd02526e34a0de62",
+    "tokenizer_config_file_sha256": "60f6e8cb15c98dd07300a3cc465ea662de245d2095e4245616af21b2324db3fc",
+    "source_chat_template_utf8_sha256": "5a38bfa05833266240066aedc497decc9b00cc0d3e3b8cceea98cf530196ab06",
+    "source_chat_template_utf8_bytes": 6211
+  },
+  "primary_artifact": {
+    "repository": "ggml-org/Qwen3-Coder-30B-A3B-Instruct-Q8_0-GGUF",
+    "revision": "99d445b5fd000458cabc098da6a79c2967a472f1",
+    "filename": "qwen3-coder-30b-a3b-instruct-q8_0.gguf",
+    "quantization": "Q8_0",
+    "byte_count": 32483933856,
+    "sha256": "f22993e29318b5b9ec2026f6b65802a5ca99b38ab4844aab83aed8a26ce00ff6",
+    "xet_hash": "152f02ccacbdc6f7e4714ab501dda9de2815451577ad6aed8cff9aebbe1f778b",
+    "license": "Apache-2.0"
+  },
+  "operational_fallback": {
+    "repository": "unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF",
+    "revision": "75c8d15549f5509d1cf941d8ae429f909e0f9bd9",
+    "filename": "Qwen3-Coder-30B-A3B-Instruct-Q6_K.gguf",
+    "quantization": "Q6_K",
+    "byte_count": 25092535456,
+    "sha256": "100b5121d09553fb1af3b873b21fb3ec3da5c306fc5cb09bd338c48e21b10875",
+    "xet_hash": "7e6ae1cb1e0aec20e0967851ff32eaa9c88f9e63499436a2ec62420832310ddd",
+    "license": "Apache-2.0",
+    "activation_rule": "only_if_q8_fails_schema_oom_crash_truncation_memory_or_runtime_gate_on_development_fixtures",
+    "scientific_quality_selection_forbidden": true,
+    "different_converter_repository_disclosed": true
+  },
+  "runner": {
+    "repository": "https://github.com/ggml-org/llama.cpp",
+    "release": "v0.4.1",
+    "annotated_tag_object_sha": "29aaf1c27faa48292357cea2120d94114a545006",
+    "dereferenced_commit_sha": "b29c606e28a01b1bc8c1351026a0fa6e616bf6c4",
+    "backend": "Metal",
+    "build_type": "Release",
+    "cmake_flags": [
+      "-DGGML_METAL=ON",
+      "-DCMAKE_BUILD_TYPE=Release"
+    ],
+    "n_gpu_layers": 99,
+    "server_bind": "127.0.0.1",
+    "context_shift": false,
+    "use_embedded_jinja_chat_template": true,
+    "tools_supplied": false,
+    "tool_calling_evaluated": false
+  },
+  "host_envelope": {
+    "model_class": "MacBook Pro Apple M2 Max",
+    "cpu_cores": 12,
+    "unified_memory_gib": 64,
+    "operating_system": "macOS 26.6.1",
+    "architecture": "arm64",
+    "maximum_observed_peak_memory_gib": 40,
+    "serial_number_recorded": false
+  },
+  "generation_policy": {
+    "server_context_tokens": 32768,
+    "shared_visible_context_ceiling_tokens": 12000,
+    "maximum_output_tokens": 600,
+    "decoding": "qwen_recommended_sampling_with_fixed_seed",
+    "temperature": 0.7,
+    "top_p": 0.8,
+    "top_k": 20,
+    "min_p": 0.0,
+    "repetition_penalty": 1.05,
+    "seed": 17,
+    "timeout_seconds": 300,
+    "provider_attempt_ceiling": 2,
+    "fallback_model_or_prompt_switch_within_request": false,
+    "qwen_recommended_sampling_overridden": false,
+    "deterministic_output_claimed": false,
+    "repeatability_rule": "same pinned runtime seed request and host; report any byte-level divergence observed during development calibration"
+  },
+  "sensitivity_design": {
+    "family_count": 12,
+    "families_per_mechanism": 4,
+    "mechanisms": [
+      "data_drift",
+      "preprocessing_mismatch",
+      "label_noise"
+    ],
+    "evidence_conditions": [
+      "full",
+      "missing_key",
+      "noisy"
+    ],
+    "variants": [
+      "B1",
+      "A3"
+    ],
+    "expected_request_count": 72,
+    "selection_order": "mechanism_then_prespecified_severity_stratum_then_request_sha256",
+    "replacement_after_outcome_forbidden": true,
+    "main_model_pooling_forbidden": true,
+    "independent_family_n": 12,
+    "request_census_path": "configs/evaluation/diagnosis_qwen_sensitivity_census.json",
+    "request_census_file_sha256": "faf938d13fc91e8aeeb1f01b49e8892bb74cd411667c261c94bdeda7521b7790",
+    "request_census_sha256": "a6044e1386c3e68fd653a6e3c888abb70ccc863457af6cc5cea98806ad7ad159",
+    "exact_request_ids_locked": true,
+    "request_ids_embedded_in_candidate": false
+  },
+  "calibration_policy": {
+    "partition": "development_only",
+    "allowed_criteria_in_order": [
+      "structured_output_schema_compatibility",
+      "no_oom_crash_or_silent_truncation",
+      "peak_memory_within_envelope",
+      "deterministic_request_construction_and_artifact_identity",
+      "same_seed_repeatability_observation_without_correctness_selection",
+      "runtime_feasibility_for_frozen_output_budget"
+    ],
+    "main_correctness_groundedness_or_hypothesis_direction_visible": false,
+    "if_both_pass_select": "Q8_0",
+    "if_neither_pass": "report_operationally_infeasible_without_model_substitution"
+  },
+  "development_calibration_contract": {
+    "development_plan_path": "configs/evaluation/diagnosis_development_pilot_plan.json",
+    "development_plan_file_sha256": "56228f25a05bddcc3f7484a069b22d3fb9d49dd666bd28baaccb5916561a7025",
+    "development_plan_sha256": "d176750f7e09db4ce1544c685714a90e7a9ccce61caa5b6b1310c4f392773665",
+    "response_contract_path": "configs/evaluation/diagnosis_main_response_contract.json",
+    "response_contract_file_sha256": "e026bf8573b8fa195f30193daee64fe4bbd319fa88dd80140e264f449e7d970f",
+    "response_contract_sha256": "d9cbbdda6e29e0e2717591124804c8c5d5a90d4f5a9cd81de67fdf36ee5bd810",
+    "implementation_path": "src/aletheia_lab/evaluation/qwen_local_calibration.py",
+    "implementation_file_sha256": "c82501c636bac37bb77d0b0209d02d39fb01f8c9773afe6a75e10e72f8a54af6",
+    "entrypoint_path": "scripts/calibrate_qwen_local_sensitivity.py",
+    "entrypoint_file_sha256": "982c5c0089ab108ec53c15772951eea836f9b74cec5e94e560c497e82f463a0b",
+    "receipt_audit_entrypoint_path": "scripts/audit_qwen_local_calibration.py",
+    "receipt_audit_entrypoint_file_sha256": "c0556163da235723535c240be97047b591e85278b91a11e1e0df9ea0aca7e1a3",
+    "synthetic_case_count": 3,
+    "variant_count": 2,
+    "calibration_cell_count": 6,
+    "repeatability_replicate_count": 1,
+    "total_local_inference_calls": 7,
+    "scientific_quality_selection_permitted": false,
+    "main_outcomes_permitted": false,
+    "receipt_must_remain_outside_git_until_sanitized": true
+  },
+  "privacy_and_security": {
+    "local_only": true,
+    "web_enabled": false,
+    "shell_enabled_for_model": false,
+    "project_execution_enabled_for_model": false,
+    "hidden_truth_visible": false,
+    "evaluator_metadata_visible": false,
+    "bind_non_loopback_forbidden": true
+  },
+  "unresolved_requirements": [
+    "q8_gguf_must_be_downloaded_outside_git_and_locally_sha256_verified",
+    "embedded_gguf_chat_template_and_metadata_must_be_extracted_and_compared_with_the_pinned_source_template",
+    "llama_cpp_v0_4_1_metal_binary_and_build_flags_must_be_recorded",
+    "q8_then_conditional_q6_development_calibration_must_be_completed_without_main_outcomes"
+  ],
+  "candidate_sha256": "4f96fb083ccefdad3a8ce6ec2ac4ccf607456f9ed143a27e96f3cbe58b3188f6"
+}

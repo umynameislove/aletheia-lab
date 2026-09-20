@@ -1,0 +1,135 @@
+{
+  "schema_version": "diagnosis-main-engineering-preflight/v1",
+  "created_on": "2026-09-20",
+  "status": "engineering_preflight_pass_main_readiness_blocked_on_qwen_runtime_and_independent_review",
+  "protected_outcomes_opened": false,
+  "main_execution_authorized": false,
+  "registered_attempts_consumed": 0,
+  "acceptance_checks": [
+    {
+      "check": "study_contract_locked",
+      "status": "pass",
+      "evidence": "Eight controlled main-study paths, the separate B3 external-transfer boundary, forward response contract, model policy, information budget, prompt hashes, retry ceiling, and no-fallback policy are content-addressed."
+    },
+    {
+      "check": "model_gateway_and_context_boundary",
+      "status": "pass",
+      "evidence": "Strict request identity, visibility filtering, retry taxonomy, terminal failure retention, telemetry, and OpenAI transport translation are regression-tested."
+    },
+    {
+      "check": "external_mock_path",
+      "status": "pass_development_only",
+      "evidence": "The deterministic external mock completed all 27 development cells across nine variants without live provider calls or scientific interpretation."
+    },
+    {
+      "check": "deterministic_local_path",
+      "status": "pass_development_only",
+      "evidence": "The B0/local deterministic route is content-addressed and completes the development fixtures with no network or protected outcomes."
+    },
+    {
+      "check": "main_response_contract",
+      "status": "pass",
+      "evidence": "Citation-forbidden and citation-required variants are separated without rewriting the historical diagnosis-output/2 schema; the provider schema uses only gateway-supported constraints and semantic validation remains local."
+    },
+    {
+      "check": "information_path_fairness",
+      "status": "pass",
+      "evidence": "Every B0-B3 and A1-FULL path and attribution boundary is declared, and the offline runtime preflight proves route-level conformance over the exact sealed census."
+    },
+    {
+      "check": "main_controlled_runtime",
+      "status": "pass_implementation",
+      "evidence": "The outcome-eligible builder and executor cover all eight controlled paths with create-only per-turn persistence, explicit execution authority, no automatic replay of incomplete turns, visible-corpus retrieval restriction, and immutable terminal replay. B3 is intentionally excluded from this runtime and remains external transfer."
+    },
+    {
+      "check": "sealed_main_census",
+      "status": "pass",
+      "evidence": "The source census deterministically freezes 32 families, four evidence conditions, 128 contexts and 1,024 controlled logical requests; the public seal contains no private paths or item-level labels."
+    },
+    {
+      "check": "pinned_qwen_local_path",
+      "status": "blocked",
+      "evidence": "Model, GGUF, runner, template source, host envelope, and decoding policy are pinned, but weights/build verification and development calibration have not run."
+    },
+    {
+      "check": "qwen_72_request_sensitivity_census",
+      "status": "pass",
+      "evidence": "The balanced 12-family x 3-condition x 2-variant design is deterministically selected from the sealed census and all 72 request IDs are content-addressed before outcomes are opened."
+    },
+    {
+      "check": "independent_methods_review",
+      "status": "blocked",
+      "evidence": "Independent approval must occur only after the two runtime blockers close."
+    }
+  ],
+  "local_verification": {
+    "observed_on": "2026-09-20",
+    "selected_test_count": 203,
+    "result": "pass",
+    "real_provider_calls": 0,
+    "local_qwen_inferences": 0,
+    "protected_outcomes_opened": false,
+    "test_files": [
+      "tests/unit/test_context_evaluation_boundary.py",
+      "tests/unit/test_model_gateway_runtime.py",
+      "tests/unit/test_openai_gateway_adapter.py",
+      "tests/unit/test_diagnosis_development_runner.py",
+      "tests/unit/test_diagnosis_main_analysis.py",
+      "tests/unit/test_diagnosis_main_census.py",
+      "tests/unit/test_diagnosis_main_response.py",
+      "tests/unit/test_diagnosis_main_runtime.py",
+      "tests/unit/test_diagnosis_main_fairness_audit.py",
+      "tests/unit/test_diagnosis_qwen_local_sensitivity_candidate.py",
+      "tests/unit/test_qwen_local_calibration.py",
+      "tests/unit/test_diagnosis_rq6b_scope_decision.py"
+    ]
+  },
+  "repo_artifact_bindings": {
+    "configs/evaluation/diagnosis_development_pilot_plan.json": "56228f25a05bddcc3f7484a069b22d3fb9d49dd666bd28baaccb5916561a7025",
+    "configs/evaluation/diagnosis_development_pilot_receipt.json": "c89b9e019c88b44cb1c8b5d1cc9cc3d78a69cafbf55bc0173593d47db84f3179",
+    "configs/evaluation/diagnosis_information_path_fairness_audit.json": "c5d9395826eb965bfaa065a5b3b5f54f4959daf9dd2044ddfe5e1c45813862a7",
+    "configs/evaluation/diagnosis_main_analysis_plan.json": "12d4a79876265e0197f0f1b0553e896d37924fb5b642f18e03db2a9c19b34e7c",
+    "configs/evaluation/diagnosis_main_census_seal.json": "3853707331c1ed54847f18eda7b4c4bae195fff18f11c2d7342b88847ad87686",
+    "configs/evaluation/diagnosis_main_response_contract.json": "e026bf8573b8fa195f30193daee64fe4bbd319fa88dd80140e264f449e7d970f",
+    "configs/evaluation/diagnosis_main_runtime_contract.json": "3206c2d049b85ca007c819165349f563da8dcc2a7a40a2a92d150ebf16618c35",
+    "configs/evaluation/diagnosis_main_runtime_preflight.json": "340c5f0168ab4c7a0774de41284a1956355ddb8606c8bbcb31d1b20ccafe6851",
+    "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate.json": "5a6ac55e1d18a3c25964d1d382cfbe73654397bc5d0aeb9bdad64d31356e29a2",
+    "configs/evaluation/diagnosis_qwen_sensitivity_census.json": "faf938d13fc91e8aeeb1f01b49e8892bb74cd411667c261c94bdeda7521b7790",
+    "configs/evaluation/diagnosis_variant_fairness_freeze.json": "687021e778cb4ebfd05c6a66270fde77b1ba38d74ccab94826f6833fe2c2593b",
+    "src/aletheia_lab/context/evaluation_context.py": "a01f3b0d5a65169e378b42df6941b52c781ef2fd2ce258204ed48704dae7b472",
+    "src/aletheia_lab/diagnosis/variant_registry.py": "d54f85fcfee47580c0f43c12e047882a2dee71cdf009141ab02881ca9ad43bbe",
+    "src/aletheia_lab/diagnosis/main_response.py": "bfcfb375246be418a0c0e98122ed13d74bf5ce0f47e345048f35c48e74f5ae26",
+    "src/aletheia_lab/diagnosis/main_runtime.py": "ce583966ca2abbc757a885e7976ec233101ec087b82fdcfb072a7a49bbfa7f49",
+    "src/aletheia_lab/evaluation/diagnosis_main_analysis.py": "7f822568ee4e0574c4a9fbfb9fdd4a15336cf2453374e45e7ca4dac1530b1791",
+    "src/aletheia_lab/evaluation/qwen_local_calibration.py": "c82501c636bac37bb77d0b0209d02d39fb01f8c9773afe6a75e10e72f8a54af6",
+    "src/aletheia_lab/model_gateway/contracts.py": "d3d8db65a94e5232de5a6d48e591e981a1551422524aaaf90d35bd350eee74c3",
+    "src/aletheia_lab/model_gateway/fake.py": "16f640de33c2c38b0243c5fd0f188df382f841a40166624debcb5300107e2ff2",
+    "src/aletheia_lab/model_gateway/openai.py": "eade085c40994a6b72fa1c37a741f525ac971a5e7bf85d50c59c5a2ed3c08055",
+    "src/aletheia_lab/model_gateway/runtime.py": "a0d8a4632924ab2d9b648a24bf047574023bc581765de61260aaf62d8f557de0",
+    "tests/unit/test_context_evaluation_boundary.py": "8a5684263158d88da694978bab47e6683209cc30b4ac6c972c2d9c7a6c25f7dd",
+    "tests/unit/test_diagnosis_development_runner.py": "b6428d478e2c656f1cd1a754900f535cc39247e2bb7b351f5c5e4a49eef58705",
+    "tests/unit/test_diagnosis_main_analysis.py": "75f8577d80160965d404818e9f180db81a1847ac0c832ce0e2fb48ca9ed09896",
+    "tests/unit/test_diagnosis_main_census.py": "e580a2650e05acadcfa455375f352a643d26f26f5d85c53d8dc5bcbe25d3baca",
+    "tests/unit/test_diagnosis_main_fairness_audit.py": "eb4b991b510b1d06f37562ed2ed36efe892c3833b1615fdbf0a321f12f8981a0",
+    "tests/unit/test_diagnosis_main_response.py": "b23691a575134dc2b5e0dec33e8efeffbf165515e52182dce4ee2526bf065e21",
+    "tests/unit/test_diagnosis_main_runtime.py": "33893696d9903232d20f1f6e1b9673d94b370df19e84319d42cfe6bc21ab915f",
+    "scripts/audit_qwen_local_calibration.py": "c0556163da235723535c240be97047b591e85278b91a11e1e0df9ea0aca7e1a3",
+    "scripts/calibrate_qwen_local_sensitivity.py": "982c5c0089ab108ec53c15772951eea836f9b74cec5e94e560c497e82f463a0b",
+    "tests/unit/test_diagnosis_qwen_local_sensitivity_candidate.py": "67ea9d55479785ac239961c4eec54f748b9c2aafa87e545f6a31b648ca8c92f4",
+    "tests/unit/test_qwen_local_calibration.py": "7f4d2250e15608c5091453e8c0fb00d4852d29a667a11ba03b1ad357c0416d53",
+    "tests/unit/test_model_gateway_runtime.py": "a921d8734d06f05335e0f9711708483ab6c68d21f1c451673c84390d9d942514",
+    "tests/unit/test_openai_gateway_adapter.py": "c6c02c22b158aa195b2c50c0ed509f408885f8bccf8a8939e639c04a3c9be206"
+  },
+  "blocking_requirements": [
+    {
+      "code": "qwen_local_artifact_build_and_calibration_receipt_missing",
+      "closure": "Download outside Git, verify the exact Q8 artifact, build pinned llama.cpp, compare the embedded template, and pass development-only operational calibration; use Q6 only under the frozen operational fallback rule."
+    },
+    {
+      "code": "independent_methods_approval_missing",
+      "closure": "An independent reviewer must verify the final main-study freeze and sign a separate review record after the local Qwen artifact and development-calibration receipt close."
+    }
+  ],
+  "readiness_rule": "The engineering preflight is complete only when blocking_requirements is empty, every acceptance check is scoped pass evidence, protected outcomes remain unopened, registered attempts remain zero, and independent approval is content-addressed.",
+  "candidate_sha256": "5f7f138f2105e3e830346c8b0aa114ae6d67437f73d3e7a8ea4f064b69a5cb2b"
+}
