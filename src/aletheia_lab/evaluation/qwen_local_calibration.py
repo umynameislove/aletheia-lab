@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import subprocess
@@ -15,6 +14,7 @@ from pathlib import Path
 from typing import Any, Final, Literal
 from urllib.parse import urlparse
 
+from aletheia_lab.content_hashing import file_sha256
 from aletheia_lab.diagnosis.main_response import (
     DiagnosisMainResponseError,
     validate_main_provider_output,
@@ -23,6 +23,7 @@ from aletheia_lab.evaluation.execution_contracts import (
     canonical_execution_json,
     canonical_execution_sha256,
 )
+from aletheia_lab.project.identity import content_sha256
 
 CALIBRATION_SCHEMA_VERSION: Final = "diagnosis-qwen-local-calibration/v1"
 _CALIBRATION_VARIANTS: Final[tuple[Literal["B1", "A3"], ...]] = ("B1", "A3")
@@ -42,12 +43,7 @@ class QwenCalibrationRequest:
     request_sha256: str
 
 
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(8 * 1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+sha256_file = file_sha256
 
 
 def _load_json_object(path: Path) -> dict[str, object]:
@@ -92,9 +88,7 @@ def _render_evidence(case: dict[str, object], *, structured: bool) -> str:
         records.append(record)
     if structured:
         return canonical_execution_json(records)
-    return " | ".join(
-        f"{item['title']}: {item['content']}" for item in records
-    )
+    return " | ".join(f"{item['title']}: {item['content']}" for item in records)
 
 
 def build_calibration_requests(
@@ -121,9 +115,7 @@ def build_calibration_requests(
         if not case_id or not isinstance(evidence, list):
             raise QwenCalibrationError("development case identity is malformed")
         visible_ids = frozenset(
-            str(item.get("evidence_id", ""))
-            for item in evidence
-            if isinstance(item, dict)
+            str(item.get("evidence_id", "")) for item in evidence if isinstance(item, dict)
         )
         if len(visible_ids) != len(evidence) or "" in visible_ids:
             raise QwenCalibrationError("development evidence IDs are invalid or duplicated")
@@ -179,9 +171,7 @@ def require_loopback_base_url(base_url: str) -> str:
     return base_url.rstrip("/")
 
 
-def frozen_server_flags(
-    candidate: dict[str, object], port: int
-) -> tuple[str, ...]:
+def frozen_server_flags(candidate: dict[str, object], port: int) -> tuple[str, ...]:
     """Render the auditable llama-server envelope from the frozen candidate."""
 
     if not 1 <= port <= 65535:
@@ -249,25 +239,30 @@ def _run_text(command: list[str], *, cwd: Path | None = None) -> str:
     return (completed.stdout + completed.stderr).strip()
 
 
-def verify_local_artifacts(
-    *,
+def _candidate_artifact_sections(
     candidate: dict[str, object],
-    model_path: Path,
-    llama_checkout: Path,
-    source_tokenizer_config: Path,
-) -> dict[str, object]:
+) -> tuple[dict[str, object], dict[str, object], dict[str, object], dict[str, object]]:
     primary = candidate.get("primary_artifact")
     runner = candidate.get("runner")
     base_model = candidate.get("base_model")
     host = candidate.get("host_envelope")
-    if not all(
-        isinstance(item, dict) for item in (primary, runner, base_model, host)
-    ):
+    if not all(isinstance(item, dict) for item in (primary, runner, base_model, host)):
         raise QwenCalibrationError("candidate artifact bindings are malformed")
     assert isinstance(primary, dict)
     assert isinstance(runner, dict)
     assert isinstance(base_model, dict)
     assert isinstance(host, dict)
+    return primary, runner, base_model, host
+
+
+def _numeric_contract_value(payload: dict[str, object], key: str) -> int | float:
+    value = payload.get(key)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise QwenCalibrationError("candidate numeric artifact binding is malformed")
+    return value
+
+
+def _verify_model_artifact(model_path: Path, primary: dict[str, object]) -> str:
     if model_path.is_symlink() or not model_path.is_file():
         raise QwenCalibrationError("Q8 model must be a regular non-symlink file")
     if model_path.stat().st_size != primary.get("byte_count"):
@@ -275,6 +270,13 @@ def verify_local_artifacts(
     observed_model_sha = sha256_file(model_path)
     if observed_model_sha != primary.get("sha256"):
         raise QwenCalibrationError("Q8 SHA-256 mismatch")
+    return observed_model_sha
+
+
+def _verify_llama_checkout(
+    llama_checkout: Path,
+    runner: dict[str, object],
+) -> tuple[str, str, Path]:
     observed_commit = _run_text(
         ["git", "rev-parse", "HEAD^{commit}"], cwd=llama_checkout
     ).splitlines()[-1]
@@ -285,7 +287,6 @@ def verify_local_artifacts(
         raise QwenCalibrationError("llama.cpp commit mismatch")
     if observed_tag != runner.get("annotated_tag_object_sha"):
         raise QwenCalibrationError("llama.cpp annotated tag mismatch")
-
     binary = llama_checkout / "build/bin/llama-server"
     if binary.is_symlink() or not binary.is_file() or not os.access(binary, os.X_OK):
         raise QwenCalibrationError("pinned llama-server binary is unavailable")
@@ -294,15 +295,18 @@ def verify_local_artifacts(
     )
     if source_diff:
         raise QwenCalibrationError("llama.cpp tracked source checkout is dirty")
-    version = _run_text([str(binary), "--version"])
-    cmake_version = _run_text(["cmake", "--version"])
-    compiler_version = _run_text(["c++", "--version"])
-    operating_system = _run_text(["sw_vers"])
+    return observed_commit, observed_tag, binary
+
+
+def _verify_host_and_build(
+    llama_checkout: Path,
+    host: dict[str, object],
+) -> dict[str, object]:
     cpu_count = int(_run_text(["sysctl", "-n", "hw.ncpu"]))
     memory_bytes = int(_run_text(["sysctl", "-n", "hw.memsize"]))
     if cpu_count != host.get("cpu_cores"):
         raise QwenCalibrationError("host CPU-core count differs from frozen envelope")
-    if memory_bytes < int(host.get("unified_memory_gib", 0)) * 2**30:
+    if memory_bytes < int(_numeric_contract_value(host, "unified_memory_gib")) * 2**30:
         raise QwenCalibrationError("host unified memory is below the frozen envelope")
     cmake_cache = llama_checkout / "build/CMakeCache.txt"
     if cmake_cache.is_symlink() or not cmake_cache.is_file():
@@ -312,19 +316,19 @@ def verify_local_artifacts(
         raise QwenCalibrationError("llama.cpp build does not declare GGML_METAL=ON")
     if "CMAKE_BUILD_TYPE:STRING=Release" not in cache_text:
         raise QwenCalibrationError("llama.cpp build is not Release")
-    tokenizer_config = _load_json_object(source_tokenizer_config)
-    observed_tokenizer_config_sha = sha256_file(source_tokenizer_config)
-    if observed_tokenizer_config_sha != base_model.get(
-        "tokenizer_config_file_sha256"
-    ):
-        raise QwenCalibrationError("source tokenizer-config SHA-256 mismatch")
-    source_template = tokenizer_config.get("chat_template")
-    if not isinstance(source_template, str) or not source_template:
-        raise QwenCalibrationError("source tokenizer config has no string chat template")
-    source_template_sha = hashlib.sha256(source_template.encode()).hexdigest()
-    if source_template_sha != base_model.get("source_chat_template_utf8_sha256"):
-        raise QwenCalibrationError("source chat-template SHA-256 mismatch")
+    return {
+        "cmake_version_output": _run_text(["cmake", "--version"]),
+        "compiler_version_output": _run_text(["c++", "--version"]),
+        "operating_system_version_output": _run_text(["sw_vers"]),
+        "host_cpu_count": cpu_count,
+        "host_memory_bytes": memory_bytes,
+        "cmake_cache_sha256": content_sha256(cache_text.encode("utf-8")),
+        "cmake_build_type": "Release",
+        "ggml_metal_enabled": True,
+    }
 
+
+def _embedded_chat_template(model_path: Path, llama_checkout: Path) -> tuple[str, str]:
     dump_script = llama_checkout / "gguf-py/gguf/scripts/gguf_dump.py"
     try:
         metadata_process = subprocess.run(
@@ -350,9 +354,56 @@ def verify_local_artifacts(
         raise QwenCalibrationError("cannot extract embedded GGUF chat template") from exc
     if not isinstance(embedded_template, str):
         raise QwenCalibrationError("embedded GGUF chat template is not a string")
-    embedded_template_sha = hashlib.sha256(embedded_template.encode()).hexdigest()
+    return embedded_template, metadata_text
+
+
+def _verify_chat_templates(
+    *,
+    model_path: Path,
+    llama_checkout: Path,
+    source_tokenizer_config: Path,
+    base_model: dict[str, object],
+) -> dict[str, object]:
+    tokenizer_config = _load_json_object(source_tokenizer_config)
+    observed_tokenizer_config_sha = sha256_file(source_tokenizer_config)
+    if observed_tokenizer_config_sha != base_model.get("tokenizer_config_file_sha256"):
+        raise QwenCalibrationError("source tokenizer-config SHA-256 mismatch")
+    source_template = tokenizer_config.get("chat_template")
+    if not isinstance(source_template, str) or not source_template:
+        raise QwenCalibrationError("source tokenizer config has no string chat template")
+    source_template_sha = content_sha256(source_template.encode("utf-8"))
+    if source_template_sha != base_model.get("source_chat_template_utf8_sha256"):
+        raise QwenCalibrationError("source chat-template SHA-256 mismatch")
+    embedded_template, metadata_text = _embedded_chat_template(model_path, llama_checkout)
+    embedded_template_sha = content_sha256(embedded_template.encode("utf-8"))
     if embedded_template_sha != source_template_sha:
         raise QwenCalibrationError("embedded GGUF chat template differs from pinned source")
+    return {
+        "source_chat_template_utf8_sha256": source_template_sha,
+        "source_tokenizer_config_file_sha256": observed_tokenizer_config_sha,
+        "embedded_chat_template_utf8_sha256": embedded_template_sha,
+        "embedded_template_matches_source": True,
+        "metadata_dump_sha256": content_sha256(metadata_text.encode("utf-8")),
+    }
+
+
+def verify_local_artifacts(
+    *,
+    candidate: dict[str, object],
+    model_path: Path,
+    llama_checkout: Path,
+    source_tokenizer_config: Path,
+) -> dict[str, object]:
+    primary, runner, base_model, host = _candidate_artifact_sections(candidate)
+    observed_model_sha = _verify_model_artifact(model_path, primary)
+    observed_commit, observed_tag, binary = _verify_llama_checkout(llama_checkout, runner)
+    host_and_build = _verify_host_and_build(llama_checkout, host)
+    templates = _verify_chat_templates(
+        model_path=model_path,
+        llama_checkout=llama_checkout,
+        source_tokenizer_config=source_tokenizer_config,
+        base_model=base_model,
+    )
 
     return {
         "model_byte_count": model_path.stat().st_size,
@@ -360,20 +411,9 @@ def verify_local_artifacts(
         "llama_cpp_commit_sha": observed_commit,
         "llama_cpp_tag_object_sha": observed_tag,
         "llama_server_sha256": sha256_file(binary),
-        "llama_server_version_output": version,
-        "cmake_version_output": cmake_version,
-        "compiler_version_output": compiler_version,
-        "operating_system_version_output": operating_system,
-        "host_cpu_count": cpu_count,
-        "host_memory_bytes": memory_bytes,
-        "cmake_cache_sha256": hashlib.sha256(cache_text.encode()).hexdigest(),
-        "cmake_build_type": "Release",
-        "ggml_metal_enabled": True,
-        "source_chat_template_utf8_sha256": source_template_sha,
-        "source_tokenizer_config_file_sha256": observed_tokenizer_config_sha,
-        "embedded_chat_template_utf8_sha256": embedded_template_sha,
-        "embedded_template_matches_source": True,
-        "metadata_dump_sha256": hashlib.sha256(metadata_text.encode()).hexdigest(),
+        "llama_server_version_output": _run_text([str(binary), "--version"]),
+        **host_and_build,
+        **templates,
     }
 
 
@@ -477,7 +517,7 @@ def _completion_record(
         "variant": request.variant,
         "replicate": replicate,
         "request_sha256": request.request_sha256,
-        "raw_response_sha256": hashlib.sha256(raw.encode()).hexdigest(),
+        "raw_response_sha256": content_sha256(raw.encode("utf-8")),
         "schema_and_semantic_conformance": True,
         "elapsed_seconds": round(elapsed, 3),
         "usage": response.get("usage"),
@@ -549,8 +589,7 @@ def build_calibration_receipt(
         "inference_call_count": 7,
         "repeatability_pair": {
             "request_sha256": first["request_sha256"],
-            "byte_identical": first["raw_response_sha256"]
-            == repeat["raw_response_sha256"],
+            "byte_identical": first["raw_response_sha256"] == repeat["raw_response_sha256"],
             "determinism_claimed": False,
         },
         "records": records,
@@ -559,15 +598,12 @@ def build_calibration_receipt(
     return {**payload, "receipt_sha256": canonical_execution_sha256(payload)}
 
 
-def validate_calibration_receipt(
-    *,
+def _validate_receipt_contract_fields(
     receipt: dict[str, object],
     candidate: dict[str, object],
     development_plan: dict[str, object],
     response_contract: dict[str, object],
-) -> dict[str, object]:
-    """Validate a calibration receipt without exposing response content."""
-
+) -> str:
     unsigned = {key: value for key, value in receipt.items() if key != "receipt_sha256"}
     receipt_sha = canonical_execution_sha256(unsigned)
     fixed_fields = {
@@ -588,8 +624,13 @@ def validate_calibration_receipt(
         raise QwenCalibrationError("calibration receipt self-hash mismatch")
     if any(receipt.get(key) != value for key, value in fixed_fields.items()):
         raise QwenCalibrationError("calibration receipt fixed contract fields differ")
+    return receipt_sha
 
-    expected_requests = build_calibration_requests(development_plan, response_contract)
+
+def _validate_receipt_records(
+    receipt: dict[str, object],
+    expected_requests: tuple[QwenCalibrationRequest, ...],
+) -> tuple[dict[str, object], ...]:
     expected_sequence = (*expected_requests, expected_requests[0])
     records = receipt.get("records")
     if not isinstance(records, (list, tuple)) or len(records) != len(expected_sequence):
@@ -611,19 +652,28 @@ def validate_calibration_receipt(
             raise QwenCalibrationError("calibration response hash is malformed")
         if any(key in record for key in ("raw", "raw_response", "content", "output")):
             raise QwenCalibrationError("calibration receipt contains raw model output")
+    return tuple(records)
 
-    repeatability = receipt.get("repeatability_pair")
+
+def _validate_receipt_repeatability(
+    receipt: dict[str, object],
+    records: tuple[dict[str, object], ...],
+    expected_requests: tuple[QwenCalibrationRequest, ...],
+) -> None:
     first = records[0]
     repeat = records[-1]
     expected_repeatability = {
         "request_sha256": expected_requests[0].request_sha256,
-        "byte_identical": first.get("raw_response_sha256")
-        == repeat.get("raw_response_sha256"),
+        "byte_identical": first.get("raw_response_sha256") == repeat.get("raw_response_sha256"),
         "determinism_claimed": False,
     }
-    if repeatability != expected_repeatability:
+    if receipt.get("repeatability_pair") != expected_repeatability:
         raise QwenCalibrationError("calibration repeatability record differs")
 
+
+def _validate_receipt_server_flags(
+    receipt: dict[str, object], candidate: dict[str, object]
+) -> None:
     flags = receipt.get("server_flags")
     if not isinstance(flags, (list, tuple)):
         raise QwenCalibrationError("calibration server flags are malformed")
@@ -637,21 +687,12 @@ def validate_calibration_receipt(
     if tuple(flags) != frozen_server_flags(candidate, port):
         raise QwenCalibrationError("calibration server flags differ from freeze")
 
-    primary = candidate.get("primary_artifact")
-    runner = candidate.get("runner")
-    base_model = candidate.get("base_model")
-    host = candidate.get("host_envelope")
+
+def _validate_receipt_artifacts(receipt: dict[str, object], candidate: dict[str, object]) -> None:
+    primary, runner, base_model, host = _candidate_artifact_sections(candidate)
     artifacts = receipt.get("artifact_verification")
-    if not all(
-        isinstance(item, dict)
-        for item in (primary, runner, base_model, host, artifacts)
-    ):
+    if not isinstance(artifacts, dict):
         raise QwenCalibrationError("calibration artifact verification is malformed")
-    assert isinstance(primary, dict)
-    assert isinstance(runner, dict)
-    assert isinstance(base_model, dict)
-    assert isinstance(host, dict)
-    assert isinstance(artifacts, dict)
     required_artifact_values = {
         "model_byte_count": primary.get("byte_count"),
         "model_sha256": primary.get("sha256"),
@@ -659,19 +700,11 @@ def validate_calibration_receipt(
         "llama_cpp_tag_object_sha": runner.get("annotated_tag_object_sha"),
         "cmake_build_type": runner.get("build_type"),
         "ggml_metal_enabled": True,
-        "source_tokenizer_config_file_sha256": base_model.get(
-            "tokenizer_config_file_sha256"
-        ),
-        "source_chat_template_utf8_sha256": base_model.get(
-            "source_chat_template_utf8_sha256"
-        ),
-        "embedded_chat_template_utf8_sha256": base_model.get(
-            "source_chat_template_utf8_sha256"
-        ),
+        "source_tokenizer_config_file_sha256": base_model.get("tokenizer_config_file_sha256"),
+        "source_chat_template_utf8_sha256": base_model.get("source_chat_template_utf8_sha256"),
+        "embedded_chat_template_utf8_sha256": base_model.get("source_chat_template_utf8_sha256"),
         "embedded_template_matches_source": True,
-        "maximum_observed_peak_memory_gib": host.get(
-            "maximum_observed_peak_memory_gib"
-        ),
+        "maximum_observed_peak_memory_gib": host.get("maximum_observed_peak_memory_gib"),
     }
     if any(artifacts.get(key) != value for key, value in required_artifact_values.items()):
         raise QwenCalibrationError("calibration artifact identity differs from freeze")
@@ -679,10 +712,28 @@ def validate_calibration_receipt(
     if (
         not isinstance(observed_peak, (int, float))
         or observed_peak < 0
-        or observed_peak > float(host["maximum_observed_peak_memory_gib"])
+        or observed_peak > float(_numeric_contract_value(host, "maximum_observed_peak_memory_gib"))
     ):
         raise QwenCalibrationError("calibration memory observation exceeds freeze")
 
+
+def validate_calibration_receipt(
+    *,
+    receipt: dict[str, object],
+    candidate: dict[str, object],
+    development_plan: dict[str, object],
+    response_contract: dict[str, object],
+) -> dict[str, object]:
+    """Validate a calibration receipt without exposing response content."""
+
+    receipt_sha = _validate_receipt_contract_fields(
+        receipt, candidate, development_plan, response_contract
+    )
+    expected_requests = build_calibration_requests(development_plan, response_contract)
+    records = _validate_receipt_records(receipt, expected_requests)
+    _validate_receipt_repeatability(receipt, records, expected_requests)
+    _validate_receipt_server_flags(receipt, candidate)
+    _validate_receipt_artifacts(receipt, candidate)
     return {
         "schema_version": "diagnosis-qwen-local-calibration-audit/v1",
         "status": "pass",
