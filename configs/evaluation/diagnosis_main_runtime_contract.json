@@ -1,0 +1,131 @@
+{
+  "schema_version": "diagnosis-main-runtime-contract/v1",
+  "status": "outcome_blind_implementation_ready_execution_not_authorized",
+  "created_on": "2026-09-20",
+  "protected_main_outcomes_opened": false,
+  "execution_authorized": false,
+  "analysis_census_sha256": "86f3577e755481eb14360a1375d9bb20fba7c60e87df20df068072bb4d08463e",
+  "analysis_plan_sha256": "4dd5908cadcbb249042741329ddbdceaf4f1a4b4088724d0c1e152cc0310a94a",
+  "response_contract_sha256": "d9cbbdda6e29e0e2717591124804c8c5d5a90d4f5a9cd81de67fdf36ee5bd810",
+  "controlled_logical_request_count": 1024,
+  "provider_backed_logical_request_count": 896,
+  "deterministic_logical_request_count": 128,
+  "provider_turn_count_if_all_routes_complete": 1408,
+  "main_model_policy": {
+    "provider": "openai",
+    "api": "chat_completions",
+    "model_family": "gpt-4.1",
+    "model_snapshot": "gpt-4.1-2025-04-14",
+    "sdk_version": "2.46.0",
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "seed": 17,
+    "maximum_output_tokens": 600,
+    "timeout_seconds": 60.0,
+    "provider_attempt_ceiling": 2,
+    "hidden_sdk_retries": 0,
+    "silent_model_or_endpoint_switch": false
+  },
+  "route_contracts": [
+    {
+      "variant": "A1",
+      "route": "single_turn_structured",
+      "provider_turns": 1,
+      "retrieval_turns": 0,
+      "final_projection": "all_visible_items_structured",
+      "citation_mode": "forbidden"
+    },
+    {
+      "variant": "A2",
+      "route": "single_turn_structured",
+      "provider_turns": 1,
+      "retrieval_turns": 0,
+      "final_projection": "all_visible_items_structured",
+      "citation_mode": "required_for_cause_and_evidence_claims"
+    },
+    {
+      "variant": "A3",
+      "route": "single_turn_structured",
+      "provider_turns": 1,
+      "retrieval_turns": 0,
+      "final_projection": "all_visible_items_structured",
+      "citation_mode": "required_for_cause_and_evidence_claims"
+    },
+    {
+      "variant": "B0",
+      "route": "deterministic_local",
+      "provider_turns": 0,
+      "retrieval_turns": 0,
+      "final_projection": "declared_visible_features_rule_trace",
+      "citation_mode": "native_non_atomic"
+    },
+    {
+      "variant": "B1",
+      "route": "single_turn_plain",
+      "provider_turns": 1,
+      "retrieval_turns": 0,
+      "final_projection": "all_visible_items_plain_rendering",
+      "citation_mode": "forbidden"
+    },
+    {
+      "variant": "B2",
+      "route": "catalog_selection_then_plain_final",
+      "provider_turns": 2,
+      "retrieval_turns": 1,
+      "final_projection": "selected_subset_plain_rendering",
+      "citation_mode": "forbidden"
+    },
+    {
+      "variant": "CodeGraph",
+      "route": "graph_selection_then_graph_final",
+      "provider_turns": 2,
+      "retrieval_turns": 1,
+      "final_projection": "selected_subset_registered_graph",
+      "citation_mode": "required_for_cause_and_evidence_claims"
+    },
+    {
+      "variant": "FULL",
+      "route": "catalog_then_graph_refinement_then_full_final",
+      "provider_turns": 3,
+      "retrieval_turns": 2,
+      "final_projection": "selected_union_with_registered_graph_lineage_and_turn_provenance",
+      "citation_mode": "required_for_cause_and_evidence_claims"
+    }
+  ],
+  "retrieval_policy": {
+    "observable_corpus": "exact_model_visible_context_for_the_registered_logical_request",
+    "maximum_retrieved_items": 32,
+    "empty_selection_policy": "terminal_fail_closed_no_automatic_fallback",
+    "unknown_or_duplicate_id_policy": "terminal_fail_closed",
+    "hidden_ground_truth_visible": false,
+    "evaluator_metadata_visible": false,
+    "web_enabled": false,
+    "shell_enabled": false,
+    "project_execution_enabled": false,
+    "selection_quality_fallback_permitted": false
+  },
+  "persistence_policy": {
+    "request_written_before_provider_invocation": true,
+    "every_provider_attempt_retained": true,
+    "raw_and_parsed_response_separated": true,
+    "turn_request_and_result_create_only": true,
+    "logical_terminal_create_only": true,
+    "terminal_replay_is_read_only": true,
+    "incomplete_turn_automatic_replay_permitted": false,
+    "partial_logical_request_excluded_from_complete_case_analysis": false,
+    "partial_logical_request_invalidates_registered_execution": true
+  },
+  "semantic_validation": {
+    "final_schema": "diagnosis-main-provider-output/1",
+    "variant_aware_citation_validation": true,
+    "cited_ids_must_resolve_in_final_projection": true,
+    "selection_ids_must_resolve_in_original_context": true,
+    "technical_or_semantic_failure_retained_in_denominator": true
+  },
+  "non_pooling": {
+    "logdx_b3": "separate_native_35_case_external_transfer",
+    "qwen": "separate_72_request_model_family_sensitivity",
+    "rq6b": "excluded_from_current_registration"
+  },
+  "runtime_contract_sha256": "eca4170c7d27fafd393bcc9d9ddca5b25a611e5793640259b3919ebe9536fbc7"
+}

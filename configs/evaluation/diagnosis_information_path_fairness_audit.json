@@ -1,0 +1,154 @@
+{
+  "schema_version": "diagnosis-information-path-fairness-audit/v1",
+  "audit_status": "design_and_runtime_conformance_closed_execution_not_authorized",
+  "protected_outcomes_opened": false,
+  "execution_authorized": false,
+  "source_bindings": {
+    "fairness_freeze_path": "configs/evaluation/diagnosis_variant_fairness_freeze.json",
+    "fairness_freeze_file_sha256": "687021e778cb4ebfd05c6a66270fde77b1ba38d74ccab94826f6833fe2c2593b",
+    "historical_output_schema_path": "configs/evaluation/diagnosis_output_v2_schema.json",
+    "historical_output_schema_file_sha256": "e6392c0de469920b87255ad4a50a2cc7c91c49baa66324f0a182cafa9cf0e4f0",
+    "main_response_contract_path": "configs/evaluation/diagnosis_main_response_contract.json",
+    "main_response_contract_file_sha256": "e026bf8573b8fa195f30193daee64fe4bbd319fa88dd80140e264f449e7d970f",
+    "main_response_validator_path": "src/aletheia_lab/diagnosis/main_response.py",
+    "main_response_validator_file_sha256": "bfcfb375246be418a0c0e98122ed13d74bf5ce0f47e345048f35c48e74f5ae26",
+    "main_runtime_contract_path": "configs/evaluation/diagnosis_main_runtime_contract.json",
+    "main_runtime_contract_file_sha256": "3206c2d049b85ca007c819165349f563da8dcc2a7a40a2a92d150ebf16618c35",
+    "main_runtime_preflight_path": "configs/evaluation/diagnosis_main_runtime_preflight.json",
+    "main_runtime_preflight_file_sha256": "340c5f0168ab4c7a0774de41284a1956355ddb8606c8bbcb31d1b20ccafe6851",
+    "main_runtime_implementation_path": "src/aletheia_lab/diagnosis/main_runtime.py",
+    "main_runtime_implementation_file_sha256": "ce583966ca2abbc757a885e7976ec233101ec087b82fdcfb072a7a49bbfa7f49",
+    "main_census_seal_path": "configs/evaluation/diagnosis_main_census_seal.json",
+    "main_census_seal_file_sha256": "3853707331c1ed54847f18eda7b4c4bae195fff18f11c2d7342b88847ad87686"
+  },
+  "variant_paths": [
+    {
+      "variant": "B0",
+      "model_path": "deterministic_rules_no_llm",
+      "information_path": "declared_visible_features_only",
+      "interaction_path": "single_turn_no_tools",
+      "citation_mode": "native_non_atomic",
+      "reporting_class": "separate_deterministic_reference",
+      "attribution_boundary": "not a matched LLM effect"
+    },
+    {
+      "variant": "B1",
+      "model_path": "gpt-4.1-2025-04-14",
+      "information_path": "plain_rendering_of_registered_visible_corpus",
+      "interaction_path": "single_turn_no_tools",
+      "citation_mode": "forbidden",
+      "reporting_class": "matched_primary_reference",
+      "attribution_boundary": "plain LLM comparator"
+    },
+    {
+      "variant": "B2",
+      "model_path": "gpt-4.1-2025-04-14",
+      "information_path": "retrieved_subset_of_same_observable_corpus_and_ceiling",
+      "interaction_path": "registered_multi_turn_retrieval_with_complete_ledger",
+      "citation_mode": "forbidden",
+      "reporting_class": "matched_composite_workflow_comparator",
+      "attribution_boundary": "retrieval selection and multi-turn interaction cannot be separated"
+    },
+    {
+      "variant": "B3",
+      "model_path": "pinned_logdx_native_stack",
+      "information_path": "logdx_ci_native_35_case_corpus",
+      "interaction_path": "native_external_protocol",
+      "citation_mode": "native_non_atomic",
+      "reporting_class": "external_transfer_only",
+      "attribution_boundary": "native metrics and Aletheia metrics remain separate"
+    },
+    {
+      "variant": "A1",
+      "model_path": "gpt-4.1-2025-04-14",
+      "information_path": "structured_rendering_of_registered_visible_corpus",
+      "interaction_path": "single_turn_no_tools",
+      "citation_mode": "forbidden",
+      "reporting_class": "matched_primary_ablation",
+      "attribution_boundary": "structured rendering relative to B1"
+    },
+    {
+      "variant": "A2",
+      "model_path": "gpt-4.1-2025-04-14",
+      "information_path": "structured_rendering_of_registered_visible_corpus",
+      "interaction_path": "single_turn_no_tools",
+      "citation_mode": "required_for_cause_and_evidence_claims",
+      "reporting_class": "matched_primary_ablation",
+      "attribution_boundary": "citation requirement relative to A1"
+    },
+    {
+      "variant": "A3",
+      "model_path": "gpt-4.1-2025-04-14",
+      "information_path": "structured_rendering_of_registered_visible_corpus",
+      "interaction_path": "single_turn_no_tools",
+      "citation_mode": "required_for_cause_and_evidence_claims",
+      "reporting_class": "matched_primary_method",
+      "attribution_boundary": "abstention contract relative to A2; bundle effect relative to B1"
+    },
+    {
+      "variant": "CodeGraph",
+      "model_path": "gpt-4.1-2025-04-14",
+      "information_path": "registered_visible_corpus_plus_code_graph_nodes_and_edges",
+      "interaction_path": "code_graph_retrieval_with_complete_ledger",
+      "citation_mode": "required_for_cause_and_evidence_claims",
+      "reporting_class": "separate_system_component_path",
+      "attribution_boundary": "not pooled because delivered information differs"
+    },
+    {
+      "variant": "FULL",
+      "model_path": "gpt-4.1-2025-04-14",
+      "information_path": "registered_visible_corpus_plus_graph_lineage_and_conversation_records",
+      "interaction_path": "registered_multi_turn_system_path_with_complete_ledger",
+      "citation_mode": "required_for_cause_and_evidence_claims",
+      "reporting_class": "separate_full_system_path",
+      "attribution_boundary": "whole-system effect only; no single-component claim"
+    }
+  ],
+  "clean_ablation_claims": [
+    "B1_vs_A1_plain_vs_structured_visible_evidence_rendering",
+    "A1_vs_A2_citation_requirement",
+    "A2_vs_A3_abstention_and_missing_evidence_contract"
+  ],
+  "composite_or_noncomparable_claims": [
+    "B1_vs_A3_is_a_prespecified_bundle_effect_not_component_identification",
+    "B1_vs_B2_combines_retrieval_selection_and_multi_turn_interaction",
+    "B0_is_not_a_matched_llm_effect",
+    "B3_is_external_transfer_and_never_pooled",
+    "CodeGraph_and_FULL_have_different_information_paths_and_are_reported_separately"
+  ],
+  "findings": [
+    {
+      "code": "matched_model_and_generation_policy",
+      "status": "pass",
+      "evidence": "B1/B2/A1/A2/A3 retain one GPT-4.1 snapshot, decoding, output budget, timeout and retry ceiling."
+    },
+    {
+      "code": "hidden_truth_and_evaluator_metadata_excluded",
+      "status": "pass",
+      "evidence": "Every registered information budget excludes hidden truth and evaluator metadata; web, shell and project execution are disabled."
+    },
+    {
+      "code": "citation_ablation_transport_conflict",
+      "status": "pass_forward_fix",
+      "evidence": "The historical diagnosis-output/2 minItems=1 rule is preserved for prior work and superseded for the diagnosis main study by diagnosis-main-provider-output/1 with variant-aware citation validation."
+    },
+    {
+      "code": "retrieval_and_tool_ledger",
+      "status": "pass",
+      "evidence": "The outcome-eligible runtime fixes B2 and CodeGraph at two provider turns and FULL at three, restricts retrieval to each request's declared visible corpus, and writes a create-only request/response/selection ledger before and after every turn. Incomplete turns cannot be replayed automatically."
+    },
+    {
+      "code": "finite_census_route_coverage",
+      "status": "pass",
+      "evidence": "The sealed census and offline preflight account exactly for 32 families, 128 evidence contexts, 1,024 controlled logical requests, 896 provider-backed requests, 128 deterministic B0 requests, and 1,408 provider turns; B3 remains a separate 35-case external-transfer evaluation."
+    },
+    {
+      "code": "non_pooling_boundaries",
+      "status": "pass",
+      "evidence": "B0, B3, CodeGraph and FULL are separate; Qwen and LogDx are not pooled with GPT-4.1 matched estimates."
+    }
+  ],
+  "design_blockers": [],
+  "runtime_blocker": null,
+  "audit_sha256": "56e2096227657680974f315cb2c4e867e2ceb6a566953abe25aa936c973f9969"
+}
