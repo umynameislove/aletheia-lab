@@ -1,0 +1,131 @@
+{
+  "schema_version": "diagnosis-main-freeze-candidate/v2",
+  "created_on": "2026-09-20",
+  "status": "candidate_forward_integrity_locked_main_execution_blocked",
+  "execution_authorized": false,
+  "main_registered_attempts_consumed": 0,
+  "main_outcomes_opened": false,
+  "source_base_commit_sha": "9b3d161eab0911663898e6e136dc782b6bbc67e3",
+  "source_base_tree_sha": "b0ed8c58be3849d70fc4f8d0d8ea88b6b2826eef",
+  "candidate_artifacts_committed_at_creation": false,
+  "predecessor": {
+    "path": "configs/evaluation/diagnosis_main_freeze_candidate.json",
+    "file_sha256": "0694a733e6d469b8137670d568808dc8b5845e06690ba6ecda98e7c594bafe69",
+    "manifest_sha256": "2e6371df9fc4a36b1a066f7ec21e5078e9f4be02b2f40d325f384709ed184cc7",
+    "history_mutated": false
+  },
+  "requirements_disposition": {
+    "main_case_request_and_split_census_not_frozen": {
+      "status": "carried_forward",
+      "evidence": "No sealed 30-36-family census or exact request identities exist."
+    },
+    "analysis_plan_contains_unresolved_tbd_fields": {
+      "status": "closed_forward",
+      "evidence": "The self-hashed analysis plan and one-shot implementation fix the estimand, formulas, aggregation, multiplicity, missingness, precision, bootstrap, null branch, and non-pooling rules."
+    },
+    "diagnosis_execution_gate_not_closed": {
+      "status": "carried_forward_reduced",
+      "evidence": "The engineering preflight passes offline, but the outcome-eligible nine-path runtime, Qwen calibration, sealed census conformance, and independent approval remain open."
+    },
+    "local_model_sensitivity_identity_not_frozen": {
+      "status": "carried_forward_reduced",
+      "evidence": "Model, Q8/Q6 artifacts, llama.cpp, host envelope, generation policy, and 12x3x2 design are pinned; local artifact/build calibration and exact 72 request IDs remain open."
+    },
+    "logdx_native_reference_not_pinned_or_reproduced": {
+      "status": "closed_with_corrected_scope",
+      "evidence": "LogDx-CI v1.2 commit, licenses, 35-case census, mapping, and cached evaluator replay are bound. The earlier native-reproduction wording is explicitly narrowed; no fresh diagnoser rerun is claimed."
+    },
+    "baseline_information_path_fairness_audit_not_closed": {
+      "status": "carried_forward_reduced",
+      "evidence": "Design-path audit is closed for B0-B3 and A1-FULL; runtime conformance remains an engineering-preflight blocker."
+    },
+    "prospective_case_seal_not_closed": {
+      "status": "closed_by_prespecified_exclusion",
+      "evidence": "RQ6b is excluded from this registration before protected data opening and preserved as a separately sealed later study."
+    },
+    "main_analysis_entrypoint_and_hashes_missing": {
+      "status": "closed_forward",
+      "evidence": "A strict one-shot analysis CLI, analysis implementation, response parser, analysis environment, and dependent hashes are bound."
+    },
+    "independent_methods_approval_missing": {
+      "status": "carried_forward",
+      "evidence": "No independent reviewer has approved the final post-blocker manifest."
+    }
+  },
+  "requirement_counts": {
+    "predecessor_requirements": 9,
+    "closed_forward": 4,
+    "carried_forward": 5,
+    "remaining_blockers_after_consolidation": 4
+  },
+  "forward_locked_contracts": {
+    "analysis_plan_sha256": "85cae3791d57aaa75a894e8997c9694b083f5f6f7a35044ae73eaf22315b6596",
+    "response_contract_sha256": "b2bcc7e7e1d635d15a8bab96f1ab3767d49de245f92d0d905f1b6d14c723b160",
+    "information_path_fairness_audit_sha256": "e206cb03b66745762f9241b3847688225cfcdd5d77e8cdda85d67cad5343a516",
+    "logdx_cached_replay_receipt_sha256": "74ba4458a783fb685a9d08f3cac138a88437647ad497c993aaf44fa2483b4038",
+    "qwen_candidate_sha256": "f045b200f7ef83fcc4cdd51722a493afeeb5f8384792cccffa13e09d8a0d4f5b",
+    "rq6b_scope_decision_sha256": "f4a2287a81fd624f9602b003f2c67bc657126e6db97722c3ec7869a84b8a8ed9",
+    "engineering_preflight_sha256": "5f7f138f2105e3e830346c8b0aa114ae6d67437f73d3e7a8ea4f064b69a5cb2b"
+  },
+  "analysis_environment": {
+    "python": "3.12.14",
+    "numpy": "2.5.1",
+    "pydantic": "2.13.4",
+    "resolved_dependency_inventory_sha256": "ad8e97493e8b8e49992dd6286303b330a19219ac8794cd1a8f4149d1ab0536b3"
+  },
+  "repo_artifact_bindings": {
+    "configs/evaluation/diagnosis_information_path_fairness_audit.json": "af03c4f2d3d67a8110bc22e4d7f6a705eda9187623a94445e6002dd2e7ab8933",
+    "configs/evaluation/diagnosis_logdx_cached_evaluator_replay.json": "2bbcfc1aefd621e219f2e71efe3aa5afbbca74e20e7e229691dcc346ed6dc0cf",
+    "configs/evaluation/diagnosis_main_analysis_plan.json": "e9d8bafe2edea7ed9b5a83c314b386204382ff14639e577c7d59c73e5309cb03",
+    "configs/evaluation/diagnosis_main_response_contract.json": "1b6dda6f21bc04dfc65ffb258ee9c769503740d33ed5fa08eb9c959084ee4e30",
+    "configs/evaluation/diagnosis_main_engineering_preflight.json": "07bf53a19e16a0ca21382e67684e36b8956d8c448582084f09f1b4a553aa0fb0",
+    "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate.json": "9ed5b8d9fd7ebfd2018b837a86dc81035e599ef84bfe3b09fea7ca06c8194b1d",
+    "configs/evaluation/diagnosis_rq6b_scope_decision.json": "06726ea49cdeb9b8b397905cc551b03045d141f4ffa1c100966879d521fee61c",
+    "docs/diagnosis-main-related-work-and-technology-freeze-2026-09-20.md": "172c82162c9421cb23e18248b78d4a573a44a1ffaaa5a59b25bdd008333c5f22",
+    "pyproject.toml": "389a21c3811460f99fa40d629fd01f363f02d2b5f27fcacac1a1531c630bbc2e",
+    "reports/release/resolved-dependency-inventory-v1.json": "5cf5f1bdb431b169380fa45fb77ba163693cbe4b8273ef183e5dad8981bc196f",
+    "scripts/run_diagnosis_main_analysis.py": "7d5deaa5ece99cd7c2e2e9a1879af9b4d6d7a9e00a73eec516f1c5920821f5e1",
+    "src/aletheia_lab/diagnosis/main_response.py": "bfcfb375246be418a0c0e98122ed13d74bf5ce0f47e345048f35c48e74f5ae26",
+    "src/aletheia_lab/evaluation/diagnosis_main_analysis.py": "f5431457fbc082816777e16d3abbb52b99708751e4575be3afbd0db83bba8889",
+    "src/aletheia_lab/evaluation/execution_contracts.py": "9211fdc7e8a94ee060362a59f9aa0dbeebd60ba28d209c93ff34d4b85c2f37b6"
+  },
+  "unresolved_contract_requirements": [
+    {
+      "code": "sealed_main_case_split_and_request_census_missing",
+      "required_evidence": "A leakage-audited 30-36-family sealed census, all mandatory sibling contexts, exact split, and complete request identities."
+    },
+    {
+      "code": "outcome_eligible_nine_path_runtime_missing",
+      "required_evidence": "A tested main request builder/executor, route-specific attempt persistence, terminal reconciliation, and runtime fairness conformance for every declared reporting path."
+    },
+    {
+      "code": "qwen_local_calibration_and_exact_72_request_ids_missing",
+      "required_evidence": "Verified Q8 artifact and pinned llama.cpp build, embedded-template/metadata check, development-only operational calibration, and the deterministic balanced 12-family request subset."
+    },
+    {
+      "code": "independent_methods_approval_missing",
+      "required_evidence": "An outcome-blind independent review approving the engineering preflight and final forward manifest after the three technical blockers close."
+    }
+  ],
+  "permitted_pre_readiness_transitions": [
+    "construct_and_audit_the_sealed_main_census_without_opening_model_outcomes",
+    "implement_the_outcome_eligible_nine_path_runtime_and_runtime_fairness_tests",
+    "perform_user_run_qwen_download_build_and_development_only_calibration",
+    "obtain_independent_methods_review_after_technical_closure"
+  ],
+  "prohibited_pre_readiness_transitions": [
+    "open_main_outcomes",
+    "consume_a_registered_main_attempt",
+    "select_qwen_artifact_by_main_quality",
+    "claim_fresh_logdx_diagnoser_reproduction",
+    "claim_main_execution_ready_or_done"
+  ],
+  "deviation_policy": {
+    "scientific_change_requires_new_forward_version_before_main_outcomes": true,
+    "technical_correction_requires_forward_linked_receipt": true,
+    "post_outcome_threshold_denominator_or_family_change_forbidden": true,
+    "predecessor_history_must_be_preserved": true,
+    "blocked_candidate_does_not_authorize_execution": true
+  },
+  "manifest_sha256": "e25059164cd5625a0deb6209debd27523f7239494c38c3dafa4a82968de203e4"
+}
