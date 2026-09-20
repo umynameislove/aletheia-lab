@@ -8,6 +8,15 @@
   "source_base_commit_sha": "9b3d161eab0911663898e6e136dc782b6bbc67e3",
   "source_base_tree_sha": "b0ed8c58be3849d70fc4f8d0d8ea88b6b2826eef",
   "candidate_artifacts_committed_at_creation": false,
+  "technical_maintenance": {
+    "performed_on": "2026-09-21",
+    "scope": "module_boundary_and_hash_ownership_refactor_only",
+    "scientific_contract_changed": false,
+    "main_outcomes_opened": false,
+    "main_registered_attempts_consumed": 0,
+    "predecessor_history_mutated": false,
+    "maintainability_audit_status": "pass"
+  },
   "predecessor": {
     "path": "configs/evaluation/diagnosis_main_freeze_candidate_v2.json",
     "file_sha256": "38c7f21bca5be98b1a95b7ef3d3aa665631523c52fa7a79ce2d6925e40290e4e",
@@ -57,16 +66,16 @@
   "forward_locked_contracts": {
     "analysis_plan_sha256": "4dd5908cadcbb249042741329ddbdceaf4f1a4b4088724d0c1e152cc0310a94a",
     "response_contract_sha256": "d9cbbdda6e29e0e2717591124804c8c5d5a90d4f5a9cd81de67fdf36ee5bd810",
-    "information_path_fairness_audit_sha256": "56e2096227657680974f315cb2c4e867e2ceb6a566953abe25aa936c973f9969",
+    "information_path_fairness_audit_sha256": "a14a98b310a3c59c273842bcfe3985c8606dc0f8a94bca3e87add52f66eaa9d4",
     "main_census_source_contract_sha256": "cca7bcae009cb38b6f14425d90cfbd36400230ff2dae8977aa482c0fc8ab1375",
     "main_census_seal_sha256": "e010cd36a37ce100c2033e4bd9652de4842635ef79e0ba7fb9fee79c4a420b8b",
     "main_runtime_contract_sha256": "eca4170c7d27fafd393bcc9d9ddca5b25a611e5793640259b3919ebe9536fbc7",
     "main_runtime_preflight_sha256": "ce9ca890866d8050ba8c0c0b605964114ef2d91f0774a87a6e527445d1eb0a9a",
-    "qwen_candidate_sha256": "4f96fb083ccefdad3a8ce6ec2ac4ccf607456f9ed143a27e96f3cbe58b3188f6",
+    "qwen_candidate_sha256": "d37dbfa369e37115a463409d3b964f1fe2a1bddf3c09f4c178e09b39425c726a",
     "qwen_census_sha256": "a6044e1386c3e68fd653a6e3c888abb70ccc863457af6cc5cea98806ad7ad159",
     "logdx_cached_replay_receipt_sha256": "74ba4458a783fb685a9d08f3cac138a88437647ad497c993aaf44fa2483b4038",
     "rq6b_scope_decision_sha256": "f4a2287a81fd624f9602b003f2c67bc657126e6db97722c3ec7869a84b8a8ed9",
-    "engineering_preflight_sha256": "5f7f138f2105e3e830346c8b0aa114ae6d67437f73d3e7a8ea4f064b69a5cb2b"
+    "engineering_preflight_sha256": "7b7da7296e3b9031f1ca742fb57f10df1fc43f3fe144ec0734e169e8bd481574"
   },
   "private_artifact_content_identities": {
     "main_private_census_packet_byte_sha256": "ae68dbe62828192a70ff4db28b3728c1176e9bdf361bfe752995137761be313e",
@@ -80,7 +89,7 @@
     "resolved_dependency_inventory_sha256": "ad8e97493e8b8e49992dd6286303b330a19219ac8794cd1a8f4149d1ab0536b3"
   },
   "repo_artifact_bindings": {
-    "configs/evaluation/diagnosis_information_path_fairness_audit.json": "c5d9395826eb965bfaa065a5b3b5f54f4959daf9dd2044ddfe5e1c45813862a7",
+    "configs/evaluation/diagnosis_information_path_fairness_audit.json": "da75fc0af456eeac7b77b4727ed2f9af93a1ef7351d77ec5ed482a16602aef0e",
     "configs/evaluation/diagnosis_logdx_cached_evaluator_replay.json": "2bbcfc1aefd621e219f2e71efe3aa5afbbca74e20e7e229691dcc346ed6dc0cf",
     "configs/evaluation/diagnosis_main_analysis_plan.json": "12d4a79876265e0197f0f1b0553e896d37924fb5b642f18e03db2a9c19b34e7c",
     "configs/evaluation/diagnosis_main_census_seal.json": "3853707331c1ed54847f18eda7b4c4bae195fff18f11c2d7342b88847ad87686",
@@ -88,8 +97,8 @@
     "configs/evaluation/diagnosis_main_response_contract.json": "e026bf8573b8fa195f30193daee64fe4bbd319fa88dd80140e264f449e7d970f",
     "configs/evaluation/diagnosis_main_runtime_contract.json": "3206c2d049b85ca007c819165349f563da8dcc2a7a40a2a92d150ebf16618c35",
     "configs/evaluation/diagnosis_main_runtime_preflight.json": "340c5f0168ab4c7a0774de41284a1956355ddb8606c8bbcb31d1b20ccafe6851",
-    "configs/evaluation/diagnosis_main_engineering_preflight.json": "07bf53a19e16a0ca21382e67684e36b8956d8c448582084f09f1b4a553aa0fb0",
-    "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate.json": "5a6ac55e1d18a3c25964d1d382cfbe73654397bc5d0aeb9bdad64d31356e29a2",
+    "configs/evaluation/diagnosis_main_engineering_preflight.json": "a1e00588425fe2819e5bd0291e1127bfcd2a7da1946002ec4d67232d9722fc04",
+    "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate.json": "0d0bd1c5e566ba63812fffdc755ceab729124cc4d904bdf9963c9bb8d9895ffa",
     "configs/evaluation/diagnosis_qwen_sensitivity_census.json": "faf938d13fc91e8aeeb1f01b49e8892bb74cd411667c261c94bdeda7521b7790",
     "configs/evaluation/diagnosis_rq6b_scope_decision.json": "06726ea49cdeb9b8b397905cc551b03045d141f4ffa1c100966879d521fee61c",
     "docs/diagnosis-main-independent-methods-review.md": "6faee9dd41c50159924d19487278754ec83a4e2c3ff24354b45bfbf22ae00c4c",
@@ -104,11 +113,17 @@
     "scripts/build_diagnosis_main_census.py": "70b2e62e61a4153f2f021cb3107d7c2c6f6ac5e1565a92f4cd54bf8992428fc7",
     "scripts/calibrate_qwen_local_sensitivity.py": "982c5c0089ab108ec53c15772951eea836f9b74cec5e94e560c497e82f463a0b",
     "scripts/run_diagnosis_main_analysis.py": "0de0618468f5d53a87c3d62550073782cd5295c0c7cfe3aa9dec8ab626238c0c",
+    "src/aletheia_lab/content_hashing.py": "5273bbd228bcc0ed94aefc9108b86cb486fbb023fff42758add616320dcc21a5",
+    "src/aletheia_lab/diagnosis/_main_runtime_contexts.py": "836b51c90943aafc25a7d19104324e78659b835dcda0b0714c84c82a05bd50bb",
+    "src/aletheia_lab/diagnosis/_main_runtime_contracts.py": "da8aea46ab4ad3295d843fe2700b5374defd55e5b15574dbd5f0da19a111f8d0",
+    "src/aletheia_lab/diagnosis/_main_runtime_store.py": "66536b276cfd00f878a7b1f9d7d5f3954f64a8fdce068e214686b93ae5667e4c",
     "src/aletheia_lab/diagnosis/main_response.py": "bfcfb375246be418a0c0e98122ed13d74bf5ce0f47e345048f35c48e74f5ae26",
-    "src/aletheia_lab/diagnosis/main_runtime.py": "ce583966ca2abbc757a885e7976ec233101ec087b82fdcfb072a7a49bbfa7f49",
-    "src/aletheia_lab/evaluation/diagnosis_main_analysis.py": "7f822568ee4e0574c4a9fbfb9fdd4a15336cf2453374e45e7ca4dac1530b1791",
-    "src/aletheia_lab/evaluation/diagnosis_main_census.py": "5722046b34099ff99bfc7f9ef785c674848a6d877b20d30827160c9350fdfa4d",
-    "src/aletheia_lab/evaluation/qwen_local_calibration.py": "c82501c636bac37bb77d0b0209d02d39fb01f8c9773afe6a75e10e72f8a54af6",
+    "src/aletheia_lab/diagnosis/main_runtime.py": "c4d63551f2b20d620b59c2f2a497f40fe4f7818fa7d58c02c3f4a9d69c1a4a4a",
+    "src/aletheia_lab/evaluation/_diagnosis_main_analysis_contracts.py": "07a3b3754b5fb1dcc8833c532b5db01f064a4c361f9f13030960ffe13d74c067",
+    "src/aletheia_lab/evaluation/_diagnosis_main_census_contracts.py": "ad13fd16a73d2525b597796d20b383bd78ca504f7ec1325a04cb6f46583c42d8",
+    "src/aletheia_lab/evaluation/diagnosis_main_analysis.py": "25d4958a7b539788ff8d35632bdb0b05845b31c21b591314db535d2468123e46",
+    "src/aletheia_lab/evaluation/diagnosis_main_census.py": "3d8758660b60861f1e11d6544f0c15c26f9ae947b23a94e3a6c99aee643faca9",
+    "src/aletheia_lab/evaluation/qwen_local_calibration.py": "1bbbac252f577a7c9754e913d2d75e65cedf0de713cdf122584cfa4241849340",
     "tests/unit/test_diagnosis_main_freeze_candidate.py": "6870d8e14b080fd372f7cf2a10a5484f5f3ce71e8d18bf6bf68285b503bac88a",
     "tests/unit/test_qwen_local_calibration.py": "7f4d2250e15608c5091453e8c0fb00d4852d29a667a11ba03b1ad357c0416d53"
   },
@@ -145,5 +160,5 @@
     "blocked_candidate_does_not_authorize_execution": true,
     "failed_qwen_calibration_is_preserved_not_overwritten": true
   },
-  "manifest_sha256": "ca4fa36d67586dd57b72b5342fd7d1b0baf6cd956eada7a9fbe94866658d3a7f"
+  "manifest_sha256": "4a08fdc58141159971dc1a64dc565375c31f7611de2aa6d8bd6cf14ad65e967c"
 }

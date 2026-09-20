@@ -5,6 +5,14 @@
   "protected_outcomes_opened": false,
   "main_execution_authorized": false,
   "registered_attempts_consumed": 0,
+  "technical_maintenance": {
+    "performed_on": "2026-09-21",
+    "scope": "module_boundary_and_hash_ownership_refactor_only",
+    "scientific_contract_changed": false,
+    "protected_outcomes_opened": false,
+    "registered_attempts_consumed": 0,
+    "maintainability_audit_status": "pass"
+  },
   "acceptance_checks": [
     {
       "check": "study_contract_locked",
@@ -87,21 +95,28 @@
   "repo_artifact_bindings": {
     "configs/evaluation/diagnosis_development_pilot_plan.json": "56228f25a05bddcc3f7484a069b22d3fb9d49dd666bd28baaccb5916561a7025",
     "configs/evaluation/diagnosis_development_pilot_receipt.json": "c89b9e019c88b44cb1c8b5d1cc9cc3d78a69cafbf55bc0173593d47db84f3179",
-    "configs/evaluation/diagnosis_information_path_fairness_audit.json": "c5d9395826eb965bfaa065a5b3b5f54f4959daf9dd2044ddfe5e1c45813862a7",
+    "configs/evaluation/diagnosis_information_path_fairness_audit.json": "da75fc0af456eeac7b77b4727ed2f9af93a1ef7351d77ec5ed482a16602aef0e",
     "configs/evaluation/diagnosis_main_analysis_plan.json": "12d4a79876265e0197f0f1b0553e896d37924fb5b642f18e03db2a9c19b34e7c",
     "configs/evaluation/diagnosis_main_census_seal.json": "3853707331c1ed54847f18eda7b4c4bae195fff18f11c2d7342b88847ad87686",
     "configs/evaluation/diagnosis_main_response_contract.json": "e026bf8573b8fa195f30193daee64fe4bbd319fa88dd80140e264f449e7d970f",
     "configs/evaluation/diagnosis_main_runtime_contract.json": "3206c2d049b85ca007c819165349f563da8dcc2a7a40a2a92d150ebf16618c35",
     "configs/evaluation/diagnosis_main_runtime_preflight.json": "340c5f0168ab4c7a0774de41284a1956355ddb8606c8bbcb31d1b20ccafe6851",
-    "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate.json": "5a6ac55e1d18a3c25964d1d382cfbe73654397bc5d0aeb9bdad64d31356e29a2",
+    "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate.json": "0d0bd1c5e566ba63812fffdc755ceab729124cc4d904bdf9963c9bb8d9895ffa",
     "configs/evaluation/diagnosis_qwen_sensitivity_census.json": "faf938d13fc91e8aeeb1f01b49e8892bb74cd411667c261c94bdeda7521b7790",
     "configs/evaluation/diagnosis_variant_fairness_freeze.json": "687021e778cb4ebfd05c6a66270fde77b1ba38d74ccab94826f6833fe2c2593b",
     "src/aletheia_lab/context/evaluation_context.py": "a01f3b0d5a65169e378b42df6941b52c781ef2fd2ce258204ed48704dae7b472",
+    "src/aletheia_lab/content_hashing.py": "5273bbd228bcc0ed94aefc9108b86cb486fbb023fff42758add616320dcc21a5",
+    "src/aletheia_lab/diagnosis/_main_runtime_contexts.py": "836b51c90943aafc25a7d19104324e78659b835dcda0b0714c84c82a05bd50bb",
+    "src/aletheia_lab/diagnosis/_main_runtime_contracts.py": "da8aea46ab4ad3295d843fe2700b5374defd55e5b15574dbd5f0da19a111f8d0",
+    "src/aletheia_lab/diagnosis/_main_runtime_store.py": "66536b276cfd00f878a7b1f9d7d5f3954f64a8fdce068e214686b93ae5667e4c",
     "src/aletheia_lab/diagnosis/variant_registry.py": "d54f85fcfee47580c0f43c12e047882a2dee71cdf009141ab02881ca9ad43bbe",
     "src/aletheia_lab/diagnosis/main_response.py": "bfcfb375246be418a0c0e98122ed13d74bf5ce0f47e345048f35c48e74f5ae26",
-    "src/aletheia_lab/diagnosis/main_runtime.py": "ce583966ca2abbc757a885e7976ec233101ec087b82fdcfb072a7a49bbfa7f49",
-    "src/aletheia_lab/evaluation/diagnosis_main_analysis.py": "7f822568ee4e0574c4a9fbfb9fdd4a15336cf2453374e45e7ca4dac1530b1791",
-    "src/aletheia_lab/evaluation/qwen_local_calibration.py": "c82501c636bac37bb77d0b0209d02d39fb01f8c9773afe6a75e10e72f8a54af6",
+    "src/aletheia_lab/diagnosis/main_runtime.py": "c4d63551f2b20d620b59c2f2a497f40fe4f7818fa7d58c02c3f4a9d69c1a4a4a",
+    "src/aletheia_lab/evaluation/_diagnosis_main_analysis_contracts.py": "07a3b3754b5fb1dcc8833c532b5db01f064a4c361f9f13030960ffe13d74c067",
+    "src/aletheia_lab/evaluation/_diagnosis_main_census_contracts.py": "ad13fd16a73d2525b597796d20b383bd78ca504f7ec1325a04cb6f46583c42d8",
+    "src/aletheia_lab/evaluation/diagnosis_main_analysis.py": "25d4958a7b539788ff8d35632bdb0b05845b31c21b591314db535d2468123e46",
+    "src/aletheia_lab/evaluation/diagnosis_main_census.py": "3d8758660b60861f1e11d6544f0c15c26f9ae947b23a94e3a6c99aee643faca9",
+    "src/aletheia_lab/evaluation/qwen_local_calibration.py": "1bbbac252f577a7c9754e913d2d75e65cedf0de713cdf122584cfa4241849340",
     "src/aletheia_lab/model_gateway/contracts.py": "d3d8db65a94e5232de5a6d48e591e981a1551422524aaaf90d35bd350eee74c3",
     "src/aletheia_lab/model_gateway/fake.py": "16f640de33c2c38b0243c5fd0f188df382f841a40166624debcb5300107e2ff2",
     "src/aletheia_lab/model_gateway/openai.py": "eade085c40994a6b72fa1c37a741f525ac971a5e7bf85d50c59c5a2ed3c08055",
@@ -131,5 +146,5 @@
     }
   ],
   "readiness_rule": "The engineering preflight is complete only when blocking_requirements is empty, every acceptance check is scoped pass evidence, protected outcomes remain unopened, registered attempts remain zero, and independent approval is content-addressed.",
-  "candidate_sha256": "5f7f138f2105e3e830346c8b0aa114ae6d67437f73d3e7a8ea4f064b69a5cb2b"
+  "candidate_sha256": "7b7da7296e3b9031f1ca742fb57f10df1fc43f3fe144ec0734e169e8bd481574"
 }

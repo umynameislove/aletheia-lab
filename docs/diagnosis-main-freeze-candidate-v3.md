@@ -4,9 +4,14 @@
 
 V3 passes every integrity and traceability check but deliberately remains
 **not ready for main execution**. Its canonical manifest self-hash is
-`ca4fa36d67586dd57b72b5342fd7d1b0baf6cd956eada7a9fbe94866658d3a7f`.
+`4a08fdc58141159971dc1a64dc565375c31f7611de2aa6d8bd6cf14ad65e967c`.
 It authorizes no execution, opens no protected main outcome, and records zero
 consumed registered attempts.
+
+On 2026-09-21, the current candidate was re-sealed after an outcome-blind
+module-boundary and hash-ownership refactor. The scientific contracts and
+frozen census did not change; no protected outcome was opened and no
+registered attempt was consumed.
 
 V3 closes two of V2's four blockers:
 

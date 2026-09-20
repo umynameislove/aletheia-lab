@@ -141,8 +141,10 @@
     "response_contract_path": "configs/evaluation/diagnosis_main_response_contract.json",
     "response_contract_file_sha256": "e026bf8573b8fa195f30193daee64fe4bbd319fa88dd80140e264f449e7d970f",
     "response_contract_sha256": "d9cbbdda6e29e0e2717591124804c8c5d5a90d4f5a9cd81de67fdf36ee5bd810",
+    "file_hashing_implementation_path": "src/aletheia_lab/content_hashing.py",
+    "file_hashing_implementation_file_sha256": "5273bbd228bcc0ed94aefc9108b86cb486fbb023fff42758add616320dcc21a5",
     "implementation_path": "src/aletheia_lab/evaluation/qwen_local_calibration.py",
-    "implementation_file_sha256": "c82501c636bac37bb77d0b0209d02d39fb01f8c9773afe6a75e10e72f8a54af6",
+    "implementation_file_sha256": "1bbbac252f577a7c9754e913d2d75e65cedf0de713cdf122584cfa4241849340",
     "entrypoint_path": "scripts/calibrate_qwen_local_sensitivity.py",
     "entrypoint_file_sha256": "982c5c0089ab108ec53c15772951eea836f9b74cec5e94e560c497e82f463a0b",
     "receipt_audit_entrypoint_path": "scripts/audit_qwen_local_calibration.py",
@@ -171,5 +173,5 @@
     "llama_cpp_v0_4_1_metal_binary_and_build_flags_must_be_recorded",
     "q8_then_conditional_q6_development_calibration_must_be_completed_without_main_outcomes"
   ],
-  "candidate_sha256": "4f96fb083ccefdad3a8ce6ec2ac4ccf607456f9ed143a27e96f3cbe58b3188f6"
+  "candidate_sha256": "d37dbfa369e37115a463409d3b964f1fe2a1bddf3c09f4c178e09b39425c726a"
 }

@@ -16,8 +16,14 @@
     "main_runtime_contract_file_sha256": "3206c2d049b85ca007c819165349f563da8dcc2a7a40a2a92d150ebf16618c35",
     "main_runtime_preflight_path": "configs/evaluation/diagnosis_main_runtime_preflight.json",
     "main_runtime_preflight_file_sha256": "340c5f0168ab4c7a0774de41284a1956355ddb8606c8bbcb31d1b20ccafe6851",
+    "main_runtime_contracts_path": "src/aletheia_lab/diagnosis/_main_runtime_contracts.py",
+    "main_runtime_contracts_file_sha256": "da8aea46ab4ad3295d843fe2700b5374defd55e5b15574dbd5f0da19a111f8d0",
+    "main_runtime_contexts_path": "src/aletheia_lab/diagnosis/_main_runtime_contexts.py",
+    "main_runtime_contexts_file_sha256": "836b51c90943aafc25a7d19104324e78659b835dcda0b0714c84c82a05bd50bb",
     "main_runtime_implementation_path": "src/aletheia_lab/diagnosis/main_runtime.py",
-    "main_runtime_implementation_file_sha256": "ce583966ca2abbc757a885e7976ec233101ec087b82fdcfb072a7a49bbfa7f49",
+    "main_runtime_implementation_file_sha256": "c4d63551f2b20d620b59c2f2a497f40fe4f7818fa7d58c02c3f4a9d69c1a4a4a",
+    "main_runtime_store_path": "src/aletheia_lab/diagnosis/_main_runtime_store.py",
+    "main_runtime_store_file_sha256": "66536b276cfd00f878a7b1f9d7d5f3954f64a8fdce068e214686b93ae5667e4c",
     "main_census_seal_path": "configs/evaluation/diagnosis_main_census_seal.json",
     "main_census_seal_file_sha256": "3853707331c1ed54847f18eda7b4c4bae195fff18f11c2d7342b88847ad87686"
   },
@@ -150,5 +156,5 @@
   ],
   "design_blockers": [],
   "runtime_blocker": null,
-  "audit_sha256": "56e2096227657680974f315cb2c4e867e2ceb6a566953abe25aa936c973f9969"
+  "audit_sha256": "a14a98b310a3c59c273842bcfe3985c8606dc0f8a94bca3e87add52f66eaa9d4"
 }
