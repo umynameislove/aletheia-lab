@@ -1,0 +1,68 @@
+{
+  "analysis_census_sha256": "86f3577e755481eb14360a1375d9bb20fba7c60e87df20df068072bb4d08463e",
+  "b3_controlled_matrix_included": false,
+  "b3_reporting_class": "separate_logdx_native_external_transfer",
+  "context_count": 128,
+  "contexts_per_condition": {
+    "counterevidence": 32,
+    "full": 32,
+    "missing_key": 32,
+    "noisy": 32
+  },
+  "controlled_request_count": 1024,
+  "cross_family_semantic_duplicate_count": 0,
+  "dataset_count": 2,
+  "exact_duplicate_context_count": 0,
+  "execution_authorized": false,
+  "family_count": 32,
+  "mechanism_counts": {
+    "data_drift": 10,
+    "label_noise": 12,
+    "preprocessing_mismatch": 10
+  },
+  "normalized_duplicate_context_count": 0,
+  "private_packet_byte_sha256": "ae68dbe62828192a70ff4db28b3728c1176e9bdf361bfe752995137761be313e",
+  "private_packet_canonical_sha256": "16ee5d507c05fd9bcc3934fbcf9e2e15dc0cb3b595e45ed0d7ed3b7d34d66966",
+  "private_packet_locator_role": "project_private_memory_artifact",
+  "protected_main_outcomes_opened": false,
+  "qwen_census_sha256": "a6044e1386c3e68fd653a6e3c888abb70ccc863457af6cc5cea98806ad7ad159",
+  "qwen_family_count": 12,
+  "qwen_request_count": 72,
+  "requests_per_variant": {
+    "A1": 128,
+    "A2": 128,
+    "A3": 128,
+    "B0": 128,
+    "B1": 128,
+    "B2": 128,
+    "CodeGraph": 128,
+    "FULL": 128
+  },
+  "schema_version": "diagnosis-main-census-seal/v1",
+  "seal_sha256": "e010cd36a37ce100c2033e4bd9652de4842635ef79e0ba7fb9fee79c4a420b8b",
+  "source_contract_sha256": "cca7bcae009cb38b6f14425d90cfbd36400230ff2dae8977aa482c0fc8ab1375",
+  "source_receipts": [
+    {
+      "file_sha256": "3c7089b88a7fca460101af7f87b1b048e17954a9203e7d6197b424551094387b",
+      "source_id": "p2r_confirmatory_measurements",
+      "source_unit_count": 20
+    },
+    {
+      "file_sha256": "b7584e87351ced25a5c2e04fd1e3b5ab56e756a07a84cb883290cb3f44c456cb",
+      "source_id": "p2_v3_3_label_noise_primary",
+      "source_unit_count": 6
+    },
+    {
+      "file_sha256": "2a160b057785f87cef64ceeccd2c884a14d27bd394ef6438fd1e3b8fda0253a4",
+      "source_id": "p2_v3_3_label_noise_replication",
+      "source_unit_count": 6
+    },
+    {
+      "file_sha256": "35d99b92a880ecbb52c13cda0cc8a473b7aa31cd3412870a35bc7ef7062ad975",
+      "source_id": "p2_v3_3_label_noise_protocol",
+      "source_unit_count": 0
+    }
+  ],
+  "status": "outcome_blind_census_locked_execution_not_authorized",
+  "superfamily_count": 6
+}
