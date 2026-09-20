@@ -1,0 +1,19 @@
+{
+  "schema_version": "public-claim-audit-receipt/v1",
+  "audited_on": "2026-09-19",
+  "source_commit_sha": "85cd1453dab54b0383d849f8331934d0143bead4",
+  "audit_command": "PYTHONPATH=src python scripts/audit_public_claims.py",
+  "registry_file_sha256": "a22a4f82d0e0c75322590756ebcc4edf356a53997fa66abd9b0f50946399b96e",
+  "registry_canonical_sha256": "23b6f6e4f22d35f2802f2e2c906dc440e84d87c0c153014fdbcd04086a539a3c",
+  "claim_count": 7,
+  "current_scientific_claim_count": 4,
+  "public_surface_count": 5,
+  "denominator_reconciled": true,
+  "primary_artifacts_resolved": true,
+  "forbidden_wording_finding_count": 0,
+  "mechanism_inventory": 3,
+  "admitted_mechanism_count": 0,
+  "status": "pass",
+  "scope_note": "RQ0 aggregate results are local-only and not yet a declared public surface; publication review must add a bounded RQ0 claim before those results become public.",
+  "receipt_sha256": "640dca2afca9a2383e69097a0b692f301621b6fe6b9e47e6493cc66ee7d10ad3"
+}

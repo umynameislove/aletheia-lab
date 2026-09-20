@@ -543,6 +543,8 @@ documentation, and reproducible artifacts.
 - [Evaluation protocol](docs/evaluation-protocol.md)
 - [Evaluation readiness and trust boundaries](docs/evaluation-readiness.md)
 - [Diagnosis evaluation feasibility and fairness freeze](docs/diagnosis-evaluation-freeze.md)
+- [Main diagnosis freeze candidate](docs/diagnosis-main-freeze-candidate.md)
+- [Release-profile stability and dependency-drift audit](docs/release-profile-stability-audit.md)
 - [Diagnosis development validation](docs/diagnosis-development-validation.md)
 - [Dataset card](docs/dataset-card.md)
 - [Matched-diagnosis feasibility report](docs/p1-feasibility-report.md)

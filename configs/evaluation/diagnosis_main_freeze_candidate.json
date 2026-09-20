@@ -1,0 +1,258 @@
+{
+  "schema_version": "diagnosis-main-freeze-candidate/v1",
+  "created_on": "2026-09-20",
+  "source_commit_sha": "85cd1453dab54b0383d849f8331934d0143bead4",
+  "source_tree_sha": "0d42acbb42fb270c5de4e5cae6e21166009d6cd0",
+  "status": "candidate_integrity_locked_main_execution_blocked",
+  "execution_authorized": false,
+  "main_registered_attempts_consumed": 0,
+  "main_outcomes_opened": false,
+  "scientific_boundaries": {
+    "rq0_instrument_gate": "pass",
+    "rq0_sample_count": 200,
+    "rq0_protocol_sha256": "71c3f36c71e6d6294e6dba9b4e12db6c53148f718a17bf7f347e77cc49bae77d",
+    "rq0_primary_report_file_sha256": "67bb0d1281ea44bd51185b9c762baf680b51830fa2c8d766d46260e73bac706a",
+    "rq0_registered_report_sha256": "4a876698fb576162f62beafe5d907fca990f3f4a53f0f55df1b3f40c0f56f0cb",
+    "rq0_analysis_manifest_file_sha256": "a9d7952721cbef13211eb91e9a85d6b334d3c7a0fb79a839947a849d0cd4dc1b",
+    "rq0_sanitized_manifest_file_sha256": "f863ad2be8f759ad8e5376fffd27216bf114957e2cb1dd205e3d0923f8671274",
+    "onboarding_chronology_disposition": "PASS WITH GAP",
+    "ai_panel_role": "advisory_only",
+    "variant_superiority_authorized_by_rq0": false
+  },
+  "prerequisite_evidence": [
+    {
+      "gate": "public_claim_governance",
+      "status": "done_public_claim_governance_reconciled",
+      "evidence_sha256": "640dca2afca9a2383e69097a0b692f301621b6fe6b9e47e6493cc66ee7d10ad3"
+    },
+    {
+      "gate": "claim_support_instrument_validation",
+      "status": "scientifically_closed_pass",
+      "evidence_sha256": "4a876698fb576162f62beafe5d907fca990f3f4a53f0f55df1b3f40c0f56f0cb"
+    },
+    {
+      "gate": "mechanism_validity",
+      "status": "done_negative_result_preserved",
+      "evidence_sha256": "7b920ef15cc5683965652a3dc02cef06bf514d8c85e1954c3094c1c441919956"
+    },
+    {
+      "gate": "release_profile_stability",
+      "status": "done_release_profile_stability_and_dependency_drift_pass",
+      "evidence_sha256": "9daa38389e38efcb68ce7075b72226ee3682aeedfa6a459854a990e5056426ff"
+    },
+    {
+      "gate": "mechanism_denominator_reconciliation",
+      "status": "done",
+      "evidence_sha256": "c3dfba15265361730bb5a3ef9cb96651592c43130ea484f1726a9e0f545c8597"
+    },
+    {
+      "gate": "project_provenance_core",
+      "status": "done_core_scope_only",
+      "evidence_sha256": "31f6c58f40ac1d368c4a8d2d1376543107f13be0"
+    }
+  ],
+  "frozen_model_policy": {
+    "provider": "openai",
+    "model": "gpt-4.1",
+    "model_version": "gpt-4.1-2025-04-14",
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "seed": 17,
+    "max_output_tokens": 600,
+    "timeout_seconds": 60.0,
+    "provider_attempt_ceiling": 2,
+    "silent_provider_or_model_switch": false
+  },
+  "frozen_information_budget": {
+    "observable_corpus_ref": "diagnosis-visible-corpus/v1",
+    "maximum_context_tokens": 12000,
+    "maximum_retrieved_items": 32,
+    "maximum_turns": 3,
+    "diagnosis_question_ref": "frozen-diagnosis-question/v1",
+    "hidden_ground_truth_visible": false,
+    "evaluator_metadata_visible": false
+  },
+  "frozen_variant_policy": {
+    "matched_primary": [
+      "A1",
+      "A2",
+      "A3",
+      "B1",
+      "B2"
+    ],
+    "separate_reference": [
+      "B0"
+    ],
+    "separate_external": [
+      "B3"
+    ],
+    "separate_system_paths": [
+      "CodeGraph",
+      "FULL"
+    ],
+    "pooling_across_classes_forbidden": true
+  },
+  "frozen_prompt_sha256": {
+    "A1": "a93ccfc4dcf921a04edb728aa75d3a8916f6bafa9c91615560310974e0c9d46b",
+    "A2": "82c92b349c0bf08a19aa04eac9f02ee0b032ee2e7e74832d19ebb7581f3d1124",
+    "A3": "573cf96780e3ab2ea1bf1c34cdcf8677a9535b1a2b453ca67af8c13e9870ef53",
+    "B0": "18f2a5da4a919022dbda98452199854c789fa4b27feb59c05fdc8f51eb8238e6",
+    "B1": "7602a769f57f99fd02ec8e94e5e5a3e5ba0a4c2f9507ecc49e095ba613561408",
+    "B2": "becaf179dfc76c97994715f5b8fac01ce4a8ab6d13245df2b87954689b40da99",
+    "B3": "2b3870701475ef2653d39c74e0e6247ff2621538410462aaafdfba8090ebda92",
+    "CodeGraph": "cc7271c7ac8951e36bce71139f682d08cc6e972ffcedc9171ae56f6984f0b337",
+    "FULL": "da5e10ba0a1938a75c928a1f3d4553c4b02faa86ac262cf4cd2d071ea5a3eee5"
+  },
+  "frozen_dataset_artifacts": [
+    {
+      "artifact_id": "uci-default-of-credit-card-clients",
+      "sha256": "56c885f84457f6680f8438f02bfcdac9579323d8a94465ee5f26e32baa727602",
+      "role": "registered_environment_archive"
+    },
+    {
+      "artifact_id": "uci-online-shoppers-purchasing-intention",
+      "sha256": "2972e6184d3ad7beaaa831d9fc2b059dc3ee29df69d1ec593c466a5cd8485d14",
+      "role": "registered_environment_archive"
+    }
+  ],
+  "denominator_policy": {
+    "mechanism_inventory": [
+      "data_drift",
+      "preprocessing_mismatch",
+      "label_noise"
+    ],
+    "primary_causal_diagnosis_track": [],
+    "assumption_limited_abstention_track": [
+      "label_noise"
+    ],
+    "instrument_rejection_track": [
+      "data_drift",
+      "preprocessing_mismatch"
+    ],
+    "evidence_accountability_track": [
+      "data_drift",
+      "preprocessing_mismatch",
+      "label_noise"
+    ],
+    "empty_primary_result_must_be_published": true,
+    "causal_scoring_for_non_admitted_forbidden": true,
+    "pooling_or_denominator_substitution_forbidden": true
+  },
+  "metric_policy_locked_so_far": {
+    "primary_accountability_comparison": "B1_vs_A3",
+    "primary_endpoint": "paired_difference_in_unsupported_plus_unresolved_claim_rate",
+    "meaningful_absolute_reduction": 0.05,
+    "cluster_unit": "case_family_id",
+    "confidence_level": 0.95,
+    "missing_key_a3_overclaim_ceiling": 0.1,
+    "missing_key_minimum_reduction_vs_b1": 0.1,
+    "full_evidence_false_abstention_ceiling": 0.1,
+    "citation_id_validity_floor": 0.98,
+    "parse_success_floor": 0.98,
+    "unresolved_ceiling": 0.01,
+    "retrieval_unsupported_noninferiority_margin": 0.05,
+    "paired_expected_direction_floor": 0.75,
+    "single_composite_trust_score_forbidden": true
+  },
+  "failure_and_exclusion_policy": {
+    "registered_provider_or_parse_failures_remain_in_authorized_census": true,
+    "post_outcome_family_removal_forbidden": true,
+    "manual_main_output_repair_forbidden": true,
+    "silent_provider_model_prompt_or_context_fallback_forbidden": true,
+    "onboarding_claims_excluded_from_scientific_denominators": true,
+    "ai_panel_votes_excluded_from_human_reference_and_adjudication": true,
+    "rejected_and_assumption_limited_mechanisms_not_promoted_to_admitted": true,
+    "external_and_prospective_tracks_never_pooled_with_controlled_families": true
+  },
+  "null_branch": {
+    "valid_supporting_result": "Report a benefit only when the registered paired effect and clustered interval pass the prespecified direction and minimum-effect rule.",
+    "valid_no_detection_result": "No detectable benefit was established under the registered conditions and measured precision.",
+    "invalid_result": "Do not estimate a benefit when pairing, leakage, census, execution identity or required-variant validity fails.",
+    "required_reporting": [
+      "effect_estimate",
+      "clustered_interval",
+      "precision",
+      "registered_conditions",
+      "cost",
+      "abstention",
+      "all_failures"
+    ],
+    "forbidden_interpretations": [
+      "universal_equivalence",
+      "universal_failure",
+      "hidden_positive_effect",
+      "post_hoc_rescue"
+    ]
+  },
+  "repo_artifact_bindings": {
+    "configs/benchmark/provenance/p4_p5_mechanism_filter_manifest.json": "c3dfba15265361730bb5a3ef9cb96651592c43130ea484f1726a9e0f545c8597",
+    "configs/evaluation/claim_support_validation_protocol.json": "ab41d8c3d6d1b35336d0939928752b35266aefd4cb933fa60b10c55cefbf3dbe",
+    "configs/evaluation/diagnosis_development_pilot_receipt.json": "c89b9e019c88b44cb1c8b5d1cc9cc3d78a69cafbf55bc0173593d47db84f3179",
+    "configs/evaluation/diagnosis_output_v2_schema.json": "e6392c0de469920b87255ad4a50a2cc7c91c49baa66324f0a182cafa9cf0e4f0",
+    "configs/evaluation/diagnosis_protocol_feasibility_plan.json": "9346e43b262649ed2460c49ff0998fbb9d652832e4338ff70348b44605b6b3a0",
+    "configs/evaluation/diagnosis_variant_fairness_freeze.json": "687021e778cb4ebfd05c6a66270fde77b1ba38d74ccab94826f6833fe2c2593b",
+    "configs/evaluation/metrics.yaml": "ba527cccb4b76f5ea679619dd0d34ea2a03e560dae72ee48b4baa379bba681ec",
+    "docs/claim-support-v3-2-late-reference-freeze-amendment.md": "1f761b2db08f081e91799535625f3fd7a0db014b2c7869455f58a1f376d33f8f",
+    "reports/governance/public-claim-audit-v1.json": "340406ff7200ddc5286c15ecc45e7fabd0a1e0a4b249dc27aa6a4df2f49af755",
+    "reports/release/release-profile-stability-audit-v1.json": "3b618ed975ab487662dc0ddf935ce3573770c383c96820bcae823497de3004c2",
+    "reports/release/resolved-dependency-inventory-v1.json": "5cf5f1bdb431b169380fa45fb77ba163693cbe4b8273ef183e5dad8981bc196f",
+    "src/aletheia_lab/context/evaluation_context.py": "a01f3b0d5a65169e378b42df6941b52c781ef2fd2ce258204ed48704dae7b472",
+    "src/aletheia_lab/diagnosis/variant_registry.py": "d54f85fcfee47580c0f43c12e047882a2dee71cdf009141ab02881ca9ad43bbe",
+    "src/aletheia_lab/evaluation/instrument_validation.py": "78a270f65a6be784244f682a1065db4219eea4619c577aba24f729e91850cf41",
+    "src/aletheia_lab/evaluation/stats.py": "5ebb9db5120265e1748202534bd21c4ab03173465a0618f9bc2bee3a2856f3d6",
+    "src/aletheia_lab/evaluation/structural_closeout.py": "b8675d91624c8d200fce51f6dea5aeb9ab432b5ae95492ca19dc7ad5b3eab23b",
+    "src/aletheia_lab/model_gateway/fake.py": "16f640de33c2c38b0243c5fd0f188df382f841a40166624debcb5300107e2ff2",
+    "src/aletheia_lab/model_gateway/openai.py": "eade085c40994a6b72fa1c37a741f525ac971a5e7bf85d50c59c5a2ed3c08055"
+  },
+  "external_evidence_bindings": {
+    "rq0_aggregate_results_file_sha256": "3a6fbea4022affd3c61cc484a4a5827fb144d6e28245bf08d33e5f170622fb99",
+    "rq0_private_verification_file_sha256": "ea6b636404928fb058ed5ab77a9adca5ed1bf658a0db2831cb7f62c5459c0ff5",
+    "rq0_release_receipt_file_sha256": "03c101f34f2618a4ff30d62bea42afce927930df9b1c40e1ff27fc4c11c1ff67"
+  },
+  "unresolved_contract_requirements": [
+    {
+      "code": "main_case_request_and_split_census_not_frozen",
+      "required_evidence": "Exact main case, split and request identities with immutable hashes."
+    },
+    {
+      "code": "analysis_plan_contains_unresolved_tbd_fields",
+      "required_evidence": "Fixed formulas, aggregation order, multiplicity, missingness handling and power or precision statement."
+    },
+    {
+      "code": "diagnosis_execution_gate_not_closed",
+      "required_evidence": "A closed diagnosis execution contract with every required adapter and test result bound."
+    },
+    {
+      "code": "local_model_sensitivity_identity_not_frozen",
+      "required_evidence": "Exact Qwen revision, GGUF hash, quantization, runner, chat template, hardware and 72 request identities."
+    },
+    {
+      "code": "logdx_native_reference_not_pinned_or_reproduced",
+      "required_evidence": "Pinned LogDx-CI commit, license, 35-case census, adapter mapping and native reproduction result."
+    },
+    {
+      "code": "baseline_information_path_fairness_audit_not_closed",
+      "required_evidence": "A B0-B3 and A1-FULL information-path fairness audit completed before main registration."
+    },
+    {
+      "code": "prospective_case_seal_not_closed",
+      "required_evidence": "A closed prospective-case seal or an explicit exclusion of RQ6b from this registration without changing its later boundary."
+    },
+    {
+      "code": "main_analysis_entrypoint_and_hashes_missing",
+      "required_evidence": "A one-shot main-analysis entrypoint and all dependent source hashes."
+    },
+    {
+      "code": "independent_methods_approval_missing",
+      "required_evidence": "Independent review of the final manifest before any outcome-opening authority."
+    }
+  ],
+  "deviation_policy": {
+    "scientific_change_requires_new_version_before_main_outcomes": true,
+    "technical_correction_requires_forward_linked_receipt": true,
+    "post_outcome_threshold_or_denominator_change_forbidden": true,
+    "predecessor_history_must_be_preserved": true,
+    "blocked_candidate_does_not_authorize_execution": true
+  },
+  "manifest_sha256": "2e6371df9fc4a36b1a066f7ec21e5078e9f4be02b2f40d325f384709ed184cc7"
+}

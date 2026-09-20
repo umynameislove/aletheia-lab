@@ -1,0 +1,143 @@
+{
+  "audit_scope": {
+    "changed_production_source": {
+      "changed_line_coverage_gate": "not_applicable_no_new_or_changed_src_modules",
+      "changed_src_files": [],
+      "new_src_modules": [],
+      "policy": "The >=90% changed-source line-coverage floor applies to new modules. No tracked or untracked file under src/ differs from source_head."
+    },
+    "release_components": [
+      "three-repeat evaluation profile",
+      "project runtime profile",
+      "full test and coverage profile",
+      "strict type check",
+      "lint",
+      "repository hygiene",
+      "maintainability audit",
+      "evaluation guard mutation audit",
+      "static security analysis",
+      "resolved dependency inventory",
+      "dependency consistency and vulnerability audit"
+    ]
+  },
+  "audited_at": "2026-09-20T00:34:00+07:00",
+  "dependency_audit": {
+    "inventory": {
+      "distribution_count": 87,
+      "file_sha256": "5cf5f1bdb431b169380fa45fb77ba163693cbe4b8273ef183e5dad8981bc196f",
+      "inventory_sha256": "ad8e97493e8b8e49992dd6286303b330a19219ac8794cd1a8f4149d1ab0536b3",
+      "path": "reports/release/resolved-dependency-inventory-v1.json",
+      "python_version": "3.12.14",
+      "reproduction_command": ".venv/bin/python scripts/report_dependency_inventory.py",
+      "schema_version": "resolved-dependency-inventory/v1"
+    },
+    "pip_audit": {
+      "command": ".venv/bin/python -m pip_audit --skip-editable",
+      "editable_distribution_skipped": "aletheia-lab",
+      "known_vulnerability_count": 0,
+      "network_lookup_completed": true,
+      "status": "pass"
+    },
+    "pip_check": {
+      "broken_requirement_count": 0,
+      "command": ".venv/bin/python -m pip check",
+      "status": "pass"
+    },
+    "pyproject_sha256": "389a21c3811460f99fa40d629fd01f363f02d2b5f27fcacac1a1531c630bbc2e",
+    "scope_boundary": "This records the exact resolved audit environment. It is drift evidence, not a cross-platform installer lock; any inventory or pyproject hash change reopens this audit."
+  },
+  "evidence_bindings": {
+    "ci_workflow_sha256": "d531f15745c19564a5c404ad7d4d33b74c19664361faed93e98a9b27f459846c",
+    "dependency_inventory_script_sha256": "f4e065705ddb0d86c0418f40706e3cdcd31b49fea3c16895909dfbb65f63b870",
+    "evaluation_profile_driver_sha256": "45ccba77aacf233cdfce41b5ab0dceb6c3d205fbcafa7ce744411468cde9f0c8",
+    "evaluation_runtime_gate_test_sha256": "834477d4ebffa9a8880555c1491ff8c325c9ee8cbd768ddfa589ece605ca1ffc",
+    "hygiene_script_sha256": "8e46fffdce318e25a57daca4ebce1425f4f8e0bd5b386d061135095cd8d109be",
+    "maintainability_script_sha256": "33f035ea479ebebf6a6d9018bbc71c3d80376562b7103845ce2d03b6c7fb57a3",
+    "mutation_audit_script_sha256": "ea1a3a8173d144206fbf60c34caa4546bf55e907b7ee96c212e1c2498bfbc272",
+    "main_freeze_audit_script_sha256": "055d255f665c7a7802b51bf7420c1a0727ba4b7f282c3548b0823ab48fd39d57",
+    "main_freeze_test_sha256": "2104dae01b01912ade184819f82fbee0722da2ace3cf1c5e044640e31b648881"
+  },
+  "quality_gates": {
+    "bandit": {
+      "command": ".venv/bin/python -m bandit -r src/aletheia_lab -ll -ii",
+      "finding_count_at_required_severity_and_confidence": 0,
+      "status": "pass"
+    },
+    "evaluation_mutation_audit": {
+      "audit_sha256": "5270f3a01b4d8a6f6053bc9db6bde53b9e37f843853f1113ca8af439512254f8",
+      "detected_mutations": 16,
+      "registered_mutations": 16,
+      "status": "pass"
+    },
+    "maintainability": {
+      "audit_sha256": "76cec15e4cac6c2d83042d8487cde9c3467b715df1d65bf27401042871bcdc1e",
+      "blocking_findings": 0,
+      "status": "pass"
+    },
+    "mypy": {
+      "checked_source_files": 178,
+      "mode": "strict",
+      "status": "pass"
+    },
+    "repository_hygiene": {
+      "scope": "git-tracked files",
+      "status": "pass"
+    },
+    "ruff": {
+      "scope": "src tests scripts",
+      "status": "pass"
+    }
+  },
+  "receipt_sha256": "9daa38389e38efcb68ce7075b72226ee3682aeedfa6a459854a990e5056426ff",
+  "release_profile": {
+    "evaluation_repeats": {
+      "command": ".venv/bin/python scripts/run_test_profile.py evaluation --repeat 3",
+      "exceeded_budget_runs": 0,
+      "flake_count": 0,
+      "per_run_timeout_seconds": 600,
+      "runs": [
+        {
+          "duration_seconds": 251.222,
+          "passed": 897,
+          "python_hash_seed": 1
+        },
+        {
+          "duration_seconds": 250.039,
+          "passed": 897,
+          "python_hash_seed": 104729
+        },
+        {
+          "duration_seconds": 244.209,
+          "passed": 897,
+          "python_hash_seed": 209759
+        }
+      ],
+      "status": "pass"
+    },
+    "full_profile": {
+      "command": ".venv/bin/python scripts/run_test_profile.py full",
+      "coverage_floor_percent": 88.0,
+      "coverage_percent": 88.72,
+      "duration_seconds": 853.32,
+      "passed": 3562,
+      "skipped": 6,
+      "status": "pass",
+      "warnings": {
+        "count": 32,
+        "disposition": "explained_nonblocking_upstream_deprecation",
+        "source": "joblib numpy_pickle uses deprecated NumPy shape assignment"
+      }
+    },
+    "project_profile": {
+      "budget_seconds": 120.0,
+      "command": ".venv/bin/python scripts/run_test_profile.py project",
+      "deselected": 3177,
+      "duration_seconds": 22.66,
+      "passed": 391,
+      "status": "pass"
+    }
+  },
+  "schema_version": "release-profile-stability-audit/v1",
+  "source_head": "85cd1453dab54b0383d849f8331934d0143bead4",
+  "status": "pass"
+}

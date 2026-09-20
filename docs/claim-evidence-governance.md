@@ -45,6 +45,12 @@ scans the declared public surfaces for unsupported assertive wording. A missing
 artifact, denominator mismatch, hash mismatch or forbidden assertion blocks the
 audit. The audit does not rewrite public text or infer a stronger claim.
 
+The evidence snapshot from the 2026-09-19 closeout is preserved at
+`reports/governance/public-claim-audit-v1.json`. It covers only the declared
+repository public surfaces. The local-only RQ0 paper package is not silently
+treated as published; a bounded RQ0 registry entry is required at the later
+publication-review boundary.
+
 Pending claims stay in the planning registry and are not copied into this
 current-public registry until their minimum evidence exists. If a falsifier is
 triggered, the claim is narrowed, downgraded or withdrawn before publication;
