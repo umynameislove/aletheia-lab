@@ -7,7 +7,9 @@ from pathlib import Path
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
 
 ROOT = Path(__file__).resolve().parents[2]
-CANDIDATE = ROOT / "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate.json"
+CANDIDATE = (
+    ROOT / "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate_v2.json"
+)
 CENSUS = ROOT / "configs/evaluation/diagnosis_qwen_sensitivity_census.json"
 
 
@@ -35,14 +37,16 @@ def test_qwen_artifacts_runner_and_operational_fallback_are_exactly_bound() -> N
     fallback = payload["operational_fallback"]
     runner = payload["runner"]
 
-    assert primary["revision"] == "99d445b5fd000458cabc098da6a79c2967a472f1"
-    assert primary["byte_count"] == 32_483_933_856
-    assert primary["sha256"] == (
-        "f22993e29318b5b9ec2026f6b65802a5ca99b38ab4844aab83aed8a26ce00ff6"
+    assert payload["base_model"]["revision"] == (
+        "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0"
     )
-    assert fallback["revision"] == "75c8d15549f5509d1cf941d8ae429f909e0f9bd9"
+    assert primary["revision"] == "efbb3b1f70a21d97fd4495240648405f7228554f"
+    assert primary["byte_count"] == 28_595_763_648
+    assert primary["sha256"] == (
+        "aab65c67ef0dad127960efef9247f1832bca105faa1c7a052cc039b223cf86a1"
+    )
+    assert fallback["permitted"] is False
     assert fallback["scientific_quality_selection_forbidden"] is True
-    assert fallback["different_converter_repository_disclosed"] is True
     assert runner["release"] == "v0.4.1"
     assert runner["dereferenced_commit_sha"] == (
         "b29c606e28a01b1bc8c1351026a0fa6e616bf6c4"
@@ -60,12 +64,20 @@ def test_qwen_uses_model_recommended_sampling_without_claiming_determinism() -> 
     payload, _ = _load_unsigned()
     policy = payload["generation_policy"]
 
-    assert policy["decoding"] == "qwen_recommended_sampling_with_fixed_seed"
+    assert policy["decoding"] == (
+        "qwen38_official_non_thinking_sampling_with_fixed_seed"
+    )
+    assert policy["reasoning_mode"] == "off"
+    assert policy["chat_template_kwargs"] == {
+        "enable_thinking": False,
+        "preserve_thinking": False,
+    }
     assert policy["temperature"] == 0.7
     assert policy["top_p"] == 0.8
     assert policy["top_k"] == 20
     assert policy["min_p"] == 0.0
-    assert policy["repetition_penalty"] == 1.05
+    assert policy["presence_penalty"] == 1.5
+    assert policy["repetition_penalty"] == 1.0
     assert policy["deterministic_output_claimed"] is False
     assert payload["model_family_comparison_role"].startswith("within_qwen")
 

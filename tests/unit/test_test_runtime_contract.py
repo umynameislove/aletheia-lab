@@ -96,6 +96,18 @@ def test_windows_project_boundary_is_a_blocking_ci_gate() -> None:
     assert boundary_steps[0].get("continue-on-error") is None
 
 
+def test_windows_job_budget_cannot_truncate_the_final_publication_gate() -> None:
+    jobs = _workflow().get("jobs")
+    assert isinstance(jobs, dict)
+    windows_job = jobs.get("windows-project")
+    assert isinstance(windows_job, dict)
+
+    # Evaluation retains its own 12-minute fail-closed budget. The aggregate
+    # job also has to cover setup, project checks, data preparation, and the
+    # publication profile that follows evaluation.
+    assert windows_job.get("timeout-minutes") == 35
+
+
 def test_evaluation_reproducibility_and_compatibility_are_distinct_gates() -> None:
     jobs = _workflow().get("jobs")
     assert isinstance(jobs, dict)

@@ -1,0 +1,196 @@
+{
+  "schema_version": "diagnosis-qwen-local-sensitivity-candidate/v2",
+  "status": "prospective_qwen38_identity_and_72_request_census_locked_execution_blocked_on_local_calibration",
+  "created_on": "2026-09-21",
+  "protected_main_outcomes_opened": false,
+  "local_model_executed": false,
+  "execution_authorized": false,
+  "scientific_role": "secondary_model_family_sensitivity_reported_separately",
+  "model_family_comparison_role": "within_qwen_B1_vs_A3_only_not_cross_model_superiority",
+  "predecessor": {
+    "path": "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate.json",
+    "file_sha256": "0d0bd1c5e566ba63812fffdc755ceab729124cc4d904bdf9963c9bb8d9895ffa",
+    "candidate_sha256": "d37dbfa369e37115a463409d3b964f1fe2a1bddf3c09f4c178e09b39425c726a",
+    "history_mutated": false,
+    "executed": false
+  },
+  "forward_amendment": {
+    "path": "configs/evaluation/diagnosis_qwen38_forward_amendment.json",
+    "file_sha256": "81331577a8befcedfaeb3fc749c3f517b9c164f92f7440763e445ac5b7c8350f",
+    "amendment_sha256": "c5a2f091b26dc02b62c409bc7bdd58129ecc572fba5d4d4c68c4bf97211d56ea"
+  },
+  "base_model": {
+    "repository": "Qwen/Qwen3.8-27B",
+    "revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+    "released_on": "2026-08-14",
+    "license": "Apache-2.0",
+    "architecture": "Qwen3_5ForConditionalGeneration",
+    "model_type": "qwen3_5",
+    "parameter_count": 27781427952,
+    "hidden_layers": 64,
+    "native_context_tokens": 262144,
+    "mode": "text_only_non_thinking_instruct",
+    "vision_projection_loaded": false,
+    "mtp_sidecar_loaded": false,
+    "dflash_sidecar_loaded": false,
+    "config_file_byte_count": 4312,
+    "config_file_sha256": "191e0af232104ed8b65258cf3fb2b842e288008baca7633c11b82a1ac7203aab",
+    "tokenizer_config_file_byte_count": 17928,
+    "tokenizer_config_file_sha256": "b11349aafa7cdc6a320767cf7ceb29ed82f7eda5d65e8e0819e76f0ce947bf27",
+    "source_chat_template_utf8_sha256": "c3cf9e34abf4f9e36c2d72165aa9c132d3e2a725b6c2586aaa3a8af9d7a81041",
+    "source_chat_template_utf8_bytes": 8952
+  },
+  "primary_artifact": {
+    "repository": "ggml-org/Qwen3.8-27B-GGUF",
+    "revision": "efbb3b1f70a21d97fd4495240648405f7228554f",
+    "filename": "Qwen3.8-27B-Q8_0.gguf",
+    "quantization": "Q8_0",
+    "byte_count": 28595763648,
+    "sha256": "aab65c67ef0dad127960efef9247f1832bca105faa1c7a052cc039b223cf86a1",
+    "git_lfs_pointer_blob_sha1": "4c44a744bbdd30096e06a38c44af3516db9e6efa",
+    "license": "Apache-2.0"
+  },
+  "operational_fallback": {
+    "permitted": false,
+    "failure_rule": "preserve_failure_and_report_operationally_infeasible_without_model_substitution",
+    "scientific_quality_selection_forbidden": true
+  },
+  "runner": {
+    "repository": "https://github.com/ggml-org/llama.cpp",
+    "release": "v0.4.1",
+    "annotated_tag_object_sha": "29aaf1c27faa48292357cea2120d94114a545006",
+    "dereferenced_commit_sha": "b29c606e28a01b1bc8c1351026a0fa6e616bf6c4",
+    "backend": "Metal",
+    "build_type": "Release",
+    "cmake_flags": [
+      "-DGGML_METAL=ON",
+      "-DCMAKE_BUILD_TYPE=Release"
+    ],
+    "qwen35_architecture_support_verified_from_release": true,
+    "reasoning_control_supported": true,
+    "json_schema_response_format_supported": true,
+    "n_gpu_layers": 99,
+    "server_bind": "127.0.0.1",
+    "context_shift": false,
+    "use_embedded_jinja_chat_template": true,
+    "tools_supplied": false,
+    "tool_calling_evaluated": false
+  },
+  "host_envelope": {
+    "model_class": "MacBook Pro Apple M2 Max",
+    "cpu_cores": 12,
+    "unified_memory_gib": 64,
+    "operating_system": "macOS 26.6.1",
+    "architecture": "arm64",
+    "maximum_observed_peak_memory_gib": 40,
+    "serial_number_recorded": false
+  },
+  "generation_policy": {
+    "request_model_alias": "qwen38-27b-q8_0-frozen",
+    "input_modality": "text_only",
+    "server_context_tokens": 32768,
+    "shared_visible_context_ceiling_tokens": 12000,
+    "maximum_output_tokens": 600,
+    "reasoning_mode": "off",
+    "chat_template_kwargs": {
+      "enable_thinking": false,
+      "preserve_thinking": false
+    },
+    "decoding": "qwen38_official_non_thinking_sampling_with_fixed_seed",
+    "temperature": 0.7,
+    "top_p": 0.8,
+    "top_k": 20,
+    "min_p": 0.0,
+    "presence_penalty": 1.5,
+    "repetition_penalty": 1.0,
+    "seed": 17,
+    "timeout_seconds": 300,
+    "provider_attempt_ceiling": 2,
+    "fallback_model_or_prompt_switch_within_request": false,
+    "qwen_recommended_sampling_overridden": false,
+    "deterministic_output_claimed": false,
+    "repeatability_rule": "same pinned runtime seed request and host; report any byte-level divergence observed during development calibration"
+  },
+  "sensitivity_design": {
+    "family_count": 12,
+    "families_per_mechanism": 4,
+    "mechanisms": [
+      "data_drift",
+      "preprocessing_mismatch",
+      "label_noise"
+    ],
+    "evidence_conditions": [
+      "full",
+      "missing_key",
+      "noisy"
+    ],
+    "variants": [
+      "B1",
+      "A3"
+    ],
+    "expected_request_count": 72,
+    "selection_order": "mechanism_then_prespecified_severity_stratum_then_request_sha256",
+    "model_identity_part_of_request_selection": false,
+    "replacement_after_outcome_forbidden": true,
+    "main_model_pooling_forbidden": true,
+    "independent_family_n": 12,
+    "request_census_path": "configs/evaluation/diagnosis_qwen_sensitivity_census.json",
+    "request_census_file_sha256": "faf938d13fc91e8aeeb1f01b49e8892bb74cd411667c261c94bdeda7521b7790",
+    "request_census_sha256": "a6044e1386c3e68fd653a6e3c888abb70ccc863457af6cc5cea98806ad7ad159",
+    "exact_request_ids_locked": true,
+    "request_ids_embedded_in_candidate": false
+  },
+  "calibration_policy": {
+    "partition": "development_only",
+    "allowed_criteria_in_order": [
+      "structured_output_schema_compatibility",
+      "no_oom_crash_or_silent_truncation",
+      "peak_memory_within_envelope",
+      "deterministic_request_construction_and_artifact_identity",
+      "same_seed_repeatability_observation_without_correctness_selection",
+      "runtime_feasibility_for_frozen_output_budget"
+    ],
+    "main_correctness_groundedness_or_hypothesis_direction_visible": false,
+    "if_q8_fails": "report_operationally_infeasible_without_model_substitution"
+  },
+  "development_calibration_contract": {
+    "development_plan_path": "configs/evaluation/diagnosis_development_pilot_plan.json",
+    "development_plan_file_sha256": "56228f25a05bddcc3f7484a069b22d3fb9d49dd666bd28baaccb5916561a7025",
+    "development_plan_sha256": "d176750f7e09db4ce1544c685714a90e7a9ccce61caa5b6b1310c4f392773665",
+    "response_contract_path": "configs/evaluation/diagnosis_main_response_contract.json",
+    "response_contract_file_sha256": "e026bf8573b8fa195f30193daee64fe4bbd319fa88dd80140e264f449e7d970f",
+    "response_contract_sha256": "d9cbbdda6e29e0e2717591124804c8c5d5a90d4f5a9cd81de67fdf36ee5bd810",
+    "file_hashing_implementation_path": "src/aletheia_lab/content_hashing.py",
+    "file_hashing_implementation_file_sha256": "5273bbd228bcc0ed94aefc9108b86cb486fbb023fff42758add616320dcc21a5",
+    "implementation_path": "src/aletheia_lab/evaluation/qwen_local_calibration.py",
+    "implementation_file_sha256": "341160e11f54dd4c5f3834be9ca915e619fa2587fa81c6b8dc3a338301b2ff2a",
+    "entrypoint_path": "scripts/calibrate_qwen_local_sensitivity.py",
+    "entrypoint_file_sha256": "d16480f0e78897569e19f915ba51573c9d48a770b8eed0ce9e067e8ae168a711",
+    "receipt_audit_entrypoint_path": "scripts/audit_qwen_local_calibration.py",
+    "receipt_audit_entrypoint_file_sha256": "dc18ec6bbcb1413909a8c3bcb6505ccdb3153b02f44d376ec3b7bbc61b06761f",
+    "synthetic_case_count": 3,
+    "variant_count": 2,
+    "calibration_cell_count": 6,
+    "repeatability_replicate_count": 1,
+    "total_local_inference_calls": 7,
+    "scientific_quality_selection_permitted": false,
+    "main_outcomes_permitted": false,
+    "receipt_must_remain_outside_git_until_sanitized": true
+  },
+  "privacy_and_security": {
+    "local_only": true,
+    "web_enabled": false,
+    "shell_enabled_for_model": false,
+    "project_execution_enabled_for_model": false,
+    "hidden_truth_visible": false,
+    "evaluator_metadata_visible": false,
+    "bind_non_loopback_forbidden": true
+  },
+  "unresolved_requirements": [
+    "qwen38_q8_gguf_must_be_downloaded_outside_git_and_locally_sha256_verified",
+    "embedded_gguf_chat_template_and_metadata_must_be_extracted_and_compared_with_the_pinned_source_template",
+    "llama_cpp_v0_4_1_metal_binary_and_build_flags_must_be_recorded",
+    "seven_call_development_only_calibration_must_pass_without_main_outcomes"
+  ],
+  "candidate_sha256": "db61a2ec899e546dc0ece77120624c45296cbe3c547b52d04b31b71c34b3388d"
+}

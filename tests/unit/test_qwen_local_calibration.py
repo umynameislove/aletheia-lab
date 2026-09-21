@@ -27,7 +27,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_candidate_and_synthetic_calibration_matrix_are_exact() -> None:
     candidate = load_and_verify_candidate(
-        ROOT / "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate.json"
+        ROOT / "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate_v2.json"
     )
     plan = json.loads(
         (ROOT / "configs/evaluation/diagnosis_development_pilot_plan.json").read_text()
@@ -147,7 +147,7 @@ def _valid_receipt_inputs() -> tuple[
     dict[str, object], dict[str, object], dict[str, object], dict[str, object]
 ]:
     candidate = load_and_verify_candidate(
-        ROOT / "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate.json"
+        ROOT / "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate_v2.json"
     )
     plan = json.loads(
         (ROOT / "configs/evaluation/diagnosis_development_pilot_plan.json").read_text()

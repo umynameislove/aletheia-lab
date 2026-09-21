@@ -17,7 +17,7 @@ from aletheia_lab.evaluation.diagnosis_main_analysis import (
     analyse_diagnosis_main,
 )
 
-DEFAULT_PLAN = Path("configs/evaluation/diagnosis_main_analysis_plan.json")
+DEFAULT_PLAN = Path("configs/evaluation/diagnosis_main_analysis_plan_v3.json")
 
 
 def _parser() -> argparse.ArgumentParser:

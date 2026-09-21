@@ -77,7 +77,7 @@ class _StrictFrozenModel(BaseModel):
 
 
 class DiagnosisMainAnalysisPlan(_StrictFrozenModel):
-    schema_version: Literal["diagnosis-main-analysis-plan/v2"]
+    schema_version: Literal["diagnosis-main-analysis-plan/v3"]
     plan_status: Literal["outcome_blind_analysis_contract"]
     protected_outcomes_opened: Literal[False]
     scientific_scope: Literal["finite_frozen_benchmark_policy_comparison"]
@@ -150,6 +150,14 @@ class DiagnosisMainAnalysisPlan(_StrictFrozenModel):
     precision_interpretation: Literal[
         "The interval is a descriptive family-resampling stability summary for the frozen census; it is not a p-value, causal interval, or guarantee of superpopulation coverage."
     ]
+    qwen_sensitivity_status: Literal["secondary_descriptive_only"]
+    qwen_sensitivity_model: Literal["Qwen3.8-27B-Q8_0"]
+    qwen_sensitivity_estimand: Literal[
+        "finite_census_equal_family_mean_of_B1_minus_A3_accountability_loss_across_full_missing_key_noisy"
+    ]
+    qwen_sensitivity_family_count: Literal[12]
+    qwen_sensitivity_request_count: Literal[72]
+    qwen_cross_model_superiority_claim_permitted: Literal[False]
     qwen_pooling_permitted: Literal[False]
     logdx_pooling_permitted: Literal[False]
     rq6b_pooling_permitted: Literal[False]

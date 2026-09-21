@@ -84,7 +84,9 @@ jobs:
   # project boundary portable without duplicating the full Linux matrix.
   windows-project:
     runs-on: windows-latest
-    timeout-minutes: 20
+    # This serial job includes install, dataset preparation, the independently
+    # bounded 12-minute evaluation profile, and the publication profile.
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6

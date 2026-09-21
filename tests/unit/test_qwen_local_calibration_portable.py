@@ -165,11 +165,27 @@ def test_completion_and_six_cell_runner_record_only_auditable_metadata(
     monkeypatch.setattr(calibration, "validate_main_provider_output", lambda *args, **kwargs: None)
     ticks = iter((10.0, 10.125))
     monkeypatch.setattr(calibration.time, "monotonic", lambda: next(ticks))
+    generation_policy: dict[str, object] = {
+        "maximum_output_tokens": 600,
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "top_k": 20,
+        "min_p": 0.0,
+        "presence_penalty": 1.5,
+        "repetition_penalty": 1.0,
+        "seed": 17,
+        "chat_template_kwargs": {
+            "enable_thinking": False,
+            "preserve_thinking": False,
+        },
+    }
 
     record = calibration._completion_record(
         base_url="http://127.0.0.1:18080",
         request=requests[0],
         response_schema={"type": "object"},
+        generation_policy=generation_policy,
+        model_alias="qwen38-27b-q8_0-frozen",
         timeout=5,
         replicate=1,
     )
@@ -191,6 +207,8 @@ def test_completion_and_six_cell_runner_record_only_auditable_metadata(
         base_url="http://127.0.0.1:18080",
         requests=requests,
         response_schema={"type": "object"},
+        generation_policy=generation_policy,
+        model_alias="qwen38-27b-q8_0-frozen",
         timeout=5,
     )
 
@@ -316,8 +334,21 @@ def test_process_helpers_and_server_guards_are_portable(
         calibration._run_text(["/definitely/missing/portable-command"])
 
     candidate = calibration.load_and_verify_candidate(
-        ROOT / "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate.json"
+        ROOT / "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate_v2.json"
     )
+    server_flags = calibration.frozen_server_flags(candidate, 18080)
+    assert "--reasoning=off" in server_flags
+    assert "--presence-penalty=1.5" in server_flags
+    command = calibration.server_command(
+        Path("/tmp/llama-server"), Path("/tmp/model.gguf"), server_flags
+    )
+    assert command[:4] == [
+        "/tmp/llama-server",
+        "--model",
+        "/tmp/model.gguf",
+        "--host",
+    ]
+    assert command[command.index("--reasoning") + 1] == "off"
     with pytest.raises(calibration.QwenCalibrationError, match="port"):
         calibration.frozen_server_flags(candidate, 0)
     with pytest.raises(calibration.QwenCalibrationError, match="runtime policy"):
@@ -383,7 +414,7 @@ def _receipt_inputs() -> tuple[
     dict[str, object],
 ]:
     candidate = calibration.load_and_verify_candidate(
-        ROOT / "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate.json"
+        ROOT / "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate_v2.json"
     )
     plan = json.loads(
         (ROOT / "configs/evaluation/diagnosis_development_pilot_plan.json").read_text(
@@ -456,12 +487,18 @@ def test_completion_transport_and_receipt_tampering_fail_closed(
 ) -> None:
     candidate, plan, response_contract, receipt = _receipt_inputs()
     requests = calibration.build_calibration_requests(plan, response_contract)
+    generation_policy = candidate["generation_policy"]
+    assert isinstance(generation_policy, dict)
+    model_alias = generation_policy["request_model_alias"]
+    assert isinstance(model_alias, str)
 
     with pytest.raises(calibration.QwenCalibrationError, match="six cells"):
         calibration.run_development_calibration(
             base_url="http://127.0.0.1:18080",
             requests=requests[:-1],
             response_schema={"type": "object"},
+            generation_policy=generation_policy,
+            model_alias=model_alias,
             timeout=1,
         )
 
@@ -471,6 +508,8 @@ def test_completion_transport_and_receipt_tampering_fail_closed(
             base_url="http://127.0.0.1:18080",
             request=requests[0],
             response_schema={"type": "object"},
+            generation_policy=generation_policy,
+            model_alias=model_alias,
             timeout=1,
             replicate=1,
         )

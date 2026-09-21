@@ -103,7 +103,10 @@ for Python 3.12 compatibility, and runs once in the blocking Windows job. The
 contract profile runs before dataset acquisition on both Linux interpreters.
 The dedicated Windows publication profile replaces an unversioned list of test
 paths. Pip caches are keyed from `pyproject.toml`; dependency-audit logs include
-the exact resolved inventory digest.
+the exact resolved inventory digest. The serial Windows job has a 35-minute
+aggregate ceiling so setup, dataset preparation, the independently bounded
+12-minute evaluation profile, and the final publication profile can all
+complete. This aggregate ceiling does not relax any profile or assertion.
 
 ## Runtime interpretation
 

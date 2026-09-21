@@ -30,7 +30,7 @@ def main() -> int:
     parser.add_argument(
         "--candidate",
         type=Path,
-        default=Path("configs/evaluation/diagnosis_qwen_local_sensitivity_candidate.json"),
+        default=Path("configs/evaluation/diagnosis_qwen_local_sensitivity_candidate_v2.json"),
     )
     parser.add_argument(
         "--development-plan",
