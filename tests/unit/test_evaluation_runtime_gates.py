@@ -207,7 +207,7 @@ def test_windows_evaluation_budget_accounts_for_durable_filesystem_cost(
     monkeypatch.setattr(runner.subprocess, "run", fake_run)
 
     assert runner.run_profile("evaluation") == 0
-    assert [call["timeout"] for call in calls] == [720]
+    assert [call["timeout"] for call in calls] == [900]
 
 
 def test_profile_timeout_is_a_blocking_failure(

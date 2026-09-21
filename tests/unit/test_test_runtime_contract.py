@@ -102,7 +102,7 @@ def test_windows_job_budget_cannot_truncate_the_final_publication_gate() -> None
     windows_job = jobs.get("windows-project")
     assert isinstance(windows_job, dict)
 
-    # Evaluation retains its own 12-minute fail-closed budget. The aggregate
+    # Evaluation retains its own 15-minute fail-closed budget. The aggregate
     # job also has to cover setup, project checks, data preparation, and the
     # publication profile that follows evaluation.
     assert windows_job.get("timeout-minutes") == 35

@@ -85,7 +85,7 @@ jobs:
   windows-project:
     runs-on: windows-latest
     # This serial job includes install, dataset preparation, the independently
-    # bounded 12-minute evaluation profile, and the publication profile.
+    # bounded 15-minute evaluation profile, and the publication profile.
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v5
