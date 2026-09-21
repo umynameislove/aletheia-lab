@@ -10,8 +10,11 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from aletheia_lab.benchmark.p2.canonical import canonical_sha256
+from aletheia_lab.evaluation.qwen_calibration_failure import (
+    load_and_validate_failure_closeout,
+)
 
-DEFAULT_MANIFEST = Path("configs/evaluation/diagnosis_main_freeze_candidate_v5.json")
+DEFAULT_MANIFEST = Path("configs/evaluation/diagnosis_main_freeze_candidate_v6.json")
 
 _SCHEMA_V1 = "diagnosis-main-freeze-candidate/v1"
 _SCHEMA_V2 = "diagnosis-main-freeze-candidate/v2"
@@ -102,9 +105,7 @@ def audit_candidate(root: Path, manifest_path: Path) -> dict[str, object]:
 
     schema_version = manifest.get("schema_version")
     if schema_version == _SCHEMA_V1:
-        fairness = _load_object(
-            root / "configs/evaluation/diagnosis_variant_fairness_freeze.json"
-        )
+        fairness = _load_object(root / "configs/evaluation/diagnosis_variant_fairness_freeze.json")
         prompt_hashes = {
             key: value["prompt_content_sha256"]
             for key, value in fairness["prompt_policies"].items()
@@ -180,18 +181,15 @@ def audit_candidate(root: Path, manifest_path: Path) -> dict[str, object]:
                 predecessor_payload = _load_object(predecessor_target)
                 predecessor_file_sha = _sha256(predecessor_target)
                 predecessor_manifest_sha = predecessor_payload.get("manifest_sha256")
-                predecessor_blockers = predecessor_payload.get(
-                    "unresolved_contract_requirements"
-                )
+                predecessor_blockers = predecessor_payload.get("unresolved_contract_requirements")
                 if isinstance(predecessor_blockers, list):
                     old_blocker_codes = {
                         str(item.get("code"))
                         for item in predecessor_blockers
                         if isinstance(item, dict)
                     }
-                predecessor_identity_passed = (
-                    predecessor_manifest_sha
-                    == _canonical_manifest_hash(predecessor_payload)
+                predecessor_identity_passed = predecessor_manifest_sha == _canonical_manifest_hash(
+                    predecessor_payload
                 )
                 expected_predecessor_schema = {
                     _SCHEMA_V2: _SCHEMA_V1,
@@ -204,8 +202,7 @@ def audit_candidate(root: Path, manifest_path: Path) -> dict[str, object]:
                     predecessor_report = audit_candidate(root, predecessor_target)
                     predecessor_scope_passed = (
                         predecessor_report["integrity_status"] == "pass"
-                        and predecessor_payload.get("schema_version")
-                        == expected_predecessor_schema
+                        and predecessor_payload.get("schema_version") == expected_predecessor_schema
                     )
                 else:
                     # Forward candidates bind the predecessor manifest bytes and
@@ -213,8 +210,7 @@ def audit_candidate(root: Path, manifest_path: Path) -> dict[str, object]:
                     # directly rather than requiring superseded mutable targets
                     # from an earlier local candidate to remain at old hashes.
                     predecessor_scope_passed = (
-                        predecessor_payload.get("schema_version")
-                        == expected_predecessor_schema
+                        predecessor_payload.get("schema_version") == expected_predecessor_schema
                     )
                 predecessor_passed = (
                     predecessor_file_sha == predecessor.get("file_sha256")
@@ -286,6 +282,159 @@ def audit_candidate(root: Path, manifest_path: Path) -> dict[str, object]:
                 "evidence": "self-hash identities only; no private paths or item-level outcomes",
             }
         )
+
+        if schema_version == _SCHEMA_V6:
+            qwen = manifest.get("secondary_qwen_disposition")
+            qwen_passed = False
+            qwen_evidence = "missing"
+            if isinstance(qwen, dict):
+                closeout_target = _safe_repo_target(root, qwen.get("closeout_path"))
+                if closeout_target is not None:
+                    closeout = load_and_validate_failure_closeout(closeout_target)
+                    closeout_file_sha = _sha256(closeout_target)
+                    qwen_passed = (
+                        qwen.get("status") == "operationally_infeasible"
+                        and qwen.get("closeout_file_sha256") == closeout_file_sha
+                        and qwen.get("closeout_sha256") == closeout.get("closeout_sha256")
+                        and qwen.get("calibration_observed_server_tasks") == 4
+                        and qwen.get("calibration_planned_inference_calls") == 7
+                        and qwen.get("sensitivity_executed") is False
+                        and qwen.get("sensitivity_inference_calls") == 0
+                        and qwen.get("primary_gpt_main_contract_changed") is False
+                        and qwen.get("rerun_permitted") is False
+                    )
+                    qwen_evidence = str(closeout.get("closeout_sha256"))
+            findings.append(
+                {
+                    "code": "secondary_qwen_terminal_disposition",
+                    "status": "pass" if qwen_passed else "fail",
+                    "evidence": qwen_evidence,
+                }
+            )
+
+            expected_census = {
+                "family_count": 32,
+                "superfamily_count": 6,
+                "conditions_per_family": 4,
+                "context_count": 128,
+                "controlled_variant_count": 8,
+                "controlled_logical_request_count": 1024,
+                "provider_backed_logical_request_count": 896,
+                "deterministic_logical_request_count": 128,
+                "provider_turn_count": 1408,
+                "qwen_family_count": 12,
+                "qwen_planned_request_count": 72,
+                "qwen_executed_request_count": 0,
+                "logdx_external_case_count": 35,
+                "rq6b_case_count": 0,
+            }
+            expected_primary_invariance = {
+                "model": "gpt-4.1-2025-04-14",
+                "model_changed": False,
+                "prompt_policy_changed": False,
+                "response_contract_changed": False,
+                "evidence_context_ceiling_changed": False,
+                "sealed_census_changed": False,
+                "metrics_changed": False,
+                "aggregation_changed": False,
+                "multiplicity_changed": False,
+                "missingness_policy_changed": False,
+                "precision_interpretation_changed": False,
+                "retry_or_terminal_failure_policy_changed": False,
+                "analysis_entrypoint_changed": False,
+            }
+            plan_v2 = _load_object(root / "configs/evaluation/diagnosis_main_analysis_plan.json")
+            plan_v3 = _load_object(root / "configs/evaluation/diagnosis_main_analysis_plan_v3.json")
+            qwen_secondary_fields = {
+                "qwen_sensitivity_status",
+                "qwen_sensitivity_model",
+                "qwen_sensitivity_estimand",
+                "qwen_sensitivity_family_count",
+                "qwen_sensitivity_request_count",
+                "qwen_cross_model_superiority_claim_permitted",
+            }
+            primary_v2 = {
+                key: value
+                for key, value in plan_v2.items()
+                if key not in {"schema_version", "plan_sha256"}
+            }
+            primary_v3 = {
+                key: value
+                for key, value in plan_v3.items()
+                if key not in {"schema_version", "plan_sha256", *qwen_secondary_fields}
+            }
+            expected_plan_lineage = {
+                "runtime_authority_primary_plan_schema": ("diagnosis-main-analysis-plan/v2"),
+                "runtime_authority_primary_plan_sha256": (
+                    "4dd5908cadcbb249042741329ddbdceaf4f1a4b4088724d0c1e152cc0310a94a"
+                ),
+                "forward_analysis_plan_schema": "diagnosis-main-analysis-plan/v3",
+                "forward_analysis_plan_sha256": (
+                    "09f1a1293d9fc0ac93a9b25fec1456a591d48be444d3b479c389a6e255874249"
+                ),
+                "primary_fields_changed": False,
+                "v3_added_fields_are_qwen_secondary_only": True,
+                "main_analysis_entrypoint_uses_v3": True,
+                "semantic_conflict": False,
+            }
+            plan_lineage_passed = (
+                plan_v2.get("schema_version")
+                == expected_plan_lineage["runtime_authority_primary_plan_schema"]
+                and plan_v2.get("plan_sha256")
+                == expected_plan_lineage["runtime_authority_primary_plan_sha256"]
+                and plan_v3.get("schema_version")
+                == expected_plan_lineage["forward_analysis_plan_schema"]
+                and plan_v3.get("plan_sha256")
+                == expected_plan_lineage["forward_analysis_plan_sha256"]
+                and set(plan_v3) - set(plan_v2) == qwen_secondary_fields
+                and primary_v2 == primary_v3
+                and manifest.get("analysis_plan_lineage") == expected_plan_lineage
+            )
+            expected_primary_contracts = {
+                "analysis_plan_sha256": (
+                    "09f1a1293d9fc0ac93a9b25fec1456a591d48be444d3b479c389a6e255874249"
+                ),
+                "response_contract_sha256": (
+                    "d9cbbdda6e29e0e2717591124804c8c5d5a90d4f5a9cd81de67fdf36ee5bd810"
+                ),
+                "information_path_fairness_audit_sha256": (
+                    "a14a98b310a3c59c273842bcfe3985c8606dc0f8a94bca3e87add52f66eaa9d4"
+                ),
+                "main_census_seal_sha256": (
+                    "e010cd36a37ce100c2033e4bd9652de4842635ef79e0ba7fb9fee79c4a420b8b"
+                ),
+                "main_runtime_contract_sha256": (
+                    "eca4170c7d27fafd393bcc9d9ddca5b25a611e5793640259b3919ebe9536fbc7"
+                ),
+                "logdx_cached_replay_receipt_sha256": (
+                    "74ba4458a783fb685a9d08f3cac138a88437647ad497c993aaf44fa2483b4038"
+                ),
+                "rq6b_scope_decision_sha256": (
+                    "f4a2287a81fd624f9602b003f2c67bc657126e6db97722c3ec7869a84b8a8ed9"
+                ),
+                "engineering_preflight_sha256": (
+                    "355bbf8069033b6f633390b92a44fa34f1dd3799bba660d7626c62530abcfa73"
+                ),
+            }
+            primary_contracts_passed = isinstance(locked, dict) and all(
+                locked.get(key) == value for key, value in expected_primary_contracts.items()
+            )
+            primary_unchanged = (
+                manifest.get("frozen_census_counts") == expected_census
+                and manifest.get("primary_study_invariance") == expected_primary_invariance
+                and plan_lineage_passed
+                and primary_contracts_passed
+            )
+            findings.append(
+                {
+                    "code": "primary_study_unchanged_after_qwen_failure",
+                    "status": "pass" if primary_unchanged else "fail",
+                    "evidence": (
+                        "GPT-4.1; 32 families; 128 contexts; 1024 logical "
+                        "requests; frozen analysis contracts"
+                    ),
+                }
+            )
     else:
         findings.append(
             {
@@ -313,13 +462,33 @@ def audit_candidate(root: Path, manifest_path: Path) -> dict[str, object]:
         lifecycle_evidence = ",".join(str(code) for code in blocker_codes)
     else:
         readiness_evidence = manifest.get("readiness_evidence")
-        evidence_passed = (
-            isinstance(readiness_evidence, dict)
-            and _is_sha256(readiness_evidence.get("qwen_calibration_receipt_sha256"))
-            and _is_sha256(readiness_evidence.get("independent_review_receipt_sha256"))
-            and readiness_evidence.get("engineering_preflight_decision") == "pass"
-            and readiness_evidence.get("main_freeze_decision") == "pass"
-        )
+        if schema_version == _SCHEMA_V6:
+            evidence_passed = (
+                isinstance(readiness_evidence, dict)
+                and readiness_evidence.get("qwen_disposition") == "operationally_infeasible"
+                and readiness_evidence.get("qwen_failure_closeout_sha256")
+                == (
+                    manifest.get("secondary_qwen_disposition", {}).get("closeout_sha256")
+                    if isinstance(manifest.get("secondary_qwen_disposition"), dict)
+                    else None
+                )
+                and readiness_evidence.get("qwen_sensitivity_executed") is False
+                and readiness_evidence.get("primary_gpt_main_contract_unchanged") is True
+                and readiness_evidence.get("frozen_census_verified") is True
+                and readiness_evidence.get("fairness_audit_bound") is True
+                and readiness_evidence.get("logdx_replay_bound") is True
+                and readiness_evidence.get("engineering_preflight_bound") is True
+                and readiness_evidence.get("protected_main_outcomes_opened") is False
+                and readiness_evidence.get("main_registered_attempts_consumed") == 0
+            )
+        else:
+            evidence_passed = (
+                isinstance(readiness_evidence, dict)
+                and _is_sha256(readiness_evidence.get("qwen_calibration_receipt_sha256"))
+                and _is_sha256(readiness_evidence.get("independent_review_receipt_sha256"))
+                and readiness_evidence.get("engineering_preflight_decision") == "pass"
+                and readiness_evidence.get("main_freeze_decision") == "pass"
+            )
         lifecycle_passed = (
             schema_version in {_SCHEMA_V4, _SCHEMA_V5, _SCHEMA_V6}
             and manifest.get("execution_authorized") is False
@@ -330,7 +499,7 @@ def audit_candidate(root: Path, manifest_path: Path) -> dict[str, object]:
         )
         readiness_status = "ready_for_execution_authorization"
         lifecycle_evidence = (
-            "qwen calibration and independent review content identities present"
+            "Qwen disposition and objective frozen-contract evidence present"
             if evidence_passed
             else "missing or invalid readiness evidence"
         )
@@ -368,10 +537,7 @@ def main() -> int:
     print(json.dumps(report, indent=2, sort_keys=True))
     if report["integrity_status"] != "pass":
         return 1
-    if (
-        args.require_ready
-        and report["readiness_status"] != "ready_for_execution_authorization"
-    ):
+    if args.require_ready and report["readiness_status"] != "ready_for_execution_authorization":
         return 2
     return 0
 

@@ -1,0 +1,174 @@
+{
+  "schema_version": "diagnosis-main-freeze-candidate/v6",
+  "created_on": "2026-09-21",
+  "status": "final_forward_integrity_locked_ready_for_execution_authorization",
+  "execution_authorized": false,
+  "main_registered_attempts_consumed": 0,
+  "main_outcomes_opened": false,
+  "source_base_commit_sha": "87e2803f779348ad31af311b5903eb632b454ca3",
+  "source_base_tree_sha": "1588faa38637f0c7e06bde6cc3da0d83b2b54b42",
+  "candidate_artifacts_committed_at_creation": false,
+  "predecessor": {
+    "path": "configs/evaluation/diagnosis_main_freeze_candidate_v5.json",
+    "file_sha256": "a4bd91960b7fb7b4ebd4884d9126aa0f0a087f4631424ce2c5970887e32d4f65",
+    "manifest_sha256": "40976ab4119906c1fecfd19ce1adaf759356a84086722510d7ded78337d88437",
+    "history_mutated": false,
+    "validation_scope": "V6 preserves V5 and applies the prespecified negative Q8 calibration disposition without changing the primary study."
+  },
+  "secondary_qwen_disposition": {
+    "status": "operationally_infeasible",
+    "closeout_path": "configs/evaluation/diagnosis_qwen38_calibration_failure_closeout.json",
+    "closeout_file_sha256": "8c15d6776a7cb85bb5b6091acf62bee57b295fc29c0b3b42d5250c6ef721e2a4",
+    "closeout_sha256": "4341ea52cad5d3944ac90fc58ad1dd741d36588b6c39ef1e2193874078fa66ea",
+    "calibration_observed_server_tasks": 4,
+    "calibration_planned_inference_calls": 7,
+    "sensitivity_executed": false,
+    "sensitivity_inference_calls": 0,
+    "primary_gpt_main_contract_changed": false,
+    "rerun_permitted": false,
+    "reporting_scope": "transparent_negative_operational_robustness_result_only"
+  },
+  "requirements_disposition": {
+    "qwen_local_artifact_build_and_calibration_receipt_missing": {
+      "status": "closed_forward_by_prespecified_negative_disposition",
+      "evidence": "The exact Q8 runtime loaded and completed four untruncated serial tasks before a terminal QwenCalibrationError prevented receipt publication. The frozen failure rule closes the optional sensitivity as operationally infeasible without rerun or substitution."
+    },
+    "independent_methods_approval_missing": {
+      "status": "closed_forward_by_objective_repository_evidence",
+      "evidence": "Independent sign-off was an internal governance option, not a scientific validity requirement. Outcome-blind content bindings, frozen contracts, automated audits and the full test profile provide the required readiness evidence without adding another reviewer."
+    }
+  },
+  "requirement_counts": {
+    "predecessor_requirements": 2,
+    "closed_forward": 2,
+    "carried_forward": 0,
+    "remaining_blockers_after_consolidation": 0
+  },
+  "frozen_census_counts": {
+    "family_count": 32,
+    "superfamily_count": 6,
+    "conditions_per_family": 4,
+    "context_count": 128,
+    "controlled_variant_count": 8,
+    "controlled_logical_request_count": 1024,
+    "provider_backed_logical_request_count": 896,
+    "deterministic_logical_request_count": 128,
+    "provider_turn_count": 1408,
+    "qwen_family_count": 12,
+    "qwen_planned_request_count": 72,
+    "qwen_executed_request_count": 0,
+    "logdx_external_case_count": 35,
+    "rq6b_case_count": 0
+  },
+  "primary_study_invariance": {
+    "model": "gpt-4.1-2025-04-14",
+    "model_changed": false,
+    "prompt_policy_changed": false,
+    "response_contract_changed": false,
+    "evidence_context_ceiling_changed": false,
+    "sealed_census_changed": false,
+    "metrics_changed": false,
+    "aggregation_changed": false,
+    "multiplicity_changed": false,
+    "missingness_policy_changed": false,
+    "precision_interpretation_changed": false,
+    "retry_or_terminal_failure_policy_changed": false,
+    "analysis_entrypoint_changed": false
+  },
+  "analysis_plan_lineage": {
+    "runtime_authority_primary_plan_schema": "diagnosis-main-analysis-plan/v2",
+    "runtime_authority_primary_plan_sha256": "4dd5908cadcbb249042741329ddbdceaf4f1a4b4088724d0c1e152cc0310a94a",
+    "forward_analysis_plan_schema": "diagnosis-main-analysis-plan/v3",
+    "forward_analysis_plan_sha256": "09f1a1293d9fc0ac93a9b25fec1456a591d48be444d3b479c389a6e255874249",
+    "primary_fields_changed": false,
+    "v3_added_fields_are_qwen_secondary_only": true,
+    "main_analysis_entrypoint_uses_v3": true,
+    "semantic_conflict": false
+  },
+  "forward_locked_contracts": {
+    "analysis_plan_sha256": "09f1a1293d9fc0ac93a9b25fec1456a591d48be444d3b479c389a6e255874249",
+    "response_contract_sha256": "d9cbbdda6e29e0e2717591124804c8c5d5a90d4f5a9cd81de67fdf36ee5bd810",
+    "information_path_fairness_audit_sha256": "a14a98b310a3c59c273842bcfe3985c8606dc0f8a94bca3e87add52f66eaa9d4",
+    "main_census_seal_sha256": "e010cd36a37ce100c2033e4bd9652de4842635ef79e0ba7fb9fee79c4a420b8b",
+    "main_runtime_contract_sha256": "eca4170c7d27fafd393bcc9d9ddca5b25a611e5793640259b3919ebe9536fbc7",
+    "qwen_forward_amendment_sha256": "c5a2f091b26dc02b62c409bc7bdd58129ecc572fba5d4d4c68c4bf97211d56ea",
+    "qwen_candidate_sha256": "db61a2ec899e546dc0ece77120624c45296cbe3c547b52d04b31b71c34b3388d",
+    "qwen_calibration_technical_correction_sha256": "bc158c27f8881e1ad0995793adceaef52c6e7f7fbe3f6fc21c8a80e4de077ed4",
+    "qwen_calibration_failure_closeout_sha256": "4341ea52cad5d3944ac90fc58ad1dd741d36588b6c39ef1e2193874078fa66ea",
+    "qwen_census_sha256": "a6044e1386c3e68fd653a6e3c888abb70ccc863457af6cc5cea98806ad7ad159",
+    "logdx_cached_replay_receipt_sha256": "74ba4458a783fb685a9d08f3cac138a88437647ad497c993aaf44fa2483b4038",
+    "rq6b_scope_decision_sha256": "f4a2287a81fd624f9602b003f2c67bc657126e6db97722c3ec7869a84b8a8ed9",
+    "engineering_preflight_sha256": "355bbf8069033b6f633390b92a44fa34f1dd3799bba660d7626c62530abcfa73"
+  },
+  "private_failure_evidence_content_identities": {
+    "v2_server_log_byte_sha256": "02cb252349b462c9d3dd6b5c8c21536f5ea47545f66c1e3b0a84418ac6694812",
+    "operator_terminal_transcript_byte_sha256": "871f0933b549d85c88447b7a59e9b5064e397e1b15d4d245fcd5b1ea45d8a1cf",
+    "private_paths_embedded": false,
+    "private_prompt_or_response_content_embedded": false
+  },
+  "repo_artifact_bindings": {
+    "configs/evaluation/diagnosis_information_path_fairness_audit.json": "da75fc0af456eeac7b77b4727ed2f9af93a1ef7351d77ec5ed482a16602aef0e",
+    "configs/evaluation/diagnosis_logdx_cached_evaluator_replay.json": "2bbcfc1aefd621e219f2e71efe3aa5afbbca74e20e7e229691dcc346ed6dc0cf",
+    "configs/evaluation/diagnosis_main_analysis_plan.json": "12d4a79876265e0197f0f1b0553e896d37924fb5b642f18e03db2a9c19b34e7c",
+    "configs/evaluation/diagnosis_main_analysis_plan_v3.json": "91028557c7f7dee329e20c83937463872831b7ce11158e66756a818a70a2581b",
+    "configs/evaluation/diagnosis_main_census_seal.json": "3853707331c1ed54847f18eda7b4c4bae195fff18f11c2d7342b88847ad87686",
+    "configs/evaluation/diagnosis_main_engineering_preflight_v2.json": "5e5e726a9cdf35e418f01c7308745c58affe2a512d02933725552f53ad653580",
+    "configs/evaluation/diagnosis_main_response_contract.json": "e026bf8573b8fa195f30193daee64fe4bbd319fa88dd80140e264f449e7d970f",
+    "configs/evaluation/diagnosis_main_runtime_contract.json": "3206c2d049b85ca007c819165349f563da8dcc2a7a40a2a92d150ebf16618c35",
+    "configs/evaluation/diagnosis_qwen38_calibration_failure_closeout.json": "8c15d6776a7cb85bb5b6091acf62bee57b295fc29c0b3b42d5250c6ef721e2a4",
+    "configs/evaluation/diagnosis_qwen38_calibration_technical_correction.json": "37f49799fc9b09b250481d0d3bab0d98475f36bd6eb03444970286c1b0176186",
+    "configs/evaluation/diagnosis_qwen38_forward_amendment.json": "81331577a8befcedfaeb3fc749c3f517b9c164f92f7440763e445ac5b7c8350f",
+    "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate_v2.json": "a1a564e5be70eec62bac9733b746932463fe05e51df9cd0d0cfa0fecacf173e7",
+    "configs/evaluation/diagnosis_qwen_sensitivity_census.json": "faf938d13fc91e8aeeb1f01b49e8892bb74cd411667c261c94bdeda7521b7790",
+    "configs/evaluation/diagnosis_rq6b_scope_decision.json": "06726ea49cdeb9b8b397905cc551b03045d141f4ffa1c100966879d521fee61c",
+    "docs/diagnosis-main-study-contract.md": "684895642a10a58dac213af6c1a061636b2e3537d666a2687cfbb3571f764643",
+    "docs/diagnosis-qwen38-calibration-failure-closeout-2026-09-21.md": "91f4a7f3b47b9c79f343a89f2d1057d9e35d5fd05485b7c1be76d0d4677d350e",
+    "pyproject.toml": "389a21c3811460f99fa40d629fd01f363f02d2b5f27fcacac1a1531c630bbc2e",
+    "reports/release/resolved-dependency-inventory-v1.json": "5cf5f1bdb431b169380fa45fb77ba163693cbe4b8273ef183e5dad8981bc196f",
+    "scripts/audit_diagnosis_main_freeze.py": "0322437c4e0584fe033f9a72a797d5443402ad188061af979983ac06af25c1f8",
+    "scripts/audit_qwen_calibration_failure.py": "a095ae469cb5817f1a7c487250cdfcb9a797f81abe3fd1a838683af36cdc198b",
+    "scripts/run_diagnosis_main_analysis.py": "2b0d4fd79a2974b960e88c368a8689bd4d3bd68ba30181f5336baad0c3fe64d1",
+    "src/aletheia_lab/evaluation/diagnosis_main_analysis.py": "25d4958a7b539788ff8d35632bdb0b05845b31c21b591314db535d2468123e46",
+    "src/aletheia_lab/evaluation/qwen_calibration_failure.py": "663a781326ca0bc16ef2fe4c3f48efb5b342c17d489e51878a37ff43d3a2f163",
+    "tests/unit/test_diagnosis_main_freeze_candidate.py": "3eeea29ed99cee165d48a8e0493cc396c1bf856d6af4c1278236511dff36bd1b",
+    "tests/unit/test_qwen_calibration_failure.py": "df73782e89f73741392ccbb7197b53a24154196e0e0f376df4dc6daf06bb77bc"
+  },
+  "unresolved_contract_requirements": [],
+  "readiness_evidence": {
+    "qwen_disposition": "operationally_infeasible",
+    "qwen_failure_closeout_sha256": "4341ea52cad5d3944ac90fc58ad1dd741d36588b6c39ef1e2193874078fa66ea",
+    "qwen_sensitivity_executed": false,
+    "primary_gpt_main_contract_unchanged": true,
+    "frozen_census_verified": true,
+    "fairness_audit_bound": true,
+    "logdx_replay_bound": true,
+    "engineering_preflight_bound": true,
+    "protected_main_outcomes_opened": false,
+    "main_registered_attempts_consumed": 0
+  },
+  "permitted_pre_readiness_transitions": [
+    "commit_and_merge_the_sanitized_failure_closeout_and_v6_candidate",
+    "run_the_v6_require_ready_audit_on_the_exact_merged_commit",
+    "obtain_separate_operator_authorization_before_the_registered_main_execution"
+  ],
+  "prohibited_pre_readiness_transitions": [
+    "rerun_or_repair_the_qwen_calibration_under_the_current_registration",
+    "run_the_72_request_qwen_sensitivity",
+    "change_qwen_model_quantization_mode_prompt_schema_sampling_or_seed_after_failure",
+    "delete_or_overwrite_any_qwen_failure_evidence",
+    "open_main_outcomes",
+    "consume_a_registered_main_attempt",
+    "pool_qwen_with_the_gpt_main_study",
+    "claim_cross_model_superiority",
+    "claim_main_execution_done_before_the_registered_attempt"
+  ],
+  "deviation_policy": {
+    "scientific_change_requires_new_registration": true,
+    "predecessor_history_must_be_preserved": true,
+    "failed_qwen_calibrations_are_preserved_not_overwritten": true,
+    "prespecified_negative_branch_may_close_optional_qwen_requirement": true,
+    "primary_main_contract_may_not_change_from_qwen_failure": true,
+    "blocked_candidate_does_not_authorize_execution": true
+  },
+  "manifest_sha256": "e8a7dea411d411e9d617466358c50502270b8128851a1c9c6531d5776e672016"
+}
