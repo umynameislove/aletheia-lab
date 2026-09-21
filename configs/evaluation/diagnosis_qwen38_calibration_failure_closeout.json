@@ -1,0 +1,75 @@
+{
+  "schema_version": "diagnosis-qwen38-calibration-failure-closeout/v1",
+  "created_on": "2026-09-21",
+  "status": "operationally_infeasible",
+  "protected_main_outcomes_opened": false,
+  "main_registered_attempts_consumed": 0,
+  "qwen_sensitivity_executed": false,
+  "qwen_sensitivity_inference_calls": 0,
+  "calibration_planned_inference_calls": 7,
+  "calibration_observed_server_tasks": 4,
+  "calibration_confirmed_conforming_records_before_failure": 3,
+  "calibration_receipt_created": false,
+  "raw_model_responses_retained": false,
+  "private_paths_embedded": false,
+  "rerun_permitted_under_current_registration": false,
+  "fallback_model_or_quantization_permitted": false,
+  "pool_with_primary_permitted": false,
+  "primary_gpt_main_contract_changed": false,
+  "sealed_main_census_changed": false,
+  "analysis_plan_changed": false,
+  "lineage": {
+    "qwen_candidate_sha256": "db61a2ec899e546dc0ece77120624c45296cbe3c547b52d04b31b71c34b3388d",
+    "transport_correction_sha256": "bc158c27f8881e1ad0995793adceaef52c6e7f7fbe3f6fc21c8a80e4de077ed4",
+    "model_sha256": "aab65c67ef0dad127960efef9247f1832bca105faa1c7a052cc039b223cf86a1",
+    "llama_cpp_commit_sha": "b29c606e28a01b1bc8c1351026a0fa6e616bf6c4",
+    "response_contract_sha256": "d9cbbdda6e29e0e2717591124804c8c5d5a90d4f5a9cd81de67fdf36ee5bd810"
+  },
+  "failure_boundary": {
+    "server_started": true,
+    "model_loaded": true,
+    "loopback_only": true,
+    "serial_slot_count": 1,
+    "completed_server_task_count": 4,
+    "completed_without_truncation_count": 4,
+    "failed_request_index_in_frozen_sequence": 4,
+    "failed_calibration_id": "qcal-00e5b549b7cdbeb685754ca723d65083c48279c9064ce7a614622150fbbbcac9",
+    "failed_case_id": "devcase-conflicting-signals",
+    "failed_variant": "A3",
+    "cli_error_type": "QwenCalibrationError",
+    "specific_inner_validation_cause_observed": false,
+    "terminal_stage": "fourth_inference_response_handling_or_post_generation_validation"
+  },
+  "inference_basis": {
+    "frozen_request_order_used": true,
+    "server_task_count_used": true,
+    "raw_response_inspected": false,
+    "claim_limit": "The log and deterministic control flow locate the terminal boundary but do not identify the exact inner validation exception."
+  },
+  "private_failure_evidence_content_identities": {
+    "v2_server_log_byte_sha256": "02cb252349b462c9d3dd6b5c8c21536f5ea47545f66c1e3b0a84418ac6694812",
+    "operator_terminal_transcript_byte_sha256": "871f0933b549d85c88447b7a59e9b5064e397e1b15d4d245fcd5b1ea45d8a1cf"
+  },
+  "private_failure_evidence_byte_counts": {
+    "v2_server_log": 14235,
+    "operator_terminal_transcript": 5064
+  },
+  "scientific_disposition": {
+    "rule_source": "prespecified_q8_failure_branch",
+    "qwen_role": "secondary_robustness_study_not_executed",
+    "reporting_label": "operationally_infeasible",
+    "main_gpt_study_impact": "none",
+    "qwen_72_request_census_status": "frozen_but_not_executed",
+    "cross_model_claim_permitted": false,
+    "post_failure_prompt_schema_sampling_or_model_selection_permitted": false,
+    "future_qwen_work_requires_new_registration": true
+  },
+  "privacy": {
+    "server_log_retained_outside_git": true,
+    "terminal_transcript_retained_outside_git": true,
+    "model_output_text_in_closeout": false,
+    "absolute_local_path_in_closeout": false,
+    "operator_identity_in_closeout": false
+  },
+  "closeout_sha256": "4341ea52cad5d3944ac90fc58ad1dd741d36588b6c39ef1e2193874078fa66ea"
+}
