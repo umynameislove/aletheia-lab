@@ -3,6 +3,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
+from aletheia_lab.diagnosis.main_execution import rehearse_main_execution
+from aletheia_lab.diagnosis.main_runtime import (
+    MainRuntimeError,
+    MainRuntimeStore,
+    load_main_runtime_inputs,
+)
 from aletheia_lab.evaluation.diagnosis_main_census import (
     DiagnosisMainCensusSources,
     build_diagnosis_main_census,
@@ -40,12 +48,8 @@ def _p2r_records() -> list[dict[str, object]]:
                         "achieved_manipulation_magnitude": 0.1 + offset,
                         "manipulated_accuracy": 0.7 - offset,
                         "clean_accuracy": 0.8 + dataset_index * 0.01,
-                        "protocol_sha256": canonical_execution_sha256(
-                            {"protocol": mechanism}
-                        ),
-                        "model_sha256": canonical_execution_sha256(
-                            {"model": dataset_id}
-                        ),
+                        "protocol_sha256": canonical_execution_sha256({"protocol": mechanism}),
+                        "model_sha256": canonical_execution_sha256({"model": dataset_id}),
                         "split_membership_sha256": canonical_execution_sha256(
                             {"split": dataset_id, "seed": seed}
                         ),
@@ -65,9 +69,7 @@ def _label_noise_attempt(dataset_id: str) -> dict[str, object]:
                     "direction": direction,
                     "conditional_rate": rate,
                     "replicate_count": 5,
-                    "mean_relative_net_effect": (
-                        rate * (-1.0 if direction_index == 0 else 1.0)
-                    ),
+                    "mean_relative_net_effect": (rate * (-1.0 if direction_index == 0 else 1.0)),
                     "sensitivity_only": True,
                     "can_rescue_primary": False,
                 }
@@ -146,3 +148,109 @@ def test_census_build_is_portable_without_private_preserved_artifacts(
     assert first_seal.private_packet_byte_sha256 == content_sha256(
         serialize_census_artifact(first_packet)
     )
+
+
+def test_offline_batch_rehearsal_is_canonical_resumable_and_store_bound(
+    tmp_path: Path,
+) -> None:
+    source_root = tmp_path / "sources"
+    source_root.mkdir()
+    packet, _, _ = build_diagnosis_main_census(_portable_sources(source_root))
+    contract, fairness_freeze, response_contract = load_main_runtime_inputs(ROOT)
+    contract_payload = contract.model_dump(mode="python", exclude={"runtime_contract_sha256"})
+    contract_payload["analysis_census_sha256"] = packet.analysis_census.census_sha256
+    contract = contract.__class__.model_validate(
+        {
+            **contract_payload,
+            "runtime_contract_sha256": canonical_execution_sha256(contract_payload),
+        }
+    )
+    selected_by_variant = {}
+    for request in packet.analysis_census.requests:
+        selected_by_variant.setdefault(request.variant, request.request_id)
+    request_ids = tuple(selected_by_variant.values())
+    store = MainRuntimeStore(tmp_path / "store")
+
+    first = rehearse_main_execution(
+        packet=packet,
+        contract=contract,
+        response_contract=response_contract,
+        fairness_freeze=fairness_freeze,
+        store=store,
+        request_ids=request_ids,
+    )
+    persisted = {
+        path.relative_to(store.root): path.read_bytes()
+        for path in store.root.rglob("*")
+        if path.is_file()
+    }
+    second = rehearse_main_execution(
+        packet=packet,
+        contract=contract,
+        response_contract=response_contract,
+        fairness_freeze=fairness_freeze,
+        store=store,
+        request_ids=request_ids,
+    )
+
+    assert first == second
+    assert first.status == "offline_rehearsal_complete"
+    assert first.logical_request_count == 8
+    assert first.provider_backed_logical_request_count == 7
+    assert first.deterministic_logical_request_count == 1
+    assert first.expected_provider_turn_count == 11
+    assert first.completed_provider_turn_count == 11
+    assert first.terminal_status_counts == {"completed": 7, "deterministic_completed": 1}
+    assert persisted == {
+        path.relative_to(store.root): path.read_bytes()
+        for path in store.root.rglob("*")
+        if path.is_file()
+    }
+
+    different_selection = tuple(
+        request.request_id for request in packet.analysis_census.requests[:8]
+    )
+    with pytest.raises(MainRuntimeError, match="bound to another execution batch"):
+        rehearse_main_execution(
+            packet=packet,
+            contract=contract,
+            response_contract=response_contract,
+            fairness_freeze=fairness_freeze,
+            store=store,
+            request_ids=different_selection,
+        )
+
+    tampered_response = json.loads(json.dumps(response_contract))
+    tampered_response["prompt_contracts"]["A1"] += " Mutated after freeze."
+    with pytest.raises(MainRuntimeError, match="response contract differs"):
+        rehearse_main_execution(
+            packet=packet,
+            contract=contract,
+            response_contract=tampered_response,
+            fairness_freeze=fairness_freeze,
+            store=MainRuntimeStore(tmp_path / "tampered-store"),
+            request_ids=request_ids,
+        )
+
+    unbound_store = MainRuntimeStore(tmp_path / "unbound-store")
+    (unbound_store.root / "unexpected.json").write_text("{}", encoding="utf-8")
+    with pytest.raises(MainRuntimeError, match="has no immutable batch binding"):
+        rehearse_main_execution(
+            packet=packet,
+            contract=contract,
+            response_contract=response_contract,
+            fairness_freeze=fairness_freeze,
+            store=unbound_store,
+            request_ids=request_ids,
+        )
+
+    (store.root / request_ids[0] / "unexpected.json").write_text("{}", encoding="utf-8")
+    with pytest.raises(MainRuntimeError, match="contains an unexpected entry"):
+        rehearse_main_execution(
+            packet=packet,
+            contract=contract,
+            response_contract=response_contract,
+            fairness_freeze=fairness_freeze,
+            store=store,
+            request_ids=request_ids,
+        )
