@@ -18,6 +18,7 @@ from aletheia_lab.evaluation.qwen_local_calibration import (
     require_loopback_base_url,
     run_development_calibration,
     sample_process_rss_kib,
+    server_command,
     verify_local_artifacts,
     wait_until_healthy,
 )
@@ -35,7 +36,7 @@ def main() -> int:
     parser.add_argument(
         "--candidate",
         type=Path,
-        default=Path("configs/evaluation/diagnosis_qwen_local_sensitivity_candidate.json"),
+        default=Path("configs/evaluation/diagnosis_qwen_local_sensitivity_candidate_v2.json"),
     )
     parser.add_argument(
         "--development-plan",
@@ -76,35 +77,7 @@ def main() -> int:
         args.server_log.parent.mkdir(parents=True, exist_ok=True)
         binary = args.llama_checkout / "build/bin/llama-server"
         server_flags = frozen_server_flags(candidate, args.port)
-        command = [
-            str(binary),
-            "--model",
-            str(args.model),
-            "--host",
-            "127.0.0.1",
-            "--port",
-            str(args.port),
-            "--ctx-size",
-            "32768",
-            "--n-predict",
-            "600",
-            "--n-gpu-layers",
-            "99",
-            "--jinja",
-            "--no-context-shift",
-            "--temp",
-            "0.7",
-            "--top-p",
-            "0.8",
-            "--top-k",
-            "20",
-            "--min-p",
-            "0",
-            "--repeat-penalty",
-            "1.05",
-            "--seed",
-            "17",
-        ]
+        command = server_command(binary, args.model, server_flags)
         base_url = require_loopback_base_url(f"http://127.0.0.1:{args.port}")
         log_handle = args.server_log.open("x", encoding="utf-8")
         server = subprocess.Popen(  # noqa: S603
@@ -118,10 +91,15 @@ def main() -> int:
         generation_policy = candidate.get("generation_policy")
         if not isinstance(generation_policy, dict):
             raise QwenCalibrationError("candidate generation policy is malformed")
+        model_alias = generation_policy.get("request_model_alias")
+        if not isinstance(model_alias, str) or not model_alias:
+            raise QwenCalibrationError("candidate request model alias is malformed")
         records = run_development_calibration(
             base_url=base_url,
             requests=calibration_requests,
             response_schema=response_contract["json_schema"],
+            generation_policy=generation_policy,
+            model_alias=model_alias,
             timeout=int(generation_policy["timeout_seconds"]),
         )
         rss_samples_kib.append(sample_process_rss_kib(server.pid))

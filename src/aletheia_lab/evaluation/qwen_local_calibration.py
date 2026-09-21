@@ -190,13 +190,32 @@ def frozen_server_flags(candidate: dict[str, object], port: int) -> tuple[str, .
         f"--n-gpu-layers={runner['n_gpu_layers']}",
         "--jinja",
         "--no-context-shift",
+        f"--reasoning={policy['reasoning_mode']}",
         f"--temp={policy['temperature']}",
         f"--top-p={policy['top_p']}",
         f"--top-k={policy['top_k']}",
         f"--min-p={policy['min_p']:g}",
+        f"--presence-penalty={policy['presence_penalty']}",
         f"--repeat-penalty={policy['repetition_penalty']}",
         f"--seed={policy['seed']}",
     )
+
+
+def server_command(
+    binary: Path,
+    model_path: Path,
+    server_flags: tuple[str, ...],
+) -> list[str]:
+    """Expand normalized receipt flags into the exact local server command."""
+
+    command = [str(binary), "--model", str(model_path)]
+    for flag in server_flags:
+        if "=" not in flag:
+            command.append(flag)
+            continue
+        option, value = flag.split("=", 1)
+        command.extend((option, value))
+    return command
 
 
 class _RejectRedirects(urllib.request.HTTPRedirectHandler):
@@ -476,20 +495,24 @@ def _completion_record(
     base_url: str,
     request: QwenCalibrationRequest,
     response_schema: dict[str, object],
+    generation_policy: dict[str, object],
+    model_alias: str,
     timeout: int,
     replicate: int,
 ) -> dict[str, object]:
     payload = {
-        "model": "qwen3-coder-30b-a3b-instruct-q8_0-frozen",
+        "model": model_alias,
         "messages": request.messages,
         "response_format": {"type": "json_object", "schema": response_schema},
-        "max_tokens": 600,
-        "temperature": 0.7,
-        "top_p": 0.8,
-        "top_k": 20,
-        "min_p": 0.0,
-        "repeat_penalty": 1.05,
-        "seed": 17,
+        "max_tokens": generation_policy["maximum_output_tokens"],
+        "temperature": generation_policy["temperature"],
+        "top_p": generation_policy["top_p"],
+        "top_k": generation_policy["top_k"],
+        "min_p": generation_policy["min_p"],
+        "presence_penalty": generation_policy["presence_penalty"],
+        "repeat_penalty": generation_policy["repetition_penalty"],
+        "seed": generation_policy["seed"],
+        "chat_template_kwargs": generation_policy["chat_template_kwargs"],
         "stream": False,
     }
     started = time.monotonic()
@@ -530,6 +553,8 @@ def run_development_calibration(
     base_url: str,
     requests: tuple[QwenCalibrationRequest, ...],
     response_schema: dict[str, object],
+    generation_policy: dict[str, object],
+    model_alias: str,
     timeout: int,
 ) -> tuple[dict[str, object], ...]:
     if len(requests) != 6:
@@ -539,6 +564,8 @@ def run_development_calibration(
             base_url=base_url,
             request=request,
             response_schema=response_schema,
+            generation_policy=generation_policy,
+            model_alias=model_alias,
             timeout=timeout,
             replicate=1,
         )
@@ -549,6 +576,8 @@ def run_development_calibration(
             base_url=base_url,
             request=requests[0],
             response_schema=response_schema,
+            generation_policy=generation_policy,
+            model_alias=model_alias,
             timeout=timeout,
             replicate=2,
         )

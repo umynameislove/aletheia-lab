@@ -1,0 +1,67 @@
+{
+  "schema_version": "diagnosis-qwen-forward-amendment/v1",
+  "created_on": "2026-09-21",
+  "decision": "prospective_replacement_accepted_before_any_qwen_inference",
+  "protected_main_outcomes_opened": false,
+  "main_registered_attempts_consumed": 0,
+  "local_qwen_inference_calls_completed": 0,
+  "predecessor_freeze": {
+    "path": "configs/evaluation/diagnosis_main_freeze_candidate_v3.json",
+    "file_sha256": "86e5d068ec82927298026313d1e83adb841480fa752701e148a4de648e34d75d",
+    "manifest_sha256": "4a08fdc58141159971dc1a64dc565375c31f7611de2aa6d8bd6cf14ad65e967c",
+    "history_mutated": false
+  },
+  "superseded_qwen_candidate": {
+    "path": "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate.json",
+    "file_sha256": "0d0bd1c5e566ba63812fffdc755ceab729124cc4d904bdf9963c9bb8d9895ffa",
+    "candidate_sha256": "d37dbfa369e37115a463409d3b964f1fe2a1bddf3c09f4c178e09b39425c726a",
+    "model": "Qwen/Qwen3-Coder-30B-A3B-Instruct",
+    "disposition": "preserved_as_historical_candidate_not_executed"
+  },
+  "replacement": {
+    "model": "Qwen/Qwen3.8-27B",
+    "model_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+    "gguf_repository": "ggml-org/Qwen3.8-27B-GGUF",
+    "gguf_revision": "efbb3b1f70a21d97fd4495240648405f7228554f",
+    "gguf_filename": "Qwen3.8-27B-Q8_0.gguf",
+    "reason": "A pre-execution recency audit found that the official Qwen3.8-27B release dated 2026-08-14 preceded the 2026-09-20 local-sensitivity freeze. Replacing the unexecuted candidate improves the currency of the secondary model-family sensitivity without using outcome information.",
+    "selection_basis": [
+      "official_open_weight_qwen_release_available_before_original_freeze",
+      "official_ggml_org_q8_0_artifact_available_with_content_identity",
+      "apache_2_0_license",
+      "documented_llama_cpp_qwen3_5_architecture_support",
+      "fits_predeclared_64_gib_local_host_envelope_subject_to_operational_calibration"
+    ],
+    "selection_by_answer_quality": false
+  },
+  "unchanged_scientific_contract": {
+    "scientific_role": "secondary_model_family_sensitivity_reported_separately",
+    "comparison": "within_qwen_B1_vs_A3_only_not_cross_model_superiority",
+    "family_count": 12,
+    "request_count": 72,
+    "request_census_sha256": "a6044e1386c3e68fd653a6e3c888abb70ccc863457af6cc5cea98806ad7ad159",
+    "request_census_file_sha256": "faf938d13fc91e8aeeb1f01b49e8892bb74cd411667c261c94bdeda7521b7790",
+    "pooling_with_gpt_main_permitted": false,
+    "primary_gpt_main_design_changed": false,
+    "main_census_changed": false,
+    "thresholds_or_denominators_changed": false
+  },
+  "prospective_runtime_changes": {
+    "input_modality": "text_only",
+    "reasoning_mode": "off",
+    "reasoning_mode_rationale": "The registered response is a short schema-constrained diagnosis object. Non-thinking mode is selected prospectively using the model author's documented instruct settings; it avoids mixing hidden reasoning tokens with the 600-token answer budget and is not selected from answer quality.",
+    "sampling_policy": "official_qwen38_non_thinking_recommendation_with_fixed_seed",
+    "operational_fallback_model": "none",
+    "q8_failure_rule": "preserve_failure_and_report_operationally_infeasible_without_model_substitution"
+  },
+  "required_before_any_qwen_sensitivity_execution": [
+    "verify_exact_q8_bytes_and_sha256_outside_git",
+    "verify_pinned_llama_cpp_metal_release_build",
+    "verify_source_and_embedded_chat_template_identity",
+    "pass_seven_call_synthetic_outcome_blind_operational_calibration",
+    "obtain_outcome_blind_independent_methods_approval",
+    "issue_and_audit_a_forward_ready_manifest"
+  ],
+  "claim_boundary": "Model-author benchmark results motivate recency only; they are not Aletheia results and do not support cross-model superiority claims.",
+  "amendment_sha256": "c5a2f091b26dc02b62c409bc7bdd58129ecc572fba5d4d4c68c4bf97211d56ea"
+}
