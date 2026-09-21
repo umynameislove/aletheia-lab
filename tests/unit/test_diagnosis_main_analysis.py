@@ -22,7 +22,7 @@ from aletheia_lab.evaluation.diagnosis_main_analysis import (
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
 
 ROOT = Path(__file__).resolve().parents[2]
-PLAN_PATH = ROOT / "configs/evaluation/diagnosis_main_analysis_plan.json"
+PLAN_PATH = ROOT / "configs/evaluation/diagnosis_main_analysis_plan_v3.json"
 
 
 def _plan() -> DiagnosisMainAnalysisPlan:

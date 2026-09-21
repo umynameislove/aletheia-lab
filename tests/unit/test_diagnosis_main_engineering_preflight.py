@@ -7,7 +7,7 @@ from pathlib import Path, PurePosixPath
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
 
 ROOT = Path(__file__).resolve().parents[2]
-PREFLIGHT = ROOT / "configs/evaluation/diagnosis_main_engineering_preflight.json"
+PREFLIGHT = ROOT / "configs/evaluation/diagnosis_main_engineering_preflight_v2.json"
 
 
 def _sha(path: Path) -> str:
@@ -48,7 +48,10 @@ def test_engineering_preflight_local_verification_is_bounded_and_offline() -> No
     payload = json.loads(PREFLIGHT.read_text(encoding="utf-8"))
     verification = payload["local_verification"]
 
-    assert verification["selected_test_count"] > 165
+    assert verification["selected_test_count"] == 33
+    assert verification["scope"] == (
+        "qwen_candidate_calibration_and_main_analysis_contract_focused_tests"
+    )
     assert verification["result"] == "pass"
     assert verification["real_provider_calls"] == 0
     assert verification["local_qwen_inferences"] == 0

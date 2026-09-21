@@ -1,0 +1,125 @@
+{
+  "schema_version": "diagnosis-main-engineering-preflight/v2",
+  "created_on": "2026-09-21",
+  "status": "engineering_preflight_integrity_pass_main_readiness_blocked_on_qwen38_runtime_and_independent_review",
+  "protected_outcomes_opened": false,
+  "main_execution_authorized": false,
+  "registered_attempts_consumed": 0,
+  "predecessor": {
+    "path": "configs/evaluation/diagnosis_main_engineering_preflight.json",
+    "file_sha256": "a1e00588425fe2819e5bd0291e1127bfcd2a7da1946002ec4d67232d9722fc04",
+    "candidate_sha256": "7b7da7296e3b9031f1ca742fb57f10df1fc43f3fe144ec0734e169e8bd481574",
+    "history_mutated": false
+  },
+  "scientific_amendment": {
+    "scope": "prospective_secondary_qwen_model_replacement_only",
+    "primary_gpt_main_contract_changed": false,
+    "sealed_census_changed": false,
+    "qwen_request_ids_changed": false,
+    "protected_outcomes_opened": false,
+    "registered_attempts_consumed": 0
+  },
+  "acceptance_checks": [
+    {
+      "check": "study_contract_locked",
+      "status": "pass",
+      "evidence": "The primary GPT-4.1 study contract, response contract, prompt identities, budgets, retry ceiling, failure policy, and sealed main census remain unchanged."
+    },
+    {
+      "check": "model_gateway_and_context_boundary",
+      "status": "pass",
+      "evidence": "Strict request identity, visibility filtering, retry taxonomy, terminal-failure retention, and telemetry remain regression-tested."
+    },
+    {
+      "check": "external_mock_path",
+      "status": "pass_development_only",
+      "evidence": "The prior deterministic mock evidence remains development-only and is not promoted to a scientific result."
+    },
+    {
+      "check": "deterministic_local_path",
+      "status": "pass_development_only",
+      "evidence": "The deterministic local route remains content-addressed and separate from the unexecuted Qwen3.8 path."
+    },
+    {
+      "check": "main_response_contract",
+      "status": "pass",
+      "evidence": "The unchanged schema-constrained response contract remains bound; Qwen3.8 uses text-only non-thinking generation against the same contract."
+    },
+    {
+      "check": "information_path_fairness",
+      "status": "pass",
+      "evidence": "The main B0-B3 and A1-FULL fairness audit is unchanged; Qwen remains a separate within-model B1/A3 sensitivity."
+    },
+    {
+      "check": "main_controlled_runtime",
+      "status": "pass_implementation",
+      "evidence": "The eight controlled primary paths retain create-only persistence, explicit authority, and immutable terminal handling."
+    },
+    {
+      "check": "sealed_main_census",
+      "status": "pass",
+      "evidence": "The sealed census remains 32 families, 128 contexts and 1,024 controlled requests."
+    },
+    {
+      "check": "pinned_qwen_local_path",
+      "status": "blocked",
+      "evidence": "Qwen3.8 base, official Q8, tokenizer/template, llama.cpp v0.4.1, non-thinking mode and sampling are content-addressed, but local bytes/build/template equality and seven-call calibration have not run."
+    },
+    {
+      "check": "qwen_72_request_sensitivity_census",
+      "status": "pass",
+      "evidence": "The exact 12-family x 3-condition x 2-variant census is unchanged, model-independent, and locked before any Qwen inference."
+    },
+    {
+      "check": "independent_methods_review",
+      "status": "blocked",
+      "evidence": "Outcome-blind independent approval must follow the Qwen3.8 calibration receipt."
+    }
+  ],
+  "local_verification": {
+    "observed_on": "2026-09-21",
+    "selected_test_count": 33,
+    "scope": "qwen_candidate_calibration_and_main_analysis_contract_focused_tests",
+    "result": "pass",
+    "real_provider_calls": 0,
+    "local_qwen_inferences": 0,
+    "protected_outcomes_opened": false,
+    "test_files": [
+      "tests/unit/test_diagnosis_qwen_local_sensitivity_candidate.py",
+      "tests/unit/test_qwen_local_calibration.py",
+      "tests/unit/test_qwen_local_calibration_portable.py",
+      "tests/unit/test_diagnosis_main_analysis.py"
+    ]
+  },
+  "repo_artifact_bindings": {
+    "configs/evaluation/diagnosis_qwen38_forward_amendment.json": "81331577a8befcedfaeb3fc749c3f517b9c164f92f7440763e445ac5b7c8350f",
+    "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate_v2.json": "a1a564e5be70eec62bac9733b746932463fe05e51df9cd0d0cfa0fecacf173e7",
+    "configs/evaluation/diagnosis_main_analysis_plan_v3.json": "91028557c7f7dee329e20c83937463872831b7ce11158e66756a818a70a2581b",
+    "configs/evaluation/diagnosis_qwen_sensitivity_census.json": "faf938d13fc91e8aeeb1f01b49e8892bb74cd411667c261c94bdeda7521b7790",
+    "configs/evaluation/diagnosis_main_census_seal.json": "3853707331c1ed54847f18eda7b4c4bae195fff18f11c2d7342b88847ad87686",
+    "configs/evaluation/diagnosis_main_response_contract.json": "e026bf8573b8fa195f30193daee64fe4bbd319fa88dd80140e264f449e7d970f",
+    "configs/evaluation/diagnosis_main_runtime_contract.json": "3206c2d049b85ca007c819165349f563da8dcc2a7a40a2a92d150ebf16618c35",
+    "configs/evaluation/diagnosis_information_path_fairness_audit.json": "da75fc0af456eeac7b77b4727ed2f9af93a1ef7351d77ec5ed482a16602aef0e",
+    "docs/diagnosis-main-qwen38-technology-amendment-2026-09-21.md": "b0ee921cf329b2cb7e1ada66311a87582e9e2b938d4f8447a0ccc81250728c4c",
+    "docs/qwen38-local-sensitivity-preparation.md": "89d44509726f8ee58ec07a8cc7ccae64ea90ec71cf4958fc52f7f0ee9f89f405",
+    "docs/diagnosis-main-independent-methods-review-v2.md": "004ff7f379e54d540afb668fb50ff36947455deb992bd9edef925c6c2599b971",
+    "src/aletheia_lab/evaluation/_diagnosis_main_analysis_contracts.py": "9445114822aa724a68f617f233371f98c1f0747234bd6b6b3dbbbb65753e327f",
+    "src/aletheia_lab/evaluation/qwen_local_calibration.py": "341160e11f54dd4c5f3834be9ca915e619fa2587fa81c6b8dc3a338301b2ff2a",
+    "scripts/run_diagnosis_main_analysis.py": "2b0d4fd79a2974b960e88c368a8689bd4d3bd68ba30181f5336baad0c3fe64d1",
+    "scripts/calibrate_qwen_local_sensitivity.py": "d16480f0e78897569e19f915ba51573c9d48a770b8eed0ce9e067e8ae168a711",
+    "scripts/audit_qwen_local_calibration.py": "dc18ec6bbcb1413909a8c3bcb6505ccdb3153b02f44d376ec3b7bbc61b06761f",
+    "scripts/audit_diagnosis_main_freeze.py": "64e57c5f9e0d8d452c0a884d7f8b6ba3518f8e112b4dbd792f8e72a635955ce0"
+  },
+  "blocking_requirements": [
+    {
+      "code": "qwen_local_artifact_build_and_calibration_receipt_missing",
+      "closure": "Download and hash the exact Qwen3.8 Q8 outside Git, verify the pinned Metal Release runtime and template equality, and pass the seven-call synthetic calibration without opening outcomes."
+    },
+    {
+      "code": "independent_methods_approval_missing",
+      "closure": "An outcome-blind independent reviewer must bind the amendment, calibration receipt, engineering preflight and forward main freeze before readiness."
+    }
+  ],
+  "readiness_rule": "Readiness requires empty blockers, unopened protected outcomes, zero consumed registered attempts, a passing content-addressed Qwen3.8 calibration receipt, independent approval, and a separately issued forward ready manifest.",
+  "candidate_sha256": "355bbf8069033b6f633390b92a44fa34f1dd3799bba660d7626c62530abcfa73"
+}

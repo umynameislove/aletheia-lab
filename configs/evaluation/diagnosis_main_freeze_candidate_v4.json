@@ -1,0 +1,145 @@
+{
+  "schema_version": "diagnosis-main-freeze-candidate/v4",
+  "created_on": "2026-09-21",
+  "status": "final_forward_integrity_locked_main_execution_blocked",
+  "execution_authorized": false,
+  "main_registered_attempts_consumed": 0,
+  "main_outcomes_opened": false,
+  "source_base_commit_sha": "c8d7ec2e435361bd3a408894afff3787fca572b5",
+  "source_base_tree_sha": "0d738c222e58130bb92f64af9056d42ec26235d7",
+  "candidate_artifacts_committed_at_creation": false,
+  "predecessor": {
+    "path": "configs/evaluation/diagnosis_main_freeze_candidate_v3.json",
+    "file_sha256": "86e5d068ec82927298026313d1e83adb841480fa752701e148a4de648e34d75d",
+    "manifest_sha256": "4a08fdc58141159971dc1a64dc565375c31f7611de2aa6d8bd6cf14ad65e967c",
+    "history_mutated": false,
+    "validation_scope": "manifest_bytes_canonical_identity_and_lineage; V4 binds current artifacts directly and preserves V3 as the unexecuted predecessor"
+  },
+  "scientific_amendment": {
+    "scope": "prospective_secondary_qwen_model_replacement_only",
+    "path": "configs/evaluation/diagnosis_qwen38_forward_amendment.json",
+    "file_sha256": "81331577a8befcedfaeb3fc749c3f517b9c164f92f7440763e445ac5b7c8350f",
+    "amendment_sha256": "c5a2f091b26dc02b62c409bc7bdd58129ecc572fba5d4d4c68c4bf97211d56ea",
+    "predecessor_history_mutated": false,
+    "primary_gpt_main_contract_changed": false,
+    "sealed_census_changed": false,
+    "protected_outcomes_opened": false,
+    "registered_attempts_consumed": 0
+  },
+  "requirements_disposition": {
+    "qwen_local_artifact_build_and_calibration_receipt_missing": {
+      "status": "carried_forward_with_prospective_model_replacement",
+      "evidence": "The exact Qwen3.8-27B base revision, official Q8 bytes, source template, llama.cpp v0.4.1 and non-thinking policy are locked before inference. Download, build, embedded-template verification and seven-call calibration remain unexecuted."
+    },
+    "independent_methods_approval_missing": {
+      "status": "carried_forward",
+      "evidence": "Outcome-blind independent review remains sequenced after the Qwen3.8 calibration receipt and before any ready manifest."
+    }
+  },
+  "requirement_counts": {
+    "predecessor_requirements": 2,
+    "closed_forward": 0,
+    "carried_forward": 2,
+    "remaining_blockers_after_consolidation": 2
+  },
+  "frozen_census_counts": {
+    "family_count": 32,
+    "superfamily_count": 6,
+    "conditions_per_family": 4,
+    "context_count": 128,
+    "controlled_variant_count": 8,
+    "controlled_logical_request_count": 1024,
+    "provider_backed_logical_request_count": 896,
+    "deterministic_logical_request_count": 128,
+    "provider_turn_count": 1408,
+    "qwen_family_count": 12,
+    "qwen_request_count": 72,
+    "logdx_external_case_count": 35,
+    "rq6b_case_count": 0
+  },
+  "forward_locked_contracts": {
+    "analysis_plan_sha256": "09f1a1293d9fc0ac93a9b25fec1456a591d48be444d3b479c389a6e255874249",
+    "response_contract_sha256": "d9cbbdda6e29e0e2717591124804c8c5d5a90d4f5a9cd81de67fdf36ee5bd810",
+    "information_path_fairness_audit_sha256": "a14a98b310a3c59c273842bcfe3985c8606dc0f8a94bca3e87add52f66eaa9d4",
+    "main_census_seal_sha256": "e010cd36a37ce100c2033e4bd9652de4842635ef79e0ba7fb9fee79c4a420b8b",
+    "main_runtime_contract_sha256": "eca4170c7d27fafd393bcc9d9ddca5b25a611e5793640259b3919ebe9536fbc7",
+    "qwen_forward_amendment_sha256": "c5a2f091b26dc02b62c409bc7bdd58129ecc572fba5d4d4c68c4bf97211d56ea",
+    "qwen_candidate_sha256": "db61a2ec899e546dc0ece77120624c45296cbe3c547b52d04b31b71c34b3388d",
+    "qwen_census_sha256": "a6044e1386c3e68fd653a6e3c888abb70ccc863457af6cc5cea98806ad7ad159",
+    "logdx_cached_replay_receipt_sha256": "74ba4458a783fb685a9d08f3cac138a88437647ad497c993aaf44fa2483b4038",
+    "rq6b_scope_decision_sha256": "f4a2287a81fd624f9602b003f2c67bc657126e6db97722c3ec7869a84b8a8ed9",
+    "engineering_preflight_sha256": "355bbf8069033b6f633390b92a44fa34f1dd3799bba660d7626c62530abcfa73"
+  },
+  "private_artifact_content_identities": {
+    "main_private_census_packet_byte_sha256": "ae68dbe62828192a70ff4db28b3728c1176e9bdf361bfe752995137761be313e",
+    "private_paths_embedded": false,
+    "private_item_level_content_embedded": false
+  },
+  "repo_artifact_bindings": {
+    "configs/evaluation/diagnosis_qwen38_forward_amendment.json": "81331577a8befcedfaeb3fc749c3f517b9c164f92f7440763e445ac5b7c8350f",
+    "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate_v2.json": "a1a564e5be70eec62bac9733b746932463fe05e51df9cd0d0cfa0fecacf173e7",
+    "configs/evaluation/diagnosis_main_analysis_plan_v3.json": "91028557c7f7dee329e20c83937463872831b7ce11158e66756a818a70a2581b",
+    "configs/evaluation/diagnosis_main_engineering_preflight_v2.json": "5e5e726a9cdf35e418f01c7308745c58affe2a512d02933725552f53ad653580",
+    "configs/evaluation/diagnosis_qwen_sensitivity_census.json": "faf938d13fc91e8aeeb1f01b49e8892bb74cd411667c261c94bdeda7521b7790",
+    "configs/evaluation/diagnosis_main_census_seal.json": "3853707331c1ed54847f18eda7b4c4bae195fff18f11c2d7342b88847ad87686",
+    "configs/evaluation/diagnosis_main_response_contract.json": "e026bf8573b8fa195f30193daee64fe4bbd319fa88dd80140e264f449e7d970f",
+    "configs/evaluation/diagnosis_main_runtime_contract.json": "3206c2d049b85ca007c819165349f563da8dcc2a7a40a2a92d150ebf16618c35",
+    "configs/evaluation/diagnosis_information_path_fairness_audit.json": "da75fc0af456eeac7b77b4727ed2f9af93a1ef7351d77ec5ed482a16602aef0e",
+    "configs/evaluation/diagnosis_logdx_cached_evaluator_replay.json": "2bbcfc1aefd621e219f2e71efe3aa5afbbca74e20e7e229691dcc346ed6dc0cf",
+    "configs/evaluation/diagnosis_rq6b_scope_decision.json": "06726ea49cdeb9b8b397905cc551b03045d141f4ffa1c100966879d521fee61c",
+    "docs/diagnosis-main-qwen38-technology-amendment-2026-09-21.md": "b0ee921cf329b2cb7e1ada66311a87582e9e2b938d4f8447a0ccc81250728c4c",
+    "docs/qwen38-local-sensitivity-preparation.md": "89d44509726f8ee58ec07a8cc7ccae64ea90ec71cf4958fc52f7f0ee9f89f405",
+    "docs/diagnosis-main-independent-methods-review-v2.md": "004ff7f379e54d540afb668fb50ff36947455deb992bd9edef925c6c2599b971",
+    "docs/diagnosis-main-study-contract.md": "684895642a10a58dac213af6c1a061636b2e3537d666a2687cfbb3571f764643",
+    "pyproject.toml": "389a21c3811460f99fa40d629fd01f363f02d2b5f27fcacac1a1531c630bbc2e",
+    "reports/release/resolved-dependency-inventory-v1.json": "5cf5f1bdb431b169380fa45fb77ba163693cbe4b8273ef183e5dad8981bc196f",
+    "src/aletheia_lab/content_hashing.py": "5273bbd228bcc0ed94aefc9108b86cb486fbb023fff42758add616320dcc21a5",
+    "src/aletheia_lab/evaluation/_diagnosis_main_analysis_contracts.py": "9445114822aa724a68f617f233371f98c1f0747234bd6b6b3dbbbb65753e327f",
+    "src/aletheia_lab/evaluation/diagnosis_main_analysis.py": "25d4958a7b539788ff8d35632bdb0b05845b31c21b591314db535d2468123e46",
+    "src/aletheia_lab/evaluation/qwen_local_calibration.py": "341160e11f54dd4c5f3834be9ca915e619fa2587fa81c6b8dc3a338301b2ff2a",
+    "scripts/run_diagnosis_main_analysis.py": "2b0d4fd79a2974b960e88c368a8689bd4d3bd68ba30181f5336baad0c3fe64d1",
+    "scripts/calibrate_qwen_local_sensitivity.py": "d16480f0e78897569e19f915ba51573c9d48a770b8eed0ce9e067e8ae168a711",
+    "scripts/audit_qwen_local_calibration.py": "dc18ec6bbcb1413909a8c3bcb6505ccdb3153b02f44d376ec3b7bbc61b06761f",
+    "scripts/audit_diagnosis_main_freeze.py": "64e57c5f9e0d8d452c0a884d7f8b6ba3518f8e112b4dbd792f8e72a635955ce0",
+    "tests/unit/test_diagnosis_main_freeze_candidate.py": "a5fed8636b96129c4619b7ea359fa79615cf6b7f902ac541dcdce4284fec6eca",
+    "tests/unit/test_diagnosis_main_engineering_preflight.py": "b7ce97a360cae6ddb19179357611ceca040056577368439ed5675e42c8a7cbb1",
+    "tests/unit/test_diagnosis_qwen_local_sensitivity_candidate.py": "cec4d72293c6dcc6902d423248e5cb43b8aed126362154c2de572e3996e4caa7",
+    "tests/unit/test_qwen_local_calibration.py": "e7e8d1c17bfbcae054342993a150a40182c62664aa6cda47d70e492f8e8df896",
+    "tests/unit/test_qwen_local_calibration_portable.py": "88c897b6c8476d6be21a230eba383a5070e69f1efa174da51f2da4542675249a",
+    "tests/unit/test_diagnosis_main_analysis.py": "24136f6fc96d2f06cff2d5176b1598bb6f3319dbde1af0f6cb700efdc789202f"
+  },
+  "unresolved_contract_requirements": [
+    {
+      "code": "qwen_local_artifact_build_and_calibration_receipt_missing",
+      "required_evidence": "A create-only receipt proving exact Qwen3.8 Q8 bytes, clean pinned llama.cpp Metal Release build, source-to-embedded template equality, loopback-only non-thinking launch, six conforming synthetic B1/A3 cells, one same-seed replicate, no main outcomes and no quality-based model selection."
+    },
+    {
+      "code": "independent_methods_approval_missing",
+      "required_evidence": "Outcome-blind independent review binding this amendment, Qwen3.8 calibration receipt, engineering preflight and final main-study freeze before a ready manifest is issued."
+    }
+  ],
+  "permitted_pre_readiness_transitions": [
+    "perform_user_run_exact_qwen38_q8_download_build_and_frozen_development_calibration",
+    "preserve_and_audit_the_create_only_qwen38_receipt_without_opening_main_outcomes",
+    "obtain_outcome_blind_independent_methods_review",
+    "issue_and_strictly_audit_a_v5_ready_manifest_before_separate_execution_authorization"
+  ],
+  "prohibited_pre_readiness_transitions": [
+    "open_main_outcomes",
+    "consume_a_registered_main_attempt",
+    "select_a_qwen_model_quantization_or_mode_by_synthetic_or_main_answer_quality",
+    "silently_replay_a_failed_or_interrupted_calibration",
+    "pool_qwen_with_the_gpt_main_study",
+    "claim_cross_model_superiority",
+    "claim_main_execution_ready_or_done"
+  ],
+  "deviation_policy": {
+    "scientific_change_requires_new_forward_version_before_main_outcomes": true,
+    "technical_correction_requires_forward_linked_receipt": true,
+    "post_outcome_threshold_denominator_family_or_model_change_forbidden": true,
+    "predecessor_history_must_be_preserved": true,
+    "blocked_candidate_does_not_authorize_execution": true,
+    "failed_qwen_calibration_is_preserved_not_overwritten": true
+  },
+  "manifest_sha256": "956b545d030bd2c8435e0d0c7f80426f48d247e6b3074112e091b6cf34c45e03"
+}
