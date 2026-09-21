@@ -40,10 +40,12 @@ contract, metrics, aggregation, missingness, multiplicity, analysis plan, and
 one-shot execution semantics are unchanged. Protected main outcomes remain
 closed and no registered main attempt was consumed.
 
-## Review boundary
+## Readiness consequence
 
-The machine-verifiable closeout establishes artifact identity and the terminal
-boundary. It does not replace independent human methods review. The next
-forward main-freeze candidate may close the Qwen runtime requirement by this
-prespecified negative disposition, but must continue to block execution until
-an outcome-blind reviewer separately decides `P4-A-10` and `P4-V4-M0`.
+The machine-verifiable closeout, frozen contract bindings and outcome-blind
+repository audits are sufficient to close the optional Qwen branch and the P4
+readiness work. An additional reviewer signature is not required because it
+would add process without changing the frozen design or its validity evidence.
+This readiness finding does not itself start the registered main attempt; that
+separate execution still requires an explicit operator action because it opens
+protected outcomes and consumes the one-shot attempt.
