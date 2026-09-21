@@ -9,6 +9,9 @@ import subprocess
 from pathlib import Path
 
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_json
+from aletheia_lab.evaluation.qwen_calibration_correction import (
+    load_and_verify_technical_correction,
+)
 from aletheia_lab.evaluation.qwen_local_calibration import (
     QwenCalibrationError,
     build_calibration_receipt,
@@ -48,6 +51,13 @@ def main() -> int:
         type=Path,
         default=Path("configs/evaluation/diagnosis_main_response_contract.json"),
     )
+    parser.add_argument(
+        "--technical-correction",
+        type=Path,
+        default=Path(
+            "configs/evaluation/diagnosis_qwen38_calibration_technical_correction.json"
+        ),
+    )
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--llama-checkout", type=Path, required=True)
     parser.add_argument("--source-tokenizer-config", type=Path, required=True)
@@ -61,6 +71,11 @@ def main() -> int:
     log_handle = None
     try:
         candidate = load_and_verify_candidate(args.candidate)
+        technical_correction = load_and_verify_technical_correction(
+            args.technical_correction,
+            candidate=candidate,
+            repository_root=Path(__file__).resolve().parents[1],
+        )
         development_plan = json.loads(args.development_plan.read_text(encoding="utf-8"))
         response_contract = json.loads(args.response_contract.read_text(encoding="utf-8"))
         calibration_requests = build_calibration_requests(
@@ -122,6 +137,7 @@ def main() -> int:
         }
         receipt = build_calibration_receipt(
             candidate=candidate,
+            technical_correction=technical_correction,
             development_plan=development_plan,
             response_contract=response_contract,
             artifacts=artifacts,

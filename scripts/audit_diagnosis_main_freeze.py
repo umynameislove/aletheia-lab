@@ -11,19 +11,21 @@ from typing import Any
 
 from aletheia_lab.benchmark.p2.canonical import canonical_sha256
 
-DEFAULT_MANIFEST = Path("configs/evaluation/diagnosis_main_freeze_candidate_v4.json")
+DEFAULT_MANIFEST = Path("configs/evaluation/diagnosis_main_freeze_candidate_v5.json")
 
 _SCHEMA_V1 = "diagnosis-main-freeze-candidate/v1"
 _SCHEMA_V2 = "diagnosis-main-freeze-candidate/v2"
 _SCHEMA_V3 = "diagnosis-main-freeze-candidate/v3"
 _SCHEMA_V4 = "diagnosis-main-freeze-candidate/v4"
 _SCHEMA_V5 = "diagnosis-main-freeze-candidate/v5"
+_SCHEMA_V6 = "diagnosis-main-freeze-candidate/v6"
 _BLOCKED_STATUS = {
     _SCHEMA_V1: "candidate_integrity_locked_main_execution_blocked",
     _SCHEMA_V2: "candidate_forward_integrity_locked_main_execution_blocked",
     _SCHEMA_V3: "candidate_forward_integrity_locked_main_execution_blocked",
     _SCHEMA_V4: "final_forward_integrity_locked_main_execution_blocked",
     _SCHEMA_V5: "final_forward_integrity_locked_main_execution_blocked",
+    _SCHEMA_V6: "final_forward_integrity_locked_main_execution_blocked",
 }
 _READY_STATUS = "final_forward_integrity_locked_ready_for_execution_authorization"
 
@@ -161,7 +163,13 @@ def audit_candidate(root: Path, manifest_path: Path) -> dict[str, object]:
                 "evidence": "content hashes only; private source paths are not embedded",
             }
         )
-    elif schema_version in {_SCHEMA_V2, _SCHEMA_V3, _SCHEMA_V4, _SCHEMA_V5}:
+    elif schema_version in {
+        _SCHEMA_V2,
+        _SCHEMA_V3,
+        _SCHEMA_V4,
+        _SCHEMA_V5,
+        _SCHEMA_V6,
+    }:
         predecessor = manifest.get("predecessor")
         predecessor_passed = False
         predecessor_evidence = "missing"
@@ -190,6 +198,7 @@ def audit_candidate(root: Path, manifest_path: Path) -> dict[str, object]:
                     _SCHEMA_V3: _SCHEMA_V2,
                     _SCHEMA_V4: _SCHEMA_V3,
                     _SCHEMA_V5: _SCHEMA_V4,
+                    _SCHEMA_V6: _SCHEMA_V5,
                 }[str(schema_version)]
                 if schema_version == _SCHEMA_V2:
                     predecessor_report = audit_candidate(root, predecessor_target)
@@ -312,7 +321,7 @@ def audit_candidate(root: Path, manifest_path: Path) -> dict[str, object]:
             and readiness_evidence.get("main_freeze_decision") == "pass"
         )
         lifecycle_passed = (
-            schema_version in {_SCHEMA_V4, _SCHEMA_V5}
+            schema_version in {_SCHEMA_V4, _SCHEMA_V5, _SCHEMA_V6}
             and manifest.get("execution_authorized") is False
             and manifest.get("main_outcomes_opened") is False
             and manifest.get("main_registered_attempts_consumed") == 0

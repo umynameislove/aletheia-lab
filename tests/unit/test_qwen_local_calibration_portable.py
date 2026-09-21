@@ -107,10 +107,10 @@ def test_local_artifact_verification_is_exercised_without_the_large_model(
     assert observed["host_memory_bytes"] == 64 * 2**30
 
 
-def test_loopback_json_transport_builds_a_local_request(
+def test_loopback_json_transport_sends_direct_provider_payload(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    opened: list[tuple[str, str, int]] = []
+    opened: list[tuple[str, str, int, bytes | None]] = []
 
     class Response:
         def __enter__(self) -> Response:
@@ -127,7 +127,9 @@ def test_loopback_json_transport_builds_a_local_request(
         @staticmethod
         def open(request: object, *, timeout: int) -> Response:
             assert isinstance(request, calibration.urllib.request.Request)
-            opened.append((request.full_url, request.get_method(), timeout))
+            opened.append(
+                (request.full_url, request.get_method(), timeout, request.data)
+            )
             return Response()
 
     monkeypatch.setattr(calibration, "_loopback_opener", lambda: Opener())
@@ -135,7 +137,31 @@ def test_loopback_json_transport_builds_a_local_request(
     assert calibration._request_json("http://127.0.0.1:18080/health", None, 7) == {
         "status": "ok"
     }
-    assert opened == [("http://127.0.0.1:18080/health", "GET", 7)]
+    payload = {
+        "messages": ({"role": "user", "content": "chào"},),
+        "temperature": 0.7,
+    }
+    assert calibration._request_json(
+        "http://127.0.0.1:18080/v1/chat/completions", payload, 11
+    ) == {"status": "ok"}
+    assert opened == [
+        ("http://127.0.0.1:18080/health", "GET", 7, None),
+        (
+            "http://127.0.0.1:18080/v1/chat/completions",
+            "POST",
+            11,
+            b'{"messages":[{"content":"ch\xc3\xa0o","role":"user"}],"temperature":0.7}',
+        ),
+    ]
+    body = opened[1][3]
+    assert body is not None
+    decoded_body = json.loads(body.decode("utf-8"))
+    assert decoded_body == {
+        "messages": [{"role": "user", "content": "chào"}],
+        "temperature": 0.7,
+    }
+    assert "payload" not in decoded_body
+    assert "schema_version" not in decoded_body
 
 
 def test_completion_and_six_cell_runner_record_only_auditable_metadata(
@@ -338,6 +364,7 @@ def test_process_helpers_and_server_guards_are_portable(
     )
     server_flags = calibration.frozen_server_flags(candidate, 18080)
     assert "--reasoning=off" in server_flags
+    assert "--parallel=1" in server_flags
     assert "--presence-penalty=1.5" in server_flags
     command = calibration.server_command(
         Path("/tmp/llama-server"), Path("/tmp/model.gguf"), server_flags
@@ -412,10 +439,14 @@ def _receipt_inputs() -> tuple[
     dict[str, object],
     dict[str, object],
     dict[str, object],
+    dict[str, object],
 ]:
     candidate = calibration.load_and_verify_candidate(
         ROOT / "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate_v2.json"
     )
+    correction = {
+        "correction_sha256": "9" * 64,
+    }
     plan = json.loads(
         (ROOT / "configs/evaluation/diagnosis_development_pilot_plan.json").read_text(
             encoding="utf-8"
@@ -468,13 +499,14 @@ def _receipt_inputs() -> tuple[
     }
     receipt = calibration.build_calibration_receipt(
         candidate=candidate,
+        technical_correction=correction,
         development_plan=plan,
         response_contract=response_contract,
         artifacts=artifacts,
         records=records,
         server_flags=calibration.frozen_server_flags(candidate, 18080),
     )
-    return candidate, plan, response_contract, receipt
+    return candidate, correction, plan, response_contract, receipt
 
 
 def _resign(receipt: dict[str, object]) -> None:
@@ -485,7 +517,7 @@ def _resign(receipt: dict[str, object]) -> None:
 def test_completion_transport_and_receipt_tampering_fail_closed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    candidate, plan, response_contract, receipt = _receipt_inputs()
+    candidate, correction, plan, response_contract, receipt = _receipt_inputs()
     requests = calibration.build_calibration_requests(plan, response_contract)
     generation_policy = candidate["generation_policy"]
     assert isinstance(generation_policy, dict)
@@ -532,6 +564,7 @@ def test_completion_transport_and_receipt_tampering_fail_closed(
     with pytest.raises(calibration.QwenCalibrationError, match="seven conforming"):
         calibration.build_calibration_receipt(
             candidate=candidate,
+            technical_correction=correction,
             development_plan=plan,
             response_contract=response_contract,
             artifacts={},
@@ -544,6 +577,7 @@ def test_completion_transport_and_receipt_tampering_fail_closed(
     with pytest.raises(calibration.QwenCalibrationError, match="repeatability pair"):
         calibration.build_calibration_receipt(
             candidate=candidate,
+            technical_correction=correction,
             development_plan=plan,
             response_contract=response_contract,
             artifacts={},
@@ -558,6 +592,7 @@ def test_completion_transport_and_receipt_tampering_fail_closed(
             calibration.validate_calibration_receipt(
                 receipt=changed,
                 candidate=candidate,
+                technical_correction=correction,
                 development_plan=plan,
                 response_contract=response_contract,
             )

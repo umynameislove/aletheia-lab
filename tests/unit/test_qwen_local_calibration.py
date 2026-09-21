@@ -8,6 +8,9 @@ from pathlib import Path
 import pytest
 
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
+from aletheia_lab.evaluation.qwen_calibration_correction import (
+    load_and_verify_technical_correction,
+)
 from aletheia_lab.evaluation.qwen_local_calibration import (
     QwenCalibrationError,
     _loopback_opener,
@@ -29,6 +32,11 @@ def test_candidate_and_synthetic_calibration_matrix_are_exact() -> None:
     candidate = load_and_verify_candidate(
         ROOT / "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate_v2.json"
     )
+    correction = load_and_verify_technical_correction(
+        ROOT / "configs/evaluation/diagnosis_qwen38_calibration_technical_correction.json",
+        candidate=candidate,
+        repository_root=ROOT,
+    )
     plan = json.loads(
         (ROOT / "configs/evaluation/diagnosis_development_pilot_plan.json").read_text()
     )
@@ -38,6 +46,7 @@ def test_candidate_and_synthetic_calibration_matrix_are_exact() -> None:
     requests = build_calibration_requests(plan, contract)
 
     assert candidate["local_model_executed"] is False
+    assert correction["model_generation_calls"] == 0
     assert len(requests) == 6
     assert {(item.case_id, item.variant) for item in requests} == {
         (case["case_id"], variant)
@@ -46,6 +55,30 @@ def test_candidate_and_synthetic_calibration_matrix_are_exact() -> None:
     }
     assert len({item.request_sha256 for item in requests}) == 6
     assert all(item.calibration_id == f"qcal-{item.request_sha256}" for item in requests)
+
+
+def test_technical_correction_rejects_resigned_source_substitution(
+    tmp_path: Path,
+) -> None:
+    candidate = load_and_verify_candidate(
+        ROOT / "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate_v2.json"
+    )
+    source = ROOT / "configs/evaluation/diagnosis_qwen38_calibration_technical_correction.json"
+    payload = json.loads(source.read_text(encoding="utf-8"))
+    bindings = payload["implementation_bindings"]
+    assert isinstance(bindings, dict)
+    bindings["src/aletheia_lab/evaluation/qwen_calibration_transport.py"] = "0" * 64
+    unsigned = {key: value for key, value in payload.items() if key != "correction_sha256"}
+    payload["correction_sha256"] = canonical_execution_sha256(unsigned)
+    changed = tmp_path / "correction.json"
+    changed.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(QwenCalibrationError, match="implementation hash mismatch"):
+        load_and_verify_technical_correction(
+            changed,
+            candidate=candidate,
+            repository_root=ROOT,
+        )
 
 
 @pytest.mark.parametrize(
@@ -126,6 +159,7 @@ def test_receipt_is_self_hashed_and_discloses_repeatability_without_claiming_det
     )
     receipt = build_calibration_receipt(
         candidate=candidate,
+        technical_correction={"correction_sha256": "9" * 64},
         development_plan=plan,
         response_contract=contract,
         artifacts={"model_sha256": "f" * 64},
@@ -144,10 +178,19 @@ def test_receipt_is_self_hashed_and_discloses_repeatability_without_claiming_det
 
 
 def _valid_receipt_inputs() -> tuple[
-    dict[str, object], dict[str, object], dict[str, object], dict[str, object]
+    dict[str, object],
+    dict[str, object],
+    dict[str, object],
+    dict[str, object],
+    dict[str, object],
 ]:
     candidate = load_and_verify_candidate(
         ROOT / "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate_v2.json"
+    )
+    correction = load_and_verify_technical_correction(
+        ROOT / "configs/evaluation/diagnosis_qwen38_calibration_technical_correction.json",
+        candidate=candidate,
+        repository_root=ROOT,
     )
     plan = json.loads(
         (ROOT / "configs/evaluation/diagnosis_development_pilot_plan.json").read_text()
@@ -196,20 +239,22 @@ def _valid_receipt_inputs() -> tuple[
     }
     receipt = build_calibration_receipt(
         candidate=candidate,
+        technical_correction=correction,
         development_plan=plan,
         response_contract=contract,
         artifacts=artifacts,
         records=records,
         server_flags=frozen_server_flags(candidate, 18080),
     )
-    return candidate, plan, contract, receipt
+    return candidate, correction, plan, contract, receipt
 
 
 def test_calibration_receipt_validator_accepts_exact_frozen_sequence() -> None:
-    candidate, plan, contract, receipt = _valid_receipt_inputs()
+    candidate, correction, plan, contract, receipt = _valid_receipt_inputs()
     report = validate_calibration_receipt(
         receipt=receipt,
         candidate=candidate,
+        technical_correction=correction,
         development_plan=plan,
         response_contract=contract,
     )
@@ -219,7 +264,7 @@ def test_calibration_receipt_validator_accepts_exact_frozen_sequence() -> None:
 
 
 def test_calibration_receipt_validator_rejects_resigned_request_substitution() -> None:
-    candidate, plan, contract, receipt = _valid_receipt_inputs()
+    candidate, correction, plan, contract, receipt = _valid_receipt_inputs()
     records = receipt["records"]
     assert isinstance(records, (list, tuple))
     records[0]["request_sha256"] = "0" * 64
@@ -230,6 +275,7 @@ def test_calibration_receipt_validator_rejects_resigned_request_substitution() -
         validate_calibration_receipt(
             receipt=receipt,
             candidate=candidate,
+            technical_correction=correction,
             development_plan=plan,
             response_contract=contract,
         )
