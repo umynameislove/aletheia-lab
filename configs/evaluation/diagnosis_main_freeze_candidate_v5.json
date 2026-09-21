@@ -1,0 +1,157 @@
+{
+  "schema_version": "diagnosis-main-freeze-candidate/v5",
+  "created_on": "2026-09-21",
+  "status": "final_forward_integrity_locked_main_execution_blocked",
+  "execution_authorized": false,
+  "main_registered_attempts_consumed": 0,
+  "main_outcomes_opened": false,
+  "source_base_commit_sha": "2cc476c3ecef5a1a30cfdff73fe86439dcb3b342",
+  "source_base_tree_sha": "e433b6f145db2850e485fa47e140910075d90ce3",
+  "candidate_artifacts_committed_at_creation": false,
+  "predecessor": {
+    "path": "configs/evaluation/diagnosis_main_freeze_candidate_v4.json",
+    "file_sha256": "48f38abf4eec6b726642967d5880934b231552a61ffae8baa7c5c1728a63cf5a",
+    "manifest_sha256": "956b545d030bd2c8435e0d0c7f80426f48d247e6b3074112e091b6cf34c45e03",
+    "history_mutated": false,
+    "validation_scope": "V5 preserves V4 and binds the prospective calibration transport correction before any model generation or protected outcome access."
+  },
+  "technical_correction": {
+    "scope": "qwen_development_calibration_provider_wire_and_serial_slot_only",
+    "path": "configs/evaluation/diagnosis_qwen38_calibration_technical_correction.json",
+    "file_sha256": "37f49799fc9b09b250481d0d3bab0d98475f36bd6eb03444970286c1b0176186",
+    "correction_sha256": "bc158c27f8881e1ad0995793adceaef52c6e7f7fbe3f6fc21c8a80e4de077ed4",
+    "predecessor_history_mutated": false,
+    "model_generation_calls_before_correction": 0,
+    "accepted_calibration_requests_before_correction": 0,
+    "protected_outcomes_opened": false,
+    "registered_attempts_consumed": 0,
+    "scientific_contract_changed": false
+  },
+  "requirements_disposition": {
+    "qwen_local_artifact_build_and_calibration_receipt_missing": {
+      "status": "carried_forward_with_technical_correction_frozen",
+      "evidence": "The exact Q8 and pinned runtime loaded successfully. Two development invocations are preserved by private content identities; neither generated model output. The transport correction is prospectively hash-locked, but the new seven-call v2 calibration has not run."
+    },
+    "independent_methods_approval_missing": {
+      "status": "carried_forward",
+      "evidence": "Outcome-blind independent review remains sequenced after a passing v2 calibration receipt and before any ready manifest."
+    }
+  },
+  "requirement_counts": {
+    "predecessor_requirements": 2,
+    "closed_forward": 0,
+    "carried_forward": 2,
+    "remaining_blockers_after_consolidation": 2
+  },
+  "frozen_census_counts": {
+    "family_count": 32,
+    "superfamily_count": 6,
+    "conditions_per_family": 4,
+    "context_count": 128,
+    "controlled_variant_count": 8,
+    "controlled_logical_request_count": 1024,
+    "provider_backed_logical_request_count": 896,
+    "deterministic_logical_request_count": 128,
+    "provider_turn_count": 1408,
+    "qwen_family_count": 12,
+    "qwen_request_count": 72,
+    "logdx_external_case_count": 35,
+    "rq6b_case_count": 0
+  },
+  "forward_locked_contracts": {
+    "analysis_plan_sha256": "09f1a1293d9fc0ac93a9b25fec1456a591d48be444d3b479c389a6e255874249",
+    "response_contract_sha256": "d9cbbdda6e29e0e2717591124804c8c5d5a90d4f5a9cd81de67fdf36ee5bd810",
+    "information_path_fairness_audit_sha256": "a14a98b310a3c59c273842bcfe3985c8606dc0f8a94bca3e87add52f66eaa9d4",
+    "main_census_seal_sha256": "e010cd36a37ce100c2033e4bd9652de4842635ef79e0ba7fb9fee79c4a420b8b",
+    "main_runtime_contract_sha256": "eca4170c7d27fafd393bcc9d9ddca5b25a611e5793640259b3919ebe9536fbc7",
+    "qwen_forward_amendment_sha256": "c5a2f091b26dc02b62c409bc7bdd58129ecc572fba5d4d4c68c4bf97211d56ea",
+    "qwen_candidate_sha256": "db61a2ec899e546dc0ece77120624c45296cbe3c547b52d04b31b71c34b3388d",
+    "qwen_calibration_technical_correction_sha256": "bc158c27f8881e1ad0995793adceaef52c6e7f7fbe3f6fc21c8a80e4de077ed4",
+    "qwen_census_sha256": "a6044e1386c3e68fd653a6e3c888abb70ccc863457af6cc5cea98806ad7ad159",
+    "logdx_cached_replay_receipt_sha256": "74ba4458a783fb685a9d08f3cac138a88437647ad497c993aaf44fa2483b4038",
+    "rq6b_scope_decision_sha256": "f4a2287a81fd624f9602b003f2c67bc657126e6db97722c3ec7869a84b8a8ed9",
+    "engineering_preflight_sha256": "355bbf8069033b6f633390b92a44fa34f1dd3799bba660d7626c62530abcfa73"
+  },
+  "private_failure_evidence_content_identities": {
+    "environment_preflight_failure_receipt_sha256": "c6c851c1f4094d27dcd05eeb258af38e0eb96be8a760abf5364f72db45db9b4a",
+    "transport_failure_receipt_sha256": "aabee937bbb35d67ecbb63356b0923e9db7df66f266c024d5f8a81fcae5d1128",
+    "transport_failure_server_log_file_sha256": "930e9deed1ca043026f1268a690e6e4b77321f8a1506b69cf7619306a7715f6a",
+    "private_paths_embedded": false,
+    "private_prompt_or_response_content_embedded": false
+  },
+  "repo_artifact_bindings": {
+    "configs/evaluation/diagnosis_qwen38_calibration_technical_correction.json": "37f49799fc9b09b250481d0d3bab0d98475f36bd6eb03444970286c1b0176186",
+    "configs/evaluation/diagnosis_qwen38_forward_amendment.json": "81331577a8befcedfaeb3fc749c3f517b9c164f92f7440763e445ac5b7c8350f",
+    "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate_v2.json": "a1a564e5be70eec62bac9733b746932463fe05e51df9cd0d0cfa0fecacf173e7",
+    "configs/evaluation/diagnosis_main_analysis_plan_v3.json": "91028557c7f7dee329e20c83937463872831b7ce11158e66756a818a70a2581b",
+    "configs/evaluation/diagnosis_main_engineering_preflight_v2.json": "5e5e726a9cdf35e418f01c7308745c58affe2a512d02933725552f53ad653580",
+    "configs/evaluation/diagnosis_qwen_sensitivity_census.json": "faf938d13fc91e8aeeb1f01b49e8892bb74cd411667c261c94bdeda7521b7790",
+    "configs/evaluation/diagnosis_main_census_seal.json": "3853707331c1ed54847f18eda7b4c4bae195fff18f11c2d7342b88847ad87686",
+    "configs/evaluation/diagnosis_main_response_contract.json": "e026bf8573b8fa195f30193daee64fe4bbd319fa88dd80140e264f449e7d970f",
+    "configs/evaluation/diagnosis_main_runtime_contract.json": "3206c2d049b85ca007c819165349f563da8dcc2a7a40a2a92d150ebf16618c35",
+    "configs/evaluation/diagnosis_information_path_fairness_audit.json": "da75fc0af456eeac7b77b4727ed2f9af93a1ef7351d77ec5ed482a16602aef0e",
+    "configs/evaluation/diagnosis_logdx_cached_evaluator_replay.json": "2bbcfc1aefd621e219f2e71efe3aa5afbbca74e20e7e229691dcc346ed6dc0cf",
+    "configs/evaluation/diagnosis_rq6b_scope_decision.json": "06726ea49cdeb9b8b397905cc551b03045d141f4ffa1c100966879d521fee61c",
+    "docs/diagnosis-main-qwen38-technology-amendment-2026-09-21.md": "b0ee921cf329b2cb7e1ada66311a87582e9e2b938d4f8447a0ccc81250728c4c",
+    "docs/diagnosis-qwen38-calibration-transport-correction-2026-09-21.md": "732f3911d9852cde31e4f1a59fae3f8f3b8be64146157106f6abeafb2c3e39b5",
+    "docs/qwen38-local-sensitivity-preparation.md": "8b455a5b01d7cc5b3ac240cb588fb6c4e948e691d7530b32fb91f4faea6bf392",
+    "docs/diagnosis-main-independent-methods-review-v2.md": "004ff7f379e54d540afb668fb50ff36947455deb992bd9edef925c6c2599b971",
+    "docs/diagnosis-main-study-contract.md": "684895642a10a58dac213af6c1a061636b2e3537d666a2687cfbb3571f764643",
+    "pyproject.toml": "389a21c3811460f99fa40d629fd01f363f02d2b5f27fcacac1a1531c630bbc2e",
+    "reports/release/resolved-dependency-inventory-v1.json": "5cf5f1bdb431b169380fa45fb77ba163693cbe4b8273ef183e5dad8981bc196f",
+    "src/aletheia_lab/content_hashing.py": "5273bbd228bcc0ed94aefc9108b86cb486fbb023fff42758add616320dcc21a5",
+    "src/aletheia_lab/evaluation/_diagnosis_main_analysis_contracts.py": "9445114822aa724a68f617f233371f98c1f0747234bd6b6b3dbbbb65753e327f",
+    "src/aletheia_lab/evaluation/diagnosis_main_analysis.py": "25d4958a7b539788ff8d35632bdb0b05845b31c21b591314db535d2468123e46",
+    "src/aletheia_lab/evaluation/qwen_calibration_correction.py": "efc567f91af73027cffe39284348d3e3947b17d41cb2e1bcdf4773c798b5f39e",
+    "src/aletheia_lab/evaluation/qwen_calibration_transport.py": "70b801cda8667fb22317df97ea7f4e6178f162c74ceb0066a2342c574bf3e189",
+    "src/aletheia_lab/evaluation/qwen_local_calibration.py": "eef2063ec6c4541cb1e1a9f0662c68e2b8e20edef3a38a40f3dd9d5118e0eda6",
+    "scripts/run_diagnosis_main_analysis.py": "2b0d4fd79a2974b960e88c368a8689bd4d3bd68ba30181f5336baad0c3fe64d1",
+    "scripts/calibrate_qwen_local_sensitivity.py": "f223cd71d4c78536e2adb0f613a4979376a8d61fefc3b02e185d08870f27a232",
+    "scripts/audit_qwen_local_calibration.py": "2dd8f380b8a05d0072a523b2de520e0f06a81aea047d39e4fab70312cabc3249",
+    "scripts/audit_diagnosis_main_freeze.py": "d9f9fec972ac07b94031ea52918efff930837c4cdece83e56a7b33c960e1c01d",
+    "tests/unit/test_diagnosis_main_freeze_candidate.py": "3c3cbaf859420f15e61c65a398ed92469d35b3dbb48ac8d37e3e009f745ef768",
+    "tests/unit/test_diagnosis_main_engineering_preflight.py": "1d94e7cbc3d5a0cff34cf0b39bc2d724343d64c43a1c49bff4e8dd368a40b628",
+    "tests/unit/test_diagnosis_qwen_local_sensitivity_candidate.py": "9b6995578e39b7109c242f00a22b9b845b73a14f14578e3ddfa2ce1e7616fc9e",
+    "tests/unit/test_qwen_local_calibration.py": "c40f6f51065b83944fc2c1e03ce610c8e71a852f6b8e90b1bbd188ca33bc659e",
+    "tests/unit/test_qwen_local_calibration_portable.py": "545581d5f2e8c7d4d703cd45fea36e12aaf7b4c6d51ae88d00357e68a59d9599",
+    "tests/unit/test_diagnosis_main_analysis.py": "24136f6fc96d2f06cff2d5176b1598bb6f3319dbde1af0f6cb700efdc789202f"
+  },
+  "unresolved_contract_requirements": [
+    {
+      "code": "qwen_local_artifact_build_and_calibration_receipt_missing",
+      "required_evidence": "A create-only v2 receipt binding the prospective transport correction and proving seven conforming synthetic calls on the exact Qwen3.8 Q8 runtime, with no protected outcomes or quality-based selection."
+    },
+    {
+      "code": "independent_methods_approval_missing",
+      "required_evidence": "Outcome-blind independent review binding the Qwen amendment, both preserved failure identities, the v2 calibration receipt, engineering preflight, and a forward V6 ready manifest."
+    }
+  ],
+  "permitted_pre_readiness_transitions": [
+    "merge_the_transport_correction_with_green_ci",
+    "run_one_create_only_v2_synthetic_calibration_without_opening_main_outcomes",
+    "preserve_and_audit_the_v2_receipt_or_any_new_failure",
+    "obtain_outcome_blind_independent_methods_review",
+    "issue_and_strictly_audit_a_v6_ready_manifest_before_separate_execution_authorization"
+  ],
+  "prohibited_pre_readiness_transitions": [
+    "delete_or_reuse_the_failed_v1_server_log",
+    "run_the_corrected_calibration_before_merge_and_green_ci",
+    "open_main_outcomes",
+    "consume_a_registered_main_attempt",
+    "select_a_model_quantization_mode_prompt_or_sampling_by_answer_quality",
+    "silently_replay_a_failed_or_interrupted_calibration",
+    "run_the_72_request_qwen_sensitivity",
+    "pool_qwen_with_the_gpt_main_study",
+    "claim_cross_model_superiority",
+    "claim_main_execution_ready_or_done"
+  ],
+  "deviation_policy": {
+    "scientific_change_requires_new_forward_version_before_main_outcomes": true,
+    "technical_correction_requires_forward_linked_receipt": true,
+    "post_outcome_threshold_denominator_family_or_model_change_forbidden": true,
+    "predecessor_history_must_be_preserved": true,
+    "blocked_candidate_does_not_authorize_execution": true,
+    "failed_qwen_calibrations_are_preserved_not_overwritten": true
+  },
+  "manifest_sha256": "40976ab4119906c1fecfd19ce1adaf759356a84086722510d7ded78337d88437"
+}

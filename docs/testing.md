@@ -30,7 +30,7 @@ python scripts/run_test_profile.py evaluation
   contract tests. Two pytest-xdist workers run the complete profile, grouping
   tests by module/class to reuse scoped fixtures. Verbose progress identifies
   tests even when a timeout prevents the final slow-test report. The whole run
-  retains its ten-minute POSIX and twelve-minute Windows timeout; workers do not
+  retains its ten-minute POSIX and fifteen-minute Windows timeout; workers do not
   receive separate budgets. Install the `dev` extra to include pytest-xdist.
 - `windows-publication` exercises the shared filesystem primitive and every
   immutable store whose durability behavior differs across Windows and POSIX.
@@ -105,7 +105,7 @@ The dedicated Windows publication profile replaces an unversioned list of test
 paths. Pip caches are keyed from `pyproject.toml`; dependency-audit logs include
 the exact resolved inventory digest. The serial Windows job has a 35-minute
 aggregate ceiling so setup, dataset preparation, the independently bounded
-12-minute evaluation profile, and the final publication profile can all
+15-minute evaluation profile, and the final publication profile can all
 complete. This aggregate ceiling does not relax any profile or assertion.
 
 ## Runtime interpretation

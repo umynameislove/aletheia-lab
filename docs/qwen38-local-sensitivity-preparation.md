@@ -82,11 +82,21 @@ build/bin/llama-server --version
 printf 'QWEN38_Q8_PREPARATION=PASS\n'
 ```
 
-## Outcome-blind calibration
+## Outcome-blind calibration after the transport correction
 
-Run this only after preparation prints `QWEN38_Q8_PREPARATION=PASS`. The
-entrypoint owns the loopback server and performs exactly six synthetic B1/A3
-cells plus one repeatability replicate. It stores hashes and operational
+The first operator preflight stopped before server start because the repository
+virtual environment could not resolve CMake. The corrected environment reached a
+fully loaded loopback server, but the first chat request was rejected before
+generation because the provider payload had been wrapped in the execution-hash
+namespace. Both failures are preserved by content identity in the forward
+technical-correction artifact. Neither produced model output, opened protected
+outcomes, or consumed a registered attempt.
+
+Run the block below only after the transport correction is merged with green CI
+and preparation has printed `QWEN38_Q8_PREPARATION=PASS`. Do not delete or reuse
+the failed `v1` server log. The corrected attempt uses new create-only `v2`
+paths. The entrypoint owns the loopback server and performs exactly six synthetic
+B1/A3 cells plus one repeatability replicate. It stores hashes and operational
 metadata, not raw model responses.
 
 ```bash
@@ -96,20 +106,28 @@ ALETHEIA_REPO='/absolute/path/to/working-baseline'
 ALETHEIA_QWEN_ROOT='/absolute/private/path/to/aletheia-qwen'
 
 cd "$ALETHEIA_REPO"
-source .venv/bin/activate
+export PATH="$ALETHEIA_REPO/.venv/bin:$ALETHEIA_QWEN_ROOT/runtime/build-venv/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
-test ! -e "$ALETHEIA_QWEN_ROOT/receipts/qwen38-q8-calibration-v1.json"
-test ! -e "$ALETHEIA_QWEN_ROOT/receipts/qwen38-q8-calibration-v1-server.log"
+test "$(command -v python)" = "$ALETHEIA_REPO/.venv/bin/python"
+test "$(command -v cmake)" = "$ALETHEIA_QWEN_ROOT/runtime/build-venv/bin/cmake"
+
+test -f "$ALETHEIA_QWEN_ROOT/receipts/qwen38-q8-calibration-v1-server.log"
+test "$(/usr/bin/shasum -a 256 "$ALETHEIA_QWEN_ROOT/receipts/qwen38-q8-calibration-v1-server.log" | awk '{print $1}')" = '930e9deed1ca043026f1268a690e6e4b77321f8a1506b69cf7619306a7715f6a'
+
+test ! -e "$ALETHEIA_QWEN_ROOT/receipts/qwen38-q8-calibration-v2.json"
+test ! -e "$ALETHEIA_QWEN_ROOT/receipts/qwen38-q8-calibration-v2-server.log"
 
 PYTHONPATH=src python scripts/calibrate_qwen_local_sensitivity.py \
+  --technical-correction configs/evaluation/diagnosis_qwen38_calibration_technical_correction.json \
   --model "$ALETHEIA_QWEN_ROOT/q8/Qwen3.8-27B-Q8_0.gguf" \
   --llama-checkout "$ALETHEIA_QWEN_ROOT/runtime/llama.cpp" \
   --source-tokenizer-config "$ALETHEIA_QWEN_ROOT/source/tokenizer_config.json" \
-  --receipt "$ALETHEIA_QWEN_ROOT/receipts/qwen38-q8-calibration-v1.json" \
-  --server-log "$ALETHEIA_QWEN_ROOT/receipts/qwen38-q8-calibration-v1-server.log"
+  --receipt "$ALETHEIA_QWEN_ROOT/receipts/qwen38-q8-calibration-v2.json" \
+  --server-log "$ALETHEIA_QWEN_ROOT/receipts/qwen38-q8-calibration-v2-server.log"
 
 PYTHONPATH=src python scripts/audit_qwen_local_calibration.py \
-  --receipt "$ALETHEIA_QWEN_ROOT/receipts/qwen38-q8-calibration-v1.json"
+  --technical-correction configs/evaluation/diagnosis_qwen38_calibration_technical_correction.json \
+  --receipt "$ALETHEIA_QWEN_ROOT/receipts/qwen38-q8-calibration-v2.json"
 ```
 
 The audit must report `status: pass`, seven inference calls, zero registered

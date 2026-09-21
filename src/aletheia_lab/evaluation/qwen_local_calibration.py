@@ -23,9 +23,10 @@ from aletheia_lab.evaluation.execution_contracts import (
     canonical_execution_json,
     canonical_execution_sha256,
 )
+from aletheia_lab.evaluation.qwen_calibration_transport import provider_wire_json
 from aletheia_lab.project.identity import content_sha256
 
-CALIBRATION_SCHEMA_VERSION: Final = "diagnosis-qwen-local-calibration/v1"
+CALIBRATION_SCHEMA_VERSION: Final = "diagnosis-qwen-local-calibration/v2"
 _CALIBRATION_VARIANTS: Final[tuple[Literal["B1", "A3"], ...]] = ("B1", "A3")
 
 
@@ -186,6 +187,7 @@ def frozen_server_flags(candidate: dict[str, object], port: int) -> tuple[str, .
         "--host=127.0.0.1",
         f"--port={port}",
         f"--ctx-size={policy['server_context_tokens']}",
+        "--parallel=1",
         f"--n-predict={policy['maximum_output_tokens']}",
         f"--n-gpu-layers={runner['n_gpu_layers']}",
         "--jinja",
@@ -445,7 +447,7 @@ def _request_json(url: str, payload: dict[str, object] | None, timeout: int) -> 
         or parsed.password is not None
     ):
         raise QwenCalibrationError("loopback request URL escaped the local endpoint")
-    body = None if payload is None else canonical_execution_json(payload).encode()
+    body = None if payload is None else provider_wire_json(payload)
     request = urllib.request.Request(
         url,
         data=body,
@@ -588,6 +590,7 @@ def run_development_calibration(
 def build_calibration_receipt(
     *,
     candidate: dict[str, object],
+    technical_correction: dict[str, object],
     development_plan: dict[str, object],
     response_contract: dict[str, object],
     artifacts: dict[str, object],
@@ -610,6 +613,7 @@ def build_calibration_receipt(
         "scientific_quality_selection_performed": False,
         "local_loopback_only": True,
         "candidate_sha256": candidate["candidate_sha256"],
+        "technical_correction_sha256": technical_correction["correction_sha256"],
         "development_plan_sha256": development_plan["plan_sha256"],
         "response_contract_sha256": response_contract["contract_sha256"],
         "artifact_verification": artifacts,
@@ -630,6 +634,7 @@ def build_calibration_receipt(
 def _validate_receipt_contract_fields(
     receipt: dict[str, object],
     candidate: dict[str, object],
+    technical_correction: dict[str, object],
     development_plan: dict[str, object],
     response_contract: dict[str, object],
 ) -> str:
@@ -643,6 +648,7 @@ def _validate_receipt_contract_fields(
         "scientific_quality_selection_performed": False,
         "local_loopback_only": True,
         "candidate_sha256": candidate.get("candidate_sha256"),
+        "technical_correction_sha256": technical_correction.get("correction_sha256"),
         "development_plan_sha256": development_plan.get("plan_sha256"),
         "response_contract_sha256": response_contract.get("contract_sha256"),
         "calibration_cell_count": 6,
@@ -750,13 +756,14 @@ def validate_calibration_receipt(
     *,
     receipt: dict[str, object],
     candidate: dict[str, object],
+    technical_correction: dict[str, object],
     development_plan: dict[str, object],
     response_contract: dict[str, object],
 ) -> dict[str, object]:
     """Validate a calibration receipt without exposing response content."""
 
     receipt_sha = _validate_receipt_contract_fields(
-        receipt, candidate, development_plan, response_contract
+        receipt, candidate, technical_correction, development_plan, response_contract
     )
     expected_requests = build_calibration_requests(development_plan, response_contract)
     records = _validate_receipt_records(receipt, expected_requests)
@@ -768,6 +775,7 @@ def validate_calibration_receipt(
         "status": "pass",
         "receipt_sha256": receipt_sha,
         "candidate_sha256": candidate["candidate_sha256"],
+        "technical_correction_sha256": technical_correction["correction_sha256"],
         "calibration_cell_count": 6,
         "inference_call_count": 7,
         "protected_main_outcomes_opened": False,

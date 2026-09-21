@@ -1,0 +1,99 @@
+{
+  "schema_version": "diagnosis-qwen38-calibration-technical-correction/v1",
+  "created_on": "2026-09-21",
+  "status": "prospective_transport_correction_frozen_before_any_model_generation",
+  "protected_main_outcomes_opened": false,
+  "main_registered_attempts_consumed": 0,
+  "accepted_calibration_requests": 0,
+  "model_generation_calls": 0,
+  "scientific_contract_changed": false,
+  "development_calibration_rerun_permitted_after_merge_green_ci": true,
+  "qwen_candidate_sha256": "db61a2ec899e546dc0ece77120624c45296cbe3c547b52d04b31b71c34b3388d",
+  "predecessor_main_freeze": {
+    "path": "configs/evaluation/diagnosis_main_freeze_candidate_v4.json",
+    "file_sha256": "48f38abf4eec6b726642967d5880934b231552a61ffae8baa7c5c1728a63cf5a",
+    "manifest_sha256": "956b545d030bd2c8435e0d0c7f80426f48d247e6b3074112e091b6cf34c45e03",
+    "history_mutated": false
+  },
+  "failure_history_summary": {
+    "failed_operator_invocations": 2,
+    "server_starts": 1,
+    "accepted_calibration_requests": 0,
+    "model_generation_calls": 0,
+    "synthetic_response_content_observed": false
+  },
+  "private_failure_evidence_identities": {
+    "environment_preflight_failure_receipt_sha256": "c6c851c1f4094d27dcd05eeb258af38e0eb96be8a760abf5364f72db45db9b4a",
+    "environment_preflight_failure_receipt_file_sha256": "ecff7aaef30437292cf3be67373b4dbf664c45914d7db4825ce6209dfefa22f4",
+    "transport_failure_receipt_sha256": "aabee937bbb35d67ecbb63356b0923e9db7df66f266c024d5f8a81fcae5d1128",
+    "transport_failure_receipt_file_sha256": "4cdc868690494e3a0e5a34ba6b9272eab6af75ee5c1223cec072c9ce4a75ea48",
+    "transport_failure_server_log_file_sha256": "930e9deed1ca043026f1268a690e6e4b77321f8a1506b69cf7619306a7715f6a"
+  },
+  "root_cause": {
+    "classification": "provider_wire_serialization_namespace_wrapper_defect",
+    "expected": "provider fields including messages at the HTTP body top level",
+    "observed": "provider payload nested under the execution identity payload field",
+    "server_disposition": "HTTP 400 before prompt evaluation or token generation",
+    "model_or_quantization_failure_established": false,
+    "operational_infeasibility_established": false
+  },
+  "correction": {
+    "provider_wire_serialization": "direct_deterministic_utf8_json",
+    "sort_keys": true,
+    "compact_separators": true,
+    "ensure_ascii": false,
+    "allow_nan": false,
+    "execution_identity_wrapper_removed_from_wire": true,
+    "provider_fields_remain_top_level": true,
+    "parallel_slot_count": 1,
+    "parallel_slot_rationale": "serial_calibration_and_sensitivity_remove_unnecessary_runtime_default_without_changing_request_semantics",
+    "calibration_receipt_schema": "diagnosis-qwen-local-calibration/v2",
+    "calibration_receipt_binds_correction_sha256": true
+  },
+  "unchanged_scientific_contract": {
+    "model_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+    "gguf_sha256": "aab65c67ef0dad127960efef9247f1832bca105faa1c7a052cc039b223cf86a1",
+    "llama_cpp_commit_sha": "b29c606e28a01b1bc8c1351026a0fa6e616bf6c4",
+    "request_census_sha256": "a6044e1386c3e68fd653a6e3c888abb70ccc863457af6cc5cea98806ad7ad159",
+    "development_case_count": 3,
+    "calibration_cell_count": 6,
+    "repeatability_replicate_count": 1,
+    "planned_inference_call_count": 7,
+    "prompt_evidence_response_schema_seed_sampling_and_thresholds_changed": false,
+    "pooling_with_gpt_main_permitted": false
+  },
+  "superseded_candidate_bindings": {
+    "implementation_file_sha256": "341160e11f54dd4c5f3834be9ca915e619fa2587fa81c6b8dc3a338301b2ff2a",
+    "entrypoint_file_sha256": "d16480f0e78897569e19f915ba51573c9d48a770b8eed0ce9e067e8ae168a711",
+    "receipt_audit_entrypoint_file_sha256": "dc18ec6bbcb1413909a8c3bcb6505ccdb3153b02f44d376ec3b7bbc61b06761f"
+  },
+  "superseded_repo_bindings": {
+    "docs/qwen38-local-sensitivity-preparation.md": "89d44509726f8ee58ec07a8cc7ccae64ea90ec71cf4958fc52f7f0ee9f89f405",
+    "scripts/audit_diagnosis_main_freeze.py": "64e57c5f9e0d8d452c0a884d7f8b6ba3518f8e112b4dbd792f8e72a635955ce0",
+    "scripts/audit_qwen_local_calibration.py": "dc18ec6bbcb1413909a8c3bcb6505ccdb3153b02f44d376ec3b7bbc61b06761f",
+    "scripts/calibrate_qwen_local_sensitivity.py": "d16480f0e78897569e19f915ba51573c9d48a770b8eed0ce9e067e8ae168a711",
+    "src/aletheia_lab/evaluation/qwen_local_calibration.py": "341160e11f54dd4c5f3834be9ca915e619fa2587fa81c6b8dc3a338301b2ff2a"
+  },
+  "implementation_bindings": {
+    "scripts/audit_qwen_local_calibration.py": "2dd8f380b8a05d0072a523b2de520e0f06a81aea047d39e4fab70312cabc3249",
+    "scripts/calibrate_qwen_local_sensitivity.py": "f223cd71d4c78536e2adb0f613a4979376a8d61fefc3b02e185d08870f27a232",
+    "src/aletheia_lab/evaluation/qwen_calibration_correction.py": "efc567f91af73027cffe39284348d3e3947b17d41cb2e1bcdf4773c798b5f39e",
+    "src/aletheia_lab/evaluation/qwen_calibration_transport.py": "70b801cda8667fb22317df97ea7f4e6178f162c74ceb0066a2342c574bf3e189",
+    "src/aletheia_lab/evaluation/qwen_local_calibration.py": "eef2063ec6c4541cb1e1a9f0662c68e2b8e20edef3a38a40f3dd9d5118e0eda6",
+    "tests/unit/test_qwen_local_calibration.py": "c40f6f51065b83944fc2c1e03ce610c8e71a852f6b8e90b1bbd188ca33bc659e",
+    "tests/unit/test_qwen_local_calibration_portable.py": "545581d5f2e8c7d4d703cd45fea36e12aaf7b4c6d51ae88d00357e68a59d9599"
+  },
+  "public_documentation": {
+    "path": "docs/diagnosis-qwen38-calibration-transport-correction-2026-09-21.md",
+    "file_sha256": "732f3911d9852cde31e4f1a59fae3f8f3b8be64146157106f6abeafb2c3e39b5"
+  },
+  "next_attempt": {
+    "receipt_filename": "qwen38-q8-calibration-v2.json",
+    "server_log_filename": "qwen38-q8-calibration-v2-server.log",
+    "create_only": true,
+    "reuse_or_delete_v1_log_forbidden": true,
+    "another_failure_must_be_preserved_and_reviewed": true
+  },
+  "authorization_boundary": "This correction permits only the seven-call synthetic development calibration after merge and green CI. It does not authorize the 72-request Qwen sensitivity, main outcome opening, or any registered main attempt.",
+  "correction_sha256": "bc158c27f8881e1ad0995793adceaef52c6e7f7fbe3f6fc21c8a80e4de077ed4"
+}

@@ -339,7 +339,7 @@ python scripts/run_test_profile.py evaluation --repeat 3
 `--show-command` emits a JSON argv array rather than shell text. This preserves
 Unicode, Windows separators, and interpreter paths containing whitespace.
 
-Each evaluation run has a five-minute POSIX timeout and a twelve-minute Windows
+Each evaluation run has a ten-minute POSIX timeout and a fifteen-minute Windows
 timeout, and always reports the 20 slowest tests. The larger Windows ceiling
 keeps the same durable immutable-file coverage rather than deselecting tests.
 Ordinary unit and property tests target two seconds; a complete fixture-provider

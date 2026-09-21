@@ -8,6 +8,9 @@ import json
 from pathlib import Path
 
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_json
+from aletheia_lab.evaluation.qwen_calibration_correction import (
+    load_and_verify_technical_correction,
+)
 from aletheia_lab.evaluation.qwen_local_calibration import (
     QwenCalibrationError,
     load_and_verify_candidate,
@@ -42,11 +45,25 @@ def main() -> int:
         type=Path,
         default=Path("configs/evaluation/diagnosis_main_response_contract.json"),
     )
+    parser.add_argument(
+        "--technical-correction",
+        type=Path,
+        default=Path(
+            "configs/evaluation/diagnosis_qwen38_calibration_technical_correction.json"
+        ),
+    )
     args = parser.parse_args()
     try:
+        candidate = load_and_verify_candidate(args.candidate)
+        technical_correction = load_and_verify_technical_correction(
+            args.technical_correction,
+            candidate=candidate,
+            repository_root=Path(__file__).resolve().parents[1],
+        )
         report = validate_calibration_receipt(
             receipt=_load_object(args.receipt),
-            candidate=load_and_verify_candidate(args.candidate),
+            candidate=candidate,
+            technical_correction=technical_correction,
             development_plan=_load_object(args.development_plan),
             response_contract=_load_object(args.response_contract),
         )

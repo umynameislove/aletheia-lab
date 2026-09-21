@@ -8,6 +8,7 @@ from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha2
 
 ROOT = Path(__file__).resolve().parents[2]
 PREFLIGHT = ROOT / "configs/evaluation/diagnosis_main_engineering_preflight_v2.json"
+CORRECTION = ROOT / "configs/evaluation/diagnosis_qwen38_calibration_technical_correction.json"
 
 
 def _sha(path: Path) -> str:
@@ -16,13 +17,17 @@ def _sha(path: Path) -> str:
 
 def test_engineering_preflight_is_self_hashed_and_source_bound() -> None:
     payload = json.loads(PREFLIGHT.read_text(encoding="utf-8"))
+    correction = json.loads(CORRECTION.read_text(encoding="utf-8"))
     declared = payload.pop("candidate_sha256")
 
     assert canonical_execution_sha256(payload) == declared
+    observed_superseded: dict[str, str] = {}
     for relative, expected in payload["repo_artifact_bindings"].items():
         parts = PurePosixPath(relative)
         assert not parts.is_absolute() and ".." not in parts.parts
-        assert _sha(ROOT.joinpath(*parts.parts)) == expected
+        if _sha(ROOT.joinpath(*parts.parts)) != expected:
+            observed_superseded[relative] = expected
+    assert observed_superseded == correction["superseded_repo_bindings"]
 
 
 def test_engineering_preflight_does_not_promote_development_checks() -> None:

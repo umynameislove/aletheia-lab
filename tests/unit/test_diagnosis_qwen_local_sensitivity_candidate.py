@@ -11,6 +11,7 @@ CANDIDATE = (
     ROOT / "configs/evaluation/diagnosis_qwen_local_sensitivity_candidate_v2.json"
 )
 CENSUS = ROOT / "configs/evaluation/diagnosis_qwen_sensitivity_census.json"
+CORRECTION = ROOT / "configs/evaluation/diagnosis_qwen38_calibration_technical_correction.json"
 
 
 def _load_unsigned() -> tuple[dict[str, object], str]:
@@ -110,6 +111,7 @@ def test_qwen_72_request_design_is_exactly_locked_but_execution_remains_closed()
 def test_development_calibration_is_bounded_and_outcome_blind() -> None:
     payload, _ = _load_unsigned()
     contract = payload["development_calibration_contract"]
+    correction = json.loads(CORRECTION.read_text(encoding="utf-8"))
 
     assert contract["calibration_cell_count"] == 6
     assert contract["total_local_inference_calls"] == 7
@@ -119,4 +121,7 @@ def test_development_calibration_is_bounded_and_outcome_blind() -> None:
         if not key.endswith("_path"):
             continue
         hash_key = key.removesuffix("_path") + "_file_sha256"
-        assert hashlib.sha256((ROOT / value).read_bytes()).hexdigest() == contract[hash_key]
+        observed = hashlib.sha256((ROOT / value).read_bytes()).hexdigest()
+        expected = contract[hash_key]
+        if observed != expected:
+            assert correction["superseded_repo_bindings"][value] == expected
