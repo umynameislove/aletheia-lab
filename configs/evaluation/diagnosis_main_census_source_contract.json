@@ -1,0 +1,111 @@
+{
+  "schema_version": "diagnosis-main-census-source-contract/v1",
+  "status": "outcome_blind_complete_prior_source_census",
+  "created_on": "2026-09-20",
+  "protected_main_outcomes_opened": false,
+  "execution_authorized": false,
+  "selection_policy": "include_every_registered_source_unit_from_the_bound_artifacts_without_quality_or_effect_filtering",
+  "source_artifacts": [
+    {
+      "source_id": "p2r_confirmatory_measurements",
+      "locator_role": "repository_p2r_measurements",
+      "file_sha256": "3c7089b88a7fca460101af7f87b1b048e17954a9203e7d6197b424551094387b",
+      "expected_source_unit_count": 20,
+      "expected_dataset_count": 2,
+      "expected_mechanisms": [
+        "data_drift",
+        "preprocessing_bug"
+      ]
+    },
+    {
+      "source_id": "p2_v3_3_label_noise_primary",
+      "locator_role": "private_preserved_primary_attempt",
+      "file_sha256": "b7584e87351ced25a5c2e04fd1e3b5ab56e756a07a84cb883290cb3f44c456cb",
+      "expected_source_unit_count": 6,
+      "expected_dataset_count": 1,
+      "expected_mechanisms": [
+        "label_noise"
+      ]
+    },
+    {
+      "source_id": "p2_v3_3_label_noise_replication",
+      "locator_role": "private_preserved_replication_attempt",
+      "file_sha256": "2a160b057785f87cef64ceeccd2c884a14d27bd394ef6438fd1e3b8fda0253a4",
+      "expected_source_unit_count": 6,
+      "expected_dataset_count": 1,
+      "expected_mechanisms": [
+        "label_noise"
+      ]
+    },
+    {
+      "source_id": "p2_v3_3_label_noise_protocol",
+      "locator_role": "repository_label_noise_protocol",
+      "file_sha256": "35d99b92a880ecbb52c13cda0cc8a473b7aa31cd3412870a35bc7ef7062ad975",
+      "expected_source_unit_count": 0,
+      "expected_dataset_count": 2,
+      "expected_mechanisms": [
+        "label_noise"
+      ]
+    }
+  ],
+  "family_derivation": {
+    "family_count": 32,
+    "mechanism_counts": {
+      "data_drift": 10,
+      "preprocessing_mismatch": 10,
+      "label_noise": 12
+    },
+    "dataset_count": 2,
+    "dataset_by_mechanism_superfamily_count": 6,
+    "family_id_policy": "content_hash_pseudonym_not_source_order",
+    "post_source_unit_exclusion_permitted": false
+  },
+  "context_derivation": {
+    "conditions_per_family": [
+      "full",
+      "missing_key",
+      "noisy",
+      "counterevidence"
+    ],
+    "context_count": 128,
+    "full_rule": "performance_provenance_and_decisive_measurement",
+    "missing_key_rule": "remove_only_the_decisive_measurement",
+    "noisy_rule": "full_plus_one_deterministically_paired_secondary_observation",
+    "counterevidence_rule": "full_plus_one_deterministically_paired_attribution_challenge",
+    "p2r_pairing_rule": "next_seed_within_dataset_and_mechanism_cyclic",
+    "label_noise_pairing_rule": "same_dataset_and_rate_opposite_direction",
+    "exact_or_normalized_cross_family_duplicates_permitted": false
+  },
+  "request_derivation": {
+    "controlled_variants": [
+      "A1",
+      "A2",
+      "A3",
+      "B0",
+      "B1",
+      "B2",
+      "CodeGraph",
+      "FULL"
+    ],
+    "controlled_request_count": 1024,
+    "b3_external_transfer_included": false,
+    "b3_reason": "LogDx-CI retains a separate native 35-case external-transfer corpus and is never pooled with the controlled matrix"
+  },
+  "qwen_subset_derivation": {
+    "family_count": 12,
+    "families_per_superfamily": 2,
+    "selection_rule": "lowest_family_sha256_within_each_dataset_by_mechanism_superfamily",
+    "conditions": [
+      "full",
+      "missing_key",
+      "noisy"
+    ],
+    "variants": [
+      "B1",
+      "A3"
+    ],
+    "request_count": 72,
+    "replacement_after_outcome_forbidden": true
+  },
+  "source_contract_sha256": "cca7bcae009cb38b6f14425d90cfbd36400230ff2dae8977aa482c0fc8ab1375"
+}

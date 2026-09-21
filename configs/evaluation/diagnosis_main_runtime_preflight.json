@@ -1,0 +1,36 @@
+{
+  "analysis_census_sha256": "86f3577e755481eb14360a1375d9bb20fba7c60e87df20df068072bb4d08463e",
+  "b3_in_controlled_matrix": false,
+  "context_identity_count": 128,
+  "deterministic_logical_request_count": 128,
+  "execution_authorized": false,
+  "hidden_truth_or_evaluator_fields_visible": false,
+  "logical_request_count": 1024,
+  "preflight_sha256": "ce9ca890866d8050ba8c0c0b605964114ef2d91f0774a87a6e527445d1eb0a9a",
+  "protected_main_outcomes_opened": false,
+  "provider_backed_logical_request_count": 896,
+  "provider_turn_count_if_all_routes_complete": 1408,
+  "route_request_counts": {
+    "A1": 128,
+    "A2": 128,
+    "A3": 128,
+    "B0": 128,
+    "B1": 128,
+    "B2": 128,
+    "CodeGraph": 128,
+    "FULL": 128
+  },
+  "route_turn_counts": {
+    "A1": 128,
+    "A2": 128,
+    "A3": 128,
+    "B0": 0,
+    "B1": 128,
+    "B2": 256,
+    "CodeGraph": 256,
+    "FULL": 384
+  },
+  "runtime_contract_sha256": "eca4170c7d27fafd393bcc9d9ddca5b25a611e5793640259b3919ebe9536fbc7",
+  "schema_version": "diagnosis-main-runtime-preflight/v1",
+  "status": "runtime_conformance_pass_execution_not_authorized"
+}

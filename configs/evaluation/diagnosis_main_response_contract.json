@@ -1,0 +1,157 @@
+{
+  "schema_version": "diagnosis-main-response-contract/v1",
+  "contract_status": "outcome_blind_forward_contract",
+  "protected_outcomes_opened": false,
+  "execution_authorized": false,
+  "predecessor_schema_path": "configs/evaluation/diagnosis_output_v2_schema.json",
+  "predecessor_schema_file_sha256": "e6392c0de469920b87255ad4a50a2cc7c91c49baa66324f0a182cafa9cf0e4f0",
+  "predecessor_history_mutated": false,
+  "provider_schema_ref": "diagnosis-main-provider-output/1",
+  "output_semantics": {
+    "plain_means_input_rendering_not_unstructured_transport": true,
+    "shared_atomic_envelope_for_scoring": true,
+    "provider_generated_hashes_forbidden": true,
+    "technical_parse_failure_recorded_outside_provider_payload": true,
+    "maximum_atomic_claims": 5
+  },
+  "citation_policy": {
+    "forbidden": [
+      "A1",
+      "B1",
+      "B2"
+    ],
+    "required_for_cause_and_evidence_claims": [
+      "A2",
+      "A3",
+      "CodeGraph",
+      "FULL"
+    ],
+    "native_or_non_atomic": [
+      "B0",
+      "B3"
+    ],
+    "required_claim_types": [
+      "cause_assertion",
+      "evidence_statement"
+    ],
+    "optional_claim_types": [
+      "uncertainty_statement",
+      "recommended_action",
+      "other"
+    ],
+    "all_cited_ids_must_be_in_visible_projection": true,
+    "variant_aware_semantic_validation_required": true
+  },
+  "prompt_contracts": {
+    "A1": "Use only the structured visible evidence. Return atomic observations and at most one bounded hypothesis in the shared envelope. Do not cite evidence IDs; this arm isolates structured rendering without citation or abstention requirements.",
+    "A2": "Use only the structured visible evidence. Return the shared atomic envelope. Every cause assertion and evidence statement must cite one or more visible evidence IDs. Do not invent missing evidence.",
+    "A3": "Use only the structured visible evidence. Return the shared atomic envelope. Every cause assertion and evidence statement must cite visible evidence IDs; abstain and state missing evidence when decisive support is absent.",
+    "B1": "Use the plain rendering of the frozen visible facts. Return atomic claims in the shared scoring envelope without evidence-ID citations. Do not use tools or hidden metadata.",
+    "B2": "Use only the registered multi-turn retrieval path over the same observable corpus and budget. Return atomic claims in the shared scoring envelope without evidence-ID citations; the evaluator preserves every query, selected item, omitted item and turn.",
+    "CodeGraph": "Use only registered CodeGraph nodes and edges retrieved from the declared visible corpus. Return the shared atomic envelope and cite every cause assertion and evidence statement to visible node evidence IDs.",
+    "FULL": "Use registered provenance-aware retrieval, code graph, lineage and conversation records. Return the shared atomic envelope, cite every cause assertion and evidence statement, and abstain when evidence is insufficient."
+  },
+  "json_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "schema_version",
+      "output_status",
+      "atomic_claims",
+      "abstention_reason"
+    ],
+    "properties": {
+      "schema_version": {
+        "type": "string",
+        "const": "diagnosis-main-provider-output/1"
+      },
+      "output_status": {
+        "type": "string",
+        "enum": [
+          "completed",
+          "abstained"
+        ]
+      },
+      "atomic_claims": {
+        "type": "array",
+        "minItems": 0,
+        "maxItems": 5,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "claim_local_id",
+            "claim_type",
+            "claim_text",
+            "material_parts",
+            "visible_evidence_ids"
+          ],
+          "properties": {
+            "claim_local_id": {
+              "type": "string",
+              "pattern": "^claim-[1-5]$"
+            },
+            "claim_type": {
+              "type": "string",
+              "enum": [
+                "cause_assertion",
+                "evidence_statement",
+                "uncertainty_statement",
+                "recommended_action",
+                "other"
+              ]
+            },
+          "claim_text": {
+            "type": "string",
+            "pattern": "^[^\\s\\x00-\\x1f\\x7f\\ud800-\\udfff](?:[^\\x00-\\x1f\\x7f\\ud800-\\udfff]{0,2046}[^\\s\\x00-\\x1f\\x7f\\ud800-\\udfff])?(?![\\s\\S])"
+            },
+            "material_parts": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "part_id",
+                  "text"
+                ],
+                "properties": {
+                "part_id": {
+                  "type": "string",
+                  "pattern": "^[^\\s\\x00-\\x1f\\x7f\\ud800-\\udfff](?:[^\\x00-\\x1f\\x7f\\ud800-\\udfff]*[^\\s\\x00-\\x1f\\x7f\\ud800-\\udfff])?(?![\\s\\S])"
+                },
+                "text": {
+                  "type": "string",
+                  "pattern": "^[^\\s\\x00-\\x1f\\x7f\\ud800-\\udfff](?:[^\\x00-\\x1f\\x7f\\ud800-\\udfff]*[^\\s\\x00-\\x1f\\x7f\\ud800-\\udfff])?(?![\\s\\S])"
+                  }
+                }
+              }
+            },
+          "visible_evidence_ids": {
+            "type": "array",
+            "minItems": 0,
+            "maxItems": 32,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+            }
+          }
+        }
+      },
+    "abstention_reason": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[^\\s\\x00-\\x1f\\x7f\\ud800-\\udfff](?:[^\\x00-\\x1f\\x7f\\ud800-\\udfff]*[^\\s\\x00-\\x1f\\x7f\\ud800-\\udfff])?(?![\\s\\S])"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+    }
+  },
+  "contract_sha256": "d9cbbdda6e29e0e2717591124804c8c5d5a90d4f5a9cd81de67fdf36ee5bd810"
+}

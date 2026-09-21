@@ -1,0 +1,76 @@
+{
+  "schema_version": "diagnosis-rq6b-scope-decision/v1",
+  "decision_date": "2026-09-20",
+  "status": "excluded_from_current_registration_deferred_to_separate_prospective_study",
+  "decision_reason": "The source project, acquisition boundary, temporal holdout, custody ledger, adapter, and seal do not yet exist. Including RQ6b in the current registration would either leave a non-executable branch or weaken the prospective boundary.",
+  "protected_rq6b_data_opened": false,
+  "protected_main_outcomes_opened": false,
+  "current_state": {
+    "source_project_started": false,
+    "source_capture_started": false,
+    "development_partition_exists": false,
+    "holdout_partition_exists": false,
+    "acquisition_boundary_frozen": false,
+    "access_ledger_exists": false,
+    "temporal_seal_exists": false,
+    "adapter_frozen": false,
+    "rq6b_execution_authorized": false
+  },
+  "current_registration_effect": {
+    "rq6b_cases": 0,
+    "rq6b_requests": 0,
+    "rq6b_endpoints_registered": [],
+    "rq6b_in_primary_denominator": false,
+    "rq6b_in_secondary_denominator": false,
+    "rq6b_pooled_with_controlled_main": false,
+    "rq6b_pooled_with_logdx_ci": false,
+    "rq6b_absence_blocks_controlled_main": false,
+    "current_registration_may_claim_rq6b_results": false
+  },
+  "preserved_later_study_boundary": {
+    "study_type": "separate_prospective_named_project_case",
+    "required_before_any_protected_case_data_opening": [
+      "freeze_custodian_and_source",
+      "freeze_acquisition_window",
+      "create_empty_access_ledger",
+      "freeze_development_holdout_boundary",
+      "record_checksums_and_permitted_archive_scope",
+      "freeze_adapter_mapping_tasks_metrics_and_deviation_policy",
+      "obtain_independent_provenance_review"
+    ],
+    "development_data_may_tune": [
+      "adapter",
+      "graph",
+      "retrieval",
+      "audit_tasks",
+      "user_interface"
+    ],
+    "sealed_holdout_may_tune": [],
+    "early_access_consequence": "downgrade_to_exploratory_descriptive_evidence",
+    "checksum_mismatch_consequence": "block_confirmatory_analysis_and_record_deviation",
+    "correctness_eligible_reference_tiers": [
+      "G3",
+      "G4"
+    ],
+    "correctness_ineligible_reference_tiers": [
+      "G0",
+      "G1",
+      "G2"
+    ],
+    "strong_root_cause_wording_eligible_tiers": [
+      "C3",
+      "C4"
+    ],
+    "pool_with_controlled_main": false,
+    "pool_with_logdx_ci": false,
+    "one_named_case_generalization_forbidden": true
+  },
+  "chronology": {
+    "decision_made_before_rq6b_data_opening": true,
+    "decision_does_not_reclassify_existing_results": true,
+    "decision_does_not_change_controlled_main_hypotheses": true,
+    "decision_does_not_change_logdx_role": true,
+    "reactivation_requires_a_new_forward_registration": true
+  },
+  "decision_sha256": "f4a2287a81fd624f9602b003f2c67bc657126e6db97722c3ec7869a84b8a8ed9"
+}

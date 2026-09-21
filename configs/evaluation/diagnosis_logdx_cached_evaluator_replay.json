@@ -1,0 +1,129 @@
+{
+  "schema_version": "diagnosis-logdx-cached-evaluator-replay/v1",
+  "status": "published_cached_evaluator_target_replayed_exactly_with_cross_split_rounding_observations",
+  "reproduced_on": "2026-09-20",
+  "protected_aletheia_outcomes_opened": false,
+  "external_provider_calls_executed": false,
+  "fresh_diagnoser_regeneration_attempted": false,
+  "end_to_end_native_reproduction_claimed": false,
+  "source": {
+    "repository": "https://github.com/eyuansu62/LogDx",
+    "release": "v1.2",
+    "annotated_tag_object_sha": "8d358ae6b973320b8a5e29ce7e0eab243033d31f",
+    "dereferenced_commit_sha": "99591c1471118c95155976346df72f520a05f100",
+    "source_tree_sha": "98fb30d076a25186a1c77fd1a3b12975b83687ef",
+    "code_license": "Apache-2.0",
+    "code_license_file_sha256": "916c9e3e5454a31542b91f2974eb301409c7fd95291650cca9e4a5c3c5b4bef6",
+    "data_license": "CC-BY-4.0",
+    "data_license_file_sha256": "6bf09676079cc14c07077d5aa4c3f55b361e11879521c94df21100ef12cff3ae"
+  },
+  "corpus": {
+    "case_count": 35,
+    "split_counts": {
+      "dev": 5,
+      "holdout": 5,
+      "stress": 6,
+      "v2/dev": 3,
+      "v2/holdout": 10,
+      "v2/stress": 6
+    },
+    "fingerprint_path_in_source": "huggingface/corpus_fingerprint.json",
+    "fingerprint_file_sha256": "406bb07306be065a9d270502cead4cd5398a3e5e959681c97178d9953e611975",
+    "declared_top_level_sha256": "f41ef570f6ce586ff6e803739eefa438c173d71974a368c7e332e4771a47033f"
+  },
+  "release_protocol": {
+    "protocol_id": "logdx-ci-v1.2",
+    "protocol_lock_path_in_source": "protocols/logdx-ci-v1.2.lock.json",
+    "protocol_lock_file_sha256": "c5e77e91267036ceb1e80df1d035caa78eb0c831ae690ab5eb0149215fb36087",
+    "evaluator_path_in_source": "tools/evaluate_diagnosis.py",
+    "evaluator_file_sha256": "ff6a51b19049b40c80ad29c7c9ca3a25fc184b01d443acbcc9c3463b12472e54",
+    "diagnoser": "real-debugger-v3",
+    "primary_score": "diagnosis_score_v1_1",
+    "published_reproduction_command": "python3 tools/evaluate_diagnosis.py --split v2/dev --diagnoser real-debugger-v3",
+    "reproduction_scope": "deterministic_evaluation_of_release_cached_diagnoses",
+    "fresh_llm_diagnosis_claimed": false
+  },
+  "environment": {
+    "python": "3.9.6",
+    "operating_system": "Darwin 25.6.0",
+    "architecture": "arm64"
+  },
+  "primary_cached_replay": {
+    "split": "v2/dev",
+    "published_result_file_sha256": "794ce60bd51f28780e4f35d2a5f583b8329a64dc03850a9cf52fbff347cfc33b",
+    "recomputed_result_file_sha256": "794ce60bd51f28780e4f35d2a5f583b8329a64dc03850a9cf52fbff347cfc33b",
+    "byte_exact": true,
+    "gate_disposition": "pass"
+  },
+  "supplementary_cached_replays": [
+    {
+      "split": "dev",
+      "published_sha256": "be798540e7a71bac09748b8f6308eb2b3e3c9ed5f6c601332147a4dc99ba5966",
+      "recomputed_sha256": "be798540e7a71bac09748b8f6308eb2b3e3c9ed5f6c601332147a4dc99ba5966",
+      "byte_exact": true,
+      "rounding_differences": []
+    },
+    {
+      "split": "holdout",
+      "published_sha256": "9f293d2f5f4a69837b823e323eb77527a357e71203c00f8141ea40a80fa65c2f",
+      "recomputed_sha256": "9f293d2f5f4a69837b823e323eb77527a357e71203c00f8141ea40a80fa65c2f",
+      "byte_exact": true,
+      "rounding_differences": []
+    },
+    {
+      "split": "stress",
+      "published_sha256": "a2aae5753fcb2b4622b8323cbb8fd3f0c6b893eb384f8e653bcb94d198635a76",
+      "recomputed_sha256": "bbf2fbe9ce5dfb2961676573c17d4fc220efe5549aec34090a99d00324abd3be",
+      "byte_exact": false,
+      "rounding_differences": [
+        "macro_valid_evidence_quote_rate:0.9444_to_0.9445"
+      ]
+    },
+    {
+      "split": "v2/holdout",
+      "published_sha256": "f4aedbde78501b23a5f6f1dbb7a51ca7866bd45fb57bba3da1bf9784a12bfbd8",
+      "recomputed_sha256": "f4aedbde78501b23a5f6f1dbb7a51ca7866bd45fb57bba3da1bf9784a12bfbd8",
+      "byte_exact": true,
+      "rounding_differences": []
+    },
+    {
+      "split": "v2/stress",
+      "published_sha256": "260863cfb9de4c9579a2809d087c5e9d9d0e0108b82748bd0f3f61b00c3cf3f9",
+      "recomputed_sha256": "025b892962b8745818dd7a2b3a45c013a32e733ee9de3307bacc3187d2ad50c9",
+      "byte_exact": false,
+      "rounding_differences": [
+        "diagnosis_score_v1_1:0.6556_to_0.6557",
+        "diagnosis_score_v1_1:0.6864_to_0.6865",
+        "macro_required_signal_mention_recall:0.4083_to_0.4082"
+      ]
+    }
+  ],
+  "adapter_mapping": {
+    "case.json": "case_metadata_and_native_task_definition",
+    "raw.log": "diagnosis_visible_log_evidence",
+    "tags.json": "stratification_metadata_not_answer_key",
+    "ground_truth.json": "evaluator_only_never_provider_visible",
+    "diagnosis_jsonl": "native_diagnosis_output_preserved_without_schema_rewrite",
+    "eval_diagnosis_json": "native_metrics_preserved_in_separate_transfer_table"
+  },
+  "reporting_boundaries": {
+    "pool_with_controlled_ml_families": false,
+    "pool_native_and_aletheia_metrics": false,
+    "treat_truth_as_independent_human_gold": false,
+    "allowed_claim": "We reproduced the published v1.2 evaluator scores and result manifest from the frozen release cached diagnoses.",
+    "forbidden_claims": [
+      "fresh_model_or_api_rerun",
+      "independent_end_to_end_reproduction",
+      "independent_ground_truth_validation",
+      "native_diagnoser_reproduction"
+    ],
+    "limitations": [
+      "35_case_public_ci_log_corpus",
+      "ground_truth_ai_drafted_and_single_author_verified",
+      "20_historical_provider_error_outputs_are_zero_score_abstentions_in_the_release",
+      "public_preprint_not_peer_reviewed_at_freeze",
+      "cached_release_evaluation_does_not_reexecute_paid_diagnoser_calls"
+    ]
+  },
+  "receipt_sha256": "74ba4458a783fb685a9d08f3cac138a88437647ad497c993aaf44fa2483b4038"
+}
