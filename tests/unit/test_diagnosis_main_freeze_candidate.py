@@ -15,6 +15,7 @@ MANIFEST_V3 = ROOT / "configs" / "evaluation" / "diagnosis_main_freeze_candidate
 MANIFEST_V4 = ROOT / "configs" / "evaluation" / "diagnosis_main_freeze_candidate_v4.json"
 MANIFEST_V5 = ROOT / "configs" / "evaluation" / "diagnosis_main_freeze_candidate_v5.json"
 MANIFEST_V6 = ROOT / "configs" / "evaluation" / "diagnosis_main_freeze_candidate_v6.json"
+MANIFEST_V7 = ROOT / "configs" / "evaluation" / "diagnosis_main_freeze_candidate_v7.json"
 
 
 def _run(*extra: str) -> subprocess.CompletedProcess[str]:
@@ -73,6 +74,77 @@ def test_forward_candidate_reconciles_every_predecessor_blocker_once() -> None:
     }
     assert forward["execution_authorized"] is False
     assert forward["main_outcomes_opened"] is False
+
+
+def test_v7_binds_the_authorized_pipeline_without_consuming_the_attempt() -> None:
+    predecessor = json.loads(MANIFEST_V6.read_text(encoding="utf-8"))
+    forward = json.loads(MANIFEST_V7.read_text(encoding="utf-8"))
+
+    assert predecessor["unresolved_contract_requirements"] == []
+    assert forward["requirements_disposition"] == {}
+    assert forward["requirement_counts"] == {
+        "predecessor_requirements": 0,
+        "closed_forward": 0,
+        "carried_forward": 0,
+        "remaining_blockers_after_consolidation": 0,
+    }
+    assert forward["execution_pipeline"] == {
+        "status": "outcome_blind_authorized_pipeline_locked",
+        "logical_request_count": 1024,
+        "provider_backed_logical_request_count": 896,
+        "deterministic_logical_request_count": 128,
+        "maximum_main_provider_turn_count": 1408,
+        "maximum_relation_request_count": 4480,
+        "offline_end_to_end_preflight_tested": True,
+        "offline_preflight_is_scientific_result": False,
+        "private_packet_preflight_required_before_authorization": True,
+        "registered_attempts_consumed": 0,
+        "provider_calls_executed": False,
+        "terminal_only_resume": True,
+        "incomplete_request_replay_permitted": False,
+        "shared_cost_guard_required": True,
+        "raw_artifacts_private": True,
+        "action_time_authorization_confirmation_required": True,
+    }
+    assert forward["execution_authorized"] is False
+    assert forward["main_outcomes_opened"] is False
+    assert forward["main_registered_attempts_consumed"] == 0
+
+
+def test_v7_rejects_resealed_pipeline_policy_drift(tmp_path: Path) -> None:
+    payload = json.loads(MANIFEST_V7.read_text(encoding="utf-8"))
+    payload["execution_pipeline"]["incomplete_request_replay_permitted"] = True
+    unsigned = {key: value for key, value in payload.items() if key != "manifest_sha256"}
+    payload["manifest_sha256"] = canonical_sha256(unsigned)
+    changed = tmp_path / "candidate-v7-pipeline-drift.json"
+    changed.write_text(json.dumps(payload), encoding="utf-8")
+
+    completed = _run("--manifest", str(changed))
+    assert completed.returncode == 1
+    report = json.loads(completed.stdout)
+    finding = next(
+        item for item in report["findings"] if item["code"] == "authorized_pipeline_forward_lock"
+    )
+    assert finding["status"] == "fail"
+
+
+def test_v7_rejects_missing_pipeline_implementation_binding(tmp_path: Path) -> None:
+    payload = json.loads(MANIFEST_V7.read_text(encoding="utf-8"))
+    del payload["repo_artifact_bindings"]["src/aletheia_lab/diagnosis/main_pipeline.py"]
+    unsigned = {key: value for key, value in payload.items() if key != "manifest_sha256"}
+    payload["manifest_sha256"] = canonical_sha256(unsigned)
+    changed = tmp_path / "candidate-v7-missing-implementation.json"
+    changed.write_text(json.dumps(payload), encoding="utf-8")
+
+    completed = _run("--manifest", str(changed))
+    assert completed.returncode == 1
+    report = json.loads(completed.stdout)
+    finding = next(
+        item
+        for item in report["findings"]
+        if item["code"] == "authorized_pipeline_implementation_identity"
+    )
+    assert finding["status"] == "fail"
 
 
 def test_forward_candidate_artifact_tampering_fails_integrity(tmp_path: Path) -> None:

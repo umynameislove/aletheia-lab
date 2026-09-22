@@ -7,7 +7,8 @@ from pathlib import Path
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
 
 ROOT = Path(__file__).resolve().parents[2]
-AUDIT = ROOT / "configs/evaluation/diagnosis_information_path_fairness_audit.json"
+AUDIT_V1 = ROOT / "configs/evaluation/diagnosis_information_path_fairness_audit.json"
+AUDIT_V2 = ROOT / "configs/evaluation/diagnosis_information_path_fairness_audit_v2.json"
 CONTRACT = ROOT / "configs/evaluation/diagnosis_main_response_contract.json"
 
 
@@ -15,8 +16,8 @@ def _sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def test_information_path_audit_is_self_hashed_and_source_bound() -> None:
-    payload = json.loads(AUDIT.read_text(encoding="utf-8"))
+def test_information_path_audit_v1_is_self_hashed_and_preserved() -> None:
+    payload = json.loads(AUDIT_V1.read_text(encoding="utf-8"))
     declared = payload.pop("audit_sha256")
 
     assert canonical_execution_sha256(payload) == declared
@@ -31,7 +32,33 @@ def test_information_path_audit_is_self_hashed_and_source_bound() -> None:
         if not key.endswith("_path"):
             continue
         hash_key = key.removesuffix("_path") + "_file_sha256"
-        assert _sha(ROOT / value) == payload["source_bindings"][hash_key]
+        if key == "main_runtime_implementation_path":
+            assert payload["source_bindings"][hash_key] == (
+                "c4d63551f2b20d620b59c2f2a497f40fe4f7818fa7d58c02c3f4a9d69c1a4a4a"
+            )
+        else:
+            assert _sha(ROOT / value) == payload["source_bindings"][hash_key]
+
+
+def test_information_path_audit_v2_binds_current_runtime_without_rewriting_v1() -> None:
+    payload = json.loads(AUDIT_V2.read_text(encoding="utf-8"))
+    declared = payload.pop("audit_sha256")
+    predecessor = payload["predecessor"]
+    binding = payload["forward_runtime_binding"]
+
+    assert canonical_execution_sha256(payload) == declared
+    assert predecessor["history_mutated"] is False
+    assert predecessor["file_sha256"] == _sha(AUDIT_V1)
+    old = json.loads(AUDIT_V1.read_text(encoding="utf-8"))
+    assert predecessor["audit_sha256"] == old["audit_sha256"]
+    assert (
+        _sha(ROOT / binding["main_runtime_implementation_path"])
+        == binding["main_runtime_implementation_file_sha256"]
+    )
+    assert payload["scientific_design_changed"] is False
+    assert payload["protected_outcomes_opened"] is False
+    assert payload["execution_authorized"] is False
+    assert payload["main_registered_attempts_consumed"] == 0
 
 
 def test_forward_response_contract_resolves_citation_ablation_without_rewriting_history() -> None:
@@ -57,7 +84,7 @@ def test_forward_response_contract_resolves_citation_ablation_without_rewriting_
 
 
 def test_only_clean_ablation_contrasts_receive_component_language() -> None:
-    payload = json.loads(AUDIT.read_text(encoding="utf-8"))
+    payload = json.loads(AUDIT_V1.read_text(encoding="utf-8"))
 
     assert payload["clean_ablation_claims"] == [
         "B1_vs_A1_plain_vs_structured_visible_evidence_rendering",

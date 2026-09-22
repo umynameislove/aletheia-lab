@@ -5,12 +5,24 @@ from pathlib import Path
 
 import pytest
 
-from aletheia_lab.diagnosis.main_execution import rehearse_main_execution
+from aletheia_lab.diagnosis import main_pipeline
+from aletheia_lab.diagnosis._main_pipeline_budget import SharedProviderBudget
+from aletheia_lab.diagnosis._main_pipeline_relations import DeterministicRelationAdapter
+from aletheia_lab.diagnosis.main_execution import (
+    DeterministicRehearsalClock,
+    DiagnosisMainOfflineAdapter,
+    rehearse_main_execution,
+)
+from aletheia_lab.diagnosis.main_pipeline import (
+    DiagnosisMainPipelineError,
+    _rehearse_main_pipeline_components,
+)
 from aletheia_lab.diagnosis.main_runtime import (
     MainRuntimeError,
     MainRuntimeStore,
     load_main_runtime_inputs,
 )
+from aletheia_lab.evaluation.claim_corpus_execution import RepositoryExecutionState
 from aletheia_lab.evaluation.diagnosis_main_census import (
     DiagnosisMainCensusSources,
     build_diagnosis_main_census,
@@ -28,7 +40,17 @@ from aletheia_lab.evaluation.diagnosis_main_materialization import (
     prepare_main_scoring,
     rehearse_main_materialization,
 )
-from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
+from aletheia_lab.evaluation.execution_contracts import (
+    ModelPolicyReference,
+    canonical_execution_sha256,
+)
+from aletheia_lab.model_gateway import (
+    GatewayExecutionResult,
+    GatewayRequest,
+    OpenAIChatCompletionsGatewayAdapter,
+    OpenAIGatewayPolicy,
+    ProviderBinding,
+)
 from aletheia_lab.project.identity import content_sha256
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -426,7 +448,6 @@ def test_full_materialization_rehearsal_is_blind_complete_and_fail_closed(
     assert failed_record.technical_status == "unresolved"
     assert failed_record.output_status is None
     assert failed_record.claims == ()
-
     missing = relation_results.results[1:]
     missing_identity = {
         **relation_results.model_dump(mode="python", exclude={"results_sha256"}),
@@ -457,3 +478,181 @@ def test_full_materialization_rehearsal_is_blind_complete_and_fail_closed(
             batch_result=batch_result,
             store_root=store.root,
         )
+
+
+def test_offline_main_pipeline_is_end_to_end_resumable_and_network_incapable(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_root = tmp_path / "pipeline-sources"
+    source_root.mkdir()
+    packet, _, _ = build_diagnosis_main_census(_portable_sources(source_root))
+    runtime, fairness, response = load_main_runtime_inputs(ROOT)
+    frozen_runtime = runtime
+    runtime_payload = runtime.model_dump(mode="python", exclude={"runtime_contract_sha256"})
+    runtime_payload["analysis_census_sha256"] = packet.analysis_census.census_sha256
+    runtime = runtime.__class__.model_validate(
+        {
+            **runtime_payload,
+            "runtime_contract_sha256": canonical_execution_sha256(runtime_payload),
+        }
+    )
+    scoring = load_main_scoring_contract(
+        ROOT,
+        runtime_contract=frozen_runtime,
+        response_contract=response,
+    )
+    scoring_payload = scoring.model_dump(mode="python", exclude={"contract_sha256"})
+    scoring_payload["runtime_contract_sha256"] = runtime.runtime_contract_sha256
+    scoring = DiagnosisMainScoringContract.model_validate(
+        {
+            **scoring_payload,
+            "contract_sha256": canonical_execution_sha256(scoring_payload),
+        }
+    )
+    workspace = tmp_path / "pipeline-rehearsal"
+    arguments = {
+        "root": ROOT,
+        "packet": packet,
+        "workspace": workspace,
+        "source_commit_ref": "1" * 40,
+        "runtime": runtime,
+        "fairness": fairness,
+        "response": response,
+        "scoring": scoring,
+        "plan": load_main_analysis_plan(ROOT),
+    }
+
+    first = _rehearse_main_pipeline_components(**arguments)
+    persisted = {
+        path.relative_to(workspace): path.read_bytes()
+        for path in workspace.rglob("*")
+        if path.is_file()
+    }
+    second = _rehearse_main_pipeline_components(**arguments)
+
+    assert first == second
+    assert first.status == "offline_end_to_end_preflight_pass"
+    assert first.scientific_result_eligible is False
+    assert first.provider_calls_executed is False
+    assert first.registered_main_attempts_consumed == 0
+    assert first.registered_relation_attempts_consumed == 0
+    assert first.logical_request_count == 1024
+    assert first.expected_provider_turn_count == 1408
+    assert first.completed_provider_turn_count == 1408
+    assert first.relation_request_count == 896
+    assert first.provider_input_fields == (
+        "claim_text",
+        "claim_type",
+        "visible_evidence",
+    )
+    assert persisted == {
+        path.relative_to(workspace): path.read_bytes()
+        for path in workspace.rglob("*")
+        if path.is_file()
+    }
+
+    monkeypatch.setattr(
+        main_pipeline, "load_main_runtime_inputs", lambda _root: (runtime, fairness, response)
+    )
+    monkeypatch.setattr(main_pipeline, "load_main_scoring_contract", lambda *_a, **_k: scoring)
+    monkeypatch.setattr(main_pipeline, "SystemMonotonicClock", DeterministicRehearsalClock)
+    monkeypatch.setattr(main_pipeline, "PacedProviderAdapter", lambda delegate, **_k: delegate)
+    state = RepositoryExecutionState(
+        branch="main",
+        head_commit="1" * 40,
+        origin_main_commit="1" * 40,
+        clean=True,
+    )
+    run_dir = tmp_path / "synthetic-authorized-run"
+    authorization_args = dict(
+        root=ROOT,
+        packet=packet,
+        preflight=first,
+        repository_state=state,
+        run_dir=run_dir,
+        authorized_at="2026-09-22T00:00:00Z",
+        operator_cost_ceiling_usd=100.0,
+        confirmed_preflight_sha256=first.preflight_sha256,
+    )
+    with pytest.raises(DiagnosisMainPipelineError, match="clean synchronized main"):
+        main_pipeline.build_pipeline_authorization(
+            **{**authorization_args, "repository_state": state.model_copy(update={"clean": False})}
+        )
+    authority = main_pipeline.build_pipeline_authorization(**authorization_args)
+    execution_args = dict(
+        root=ROOT,
+        packet=packet,
+        preflight=first,
+        authorization=authority,
+        repository_state=state,
+        run_dir=run_dir,
+        confirmed_authorization_sha256=authority.authorization_sha256,
+    )
+
+    def unavailable_client(**_kwargs: object) -> None:
+        raise ValueError("synthetic client unavailable")
+
+    monkeypatch.setattr(OpenAIChatCompletionsGatewayAdapter, "from_environment", unavailable_client)
+    with pytest.raises(DiagnosisMainPipelineError, match="confirmation differs"):
+        main_pipeline.execute_authorized_main_pipeline(
+            **{**execution_args, "confirmed_authorization_sha256": "0" * 64}
+        )
+    with pytest.raises(ValueError, match="synthetic client unavailable"):
+        main_pipeline.execute_authorized_main_pipeline(**execution_args)
+    assert not (run_dir / "lease.json").exists()
+    assert not (run_dir / "active-execution").exists()
+
+    adapter_builds: list[str] = []
+
+    def fake_client(*, model_policy: ModelPolicyReference, policy: OpenAIGatewayPolicy):
+        # Exercise the real binding validator without creating a network client.
+        OpenAIChatCompletionsGatewayAdapter(client=None, model_policy=model_policy, policy=policy)
+        adapter_builds.append(model_policy.model_version_ref)
+        if len(adapter_builds) == 1:
+            return DiagnosisMainOfflineAdapter(fairness)
+        return DeterministicRelationAdapter(ProviderBinding.from_model_policy(model_policy))
+
+    monkeypatch.setattr(OpenAIChatCompletionsGatewayAdapter, "from_environment", fake_client)
+    receipt = main_pipeline.execute_authorized_main_pipeline(**execution_args)
+    assert receipt.status == "registered_main_analysis_complete"
+    assert receipt.logical_request_count == 1024
+    assert receipt.relation_request_count == 896
+    assert receipt.main_terminal_status_counts == {"completed": 896, "deterministic_completed": 128}
+    assert receipt.relation_terminal_status_counts == {"parsed": 896}
+    assert receipt.provider_cost_committed_usd <= authority.operator_cost_ceiling_usd
+    assert len(adapter_builds) == 2
+
+    monkeypatch.setattr(OpenAIChatCompletionsGatewayAdapter, "from_environment", unavailable_client)
+    assert main_pipeline.execute_authorized_main_pipeline(**execution_args) == receipt
+    assert (
+        main_pipeline.verify_completed_pipeline(run_dir=run_dir, authorization=authority) == receipt
+    )
+
+    report_path = run_dir / "analysis-report.json"
+    report_payload = json.loads(report_path.read_text())
+    report_payload["input_sha256"] = "0" * 64
+    report_payload["report_sha256"] = canonical_execution_sha256(
+        {key: value for key, value in report_payload.items() if key != "report_sha256"}
+    )
+    _write_json(report_path, report_payload)
+    with pytest.raises(DiagnosisMainPipelineError, match="do not reconcile"):
+        main_pipeline.verify_completed_pipeline(run_dir=run_dir, authorization=authority)
+
+    turn_root = next((workspace / "main-store").glob("dmr-*/turn-*"))
+    request = GatewayRequest.model_validate_json((turn_root / "request.json").read_bytes())
+    result = GatewayExecutionResult.model_validate_json((turn_root / "result.json").read_bytes())
+    restored_budget = SharedProviderBudget(100.0)
+    restored_budget.restore(request, result.attempts)
+    assert 0 < restored_budget.committed_usd < 100.0
+    insufficient_budget = SharedProviderBudget(0.000001)
+    insufficient_budget.restore(request, result.attempts)
+    assert insufficient_budget.exhausted is True
+
+    terminal = next((workspace / "relation-store" / "requests").glob("*/terminal/*.json"))
+    terminal.unlink()
+    with pytest.raises(
+        DiagnosisMainPipelineError,
+        match="incomplete relation request forbids automatic provider replay",
+    ):
+        _rehearse_main_pipeline_components(**arguments)

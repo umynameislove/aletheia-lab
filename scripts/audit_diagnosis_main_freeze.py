@@ -14,7 +14,7 @@ from aletheia_lab.evaluation.qwen_calibration_failure import (
     load_and_validate_failure_closeout,
 )
 
-DEFAULT_MANIFEST = Path("configs/evaluation/diagnosis_main_freeze_candidate_v6.json")
+DEFAULT_MANIFEST = Path("configs/evaluation/diagnosis_main_freeze_candidate_v7.json")
 
 _SCHEMA_V1 = "diagnosis-main-freeze-candidate/v1"
 _SCHEMA_V2 = "diagnosis-main-freeze-candidate/v2"
@@ -22,6 +22,7 @@ _SCHEMA_V3 = "diagnosis-main-freeze-candidate/v3"
 _SCHEMA_V4 = "diagnosis-main-freeze-candidate/v4"
 _SCHEMA_V5 = "diagnosis-main-freeze-candidate/v5"
 _SCHEMA_V6 = "diagnosis-main-freeze-candidate/v6"
+_SCHEMA_V7 = "diagnosis-main-freeze-candidate/v7"
 _BLOCKED_STATUS = {
     _SCHEMA_V1: "candidate_integrity_locked_main_execution_blocked",
     _SCHEMA_V2: "candidate_forward_integrity_locked_main_execution_blocked",
@@ -29,8 +30,19 @@ _BLOCKED_STATUS = {
     _SCHEMA_V4: "final_forward_integrity_locked_main_execution_blocked",
     _SCHEMA_V5: "final_forward_integrity_locked_main_execution_blocked",
     _SCHEMA_V6: "final_forward_integrity_locked_main_execution_blocked",
+    _SCHEMA_V7: "final_forward_integrity_locked_main_execution_blocked",
 }
 _READY_STATUS = "final_forward_integrity_locked_ready_for_execution_authorization"
+_PIPELINE_IMPLEMENTATION_PATHS = (
+    "scripts/run_diagnosis_main_pipeline.py",
+    "src/aletheia_lab/diagnosis/_main_pipeline_budget.py",
+    "src/aletheia_lab/diagnosis/_main_pipeline_contracts.py",
+    "src/aletheia_lab/diagnosis/_main_pipeline_relations.py",
+    "src/aletheia_lab/diagnosis/main_pipeline.py",
+    "src/aletheia_lab/diagnosis/main_runtime.py",
+    "src/aletheia_lab/evaluation/_diagnosis_main_materialization_contracts.py",
+    "src/aletheia_lab/evaluation/claim_relation_provider.py",
+)
 
 
 def _sha256(path: Path) -> str:
@@ -170,6 +182,7 @@ def audit_candidate(root: Path, manifest_path: Path) -> dict[str, object]:
         _SCHEMA_V4,
         _SCHEMA_V5,
         _SCHEMA_V6,
+        _SCHEMA_V7,
     }:
         predecessor = manifest.get("predecessor")
         predecessor_passed = False
@@ -197,6 +210,7 @@ def audit_candidate(root: Path, manifest_path: Path) -> dict[str, object]:
                     _SCHEMA_V4: _SCHEMA_V3,
                     _SCHEMA_V5: _SCHEMA_V4,
                     _SCHEMA_V6: _SCHEMA_V5,
+                    _SCHEMA_V7: _SCHEMA_V6,
                 }[str(schema_version)]
                 if schema_version == _SCHEMA_V2:
                     predecessor_report = audit_candidate(root, predecessor_target)
@@ -283,7 +297,7 @@ def audit_candidate(root: Path, manifest_path: Path) -> dict[str, object]:
             }
         )
 
-        if schema_version == _SCHEMA_V6:
+        if schema_version in {_SCHEMA_V6, _SCHEMA_V7}:
             qwen = manifest.get("secondary_qwen_disposition")
             qwen_passed = False
             qwen_evidence = "missing"
@@ -311,6 +325,63 @@ def audit_candidate(root: Path, manifest_path: Path) -> dict[str, object]:
                     "evidence": qwen_evidence,
                 }
             )
+            if schema_version == _SCHEMA_V7:
+                pipeline = manifest.get("execution_pipeline")
+                pipeline_passed = (
+                    isinstance(pipeline, dict)
+                    and pipeline.get("status") == "outcome_blind_authorized_pipeline_locked"
+                    and pipeline.get("logical_request_count") == 1024
+                    and pipeline.get("provider_backed_logical_request_count") == 896
+                    and pipeline.get("deterministic_logical_request_count") == 128
+                    and pipeline.get("maximum_main_provider_turn_count") == 1408
+                    and pipeline.get("maximum_relation_request_count") == 4480
+                    and pipeline.get("offline_end_to_end_preflight_tested") is True
+                    and pipeline.get("offline_preflight_is_scientific_result") is False
+                    and pipeline.get("private_packet_preflight_required_before_authorization")
+                    is True
+                    and pipeline.get("registered_attempts_consumed") == 0
+                    and pipeline.get("provider_calls_executed") is False
+                    and pipeline.get("terminal_only_resume") is True
+                    and pipeline.get("incomplete_request_replay_permitted") is False
+                    and pipeline.get("shared_cost_guard_required") is True
+                    and pipeline.get("raw_artifacts_private") is True
+                    and pipeline.get("action_time_authorization_confirmation_required") is True
+                )
+                findings.append(
+                    {
+                        "code": "authorized_pipeline_forward_lock",
+                        "status": "pass" if pipeline_passed else "fail",
+                        "evidence": (
+                            "1024 logical requests; terminal-only resume; private raw store; "
+                            "shared budget guard"
+                        ),
+                    }
+                )
+                pipeline_bindings = (
+                    {path: bindings.get(path) for path in _PIPELINE_IMPLEMENTATION_PATHS}
+                    if isinstance(bindings, dict)
+                    else {}
+                )
+                implementation_sha = (
+                    canonical_sha256(pipeline_bindings)
+                    if len(pipeline_bindings) == len(_PIPELINE_IMPLEMENTATION_PATHS)
+                    and all(_is_sha256(value) for value in pipeline_bindings.values())
+                    else "missing"
+                )
+                findings.append(
+                    {
+                        "code": "authorized_pipeline_implementation_identity",
+                        "status": (
+                            "pass"
+                            if implementation_sha
+                            == manifest.get("forward_locked_contracts", {}).get(
+                                "authorized_pipeline_implementation_sha256"
+                            )
+                            else "fail"
+                        ),
+                        "evidence": implementation_sha,
+                    }
+                )
 
             expected_census = {
                 "family_count": 32,
@@ -398,7 +469,9 @@ def audit_candidate(root: Path, manifest_path: Path) -> dict[str, object]:
                     "d9cbbdda6e29e0e2717591124804c8c5d5a90d4f5a9cd81de67fdf36ee5bd810"
                 ),
                 "information_path_fairness_audit_sha256": (
-                    "a14a98b310a3c59c273842bcfe3985c8606dc0f8a94bca3e87add52f66eaa9d4"
+                    "005501b0c59601acfb4c5e6e5b37f50d1a25954df51ae697f3aeb523fb9e5ad0"
+                    if schema_version == _SCHEMA_V7
+                    else "a14a98b310a3c59c273842bcfe3985c8606dc0f8a94bca3e87add52f66eaa9d4"
                 ),
                 "main_census_seal_sha256": (
                     "e010cd36a37ce100c2033e4bd9652de4842635ef79e0ba7fb9fee79c4a420b8b"
@@ -462,7 +535,7 @@ def audit_candidate(root: Path, manifest_path: Path) -> dict[str, object]:
         lifecycle_evidence = ",".join(str(code) for code in blocker_codes)
     else:
         readiness_evidence = manifest.get("readiness_evidence")
-        if schema_version == _SCHEMA_V6:
+        if schema_version in {_SCHEMA_V6, _SCHEMA_V7}:
             evidence_passed = (
                 isinstance(readiness_evidence, dict)
                 and readiness_evidence.get("qwen_disposition") == "operationally_infeasible"
@@ -480,6 +553,14 @@ def audit_candidate(root: Path, manifest_path: Path) -> dict[str, object]:
                 and readiness_evidence.get("engineering_preflight_bound") is True
                 and readiness_evidence.get("protected_main_outcomes_opened") is False
                 and readiness_evidence.get("main_registered_attempts_consumed") == 0
+                and (
+                    schema_version != _SCHEMA_V7
+                    or (
+                        readiness_evidence.get("authorized_pipeline_bound") is True
+                        and readiness_evidence.get("offline_end_to_end_preflight_tested") is True
+                        and readiness_evidence.get("private_packet_preflight_required") is True
+                    )
+                )
             )
         else:
             evidence_passed = (
@@ -490,7 +571,7 @@ def audit_candidate(root: Path, manifest_path: Path) -> dict[str, object]:
                 and readiness_evidence.get("main_freeze_decision") == "pass"
             )
         lifecycle_passed = (
-            schema_version in {_SCHEMA_V4, _SCHEMA_V5, _SCHEMA_V6}
+            schema_version in {_SCHEMA_V4, _SCHEMA_V5, _SCHEMA_V6, _SCHEMA_V7}
             and manifest.get("execution_authorized") is False
             and manifest.get("main_outcomes_opened") is False
             and manifest.get("main_registered_attempts_consumed") == 0
