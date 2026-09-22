@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Protocol
 
@@ -48,8 +48,11 @@ from aletheia_lab.project.identity import canonical_project_json, content_sha256
 class RelationAuthorizationBinding(Protocol):
     """Minimum authority fields embedded in provider-neutral request identity."""
 
-    authorization_ref: str
-    authorized_at: str
+    @property
+    def authorization_ref(self) -> str: ...
+
+    @property
+    def authorized_at(self) -> str: ...
 
 
 class PreparedRelationRequest:
@@ -88,24 +91,58 @@ def build_relation_gateway_requests(
     plan: ClaimRelationExecutionPlan,
     authorization: RelationAuthorizationBinding,
 ) -> tuple[PreparedRelationRequest, ...]:
-    policy = load_evidence_semantics_policy(root)
-    gateway_policy = _provider_policy(root, policy)
     if (
         tuple(item.assignment_request_sha256 for item in preparation.relation_requests)
         != plan.assignment_request_sha256s
     ):
         raise ClaimRelationExecutionError("relation preparation differs from execution plan")
-    project_sha = canonical_execution_sha256(
-        {"boundary": "claim-relation-execution/v1", "plan": plan.plan_sha256}
+    return build_relation_gateway_requests_for_assignments(
+        root,
+        preparation.relation_requests,
+        preparation_sha256=preparation.preparation_sha256,
+        plan_sha256=plan.plan_sha256,
+        source_commit_ref=plan.source_commit_ref,
+        authorization=authorization,
+        expected_request_count=EXPECTED_RELATION_REQUEST_COUNT,
+        execution_boundary="claim-relation-execution/v1",
+        dataset_scope="development-claim-corpus",
     )
+
+
+def build_relation_gateway_requests_for_assignments(
+    root: Path,
+    assignments: Sequence[ClaimRelationAssignmentRequest],
+    *,
+    preparation_sha256: str,
+    plan_sha256: str,
+    source_commit_ref: str,
+    authorization: RelationAuthorizationBinding,
+    expected_request_count: int,
+    execution_boundary: str,
+    dataset_scope: str,
+) -> tuple[PreparedRelationRequest, ...]:
+    """Build an exact blind relation census without coupling it to one study cohort."""
+
+    if (
+        expected_request_count < 1
+        or expected_request_count > 4480
+        or len(assignments) != expected_request_count
+        or len({item.assignment_request_sha256 for item in assignments}) != expected_request_count
+        or not execution_boundary
+        or not dataset_scope
+    ):
+        raise ClaimRelationExecutionError("relation assignment census is invalid")
+    policy = load_evidence_semantics_policy(root)
+    gateway_policy = _provider_policy(root, policy)
+    project_sha = canonical_execution_sha256({"boundary": execution_boundary, "plan": plan_sha256})
     manifest = EvaluationManifestReference.build(
         project_id=f"p3-project-{project_sha}",
-        snapshot_id=f"p3-snapshot-{canonical_execution_sha256({'commit': plan.source_commit_ref})}",
-        manifest_content_sha256=plan.plan_sha256,
-        source_commit_ref=plan.source_commit_ref,
+        snapshot_id=f"p3-snapshot-{canonical_execution_sha256({'commit': source_commit_ref})}",
+        manifest_content_sha256=plan_sha256,
+        source_commit_ref=source_commit_ref,
         authorization_state="authorized",
         authorization_ref=authorization.authorization_ref,
-        provenance_sha256=preparation.preparation_sha256,
+        provenance_sha256=preparation_sha256,
         created_at=authorization.authorized_at,
         frozen_at=authorization.authorized_at,
         visibility="evaluator",
@@ -134,14 +171,14 @@ def build_relation_gateway_requests(
         timeout_ns=int(gateway_policy.timeout_seconds * 1_000_000_000),
         max_attempts=policy.maximum_attempts,
         max_response_bytes=32_768,
-        provenance_sha256=plan.plan_sha256,
+        provenance_sha256=plan_sha256,
     )
     prepared: list[PreparedRelationRequest] = []
-    for assignment in preparation.relation_requests:
+    for assignment in assignments:
         context = ClaimRelationProviderContext.from_provider_payload(assignment.provider_payload())
         authority_payload = {
             "assignment_request_sha256": assignment.assignment_request_sha256,
-            "preparation_sha256": preparation.preparation_sha256,
+            "preparation_sha256": preparation_sha256,
             "policy_sha256": policy.policy_sha256,
             "provider_payload_sha256": context.context_sha256,
         }
@@ -154,7 +191,7 @@ def build_relation_gateway_requests(
             case_id=_opaque({"relation_request": request_sha}),
             family_id=_opaque({"relation_boundary": request_sha}),
             mechanism_id=_opaque({"relation_boundary": "withheld"}),
-            dataset_id=_opaque({"dataset": "development-claim-corpus"}),
+            dataset_id=_opaque({"dataset": dataset_scope}),
             variant_id=_opaque({"relation_policy": policy.policy_sha256}),
             variant_content_sha256=policy.policy_sha256,
             case_content_sha256=request_sha,
@@ -179,9 +216,9 @@ def build_relation_gateway_requests(
             PreparedRelationRequest(assignment=assignment, authority=authority, request=request)
         )
     if (
-        len(prepared) != EXPECTED_RELATION_REQUEST_COUNT
+        len(prepared) != expected_request_count
         or len({item.request.initial_attempt.request_identity_sha256 for item in prepared})
-        != EXPECTED_RELATION_REQUEST_COUNT
+        != expected_request_count
     ):
         raise ClaimRelationExecutionError("gateway construction lost relation census identity")
     return tuple(prepared)
@@ -227,4 +264,5 @@ __all__ = [
     "PreparedRelationRequest",
     "RelationAuthorizationBinding",
     "build_relation_gateway_requests",
+    "build_relation_gateway_requests_for_assignments",
 ]
