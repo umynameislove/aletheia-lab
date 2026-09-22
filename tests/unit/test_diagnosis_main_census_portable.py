@@ -16,6 +16,18 @@ from aletheia_lab.evaluation.diagnosis_main_census import (
     build_diagnosis_main_census,
     serialize_census_artifact,
 )
+from aletheia_lab.evaluation.diagnosis_main_materialization import (
+    DiagnosisMainMaterializationError,
+    DiagnosisMainRelationResult,
+    DiagnosisMainRelationResults,
+    DiagnosisMainScoringContract,
+    build_offline_relation_results,
+    load_main_analysis_plan,
+    load_main_scoring_contract,
+    materialize_main_analysis_input,
+    prepare_main_scoring,
+    rehearse_main_materialization,
+)
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
 from aletheia_lab.project.identity import content_sha256
 
@@ -253,4 +265,195 @@ def test_offline_batch_rehearsal_is_canonical_resumable_and_store_bound(
             fairness_freeze=fairness_freeze,
             store=store,
             request_ids=request_ids,
+        )
+
+
+def test_full_materialization_rehearsal_is_blind_complete_and_fail_closed(
+    tmp_path: Path,
+) -> None:
+    source_root = tmp_path / "sources"
+    source_root.mkdir()
+    packet, _, _ = build_diagnosis_main_census(_portable_sources(source_root))
+    runtime_contract, fairness_freeze, response_contract = load_main_runtime_inputs(ROOT)
+    scoring_contract = load_main_scoring_contract(
+        ROOT,
+        runtime_contract=runtime_contract,
+        response_contract=response_contract,
+    )
+
+    runtime_payload = runtime_contract.model_dump(
+        mode="python", exclude={"runtime_contract_sha256"}
+    )
+    runtime_payload["analysis_census_sha256"] = packet.analysis_census.census_sha256
+    runtime_contract = runtime_contract.__class__.model_validate(
+        {
+            **runtime_payload,
+            "runtime_contract_sha256": canonical_execution_sha256(runtime_payload),
+        }
+    )
+    scoring_payload = scoring_contract.model_dump(mode="python", exclude={"contract_sha256"})
+    scoring_payload["runtime_contract_sha256"] = runtime_contract.runtime_contract_sha256
+    scoring_contract = DiagnosisMainScoringContract.model_validate(
+        {
+            **scoring_payload,
+            "contract_sha256": canonical_execution_sha256(scoring_payload),
+        }
+    )
+
+    store = MainRuntimeStore(tmp_path / "full-store")
+    batch_result = rehearse_main_execution(
+        packet=packet,
+        contract=runtime_contract,
+        response_contract=response_contract,
+        fairness_freeze=fairness_freeze,
+        store=store,
+    )
+    preparation = prepare_main_scoring(
+        packet=packet,
+        runtime_contract=runtime_contract,
+        response_contract=response_contract,
+        fairness_freeze=fairness_freeze,
+        scoring_contract=scoring_contract,
+        batch_result=batch_result,
+        store_root=store.root,
+    )
+    first_request = next(
+        claim.relation_request for record in preparation.records for claim in record.claims
+    )
+    provider_payload = first_request.provider_payload()
+
+    assert preparation.record_count == 1024
+    assert preparation.technical_status_counts == {"success": 1024}
+    assert preparation.emitted_claim_count == 896
+    assert preparation.relation_request_count == 896
+    assert sum(not record.claims for record in preparation.records) == 128
+    assert set(provider_payload) == {"claim_text", "claim_type", "visible_evidence"}
+    assert not {
+        "mechanism",
+        "evidence_condition",
+        "variant",
+        "hidden_ground_truth",
+        "human_judgment",
+        "main_outcome",
+    }.intersection(provider_payload)
+
+    relation_results = build_offline_relation_results(preparation)
+    invalid_authorized_identity = {
+        **relation_results.model_dump(mode="python", exclude={"results_sha256"}),
+        "execution_mode": "authorized_execution",
+    }
+    with pytest.raises(ValueError, match="result census or identity changed"):
+        DiagnosisMainRelationResults.model_validate(
+            {
+                **invalid_authorized_identity,
+                "results": relation_results.results,
+                "results_sha256": canonical_execution_sha256(invalid_authorized_identity),
+            }
+        )
+    with pytest.raises(
+        DiagnosisMainMaterializationError,
+        match="cannot be published",
+    ):
+        materialize_main_analysis_input(
+            preparation=preparation,
+            relation_results=relation_results,
+        )
+    analysis_input = materialize_main_analysis_input(
+        preparation=preparation,
+        relation_results=relation_results,
+        allow_offline_rehearsal=True,
+    )
+    claims = tuple(claim for record in analysis_input.records for claim in record.claims)
+    assert len(analysis_input.records) == 1024
+    assert len(claims) == 896
+    assert {claim.support_label for claim in claims} == {"fully_supported"}
+
+    receipt = rehearse_main_materialization(
+        plan=load_main_analysis_plan(ROOT),
+        census=packet.analysis_census,
+        preparation=preparation,
+    )
+    repeated = rehearse_main_materialization(
+        plan=load_main_analysis_plan(ROOT),
+        census=packet.analysis_census,
+        preparation=preparation,
+    )
+    assert receipt == repeated
+    assert receipt.status == "offline_materialization_rehearsal_pass"
+    assert receipt.provider_calls_executed is False
+    assert receipt.registered_attempts_consumed == 0
+    assert receipt.analysis_contract_accepted is True
+    assert receipt.support_label_counts == {"fully_supported": 896}
+
+    failed_id = relation_results.results[0].assignment_request_sha256
+    failed_result = DiagnosisMainRelationResult(
+        assignment_request_sha256=failed_id,
+        terminal_status="technical_failure",
+        response=None,
+        issue_code="synthetic_transport_failure",
+    )
+    replaced = tuple(
+        failed_result if item.assignment_request_sha256 == failed_id else item
+        for item in relation_results.results
+    )
+    failed_identity = {
+        **relation_results.model_dump(mode="python", exclude={"results_sha256"}),
+        "results": tuple(item.model_dump(mode="json") for item in replaced),
+    }
+    failed_results = DiagnosisMainRelationResults.model_validate(
+        {
+            **failed_identity,
+            "results": replaced,
+            "results_sha256": canonical_execution_sha256(failed_identity),
+        }
+    )
+    failed_input = materialize_main_analysis_input(
+        preparation=preparation,
+        relation_results=failed_results,
+        allow_offline_rehearsal=True,
+    )
+    source_record = next(
+        record
+        for record in preparation.records
+        if any(
+            claim.relation_request.assignment_request_sha256 == failed_id for claim in record.claims
+        )
+    )
+    failed_record = next(
+        record for record in failed_input.records if record.request_id == source_record.request_id
+    )
+    assert len(failed_input.records) == 1024
+    assert failed_record.technical_status == "unresolved"
+    assert failed_record.output_status is None
+    assert failed_record.claims == ()
+
+    missing = relation_results.results[1:]
+    missing_identity = {
+        **relation_results.model_dump(mode="python", exclude={"results_sha256"}),
+        "results": tuple(item.model_dump(mode="json") for item in missing),
+    }
+    missing_results = DiagnosisMainRelationResults.model_validate(
+        {
+            **missing_identity,
+            "results": missing,
+            "results_sha256": canonical_execution_sha256(missing_identity),
+        }
+    )
+    with pytest.raises(DiagnosisMainMaterializationError, match="exactly cover"):
+        materialize_main_analysis_input(
+            preparation=preparation,
+            relation_results=missing_results,
+            allow_offline_rehearsal=True,
+        )
+
+    (store.root / "unexpected.json").write_text("{}", encoding="utf-8")
+    with pytest.raises(DiagnosisMainMaterializationError, match="membership differs"):
+        prepare_main_scoring(
+            packet=packet,
+            runtime_contract=runtime_contract,
+            response_contract=response_contract,
+            fairness_freeze=fairness_freeze,
+            scoring_contract=scoring_contract,
+            batch_result=batch_result,
+            store_root=store.root,
         )
