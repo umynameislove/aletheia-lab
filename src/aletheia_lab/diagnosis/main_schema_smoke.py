@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Mapping
+from copy import deepcopy
+from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
@@ -29,6 +32,7 @@ from aletheia_lab.model_gateway import (
     prepare_gateway_request,
     validate_response_payload,
 )
+from aletheia_lab.model_gateway.contracts import GatewayContractError
 from aletheia_lab.model_gateway.openai import (
     OpenAIGatewayConfigurationError,
     _openai_response_format,
@@ -38,11 +42,14 @@ from aletheia_lab.model_gateway.openai_recovery import OpenAIRecoveryAdapter
 from aletheia_lab.model_gateway.schema import validate_response_schema
 from aletheia_lab.project.identity import canonical_project_json, content_sha256
 
-SMOKE_PLAN_SCHEMA_VERSION = "diagnosis-main-schema-smoke-plan/v1"
-SMOKE_RECEIPT_SCHEMA_VERSION = "diagnosis-main-schema-smoke-receipt/v1"
+SMOKE_PLAN_SCHEMA_VERSION = "diagnosis-main-schema-smoke-plan/v2"
+SMOKE_RECEIPT_SCHEMA_VERSION = "diagnosis-main-schema-smoke-receipt/v2"
 SMOKE_DESTINATION = "https://api.openai.com/v1/chat/completions"
 SYNTHETIC_EVIDENCE_ID = "ev-synthetic-compatibility"
 EXPECTED_FAILED_MAIN_COUNTS = {"deterministic_completed": 128, "technical_failure": 896}
+EXPECTED_PRIOR_SMOKE_RECEIPT_SHA256 = (
+    "4a0c2f722cad5116c18aebbf52bd625f5831a84b838df011973cdc46f3d51825"
+)
 MAIN_RECOVERY_SCHEMA_VERSION = "diagnosis-main-provider-output/1"
 MAIN_RECOVERY_TRANSPORT_CONTRACT: dict[str, object] = {
     "schema_version": "diagnosis-main-recovery-transport/v1",
@@ -55,9 +62,49 @@ MAIN_RECOVERY_TRANSPORT_CONTRACT: dict[str, object] = {
     "failed_response_content_persisted": False,
 }
 MAIN_RECOVERY_TRANSPORT_SHA256 = canonical_execution_sha256(MAIN_RECOVERY_TRANSPORT_CONTRACT)
+MAIN_RECOVERY_TRANSPORT_V2_CONTRACT: dict[str, object] = {
+    **MAIN_RECOVERY_TRANSPORT_CONTRACT,
+    "schema_version": "diagnosis-main-recovery-transport/v2",
+    "provider_schema_projection": "remove_string_patterns_preserve_claim_id_enum",
+}
+MAIN_RECOVERY_TRANSPORT_V2_SHA256 = canonical_execution_sha256(MAIN_RECOVERY_TRANSPORT_V2_CONTRACT)
+FORMAT_ONLY_REPAIR_POLICY: dict[str, object] = {
+    "schema_version": "diagnosis-main-format-repair/v1",
+    "operation": "strip_boundary_whitespace_only",
+    "fields": [
+        "atomic_claims[].claim_text",
+        "atomic_claims[].material_parts[].part_id",
+        "atomic_claims[].material_parts[].text",
+        "atomic_claims[].visible_evidence_ids[]",
+        "abstention_reason",
+    ],
+    "must_pass_original_schema_after_repair": True,
+    "must_pass_variant_semantics_after_repair": True,
+    "only_original_pattern_mismatch_fields_modified": True,
+    "internal_whitespace_and_nontext_fields_unchanged": True,
+}
+FORMAT_ONLY_REPAIR_SHA256 = canonical_execution_sha256(FORMAT_ONLY_REPAIR_POLICY)
 
 _RESPONSE_CONTRACT = Path("configs/evaluation/diagnosis_main_response_contract.json")
 _FAIRNESS_FREEZE = Path("configs/evaluation/diagnosis_variant_fairness_freeze.json")
+
+
+@dataclass(frozen=True)
+class SmokeResponseAssessment:
+    """In-memory accepted payload; the receipt stores only its digest and repair paths."""
+
+    payload: dict[str, object]
+    accepted_payload_sha256: str
+    format_repaired_fields: tuple[str, ...]
+
+
+class SmokeResponseValidationError(ValueError):
+    """Allowlisted diagnostics that never contain generated text or evidence IDs."""
+
+    def __init__(self, code: str, fields: tuple[str, ...] = ()) -> None:
+        super().__init__(code)
+        self.code = code
+        self.fields = fields
 
 
 def _remove_patterns(value: object) -> object:
@@ -72,8 +119,19 @@ def _remove_patterns(value: object) -> object:
     return value
 
 
+def _claim_id_schema(schema: dict[str, object]) -> dict[str, object]:
+    node: object = schema
+    for key in ("properties", "atomic_claims", "items", "properties", "claim_local_id"):
+        if not isinstance(node, dict):
+            raise ValueError("main claim ID schema is unavailable")
+        node = node.get(key)
+    if not isinstance(node, dict):
+        raise ValueError("main claim ID schema is unavailable")
+    return cast(dict[str, object], node)
+
+
 def main_provider_wire_schema(schema_json: str) -> dict[str, object]:
-    """Remove regex decoding constraints while retaining the original local gate."""
+    """Replace the simple claim-ID regex with an equivalent provider enum."""
 
     schema = json.loads(schema_json)
     if not isinstance(schema, dict):
@@ -84,9 +142,11 @@ def main_provider_wire_schema(schema_json: str) -> dict[str, object]:
     if (
         not isinstance(schema_version, dict)
         or schema_version.get("const") != MAIN_RECOVERY_SCHEMA_VERSION
+        or _claim_id_schema(schema) != {"type": "string", "pattern": "^claim-[1-5]$"}
     ):
         raise ValueError("wire projection requires the registered main schema")
     projected = cast(dict[str, object], _remove_patterns(schema))
+    _claim_id_schema(projected)["enum"] = [f"claim-{index}" for index in range(1, 6)]
     validate_response_schema(projected)
     return projected
 
@@ -312,6 +372,7 @@ def build_smoke_plan(
     source_commit_ref: str,
     predecessor_receipt_sha256: str,
     predecessor_tree_sha256: str,
+    prior_smoke_receipt_sha256: str,
 ) -> dict[str, object]:
     request, policy = build_synthetic_main_schema_request(root, source_commit_ref=source_commit_ref)
     outbound = exact_outbound_payload(request, policy)
@@ -331,11 +392,13 @@ def build_smoke_plan(
         "request_identity_sha256": request.initial_attempt.request_identity_sha256,
         "original_schema_sha256": original_schema_sha,
         "wire_schema_sha256": content_sha256(wire_schema.encode()),
-        "transport_sha256": MAIN_RECOVERY_TRANSPORT_SHA256,
+        "transport_sha256": MAIN_RECOVERY_TRANSPORT_V2_SHA256,
+        "format_only_repair_policy_sha256": FORMAT_ONLY_REPAIR_SHA256,
         "outbound_payload": outbound,
         "outbound_payload_sha256": canonical_execution_sha256(outbound),
         "predecessor_receipt_sha256": predecessor_receipt_sha256,
         "predecessor_tree_sha256": predecessor_tree_sha256,
+        "prior_smoke_receipt_sha256": prior_smoke_receipt_sha256,
         "recovery_authorized": False,
     }
     return {**payload, "plan_sha256": canonical_execution_sha256(payload)}
@@ -360,6 +423,202 @@ def validate_smoke_response(raw: bytes, *, request: GatewayRequest) -> dict[str,
     return parsed
 
 
+def _reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise SmokeResponseValidationError("duplicate_json_key")
+        result[key] = value
+    return result
+
+
+def _trim_allowed(
+    container: dict[str, object] | list[object],
+    key: str | int,
+    path: str,
+    allowed: frozenset[str],
+    fields: list[str],
+) -> None:
+    if path not in allowed:
+        return
+    if isinstance(container, dict):
+        if not isinstance(key, str):
+            raise SmokeResponseValidationError("wire_schema_invalid")
+        value = container[key]
+    else:
+        if not isinstance(key, int):
+            raise SmokeResponseValidationError("wire_schema_invalid")
+        value = container[key]
+    if isinstance(value, str) and (stripped := value.strip()) != value:
+        if isinstance(container, dict):
+            container[cast(str, key)] = stripped
+        else:
+            container[cast(int, key)] = stripped
+        fields.append(path)
+
+
+def _trim_claim_fields(
+    claim: dict[str, object], prefix: str, allowed: frozenset[str], fields: list[str]
+) -> None:
+    for key in ("claim_text",):
+        if key in claim:
+            _trim_allowed(claim, key, f"{prefix}.{key}", allowed, fields)
+    parts = claim.get("material_parts")
+    if isinstance(parts, list):
+        for part_index, part in enumerate(parts):
+            if isinstance(part, dict):
+                for key in ("part_id", "text"):
+                    if key in part:
+                        _trim_allowed(
+                            part,
+                            key,
+                            f"{prefix}.material_parts[{part_index}].{key}",
+                            allowed,
+                            fields,
+                        )
+    evidence_ids = claim.get("visible_evidence_ids")
+    if isinstance(evidence_ids, list):
+        for evidence_index in range(len(evidence_ids)):
+            _trim_allowed(
+                evidence_ids,
+                evidence_index,
+                f"{prefix}.visible_evidence_ids[{evidence_index}]",
+                allowed,
+                fields,
+            )
+
+
+def _strip_boundary_whitespace(
+    payload: dict[str, object], mismatch_paths: tuple[str, ...]
+) -> tuple[dict[str, object], tuple[str, ...]]:
+    """Copy and trim only the six allowlisted fields; never rewrite claim meaning."""
+
+    copied = deepcopy(payload)
+    allowed = frozenset(mismatch_paths)
+    fields: list[str] = []
+    if "abstention_reason" in copied:
+        _trim_allowed(copied, "abstention_reason", "abstention_reason", allowed, fields)
+    claims = copied.get("atomic_claims")
+    if isinstance(claims, list):
+        for claim_index, claim in enumerate(claims):
+            if isinstance(claim, dict):
+                _trim_claim_fields(claim, f"atomic_claims[{claim_index}]", allowed, fields)
+    return copied, tuple(fields)
+
+
+def _pattern_mismatch_fields(
+    value: object, schema: dict[str, object], path: str = ""
+) -> tuple[str, ...]:
+    """Report schema paths only; never include generated values in a receipt."""
+
+    alternatives = schema.get("anyOf")
+    if isinstance(alternatives, list):
+        for alternative in alternatives:
+            if isinstance(alternative, dict) and (
+                (alternative.get("type") == "string" and isinstance(value, str))
+                or (alternative.get("type") == "null" and value is None)
+            ):
+                return _pattern_mismatch_fields(value, alternative, path)
+        return ()
+    if schema.get("type") == "string" and isinstance(value, str):
+        pattern = schema.get("pattern")
+        return (path,) if isinstance(pattern, str) and re.search(pattern, value) is None else ()
+    if schema.get("type") == "object" and isinstance(value, dict):
+        properties = schema.get("properties")
+        if isinstance(properties, dict):
+            return tuple(
+                child_path
+                for key, child_schema in properties.items()
+                if key in value and isinstance(child_schema, dict)
+                for child_path in _pattern_mismatch_fields(
+                    value[key], child_schema, f"{path}.{key}" if path else key
+                )
+            )
+    if schema.get("type") == "array" and isinstance(value, list):
+        item_schema = schema.get("items")
+        if isinstance(item_schema, dict):
+            return tuple(
+                child_path
+                for index, item in enumerate(value)
+                for child_path in _pattern_mismatch_fields(item, item_schema, f"{path}[{index}]")
+            )
+    return ()
+
+
+def _validated_wire_response(
+    raw: bytes, request: GatewayRequest
+) -> tuple[dict[str, object], dict[str, object]]:
+    try:
+        text = raw.decode("utf-8", errors="strict")
+        parsed = json.loads(text, object_pairs_hook=_reject_duplicate_keys)
+    except SmokeResponseValidationError:
+        raise
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise SmokeResponseValidationError("invalid_json_or_encoding") from exc
+    if not isinstance(parsed, dict):
+        raise SmokeResponseValidationError("wire_schema_invalid")
+    original_schema = json.loads(request.response_schema_json)
+    if not isinstance(original_schema, dict):
+        raise SmokeResponseValidationError("original_schema_unavailable")
+    try:
+        validate_response_payload(parsed, main_provider_wire_schema(request.response_schema_json))
+    except GatewayContractError as exc:
+        raise SmokeResponseValidationError("wire_schema_invalid") from exc
+    return parsed, original_schema
+
+
+def _original_schema_or_boundary_repair(
+    parsed: dict[str, object], original_schema: dict[str, object]
+) -> tuple[dict[str, object], tuple[str, ...]]:
+    try:
+        validate_response_payload(parsed, original_schema)
+    except GatewayContractError:
+        mismatches = _pattern_mismatch_fields(parsed, original_schema)
+        if not mismatches:
+            raise SmokeResponseValidationError("local_schema_invalid") from None
+        accepted, repaired_fields = _strip_boundary_whitespace(parsed, mismatches)
+        if not repaired_fields:
+            raise SmokeResponseValidationError("unrepaired_pattern_mismatch", mismatches) from None
+        try:
+            validate_response_payload(accepted, original_schema)
+        except GatewayContractError as exc:
+            raise SmokeResponseValidationError(
+                "unrepaired_pattern_mismatch", _pattern_mismatch_fields(accepted, original_schema)
+            ) from exc
+        return accepted, repaired_fields
+    return parsed, ()
+
+
+def _validate_synthetic_semantics(accepted: dict[str, object]) -> None:
+    try:
+        output = validate_main_provider_output(
+            canonical_project_json(accepted),
+            variant="A2",
+            visible_evidence_ids={SYNTHETIC_EVIDENCE_ID},
+        )
+    except (ValueError, TypeError) as exc:
+        raise SmokeResponseValidationError("semantic_contract_invalid") from exc
+    if not any(
+        claim.claim_type in {"cause_assertion", "evidence_statement"}
+        and SYNTHETIC_EVIDENCE_ID in claim.visible_evidence_ids
+        for claim in output.atomic_claims
+    ):
+        raise SmokeResponseValidationError("synthetic_coverage_invalid")
+
+
+def assess_smoke_response(raw: bytes, *, request: GatewayRequest) -> SmokeResponseAssessment:
+    """Accept original-valid output or boundary-only repair, otherwise fail closed."""
+
+    parsed, original_schema = _validated_wire_response(raw, request)
+    accepted, repaired_fields = _original_schema_or_boundary_repair(parsed, original_schema)
+    _validate_synthetic_semantics(accepted)
+    return SmokeResponseAssessment(
+        payload=accepted,
+        accepted_payload_sha256=canonical_execution_sha256(accepted),
+        format_repaired_fields=repaired_fields,
+    )
+
+
 def validate_self_hash(payload: Mapping[str, object], field: str) -> None:
     declared = payload.get(field)
     identity = {key: value for key, value in payload.items() if key != field}
@@ -369,13 +628,21 @@ def validate_self_hash(payload: Mapping[str, object], field: str) -> None:
 
 __all__ = [
     "EXPECTED_FAILED_MAIN_COUNTS",
+    "EXPECTED_PRIOR_SMOKE_RECEIPT_SHA256",
+    "FORMAT_ONLY_REPAIR_POLICY",
+    "FORMAT_ONLY_REPAIR_SHA256",
     "MAIN_RECOVERY_SCHEMA_VERSION",
     "MAIN_RECOVERY_TRANSPORT_CONTRACT",
     "MAIN_RECOVERY_TRANSPORT_SHA256",
+    "MAIN_RECOVERY_TRANSPORT_V2_CONTRACT",
+    "MAIN_RECOVERY_TRANSPORT_V2_SHA256",
     "OpenAIMainRecoveryAdapter",
     "SMOKE_DESTINATION",
     "SMOKE_PLAN_SCHEMA_VERSION",
     "SMOKE_RECEIPT_SCHEMA_VERSION",
+    "SmokeResponseAssessment",
+    "SmokeResponseValidationError",
+    "assess_smoke_response",
     "build_smoke_plan",
     "build_synthetic_main_schema_request",
     "exact_outbound_payload",
