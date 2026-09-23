@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 from argparse import Namespace
 from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 
 import pytest
 
-import scripts.diagnosis_main_schema_smoke as smoke_cli
 from aletheia_lab.diagnosis.main_schema_smoke import (
     FORMAT_ONLY_REPAIR_SHA256,
     MAIN_RECOVERY_TRANSPORT_V2_SHA256,
@@ -35,6 +35,18 @@ from aletheia_lab.project.identity import canonical_project_json, content_sha256
 
 ROOT = Path(__file__).resolve().parents[2]
 COMMIT = "1" * 40
+
+
+def _load_smoke_cli() -> ModuleType:
+    script = ROOT / "scripts" / "diagnosis_main_schema_smoke.py"
+    spec = importlib.util.spec_from_file_location("diagnosis_main_schema_smoke_cli", script)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+smoke_cli = _load_smoke_cli()
 
 
 def _response(*, claim_id: str = "claim-1", material_text: str | None = None) -> bytes:
