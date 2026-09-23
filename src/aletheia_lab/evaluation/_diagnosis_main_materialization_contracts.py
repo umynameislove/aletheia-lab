@@ -254,9 +254,9 @@ class DiagnosisMainRelationResults(_StrictFrozenModel):
         offline_state_valid = (
             not self.provider_calls_executed and self.registered_relation_attempts_consumed == 0
         )
-        authorized_state_valid = (
-            self.provider_calls_executed and self.registered_relation_attempts_consumed == 1
-        )
+        authorized_state_valid = self.provider_calls_executed == bool(
+            self.results
+        ) and self.registered_relation_attempts_consumed == int(bool(self.results))
         mode_state_valid = (
             offline_state_valid
             if self.execution_mode == "offline_rehearsal"

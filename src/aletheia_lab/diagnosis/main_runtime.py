@@ -197,6 +197,36 @@ def _gateway_request(
     )
 
 
+def build_main_adapter_model_policy(
+    authority: MainExecutionAuthority,
+    contract: MainRuntimeContract,
+    freeze: DiagnosisVariantFairnessFreeze,
+) -> ModelPolicyReference:
+    """Build the provider binding used by every main-study gateway request.
+
+    Request-specific prompt, response-schema and route identities remain on
+    each immutable request.  The transport adapter needs only the frozen
+    provider/model binding and therefore receives this non-request identity.
+    """
+
+    manifest = _manifest(authority, contract)
+    policy = OpenAIGatewayPolicy.from_fairness_policy(freeze.model_policies["main_llm_v1"])
+    return ModelPolicyReference.build(
+        manifest=manifest,
+        policy_content_sha256=policy.model_policy_sha256(),
+        provider_ref=_opaque({"provider": "openai"}),
+        model_ref=_opaque({"model": policy.model}),
+        model_version_ref=_opaque({"model_version": policy.model_version}),
+        resource_policy_ref=_opaque(
+            {"boundary": "diagnosis-main-adapter", "runtime": contract.runtime_contract_sha256}
+        ),
+        prompt_policy_ref=_opaque({"boundary": "request_specific_prompts"}),
+        response_schema_sha256=contract.response_contract_sha256,
+        provenance_sha256=authority.authority_sha256,
+        visibility="diagnosis",
+    )
+
+
 def _turn_receipt(
     *,
     logical: DiagnosisMainExpectedRequest,
@@ -689,6 +719,7 @@ __all__ = [
     "MainRuntimePreflight",
     "MainRuntimeStore",
     "NeverCancelled",
+    "build_main_adapter_model_policy",
     "build_main_runtime_preflight",
     "load_main_runtime_contract",
     "load_main_runtime_inputs",

@@ -1,0 +1,26 @@
+{
+  "schema_version": "diagnosis-information-path-fairness-audit/v2",
+  "created_on": "2026-09-22",
+  "audit_status": "forward_runtime_binding_closed_execution_not_authorized",
+  "protected_outcomes_opened": false,
+  "execution_authorized": false,
+  "main_registered_attempts_consumed": 0,
+  "predecessor": {
+    "path": "configs/evaluation/diagnosis_information_path_fairness_audit.json",
+    "file_sha256": "da75fc0af456eeac7b77b4727ed2f9af93a1ef7351d77ec5ed482a16602aef0e",
+    "audit_sha256": "a14a98b310a3c59c273842bcfe3985c8606dc0f8a94bca3e87add52f66eaa9d4",
+    "history_mutated": false
+  },
+  "forward_runtime_binding": {
+    "reason": "Bind the outcome-blind authorized pipeline implementation without rewriting the completed V1 design audit.",
+    "main_runtime_implementation_path": "src/aletheia_lab/diagnosis/main_runtime.py",
+    "main_runtime_implementation_file_sha256": "5e8555437b883314b72421e68c8850b9182ec22fdacfea7995105965fc4ae463",
+    "authorized_pipeline_implementation_sha256": "c2ed1280b730b8644033c5cb186558b3e3b42688481c2b78646b18b36dddd101"
+  },
+  "scientific_design_changed": false,
+  "inherited_design_findings_changed": false,
+  "registered_information_paths_changed": false,
+  "registered_ablation_claims_changed": false,
+  "non_pooling_boundaries_changed": false,
+  "audit_sha256": "005501b0c59601acfb4c5e6e5b37f50d1a25954df51ae697f3aeb523fb9e5ad0"
+}
