@@ -156,13 +156,15 @@ def main_wire_schema_json(schema_json: str) -> str:
 
 
 class OpenAIMainRecoveryAdapter(OpenAIRecoveryAdapter):
-    """Use the main-only projection without mutating the historical adapters."""
+    """Project only final diagnoses; retrieval selections retain their frozen schema."""
 
     def _prepare_payload(
         self,
         call: ProviderCall,
         payload: dict[str, object],
     ) -> dict[str, object]:
+        if '"diagnosis-main-selection-output/v1"' in call.response_schema_json:
+            return super()._prepare_payload(call, payload)
         try:
             response_format = _openai_response_format(
                 main_wire_schema_json(call.response_schema_json)
