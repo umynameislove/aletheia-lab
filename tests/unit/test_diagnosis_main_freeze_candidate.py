@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 import sys
@@ -28,20 +29,31 @@ def _run(*extra: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def test_forward_candidate_integrity_is_ready_without_authorizing_execution() -> None:
-    completed = _run()
-    assert completed.returncode == 0
+def test_historical_v7_candidate_fails_closed_on_post_result_analysis_change() -> None:
+    completed = _run("--manifest", str(MANIFEST_V7))
+    assert completed.returncode == 1
     report = json.loads(completed.stdout)
-    assert report["integrity_status"] == "pass"
-    assert report["readiness_status"] == "ready_for_execution_authorization"
+    assert report["integrity_status"] == "fail"
+    assert report["readiness_status"] == "invalid"
     assert report["execution_authorized"] is False
-    assert "analysis_plan_contains_unresolved_tbd_fields" not in report["blocker_codes"]
-    assert "sealed_main_case_split_and_request_census_missing" not in report["blocker_codes"]
-    assert "outcome_eligible_nine_path_runtime_missing" not in report["blocker_codes"]
     assert report["blocker_codes"] == []
+    failed = [finding for finding in report["findings"] if finding["status"] != "pass"]
+    changed_paths = (
+        "src/aletheia_lab/evaluation/diagnosis_main_analysis.py",
+        "tests/unit/test_diagnosis_main_freeze_candidate.py",
+    )
+    assert failed == [
+        {
+            "code": f"artifact.{path}",
+            "status": "fail",
+            "evidence": hashlib.sha256((ROOT / path).read_bytes()).hexdigest(),
+        }
+        for path in changed_paths
+    ]
 
-    ready_gate = _run("--require-ready")
-    assert ready_gate.returncode == 0
+    ready_gate = _run("--manifest", str(MANIFEST_V7), "--require-ready")
+    assert ready_gate.returncode == 1
+    assert json.loads(ready_gate.stdout)["readiness_status"] == "invalid"
 
 
 def test_resigned_policy_drift_fails_cross_artifact_reconciliation(tmp_path: Path) -> None:

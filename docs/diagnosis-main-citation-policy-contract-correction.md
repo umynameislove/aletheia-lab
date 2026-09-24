@@ -16,6 +16,12 @@ materialized optional-type claim. The correction aligns that validator with
 the frozen response contract and materializer; it does not change scoring,
 citation validity, missingness, or any metric formula.
 
+The pre-execution V7 freeze remains bound to the original analysis source and
+freeze-test bytes. Auditing V7 against this post-result checkout now fails
+closed on those two bindings, as it should; the historical manifest is not
+resealed or treated as a current execution authorization. The updated
+regression test checks that no other frozen binding has drifted.
+
 Verification on the sealed inputs was offline and read-only. The corrected
 analysis reproduced **every field** of the existing registered report,
 including its self-hash
