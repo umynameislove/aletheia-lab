@@ -13,6 +13,7 @@ from aletheia_lab.diagnosis.main_execution import (
     MainBatchResult,
     _assert_store_scope,
 )
+from aletheia_lab.diagnosis.main_pipeline import load_private_main_packet
 from aletheia_lab.diagnosis.main_runtime import load_main_runtime_inputs
 from aletheia_lab.diagnosis.main_schema_smoke import (
     FORMAT_ONLY_REPAIR_SHA256,
@@ -28,6 +29,7 @@ from aletheia_lab.diagnosis.main_technical_recovery import (
     _read_object,
     _tree_sha256,
     authority_from_plan,
+    build_recovery_plan,
     checked_recovery_paths,
 )
 from aletheia_lab.evaluation.diagnosis_main_census import DiagnosisMainPrivateCensusPacket
@@ -297,4 +299,43 @@ def verify_recovery(
     return plan
 
 
-__all__ = ["verify_recovery"]
+def verify_sealed_recovery_from_pinned_source(
+    *,
+    root: Path,
+    packet_path: Path,
+    predecessor: Path,
+    smoke: Path,
+    recovery: Path,
+) -> dict[str, object]:
+    """Read a completed recovery after later, forward-only code commits.
+
+    The original execution verifier deliberately requires its execution commit
+    to be HEAD.  Downstream scoring must instead verify that same sealed plan
+    against its *recorded* commit, without reopening the recovery for execution.
+    """
+
+    packet_path, predecessor, smoke, recovery = checked_recovery_paths(
+        root, packet_path, predecessor, smoke, recovery
+    )
+    plan = _read_object(recovery / "plan.json")
+    validate_self_hash(plan, "plan_sha256")
+    ceiling = plan.get("operator_cost_ceiling_usd")
+    if isinstance(ceiling, bool) or not isinstance(ceiling, (int, float)):
+        raise MainTechnicalRecoveryError("sealed recovery cost ceiling is invalid")
+    expected = build_recovery_plan(
+        root=root,
+        packet_path=packet_path,
+        predecessor=predecessor,
+        smoke=smoke,
+        recovery=recovery,
+        source_commit_ref=str(plan.get("source_commit_ref")),
+        created_at=str(plan.get("created_at")),
+        cost_ceiling_usd=float(ceiling),
+    )
+    if plan != expected or not (recovery / "receipt.json").is_file():
+        raise MainTechnicalRecoveryError("sealed recovery plan or receipt differs")
+    packet = load_private_main_packet(root, packet_path)
+    return _verify_complete(root, recovery, predecessor, plan, packet)
+
+
+__all__ = ["verify_recovery", "verify_sealed_recovery_from_pinned_source"]
