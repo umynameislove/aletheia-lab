@@ -42,3 +42,21 @@ original attempt into a clean registered execution. Any analysis including
 repaired outputs requires a sensitivity result that treats those outputs as
 unaccepted. Raw responses, per-request results and private file paths remain
 outside the public repository.
+
+## Forward correction after the stopped pilot
+
+The first recovery pilot stopped on its first A1 request (`semantic_failure`;
+pilot-stop SHA-256 `2c64178f2d89c721c3c35ed5e5926613b5dc3f89cf7b6016133701770860671b`).
+The provider response parsed but contained a citation, which A1's frozen arm
+rule forbids. No full recovery batch ran. The stopped lease and response remain
+private and immutable.
+
+For a separate forward attempt (transport v3), only the outbound provider wire
+schema is narrowed to require an empty `visible_evidence_ids` array for all three
+citation-free arms (A1, B1, B2). The immutable gateway request and its original
+local schema remain unchanged, as do prompts, evidence, model, sampling,
+census and semantic checks. The four citation-required arms retain their exact
+prior wire schema. No citation is removed from a received response. This is a
+post-failure technical correction, not a retroactive pass for either failed
+run; any later results must identify the new code version and be reported as
+recovery evidence.

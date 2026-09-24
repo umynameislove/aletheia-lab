@@ -13,6 +13,7 @@ from aletheia_lab.diagnosis.main_runtime import (
     load_main_runtime_inputs,
     run_main_logical_request,
 )
+from aletheia_lab.diagnosis.main_schema_smoke import _CITATION_FREE_FINAL_RESOURCE_REFS
 from aletheia_lab.evaluation.claim_evidence_semantics import (
     ModelVisibleEvidenceContext,
     build_visible_evidence_item,
@@ -274,6 +275,11 @@ def test_each_controlled_route_executes_exact_declared_path_and_replays_read_onl
     assert len(terminal.turn_receipts) == expected_turns
     assert replay == terminal
     assert (0 if adapter is None else len(adapter.calls)) == call_count
+    if adapter is not None:
+        assert (
+            adapter.calls[-1].runtime_policy.resource_policy_ref
+            in _CITATION_FREE_FINAL_RESOURCE_REFS
+        ) is (variant in {"A1", "B1", "B2"})
 
 
 def test_variant_semantic_failure_is_terminal_not_silently_rescued(tmp_path: Path) -> None:
