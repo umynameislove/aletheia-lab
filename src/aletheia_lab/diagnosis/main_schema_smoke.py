@@ -68,6 +68,12 @@ MAIN_RECOVERY_TRANSPORT_V2_CONTRACT: dict[str, object] = {
     "provider_schema_projection": "remove_string_patterns_preserve_claim_id_enum",
 }
 MAIN_RECOVERY_TRANSPORT_V2_SHA256 = canonical_execution_sha256(MAIN_RECOVERY_TRANSPORT_V2_CONTRACT)
+MAIN_RECOVERY_TRANSPORT_V3_CONTRACT: dict[str, object] = {
+    **MAIN_RECOVERY_TRANSPORT_V2_CONTRACT,
+    "schema_version": "diagnosis-main-recovery-transport/v3",
+    "citation_free_final_arm_wire_constraint": "visible_evidence_ids.maxItems=0 for A1,B1,B2",
+}
+MAIN_RECOVERY_TRANSPORT_V3_SHA256 = canonical_execution_sha256(MAIN_RECOVERY_TRANSPORT_V3_CONTRACT)
 FORMAT_ONLY_REPAIR_POLICY: dict[str, object] = {
     "schema_version": "diagnosis-main-format-repair/v1",
     "operation": "strip_boundary_whitespace_only",
@@ -166,9 +172,23 @@ class OpenAIMainRecoveryAdapter(OpenAIRecoveryAdapter):
         if '"diagnosis-main-selection-output/v1"' in call.response_schema_json:
             return super()._prepare_payload(call, payload)
         try:
-            response_format = _openai_response_format(
-                main_wire_schema_json(call.response_schema_json)
-            )
+            wire = main_provider_wire_schema(call.response_schema_json)
+            if call.runtime_policy.resource_policy_ref in _CITATION_FREE_FINAL_RESOURCE_REFS:
+                citation_schema: object = wire
+                for key in (
+                    "properties",
+                    "atomic_claims",
+                    "items",
+                    "properties",
+                    "visible_evidence_ids",
+                ):
+                    if not isinstance(citation_schema, dict):
+                        raise ValueError("citation-free wire schema is unavailable")
+                    citation_schema = citation_schema.get(key)
+                if not isinstance(citation_schema, dict) or citation_schema.get("type") != "array":
+                    raise ValueError("citation-free wire schema is unavailable")
+                citation_schema["maxItems"] = 0
+            response_format = _openai_response_format(canonical_project_json(wire))
         except (OpenAIGatewayConfigurationError, ValueError):
             raise AdapterInvocationError(
                 code="provider_schema_incompatible",
@@ -180,6 +200,12 @@ class OpenAIMainRecoveryAdapter(OpenAIRecoveryAdapter):
                 ),
             ) from None
         return {**payload, "response_format": response_format}
+
+
+_CITATION_FREE_FINAL_RESOURCE_REFS = frozenset(
+    f"ev-{canonical_execution_sha256({'route': variant, 'turn': turn, 'kind': 'final'})}"
+    for variant, turn in (("A1", 1), ("B1", 1), ("B2", 2))
+)
 
 
 def _opaque(payload: object) -> str:

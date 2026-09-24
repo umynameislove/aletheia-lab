@@ -17,6 +17,7 @@ from aletheia_lab.diagnosis.main_schema_smoke import (
     SYNTHETIC_EVIDENCE_ID,
     OpenAIMainRecoveryAdapter,
     build_synthetic_main_schema_request,
+    main_provider_wire_schema,
     provider_call,
 )
 from aletheia_lab.diagnosis.main_technical_recovery import (
@@ -37,7 +38,9 @@ from aletheia_lab.model_gateway import (
     UsageMetadata,
     execute_gateway_request,
 )
+from aletheia_lab.model_gateway.contracts import GatewayContractError
 from aletheia_lab.model_gateway.openai import OpenAIGatewayClient
+from aletheia_lab.model_gateway.schema import validate_response_payload
 from aletheia_lab.project.identity import canonical_project_json, content_sha256
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -113,6 +116,62 @@ def test_selection_turn_retains_its_original_provider_schema() -> None:
     )
     outbound: dict[str, object] = {"response_format": {"frozen_selection_schema": selection}}
     assert adapter._prepare_payload(selection_call, outbound) == outbound
+
+
+@pytest.mark.parametrize(
+    ("variant", "turn", "citation_cap"),
+    (
+        ("A1", 1, 0),
+        ("B1", 1, 0),
+        ("B2", 2, 0),
+        ("A2", 1, 32),
+        ("A3", 1, 32),
+        ("CodeGraph", 2, 32),
+        ("FULL", 3, 32),
+    ),
+)
+def test_recovery_wire_schema_enforces_only_frozen_citation_free_arms(
+    variant: str, turn: int, citation_cap: int
+) -> None:
+    request, policy = _request_and_policy()
+    call = provider_call(request)
+    frozen_schema = main_provider_wire_schema(call.response_schema_json)
+    resource_ref = (
+        f"ev-{canonical_execution_sha256({'route': variant, 'turn': turn, 'kind': 'final'})}"
+    )
+    routed = call.model_copy(
+        update={
+            "runtime_policy": call.runtime_policy.model_copy(
+                update={"resource_policy_ref": resource_ref}
+            )
+        }
+    )
+    adapter = OpenAIMainRecoveryAdapter(
+        client=cast(OpenAIGatewayClient, object()),
+        model_policy=request.initial_attempt.model_policy,
+        policy=policy,
+    )
+    outbound = adapter._prepare_payload(routed, {})
+    response_format = outbound["response_format"]
+    assert isinstance(response_format, dict)
+    json_schema = response_format["json_schema"]
+    assert isinstance(json_schema, dict)
+    wire = json_schema["schema"]
+    assert isinstance(wire, dict)
+    citation_schema = wire["properties"]["atomic_claims"]["items"]["properties"][  # type: ignore[index]
+        "visible_evidence_ids"
+    ]
+    assert citation_schema["maxItems"] == citation_cap
+    if citation_cap == 0:
+        with pytest.raises(GatewayContractError, match="array is longer"):
+            validate_response_payload(json.loads(_raw_response()), wire)
+        without_citation = json.loads(_raw_response())
+        without_citation["atomic_claims"][0]["visible_evidence_ids"] = []
+        validate_response_payload(without_citation, wire)
+    else:
+        assert wire == frozen_schema
+        validate_response_payload(json.loads(_raw_response()), wire)
+    assert call.response_schema_json == request.response_schema_json
 
 
 def test_pilot_is_one_fixed_request_per_provider_route() -> None:
