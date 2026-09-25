@@ -327,13 +327,17 @@ def _validate_observed_contracts(
             "observed records changed frozen request identity: " + ",".join(mismatched_hashes)
         )
     citation_required_variants = {"A2", "A3", "CodeGraph", "FULL"}
+    citation_required_claim_types = {"cause_assertion", "evidence_statement"}
     citation_contract_mismatches = tuple(
         sorted(
             request_id
             for request_id, record in observed.items()
             for claim in record.claims
             if claim.citation_required
-            != (expected[request_id].variant in citation_required_variants)
+            != (
+                expected[request_id].variant in citation_required_variants
+                and claim.claim_type in citation_required_claim_types
+            )
         )
     )
     if citation_contract_mismatches:

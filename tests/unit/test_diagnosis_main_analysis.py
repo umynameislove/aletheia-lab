@@ -10,6 +10,7 @@ from aletheia_lab.evaluation.diagnosis_main_analysis import (
     ALL_CONDITIONS,
     CONTROLLED_VARIANTS,
     DiagnosisMainAnalysisCensus,
+    DiagnosisMainAnalysisError,
     DiagnosisMainAnalysisInput,
     DiagnosisMainAnalysisPlan,
     DiagnosisMainClaim,
@@ -17,7 +18,12 @@ from aletheia_lab.evaluation.diagnosis_main_analysis import (
     DiagnosisMainExpectedRequest,
     DiagnosisMainFamily,
     DiagnosisMainObservedRecord,
+    _validate_observed_contracts,
     analyse_diagnosis_main,
+)
+from aletheia_lab.evaluation.diagnosis_main_materialization import (
+    _CITATION_REQUIRED_CLAIMS,
+    _CITATION_REQUIRED_VARIANTS,
 )
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
 
@@ -271,6 +277,88 @@ def test_versioned_plan_is_hash_locked_outcome_blind_and_noncausal() -> None:
     assert plan.controlled_request_count == 1024
     assert plan.secondary_claim_status == "descriptive_only"
     assert plan.aggregation_order[-1] == "family_to_finite_census_equal_family_weight"
+
+
+def test_materializer_citation_sets_match_frozen_response_contract() -> None:
+    policy = json.loads(
+        (ROOT / "configs/evaluation/diagnosis_main_response_contract.json").read_text()
+    )["citation_policy"]
+    assert set(policy["required_for_cause_and_evidence_claims"]) == _CITATION_REQUIRED_VARIANTS
+    assert set(policy["required_claim_types"]) == _CITATION_REQUIRED_CLAIMS
+
+
+@pytest.mark.parametrize("variant", CONTROLLED_VARIANTS)
+@pytest.mark.parametrize(
+    "claim_type",
+    (
+        "cause_assertion",
+        "evidence_statement",
+        "uncertainty_statement",
+        "recommended_action",
+        "other",
+    ),
+)
+def test_analysis_citation_check_matches_frozen_claim_type_policy(
+    variant: str, claim_type: str
+) -> None:
+    policy = json.loads(
+        (ROOT / "configs/evaluation/diagnosis_main_response_contract.json").read_text()
+    )["citation_policy"]
+    assert claim_type in (*policy["required_claim_types"], *policy["optional_claim_types"])
+    citation_required = (
+        variant in policy["required_for_cause_and_evidence_claims"]
+        and claim_type in policy["required_claim_types"]
+    )
+    request = _request(_context(_family(1), "full", counterevidence_source=None), variant)
+    record = DiagnosisMainObservedRecord(
+        request_id=request.request_id,
+        request_sha256=request.request_sha256,
+        technical_status="success",
+        output_status="completed",
+        claims=(
+            DiagnosisMainClaim(
+                claim_id="claim-1",
+                claim_type=claim_type,  # type: ignore[arg-type]
+                support_label="fully_supported",
+                citation_required=citation_required,
+                citation_present=citation_required,
+                citation_ids_valid=citation_required,
+            ),
+        ),
+    )
+    _validate_observed_contracts({request.request_id: request}, {record.request_id: record})
+
+
+@pytest.mark.parametrize(
+    ("variant", "claim_type", "citation_required"),
+    (
+        ("A3", "cause_assertion", False),
+        ("A3", "uncertainty_statement", True),
+        ("B1", "cause_assertion", True),
+    ),
+)
+def test_analysis_citation_check_rejects_policy_mismatch(
+    variant: str, claim_type: str, citation_required: bool
+) -> None:
+    request = _request(_context(_family(1), "full", counterevidence_source=None), variant)
+    record = DiagnosisMainObservedRecord(
+        request_id=request.request_id,
+        request_sha256=request.request_sha256,
+        technical_status="success",
+        output_status="completed",
+        claims=(
+            DiagnosisMainClaim(
+                claim_id="claim-1",
+                claim_type=claim_type,  # type: ignore[arg-type]
+                support_label="fully_supported",
+                citation_required=citation_required,
+                citation_present=citation_required,
+                citation_ids_valid=citation_required,
+            ),
+        ),
+    )
+    with pytest.raises(DiagnosisMainAnalysisError, match="citation policy"):
+        _validate_observed_contracts({request.request_id: request}, {record.request_id: record})
 
 
 def test_finite_census_primary_keeps_claim_to_family_aggregation() -> None:
