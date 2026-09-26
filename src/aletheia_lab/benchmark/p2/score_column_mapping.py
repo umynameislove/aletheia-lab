@@ -21,7 +21,11 @@ def _fail(message: str) -> NoReturn:
     raise ScoreColumnMappingError(message)
 
 
-def _checked_ids(values: Sequence[str]) -> tuple[str, ...]:
+def validate_score_record_ids(values: Sequence[str]) -> tuple[str, ...]:
+    """Return canonical, unique row IDs before score capture or decoding."""
+
+    if isinstance(values, (str, bytes)):
+        _fail("record IDs must be an ordered sequence of strings")
     try:
         ids = tuple(values)
     except TypeError as exc:
@@ -83,8 +87,8 @@ def decode_positive_class_scores(
     deliberately checked by a separate source/witness layer.
     """
 
-    ids = _checked_ids(record_ids)
-    if ids != _checked_ids(expected_record_ids):
+    ids = validate_score_record_ids(record_ids)
+    if ids != validate_score_record_ids(expected_record_ids):
         _fail("score rows and expected records differ in identity or order")
     classes = _checked_classes(column_classes)
     try:
