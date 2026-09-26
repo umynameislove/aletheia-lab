@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import replace
 from pathlib import Path
 
@@ -179,6 +180,45 @@ def test_visible_resolution_is_explicit_and_does_not_change_old_projection() -> 
     assert (
         build_development_evidence_views(mapping)["missing_key"] != (mapping_views["missing_key"])
     )
+
+
+def test_shortcut_rule_has_no_pairwise_signal_without_key() -> None:
+    mapping = _observation()
+    rival = replace(
+        mapping,
+        observed_log_loss=0.6000002,
+        evaluator_classes=(0, 1),
+        example_observed_positive=0.9,
+        target_binding_matches_source=False,
+        corrected_log_loss=0.6000002,
+    )
+    mapping_views = _coarsened_views(mapping)
+    rival_views = _coarsened_views(rival)
+    missing = mapping_views["missing_key"]
+    assert missing == rival_views["missing_key"]
+    assert set(missing) == {"schema_version", "metric_decimal_places", "items"}
+    assert [item["id"] for item in missing["items"]] == [
+        "performance-comparison",
+        "score-source-controls",
+    ]
+    serialized = json.dumps(missing, sort_keys=True)
+    assert not any(
+        token in serialized
+        for token in ("target-binding", "column-interpretation", "independent-recomputation")
+    )
+
+    def full_rule(view: dict[str, object]) -> str:
+        items = {item["id"]: item["payload"] for item in view["items"]}
+        interpretation = items["column-interpretation"]
+        targets_match = items["target-binding-check"]["scoring_targets_match_source_rows"]
+        if interpretation["model_column_classes"] != interpretation["evaluator_column_classes"]:
+            return "mapping" if targets_match else "unresolved"
+        return "target_binding" if not targets_match else "unresolved"
+
+    assert full_rule(mapping_views["full"]) == "mapping"
+    assert full_rule(rival_views["full"]) == "target_binding"
+    assert mapping_views["noisy"]["items"][-1] == rival_views["noisy"]["items"][-1]
+    assert mapping_views["misleading"]["items"][-1] == rival_views["misleading"]["items"][-1]
 
 
 def test_private_predecessor_cannot_become_output_parent(tmp_path: Path) -> None:
