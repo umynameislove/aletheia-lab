@@ -19,6 +19,7 @@ from aletheia_lab.evaluation._diagnosis_main_analysis_contracts import (
     DiagnosisMainAnalysisPlan,
     DiagnosisMainAnalysisReport,
     DiagnosisMainObservedRecord,
+    MetricInterval,
 )
 
 CATEGORIES = ("technical_failure", "actual_abstention", "zero_claim", "claim_scored")
@@ -61,7 +62,10 @@ def _require_locked_inputs(
     census: DiagnosisMainAnalysisCensus,
     analysis_input: DiagnosisMainAnalysisInput,
     report: DiagnosisMainAnalysisReport,
-) -> None:
+) -> tuple[MetricInterval, MetricInterval, dict[str, MetricInterval]]:
+    primary = report.primary_effect
+    sensitivity = report.partial_support_sensitivity_effect
+    conditions = report.condition_primary_effects
     if (
         report.status != "valid_registered_analysis"
         or report.analysis_plan_sha256 != plan.plan_sha256
@@ -71,11 +75,12 @@ def _require_locked_inputs(
         or analysis_input.census_sha256 != census.census_sha256
         or report.expected_request_count != len(census.requests)
         or report.terminal_request_count != len(analysis_input.records)
-        or report.primary_effect is None
-        or report.partial_support_sensitivity_effect is None
-        or report.condition_primary_effects is None
+        or primary is None
+        or sensitivity is None
+        or conditions is None
     ):
         raise ForwardDecompositionError(f"{name} is not bound to the frozen census and report")
+    return primary, sensitivity, conditions
 
 
 def _require_complete_records(
@@ -108,7 +113,9 @@ def _checked_run(
     analysis_input: DiagnosisMainAnalysisInput,
     report: DiagnosisMainAnalysisReport,
 ) -> dict[str, Any]:
-    _require_locked_inputs(name, plan, census, analysis_input, report)
+    primary_report, sensitivity_report, condition_reports = _require_locked_inputs(
+        name, plan, census, analysis_input, report
+    )
     observed = _require_complete_records(name, census, analysis_input, report)
 
     contexts = {context.context_id: context for context in census.contexts}
@@ -177,10 +184,10 @@ def _checked_run(
     primary_effect = paired_effect(CORE_CONDITIONS, 0)
     sensitivity_effect = paired_effect(CORE_CONDITIONS, 1)
     if not math.isclose(
-        primary_effect, report.primary_effect.estimate, rel_tol=0.0, abs_tol=1e-12
+        primary_effect, primary_report.estimate, rel_tol=0.0, abs_tol=1e-12
     ) or not math.isclose(
         sensitivity_effect,
-        report.partial_support_sensitivity_effect.estimate,
+        sensitivity_report.estimate,
         rel_tol=0.0,
         abs_tol=1e-12,
     ):
@@ -188,7 +195,7 @@ def _checked_run(
     for condition in CORE_CONDITIONS:
         if not math.isclose(
             paired_effect((condition,), 0),
-            report.condition_primary_effects[condition].estimate,
+            condition_reports[condition].estimate,
             rel_tol=0.0,
             abs_tol=1e-12,
         ):
@@ -219,10 +226,8 @@ def _checked_run(
         "report_sha256": report.report_sha256,
         "technical_status_counts": report.technical_status_counts,
         "raw_claim_count": report.raw_claim_count,
-        "primary_effect": report.primary_effect.model_dump(mode="json"),
-        "partial_support_sensitivity_effect": report.partial_support_sensitivity_effect.model_dump(
-            mode="json"
-        ),
+        "primary_effect": primary_report.model_dump(mode="json"),
+        "partial_support_sensitivity_effect": sensitivity_report.model_dump(mode="json"),
         "cells": cell_output,
         "B1_minus_A3_primary_loss_contributions": contrasts,
     }
