@@ -72,7 +72,7 @@ class DevelopmentSymptomStudyError(ValueError):
 
 
 @dataclass(frozen=True, slots=True)
-class _CellReplay:
+class DevelopmentCellReplay:
     witness: IndependentScoreWitness
     source: EvaluatorScoreSource
     model: BinaryProbabilityModel
@@ -84,6 +84,9 @@ class _CellReplay:
     dev_targets: tuple[int, ...]
     target_rows: tuple[tuple[str, int], ...]
     healthy_scores: tuple[float, ...]
+
+
+_CellReplay = DevelopmentCellReplay
 
 
 def _checked_prior_summary(prior: Path) -> dict[str, Any]:
@@ -118,7 +121,7 @@ def _required_artifact(path: Path, expected_sha256: str) -> None:
         raise DevelopmentSymptomStudyError("pinned source artifact is missing or changed")
 
 
-def _measure_dose(replay: _CellReplay, previous: dict[str, Any]) -> dict[str, Any]:
+def _measure_dose(replay: DevelopmentCellReplay, previous: dict[str, Any]) -> dict[str, Any]:
     dose = previous["selected_shards"]
     if dose not in DOSES:
         raise DevelopmentSymptomStudyError("predecessor used an unknown development dose")
@@ -240,7 +243,7 @@ def _measure_dose(replay: _CellReplay, previous: dict[str, Any]) -> dict[str, An
     return result
 
 
-def _cell_study(
+def load_development_cell(
     *,
     root: Path,
     prior: Path,
@@ -251,7 +254,8 @@ def _cell_study(
     prior_cell: dict[str, Any],
     kind: str,
     protocol_path: Path,
-) -> dict[str, Any]:
+) -> DevelopmentCellReplay:
+    """Replay a hash-pinned train/development source without scoring a holdout."""
     cell_dir = prior / f"{dataset.dataset_id}-{kind}"
     if cell_dir.is_symlink() or not cell_dir.is_dir():
         raise DevelopmentSymptomStudyError("predecessor cell is unavailable")
@@ -330,7 +334,7 @@ def _cell_study(
     healthy_scores = tuple(
         row[witness.model_classes.index(1)] for row in witness.calibrated_score_rows
     )
-    replay = _CellReplay(
+    return DevelopmentCellReplay(
         witness,
         source,
         model,
@@ -343,13 +347,38 @@ def _cell_study(
         target_rows,
         healthy_scores,
     )
+
+
+def _cell_study(
+    *,
+    root: Path,
+    prior: Path,
+    dataset: Any,
+    frame: Any,
+    split: Any,
+    protocol: Any,
+    prior_cell: dict[str, Any],
+    kind: str,
+    protocol_path: Path,
+) -> dict[str, Any]:
+    replay = load_development_cell(
+        root=root,
+        prior=prior,
+        dataset=dataset,
+        frame=frame,
+        split=split,
+        protocol=protocol,
+        prior_cell=prior_cell,
+        kind=kind,
+        protocol_path=protocol_path,
+    )
     measurements = [_measure_dose(replay, previous) for previous in prior_cell["measurements"]]
     return {
         "dataset_id": dataset.dataset_id,
         "model_kind": kind,
-        "development_count": len(dev_ids),
-        "source_score_sha256": witness.raw_scores_sha256,
-        "source_target_binding_sha256": witness.target_binding_sha256,
+        "development_count": len(replay.dev_ids),
+        "source_score_sha256": replay.witness.raw_scores_sha256,
+        "source_target_binding_sha256": replay.witness.target_binding_sha256,
         "measurements": measurements,
     }
 
