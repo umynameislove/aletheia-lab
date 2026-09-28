@@ -7,7 +7,6 @@ prior feasibility folder is read-only; a new private folder holds this study.
 from __future__ import annotations
 
 import json
-from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -39,8 +38,10 @@ from aletheia_lab.benchmark.p2.score_mapping_development import (
 )
 from aletheia_lab.benchmark.p2.score_mapping_evidence import (
     DevelopmentObservation,
+    ProjectionBundle,
     build_development_evidence_views,
     mapping_observation,
+    serialize_development_evidence_view,
     target_binding_rival_observation,
 )
 from aletheia_lab.benchmark.p2.score_mapping_intervention import (
@@ -91,7 +92,7 @@ def _checked_prior_summary(prior: Path) -> dict[str, Any]:
         raise DevelopmentSymptomStudyError("pinned predecessor summary is unavailable")
     if file_sha256(path) != PRIOR_SUMMARY_SHA256:
         raise DevelopmentSymptomStudyError("pinned predecessor summary bytes changed")
-    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
     if (
         payload.get("schema_version") != "score-mapping-development-feasibility/v1"
         or payload.get("status") != "development_only"
@@ -104,32 +105,12 @@ def _checked_prior_summary(prior: Path) -> dict[str, Any]:
     return payload
 
 
-def _coarsened_views(observation: DevelopmentObservation) -> dict[str, dict[str, object]]:
-    """Report log-loss at fixed visible resolution without changing old views.
+def _coarsened_views(observation: DevelopmentObservation) -> ProjectionBundle:
+    """Use the same source-to-visible rounding rule as the matching search."""
 
-    Existing twelve-decimal views remain intact for audit. This forward view
-    explicitly states the resolution seen by a hypothetical diagnoser.
-    """
-
-    views = deepcopy(build_development_evidence_views(observation))
-    for view in views.values():
-        view["metric_decimal_places"] = VISIBLE_METRIC_DECIMALS
-        items = view["items"]
-        if not isinstance(items, list):
-            raise DevelopmentSymptomStudyError("evidence view has no item list")
-        performance = items[0]["payload"]
-        reference = round(performance["reference_log_loss"], VISIBLE_METRIC_DECIMALS)
-        observed = round(performance["observed_log_loss"], VISIBLE_METRIC_DECIMALS)
-        performance["reference_log_loss"] = reference
-        performance["observed_log_loss"] = observed
-        performance["log_loss_change"] = round(observed - reference, VISIBLE_METRIC_DECIMALS)
-        for item in items:
-            if item["id"] == "independent-recomputation":
-                metric = item["payload"]["source_column_decode_log_loss"]
-                item["payload"]["source_column_decode_log_loss"] = round(
-                    metric, VISIBLE_METRIC_DECIMALS
-                )
-    return views
+    return build_development_evidence_views(
+        observation, metric_decimal_places=VISIBLE_METRIC_DECIMALS
+    )
 
 
 def _required_artifact(path: Path, expected_sha256: str) -> None:
@@ -210,8 +191,16 @@ def _measure_dose(replay: _CellReplay, previous: dict[str, Any]) -> dict[str, An
     rival_views = _coarsened_views(rival)
     original_mapping = build_development_evidence_views(mapping)
     original_rival = build_development_evidence_views(rival)
-    full_distinguishes = mapping_views["full"] != rival_views["full"]
-    missing_identical = mapping_views["missing_key"] == rival_views["missing_key"]
+    full_distinguishes = serialize_development_evidence_view(
+        mapping, condition="full", metric_decimal_places=VISIBLE_METRIC_DECIMALS
+    ) != serialize_development_evidence_view(
+        rival, condition="full", metric_decimal_places=VISIBLE_METRIC_DECIMALS
+    )
+    missing_identical = serialize_development_evidence_view(
+        mapping, condition="missing_key", metric_decimal_places=VISIBLE_METRIC_DECIMALS
+    ) == serialize_development_evidence_view(
+        rival, condition="missing_key", metric_decimal_places=VISIBLE_METRIC_DECIMALS
+    )
     source_shared = (
         mapping.source_identity_sha256 == rival.source_identity_sha256
         and mapping.reference_features_sha256 == rival.reference_features_sha256
