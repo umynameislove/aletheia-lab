@@ -7,6 +7,7 @@ authenticity of the upstream model and label ledger remains a caller duty.
 
 from __future__ import annotations
 
+import json
 import math
 from collections.abc import Sequence
 from copy import deepcopy
@@ -323,16 +324,25 @@ def _projection(items: tuple[dict[str, object], ...]) -> Projection:
     return {"schema_version": _SCHEMA_VERSION, "items": deepcopy(list(items))}
 
 
-def _display_metric(value: float) -> float:
-    rounded = round(value, _DISPLAY_DECIMALS)
+def _display_metric(value: float, decimals: int = _DISPLAY_DECIMALS) -> float:
+    rounded = round(value, decimals)
     return 0.0 if rounded == 0.0 else rounded
 
 
-def build_development_evidence_views(observation: DevelopmentObservation) -> ProjectionBundle:
-    """Materialize four sibling views with condition names kept outside payloads."""
+def build_development_evidence_views(
+    observation: DevelopmentObservation, *, metric_decimal_places: int = 12
+) -> ProjectionBundle:
+    """Build sibling views, rounding once from source metrics at explicit precision.
+
+    The default preserves the historical twelve-decimal projection. Six
+    decimals is a different observation contract, not a raw-metric equality
+    claim; its resolution is stated inside each payload.
+    """
 
     if not isinstance(observation, DevelopmentObservation):
         raise ScoreMappingEvidenceError("a checked development observation is required")
+    if type(metric_decimal_places) is not int or metric_decimal_places not in (6, 12):
+        raise ScoreMappingEvidenceError("metric resolution must be six or twelve decimals")
     pair = observation.example_score_pair
     if (
         observation.record_count < 2
@@ -369,15 +379,15 @@ def build_development_evidence_views(observation: DevelopmentObservation) -> Pro
         raise ScoreMappingEvidenceError("development observation is malformed")
     if observation.feature_mean_distance <= 0.0:
         raise ScoreMappingEvidenceError("misleading view needs a real nonzero competing clue")
-    reference = _display_metric(observation.reference_log_loss)
-    observed = _display_metric(observation.observed_log_loss)
+    reference = _display_metric(observation.reference_log_loss, metric_decimal_places)
+    observed = _display_metric(observation.observed_log_loss, metric_decimal_places)
     performance = _item(
         "performance-comparison",
         {
             "record_count": observation.record_count,
             "reference_log_loss": reference,
             "observed_log_loss": observed,
-            "log_loss_change": _display_metric(observed - reference),
+            "log_loss_change": _display_metric(observed - reference, metric_decimal_places),
         },
     )
     controls = _item(
@@ -402,7 +412,11 @@ def build_development_evidence_views(observation: DevelopmentObservation) -> Pro
         ),
         _item(
             "independent-recomputation",
-            {"source_column_decode_log_loss": _display_metric(observation.corrected_log_loss)},
+            {
+                "source_column_decode_log_loss": _display_metric(
+                    observation.corrected_log_loss, metric_decimal_places
+                )
+            },
         ),
     )
     full = common + decisive
@@ -422,12 +436,38 @@ def build_development_evidence_views(observation: DevelopmentObservation) -> Pro
             "mean_vector_distance": observation.feature_mean_distance,
         },
     )
-    return {
+    views: ProjectionBundle = {
         "full": _projection(full),
         "missing_key": _projection(common),
         "noisy": _projection(full + (noisy,)),
         "misleading": _projection(full + (competing,)),
     }
+    if metric_decimal_places == 6:
+        for view in views.values():
+            view["metric_decimal_places"] = metric_decimal_places
+    return views
+
+
+def serialize_development_evidence_view(
+    observation: DevelopmentObservation,
+    *,
+    condition: EvidenceCondition,
+    metric_decimal_places: int,
+) -> bytes:
+    """Serialize only the selected observation, never its raw audit parent.
+
+    Precision has no implicit default at this reader boundary. Source hashes,
+    selector/dose, rival labels and other private audit fields are not attached.
+    """
+
+    if condition not in ("full", "missing_key", "noisy", "misleading"):
+        raise ScoreMappingEvidenceError("unknown evidence condition")
+    view = build_development_evidence_views(
+        observation, metric_decimal_places=metric_decimal_places
+    )[condition]
+    return json.dumps(
+        view, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
+    ).encode("utf-8")
 
 
 def audit_matched_target_rival(

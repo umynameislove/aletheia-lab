@@ -25,7 +25,9 @@ from aletheia_lab.benchmark.p2.score_mapping_development_symptoms import (
 )
 from aletheia_lab.benchmark.p2.score_mapping_evidence import (
     DevelopmentObservation,
+    ScoreMappingEvidenceError,
     build_development_evidence_views,
+    serialize_development_evidence_view,
 )
 from aletheia_lab.benchmark.p2.score_mapping_intervention import apply_evaluator_mapping_fault
 from aletheia_lab.benchmark.p2.score_mapping_symptom_matching import (
@@ -229,6 +231,97 @@ def test_shortcut_rule_has_no_pairwise_signal_without_key() -> None:
     assert full_rule(rival_views["full"]) == "target_binding"
     assert mapping_views["noisy"]["items"][-1] == rival_views["noisy"]["items"][-1]
     assert mapping_views["misleading"]["items"][-1] == rival_views["misleading"]["items"][-1]
+
+
+def test_reader_bytes_match_only_at_the_declared_observation_resolution() -> None:
+    mapping = _observation()
+    rival = replace(
+        mapping,
+        observed_log_loss=0.6000002,
+        evaluator_classes=(0, 1),
+        example_observed_positive=0.9,
+        target_binding_matches_source=False,
+        corrected_log_loss=0.6000002,
+    )
+    six = serialize_development_evidence_view(
+        mapping, condition="missing_key", metric_decimal_places=6
+    )
+    assert six == serialize_development_evidence_view(
+        rival, condition="missing_key", metric_decimal_places=6
+    )
+    assert json.loads(six) == json.loads(json.dumps(_coarsened_views(mapping)["missing_key"]))
+    assert serialize_development_evidence_view(
+        mapping, condition="missing_key", metric_decimal_places=12
+    ) != serialize_development_evidence_view(
+        rival, condition="missing_key", metric_decimal_places=12
+    )
+    assert serialize_development_evidence_view(
+        mapping, condition="full", metric_decimal_places=6
+    ) != serialize_development_evidence_view(rival, condition="full", metric_decimal_places=6)
+    for private_token in (
+        b"source_identity_sha256",
+        b"reference_features_sha256",
+        b"evaluator_classes",
+        b"target_binding_matches_source",
+        b"condition",
+        b"0.6000001",
+    ):
+        assert private_token not in six
+    assert mapping.observed_log_loss == 0.6000001
+    assert rival.observed_log_loss == 0.6000002
+
+
+def test_visible_metric_rounds_once_from_raw_not_via_twelve_decimals() -> None:
+    boundary = 0.1234565000004
+    assert round(boundary, 6) != round(round(boundary, 12), 6)
+    observation = replace(_observation(), reference_log_loss=boundary, corrected_log_loss=boundary)
+    original = build_development_evidence_views(observation)
+    visible = _coarsened_views(observation)
+    for view in visible.values():
+        performance = view["items"][0]["payload"]
+        assert performance["reference_log_loss"] == round(boundary, 6)
+        assert performance["log_loss_change"] == round(
+            performance["observed_log_loss"] - performance["reference_log_loss"], 6
+        )
+        for item in view["items"]:
+            if item["id"] == "independent-recomputation":
+                assert item["payload"]["source_column_decode_log_loss"] == round(boundary, 6)
+    assert original["full"]["items"][0]["payload"]["reference_log_loss"] == round(boundary, 12)
+    assert observation.reference_log_loss == boundary
+
+
+def test_small_raw_gap_across_a_rounding_boundary_is_not_an_identical_payload() -> None:
+    mapping = replace(_observation(), observed_log_loss=0.60000049)
+    rival = replace(mapping, observed_log_loss=0.60000051)
+    assert abs(mapping.observed_log_loss - rival.observed_log_loss) < MAX_ABSOLUTE_LOSS_GAP
+    assert serialize_development_evidence_view(
+        mapping, condition="missing_key", metric_decimal_places=6
+    ) != serialize_development_evidence_view(
+        rival, condition="missing_key", metric_decimal_places=6
+    )
+
+
+@pytest.mark.parametrize("precision", [True, False, 0, 5, 7, 13])
+def test_reader_rejects_undeclared_precision(precision: int) -> None:
+    with pytest.raises(ScoreMappingEvidenceError, match="resolution"):
+        serialize_development_evidence_view(
+            _observation(), condition="missing_key", metric_decimal_places=precision
+        )
+
+
+def test_reader_rejects_unknown_condition_and_keeps_zero_canonical() -> None:
+    with pytest.raises(ScoreMappingEvidenceError, match="unknown evidence condition"):
+        serialize_development_evidence_view(
+            _observation(),
+            condition="raw_audit",  # type: ignore[arg-type]
+            metric_decimal_places=6,
+        )
+    observation = replace(_observation(), reference_log_loss=0.0000001, observed_log_loss=0.0)
+    payload = serialize_development_evidence_view(
+        observation, condition="missing_key", metric_decimal_places=6
+    )
+    assert b"-0.0" not in payload
+    assert json.loads(payload)["items"][0]["payload"]["log_loss_change"] == 0.0
 
 
 def test_private_predecessor_cannot_become_output_parent(tmp_path: Path) -> None:

@@ -125,3 +125,27 @@ and separate execution authorization remain necessary before any registered
 attempt. No provider was called,
 no sealed predictions or metrics were computed, and the earlier P2R/P5
 results were not changed.
+
+## Reader precision contract
+
+The evidence builder supports the historical twelve-decimal view and an
+explicit six-decimal view. It rounds each source loss **once**, then derives
+the displayed change from the displayed reference and observed losses. It
+does not round through twelve decimals before producing six: double rounding
+can move a value to the other side of a rounding boundary. Source metrics and
+the historical artifacts are left untouched.
+
+`serialize_development_evidence_view` requires an explicit precision and
+condition. It serializes only that view, not the enclosing observation or
+private study ledger. Six-decimal payloads declare their precision; the
+historical default twelve-decimal projection remains unchanged. Matching now
+compares the actual serialized `missing_key` and `full` bytes. A raw gap below
+the half-unit tolerance alone is insufficient when the values straddle a
+rounding boundary. This is an observation-channel contract for development,
+not a guarantee that all deployments or other mechanism pairs are leak-free.
+
+The technical basis is the classifier's documented score-column order and
+the metric's label convention ([classifier API](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html),
+[log-loss API](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.log_loss.html)).
+Neither source establishes mechanism admission or the validity of a future
+protected experiment.
