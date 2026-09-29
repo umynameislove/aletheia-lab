@@ -198,3 +198,87 @@ the metric's label convention ([classifier API](https://scikit-learn.org/stable/
 [log-loss API](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.log_loss.html)).
 Neither source establishes mechanism admission or the validity of a future
 protected experiment.
+
+## Prospective target-row binding validation on new sources
+
+The separate `target_binding_prospective.py` runner freezes two previously
+unused source domains: [UCI MAGIC Gamma Telescope](https://archive.ics.uci.edu/dataset/159/magic%2Bgamma%2Btelescope)
+and [UCI Spambase](https://archive.ics.uci.edu/dataset/94/spambase). The checked
+protocol pins both archive and member bytes, source label encodings and
+CC-BY-4.0 provenance. These are **two source clusters**, evaluated with the two
+existing fixed estimators (four cells), not four independent datasets. MAGIC
+is Monte-Carlo-generated and its hadrons are underrepresented; Spambase's
+labels and predictors reflect its historical mail-collection context. Source
+hashes prove identity/lineage, not semantic truth of the labels or
+representativeness of current deployments.
+
+`prepare` parses numeric source rows and computes membership/class counts;
+it fits nothing and produces no final predictions or metrics. It is therefore
+**prediction/metric-blind**, not physically blind to source labels. Exact
+feature duplicates share a feature-only hash group, with fixed 60/20/20 hash
+intervals for train/calibration/final. Labels and fitted scores cannot change
+membership. No missing/nonfinite row is silently removed or imputed: a parser
+failure blocks preparation. A single-class/empty partition remains an explicit
+ineligible cell in the fixed census. See the
+[scikit-learn leakage guidance](https://scikit-learn.org/stable/common_pitfalls.html).
+
+`execute` requires the exact plan byte hash and acquires one atomic lease before
+model fitting. The loaded package must be the checkout whose sources are
+hashed. Standardization and model fitting use train only; logit calibration
+uses the separate calibration partition, with fitting clip `1e-12`, 200
+iterations and tolerance `1e-9`. Calibration application retains the existing
+runtime clip `1e-15`. Final rows are not used to choose model, hyperparameters,
+calibration, seed or dose. Code, runtime versions, source bytes, membership,
+precision and failure policy are all bound before execution.
+
+For every cell, retain the healthy/unused-metadata sham, zero-dose target
+control and fixed one-of-twenty-shard cyclic target-donor intervention. Cyclic
+selection does not consult targets/scores; same-label donors and flat or
+negative effects are retained. Verify source model/class order, both score
+columns, target ledger and correction independently before making a causal
+interpretation. Actual target-source restoration must recover healthy loss.
+
+The existing deterministic greedy matcher is then used **once as a
+predeclared adversarial construction**, not as a natural-corruption sample.
+The mapping dose stays at one shard; opposite-label target swaps preserve
+class counts and cannot exceed mapping's affected-row footprint. Match only
+at the frozen six-decimal channel, with a raw gap at most `5e-7` **and** exact
+complete `missing_key` reader-context equality; `full` must retain a differing
+witness. Failure to match, a nonpositive mapping effect, insufficient footprint,
+model/calibration failure or interruption never replaces a source, increases
+dose/tolerance, or drops a cell. Correction of **target bindings** is evaluated
+separately from the reader's "correct score-column decode" field: correcting
+columns with wrong targets still leaves the target-rival loss faulty.
+
+The immutable receipt includes all four dispositions, artifact hashes and
+match coverage. The offline `verify` operation replays source membership,
+stored score/calibration bindings, independent donor joins, runtime metrics
+and complete reader payloads, without refitting a model, repeating matching,
+or making a provider call. Receipt verification establishes consistency of
+the local evidence chain, not authenticity against someone able to rewrite
+every file and seal. A verified failure receipt is not a mechanism PASS.
+
+The receipt's mechanical disposition is `incomplete` if any cell is not
+structurally verified or the execution fails, `rejected_no_visible_cyclic_effect`
+if all four verify but none shows a target-changing cyclic effect at the
+declared precision, and `assumption_limited` otherwise. That last status is
+**not admission** and does not require all four adversarial pairs to match.
+Its claim remains bounded to the observed cells, original-label assumption
+and two source clusters; match coverage remains an independent result.
+
+Successful paired ambiguity is conditional on the matched subset. Report
+match coverage over **all four cells** separately from structural/correction
+checks, and keep both source-cluster identities when discussing generalization.
+This is a prospective algorithmic positive-control test, not LLM diagnostic
+accuracy, natural error frequency, unrestricted zero-leakage, or automatic
+admission of either mechanism. It does not open a historical holdout or change
+P2R/P5 results. The development-to-prospective distinction follows
+[Dwork et al.'s adaptive holdout analysis](https://arxiv.org/abs/1506.02629).
+No paid API is needed for this validation; any later LLM reader experiment is
+a separate question with its own final observation contract.
+
+Use one private directory outside the repository, with the two pinned archives
+under `sources/`. Run `prepare`, then inspect its exact plan and authorize
+`execute --confirm-plan-sha256 ...`; finally run `verify`. Do not publish the
+raw archives, fitted models, row-target ledgers or reader traces. Preparation
+and synthetic tests alone must not be reported as completed prospective results.
