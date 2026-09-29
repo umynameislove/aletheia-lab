@@ -43,6 +43,7 @@ from aletheia_lab.benchmark.p2.score_mapping_evidence import (
     mapping_observation,
     serialize_m5_diagnostic_view,
     target_binding_rival_observation,
+    zero_dose_observation,
 )
 from aletheia_lab.benchmark.p2.score_mapping_intervention import (
     BinaryProbabilityModel,
@@ -63,6 +64,7 @@ from aletheia_lab.benchmark.p2.score_mapping_verification import (
     verify_evaluator_mapping,
 )
 from aletheia_lab.content_hashing import file_sha256
+from aletheia_lab.evaluation.score_mapping_reader import build_score_mapping_reader_context
 
 PRIOR_SUMMARY_SHA256 = "2074633e1dbae29f4b9178344a752f8ff6b49a3bbc643bb0c206d4302406759a"
 
@@ -152,6 +154,18 @@ def _measure_dose(replay: DevelopmentCellReplay, previous: dict[str, Any]) -> di
         "mapping_log_loss": previous["faulty_log_loss"],
     }
     if dose == 0 or not verified.changed_score_record_ids:
+        if dose == 0:
+            control = zero_dose_observation(
+                witness=replay.witness,
+                source=replay.source,
+                reference_model=replay.model,
+                reference_calibration=replay.calibration,
+                artifacts=replay.artifacts,
+                reference_features=replay.train,
+                evaluation_features=replay.development,
+            )
+            for condition in ("full", "missing_key", "noisy", "misleading"):
+                build_score_mapping_reader_context(control, condition=condition)
         result["status"] = "zero_or_flat_control"
         return result
     mapping = mapping_observation(
@@ -200,6 +214,21 @@ def _measure_dose(replay: DevelopmentCellReplay, previous: dict[str, Any]) -> di
     missing_identical = serialize_m5_diagnostic_view(
         mapping, condition="missing_key"
     ) == serialize_m5_diagnostic_view(rival, condition="missing_key")
+    # The gateway sends the whole context envelope, including derived IDs and
+    # digests.  Projection-byte equality alone cannot rule out that shortcut.
+    gateway_missing_identical = (
+        build_score_mapping_reader_context(mapping, condition="missing_key").model_payload()
+        == build_score_mapping_reader_context(rival, condition="missing_key").model_payload()
+    )
+    gateway_full_distinguishes = (
+        build_score_mapping_reader_context(mapping, condition="full").model_payload()
+        != build_score_mapping_reader_context(rival, condition="full").model_payload()
+    )
+    if (
+        gateway_missing_identical != missing_identical
+        or gateway_full_distinguishes != full_distinguishes
+    ):
+        raise DevelopmentSymptomStudyError("gateway reader envelope disagrees with the projection")
     source_shared = (
         mapping.source_identity_sha256 == rival.source_identity_sha256
         and mapping.reference_features_sha256 == rival.reference_features_sha256
