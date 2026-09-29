@@ -41,7 +41,7 @@ from aletheia_lab.benchmark.p2.score_mapping_evidence import (
     ProjectionBundle,
     build_development_evidence_views,
     mapping_observation,
-    serialize_development_evidence_view,
+    serialize_m5_diagnostic_view,
     target_binding_rival_observation,
 )
 from aletheia_lab.benchmark.p2.score_mapping_intervention import (
@@ -194,16 +194,12 @@ def _measure_dose(replay: DevelopmentCellReplay, previous: dict[str, Any]) -> di
     rival_views = _coarsened_views(rival)
     original_mapping = build_development_evidence_views(mapping)
     original_rival = build_development_evidence_views(rival)
-    full_distinguishes = serialize_development_evidence_view(
-        mapping, condition="full", metric_decimal_places=VISIBLE_METRIC_DECIMALS
-    ) != serialize_development_evidence_view(
-        rival, condition="full", metric_decimal_places=VISIBLE_METRIC_DECIMALS
-    )
-    missing_identical = serialize_development_evidence_view(
-        mapping, condition="missing_key", metric_decimal_places=VISIBLE_METRIC_DECIMALS
-    ) == serialize_development_evidence_view(
-        rival, condition="missing_key", metric_decimal_places=VISIBLE_METRIC_DECIMALS
-    )
+    full_distinguishes = serialize_m5_diagnostic_view(
+        mapping, condition="full"
+    ) != serialize_m5_diagnostic_view(rival, condition="full")
+    missing_identical = serialize_m5_diagnostic_view(
+        mapping, condition="missing_key"
+    ) == serialize_m5_diagnostic_view(rival, condition="missing_key")
     source_shared = (
         mapping.source_identity_sha256 == rival.source_identity_sha256
         and mapping.reference_features_sha256 == rival.reference_features_sha256

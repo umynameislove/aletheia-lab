@@ -36,6 +36,7 @@ from aletheia_lab.benchmark.p2.score_mapping_verification import (
 EvidenceCondition: TypeAlias = Literal["full", "missing_key", "noisy", "misleading"]
 _SCHEMA_VERSION = "diagnosis-development-projection/v1"
 _DISPLAY_DECIMALS = 12
+M5_DIAGNOSTIC_METRIC_DECIMALS = 6
 
 
 class ScoreMappingEvidenceError(ValueError):
@@ -468,6 +469,23 @@ def serialize_development_evidence_view(
     return json.dumps(
         view, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
     ).encode("utf-8")
+
+
+def serialize_m5_diagnostic_view(
+    observation: DevelopmentObservation, *, condition: EvidenceCondition
+) -> bytes:
+    """Serialize the M5 development reader view with six-decimal losses.
+
+    This helper defines the development symptom study's observation boundary;
+    it is not a provider-facing or registered diagnosis runtime contract.
+    The twelve-decimal serializer remains available for private sensitivity.
+    """
+
+    return serialize_development_evidence_view(
+        observation,
+        condition=condition,
+        metric_decimal_places=M5_DIAGNOSTIC_METRIC_DECIMALS,
+    )
 
 
 def audit_matched_target_rival(

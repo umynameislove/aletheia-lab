@@ -144,6 +144,34 @@ the half-unit tolerance alone is insufficient when the values straddle a
 rounding boundary. This is an observation-channel contract for development,
 not a guarantee that all deployments or other mechanism pairs are leak-free.
 
+The forward reader audit pins both the score-mapping and independently replayed
+target-binding summaries by byte hash. It checks the four zero-dose controls,
+all twelve positive-dose correction and lineage witnesses, and every sibling
+view. A dedicated helper fixes the **development symptom reader view** at six
+decimals; it is not yet wired into a provider-facing diagnosis runtime. The
+twelve-decimal path remains an audit-only counterexample. Across the
+balanced finite set of twelve mapping/target pairs, the optimal lookup rule
+over **only the serialized `missing_key` payload** has 50% accuracy because
+each pair supplies identical bytes with opposite causes. The corresponding
+finite-corpus lookup accuracy under `full`, `noisy`, and `misleading` is 100%
+because the canonical view hashes separate the causes across this corpus;
+the source replay separately verifies paired byte equality for `missing_key`.
+All twelve `missing_key`
+pairs differ at twelve decimals. A trained shortcut classifier cannot improve
+the six-decimal finite-pair bound, but this does **not** prove 50% accuracy on
+unseen families, different cause frequencies, raw private summaries, or a
+reader that receives other fields. No mechanism has been admitted by this
+development audit.
+
+This exact paired-payload check is stronger than a non-significant classifier
+two-sample test for the *observed pairs*: failure of a finite learned probe
+would not prove indistinguishability. It is also narrower. Equal-prior binary
+testing is limited by the information in the observation channel, while
+adaptive selection on development data cannot certify a new holdout. See
+[Duchi's statistical testing notes](https://web.stanford.edu/class/stats311/lecture-notes.pdf),
+[Lopez-Paz and Oquab's classifier two-sample test](https://arxiv.org/abs/1610.06545),
+and [Dwork et al. on adaptive holdout reuse](https://arxiv.org/abs/1506.02629).
+
 The technical basis is the classifier's documented score-column order and
 the metric's label convention ([classifier API](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html),
 [log-loss API](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.log_loss.html)).
