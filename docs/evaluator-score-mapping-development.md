@@ -199,6 +199,33 @@ the metric's label convention ([classifier API](https://scikit-learn.org/stable/
 Neither source establishes mechanism admission or the validity of a future
 protected experiment.
 
+## M5 implementation closeout: an observation-limited result
+
+The original, unrestricted `zero leakage` acceptance criterion did **not**
+pass: all 12 development mapping/target-rival pairs have distinguishable
+`missing_key` metrics at twelve decimals. The implementation and its
+development audit are complete, but this negative control is retained rather
+than reinterpreted as a pass. Four zero-dose controls stayed flat, all 12
+positive-dose mapping effects were independently verified and corrected, and
+the six-decimal `missing_key` payloads were byte-identical within all 12
+constructed pairs. For equally weighted causes on this finite paired set,
+any decision rule restricted to those identical payloads has 50% accuracy;
+this is an information-boundary fact, not a measured LLM result or a guarantee
+on other families or cause frequencies.
+
+The development reader places only that six-decimal projection in the
+gateway's model-visible context. Tests using the production adapter with a
+mock SDK client check the *complete model messages*: paired `missing_key`
+messages match, while `full`, `noisy`, and `misleading` retain distinguishing
+witnesses. They do not prove that entire API requests are identical: the
+client-request header contains a distinct attempt identity. Neither private
+source ledgers nor twelve-decimal metrics are allowed in the tested reader
+context. These checks do not authorize a provider call, establish a
+population-wide zero-leakage property, or admit M5. A prospective M5 study
+must fix its actual observation channel, source/family holdout, dose, rivals,
+failure handling, and decision rule before reading that holdout; it cannot
+reuse these development pairs as confirmation.
+
 ## Prospective target-row binding validation on new sources
 
 The separate `target_binding_prospective.py` runner freezes two previously
