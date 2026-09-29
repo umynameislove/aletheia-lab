@@ -1,0 +1,51 @@
+{
+  "schema_version": "target-binding-prospective-protocol/v1",
+  "sources": [
+    {
+      "dataset_id": "magic_gamma",
+      "archive_filename": "magic.zip",
+      "url": "https://archive.ics.uci.edu/static/public/159/magic%2Bgamma%2Btelescope.zip",
+      "doi": "10.24432/C52C8B",
+      "license": "CC-BY-4.0",
+      "archive_bytes": 646639,
+      "archive_sha256": "252e0a78333c108d0ea54537b61154aa781e95a15675e65ddf9b76993617191d",
+      "member": "magic04.data",
+      "member_bytes": 1477391,
+      "member_sha256": "e9314b7ebd4b4b59a3b3d65f7316663963777b16a46786877651dbbaa640b36a",
+      "row_count": 19020,
+      "feature_count": 10,
+      "target_encoding": {"h": 0, "g": 1}
+    },
+    {
+      "dataset_id": "spambase",
+      "archive_filename": "spambase.zip",
+      "url": "https://archive.ics.uci.edu/static/public/94/spambase.zip",
+      "doi": "10.24432/C53G6X",
+      "license": "CC-BY-4.0",
+      "archive_bytes": 125537,
+      "archive_sha256": "813ac1df8effac70463c09c9c4b11e8803eefcab54771af66150852bcdcd1636",
+      "member": "spambase.data",
+      "member_bytes": 702942,
+      "member_sha256": "b1ef93de71f97714d3d7d4f58fc9f718da7bbc8ac8a150eff2778616a8097b12",
+      "row_count": 4601,
+      "feature_count": 57,
+      "target_encoding": {"0": 0, "1": 1}
+    }
+  ],
+  "models": ["logistic_regression", "hist_gradient_boosting"],
+  "split_seed": "target-binding-prospective-v1",
+  "split_policy": "feature-duplicate-group-hash-60-20-20",
+  "preprocessing": "train-only-standard-scaler-no-imputation",
+  "calibration": "separate-calibration-partition-logit-clip1e-12-iter200-tol1e-9",
+  "calibration_application_clip": 1e-15,
+  "dose": 1,
+  "target_selector": "target-binding-development-v1/20-shards/cyclic-donor",
+  "mapping_selector": "m5-dev-v1-2026-09-25/20-shards",
+  "matcher": "existing-greedy-opposite-label-swaps-footprint-bounded",
+  "visible_metric_decimals": 6,
+  "maximum_absolute_loss_gap": 0.0000005,
+  "metric": "reference-prior-standardized-log-loss",
+  "failure_policy": "retain-all-four-cells-no-source-model-dose-or-tolerance-substitution",
+  "retry_policy": "none-after-lease",
+  "claim_scope": "finite-source-algorithmic-control-not-llm-efficacy-or-global-zero-leakage"
+}
