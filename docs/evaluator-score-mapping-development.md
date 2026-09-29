@@ -148,8 +148,18 @@ The forward reader audit pins both the score-mapping and independently replayed
 target-binding summaries by byte hash. It checks the four zero-dose controls,
 all twelve positive-dose correction and lineage witnesses, and every sibling
 view. A dedicated helper fixes the **development symptom reader view** at six
-decimals; it is not yet wired into a provider-facing diagnosis runtime. The
-twelve-decimal path remains an audit-only counterexample. Across the
+decimals. A development-only wrapper now passes exactly that projection into
+the gateway's real model-visible context type; an offline fake adapter and a
+mock OpenAI SDK client capture the complete model messages supplied to the SDK. The item
+ID, title and kind are constant,
+while the item and context hashes are derived only from the selected visible
+projection, never from the private source witness or case ID. The mock client
+uses different case IDs and still sends identical model messages. This closes
+the tested envelope-level shortcut: the `missing_key` pair stays identical after the
+gateway adds IDs and hashes, while the `full` witness remains different.
+The original four-cell source replay still yields the exact historical
+summary byte hash `aa891dcec952caefb54b1ccb11470fc22955d738b3e3b49ee961cfe6d4a31d50`.
+The twelve-decimal path remains an audit-only counterexample. Across the
 balanced finite set of twelve mapping/target pairs, the optimal lookup rule
 over **only the serialized `missing_key` payload** has 50% accuracy because
 each pair supplies identical bytes with opposite causes. The corresponding
@@ -160,8 +170,19 @@ All twelve `missing_key`
 pairs differ at twelve decimals. A trained shortcut classifier cannot improve
 the six-decimal finite-pair bound, but this does **not** prove 50% accuracy on
 unseen families, different cause frequencies, raw private summaries, or a
-reader that receives other fields. No mechanism has been admitted by this
-development audit.
+reader that receives other fields. The gateway tests make no network call and
+do not freeze an M5 prompt. Zero-dose controls are independently checked by
+the pinned replay and now produce reader payloads through a separate healthy
+constructor. It reports the class order actually used, not the unused reversed
+metadata carried by the zero-dose injector. The mapping-fault constructor
+still rejects unchanged scores. The reader-specific validation also rejects
+otherwise valid generic contexts with source hashes, cause-bearing IDs/titles,
+raw-precision metrics, changed-row counts or extra catalog fields. All four
+sibling views pass through the mock client with the same prompt, schema and
+sampling settings. Neither this work nor the
+replay establishes leakage resistance for a future multi-turn catalog, a new
+family, an unbalanced cause prior, or a protected run. No mechanism has been
+admitted by this development audit.
 
 This exact paired-payload check is stronger than a non-significant classifier
 two-sample test for the *observed pairs*: failure of a finite learned probe

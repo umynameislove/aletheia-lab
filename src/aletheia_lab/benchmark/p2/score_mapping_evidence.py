@@ -26,6 +26,7 @@ from aletheia_lab.benchmark.p2.score_mapping_intervention import (
     BinaryProbabilityModel,
     EvaluatorScoreSource,
     MappingInterventionResult,
+    apply_evaluator_mapping_fault,
 )
 from aletheia_lab.benchmark.p2.score_mapping_verification import (
     IndependentScoreWitness,
@@ -265,6 +266,49 @@ def mapping_observation(
     )
 
 
+def zero_dose_observation(
+    *,
+    witness: IndependentScoreWitness,
+    source: EvaluatorScoreSource,
+    reference_model: BinaryProbabilityModel,
+    reference_calibration: CalibrationResult,
+    artifacts: SourceArtifactPaths,
+    reference_features: NDArray[np.float64],
+    evaluation_features: NDArray[np.float64],
+) -> DevelopmentObservation:
+    """Project the verified unchanged control, never an alleged mapping fault.
+
+    Reversed-column bookkeeping is carried by the zero-dose injector but is
+    never consumed.  The observation reports the actually used source order.
+    This tests the healthy/unused-metadata sham, not an additional mechanism.
+    """
+
+    _source_matches(witness, source)
+    control = apply_evaluator_mapping_fault(source, selected_shard_count=0)
+    verification = verify_evaluator_mapping(
+        witness=witness,
+        source=source,
+        intervention=control,
+        scoring_target_rows=witness.target_rows,
+        reference_model=reference_model,
+        evaluation_matrix=evaluation_features,
+        reference_calibration=reference_calibration,
+        artifacts=artifacts,
+    )
+    return _observation(
+        witness,
+        reference_log_loss=verification.healthy_log_loss,
+        observed_log_loss=verification.faulty_log_loss,
+        evaluator_classes=witness.model_classes,
+        example_index=0,
+        example_observed_positive=control.positive_probabilities[0],
+        target_binding_matches_source=True,
+        corrected_log_loss=verification.corrected_log_loss,
+        reference_features=reference_features,
+        evaluation_features=evaluation_features,
+    )
+
+
 def target_binding_rival_observation(
     *,
     witness: IndependentScoreWitness,
@@ -476,8 +520,9 @@ def serialize_m5_diagnostic_view(
 ) -> bytes:
     """Serialize the M5 development reader view with six-decimal losses.
 
-    This helper defines the development symptom study's observation boundary;
-    it is not a provider-facing or registered diagnosis runtime contract.
+    This helper defines the development symptom study's observation boundary.
+    The separate reader wrapper can place it in a provider-compatible gateway
+    context for offline tests; no registered diagnosis runtime is authorized.
     The twelve-decimal serializer remains available for private sensitivity.
     """
 
