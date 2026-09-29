@@ -13,4 +13,10 @@ def file_sha256(path: Path) -> str:
         return hashlib.file_digest(handle, "sha256").hexdigest()
 
 
-__all__ = ["file_sha256"]
+def bytes_sha256(payload: bytes) -> str:
+    """Hash exact in-memory bytes without canonicalizing text or structures."""
+
+    return hashlib.new("sha256", payload).hexdigest()
+
+
+__all__ = ["bytes_sha256", "file_sha256"]
