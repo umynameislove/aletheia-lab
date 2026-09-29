@@ -28,6 +28,7 @@ from aletheia_lab.benchmark.p2.score_mapping_evidence import (
     ScoreMappingEvidenceError,
     build_development_evidence_views,
     serialize_development_evidence_view,
+    serialize_m5_diagnostic_view,
 )
 from aletheia_lab.benchmark.p2.score_mapping_intervention import apply_evaluator_mapping_fault
 from aletheia_lab.benchmark.p2.score_mapping_symptom_matching import (
@@ -249,6 +250,8 @@ def test_reader_bytes_match_only_at_the_declared_observation_resolution() -> Non
     assert six == serialize_development_evidence_view(
         rival, condition="missing_key", metric_decimal_places=6
     )
+    assert six == serialize_m5_diagnostic_view(mapping, condition="missing_key")
+    assert six == serialize_m5_diagnostic_view(rival, condition="missing_key")
     assert json.loads(six) == json.loads(json.dumps(_coarsened_views(mapping)["missing_key"]))
     assert serialize_development_evidence_view(
         mapping, condition="missing_key", metric_decimal_places=12
