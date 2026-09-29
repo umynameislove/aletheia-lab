@@ -15,7 +15,8 @@ from typing import Any
 from zipfile import ZipFile
 
 from aletheia_lab.benchmark.p2.canonical import canonical_sha256
-from aletheia_lab.content_hashing import bytes_sha256, file_sha256
+from aletheia_lab.content_hashing import file_sha256
+from aletheia_lab.project.identity import content_sha256
 
 PROTOCOL_PATH = "configs/benchmark/score_mapping_new_source_protocol.json"
 FROZEN_PROTOCOL_SHA256 = "428ee882d1857967511f32deb5336588f4aa0d7c8ca2e26e2d01dfbb5866d10f"
@@ -52,7 +53,7 @@ def _checked_member_payload(directory: Path, spec: dict[str, Any]) -> bytes:
             raise NewSourceProtocolError("source member is missing, duplicated, or encrypted")
         payload = archive.read(matches[0])  # Never extract archive-provided paths.
     if (
-        bytes_sha256(payload) != spec["member_sha256"]
+        content_sha256(payload) != spec["member_sha256"]
         or file_sha256(path) != spec["archive_sha256"]
     ):
         raise NewSourceProtocolError("source member or archive changed during reading")
@@ -111,7 +112,7 @@ def _audit_source(
     for index, (features, target) in enumerate(rows):
         group = canonical_sha256(features)
         groups[group].add(target)
-        bucket = int(bytes_sha256(f"{seed}\0{spec['dataset_id']}\0{group}".encode()), 16) % 10_000
+        bucket = int(content_sha256(f"{seed}\0{spec['dataset_id']}\0{group}".encode()), 16) % 10_000
         partition = "train" if bucket < 6000 else "calibration" if bucket < 8000 else "final"
         partitions[partition].append((f"{spec['dataset_id']}:{index + 1}", group, target))
     membership = tuple(

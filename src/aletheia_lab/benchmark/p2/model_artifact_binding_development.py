@@ -44,7 +44,8 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_shift import (
     reference_prior_standardized_log_loss,
 )
 from aletheia_lab.benchmark.p2.score_mapping_development import _model_for, _private_output_guard
-from aletheia_lab.content_hashing import bytes_sha256, file_sha256
+from aletheia_lab.content_hashing import file_sha256
+from aletheia_lab.project.identity import content_sha256
 
 DATASET_ID = "uci_online_shoppers_purchasing_intention"
 MODEL_KIND: Literal["hist_gradient_boosting"] = "hist_gradient_boosting"
@@ -217,7 +218,7 @@ def _trusted_load(
     if path.is_symlink() or not path.is_file() or path.stat().st_size > 100_000_000:
         raise ModelArtifactBindingError("trusted model artifact is unavailable")
     payload = path.read_bytes()
-    actual_sha256 = bytes_sha256(payload)
+    actual_sha256 = content_sha256(payload)
     if actual_sha256 != expected_sha256:
         raise ModelArtifactBindingError("model bytes differ from the pre-load manifest")
     model = joblib.load(io.BytesIO(payload))
