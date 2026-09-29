@@ -1,0 +1,103 @@
+{
+  "schema_version": "score-mapping-new-source-protocol/v1",
+  "status": "prospective_design_locked_not_executed",
+  "sources": [
+    {
+      "dataset_id": "htru2",
+      "source_family": "radio_pulsar_candidates",
+      "url": "https://archive.ics.uci.edu/static/public/372/htru2.zip",
+      "doi": "10.24432/C5DK6R",
+      "license": "CC-BY-4.0",
+      "archive_filename": "htru2.zip",
+      "archive_bytes": 1563015,
+      "archive_sha256": "ba442c076dd22a8952700f26e38499fc1806037dcf7bea0e125e6bfba393f379",
+      "member": "HTRU_2.csv",
+      "member_bytes": 1730114,
+      "member_sha256": "b13b4d8929e96ecd196e464c1c8a454c3ac2ffa631015f6388957531a9923f59",
+      "format": "csv_no_header_numeric_last_target",
+      "row_count": 17898,
+      "feature_count": 8,
+      "target_encoding": {"0": 0, "1": 1}
+    },
+    {
+      "dataset_id": "rice_cammeo_osmancik",
+      "source_family": "rice_grain_morphology",
+      "url": "https://archive.ics.uci.edu/static/public/545/rice%2Bcammeo%2Band%2Bosmancik.zip",
+      "doi": "10.24432/C5MW4Z",
+      "license": "CC-BY-4.0",
+      "archive_filename": "rice-cammeo-osmancik.zip",
+      "archive_bytes": 171738,
+      "archive_sha256": "fe94e42046b829de21b92b0ffb6a22774fde021328cae799faa802a14e8dbed9",
+      "member": "Rice_Cammeo_Osmancik.arff",
+      "member_bytes": 427635,
+      "member_sha256": "1af97883100c89de2ea2972f7a28d428f4f1c14711a61defc0b0569e9eb65665",
+      "format": "arff_numeric_last_target",
+      "row_count": 3810,
+      "feature_count": 7,
+      "target_encoding": {"Osmancik": 0, "Cammeo": 1}
+    }
+  ],
+  "historical_source_exclusions": [
+    "uci_default_of_credit_card_clients",
+    "uci_online_shoppers_purchasing_intention",
+    "magic_gamma",
+    "spambase"
+  ],
+  "split": {
+    "seed": "m5-new-source-v1",
+    "policy": "feature-duplicate-group-hash-60-20-20",
+    "partitions": ["train", "calibration", "final"],
+    "bucket_edges": [0, 6000, 8000, 10000],
+    "target_blind_assignment": true,
+    "no_group_cross_partition": true
+  },
+  "models": ["logistic_regression", "hist_gradient_boosting"],
+  "model_parameters": "p2-v3-score-mapping-development-fixed-models",
+  "preprocessing": "train-only-standard-scaler-no-imputation",
+  "calibration": "separate-calibration-partition-logit-clip1e-12-iter200-tol1e-9",
+  "calibration_application_clip": 1e-15,
+  "intervention": {
+    "locus": "evaluator-positive-class-column-mapping-only",
+    "selector_seed": "m5-dev-v1-2026-09-25",
+    "shard_count": 20,
+    "positive_selected_shards": 1,
+    "zero_control_selected_shards": 0,
+    "selector_cannot_use_labels_scores_or_metrics": true,
+    "correction": "restore-actual-model-classes-before-runtime-scorer"
+  },
+  "rival": {
+    "target_binding": "existing-greedy-opposite-label-swaps-footprint-bounded",
+    "maximum_absolute_log_loss_gap": 0.0000005,
+    "exact_missing_key_model_message_bytes_required": true,
+    "unmatched_cells_retained": true
+  },
+  "evidence": {
+    "conditions": ["full", "missing_key", "noisy", "misleading"],
+    "visible_metric_decimals": 6,
+    "reader_context_constructor": "build_score_mapping_reader_context",
+    "reader_item_id": "development-observation",
+    "reader_item_title": "Observed evaluation measurements",
+    "complete_model_message_shortcut_audit_required": true,
+    "raw_and_twelve_decimal_counterfactual_audit_required": true
+  },
+  "analysis": {
+    "cell_census": [
+      "htru2/logistic_regression",
+      "htru2/hist_gradient_boosting",
+      "rice_cammeo_osmancik/logistic_regression",
+      "rice_cammeo_osmancik/hist_gradient_boosting"
+    ],
+    "source_family_is_independent_unit": true,
+    "primary_metric": "reference-prior-standardized-log-loss",
+    "positive_effect_minimum_absolute_delta": 0.01,
+    "g1": "per-cell-source-scores-unchanged-mapping-consumed-positive-effect-sham-zero-correction-exact-full-witness",
+    "g2": "report-exact-missing-key-message-match-over-all-four-cells-separately-from-g1",
+    "uncertainty": "finite-two-source-descriptive-no-row-level-ci-or-source-population-claim",
+    "multiplicity": "two-prespecified-models-no-favorable-cell-selection"
+  },
+  "failure_policy": "retain-all-four-cells-and-all-unmatched-rivals-no-source-model-dose-matcher-or-precision-substitution",
+  "retry_policy": "no-automatic-repeat-after-final-execution-lease",
+  "provider_calls_authorized": false,
+  "final_execution_authorized": false,
+  "scientific_admission_authorized": false
+}
