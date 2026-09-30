@@ -130,6 +130,81 @@ replace B post hoc, infer G2 from the candidate views, or unlock U4 on this
 result. The private receipt and artifacts are outside the repo; code and
 synthetic tests here disclose no source-row predictions.
 
+### Forward early-budget development cell
+
+The next cell is a **new development design**, not a replacement of the first
+result. Before any new fit or prediction, `prepare-forward` records the fixed
+100/1 HGB recipes, numerical runtime and code, original source/split bindings,
+ordered memberships and all predecessor file digests. B is a separately fitted
+**early-budget artifact**, not a literal saved checkpoint from A's training.
+Both fit the identical original training rows with the original train-fitted
+preprocessor. Early stopping remains disabled, learning rate 0.1 and seed 43;
+the actual fitted iterations must be 100 and 1. The runner also checks B's raw
+scores against A's first `staged_predict_proba` output. B is not chosen by
+searching the new measurement loss.
+
+Existing development members are stratified by their labels and ranked with a
+fixed seed (`20260930`) and opaque row identities. Half of each class, rounded
+down, fits only A's calibrator; the other members measure every path. Training,
+calibration and measurement are disjoint by row identity. The original sealed
+partition is never predicted. These development data have prior exposure, so
+this split removes calibration/measurement reuse but **does not create a pristine
+confirmatory holdout**. Duplicate entities, unmeasured dependence and external
+generalization are not established by disjoint IDs alone.
+
+The forward primary endpoint is **raw reference-prior-standardized log loss**:
+half the mean loss among class 0 plus half the mean among class 1, with strict
+finite probabilities in `(0,1)` and no raw-score clipping. Prespecified success
+requires changed raw scores, a faulty-minus-healthy increase of at least `0.01`,
+and healthy raw loss below the constant predictor using the **training** prior.
+This is not the first cell's calibrated-primary endpoint and cannot repair its
+failed result. Ordinary empirical log loss and loss after the fixed A-calibrator
+are secondary diagnostics; no endpoint is selected after observing its sign.
+Class reweighting changes the target distribution, so this standardized loss is
+not evidence that the original-population probabilities are better calibrated.
+The fixed A-calibrator/B-model combination remains an operational compatibility
+effect, not a pure calibration or model-quality effect.
+
+All six paths traverse the same hash-before-deserialization boundary: A/A,
+A/B, sham A/A, correction A/A, legitimate B/B, and an untrusted manifest-text
+edit with the trusted intended/actual A/A load unchanged. The measured digest
+comes from the actual buffer deserialized, not the declared identity. Ordered
+raw/calibrated scores, targets and boundary events stay in private files. Sham,
+correction and the manifest-only control must reproduce healthy scores exactly;
+legitimate B/B must reproduce faulty scores with **no binding violation**.
+Separate adapter-reversal and two-row target-swap rivals retain A/A and the
+healthy pre-adapter scores. They establish different fault loci, not matched
+aggregate symptoms or a validated ambiguous `missing_key` message.
+
+The verifier checks the retained artifact byte identities, independently refits
+from the source to check the boundary score vectors (it **never loads supplied
+pickles**), and recalculates class-conditional loss directly from row-aligned
+vectors. Fresh-fit serialization need not be byte-identical to an earlier file;
+byte identity and functional score replay are intentionally separate checks.
+It does not call the injector, runner metric helper or runner decision helper.
+Code/runtime drift, tampering, score changes in a sham/correction, or an invalid
+load fails verification. The load record is instrumentation evidence; it is not
+tamper-proof attestation against a malicious process with access to every file.
+All weak, opposite or failed cells remain development evidence. No provider,
+protected execution, scientific admission, G2 input-equivalence claim or U4
+permission follows from this one cell.
+
+The design applies the intervention-boundary distinction in
+[Pearl (1995)](https://bayes.cs.ucla.edu/R218-B.pdf), artifact/execution lineage
+from [ML Metadata](https://www.tensorflow.org/tfx/guide/mlmd), the iteration and
+staged-score contracts of [HGB](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.HistGradientBoostingClassifier.html),
+and separate calibration/evaluation motivated by the
+[calibration guide](https://scikit-learn.org/stable/modules/calibration.html)
+and [Kapoor and Narayanan (2022)](https://arxiv.org/abs/2207.07048).
+These are methodological foundations, not claims that artifact identity proves
+scientific correctness or that this cell is a novel general diagnosis method.
+
+Use the existing `scripts/model_artifact_binding_development.py` entrypoint:
+`prepare-forward`, then `execute-forward --confirm-plan-sha256 <observed hash>`,
+then `verify-forward`. Forward operations require `--predecessor-output` for
+the unchanged first cell. An existing lease/output is never overwritten;
+another exploratory attempt needs a separately identified development cell.
+
 ## Separate M5 new-source readiness
 
 M5 development has demonstrated a six-decimal observation boundary, not an
