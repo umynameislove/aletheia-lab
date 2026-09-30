@@ -124,6 +124,63 @@ responses and rebuilds analysis and the receipt without network access. Offline
 fixtures prove contracts, not A4 efficacy; live results are required to assess
 headroom. No protected contrastive study is authorized by this pilot.
 
+## Continuing a stopped pilot
+
+The shared wire schema does not express the local validator's cross-field rules.
+A response can retain both compatible causes alongside abstention or a proposed
+check and still fail those rules. Structured Outputs does not supply arbitrary
+application-level cross-field validation ([OpenAI documentation](https://developers.openai.com/api/docs/guides/structured-outputs)).
+That is a prompt/parser contract gap, not evidence of an API outage or a wrong
+causal diagnosis.
+
+The continuation keeps the original plan, lease, raw responses, analysis and
+receipt byte-for-byte. It verifies them before deriving the uncalled suffix of
+the original ordered request frame. Only that suffix can receive new calls.
+Prompts, visible payloads, strict wire schema, model, sampling and token limits
+remain identical. The original code bindings remain valid; no old validator or
+historical score is replaced.
+
+Supplementary semantic decoding is uniform across both arms and uses response
+fields only. A noncanonical non-answer is eligible only with an empty or complete
+two-cause candidate set, no definitive `causal_claims`, reason `insufficient` and
+a valid proposed-measurement field. Unique candidates, causal assertions,
+malformed fields, duplicate entries and unknown citations are never removed to
+make a response safe. A strict scoring projection uses empty candidates for a
+non-answer and `measurement=none` for abstention. The raw action, complete
+candidate list and original proposed check remain explicitly recorded and are
+not rewritten. The check is still only proposed, never treated as observed.
+
+This is **supplementary development interpretation after observing the contract
+failure**, not a format-only repair, a prospective efficacy result, or a change
+to the historical primary analysis. The combined analysis reports original
+strict-contract scoring and semantic decoding separately, with unresolved errors
+and unexecuted requests retained in their denominators. It does not establish
+A4 superiority or authorize a protected study.
+
+The same command entry point handles preparation and independent replay:
+
+```sh
+python scripts/evidence_bounded_policy_pilot.py prepare-continuation --memory-root ../memory
+python scripts/evidence_bounded_policy_pilot.py verify-continuation --memory-root ../memory
+```
+
+One separate private continuation directory holds the plan and preflight audit;
+the old raw responses are read in place, not duplicated. The prepared plan binds
+every predecessor file, the decoder, remaining request IDs and unchanged provider
+contract. Check the new digest and additional cost reservation before paid use:
+
+```sh
+python scripts/evidence_bounded_policy_pilot.py execute-continuation --memory-root ../memory --confirm-plan-sha256 DIGEST
+python scripts/evidence_bounded_policy_pilot.py verify-continuation --memory-root ../memory
+```
+
+The additional reservation covers uncalled requests only, and combined spending
+must stay within the original $4.25 ceiling. There are no retries or paid replays.
+Three consecutive **unassessable** or provider failures stop the continuation;
+eligible bounded non-answers do not count as such failures. An existing
+continuation lease cannot be replayed. Verification independently reconstructs
+both scoring interpretations, response hashes, resources and the execution order.
+
 ## Methodological basis
 
 Reject-option theory motivates reporting risk and coverage together, rather
