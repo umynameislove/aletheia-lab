@@ -170,16 +170,98 @@ are computed:
 - a prospective holdout boundary, no retuning on its outcome, a feasible P6
   reserve and a separate U3 execution decision.
 
-**Current readiness, 29 September 2026:** the existing M5 development
-injector, verifier and mock reader are reusable, but the six-decimal boundary
-is conditional. Source identity, 60/20/20 feature-group split, two fixed model
-families, dose, rival, four evidence conditions, failure accounting and
-analysis unit are specified in the hashed prospective design. This is
-**protocol preparation**, not a completed executable final freeze: the
-new-source runner must still bind its exact code/runtime hash, produce and
-audit complete model-visible message bytes for all conditions, and prove the
-final execution cannot be used to tune the design. `V5-U3` remains locked;
-no new-source model has been fitted and no final score was viewed.
+**Runner readiness, 29 September 2026:** the new-source runner implements
+prediction-blind preflight/sealing, fixed-dose execution and independent
+verification. End-to-end tests use synthetic CSV/ARFF sources with both fixed
+estimators. Preflight on the pinned public archives checks the existing
+inventory and all split memberships without fitting either source. The
+historical design hash is unchanged. This is a locally verified runner, **not
+an executed new-source study**. The execution plan must still be sealed from
+the committed checkout and separately authorized before final outcomes are
+computed. No real new-source estimator has been fitted at this checkpoint.
+
+### Entry point and retained artifacts
+
+Use `scripts/score_mapping_new_source_study.py` with four operations:
+
+| Operation | Reads or writes | Models / provider |
+| --- | --- | --- |
+| `preflight` | Checks pinned archives, original inventory, split, code/runtime and synthetic input audit; writes nothing | No new-source fit; no provider |
+| `prepare` | Creates immutable `execution-plan.json` in the existing private source directory, from a clean committed checkout | No new-source fit; no provider |
+| `execute` | Requires the exact plan hash and separate `--authorize-final-execution`; creates one immutable lease and retains all four cells | Fits train only, calibrates calibration only, measures final; no provider |
+| `verify` | Checks the seal and retained files, independently regenerates source scores/calibration and replays metric/donor ledgers | Deterministic source replay; no new intervention search or provider |
+
+The plan binds all source code, the entrypoint, prospective protocol, package
+configuration, common input contracts, commit, numerical package versions,
+platform and single-thread policy. It also binds the original private
+inventory; the source directory is reused rather than replaced by another
+roadmap or results folder. A code/runtime/source drift fails before fitting.
+An existing lease blocks repeat execution even after interruption. Failures
+and unmatched rivals stay in the denominator of four cells; two estimators
+on a source do not become independent source replications. `G1` measures the
+mapping effect, unchanged upstream scores, sham, correction and full witness.
+`G2` separately measures exact six-decimal missing-key input equality and a
+distinguishing full witness. Neither gate is inferred from the other.
+
+Source verification first checks retained hashes, then rebuilds the trusted
+train-fitted estimator and calibration-only calibrator and compares the exact
+saved scores. The verifier never deserializes a supplied model pickle. It
+recomputes the mapping footprint from row IDs and evaluates the saved donor
+ledger with the runtime scorer, without rerunning the injector or greedy
+matcher. Verification establishes deterministic reproducibility under the
+sealed environment; it is not another selected experimental attempt.
+
+### Input-channel scope
+
+The offline audit sends each view through the production adapter into a
+fake SDK client. It captures every SDK-interface field: both messages,
+response schema, model snapshot, sampling, output ceiling and timeout. Only
+the verified opaque request-ID header is classified separately from model
+inputs. Equality means exact UTF-8 JSON bytes of these captured interface
+objects, including the exact message strings. This does **not** claim to run
+the OpenAI SDK's HTTP serializer or measure a live provider. The common frozen
+A2 prompt/schema is an input-channel witness, not an LLM efficacy study. A
+future study with a different prompt, adapter or side channel needs its own
+actual-input audit. See the official [Chat Completions contract](https://developers.openai.com/api/reference/python/resources/chat/subresources/completions/methods/create)
+and [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs).
+
+The audit reports raw and twelve-decimal equality as counterfactual results;
+it does not require those channels to differ in every pair. A metric gap
+below `5e-7` alone cannot establish six-decimal message equality: values on
+opposite sides of a rounding boundary can satisfy that gap and still produce
+different inputs. Empty/unmatched rivals remain failures of the specified
+greedy procedure, not proof that all possible target-binding rivals fail.
+
+### Why limited or negative effects do not diagnose the architecture
+
+For binary cross-entropy, `loss(y, 1-p) = loss(1-y, p)` at each row. However,
+the registered metric averages class-conditional losses with coefficients
+`1/(2*n_y)`. With original labels held fixed, the mapping effect on selected
+rows is `sum((2*y_i-1)*logit(p_i)/(2*n_yi))`. Thus the effect depends on score
+confidence and correctness; a real mapping error need not increase loss.
+At `p=0.5`, inversion is unobservable. Target swaps change row-specific class
+weights on imbalanced sources, even when the total class counts are retained.
+The subset BCE identity therefore does not establish equality of the actual
+weighted metric. A synthetic regression test gives mapping loss 1.4361511173
+and target-flip loss 1.6094379124 despite identical unweighted BCE and retained
+class counts. Global flipping is a separate sufficient symmetry.
+
+The source-class contract is the estimator's actual `classes_`, not a guessed
+positive column. [Logistic Regression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html)
+and [histogram gradient boosting](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.HistGradientBoostingClassifier.html)
+provide two distinct fixed estimator families for testing the same evaluator
+boundary. They are not two LLM architectures or a universal architecture
+benchmark. No model, dose or source is added after seeing final results.
+
+Separating train, calibration and final avoids using measured labels to fit
+the post-hoc calibration; [Guo et al.](https://proceedings.mlr.press/v70/guo17a.html)
+motivate the fixed-predictor/validation-calibration distinction, not this
+project's exact calibrator. The two-source descriptive analysis follows the
+independent-dataset concern in [Demšar](https://jmlr.org/papers/v7/demsar06a.html);
+four cells cannot support source-population inference. If the final cells
+are limited, first classify whether the binding failed, the effect was too
+small/nonpositive, or the frozen rival failed to match. Those are different
+findings, none of which alone proves an estimator architecture defect.
 
 Source selection, dose and acceptance rules must be frozen before any final
 source outcomes are inspected; a source used to tune these rules becomes
