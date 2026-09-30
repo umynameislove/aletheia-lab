@@ -6,6 +6,12 @@ import argparse
 import json
 from pathlib import Path
 
+from aletheia_lab.evaluation.evidence_bounded_continuation import (
+    checked_policy_continuation,
+    execute_policy_continuation,
+    prepare_policy_continuation,
+    verify_policy_continuation,
+)
 from aletheia_lab.evaluation.evidence_bounded_pilot import (
     checked_policy_plan,
     execute_policy_pilot,
@@ -16,18 +22,59 @@ from aletheia_lab.evaluation.evidence_bounded_pilot import (
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("prepare", "execute", "verify"))
+    parser.add_argument(
+        "action",
+        choices=(
+            "prepare",
+            "execute",
+            "verify",
+            "prepare-continuation",
+            "execute-continuation",
+            "verify-continuation",
+        ),
+    )
     parser.add_argument("--root", type=Path, default=Path("."))
     parser.add_argument(
         "--source-root", type=Path, help="Existing checkout holding hash-pinned old source archives"
     )
     parser.add_argument("--memory-root", type=Path, default=Path("../memory"))
     parser.add_argument("--directory", type=Path)
+    parser.add_argument("--predecessor", type=Path)
     parser.add_argument("--confirm-plan-sha256")
     args = parser.parse_args()
-    directory = args.directory or args.memory_root / "evidence-bounded-policy-development-v1"
+    continuation = args.action.endswith("-continuation")
+    predecessor = args.predecessor or args.memory_root / "evidence-bounded-policy-development-v1"
+    directory = args.directory or args.memory_root / (
+        "evidence-bounded-policy-continuation-v1"
+        if continuation
+        else "evidence-bounded-policy-development-v1"
+    )
     try:
-        if args.action == "prepare":
+        if args.action == "prepare-continuation":
+            report = prepare_policy_continuation(predecessor=predecessor, directory=directory)
+        elif args.action == "verify-continuation":
+            report = verify_policy_continuation(predecessor=predecessor, directory=directory)
+        elif args.action == "execute-continuation":
+            if not args.confirm_plan_sha256:
+                parser.error("execute requires the freshly approved paid plan digest")
+            plan, _, _ = checked_policy_continuation(
+                predecessor=predecessor,
+                directory=directory,
+                confirm_sha256=args.confirm_plan_sha256,
+            )
+            if (directory / "lease.json").exists() or (directory / "results").exists():
+                raise ValueError("continuation attempt already exists")
+            from aletheia_lab.evaluation.warrant_development_live import OpenAIDevelopmentCaller
+
+            caller = OpenAIDevelopmentCaller(maximum_calls=plan["maximum_provider_calls"])
+            report = execute_policy_continuation(
+                predecessor=predecessor,
+                directory=directory,
+                confirm_sha256=args.confirm_plan_sha256,
+                caller=caller,
+                progress=lambda value: print(json.dumps(value), flush=True),
+            )
+        elif args.action == "prepare":
             report = prepare_policy_pilot(
                 root=args.root,
                 memory_root=args.memory_root,
@@ -51,7 +98,7 @@ def main() -> int:
             )
         else:
             report = verify_policy_pilot(directory=directory)
-    except (ValueError, OSError, KeyError, StopIteration):
+    except (ValueError, OSError, KeyError, TypeError, StopIteration):
         print(
             json.dumps({"status": "policy_pilot_failed_closed", "private_details_printed": False})
         )
