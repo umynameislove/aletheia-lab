@@ -1,7 +1,7 @@
 # Model artifact binding as a positive control (M4)
 
-This is a development-stage design and one executed **development** cell, not an
-admitted mechanism or protected experiment. It defines one fault: the evaluation process declares a specific
+This contains **development** controls and an unexecuted new-source design, not
+an admitted mechanism or protected experiment. It defines one fault: the evaluation process declares a specific
 fitted model artifact but loads a different, compatible fitted model artifact.
 The intended and loaded artifacts must be separately fitted and have distinct
 recorded recipes and byte identities; a separate process is not required. A
@@ -266,6 +266,78 @@ Construct verification and diagnostic inference remain separate: recent
 behavior from inferring its cause. These motivate this development audit; they
 do not establish novel theory, mechanism admission, external generalization
 or permission for protected execution.
+
+## Development dose sweep and prospective M4 design
+
+The dose sweep retains the forward cell's exact A artifact bytes, train-fitted
+preprocessor, A-calibrator and calibration/measurement memberships. Its fixed
+grid independently fits B with **1, 5, 10, 25 and 50 iterations**, changing no
+other fitting parameter. Dose describes the alternate artifact's provenance;
+the fault still redirects only the evaluation loader. Zero-dose/sham and
+correction load the same retained A bytes, rather than a separately fitted
+B100 whose serialization might differ. Each B is compared functionally with
+the corresponding staged predictions from A; a stage match does not establish
+literal checkpoint provenance.
+
+All five budgets, six loader paths and two rival constructs are retained. The
+raw standardized effect, empirical raw effect and fixed-A calibrated effect
+are reported separately, without selecting a best dose or endpoint. The
+verifier refits from source and recomputes class-conditional losses without
+loading supplied pickles, invoking the injector, or using the runner's metric
+and decision helpers. It also replays all 160 non-network SDK-interface
+captures. The input audit retains the class-column and two-row target witnesses:
+changing budget cannot justify removing these witnesses to force a cross-fault
+match. Legitimate B/B remains a no-binding-fault control, not a second cause.
+
+For the **new** prospective design, a positive control additionally requires
+healthy raw standardized loss strictly below `ln(2)` (the uniform predictor)
+and positive empirical wrong-load loss change, as well as the `0.01` raw
+standardized effect and unchanged-locus/control checks. The historical forward
+cell's training-prior adequacy rule is not rewritten. A calibrated improvement
+cannot rescue a failed raw-primary gate. These checks distinguish a worsening
+wrong-load path from a comparison whose intended baseline is already weak for
+the specified reference distribution. They do not establish estimator
+optimality, calibration quality under natural prevalence, or LLM accuracy.
+
+The separate prospective protocol is
+[`model_artifact_binding_new_source_protocol.json`](../configs/benchmark/model_artifact_binding_new_source_protocol.json).
+It selects [Banknote Authentication](https://archive.ics.uci.edu/dataset/267/banknote%2Bauthentication)
+and [Wisconsin Diagnostic Breast Cancer](https://archive.ics.uci.edu/dataset/17/breast%2Bcancer%2Bwisconsin%2Bdiagnostic)
+by numeric/binary schema, license and distinct source provenance, **not fitted
+performance**. Archive/member size and SHA-256, target encodings, ID exclusion,
+split, fixed A100/B1 recipe, calibration, endpoint, reader precision and failure
+policy are pinned. B1 is the minimum compatible early-budget control, not the
+winner selected from the development loss curve. A100/B1 are fitted only on
+train; the A-calibrator fits only calibration; final is a separate partition.
+
+Union components join repeated feature vectors and repeated available subject
+IDs before a target-blind 60/20/20 hash split. Class-support checks reject an
+ineligible split rather than reroll it. This prevents observed groups from
+crossing partitions, but cannot prove independence of unrecorded physical
+subjects or public benchmark novelty to an LLM. Two sources are **two source
+clusters**, not independent replicates for each budget, row or evidence view.
+The final census retains both sources, including weak, opposite, unmatched,
+incompatible and technical-failure cells; it has no replacement search or
+population-confidence-interval claim.
+
+`scripts/model_artifact_binding_dose.py` supplies `prepare`, `execute` and
+`verify` for exposed development only. These require the source archive,
+verified predecessor directory and receipt digest, and a private output;
+execution additionally requires the prepared plan digest. `inventory` checks
+the pinned new-source archives and grouped memberships without fitting a model
+or computing final predictions. Its optional output is immutable and private.
+**No operation in this entrypoint executes the new-source final study.** That
+requires a later runner, clean committed code/runtime/inventory execution seal
+and an explicit protected-execution decision. No provider call or mechanism
+admission is authorized by this design lock.
+
+The intervention boundary follows [Pearl (1995)](https://bayes.cs.ucla.edu/R218-B.pdf);
+development/final separation follows the caution about adaptive evaluation in
+[Dwork et al. (2015)](https://arxiv.org/abs/1506.02629). Dataset-level replication,
+rather than counting repeated fits as independent samples, follows
+[Demšar (2006)](https://jmlr.org/papers/volume7/demsar06a/demsar06a.pdf).
+These support a bounded, reproducible control study, not a new general causal
+identification theorem or a diagnosis of the entire system architecture.
 
 ## Separate M5 new-source readiness
 
