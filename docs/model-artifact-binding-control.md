@@ -205,6 +205,68 @@ then `verify-forward`. Forward operations require `--predecessor-output` for
 the unchanged first cell. An existing lease/output is never overwritten;
 another exploratory attempt needs a separately identified development cell.
 
+### Retained-cell reader and complete-input audit
+
+`scripts/audit_model_artifact_binding_input.py` reads the already independently
+verified forward cell. Supply `--root`, `--cell-dir`, and
+`--confirm-receipt-sha256` with the receipt identity from that verification.
+It checks retained file/code bindings, load events, raw row-aligned scores,
+metrics, sham/correction and rivals without loading a pickle, fitting a model,
+predicting again, or rerunning the intervention. It emits an aggregate report
+to stdout and leaves the cell unchanged. Its new code hashes are separate from
+the historical cell seal; none of the previously sealed implementation changes.
+
+Every view uses the same cause-blind layout and a shared historical A
+performance benchmark. The legitimate B/B control retains **its own B
+intention**, not A's intention. Local artifact byte identities become two
+consistent visible aliases. Private source hashes, case identities, recipes
+and intervention labels are not serialized into the evidence.
+
+| View | Visible evidence |
+| --- | --- |
+| `full` | Raw standardized-loss comparison, trusted intended/loaded artifact binding, pre-adapter class/column probes and source/scoring target probes |
+| `missing_key` | Exactly `full` minus the trusted artifact-load binding; the other measurements and witnesses remain |
+| `noisy` | `full` plus authentic feature, training and calibration dimensions |
+| `misleading` | `full` plus authentic reported manifest text, explicitly distinguished from trusted load instrumentation |
+
+The raw-primary endpoint uses raw score probes, not calibrated probes. The
+same first class-0/class-1 measurement rows are used in every path. These
+probes witness the retained two-row target swap; they do not establish target
+integrity for arbitrary rows or label faults. Numerical projections use six
+decimals, with raw metric equality and twelve-decimal projections reported
+separately so rounding cannot be silently called exact equality.
+
+The audit passes each context through the existing recovery adapter's common
+frozen A2 prompt/schema with a non-network SDK substitute. It compares the
+complete captured SDK arguments: messages, response schema, model and sampling
+settings. Only the checked opaque request-ID header is excluded. Unknown SDK
+fields, extra telemetry or extra invocations fail the audit. Identifiers and
+content digests exposed to the model derive solely from the selected view;
+changing a private source identity or internal case ID must not change the
+input used for equality. This is an SDK-interface test, **not** a live HTTP
+test, frozen M4 diagnosis protocol, or LLM diagnosis experiment.
+
+The genuine A/B fault and legitimate B/B control can have identical missing-key
+inputs because they load the same B scores. The full load witness distinguishes
+their binding status. On a finite pair with equal priors, identical inputs and
+no side channel limit expected payload-only binary classification accuracy to
+one half. A lookup ceiling on distinct inputs is only potential separability;
+neither value is measured LLM accuracy. Legitimate B is a no-binding-fault
+control, **not a second causal mechanism**. Adapter reversal and target swap
+remain separate rivals; their input/metric differences are retained rather
+than erased to manufacture cross-fault ambiguity. Missing-key equivalence with
+those rivals must be demonstrated separately before any matched-cause study.
+
+This approach uses artifact/execution lineage from
+[ML Metadata](https://www.tensorflow.org/tfx/guide/mlmd) and checks alternative
+input shortcuts rather than inferring explanation quality from performance
+alone, following the caution in [Lapuschkin et al. (2019)](https://arxiv.org/abs/1902.10178).
+Construct verification and diagnostic inference remain separate: recent
+[OpenRCA 2.0](https://arxiv.org/html/2606.27154v2) also distinguishes verifying
+behavior from inferring its cause. These motivate this development audit; they
+do not establish novel theory, mechanism admission, external generalization
+or permission for protected execution.
+
 ## Separate M5 new-source readiness
 
 M5 development has demonstrated a six-decimal observation boundary, not an
