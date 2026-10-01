@@ -339,6 +339,64 @@ rather than counting repeated fits as independent samples, follows
 These support a bounded, reproducible control study, not a new general causal
 identification theorem or a diagnosis of the entire system architecture.
 
+### New-source M4 runner: offline readiness
+
+The entry point is `scripts/model_artifact_binding_new_source_study.py`.
+The Banknote/WDBC protocol bytes and original prediction-blind inventory
+remain unchanged. This checkpoint implements and tests the runner; it does
+not report real new-source model effects or authorize final execution.
+
+| Operation | Scope |
+| --- | --- |
+| `preflight` | Reads pinned archives, original inventory, target-blind memberships, code/runtime and synthetic reader captures. Writes nothing and fits no estimator or scaler. |
+| `prepare` | Seals `execution-plan.json` in the existing private study directory, from the committed clean checkout. Still no model fitting or final prediction. |
+| `execute` | Requires the exact plan hash and explicit scoped final-execution authorization. Acquires one immutable lease and retains both source cells, including failures. |
+| `verify` | Rechecks the seal and file census, independently refits completed cells and recomputes their metrics, controls, rival ledgers and decisions. Never loads supplied model pickles. |
+
+Preparation binds all source code, the entry point, protocol, package
+configuration, reader contracts, Git commit, runtime versions, single-thread
+policy, original inventory and exact synthetic SDK-interface captures. Drift
+fails before a lease or fit. Interruption after the lease retains both census
+dispositions and blocks repeat execution. A runtime-failure record can have
+verified integrity without a successful numerical replay; it is not counted
+as an effect-valid or structurally verified cell.
+
+Execution fits one train-only StandardScaler and two separately fitted HGB
+artifacts, A100 and B1, on the same training rows. Calibration fits A only on
+the separate calibration partition, with fit clipping `1e-12`; every loader
+path uses that same calibrator with application clipping `1e-15`. The six
+controls retain raw and calibrated scores, actual deserialization-buffer
+hashes and unchanged preprocessor/features/targets/calibration/adapter/scorer
+bindings. Column reversal and two-row target swap retain A at the loader and
+change their respective downstream locus only.
+
+`G1` requires changed raw scores, standardized raw loss increase at least
+`0.01`, healthy raw loss strictly below `ln(2)`, positive empirical raw loss
+increase and exact controls. Calibrated improvement cannot rescue a raw
+failure. `G2` separately reports whether either different-locus rival has
+the same complete missing-key SDK input and a distinguishing full input.
+Legitimate B/B is a no-binding-fault control, not a second fault mechanism.
+Both source cells stay in each denominator; there is no outcome-dependent
+source, budget or threshold replacement.
+
+Synthetic tests cover preparation without fit/prediction/network access,
+train-only preprocessing, separate calibration, boundary decisions, exact
+controls, signed-result tampering, drift, failure retention and lease races.
+The real-archive preflight remains prediction-blind: 1,941 source rows and
+385 final rows are metadata counts, not scored outcomes. The current checkout
+must be committed before an execution seal can be prepared.
+
+The control equalities are an application of
+[metamorphic testing](https://arxiv.org/abs/2002.12543), not a substitute for
+the independent numerical replay. Train-only preprocessing follows the
+[scikit-learn leakage guidance](https://scikit-learn.org/stable/common_pitfalls.html).
+Avoiding supplied pickle loading follows its
+[model persistence security guidance](https://scikit-learn.org/stable/model_persistence.html).
+Refit replay checks reproducibility under the bound environment; the saved
+loader trace does not attest against a malicious process rewriting all
+evidence. Two source clusters support descriptive finite-control findings,
+not source-population confidence intervals or LLM diagnosis accuracy.
+
 ## Separate M5 new-source readiness
 
 M5 development has demonstrated a six-decimal observation boundary, not an
