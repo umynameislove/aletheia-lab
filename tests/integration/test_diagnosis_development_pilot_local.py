@@ -8,6 +8,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 from aletheia_lab.evaluation.development_audit import DevelopmentPilotAuditReceipt
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -31,11 +33,32 @@ def _run(store: Path, seed: str, command: str = "all") -> dict[str, object]:
         check=True,
         capture_output=True,
         text=True,
-        timeout=30,
+        # NTFS publication and independent replay can exceed 30s on a busy
+        # Windows runner. Keep a finite budget and all receipt comparisons.
+        timeout=120 if sys.platform == "win32" else 30,
     )
     payload = json.loads(completed.stdout)
     assert isinstance(payload, dict)
     return payload
+
+
+@pytest.mark.parametrize("platform,timeout", [("win32", 120), ("linux", 30), ("darwin", 30)])
+def test_pilot_subprocess_budget_is_finite_and_platform_specific(
+    tmp_path, monkeypatch, platform, timeout
+):
+    calls = []
+
+    def run(command, **kwargs):
+        calls.append(kwargs)
+        return subprocess.CompletedProcess(command, 0, stdout="{}")
+
+    monkeypatch.setattr(sys, "platform", platform)
+    monkeypatch.setattr(subprocess, "run", run)
+    _run(tmp_path / "store", "104729")
+    assert len(calls) == 1
+    assert calls[0]["timeout"] == timeout
+    assert calls[0]["check"] is True
+    assert calls[0]["env"]["PYTHONHASHSEED"] == "104729"
 
 
 def test_pilot_is_byte_stable_across_process_hash_seeds(tmp_path: Path) -> None:
@@ -59,9 +82,7 @@ def test_independent_validation_reproduces_original_receipt(tmp_path: Path) -> N
 
 
 def test_tracked_receipt_matches_a_fresh_independent_run(tmp_path: Path) -> None:
-    tracked = DevelopmentPilotAuditReceipt.model_validate_json(
-        TRACKED_RECEIPT.read_bytes()
-    )
+    tracked = DevelopmentPilotAuditReceipt.model_validate_json(TRACKED_RECEIPT.read_bytes())
     fresh = _run(tmp_path / "fresh", "104729")
 
     assert fresh["audit"] == tracked.model_dump(mode="json")

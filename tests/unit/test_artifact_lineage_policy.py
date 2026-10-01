@@ -192,10 +192,28 @@ def test_failures_receive_no_safe_abstention_credit():
         "not json",
         "x" * 64001,
     ],
+    # pytest stores node IDs in PYTEST_CURRENT_TEST; Windows cannot store the
+    # oversized payload itself in an environment variable.
+    ids=[
+        "duplicate-key",
+        "extra-field",
+        "unknown-decision",
+        "unknown-citation",
+        "empty-object",
+        "non-json",
+        "oversized-response",
+    ],
 )
 def test_grammar_cannot_hide_commitments_in_duplicate_unknown_or_free_prose_fields(bad):
     with pytest.raises(ValueError):
         parse_decision(bad)
+
+
+def test_parameter_ids_fit_windows_current_test_environment(request):
+    for item in request.session.items:
+        if item.path == request.node.path:
+            value = f"{item.nodeid} (teardown)"
+            assert len(value.encode("utf-16-le")) // 2 < 32767
 
 
 def test_shared_wire_schema_accepts_all_declared_examples_and_parser_matches():
