@@ -96,7 +96,7 @@ constructing these views.
 
 ## Development decision and next implementation
 
-For `V5-M4-01`, first build one small, reproducible source-model cell and an
+For artifact-binding development, first build one small, reproducible source-model cell and an
 independent source-bound verifier. Measure the fault, correction, sham and
 rivals on development data, retaining all attempts and failures. Only then
 consider more cells or dose tuning. A plausible M4 cell requires a verified
@@ -549,3 +549,93 @@ on version compatibility and loading untrusted serialized models. The need
 to keep an adaptive development set separate from a final test is supported
 by [Dwork et al.](https://arxiv.org/abs/1506.02629). These sources motivate
 the construct and safeguards; none proves that M4 has passed in this project.
+
+## Development pilot: loader status with and without artifact lineage
+
+The follow-on question is narrower than cause-of-loss diagnosis: **does the
+fitted-model artifact loaded match the artifact requested?** `binding_fault`
+means a loader mismatch. `no_binding_fault` means this loader binding matches,
+not that all other pipeline loci are healthy or that the model performs well.
+The retained wrong A/B and legitimate B/B paths share scores and loss. Their
+complete `missing_key` inputs are equal even without rounding; `full` contains
+different trusted intended/loaded bindings. This fault–legitimate pair does
+not create a second fault mechanism or repair cross-fault matching results.
+
+`artifact_lineage_policy_pilot.py` reads the already independently verified
+Online Shoppers development cell. Preparation hashes supplied model artifacts
+but never loads them, fits models, predicts again, or reads new-source final
+outcomes. The census retains all six loader controls and both column/target
+rivals. A bijective alias swap counterbalances the two local artifact names.
+Eight observations × two alias orders × four views give 64 planned views,
+**one exposed source cluster**, not 64 independent families. Both cross-locus
+rivals have intact loader bindings, so their loader answer is `no_binding_fault`
+even though another fault is present.
+
+The exact visible-context census has 36 distinct inputs. Each policy receives
+one completion per distinct input, then that response is joined to all retained
+worlds with the same input. The matched A3-derived and A4 instructions share
+the task, evidence, response grammar and runtime; A4 adds consideration of the
+two loader-status alternatives. A3-derived is not the historical P5 A3 arm.
+All actual SDK-interface arguments are captured with a non-network client at
+preflight. Private truth, references, case/source/condition/alias-order IDs,
+receipt hashes and paths are outside messages and options. An unknown transport
+field or changed request prevents the input audit from passing. These are SDK
+captures, not live HTTP or LLM results.
+
+The output is a flat decision (`binding_fault`, `no_binding_fault`, `abstain`,
+`check_binding`), its basis, and cited visible field IDs. Duplicate or unknown
+JSON fields are rejected. Wrong decisions, wrong non-answer reasons and missing
+citations are assessable scientific errors, separate from technical/parser
+failures. There is no free-prose field or second hidden cause field. The visible
+trusted binding proves a mismatch, **not that it caused the loss change**;
+correction experiments are not included as visible causal evidence here.
+
+The main development endpoint requires both worlds' full views resolved with
+the binding witness **and** their missing-lineage views bounded. Report full
+fault recall, legitimate-B false positives, sufficient-view nonresolution,
+missing-view unique commitments, next-check correctness, citation compliance,
+failures, unexecuted requests, latency, tokens and cost separately. Selective
+unwarranted risk uses committed decisions; it is `null`, not zero, when coverage
+is zero. Report a single risk/coverage operating point, not AURC or a population
+confidence interval. Alias/view permutations are shortcut checks, not source
+replication. Deterministic trusted-binding, always-abstain and metric-only
+controls make extraction ceilings and symptom shortcuts explicit.
+
+This extends paired evidence diagnostics, not the invention of evidence-first
+reasoning. [EviScope](https://arxiv.org/html/2609.17081v1) shows why full/missing
+joint success and wrong non-answer actions matter and why an explicit gate must
+not be assumed to outperform a simple prompt. [TraceBench](https://arxiv.org/html/2608.27182)
+studies ambiguous intervention/configuration observations; here the ambiguous
+loader-status pair is retained for warrant testing rather than turned into an
+answerable hidden-label task. [ML Metadata](https://www.tensorflow.org/tfx/guide/mlmd)
+motivates the execution–artifact lineage boundary, not causal attribution of
+loss. [Franc et al.](https://jmlr.org/papers/v24/21-0048.html) motivate reporting
+resolution/coverage with reject-option risk. These are design motivations, not
+evidence that A4 improves on A3-derived in this pilot.
+
+### Local workflow and paid boundary
+
+Preparation and preflight verification need no key or network access:
+
+```sh
+PYTHONPATH=src python scripts/artifact_lineage_policy_pilot.py prepare \
+  --root . --memory-root ../memory --pilot-dir ../memory/artifact-lineage-policy-development-v1
+PYTHONPATH=src python scripts/artifact_lineage_policy_pilot.py preflight \
+  --root . --memory-root ../memory --pilot-dir ../memory/artifact-lineage-policy-development-v1
+```
+
+After explicit approval of the current plan digest, destination and payload,
+`execute --confirm-plan-sha256 <current-plan-digest>` calls only
+`https://api.openai.com/v1/chat/completions`, snapshot `gpt-4.1-2025-04-14`.
+At most **72 calls**, zero retries, temperature 0, seed 731, timeout 90 seconds,
+8,192 input and 1,024 output tokens per call. The frozen-rate reservation is
+**$1.769472** under a **$2.00 ceiling**; this is not a predicted bill.
+`store=false` does not assert zero provider-side retention. The existing caller
+rejects destination, organization, project and proxy overrides. No human
+judgments or raw source rows are sent. All replies and raw records stay private.
+
+Execution retains every attempt, stops after three consecutive invalid/provider
+responses and does not silently replay charged calls. `verify` rechecks the
+source/code/runtime, order, stop rule, resources, results and analysis offline.
+API keys and exception text are not printed or persisted. Do not execute this
+development pilot or infer policy superiority from preparation/tests alone.
