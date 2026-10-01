@@ -221,6 +221,7 @@ def test_changed_metric_refresh_persists_one_traceable_immutable_generation(
     assert evidence.event_id == event.event_id
     assert isinstance(lineage, ProjectLineageGraph)
     assert "causes" not in lineage.model_dump_json()
+    assert "related_to" not in lineage.model_dump_json()
 
     with ProductLifecycleStore(store_root) as lifecycle:
         current = lifecycle.get_project_state(project_id)
@@ -232,9 +233,7 @@ def test_changed_metric_refresh_persists_one_traceable_immutable_generation(
     assert payload["event_id"] == event.event_id
     assert payload["evidence_bundle_id"] == evidence.evidence_bundle_id
     assert payload["lineage_graph_id"] == lineage.graph_id
-    assert payload["adverse_metric_change_ids"] == [
-        comparison.metric_changes[0].metric_change_id
-    ]
+    assert payload["adverse_metric_change_ids"] == [comparison.metric_changes[0].metric_change_id]
 
     before_replay = _store_census(store_root, project_id)
     replay = ProductService(store_root).refresh(project_id)
@@ -264,10 +263,25 @@ def test_changed_metric_refresh_persists_one_traceable_immutable_generation(
     assert foreign_snapshot.value.code == "record_not_found"
 
 
-def test_adverse_threshold_uses_decimal_boundary_comparison(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("direction", "before_value", "after_value", "expected_adverse"),
+    [
+        ("lower_is_better", "0.60", "0.68", True),
+        ("higher_is_better", "0.82", "0.74", True),
+        ("lower_is_better", "0.60", "0.679", False),
+        ("higher_is_better", "0.82", "0.741", False),
+    ],
+)
+def test_adverse_threshold_uses_decimal_boundary_comparison(
+    tmp_path: Path,
+    direction: str,
+    before_value: str,
+    after_value: str,
+    expected_adverse: bool,
+) -> None:
     source_root = _project(tmp_path / "source")
     (source_root / "metrics.csv").write_text(
-        "run,name,value\nbaseline,loss,0.5\ncandidate,loss,0.82\n",
+        f"run,name,value\nbaseline,loss,0.5\ncandidate,loss,{before_value}\n",
         encoding="utf-8",
     )
     _git(source_root, "add", "metrics.csv")
@@ -281,7 +295,7 @@ def test_adverse_threshold_uses_decimal_boundary_comparison(tmp_path: Path) -> N
             json.dumps(
                 _mapping(
                     preview,
-                    direction="higher_is_better",
+                    direction=direction,
                     threshold=0.08,
                 ),
                 allow_nan=False,
@@ -294,7 +308,7 @@ def test_adverse_threshold_uses_decimal_boundary_comparison(tmp_path: Path) -> N
     )
 
     (source_root / "metrics.csv").write_text(
-        "run,name,value\nbaseline,loss,0.5\ncandidate,loss,0.74\n",
+        f"run,name,value\nbaseline,loss,0.5\ncandidate,loss,{after_value}\n",
         encoding="utf-8",
     )
     _git(source_root, "add", "metrics.csv")
@@ -307,8 +321,126 @@ def test_adverse_threshold_uses_decimal_boundary_comparison(tmp_path: Path) -> N
         payload = lifecycle.get_project_state(str(confirmed["project_id"])).payload()
     adverse_change_ids = payload["adverse_metric_change_ids"]
     assert isinstance(adverse_change_ids, list)
-    assert len(adverse_change_ids) == 1
-    assert isinstance(payload["event_id"], str)
+    assert bool(adverse_change_ids) is expected_adverse
+    assert isinstance(payload["event_id"], str) is expected_adverse
+
+
+def test_config_only_refresh_is_observation_and_zero_threshold_is_not_adverse(
+    tmp_path: Path,
+) -> None:
+    source_root = _project(tmp_path / "source")
+    store_root = tmp_path / "store"
+    service = ProductService(store_root)
+    preview = service.preview_import(str(source_root))
+    confirmed = service.confirm_import(
+        str(preview["preview_id"]),
+        _mapping(preview, threshold=0.0),
+    )
+    project_id = str(confirmed["project_id"])
+
+    (source_root / "config.json").write_text('{"seed":43}\n', encoding="utf-8")
+    _git(source_root, "add", "config.json")
+    _git(source_root, "commit", "-q", "-m", "config changed")
+
+    refreshed = ProductService(store_root).refresh(project_id)
+
+    assert refreshed["status"] == "new_snapshot"
+    with ProjectStore(store_root) as reopened:
+        comparisons = reopened.list_records(project_id, "snapshot_comparison")
+        assert len(comparisons) == 1
+        comparison = reopened.load(comparisons[0].record_id)
+        assert isinstance(comparison, ProjectSnapshotComparison)
+        assert comparison.status == "changed"
+        assert comparison.metric_changes == ()
+        assert any(
+            (change.before is not None and change.before.relative_path == "config.json")
+            or (change.after is not None and change.after.relative_path == "config.json")
+            for change in comparison.item_changes
+        )
+        assert reopened.list_records(project_id, "regression_event") == ()
+        assert reopened.list_records(project_id, "evidence_bundle") == ()
+        assert reopened.list_records(project_id, "lineage_graph") == ()
+    with ProductLifecycleStore(store_root) as lifecycle:
+        payload = lifecycle.get_project_state(project_id).payload()
+    assert payload["adverse_metric_change_ids"] == []
+    assert payload["event_id"] is None
+
+
+def test_two_changed_refreshes_preserve_and_reload_the_first_generation(
+    tmp_path: Path,
+) -> None:
+    source_root = _project(tmp_path / "source")
+    store_root = tmp_path / "store"
+    service = ProductService(store_root)
+    preview = service.preview_import(str(source_root))
+    confirmed = service.confirm_import(str(preview["preview_id"]), _mapping(preview))
+    project_id = str(confirmed["project_id"])
+
+    (source_root / "metrics.csv").write_text(
+        "run,name,value\nbaseline,loss,0.5\ncandidate,loss,0.8\n",
+        encoding="utf-8",
+    )
+    _git(source_root, "add", "metrics.csv")
+    _git(source_root, "commit", "-q", "-m", "first adverse refresh")
+    first_refresh = ProductService(store_root).refresh(project_id)
+    first_snapshot_id = str(first_refresh["snapshot_id"])
+    pinned_result = build_product_lifecycle_record(
+        record_kind="result",
+        project_id=project_id,
+        snapshot_id=first_snapshot_id,
+        payload={"status": "first_generation_probe"},
+    )
+    with ProductLifecycleStore(store_root) as lifecycle:
+        first_state = lifecycle.get_project_state(project_id)
+        lifecycle.put(pinned_result)
+    first_payload = first_state.payload()
+    first_generation_ids = tuple(
+        str(first_payload[key])
+        for key in (
+            "comparison_id",
+            "event_id",
+            "evidence_bundle_id",
+            "lineage_graph_id",
+        )
+    )
+    with ProjectStore(store_root) as reopened:
+        first_generation_json = tuple(
+            reopened.load(record_id).model_dump_json() for record_id in first_generation_ids
+        )
+
+    (source_root / "metrics.csv").write_text(
+        "run,name,value\nbaseline,loss,0.5\ncandidate,loss,0.9\n",
+        encoding="utf-8",
+    )
+    _git(source_root, "add", "metrics.csv")
+    _git(source_root, "commit", "-q", "-m", "second adverse refresh")
+    second_refresh = ProductService(store_root).refresh(project_id)
+
+    assert second_refresh["status"] == "new_snapshot"
+    assert second_refresh["snapshot_id"] != first_snapshot_id
+    with ProjectStore(store_root) as reopened:
+        assert (
+            tuple(reopened.load(record_id).model_dump_json() for record_id in first_generation_ids)
+            == first_generation_json
+        )
+        assert len(reopened.list_records(project_id, "snapshot_comparison")) == 2
+        assert len(reopened.list_records(project_id, "regression_event")) == 2
+        assert len(reopened.list_records(project_id, "evidence_bundle")) == 2
+        assert len(reopened.list_records(project_id, "lineage_graph")) == 2
+        assert isinstance(reopened.load(first_snapshot_id), ProjectSnapshot)
+    with ProductLifecycleStore(store_root) as lifecycle:
+        current = lifecycle.get_project_state(project_id)
+        assert current.payload()["previous_snapshot_id"] == first_snapshot_id
+        assert (
+            lifecycle.get(
+                pinned_result.record_id,
+                expected_kind="result",
+                project_id=project_id,
+                snapshot_id=first_snapshot_id,
+            )
+            == pinned_result
+        )
+    assert ProductService(store_root).refresh(project_id)["status"] == "unchanged"
 
 
 def test_non_adverse_refresh_persists_comparison_without_regression_claims(

@@ -96,7 +96,8 @@ manual-entry, root-array, and sensitive-withheld candidate behavior. Version 2
 adds stable `metric_name_candidates`; an unresolved source returns an empty
 list, while a sensitive metric name disables the candidate with a safe label,
 no path, and empty structural arrays. The UI type and tests are ready for this
-fixture; byte-for-byte UI verification is pending the K04 branch push.
+fixture. The backend fixture is available on the K04 branch; byte-for-byte UI
+verification remains pending the UI maintainer's confirmation of the v2 SHA.
 
 The older `synthetic_p6_view.json` fixture is not the K03 preview contract and
 remains only a temporary UI fallback. A shared `p6-product-view/v1` fixture will
