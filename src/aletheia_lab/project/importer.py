@@ -41,6 +41,7 @@ from aletheia_lab.project.contracts import (
     verify_project_item_artifact,
 )
 from aletheia_lab.project.identity import (
+    SHA256_PATTERN,
     ProjectIdentityError,
     canonical_project_json,
     canonical_project_sha256,
@@ -186,6 +187,41 @@ class ProjectImportResult:
 
 
 @dataclass(frozen=True, slots=True)
+class ProjectImportInspection:
+    """A preview plus a path-free seal of the exact inspected source state."""
+
+    preview: ProjectImportPreview
+    source_state_sha256: str | None
+    items: tuple[ProjectItem, ...]
+    artifacts: tuple[ProjectImportArtifact, ...]
+
+    def __post_init__(self) -> None:
+        blocker_exists = any(issue.severity == "blocker" for issue in self.preview.issues)
+        if blocker_exists:
+            if self.source_state_sha256 is not None or self.items or self.artifacts:
+                raise ValueError(
+                    "blocked inspections must not release admitted source state"
+                )
+            return
+        if self.source_state_sha256 is None or re.fullmatch(
+            SHA256_PATTERN, self.source_state_sha256
+        ) is None:
+            raise ValueError("successful inspections require a valid source-state seal")
+        item_by_path = {item.relative_path: item for item in self.items}
+        artifact_by_path = {artifact.relative_path: artifact for artifact in self.artifacts}
+        if (
+            not self.items
+            or len(item_by_path) != len(self.items)
+            or len(artifact_by_path) != len(self.artifacts)
+            or set(item_by_path) != set(artifact_by_path)
+        ):
+            raise ValueError("inspection items and artifacts must reconcile exactly")
+        for relative_path, item in item_by_path.items():
+            if item.artifact != artifact_by_path[relative_path].reference:
+                raise ValueError("inspection artifact does not match its project item")
+
+
+@dataclass(frozen=True, slots=True)
 class _FileProfile:
     source_type: ProjectSourceType
     media_type: str
@@ -215,6 +251,15 @@ class _PreparedItem:
     decision: ProjectImportDecision
     issues: tuple[ProjectValidationIssue, ...]
     final_stat: os.stat_result = field(repr=False)
+
+
+@dataclass(frozen=True, slots=True)
+class _ProjectInspection:
+    policy: ProjectImportPolicy
+    ingested_at: str
+    preview: ProjectImportPreview
+    prepared: tuple[_PreparedItem, ...]
+    source_state_sha256: str | None
 
 
 class _ContentFailure(ValueError):
@@ -1033,6 +1078,56 @@ def _observations_are_current(
     return True
 
 
+def _source_state_sha256(
+    grant: GrantedProjectRoot,
+    prepared: tuple[_PreparedItem, ...],
+    directories: tuple[_DirectoryObservation, ...],
+) -> str | None:
+    """Seal exact inspected identities without exposing host paths or source bytes."""
+
+    try:
+        root_before = grant._path.lstat()
+        directory_states = []
+        for observation in directories:
+            relative = observation.path.relative_to(grant._path)
+            directory_states.append(
+                {
+                    "relative_path": "/".join(relative.parts),
+                    "stat": list(_directory_signature(observation.stat_result)),
+                    "entry_name_sha256": [
+                        content_sha256(name) for name in observation.entry_names
+                    ],
+                }
+            )
+        payload = {
+            "schema_version": "p3-project-source-state/v1",
+            "root_fingerprint": grant.root_fingerprint,
+            "root_stat": list(_directory_signature(root_before)),
+            "files": [
+                {
+                    "relative_path": ready.item.relative_path,
+                    "stat": list(_stat_signature(ready.final_stat)),
+                    "content_sha256": ready.item.content_sha256,
+                    "artifact_sha256": ready.item.artifact.sha256,
+                }
+                for ready in sorted(prepared, key=lambda value: value.item.relative_path)
+            ],
+            "directories": sorted(
+                directory_states,
+                key=lambda value: str(value["relative_path"]),
+            ),
+        }
+        root_after = grant._path.lstat()
+    except (OSError, ValueError):
+        return None
+    if (
+        _directory_signature(root_before) != _directory_signature(root_after)
+        or not _grant_is_current(grant)
+    ):
+        return None
+    return canonical_project_sha256(payload)
+
+
 def _report_sha256(
     *,
     status: ProjectImportStatus,
@@ -1094,42 +1189,28 @@ def _blocked_result(
     )
 
 
-def import_local_project(
+def _inspect_granted_project(
     grant: GrantedProjectRoot,
     *,
-    display_name: str,
-    ingested_at: str,
-    policy: ProjectImportPolicy | None = None,
-) -> ProjectImportResult:
-    """Read and atomically assemble one diagnosis-safe local ProjectBundle.
-
-    Unsupported files are explicitly excluded.  Unsafe paths, source races,
-    malformed allowed content and resource-limit violations are blockers.  A
-    handled secret is retained only as a local-only withheld item; PII is
-    redacted before artifact bytes become diagnosis-visible.
-    """
-
-    if not isinstance(grant, GrantedProjectRoot):
-        raise TypeError("import_local_project requires a GrantedProjectRoot")
-    selected_policy = ProjectImportPolicy() if policy is None else ProjectImportPolicy.model_validate(
-        policy.model_dump(mode="python")
-    )
-    normalized_time = _canonical_ingested_at(ingested_at)
-    normalize_text(display_name, label="project display name", max_length=128)
+    selected_policy: ProjectImportPolicy,
+    normalized_time: str,
+) -> _ProjectInspection:
     if not _grant_is_current(grant):
         issue = _issue("root_changed", subject=grant.root_fingerprint)
-        return _blocked_result(grant, selected_policy, (), (issue,))
+        blocked = _blocked_result(grant, selected_policy, (), (issue,))
+        return _ProjectInspection(selected_policy, normalized_time, blocked.preview, (), None)
 
     candidates, directories, discovery_decisions, discovery_issues = _discover(
         grant, selected_policy
     )
     if any(issue.severity == "blocker" for issue in discovery_issues):
-        return _blocked_result(
+        blocked = _blocked_result(
             grant,
             selected_policy,
             discovery_decisions,
             discovery_issues,
         )
+        return _ProjectInspection(selected_policy, normalized_time, blocked.preview, (), None)
 
     prepared: list[_PreparedItem] = []
     decisions = list(discovery_decisions)
@@ -1165,29 +1246,37 @@ def import_local_project(
     if not prepared and not any(issue.code == "empty_project" for issue in issues):
         issues.append(_issue("empty_project", subject=grant.root_fingerprint))
     if any(issue.severity == "blocker" for issue in issues):
-        return _blocked_result(
+        blocked = _blocked_result(
             grant,
             selected_policy,
             tuple(decisions),
             tuple(issues),
         )
+        return _ProjectInspection(selected_policy, normalized_time, blocked.preview, (), None)
     prepared_tuple = tuple(prepared)
     if not _grant_is_current(grant) or not _observations_are_current(
         candidates, prepared_tuple, directories
     ):
         issues.append(_issue("source_changed_during_read", subject=grant.root_fingerprint))
-        return _blocked_result(
+        blocked = _blocked_result(
             grant,
             selected_policy,
             tuple(decisions),
             tuple(issues),
         )
+        return _ProjectInspection(selected_policy, normalized_time, blocked.preview, (), None)
 
     sorted_prepared = tuple(sorted(prepared_tuple, key=lambda item: item.item.relative_path))
-    sorted_items = tuple(item.item for item in sorted_prepared)
-    sorted_artifacts = tuple(item.artifact for item in sorted_prepared)
-    restricted = any(issue.severity in {"warning", "error"} for issue in issues)
-    status: ProjectImportStatus = "imported_with_restrictions" if restricted else "imported"
+    source_state_sha256 = _source_state_sha256(grant, sorted_prepared, directories)
+    if source_state_sha256 is None:
+        issues.append(_issue("source_changed_during_read", subject=grant.root_fingerprint))
+        blocked = _blocked_result(
+            grant,
+            selected_policy,
+            tuple(decisions),
+            tuple(issues),
+        )
+        return _ProjectInspection(selected_policy, normalized_time, blocked.preview, (), None)
     preview = build_project_import_preview(
         project_id=grant.project_id,
         root_fingerprint=grant.root_fingerprint,
@@ -1195,6 +1284,103 @@ def import_local_project(
         decisions=tuple(decisions),
         issues=tuple(issues),
     )
+    return _ProjectInspection(
+        selected_policy,
+        normalized_time,
+        preview,
+        sorted_prepared,
+        source_state_sha256,
+    )
+
+
+def inspect_local_project(
+    grant: GrantedProjectRoot,
+    *,
+    ingested_at: str,
+    policy: ProjectImportPolicy | None = None,
+) -> ProjectImportInspection:
+    """Inspect a source and return a private revalidation seal without a bundle."""
+
+    if not isinstance(grant, GrantedProjectRoot):
+        raise TypeError("inspect_local_project requires a GrantedProjectRoot")
+    selected_policy = (
+        ProjectImportPolicy()
+        if policy is None
+        else ProjectImportPolicy.model_validate(policy.model_dump(mode="python"))
+    )
+    normalized_time = _canonical_ingested_at(ingested_at)
+    inspected = _inspect_granted_project(
+        grant,
+        selected_policy=selected_policy,
+        normalized_time=normalized_time,
+    )
+    return ProjectImportInspection(
+        preview=inspected.preview,
+        source_state_sha256=inspected.source_state_sha256,
+        items=tuple(value.item for value in inspected.prepared),
+        artifacts=tuple(value.artifact for value in inspected.prepared),
+    )
+
+
+def preview_local_project(
+    grant: GrantedProjectRoot,
+    *,
+    ingested_at: str,
+    policy: ProjectImportPolicy | None = None,
+) -> ProjectImportPreview:
+    """Inspect a source safely without constructing a valid bundle or snapshot."""
+
+    if not isinstance(grant, GrantedProjectRoot):
+        raise TypeError("preview_local_project requires a GrantedProjectRoot")
+    return inspect_local_project(
+        grant,
+        ingested_at=ingested_at,
+        policy=policy,
+    ).preview
+
+
+def import_local_project(
+    grant: GrantedProjectRoot,
+    *,
+    display_name: str,
+    ingested_at: str,
+    policy: ProjectImportPolicy | None = None,
+) -> ProjectImportResult:
+    """Read and atomically assemble one diagnosis-safe local ProjectBundle.
+
+    Unsupported files are explicitly excluded.  Unsafe paths, source races,
+    malformed allowed content and resource-limit violations are blockers.  A
+    handled secret is retained only as a local-only withheld item; PII is
+    redacted before artifact bytes become diagnosis-visible.
+    """
+
+    if not isinstance(grant, GrantedProjectRoot):
+        raise TypeError("import_local_project requires a GrantedProjectRoot")
+    selected_policy = (
+        ProjectImportPolicy()
+        if policy is None
+        else ProjectImportPolicy.model_validate(policy.model_dump(mode="python"))
+    )
+    normalized_time = _canonical_ingested_at(ingested_at)
+    normalize_text(display_name, label="project display name", max_length=128)
+    inspection = _inspect_granted_project(
+        grant,
+        selected_policy=selected_policy,
+        normalized_time=normalized_time,
+    )
+    preview = inspection.preview
+    if any(issue.severity == "blocker" for issue in preview.issues):
+        return _blocked_result(
+            grant,
+            selected_policy,
+            preview.decisions,
+            preview.issues,
+        )
+
+    sorted_items = tuple(item.item for item in inspection.prepared)
+    sorted_artifacts = tuple(item.artifact for item in inspection.prepared)
+    restricted = any(issue.severity in {"warning", "error"} for issue in preview.issues)
+    status: ProjectImportStatus = "imported_with_restrictions" if restricted else "imported"
     report = _report_sha256(
         status=status,
         preview=preview,
@@ -1214,12 +1400,14 @@ def import_local_project(
             ingestion_report_sha256=report,
         )
     except (ProjectIdentityError, ValidationError, ValueError):
-        issues.append(_issue("atomic_import_aborted", subject=grant.root_fingerprint))
         return _blocked_result(
             grant,
             selected_policy,
-            tuple(decisions),
-            tuple(issues),
+            preview.decisions,
+            (
+                *preview.issues,
+                _issue("atomic_import_aborted", subject=grant.root_fingerprint),
+            ),
         )
     return ProjectImportResult(
         status=status,

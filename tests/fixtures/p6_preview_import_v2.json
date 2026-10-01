@@ -1,0 +1,208 @@
+{
+  "preview_id": "p6-preview-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "included_count": 12,
+  "redacted_count": 1,
+  "excluded_count": 3,
+  "withheld_count": 2,
+  "blockers": [],
+  "warnings": [
+    {
+      "code": "source_read_failed",
+      "severity": "error",
+      "stage": "read",
+      "message": "One source could not be read and was left out. The import continues without it.",
+      "relative_path": "logs/old.log",
+      "occurrences": 1
+    },
+    {
+      "code": "pii_redacted",
+      "severity": "warning",
+      "stage": "normalize",
+      "message": "Personally identifying content was redacted before diagnosis visibility.",
+      "relative_path": "data/users.csv",
+      "occurrences": 3
+    },
+    {
+      "code": "dataset_rows_withheld",
+      "severity": "warning",
+      "stage": "collect",
+      "message": "Rows were withheld from the bundle. The count is kept; the content is not.",
+      "relative_path": "data/events.jsonl",
+      "occurrences": 41
+    },
+    {
+      "code": "line_too_long",
+      "severity": "info",
+      "stage": "read",
+      "message": "A source line exceeded the normalisation limit and was truncated for display only.",
+      "relative_path": "logs/train.log",
+      "occurrences": 7
+    }
+  ],
+  "outbound_categories": [],
+  "mapping_candidates": {
+    "targets": [
+      {
+        "project_item_id": "p3-item-1111111111111111111111111111111111111111111111111111111111111111",
+        "label": "dataset/main.csv",
+        "mapping_id": "map-target-01",
+        "available": true,
+        "unavailable_reason": null,
+        "relative_path": "dataset/main.csv",
+        "field_names": [
+          "run_id",
+          "entity_id",
+          "timestamp"
+        ]
+      },
+      {
+        "project_item_id": "p3-item-2222222222222222222222222222222222222222222222222222222222222222",
+        "label": "A dataset with withheld field labels",
+        "mapping_id": null,
+        "available": false,
+        "unavailable_reason": "sensitive_fields_withheld",
+        "relative_path": null,
+        "field_names": []
+      }
+    ],
+    "metric_sources": [
+      {
+        "project_item_id": "p3-item-3333333333333333333333333333333333333333333333333333333333333333",
+        "label": "metrics/validation.json",
+        "mapping_id": "map-metric-01",
+        "available": true,
+        "unavailable_reason": null,
+        "relative_path": "metrics/validation.json",
+        "format": "json",
+        "records_path_candidates": [
+          [
+            "runs"
+          ],
+          [
+            "records"
+          ]
+        ],
+        "field_names": [
+          "name",
+          "value",
+          "run_id",
+          "step"
+        ],
+        "run_id_field_candidates": [
+          "run_id"
+        ],
+        "metric_name_candidates": [
+          "accuracy",
+          "loss"
+        ]
+      },
+      {
+        "project_item_id": "p3-item-4444444444444444444444444444444444444444444444444444444444444444",
+        "label": "metrics/train.csv",
+        "mapping_id": "map-metric-02",
+        "available": true,
+        "unavailable_reason": null,
+        "relative_path": "metrics/train.csv",
+        "format": "csv",
+        "records_path_candidates": [],
+        "field_names": [
+          "metric",
+          "val",
+          "run"
+        ],
+        "run_id_field_candidates": [
+          "run"
+        ],
+        "metric_name_candidates": [
+          "loss"
+        ]
+      },
+      {
+        "project_item_id": "p3-item-5555555555555555555555555555555555555555555555555555555555555555",
+        "label": "metrics/legacy.json",
+        "mapping_id": "map-metric-03",
+        "available": true,
+        "unavailable_reason": null,
+        "relative_path": "metrics/legacy.json",
+        "format": "json",
+        "records_path_candidates": [],
+        "field_names": [
+          "k",
+          "v"
+        ],
+        "run_id_field_candidates": [],
+        "metric_name_candidates": []
+      },
+      {
+        "project_item_id": "p3-item-6666666666666666666666666666666666666666666666666666666666666666",
+        "label": "metrics/flat.json",
+        "mapping_id": "map-metric-04",
+        "available": true,
+        "unavailable_reason": null,
+        "relative_path": "metrics/flat.json",
+        "format": "json",
+        "records_path_candidates": [
+          []
+        ],
+        "field_names": [
+          "name",
+          "value",
+          "run_id"
+        ],
+        "run_id_field_candidates": [
+          "run_id"
+        ],
+        "metric_name_candidates": [
+          "accuracy"
+        ]
+      },
+      {
+        "project_item_id": "p3-item-8888888888888888888888888888888888888888888888888888888888888888",
+        "label": "A metric source with withheld field labels",
+        "mapping_id": null,
+        "available": false,
+        "unavailable_reason": "sensitive_fields_withheld",
+        "relative_path": null,
+        "format": "csv",
+        "records_path_candidates": [],
+        "field_names": [],
+        "run_id_field_candidates": [],
+        "metric_name_candidates": []
+      }
+    ],
+    "configs": [
+      {
+        "project_item_id": "p3-item-7777777777777777777777777777777777777777777777777777777777777777",
+        "label": "config/train.yaml",
+        "mapping_id": "map-config-01",
+        "available": true,
+        "unavailable_reason": null,
+        "relative_path": "config/train.yaml"
+      }
+    ],
+    "runs": [
+      {
+        "run_id": "run-after",
+        "available": true,
+        "unavailable_reason": null,
+        "source_metric_item_ids": [
+          "p3-item-3333333333333333333333333333333333333333333333333333333333333333"
+        ],
+        "available_config_item_ids": [
+          "p3-item-7777777777777777777777777777777777777777777777777777777777777777"
+        ]
+      },
+      {
+        "run_id": "run-before",
+        "available": true,
+        "unavailable_reason": null,
+        "source_metric_item_ids": [
+          "p3-item-3333333333333333333333333333333333333333333333333333333333333333"
+        ],
+        "available_config_item_ids": [
+          "p3-item-7777777777777777777777777777777777777777777777777777777777777777"
+        ]
+      }
+    ]
+  }
+}

@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -380,6 +380,7 @@ class ProjectStore:
         models: Iterable[StoredProjectModel],
         *,
         artifacts: Mapping[str, tuple[str, bytes]] | None = None,
+        transaction_write: Callable[[sqlite3.Connection], None] | None = None,
     ) -> tuple[StoredRecord, ...]:
         """Atomically expose a generation after writing and verifying its objects.
 
@@ -412,6 +413,8 @@ class ProjectStore:
             for model in checked_models:
                 if isinstance(model, ProjectLineageGraph):
                     self._index_lineage(model)
+            if transaction_write is not None:
+                transaction_write(self._connection)
         self.verify_integrity()
         return tuple(records)
 
