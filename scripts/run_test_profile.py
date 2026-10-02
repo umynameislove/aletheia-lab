@@ -149,6 +149,8 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_source_evidence_headroom.py",
         "tests/unit/test_source_evidence_extraction.py",
         "tests/unit/test_source_evidence_acquisition.py",
+        "tests/unit/test_native_cache_extraction.py",
+        "tests/unit/test_native_cache_experiment.py",
         "--durations=20",
     ),
     "windows-publication": (
