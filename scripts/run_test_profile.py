@@ -137,6 +137,9 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_artifact_lineage_policy.py",
         "tests/unit/test_artifact_lineage_sources.py",
         "tests/unit/test_artifact_lineage_pilot.py",
+        "tests/unit/test_compositional_lineage.py",
+        "tests/unit/test_compositional_lineage_cases.py",
+        "tests/unit/test_compositional_lineage_pilot.py",
         "--durations=20",
     ),
     "windows-publication": (

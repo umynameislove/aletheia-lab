@@ -639,3 +639,146 @@ responses and does not silently replay charged calls. `verify` rechecks the
 source/code/runtime, order, stop rule, resources, results and analysis offline.
 API keys and exception text are not printed or persisted. Do not execute this
 development pilot or infer policy superiority from preparation/tests alone.
+
+### Completed direct-witness pilot and compositional follow-up
+
+`V6-M4-LIN-DEV-01` is complete at its development scope: 72/72 unique requests
+were parsed and replayed offline. Both policies resolved all 48 sufficient
+view slots and returned the warranted binding check on all 16 missing slots.
+All 36 matched contexts had identical parsed decisions. The observed frozen-rate
+cost was $0.149212; aliases and reused view slots are not independent sources.
+This is a genuine ceiling/tie, not evidence of A4 superiority or deep causal
+reasoning. The old prompt supplied a direct witness and its comparison rule.
+The completed pilot and all source/code bindings remain unchanged.
+
+`V6-A4-DEV-02` therefore asks a new, explicitly **exposed development** question:
+can the policies compose scoped lineage facts and respond appropriately when
+those facts identify, underdetermine, or contradict the requested/loaded byte
+identity? It is not a confirmatory rescue of the old result. The code lives in
+`compositional_lineage.py`, `compositional_lineage_cases.py`, and
+`compositional_lineage_pilot.py`; the existing paid caller and immutable private
+IO are reused without modifying the completed pilot.
+
+#### Reference model and scope
+
+The requested endpoint is the artifact in the **pinned immutable snapshot**.
+The consumed endpoint is obtained from the target attempt's execution, its
+actual consumed buffer, and that buffer's byte identity. This is not a temporal
+latest-manifest task. Declarations and symptom reports are not consumption
+measurements. Requested and loaded endpoints can match even when a declaration
+does not; a wrong buffer can differ even when the declaration matches.
+
+There are eight independent binary variables: request snapshot, request
+execution, two snapshot/artifact mappings, two execution/buffer mappings, and
+two buffer/artifact mappings. Every mapping is total but need not be injective.
+Unobserved variables may take either admitted domain value; no default is
+inferred. The 256 complete worlds are fixed before outputs. Seven primitive
+record kinds are admitted by the task contract, outside record prose. Only the
+exact request **and** attempt scope constrains this target. All admitted facts
+in that scope must be consistent, including unselected branches. This global
+integrity convention is intentional; it is not a claim that such sources are
+authenticated by a self-reported kind or `trusted=true` string in deployment.
+
+For visible records V, let W(V) be all worlds satisfying admitted constraints,
+and C(V) their requested-versus-loaded statuses. A singleton C warrants a
+commitment. Both statuses warrant a nonanswer or measurement. Empty W means
+conflicting admitted evidence, not an answer certified by vacuous entailment.
+The independent reference uses domain intersections and reachable endpoints;
+it is equivalent here because the requested and loaded variable dependencies
+are disjoint. Shared-variable extensions would require a new oracle.
+
+Three finite-model properties are tested: indistinguishable fault/match worlds
+cannot warrant a unique answer; adding consistent admitted facts only restricts
+the fixed world set; and removing an unnecessary fact can preserve a singleton.
+These apply established diagnosability/consistency ideas, not a novel general
+theory of diagnosis. [Reiter](https://www.cs.ru.nl/P.Lucas/teaching/KeR/reiter.pdf)
+motivates consistency and discriminating measurements;
+[Rintanen](https://www.ijcai.org/Proceedings/07/Papers/085.pdf) supplies the
+observable-equivalence foundation. Minimal diagnoses can change under new
+measurements: our refinement property is about a **fixed complete world set**,
+not an evolving list of minimal causal explanations.
+
+[W3C PROV-DM](https://www.w3.org/TR/prov-dm/) motivates explicit entity/activity
+joins; [PROV-AQ](https://www.w3.org/TR/prov-aq/#interpretation) distinguishes
+provenance from authority. [ML Metadata's schema](https://raw.githubusercontent.com/google/ml-metadata/master/ml_metadata/proto/metadata_store.proto)
+distinguishes declared inputs from artifacts actually read. We consequently do
+not promote declaration prose, recency or record position into a binding fact.
+
+#### Census, actions and falsification
+
+Twelve authored motifs cover complete fault and legitimate matching consumption,
+pinned-old snapshots, declaration/consumption disagreement, off-attempt and
+reported decoys, missing request/execution/manifest facts, redundant missing
+proof, both unknown endpoints, and admitted-record conflict. Two artifact alias
+orders and two record orders give **48 dependent view slots: 28 identified,
+16 ambiguous, 4 conflicting**. There is **one retained Online Shoppers
+development source**. Event envelopes and symptom reports are authored
+constructions anchored to retained A/B identities, not measured deployment logs
+or new independent families. Two list orders are not two representations;
+equivalent table/log decoding is tested offline, not claimed as a paid format
+replication. No fitting, deserialization or new-source final outcome is used.
+
+The flat response has `decision`, `basis`, `next_check`, and `cited_records`.
+For a commitment, the cited subset must itself entail the claimed status; merely
+citing existing IDs is insufficient. Conflict citations must themselves be
+inconsistent. Missing-proof nonanswers and conflicts have distinct reasons.
+The available queries measure requested, loaded, or both endpoints, with costs
+1, 1, and 2. A query guarantees resolution only when every feasible result
+leaves one status. All least-cost qualifying queries are accepted; there is no
+fabricated prior or expected-information-gain claim. `reconcile_records` flags
+the integrity problem; it is **not** scored as a guaranteed endpoint repair.
+
+The primary development endpoint is justified action success over all planned
+views: resolution where identifiable, a least-cost guaranteed query where
+ambiguous, and an evidenced conflict flag where inconsistent. Bounded abstention
+is separately credited on ambiguous views but does not earn query-utility credit.
+The constant abstention baseline uses a valid nonanswer grammar. A symptom-only
+shortcut is included alongside the visible resolver. Report raw resolution,
+boundedness, conflict handling, unsupported commitment, citation proof and
+resources separately, then A4-minus-A3 paired transitions over the **12 authored
+motifs** with their four dependent variants. No population CI or AURC is implied.
+
+Both policy arms receive identical contexts, primitive semantics, response
+schema, model, sampling, input/output budgets and failure rules. Only the
+policy instruction differs; A3 is not weakened or forced to guess. Model answers
+are never used to choose a motif, change the oracle, repair semantic errors, or
+drop a planned denominator. Tests enumerate all 6,561 partial primitive
+assignments against an independently authored integer-world reference, plus
+complete-world/direct-endpoint combinations, removals, contradictions,
+counterpart worlds, alias/order changes, citation subsets and wire privacy.
+
+[EviScope](https://arxiv.org/html/2609.17081v1) motivates paired action diagnostics
+but explicitly leaves authority, recency and multi-document synthesis outside
+its current scope; it does not supply our trust/lineage oracle. The
+[benchmark-saturation study](https://proceedings.mlr.press/v306/akhtar26a.html)
+supports investigating headroom, not assuming that a harder benchmark will
+produce the preferred ranking. Any later live difference is a finite matched
+prompt-policy result; it does not admit a second mechanism or change P5.
+
+#### Operator boundary for the new pilot
+
+`scripts/compositional_lineage_pilot.py` supports `prepare`, `preflight`,
+`execute`, and `verify`, using a **new private directory**. Preparation requires
+the completed predecessor receipt to replay and checks retained source/code
+bindings. It seals corpus, independent oracle audit, complete SDK-interface
+capture, baselines, prompts, schema, runtime, code, and finite budget. Verification
+rebuilds the results without a network client. Use the prepared directory's
+current plan digest; do not rerun either completed predecessor.
+
+After owner approval only, at most **96 unique calls**, zero retries, use
+`gpt-4.1-2025-04-14` at `https://api.openai.com/v1/chat/completions`. The worst-case
+frozen-rate reservation is **$2.359296**, ceiling **$2.50**, not a bill estimate.
+Only task instructions, constructed visible records and the decision schema are
+sent. Source/receipt hashes, paths, oracle/worlds, case/motif IDs, raw rows and
+human labels are withheld. Exact SDK arguments are captured offline; this does
+not establish live HTTP correctness. Strict structured output is still locally
+parsed and semantically assessed. [OpenAI Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs)
+does not guarantee factual or evidential correctness.
+
+Three consecutive technical/schema failures stop execution; semantic mistakes
+remain measured outcomes. Every uncalled or failed request remains in planned
+denominators. Interrupted runs are not silently replayed. If both policies
+still reach the ceiling, close headroom for this frame rather than automatically
+expanding calls to manufacture a difference. Live execution and replay remain
+required before this task can report measured development performance or be
+marked Done; they would not establish population policy efficacy.
