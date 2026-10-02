@@ -4,6 +4,14 @@ This forward experiment does **not** alter prior registered analyses or their
 sealed outcomes. It is not a registered attempt, a mechanism-admission decision,
 or evidence that the clean production evaluator contained this fault.
 
+**Forward method boundary:** the retained mapping experiments establish their
+own finite controls and observation limits. The source-faithful admission and
+matched parser/resolver direction is described in the
+[artifact-binding method document](model-artifact-binding-control.md#forward-method-source-faithful-admission-before-resolution).
+It does not reopen these experiments, retune new-source outcomes or turn a
+mapping-versus-target input match into measured LLM accuracy. Binding/extraction
+research is distinct from causal-mechanism admission.
+
 ## Source and control
 
 The runner verifies the pinned V3 protocol and UCI archive bytes, reconstructs

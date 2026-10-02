@@ -174,13 +174,53 @@ attribution, evidence-based validation, causal graph tracing and recovery/rerun.
 Therefore Aletheia does not claim to invent evidence-grounded debugging,
 trajectory attribution, code graphs or closed-loop repair.
 
-The bounded position is that the prespecified reviewed corpus did not reveal one
-evaluated system that jointly combines controlled ML-failure eligibility,
-diagnosis-visible evidence siblings, atomic support, evidence-conditioned
-abstention, correctness-groundedness divergence, immutable project lineage and
-reproducible local audit. This wording describes a scoped review result, not a
-universal first.
+The earlier bounded position described a result of the prespecified reviewed
+corpus, not a universal first. It is a historical review boundary, not proof
+that more recent systems lack overlapping evidence/verification components.
+The forward candidate contribution must now be tested against the closer
+semantic-parsing, evidence-verification and active-diagnosis work below.
 
 CodeGraph may be evaluated as an optional evidence-index component. It cannot
 replace matched generic RAG, claim-support evaluation, abstention gates or
 provenance and reproduction checks.
+
+## Source-faithful methodology and closest-work update
+
+Semantic parsing into logic plus a symbolic prover is established by
+[LINC (EMNLP 2023)](https://aclanthology.org/2023.emnlp-main.313/).
+[nl2spec (CAV 2023)](https://cs.stanford.edu/~trippel/pubs/cosler_CAV23.pdf)
+already uses fragment/subtranslation and interactive alternatives.
+[EviGuard](https://doi.org/10.3390/app16188925) overlaps with evidence
+compilation, provenance and verifier-gated decisions. The
+[EviRCA preprint](https://arxiv.org/html/2609.19825v1) separates extraction from
+reasoning. [JustDiag](https://arxiv.org/html/2606.19407v1) uses justification
+graphs rather than strict proof objects;
+[sequential model-based diagnosis](https://www.ijcai.org/Abstract/16/181)
+already studies choosing the next measurement. None of those components alone
+is an Aletheia novelty claim, and arXiv work is not assigned a peer-reviewed
+venue without verification.
+
+The testable forward question is whether **source-faithful admission or executed
+evidence acquisition** improves controlled ML-binding decisions beyond strong
+matched deterministic baselines. Keep the resolver fixed. Compare producer-aware
+parser versus LLM extractor with the same bytes, metadata, tools and resources;
+if acquisition is studied, compare against an exact/greedy cost-aware planner
+and record actual new observations and post-query decisions. Gold-fact resolver
+is a privileged reference ceiling. More typed motifs or weaker regex baselines
+do not establish an indispensable role for the LLM.
+
+Separate intervention validity, distinguishability, source fidelity/omissions,
+reasoning/certificates, action execution and rendered claim support. A hash or
+retrievable citation span does not prove entailment, completeness or upstream
+authenticity. Interpretive uncertainty and model-relative conflict require
+conservative treatment rather than a fabricated singleton. Solver soundness is
+conditional on the fact/model boundary; binding status is not causal accuracy.
+New-data claims need a producer/schema frame not used to choose the method,
+with source clustering rather than calls or formats as replication evidence.
+
+The retained-development JSON admission adapter is now implemented; semantic
+LLM extraction and executed acquisition remain prospective. Its headroom audit
+does not establish superiority, a universal guarantee, or absence of prior work
+combining similar ideas. Detailed boundaries are in the
+[existing control/method document](model-artifact-binding-control.md#forward-method-source-faithful-admission-before-resolution).
+The earlier review counts and frozen diagnosis comparisons remain unchanged.
