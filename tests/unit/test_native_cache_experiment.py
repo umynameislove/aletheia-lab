@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import runpy
 import shutil
 import sys
@@ -17,6 +18,7 @@ from aletheia_lab.evaluation import warrant_development_live
 from aletheia_lab.evaluation.native_cache_extraction import parser_facts
 from aletheia_lab.evaluation.warrant_development import DevelopmentCall
 from aletheia_lab.evaluation.warrant_development_io import MAX_CALL_USD
+from aletheia_lab.project.identity import content_sha256
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -59,11 +61,70 @@ class Caller:
         )
 
 
-def test_actual_native_census_and_equal_logs_have_different_consumer_bytes(prepared):
+def _cache_binding_log(document):
+    """Compare binding, not wall-clock timing; leave stored text and hash untouched."""
+    assert document["sha256"] == content_sha256(document["text"].encode("utf-8"))
+    match = re.fullmatch(
+        r"\[Memory\]\d+\.\ds, \d+\.\dmin *: Loading cached_value from "
+        r"(?P<cache_path>[^\n]+)\n"
+        r"_+cached_value cache loaded - \d+\.\ds, \d+\.\dmin\n",
+        document["text"],
+    )
+    assert match is not None, "unexpected native Joblib stdout grammar"
+    return (
+        {key: value for key, value in document.items() if key not in {"text", "sha256"}},
+        match["cache_path"],
+    )
+
+
+def test_cache_binding_comparison_ignores_only_elapsed_time():
+    documents = []
+    for duration in ("0.0s, 0.0min", "0.1s, 0.0min", "10.1s, 0.2min"):
+        text = (
+            f"[Memory]{duration:<16}: Loading cached_value from cache/joblib/example/key\n"
+            + f"cached_value cache loaded - {duration}".rjust(80, "_")
+            + "\n"
+        )
+        documents.append(
+            {
+                "id": "native-out",
+                "kind": "joblib-stdout",
+                "authority": "native-message",
+                "scope": "attempt-0",
+                "text": text,
+                "sha256": content_sha256(text.encode("utf-8")),
+            }
+        )
+    original = deepcopy(documents)
+    assert len({document["sha256"] for document in documents}) == 3
+    assert _cache_binding_log(documents[0]) == _cache_binding_log(documents[1])
+    assert _cache_binding_log(documents[1]) == _cache_binding_log(documents[2])
+    assert documents == original
+    changed = {**documents[0], "text": documents[0]["text"].replace("/key", "/other")}
+    changed["sha256"] = content_sha256(changed["text"].encode("utf-8"))
+    assert _cache_binding_log(changed) != _cache_binding_log(documents[0])
+    assert _cache_binding_log({**documents[0], "scope": "other"}) != _cache_binding_log(
+        documents[0]
+    )
+    with pytest.raises(AssertionError):
+        _cache_binding_log({**documents[0], "sha256": "0" * 64})
+    malformed = {**documents[0], "text": documents[0]["text"].replace("cached_value", "other")}
+    malformed["sha256"] = content_sha256(malformed["text"].encode("utf-8"))
+    with pytest.raises(AssertionError, match="stdout grammar"):
+        _cache_binding_log(malformed)
+
+
+def test_actual_native_census_and_same_cache_binding_have_different_consumer_bytes(prepared):
     directory, report = prepared
     native = json.loads((directory / "source.json").read_text())
     first, swapped, corrected, legitimate, reverse = native["cases"]
-    assert first["documents"][:3] == swapped["documents"][:3] == corrected["documents"][:3]
+    # Joblib's elapsed times (and duration-dependent padding) vary under CI load.
+    assert (
+        _cache_binding_log(first["documents"][0])
+        == _cache_binding_log(swapped["documents"][0])
+        == _cache_binding_log(corrected["documents"][0])
+    )
+    assert first["documents"][1:3] == swapped["documents"][1:3] == corrected["documents"][1:3]
     assert (
         first["reference"]["status"]
         == corrected["reference"]["status"]
@@ -79,6 +140,7 @@ def test_actual_native_census_and_equal_logs_have_different_consumer_bytes(prepa
         first["consumer_observation"]["returned"]
         == swapped["consumer_observation"]["returned"][::-1]
     )
+    assert first["consumer_observation"] == corrected["consumer_observation"]
     assert report["native_load_count"] == 5 and report["case_view_count"] == 10
     assert report["source_cluster_count"] == 1 and report["parser_exact_reference_count"] == 10
     assert report["wire_audit"]["sdk_capture_count"] == 10
