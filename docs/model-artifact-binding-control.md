@@ -782,3 +782,193 @@ still reach the ceiling, close headroom for this frame rather than automatically
 expanding calls to manufacture a difference. Live execution and replay remain
 required before this task can report measured development performance or be
 marked Done; they would not establish population policy efficacy.
+
+### Proof-aware cached development guard
+
+`V6-A4-DEV-03` adds a local post-generation guard after the compositional live
+pilot. The original prompts, corpus, decisions, oracle, analysis and receipt
+remain unchanged. This is a **post-observation development intervention**, not
+a revised score for the old pilot or evidence of transfer to new data.
+
+The architecture is an LLM proposal followed by visible-evidence checking.
+[LINC](https://aclanthology.org/2023.emnlp-main.313/) and
+[Logic-LM](https://aclanthology.org/2023.findings-emnlp.248/) already establish
+LLM/symbolic-solver decompositions; unlike their natural-language formalization
+stage, this prototype starts with typed constructed facts. It therefore does
+not test a semantic parser, real-log authentication, or general causal diagnosis.
+[ChopChop](https://arxiv.org/abs/2509.00360) motivates semantic rather than merely
+syntactic constraints, but our guard checks **after** generation: it is not
+constrained token decoding or an implementation of ChopChop's realizability
+algorithm. The research opportunity is the task-specific interaction of scoped
+lineage, independently checked citations, nonanswer and measurement, with
+explicit attribution of tool assistance; novelty beyond that requires further
+related-work and new-data evaluation.
+
+#### Conditional correctness and action boundaries
+
+For admitted visible facts V and cited subset S, a status c is accepted only
+when W(V) is nonempty, every world in W(V) has status c, and S itself entails c
+with nonempty W(S). The **whole** admitted context is checked first; a convenient
+consistent citation subset cannot hide conflicting facts elsewhere. Duplicate,
+unknown, nonconstraint or off-request/attempt citations cannot certify a claim.
+Empty W(V) warrants an evidenced conflict flag, never vacuous certainty.
+
+The guard uses domain intersections and endpoint reachability; the evaluation
+reference independently enumerates complete worlds. Their equivalence relies
+on this finite model's disjoint endpoint dependencies. Extending to shared
+variables, other artifacts or untrusted natural-language records requires a
+new model/checker validation. Correctness is conditional on the admitted facts
+and their semantics; an artifact match is not global health and a mismatch does
+not establish that it caused the measured loss.
+
+Four stages use the **same cached proposals in both arms**:
+
+| Stage | Allowed intervention |
+|---|---|
+| `raw` | Reproduce the unchanged original assessment. |
+| `action_canonicalized` | Interpret an explicit endpoint check accompanying `abstain` and `underdetermined` as `check_evidence`; change no basis, endpoint or citation. This is an action-contract intervention, not format-only repair. |
+| `reject_only` | Preserve a warranted normalized proposal; otherwise return a refusal without granting resolution/query utility. |
+| `proof_guarded` | Preserve warranted proposals; add a visible certificate for an already-correct status; generate a resolving query or evidenced conflict flag when appropriate; refuse an incorrect identified status. |
+
+Proof reconstruction never replaces an identified wrong answer with the correct
+resolver answer. Certificates are deterministically **inclusion-minimal**, not
+minimum-cardinality. Queries are cheapest among those guaranteed to resolve all
+feasible endpoint outcomes under fixed costs 1/1/2, not estimated information
+gain. Missing or unparseable proposals stay unavailable in all stages and retain
+their planned denominator; they cannot acquire successful synthetic safe outputs.
+
+Provenance separates `model`, `proof_reconstructed`, `resolver_query`,
+`resolver_conflict`, `rejected` and `invalid_proposal`. Canonicalization is also
+counted separately. Tool-generated proof/query/conflict actions are system
+capabilities, not additional unaided LLM reasoning. An always-abstain and a
+visible-resolver-only baseline remain in the comparison. Report both risk and
+coverage: rejection can improve conditional correctness by reducing commitments,
+as studied in [selective classification](https://www.jmlr.org/papers/v11/el-yaniv10a.html).
+Do not infer a population risk guarantee or AURC from this fixed finite frame.
+
+#### Replay and verification
+
+`scripts/analyze_compositional_lineage_guard.py` is read-only with respect to the
+completed pilot and has **no paid execute entrypoint**. It verifies the original
+receipt before and after analysis, hashes the source tree, reproduces the frozen
+raw arm/motif summaries, and retains the original paid resource accounting.
+New calls and provider cost are zero; checker latency is explicitly unmeasured.
+An optional output is aggregate-only and immutable, outside Git checkouts and
+outside the original pilot directory. It contains no raw proposals or records.
+
+From a checkout, reproduce the aggregate in stdout with an existing interpreter:
+
+```sh
+PYTHONPATH=src "$ALETHEIA_PYTHON" scripts/analyze_compositional_lineage_guard.py \
+  --root . --memory-root "$ALETHEIA_MEMORY" \
+  --pilot-dir "$ALETHEIA_MEMORY/compositional-lineage-policy-development-v1"
+```
+
+Here `ALETHEIA_PYTHON` is the existing project Python executable and
+`ALETHEIA_MEMORY` the operator's private memory root. Set them once; do not place
+private paths, inputs or results in the repository. `--output` is optional and
+must name a new private aggregate file, not a location inside the source run.
+
+Tests independently check complete worlds, partial constraints, citations,
+minimal proofs, redundant missing facts, conflict precedence, authority/scope
+decoys, aliases/order, the 24-record bound, mutated proposals and refusal
+idempotence. Replay tests retain full and stopped-prefix denominators, reject
+identity/status/resource tampering, detect source mutation, and prohibit network
+client construction. The new tests also enter the Windows evaluation profile;
+short parametrization IDs avoid the Windows environment-variable limit.
+
+The next question is **transfer**, not another replay until a preferred policy
+wins: freeze this guard, then evaluate genuinely new motifs/representations with
+the same evidence and tool access for both arms, retaining raw/reject/guard and
+resolver-only comparators. Separate logical correctness from parser/authority
+errors, and measure checker resources. Any new paid call still needs its own
+payload, destination and cost approval. This development repair does not admit a
+mechanism, reopen M4/M5/P5, or authorize U2/U5/S2.
+
+### Frozen proof-aware transfer on new motifs and formats
+
+The transfer runner tests a **fixed** guard on a prospectively sealed, authored
+development frame. It does not modify the earlier raw pilot or cached repair.
+The guard's byte identity is pinned before preparation; an edit blocks both
+execution and replay. No protected M4/M5/target-binding prediction is used.
+
+There are **24 new motifs**: eight identified, eight ambiguous and eight
+conflicting. Each has two model-visible encodings, a list of record objects and
+a column/row table, giving 48 dependent views per policy and at most 96 calls.
+The formats have the same records, order, scope, authority challenges and
+semantics. The provider receives the selected encoding unchanged; decoding
+equivalence is checked offline, not used to erase the format manipulation.
+Both policies get the same format instructions and evidence, model, schema,
+sampling and tool access. Execution interleaves reference states and balances
+first-policy order within format and first-format order within state.
+
+Novelty is tested against the old frame under all 16 renamings of the four
+typed binary domains, preserving requested/loaded roles. IDs, record order,
+reports, other scopes and duplicate constraints cannot create novelty. The
+new frame has no old constraint signature or nonconflicting compatible-world
+set overlap. All conflicts have an empty world set, so that set alone cannot
+establish novelty: eight distinct inclusion-minimal conflict-core topologies
+are checked separately, with no old conflict-core overlap. Identified proof
+cores are also checked. These cores are not minimum-cardinality proofs.
+
+The new frame includes direct endpoint measurements, already declared in the
+old grammar but unused in its authored corpus. It therefore tests new primitive
+exposure **and** new compositions, not a pure compound split with matched atom
+distributions, a new real-source replication, or unstructured log parsing.
+[CFQ](https://arxiv.org/abs/1912.09713) motivates separating atomic and compound
+coverage; [Shaw et al.](https://aclanthology.org/2021.acl-long.75/) distinguish
+compositional generalization from natural-language variation. Our records/table
+contrast is narrower than either broad natural-language generalization claim.
+[CheckList](https://aclanthology.org/2020.acl-main.442/) motivates testing named
+behaviors and invariances rather than treating aggregate accuracy as sufficient.
+[SATQuest](https://aclanthology.org/2026.acl-long.96/) already combines verifiable
+logical tasks with instance, task and format dimensions. Verifier-backed
+cross-format evaluation is therefore prior art, not our novelty claim.
+
+The primary system endpoint is within-arm `proof_guarded` minus `raw` justified
+action success over **all 48 planned views**. Raw A4 versus A3-derived safety,
+status correctness, proof, useful-query proposal and coverage are reported
+separately. The same cached output is assessed in raw, action-canonicalized,
+reject-only and proof-guarded regimes; these are not four independent model
+experiments. Visible-resolver-only, always-abstain and symptom-only baselines
+remain visible. Report transitions at the 24 authored-motif unit, joint success
+in both formats, format discordance, provider resources and measured local
+codec/guard duration. Retained duration measurements are validated and summed
+on replay, not claimed to have been remeasured identically.
+
+An important limitation of the frozen guard is explicit: a valid simple
+abstention on ambiguous evidence remains an abstention, whereas an invalid
+proposal can trigger a solver-generated useful query. Hence assisted query
+success need not increase monotonically with raw proposal quality. Report
+preserved safe abstentions, raw boundedness, risk with coverage, and success
+origin (`model`, proof reconstruction or resolver actions). Do not rank prompts
+from guarded action success alone. A useful query is a certified proposal under
+the finite costs 1/1/2; the pilot does not execute that measurement or observe a
+subsequently resolved status. Solver correctness remains conditional on the
+typed attested facts and fixed finite model, not real-log authentication.
+
+Zero guarded commitment violations are partly enforced by the checker, not
+independent evidence of improved model reasoning. The format `same_decision`
+diagnostic requires exact Decisions including citation order; it is not semantic
+equivalence of proof sets. Joint justified action and discordance are reported
+separately so an alternative valid proof is not mistaken for task failure.
+
+`scripts/proof_aware_lineage_transfer.py` provides `prepare`, `preflight`,
+`execute` and `verify`. A new private directory stores only three preparation
+files: plan, cases and combined audit. Execution adds an immutable lease,
+private responses, analysis and receipt. Replay verifies the earlier pilot and
+cached guard aggregate without modifying them. Offline complete SDK-interface
+capture checks all 96 actual argument sets; it is not a live HTTP test.
+
+Only after exact owner authorization, execution uses `gpt-4.1-2025-04-14` at
+`https://api.openai.com/v1/chat/completions`, zero retries and serial calls.
+Worst-case frozen-rate reservation is **$2.359296**, ceiling **$2.50**; this is
+not the expected bill. Payloads contain common typed-task/policy/format
+instructions, constructed visible records or rows, and the decision schema.
+Source rows, human labels, paths, hashes, reference states, oracle worlds and
+case/motif metadata are withheld; `store=false` is not a promise of zero
+provider retention. Three consecutive technical/schema failures stop the run;
+semantic errors and missing calls retain planned denominators. No automatic
+calls, prompt changes, guard tuning or mechanism admission follow the result.
+The frame is finite authored development, with dependent format views and no
+population confidence interval or new independent-source count.
