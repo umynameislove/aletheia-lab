@@ -1053,9 +1053,12 @@ greedy cost-aware deterministic planner under the same initial evidence, tool
 availability, budget and stop rules. A certified query proposal is not observed
 post-query utility. No repair/write authority follows from this research plan.
 
-Select variants on exposed development; evaluate the selected method on a
-separately fixed producer/schema/data frame not used to choose its parser or
-prompt. Formats, rows, calls and extra estimators do not increase independent
+Select the method on exposed development, then fix a separate producer/data
+frame before new model outcomes. Distinguish untouched unknown-schema validation
+from documentation-informed transfer: the latter adapts a strong parser and
+shared source semantics using disjoint offline fixtures, not evaluation outcomes.
+The current SQLite study tests that narrower transfer claim. Formats, rows,
+calls and extra estimators do not increase independent
 source count. Extraction-only validation need not require an active agent or two
 admitted causal mechanisms; a causal contrastive study still needs its own
 mechanism-admission contract. New paid calls require separate exact approval.
@@ -1221,20 +1224,27 @@ private JSON directly in the memory root, with source/code identities and scoped
 row ledgers; it cannot overwrite an existing file or enter the public repository.
 The same source/bytes can be replayed without authorizing a provider operation.
 
-### Independent validation preparation: design only
+### Independent producer/schema transfer: offline implementation
 
-The validation design is prepared here, but **no independent source is selected
-and no final execution is enabled**. The deterministic adapter remains the
-within-scope comparator; there is no selected LLM variant. An independent runner
-should be implemented against an actually admitted producer contract, not a
-generic placeholder which fabricates readiness.
+The selected development cited-fact interface now has an implemented SQLite
+transfer runner. It uses native SELECT traces, a nested row-declaration grammar,
+caller pins and exact returned-BLOB witnesses; it does not reuse Joblib traces or
+evaluation artifact values. The deterministic parser remains the matched
+within-scope comparator and both arms share the unchanged finite resolver.
+The complete producer contract, reference, lifecycle and paid boundary are in
+[the existing extraction document](native-cache-evidence-extraction.md#independent-sqlite-producer-and-nested-schema-transfer).
+**Offline readiness is not a live LLM transfer result.**
 
 An eligible source needs authorized authentic bytes, independently justified
 producer and operational scope, a real semantic admission question, and reference
 facts/roles traceable to a producer/runtime witness independent of the candidate
-extractor. Its producer/schema/data frame must not have been used to choose the
-adapter or prompt. More estimator cells, JSON layouts, authored masks or LLM
-paraphrases do not provide independent producer evidence.
+extractor. For this study, the SQLite adapter and shared semantics are developed
+from official documentation and disjoint fixture bytes before evaluation bytes
+and new model outputs. This explicitly narrows the earlier untouched-schema
+ambition to documentation-informed transfer with adaptation; it is not a claim
+that no SQLite documentation influenced the adapter. More estimator cells,
+JSON layouts, authored masks or LLM paraphrases do not provide independent
+producer evidence.
 
 Before new outcomes, bind source identities and units, development/final split,
 selected variant and code, strongest matched comparator, permitted input/tools,
@@ -1245,10 +1255,14 @@ separately. Gold-fact resolution is a privileged ceiling, not a matched arm.
 Inference groups by independent producer/source, not claim/view/call count. With
 only one source the result remains descriptive. Acquisition claims additionally
 require observed tool returns; proposed queries are not post-query utility.
-Margins/sample precision cannot be invented from this dependent replay, so they
-remain unbound until the source/estimand is chosen. Paid/protected execution needs
-separate exact authority. Until then, the stop decision is to retain the working
-deterministic method and avoid an uninformative paid comparison on its ceiling.
+The selected frame is a finite descriptive census: five controls with two views,
+ten dependent execution slots and six distinct complete provider inputs from one
+additional controlled producer. No population interval or non-inferiority margin
+is estimated from these slots. The exact cited-frame comparison, authority and
+omission diagnostics, failure policy and resource ceilings are fixed before
+model outputs. A parser ceiling can support a falsifiable fidelity/false-authority
+question, not superiority. Paid execution still requires separate payload,
+destination and cost approval; no protected source or prior study is reopened.
 
 The method follows the formalization/prover limitation in
 [LINC](https://aclanthology.org/2023.emnlp-main.313.pdf), fragment interpretation in
