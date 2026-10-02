@@ -1,13 +1,21 @@
 # Model artifact binding as a positive control (M4)
 
-This contains **development** controls and an unexecuted new-source design, not
-an admitted mechanism or protected experiment. It defines one fault: the evaluation process declares a specific
+This documents **development** controls, fixed new-source protocols and their
+execution/replay workflows. Neither implementation nor an execution receipt
+automatically admits a causal mechanism. It defines one fault: the evaluation process declares a specific
 fitted model artifact but loads a different, compatible fitted model artifact.
 The intended and loaded artifacts must be separately fitted and have distinct
 recorded recipes and byte identities; a separate process is not required. A
 worse prediction from a legitimately selected model is not
 this fault; the discrepancy between the declared binding and actual load is
 the intervention.
+
+**Current methodological scope:** preserve each historical control, protocol and
+run below. New forward work prioritizes source-faithful evidence admission into
+a fixed resolver, with an adapted deterministic parser as the matched comparator.
+The dated offline-readiness sections describe preparation checkpoints; they are
+not instructions to repeat a consumed execution. Numeric private outcomes and
+operator task tracking are not published by this documentation update.
 
 ## Intervention and causal boundary
 
@@ -972,3 +980,169 @@ semantic errors and missing calls retain planned denominators. No automatic
 calls, prompt changes, guard tuning or mechanism admission follow the result.
 The frame is finite authored development, with dependent format views and no
 population confidence interval or new independent-source count.
+
+### Offline transfer diagnostics
+
+`scripts/analyze_proof_aware_lineage_transfer.py` replays a verified transfer
+without provider calls. It separates mutually exclusive state/action outcomes
+from overlapping reasoning, citation and action-contract flags. Identified
+refusal and safe ambiguous abstention have different meanings; neither is a
+technical failure. It records whether a successful guarded action came from
+the model, proof reconstruction, resolver conflict handling or resolver query
+selection. Assisted success must not be attributed entirely to model reasoning.
+
+The records/table comparison separates semantic status/basis/action differences,
+citation membership and citation-order-only changes. A single completion per
+format cannot isolate a causal representation effect from model variability.
+The diagnostic also checks a case-only counterfactual for the secondary
+symptom-only baseline. A case-sensitive phrase lookup can create a spurious
+abstention ceiling; such a finding belongs in a separate post-hoc diagnostic,
+not a silent rewrite of the frozen baseline or primary analysis.
+
+Diagnostics may produce an aggregate-only file outside the immutable run. They
+verify source integrity before and after replay and never export raw responses,
+source contexts or private paths. The frozen guard, reference and runner remain
+unchanged.
+
+### Forward method: source-faithful admission before resolution
+
+The next research question is whether evidence extraction/admission or actual
+evidence acquisition adds value beyond strong deterministic baselines. This is
+a **design direction**, not an implemented semantic extractor or a performance
+claim. More prompts on fully typed facts do not by themselves establish useful
+LLM headroom.
+
+Keep six boundaries separate: intervention/reference validity, visible source
+bytes, extraction/admission, finite-world reasoning and certificates, executed
+actions with newly observed evidence, and rendered claim warrant. The existing
+eight-variable/256-world model does not establish temporal, shared-variable or
+open-world correctness. A binding mismatch is not proof of loss causation;
+`no_binding_fault` is not global pipeline health.
+
+Source admission must check producer/request/attempt/time scope, permitted
+authority, source-span/field meaning and omission/completeness limits. The LLM
+can propose interpretations and spans, but cannot authenticate its own evidence
+or promote a manifest/report to a runtime consumed-buffer witness. Hash and span
+resolution do not establish semantic entailment or upstream authenticity.
+Check the full admitted context for consistency before validating a cited subset.
+An inclusion-minimal proof/core is not necessarily minimum-cardinality.
+
+For multiple admissible interpretations, preserve the union of feasible worlds
+instead of intersecting alternatives into false certainty. An interpretation
+with no feasible worlds must remain an explicit conflict possibility, not be
+discarded when forming that union. Commit only if all admissible readings are
+consistent and imply the same conclusion, under a justified true-reading
+coverage assumption. Mixed consistent/conflicting readings require clarification;
+all inconsistent readings support only model-relative conflict. An LLM list of
+alternatives is not an exhaustive-coverage proof: retain an unknown branch or
+declare the producer/schema scope. These are proposed conservative semantics,
+not guarantees supplied by the current typed guard.
+
+Use a producer/schema-adapted deterministic parser and an LLM extractor with the
+**same raw evidence, allowed metadata, tools, budget and fixed resolver**. A
+gold-fact resolver has privileged facts and is a reference ceiling, not the
+matched comparator. Report source/graph fidelity, omissions, false authority,
+downstream status/certificate warrant, failures, latency and cost separately.
+If the adapted parser solves the task, keep that solution; do not weaken it or
+manufacture natural-language difficulty merely to require an LLM.
+
+Acquisition is optional. If ambiguity can be reduced by a permitted measurement,
+execute the read-only tool, retain unavailable/error results, record newly
+observed source evidence and reassess the decision. Compare with an exact or
+greedy cost-aware deterministic planner under the same initial evidence, tool
+availability, budget and stop rules. A certified query proposal is not observed
+post-query utility. No repair/write authority follows from this research plan.
+
+Select variants on exposed development; evaluate the selected method on a
+separately fixed producer/schema/data frame not used to choose its parser or
+prompt. Formats, rows, calls and extra estimators do not increase independent
+source count. Extraction-only validation need not require an active agent or two
+admitted causal mechanisms; a causal contrastive study still needs its own
+mechanism-admission contract. New paid calls require separate exact approval.
+
+This architecture builds on semantic parsing plus theorem proving in
+[LINC (EMNLP 2023)](https://aclanthology.org/2023.emnlp-main.313/), interactive
+fragment/alternative formalization in
+[nl2spec (CAV 2023)](https://cs.stanford.edu/~trippel/pubs/cosler_CAV23.pdf),
+evidence compilation and verification in
+[EviGuard](https://doi.org/10.3390/app16188925), and separated extraction/reasoning
+in the [EviRCA preprint](https://arxiv.org/html/2609.19825v1).
+[Sequential model-based diagnosis](https://www.ijcai.org/Abstract/16/181) already
+studies measurement selection. Candidate novelty therefore concerns controlled
+ML binding errors, source-faithful admission, attribution and executed acquisition
+under matched controls—not the first neurosymbolic, proof-aware or active
+diagnosis method. Incremental value and independent transfer remain to be shown.
+
+### Retained development source admission and headroom
+
+The development source audit implements an offline, explicit-allowlist audit of three
+already-exposed local M4 development stores. It does not search the entire
+workspace, open prospective/final studies, fit or deserialize a model, or call
+a provider. The inventory distinguishes five legacy aggregate path records
+from 36 consumed-buffer loader events, three container layouts from two endpoint
+parser contracts, and dependent records from one producer family/source cluster.
+These are not independent incidents or naturally sampled pipeline failures.
+
+The parser receives a **blinded JSON field projection**, not native free-text
+logs: declared artifact hash, actually loaded hash, and a reported-manifest
+distractor when present. Control names, gold labels, metrics, dose/iteration
+recipes and native pointers that reveal the control are withheld. Exact source
+field pointers are restored on the audit branch after parsing. The producer and
+receipt-local control slot are caller-bound, not inferred from document prose.
+Neither native request/attempt IDs nor timestamps exist in these records;
+solver aliases do not manufacture them. The dataset's license does not establish
+permission to publish the derived local traces.
+
+The strong baseline is a producer/schema-adapted deterministic parser followed
+by the existing finite resolver. It admits declared and actual endpoints, not
+report text as proof of what was loaded. Missing endpoints preserve ambiguity;
+malformed recognized fields or unsupported producer/schema remain unresolved;
+same-scope contradictions are preserved, and unrelated scope supplies no facts.
+Duplicate keys and nonfinite JSON numbers are rejected. More than two artifact
+identities stay outside this adapter's declared binary domain. Full admitted
+context consistency is checked, not only the subset convenient for a conclusion.
+
+The reference uses a **separate fixed control schedule and retained artifact-byte
+hashes**, not the parser's endpoint comparison or an LLM answer. Historical code,
+receipt/plan bindings and the exact control census are checked before replay;
+source hashes are compared before and after. This is independent replay logic
+within a trusted local producer, not independent host/request-service
+attestation. An adversary controlling the caller can forge producer metadata;
+dropping an entire document cannot be detected from the remaining bytes alone.
+The native census check limits that risk for this retained corpus, not for all
+runtime evidence. Correct resolution remains conditional on admitted facts and
+the finite model; binding status does not prove loss causation or overall health.
+
+Synthetic falsifiers cover missing endpoints, conflicting documents, invalid
+authority/schema, out-of-scope evidence, reported-manifest and prose distractors,
+duplicate/nonfinite values, alias/order changes, and 81 combinations of two
+documents with missing/A/B endpoints. These are behavioral tests, not extra
+empirical source samples. A swapped-fact regression verifies that a correct
+fault/no-fault status alone cannot hide extraction of the wrong endpoint facts.
+Both exact-fact fidelity and resolution must pass before declaring no measured
+gap. The audit is descriptive and does not supply population intervals.
+
+Run the read-only audit with:
+
+```sh
+PYTHONPATH=src python scripts/audit_source_evidence_headroom.py \
+  --root . --memory-root ../memory
+```
+
+Optional `--output` creates one new private JSON directly in the memory root;
+it cannot overwrite an existing file, enter a study directory, or publish raw
+traces in the repository. The source-bound result stays private. A
+`no_demonstrated_semantic_headroom` disposition means **keep the deterministic
+adapter for this structured scope**. It does not mean LLMs cannot help elsewhere.
+Do not launch an LLM comparison on this corpus merely to obtain model calls: first identify
+authorized producer evidence with a useful semantic/admission question and an
+independently checkable reference. Do not invent AI paraphrases or weaken the
+parser to manufacture that gap.
+
+This boundary follows established ideas, not a new parsing-plus-proving
+architecture: [LINC](https://aclanthology.org/2023.emnlp-main.313/) separates
+semantic translation from proving; [EviRCA](https://arxiv.org/html/2609.19825v1)
+already uses deterministic extraction and declarative adapters. The
+[W3C PROV data model](https://www.w3.org/TR/prov-dm/) motivates explicit
+entity/activity/agent provenance, but does not authenticate these local records.
+No novelty or LLM superiority follows from implementing the baseline.

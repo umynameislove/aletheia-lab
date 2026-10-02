@@ -124,8 +124,31 @@ experiment artifacts remain local and are independently validated before use.
 - The project persistence-lineage vertical slice is closed at merge `31f6c58`.
   Delete/purge, the prospective temporal seal, the version-pinned Projmem bridge
   and a sanctioned non-synthetic sample audit remain separately gated obligations.
-- Main diagnosis and statistical outcomes are not yet authorized. Instrument, model, prompt,
-  denominator and analysis policy must be frozen before those outcomes exist.
+- The repository contains retained main-diagnosis/recovery analysis and separate
+  development policy/transfer workflows. Historical attempts, protocols and
+  reports keep their own identities; a technical correction or development
+  guard is not a retrospective successful registered attempt or an admission.
+- The current forward method prioritizes **source-faithful evidence admission
+  into a fixed resolver**. Compare an LLM extractor against a producer-adapted
+  deterministic parser on the same raw input before claiming model value. Actual
+  read-only evidence acquisition is conditional on useful unresolved ambiguity
+  and must be compared with a cost-aware deterministic planner.
+- Proof-guarded success is a hybrid system result, not necessarily model
+  reasoning. Resolver correctness is conditional on admitted facts and the
+  tested finite model; source authenticity and semantic extraction are separate
+  questions. See the [method and diagnostic boundaries](docs/model-artifact-binding-control.md#forward-method-source-faithful-admission-before-resolution).
+- A producer-scoped deterministic admission adapter and offline headroom audit
+  are now implemented for retained loader JSON. This does not implement a
+  semantic LLM extractor or authenticate arbitrary logs. See the
+  [development source audit](docs/model-artifact-binding-control.md#retained-development-source-admission-and-headroom).
+
+### Retained execution history and protocol boundaries
+
+The following paragraphs retain dated preparation and execution checkpoints.
+Statements such as “outcome-blind” or “not yet materialized” describe those
+checkpoints, not a current instruction to repeat an execution. Current claims
+require the corresponding immutable study artifacts; this documentation update
+does not publish private aggregate outcomes or grant new execution authority.
 
 See the [project scope amendment](docs/p3-scope-amendment.md) for the exact boundary
 and [related work](docs/related-work.md) for the bounded novelty position. The

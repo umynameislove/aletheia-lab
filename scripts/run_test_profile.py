@@ -144,6 +144,9 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_compositional_lineage_guard_replay.py",
         "tests/unit/test_proof_aware_lineage_transfer_cases.py",
         "tests/unit/test_proof_aware_lineage_transfer.py",
+        "tests/unit/test_proof_aware_lineage_diagnostics.py",
+        "tests/unit/test_source_evidence_admission.py",
+        "tests/unit/test_source_evidence_headroom.py",
         "--durations=20",
     ),
     "windows-publication": (
