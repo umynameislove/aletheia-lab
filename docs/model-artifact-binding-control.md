@@ -1146,3 +1146,115 @@ already uses deterministic extraction and declarative adapters. The
 [W3C PROV data model](https://www.w3.org/TR/prov-dm/) motivates explicit
 entity/activity/agent provenance, but does not authenticate these local records.
 No novelty or LLM superiority follows from implementing the baseline.
+
+### Offline extraction assessment and executed acquisition replay
+
+The next implementation reuses the producer adapter and the unchanged finite
+resolver. `source_evidence_extraction.py` assesses candidate fact proposals on
+the **same document bytes and caller-bound metadata** as the deterministic
+comparator. It separates byte/field grounding, semantic role, omitted eligible
+facts and downstream resolution. A grounded manifest digest is not an actual
+loaded-buffer witness. Swapped endpoint roles cannot pass merely because the
+fault status remains the same. Omitting a contrary same-scope witness cannot
+obtain a certificate over the convenient remaining subset.
+
+For these known schemas, only an exact complete eligible fact frame is admitted.
+This conservative engineering contract delegates semantic warrant to the strong
+producer parser; it is not independent natural-language reference annotation or
+measured LLM extraction. Completeness means the supplied eligible document frame,
+not all runtime logs. Requiring exact facts may reject harmless omissions too.
+Unknown producer/schema, malformed recognized evidence or an unverified caller
+cannot be repaired by the extractor's declaration of trust.
+
+Alternative readings retain ambiguity, conflict and unknown coverage explicitly.
+One consistent singleton plus one conflicting reading requires reconciliation;
+the empty conflicting world set must not disappear in a union. No commitment is
+permitted with unverified true-reading coverage. Listed-reading statuses are
+reported separately from an exhaustive compatible answer. Conditional soundness
+requires the true reading to be covered, the true world to be represented and
+satisfy that reading, and all admissible readings to be consistent and entail the
+same status. The code does not prove these upstream premises. This applies the
+possible-world/uncertainty boundary, not a new universal theorem.
+
+`source_evidence_acquisition.py` adds one-attempt, read-only endpoint acquisition
+from the two already-exposed native runtime containers. The caller pins store,
+compiled JSON pointer, container identity and receipt-local scope. Initial and
+new evidence must share the same record/snapshot capability. Audit-to-read drift,
+cross-record joins and symlink paths fail rather than silently changing the
+source. The query returns only permitted endpoint fields, with native pointer,
+container and projection hashes recorded separately. Control labels, metrics,
+recipes and raw container contents never enter the planner or resolver. Actual
+read bytes are retained even when hash/JSON validation fails. Unavailable/read
+errors remain charged outcomes, never negative endpoint facts; no retries,
+provider calls, model loads, repair commands or write capabilities are present.
+
+The exact one-step planner uses the initial evidence, available query catalogue
+and the existing abstract endpoint costs **1/1/2**. A combined query is a valid
+fallback when the required single-endpoint capability is unavailable. Re-reading
+a known loaded endpoint can have zero resolution gain; acquiring the missing
+intended endpoint can distinguish an A/B fault from a legitimate B/B load. Full
+context conflicts remain conflicts after a measurement. The reported cost ratio
+is resolution gain per abstract endpoint-cost unit, not USD or physical IO.
+Single- and both-endpoint reads consume the same underlying container bytes;
+there is no claim of native-file-cost optimality or sophisticated planner value.
+
+The offline native replay has **36 runtime records × 4 authored views = 144
+dependent view slots**, excluding the five legacy aggregate records. Thirty-six
+full views resolve without queries. The 108 masked views are initially ambiguous;
+108 executed scoped reads resolve all 108 and match the independently replayed
+control/artifact reference. All 144 post-query statuses match. Queries consume
+144 abstract units and read 444,441,402 native-container bytes in total. One
+producer and one old source cluster remain one, not 144 independent observations.
+These masks are authored visibility interventions on fully retained records,
+**not naturally missing production logs**, and no LLM planner/extractor was run.
+Source trees are checked before and after; historical outputs remain unchanged.
+
+Run the bounded replay locally:
+
+```sh
+PYTHONPATH=src python scripts/replay_source_evidence_acquisition.py \
+  --root . --memory-root ../memory
+```
+
+Stdout contains aggregate results only. Optional `--output` creates one new
+private JSON directly in the memory root, with source/code identities and scoped
+row ledgers; it cannot overwrite an existing file or enter the public repository.
+The same source/bytes can be replayed without authorizing a provider operation.
+
+### Independent validation preparation: design only
+
+The validation design is prepared here, but **no independent source is selected
+and no final execution is enabled**. The deterministic adapter remains the
+within-scope comparator; there is no selected LLM variant. An independent runner
+should be implemented against an actually admitted producer contract, not a
+generic placeholder which fabricates readiness.
+
+An eligible source needs authorized authentic bytes, independently justified
+producer and operational scope, a real semantic admission question, and reference
+facts/roles traceable to a producer/runtime witness independent of the candidate
+extractor. Its producer/schema/data frame must not have been used to choose the
+adapter or prompt. More estimator cells, JSON layouts, authored masks or LLM
+paraphrases do not provide independent producer evidence.
+
+Before new outcomes, bind source identities and units, development/final split,
+selected variant and code, strongest matched comparator, permitted input/tools,
+resource limits, failure handling, metrics/precision and inference rule. Primary
+engineering endpoints are exact fact-role fidelity and unwarranted downstream
+commitment; omissions, conflict loss, syntax, failure and costs are reported
+separately. Gold-fact resolution is a privileged ceiling, not a matched arm.
+Inference groups by independent producer/source, not claim/view/call count. With
+only one source the result remains descriptive. Acquisition claims additionally
+require observed tool returns; proposed queries are not post-query utility.
+Margins/sample precision cannot be invented from this dependent replay, so they
+remain unbound until the source/estimand is chosen. Paid/protected execution needs
+separate exact authority. Until then, the stop decision is to retain the working
+deterministic method and avoid an uninformative paid comparison on its ceiling.
+
+The method follows the formalization/prover limitation in
+[LINC](https://aclanthology.org/2023.emnlp-main.313.pdf), fragment interpretation in
+[nl2spec](https://cs.stanford.edu/~trippel/pubs/cosler_CAV23.pdf), and observed
+measurement updates with an explicitly correct oracle in
+[sequential model-based fault localization](https://www.ijcai.org/Proceedings/16/Papers/181.pdf).
+The current contribution is a checked source/admission/acquisition boundary.
+Incremental LLM value, authentic semantic-source transfer, causal admission and
+population reliability remain unmeasured.
