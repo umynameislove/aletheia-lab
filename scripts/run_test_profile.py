@@ -140,6 +140,10 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_compositional_lineage.py",
         "tests/unit/test_compositional_lineage_cases.py",
         "tests/unit/test_compositional_lineage_pilot.py",
+        "tests/unit/test_compositional_lineage_guard.py",
+        "tests/unit/test_compositional_lineage_guard_replay.py",
+        "tests/unit/test_proof_aware_lineage_transfer_cases.py",
+        "tests/unit/test_proof_aware_lineage_transfer.py",
         "--durations=20",
     ),
     "windows-publication": (
