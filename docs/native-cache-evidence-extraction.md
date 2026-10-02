@@ -109,3 +109,69 @@ PYTHONPATH=src python scripts/native_cache_extraction.py preflight \
 
 Source/cache files, private plans, raw responses and receipts are not repository
 content. The older development datasets and registered outcomes are unchanged.
+
+## Canonical source-locator correction
+
+The retained native experiment uses an application-defined source locator:
+`/documents/{document.id}/{field}` selects a visible document by ID, decodes its
+JSON `text`, and then names an endpoint field in that decoded object. It is not
+an [RFC 6901 JSON Pointer](https://www.rfc-editor.org/rfc/rfc6901.html#section-4)
+into the provider envelope: `documents` is an array and `text` is a string.
+The first prompt left that two-stage interpretation implicit, and its schema
+allowed any pointer string. A correct document citation can therefore fail the
+required field-level locator contract without having an incorrect endpoint.
+
+`scripts/native_cache_citation.py replay` verifies the retained experiment first,
+then reports original strict metrics separately from role/digest/source fidelity
+and a supplementary parser-assisted citation replay. No original module, source,
+response, assessment or receipt is modified. Alias resolution starts from the
+cited visible ID or zero-based index, not a search for a matching digest. It
+requires the exact document hash, independently bound scope/authority, recognized
+closed producer grammar and the proposed role/digest. Explicit field aliases
+must preserve the field. Whole-`text` citations can be expanded only because the
+accepted document grammar contains exactly one eligible endpoint. This supplies
+omitted citation precision through the parser; it is not merely a syntactic
+rewrite. Counts of text expansion and explicit-field locator substitution are
+reported separately. Duplicate aliases, wrong source/field/hash/role, invented
+endpoints and contrary-witness omissions never become accepted facts.
+
+The separate prospective development interface check uses the same frozen visible
+documents, model, budgets, parser and strict resolver. Its prompt explicitly
+defines the custom locator and its response schema lists every visible document
+ID crossed with both possible endpoint field names. The enum is built from IDs,
+not parser eligibility or gold facts; unsupported combinations remain possible.
+It does not constrain proposed digests or hashes to the answer. Supported
+[Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs)
+can constrain enum syntax, but they cannot ensure the model chooses grounded,
+semantically correct evidence. Live results use the original strict scorer with
+no citation normalization and separate content-fidelity diagnostics.
+
+This is a technical interface correction within an established extraction plus
+symbolic-inference architecture, not a method novelty claim. The separation of
+translation and inference also appears in [LINC](https://aclanthology.org/2023.emnlp-main.313/);
+it does not guarantee faithful extraction or usefulness over the strong parser.
+Cached replay is post-hoc development analysis. A fresh paid run tests the
+revised generation contract on already exposed inputs, not independent
+validation, natural incidents or semantic superiority.
+
+Offline commands:
+
+```sh
+PYTHONPATH=src python scripts/native_cache_citation.py replay \
+  --predecessor-dir ../memory/native-cache-extraction-development-v1
+PYTHONPATH=src python scripts/native_cache_citation.py prepare \
+  --predecessor-dir ../memory/native-cache-extraction-development-v1 \
+  --study-dir ../memory/native-cache-citation-development-v1
+PYTHONPATH=src python scripts/native_cache_citation.py preflight \
+  --predecessor-dir ../memory/native-cache-extraction-development-v1 \
+  --study-dir ../memory/native-cache-citation-development-v1
+```
+
+`execute` requires this new plan's digest and separate paid-transfer approval;
+`verify` reconstructs it offline from all ten retained calls. Preparation and
+verification bind the unchanged predecessor tree, revised contract and actual
+per-view SDK schemas. The original directory cannot be reused or overwritten.
+The ten-call reservation remains $0.245760 at frozen rates, with a $0.25 ceiling;
+no call is automatic and no failed slot is silently retried. The new private
+directory contains only the new plan and its own execution artifacts; it reuses
+the predecessor source rather than generating a second native corpus.
