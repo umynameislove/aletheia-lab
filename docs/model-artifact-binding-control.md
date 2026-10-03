@@ -1224,6 +1224,76 @@ private JSON directly in the memory root, with source/code identities and scoped
 row ledgers; it cannot overwrite an existing file or enter the public repository.
 The same source/bytes can be replayed without authorizing a provider operation.
 
+### Bounded sequential acquisition
+
+`source_evidence_sequential.py` adds an opt-in, at-most-two-attempt executor;
+the legacy one-attempt selector and historical receipts remain unchanged. A
+one-step selector cannot guarantee resolution when neither endpoint is visible,
+the combined capability is unavailable and the budget is two. Two separate
+endpoint reads can resolve that case. The new selector enumerates non-repeating
+sequences in the fixed three-action catalogue, minimizes total declared cost,
+then prefers fewer calls and lexical order on ties. Requested-then-loaded and
+loaded-then-requested are equally cost-optimal; neither is a scoring error.
+
+This is conditional exactness for successful, complete, truthful endpoint returns
+under the caller-pinned producer, record and snapshot contract, with costs 1/1/2
+and budget 0–2. It is not a general planner, source-authentication proof or optimal
+failure-recovery policy. After each actual read, the executor charges the ledger,
+retains the returned document and replans from admitted facts and remaining
+capabilities. It never learns roles from an action name or transport success:
+an `observed` empty projection supplies no witness. Failed/unavailable attempts,
+invalid evidence and full-context contradictions remain visible. A shared
+conservative stop rule halts on errors, conflict, invalid evidence or no new
+facts; even a supplied sequence cannot retry or skip this stop. No model can
+choose filesystem paths, replace authority, write repairs or exceed the budget.
+
+The objective has complementary evidence: either endpoint alone leaves the
+binding status ambiguous, while both identify it. Immediate resolution gain is
+therefore not a sufficient query heuristic. [Adaptive submodularity,
+Definition 3](https://arxiv.org/html/1003.3967v5) requires diminishing conditional
+marginal benefit; that guarantee is not imported here. [EC², §3 and Appendix
+B](https://arxiv.org/html/1010.3091v2) studies decision-equivalence classes with
+finite tests and a prior, including shortcomings of myopic criteria. Exact
+enumeration is sufficient for this smaller contract. Sequential observation
+updates are established [model-based diagnosis](https://www.ijcai.org/Abstract/16/181),
+not a new theoretical primitive.
+
+An independent observation-partition oracle checks all **384** endpoint-world,
+initial-mask, catalogue and budget conditions, accepting equal-cost alternatives.
+An independently authored contingent minimax oracle checks the integrated
+executor, including native byte-read ledgers. Missing/malformed fields, initial
+and acquired conflicts, unavailable tools, snapshot drift, useless reads and
+caller-bound metadata are explicit falsifiers. These finite checks are not an
+empirical sample size or evidence of natural-incident performance.
+
+Native replay retains **36 records × 4 authored views = 144 dependent slots**.
+With the complete catalogue, 108 actual queries resolve the 108 masked slots;
+with only the two single-endpoint tools, 144 queries resolve the same slots.
+Both recover all 144 full-source statuses at 144 declared units. Query reads
+consume respectively **444,441,402** and **592,588,536** bytes: two single reads
+load the container twice. Byte counts exclude initial-view construction and
+audit reads, and include reads that fail after IO. This demonstrates abstract
+cost ties, not equal physical IO, latency or USD. An unresolved warranted stop
+under a smaller budget is not an incorrect commitment; full-source recovery and
+decision warrant must be interpreted separately.
+
+```sh
+PYTHONPATH=src python scripts/replay_source_evidence_acquisition.py \
+  --root . --memory-root ../memory --sequential \
+  --available requested_endpoint loaded_endpoint --budget 2
+```
+
+The retained M4, Joblib and SQLite interfaces already specify endpoint roles and
+scope through producer-adapted parsers and shared semantics. Their inspected
+frames show no decision-sensitive semantic/capability gap that justifies a new
+paid LLM-planner comparison. The current disposition is **comparison not pursued
+in this frame**, not measured LLM equality or superiority. A future comparison
+needs an authorized source with a falsifiable unresolved semantic or query
+tradeoff, an independent reference and the same input, tools, budget, failure
+and stop rules for all arms. Privileged typed mapping is a ceiling, not a fair
+comparator against untyped input. No new provider calls or source mutation occur
+in this replay.
+
 ### Independent producer/schema transfer: offline implementation
 
 The selected development cited-fact interface now has an implemented SQLite
