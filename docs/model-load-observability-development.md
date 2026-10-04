@@ -49,8 +49,9 @@ delivery permutations, truthful refinement and invalid parent-binding controls.
 The native view is only a **current-alias/trace proxy** from these local producers.
 Its registry declaration is not silently treated as an acceptance receipt or
 consumed-buffer witness. Raw native messages are retained, but no general native
-log parser, MLflow integration, in-toto verifier or Modelstamp implementation is
-evaluated. Native versus scoped views compare capture capability; S versus T
+log parser, MLflow integration, in-toto verifier or Modelstamp implementation was
+evaluated in that first census. The MLflow/in-toto follow-up below is a separate
+development study, not a replacement for its results. Native versus scoped views compare capture capability; S versus T
 compares checkers with matched evidence. Neither difference establishes that all
 registry or provenance tools are deficient.
 
@@ -122,5 +123,143 @@ Partial/out-of-order monitoring already has substantial prior work, including
 [Basin, Klaedtke and Zalinescu](https://arxiv.org/abs/1909.11593). Artifact-flow
 integrity also predates this tool, including [in-toto](https://www.usenix.org/conference/usenixsecurity19/presentation/torres-arias).
 These sources inform the assumptions and comparison boundary; their systems were
-not reproduced here. Do not advance a complex monitor, capture optimizer or broad
+not reproduced in the first census. Do not advance a complex monitor, capture optimizer or broad
 benchmark claim solely because this controlled census or its tests passed.
+
+## Prevalidation: independent SDK workflow and strong provenance
+
+This follow-up uses **MLflow 3.9.0's actual local SQLite model registry and public
+sklearn flavor loader**, rather than reimplementing a registry facade. It executes
+**in-toto 3.0.0 full verification** with a signed layout, authorized signed links,
+required artifacts, `MATCH` and terminal `DISALLOW`. It is exposed development:
+`validation_locked=false`, not a held-out validation protocol or natural incident
+corpus. One MLflow workflow stack is one cluster; eight authored schedules are
+not eight independent systems. No general temporal-monitor method is admitted.
+
+### Selection policy and capture boundary
+
+The [MLflow workflow documentation](https://mlflow.org/docs/latest/ml/model-registry/workflow/)
+explicitly permits mutable aliases: a later alias load can select a newly assigned
+version. A version URI pins a different contract. This study uses actual returned
+`ModelVersion.version` as a version witness, **not an alias epoch or proof of
+registry linearizability**. Both version-pinned and legitimately reselected loads
+are included. See the pinned [sklearn loader source](https://github.com/mlflow/mlflow/blob/v3.9.0/mlflow/sklearn/__init__.py)
+and [model artifact repository](https://github.com/mlflow/mlflow/blob/v3.9.0/mlflow/store/artifact/models_artifact_repo.py).
+
+Two small fitted models A and B are saved by the SDK in an owned temporary
+directory and registered as versions 1 and 2. Only their known, freshly generated
+`model.pkl` bytes may enter the native unpickler. No downloaded, submitted or
+historical pickle is accepted. The instrumented native `pickle.load` boundary
+reads the actual file object, separately retains the offered bytes, hashes them
+for the observer and passes **that same `BytesIO`** to the original unpickler.
+The observer cannot inspect the separate control ledger.
+
+This instrumentation changes streaming semantics. It observes the full buffer
+**offered to the unpickler**, not a proof that the unpickler reads every byte,
+the whole MLflow package, subsequent object mutation or actual serving use.
+The temporary global hook is supported for this sequential local study, not
+arbitrary concurrent application workloads. SDK telemetry is disabled and socket
+connections denied; tracking/registry settings and the hook are restored. Only
+owned SQLite engines are disposed. Native Windows behavior must be checked by CI;
+the local research execution was on macOS/Python 3.12.
+
+### Fair comparison: capture and verification are different questions
+
+Three scoped methods receive exactly the same admitted selection, scope/token,
+retry-parent, offered-buffer and closure evidence:
+
+- `S`: existing strong receipt/correlation checker.
+- `T`: existing bounded compatible-completion reference.
+- `P`: independent lifecycle/policy adapter with actual signed in-toto verification.
+
+P does not call S, T or shared admission to decide its result. Scope, phase,
+inherited identity and closure are represented as required hashed artifacts.
+Duplicate delivery, foreign scope, conflicting admissions, absent parent/closure,
+wrong phase, excess loads and unavailable signatures have explicit tests. An
+observed violation can be conclusive before closure; a matching prefix cannot
+establish completed-attempt compliance.
+
+The [in-toto API](https://in-toto.readthedocs.io/en/latest/api.html) and
+[specification](https://github.com/in-toto/specification/blob/master/in-toto-spec.md)
+define signatures and artifact rules. `REQUIRE` and terminal `DISALLOW` prevent
+missing or unmatched artifacts from silently passing a `MATCH`. No inspection
+commands execute. Expected-command/byproduct fields are not used as evidence.
+Signing is a **local trusted-record transcode**; it adds no new independent-host
+capture or authentication capability to the observer.
+
+A second in-toto comparator verifies pre/post path hashes. This is an **adapted
+path-evidence artifact-chain comparator**, not an out-of-box `in-toto-run`
+collection benchmark. Its artifact-rule `pass` is reported without mapping it
+to authorized-load compliance. Native metadata and path evidence are retained
+separately from the same-buffer view; richer capture is not called a better
+checker algorithm.
+
+### Fixed development census and result
+
+| Schedule | Reference | S / T / P |
+|---|---|---|
+| Pin version A, load A | compliant | compliant |
+| Resolve updated alias B, load B | compliant | compliant |
+| Acceptance pin A, load alias B | violation | violation |
+| Path A before/after, transient B offered to unpickler | violation | violation |
+| Retry inherits root A but alias loads B | violation | violation |
+| Retry legitimately reselects B and loads B | compliant | compliant |
+| Retry loads B, target witness dropped in the spool | violation | unknown |
+| Warmed A reused, no target deserialization | no new load | excluded |
+
+All **7/7 planned load attempts completed**, with no technical failure. Each
+scoped method identifies **6/7** (3 compliant, 3 violation), leaves **1 unknown**,
+and makes **zero false compliance/violation commitments** in this fixed census.
+S, T and P agree on all eight slots. Seven actual scoped in-toto verifications
+execute; the missing-buffer slot verifies a valid partial prefix but remains
+unknown. Four retained auxiliary deserializations (three parent loads and one
+cache warmup) are separate from the target denominator. Failed slots remain in
+the planned denominator; their partial auxiliary state is not counted as retained
+successful capture. Setup failure aborts with no claimed complete report.
+
+The **critical pair** is a legal pinned-A load versus the authored A→B→A
+same-path control. Both have byte-identical native fact frames comprising SDK
+selection/current snapshots, actual version URI, registered-model metadata,
+MLmodel hash and pre/post model-file hashes. Their separately retained offered
+buffers differ and give opposite reference statuses. All seven path-only chain
+checks pass, including this pair; this is not an in-toto verifier defect. It
+shows that those path/metadata observations do not identify this input-buffer
+property under the declared control and trust model.
+
+Disposition: `bounded_capture_finding_no_new_checker_advantage`. This provides
+a concrete executable capture-adequacy boundary on an independent SDK stack.
+It does **not** establish that all provenance tools fail, that an uninstrumented
+MLflow deployment has this bug, that T outperforms S/P, or that 0 observed errors
+is a universal guarantee. This is not a measured capture-cost frontier, a new
+natural source population, adversarial-host attestation or a validated theory
+paper. The earlier 12-control census remains unchanged and is not pooled with
+this one into an independent sample-size claim.
+
+### Run, replay and next boundary
+
+Optional dependencies are pinned in `.[provenance]`. The normal runtime does not
+auto-install them. Linux and Windows test jobs install the extra so the real SDK
+and signature tests run rather than silently skipping them. Without the extra,
+those explicitly marked optional tests skip and the CLI fails closed.
+
+```sh
+PYTHONPATH=src python scripts/model_load_provenance.py run --root . --report PRIVATE_NEW_REPORT
+PYTHONPATH=src python scripts/model_load_provenance.py verify --root . --report PRIVATE_NEW_REPORT
+```
+
+The destination must be a new bounded report outside the repository in an
+existing private directory. No overwrite or symlink destination is accepted.
+Raw generated buffers are private; stdout is aggregate only. Replay hashes but
+never deserializes retained buffers. It validates code identity before/after
+execution, fixed census, SDK/native frame, observer joins/closure, independent
+reference, signed verifier outcomes and aggregate interpretation. Self-hashing
+protects consistency, not authorship or trust in a malicious report producer.
+
+**The prevalidation check is complete; final validation remains unlocked.**
+The next scope is a prospective narrowed validation design: explicitly
+hold out workflow/lifecycle units, define capture-adequacy endpoints and unavailable
+evidence, preserve legal alias/retry/cache controls, compare fairly adapted S/P
+and separate checker efficacy from capture capability. These exposed controls
+cannot become held-out cases. A capture-cost study requires a measured useful
+cost/coverage gap; final validation requires a separately sealed design and scoped
+execution authority.

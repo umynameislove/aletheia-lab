@@ -40,7 +40,7 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[dev]"
+          python -m pip install -e ".[dev,provenance]"
       - name: Test architecture and maintainability contracts
         run: python scripts/run_test_profile.py contract
       - name: Prepare pinned test dataset
@@ -97,7 +97,7 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[dev]"
+          python -m pip install -e ".[dev,provenance]"
       - name: Test Windows project boundary
         run: python scripts/run_test_profile.py project -- --durations=20
       - name: Prepare pinned test dataset
