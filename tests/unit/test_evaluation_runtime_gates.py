@@ -162,7 +162,7 @@ def test_repeated_profile_uses_distinct_hash_seeds_and_posix_budget(
     monkeypatch.setattr(runner.subprocess, "run", fake_run)
     assert runner.run_profile("evaluation", repeat=3) == 0
 
-    assert [call["timeout"] for call in calls] == [600, 600, 600]
+    assert [call["timeout"] for call in calls] == [900, 900, 900]
     seeds = [str(call["env"]["PYTHONHASHSEED"]) for call in calls]
     assert seeds == ["1", "104729", "209759"]
     assert len(set(seeds)) == 3
@@ -215,14 +215,17 @@ def test_profile_timeout_is_a_blocking_failure(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     runner = _runner_module()
+    attempts = []
 
     def raise_timeout(*args: object, **kwargs: object) -> None:
+        attempts.append(kwargs["timeout"])
         raise subprocess.TimeoutExpired(args[0], kwargs["timeout"])
 
     monkeypatch.setattr(runner.os, "name", "posix")
     monkeypatch.setattr(runner.subprocess, "run", raise_timeout)
-    assert runner.run_profile("evaluation") == 124
-    assert "600-second runtime budget" in capsys.readouterr().err
+    assert runner.run_profile("evaluation", repeat=3) == 124
+    assert attempts == [900]
+    assert "900-second runtime budget" in capsys.readouterr().err
 
 
 def test_selected_evaluation_tests_do_not_use_real_sleep() -> None:
