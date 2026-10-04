@@ -384,8 +384,10 @@ The original design module, its CLI and protocol stay unchanged, so a retained
 design plan remains replayable. Its old `runner_implemented=false` field is the
 historical design snapshot, not the new runner's current status. The new entry
 point adds preparation, execution preflight, execute and hash-only verify.
-Implementation and synthetic tests do not establish real runtime compatibility
-or validation findings. No native validation outcome has been observed yet.
+Implementation and synthetic tests alone do not establish real runtime compatibility
+or validation findings. The completed controlled validation and its limitations
+are described below; these execution instructions are historical reproduction
+guidance, not permission to rerun a consumed study.
 
 The adapters import selected SDKs only on explicitly invoked preparation/loading.
 ORT intercepts actual `C.InferenceSession` calls, including same-object provider
@@ -485,3 +487,130 @@ contribution stop remain in force. No result-based source, threshold or exclusio
 changes are permitted; an affected exposed unit becomes development and further
 design is forward. This bounded loader-format transfer does not require a new
 method frontier, and cannot demonstrate one by itself.
+
+### Completed controlled validation and evidence closeout
+
+The fixed two-loader census completed all 48 slots: 44 planned-load and four
+cache-only slots. Actual native entries totaled 62 (24 auxiliary and 38 target),
+within the frozen 72-entry reservation. Independent hash-only replay passed
+without repeating native loading. S, T and actual signed P returned the same
+verdict for every observation slot at both cutoffs. On the 22 planned observation
+loads, correct identification was 16 before delayed delivery and 18 afterwards.
+There were no observed false compliance or false violation commitments. All four
+remaining unknown cases were reference violations: two missing offered-buffer
+witnesses after wrong-mailbox delivery and two missing root selections after
+expiry. Thus compliant cases were identified in 12/12 and violations in 6/10;
+81.8% identification is not complete violation detection.
+
+Path-only evidence had two opposite-status groups covering ten slots. Exact full
+scoped evidence had zero opposite-status groups. The path ablation must not be
+presented as unavoidable ambiguity under the complete scoped input. Prevention
+is a separate endpoint: ten blocked proposals, eight opportunities blocked without
+a target load, 14 completed compliant loads and two cache-only opportunities;
+zero observed false blocks or residual violations. This does not establish host,
+prediction or serving attestation. Both loader strata share one authored scheduler,
+not two independent deployments. The supported disposition remains bounded
+transfer with no new-checker advantage.
+
+`model_load_evidence_development.py closeout` verifies the original authority and
+reference, then analyzes only actually retained observations. It never restores
+missing evidence from the private producer ledger. Removing current selection or
+load evidence reduced after-cutoff identification to 2/22; removing closure gave
+6/22. Removing parent selection did not change 18/22 on this particular census.
+A separate finite witness establishes why that last observation is not a general
+permission to drop roots: the same child selection/load/closure can be compliant
+under root A and violating under root B. Without the authoritative root both
+histories share the child-only view.
+
+The static sufficient selector retains every current-scope record and all root
+selection variants referenced by any current selection. It preserves conflicts,
+distinct load occurrences and no-new-load eligibility. It preserved S/T decisions
+on all 44 before/after load views while removing 44 irrelevant parent load/closure
+records. Enumerating the 32 subsets of five evidence groups is exposed descriptive
+analysis, not byte-optimal acquisition or an online-safe adaptive policy.
+
+### Collector retention development
+
+The companion `collector` command exercises actual SQLite transactions, routing,
+deduplication, delayed delivery, root expiry and garbage collection using inert
+producer buffers. It executes no model fit, native model load or provider request.
+Ten authored episodes include healthy/wrong/extra loads, healthy inheritance,
+reselection, cache reuse, duplicate delivery and truly foreign-scope evidence.
+The upstream producer hashes 16 buffers (557,056 bytes) once into a common tape;
+each configuration sees the same 50 receipt deliveries (13,238 serialized bytes).
+The 16 counted hashes are producer-boundary witness hashes; common domain
+initialization is not included in that counter or its timing.
+Policies receive trusted records and caller lifecycle, not the reference outcome,
+fault label or future schedule. Raw buffer archives and native logs are not added
+to full retention merely to inflate its cost.
+
+A two-by-two comparison isolates mailbox versus trusted-scope retrieval and
+attempt expiry versus request-lifetime root retention. Correct identification of
+nine load episodes was 6, 7, 7 and 8, respectively, with zero false commitments;
+all configurations also correctly classified the one cache-only episode. The
+truly foreign-scope witness remained inadmissible. Wrong mailbox with correct
+payload scope can be retrieved only because the same store still contains it;
+that is a delivery capability, not stronger inference or restored absent capture.
+These are newly constructed collector episodes, not a repaired 20/22 or 22/22
+result on the immutable validation.
+
+At matched scope retrieval, root lifetime and audit horizon two, static sufficient
+and full retention preserved the same immediate and retrospective decisions.
+Static receipt writes were 36 rows / 9,716 payload bytes versus 49 / 12,963 for full
+retention (25.05% fewer logical payload bytes). Payload peak was 3,384 versus 4,878
+bytes. Across 118 common event steps, payload occupancy was 275,456 versus 366,269
+byte-steps; serialized bookkeeping contributed another 30,077 byte-steps to both.
+These are logical payload/state measures, not Python allocator or physical write
+volume. Database and rollback-journal sizes are reported separately. SQLite
+DELETE can free rows without shrinking the main database file, as documented in
+[SQLite auto-vacuum](https://www.sqlite.org/pragma.html#pragma_auto_vacuum).
+
+Audit horizons zero, two and eight provided 0/27, 19/27 and 27/27 of the same
+requested retrospective queries at ages zero/one/two drained requests. Every
+available query preserved its earlier decision. A shorter horizon is therefore
+a different service contract, not free cost reduction at equal audit coverage.
+Only a trusted request-drained barrier closes future delivery and descendants;
+attempt closure alone does not allow deletion. Conflicting duplicate variants
+remain separate. An undelayed redelivery makes an existing delayed receipt visible;
+a correct-mailbox redelivery is not discarded because an identical payload was
+previously routed elsewhere. Request-owned foreign records are also reclaimed
+when their owner's horizon ends, without becoming target witnesses.
+
+Three rotated configuration runs completed 300 episode-runs. Repeat counts are
+engineering reproducibility, not independent experimental N. Local operation
+timing includes resource instrumentation and supports no production latency or
+throughput claim. The pilot permits one declared query attempt per request,
+bounded input and no crashes/concurrent descendants. Technical configuration
+failures remain in an incomplete report instead of being excluded from the census.
+The reported executed episode count includes only fully completed configuration
+runs; partial work in a failed run is not an observed completed episode.
+No adaptive optimizer is promoted: a request/root-aware sufficient baseline is
+already adequate on these controls, and no residual adaptive advantage has been
+demonstrated. Signing costs from P are not included in collector timing.
+
+### Prior methods and scope
+
+[Hindsight (NSDI 2023)](https://www.usenix.org/system/files/nsdi23-zhang-lei.pdf)
+already separates local capture from contingent retrospective retrieval and
+retention within a finite buffer horizon. It cannot recover history outside that
+horizon. [Pivot Tracing (SOSP 2015)](https://jonathanmace.github.io/papers/mace2015pivot.pdf)
+established dynamic instrumentation and causal joins. [Runtime Verification over
+Out-of-order Streams](https://people.inf.ethz.ch/basin/pubs/tocl19.pdf) supplies
+earlier partial-observation semantics and state-relevance principles, not a
+general cheap-completeness guarantee. The present contribution candidate is a
+bounded contract-specific evidence/cost characterization; adaptive tracing,
+three-valued verdicts and causal indexing are not new inventions here.
+
+```sh
+PYTHONPATH=src python scripts/model_load_evidence_development.py closeout \
+  --root . --plan PRIVATE_ORIGINAL_PLAN.json --study-dir PRIVATE_COMPLETED_STUDY \
+  --output PRIVATE_NEW_CLOSEOUT.json
+
+PYTHONPATH=src python scripts/model_load_evidence_development.py collector \
+  --root . --output PRIVATE_NEW_COLLECTOR_REPORT.json --repeats 3
+```
+
+Outputs are aggregate, immutable, capped at four MiB and outside the repository.
+Closeout output must also be outside the original study. No new execution seal,
+protected attempt or API credential is needed for these read-only/development
+commands. An original native validation execution must not be repeated.
