@@ -38,7 +38,10 @@ def test_historical_v7_candidate_fails_closed_on_post_result_analysis_change() -
     assert report["execution_authorized"] is False
     assert report["blocker_codes"] == []
     failed = [finding for finding in report["findings"] if finding["status"] != "pass"]
+    # The provenance optional extra changed packaging after this historical
+    # freeze. Keep the old manifest intact and require that drift to fail too.
     changed_paths = (
+        "pyproject.toml",
         "src/aletheia_lab/evaluation/diagnosis_main_analysis.py",
         "tests/unit/test_diagnosis_main_freeze_candidate.py",
     )

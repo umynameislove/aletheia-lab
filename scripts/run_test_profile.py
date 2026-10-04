@@ -12,7 +12,9 @@ from pathlib import Path
 from typing import Final
 
 _ROOT: Final = Path(__file__).resolve().parents[1]
-_EVALUATION_TIMEOUT_SECONDS: Final = 600
+# The optional native-provenance tests enlarged the complete profile; CI 3.12
+# reached the former 600-second cap near completion. Keep a bounded 15 minutes.
+_EVALUATION_TIMEOUT_SECONDS: Final = 900
 _WINDOWS_EVALUATION_TIMEOUT_SECONDS: Final = 900
 _REPRODUCIBILITY_HASH_SEEDS: Final = ("1", "104729", "209759")
 _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
@@ -156,6 +158,8 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_model_load_provenance.py",
         "tests/unit/test_model_load_mlflow.py",
         "tests/integration/test_model_load_provenance_local.py",
+        "tests/unit/test_model_load_validation.py",
+        "tests/integration/test_model_load_validation_local.py",
         "tests/unit/test_native_cache_extraction.py",
         "tests/unit/test_native_cache_experiment.py",
         "tests/unit/test_native_cache_citation.py",

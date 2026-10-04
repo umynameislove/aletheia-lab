@@ -263,3 +263,125 @@ and separate checker efficacy from capture capability. These exposed controls
 cannot become held-out cases. A capture-cost study requires a measured useful
 cost/coverage gap; final validation requires a separately sealed design and scoped
 execution authority.
+
+## Prospective validation design lock (INT-04, 2026-10-04)
+
+The prevalidation code above was merged in PR #168. The remaining INT-04 slice
+now seals a **controlled loader-format and lifecycle-composition transfer**
+design, not a new outcome. The sole public design is
+`configs/evaluation/model_load_validation_protocol.json`; its canonical SHA-256 is
+`62fa6545781b22311aaaa6a84fc6611868e98f92f20e6f16fde07b8601cf64e0`.
+`model_load_validation.py` only prepares or reconstructs a private design plan.
+It has no execute action and does not import the new loaders, fit models or read
+the previous private reports. Protocol completion is **not execution readiness**.
+
+### Question, selection and scope
+
+Can the offered-buffer, request-policy-relative result transfer beyond the exposed
+Joblib/MLflow workflows to **ONNX Runtime 1.23.2** and **SKOPS 0.15.0**, including
+deferred handoff, interleaved retry, native reentry and warm-cache reload? These
+are two unused loader APIs/formats under one authored scheduler, **not two
+independent deployments**, natural incidents or a population sample. Primitive
+ideas such as retries and cache reuse were already used in development; only the
+selected API/lifecycle compositions are prospective. Schedule, branch and slot
+identities stay outside candidate evidence. No loader/source substitution is
+allowed after outcomes.
+
+The trust model is an honest instrumented local process and scheduler. The
+reference independently joins caller/root policy and snapshots the complete
+immutable bytes offered at each actual native entry, before observer delivery
+loss. It does not call S/T/P or reuse an authored expected-status field. It does
+not attest every byte consumed, all model dependencies, later inference or a
+malicious host. Failed native entries count as entries, while completed loads
+and technical errors remain separate.
+
+### Fixed workload and comparisons
+
+| Item | Frozen choice |
+| --- | --- |
+| Census | 2 loader strata × 12 schedules × observation/prevention branches = **48 planned slots**. Four lifecycle families have three schedules each. |
+| Observation | 22 planned load slots and 2 cache-only slots. S/T/P share the same admitted policy, binding, occurrence and closure evidence. |
+| Prevention | 24 separate opportunities; blocking changes execution and is not a matched diagnostic verdict. |
+| Native budget | At most 48 target plus 24 auxiliary entries, **72 total**. Reentry is two actual native calls; repeated delivery of one record is one call. |
+| Cutoffs | After attempt close before delayed delivery, then after delayed delivery before cleanup. Expired binding stays unavailable; reference cannot fill candidate gaps. |
+| Reference | Root/attempt binding, selected artifact and actual native-entry buffer retained independently of observer spool. |
+| S/T/P | Existing receipt S, bounded completion reference T and adapted provenance P with the actual signed in-toto verifier. P can carry scoped buffer evidence; path-only capture is an explicit ablation. |
+| Prevention baseline | Read once, check immutable bytes, pass that same buffer; an atomic root/attempt-bound token permits at most one native entry. Digest checking alone is insufficient for double loads. |
+| Resources | 256 KiB/artifact, 2 local fits, 30 s/slot, 60 s/setup, 1,800 s total, 32 MiB private result cap, no runtime network or provider calls. |
+
+ONNX uses two embedded float32 MatMul/Add graphs (one input tensor with two
+features), CPU provider only, one thread and constructor fallback disabled.
+External tensor data, custom operators and sidecars are excluded recursively.
+Every native `C.InferenceSession` entry is counted, including recreation through
+`set_providers`; counting outer Python constructors would miss this lifecycle.
+This behavior is checked against the [pinned ORT source](https://raw.githubusercontent.com/microsoft/onnxruntime/v1.23.2/onnxruntime/python/onnxruntime_inference_collection.py)
+and [ONNX 1.19.1 protobuf](https://raw.githubusercontent.com/onnx/onnx/v1.19.1/onnx/onnx-ml.proto).
+
+SKOPS uses fixed tiny `LinearRegression` fits, without custom attributes, and
+loads the whole archive through `loads(bytes, trusted=[])`. Default trusted types
+remain; unknown types are never automatically approved. Preparation must check
+`get_untrusted_types(data=payload) == []` and fail closed otherwise. The selected
+[0.15.0 release provenance](https://pypi.org/project/skops/0.15.0/)
+binds the inspected [implementation](https://github.com/skops-dev/skops/blob/f426e9e3ebee6685327534d4b922679b44d4225f/skops/io/_persist.py).
+Serialization recipes do not promise byte-stable ZIP archives. Actual generated
+artifact hashes must be sealed before target loads. Runtime/ABI compatibility
+and these roundtrips **have not been executed** in INT-04.
+
+### Fair capture and analysis
+
+The strong adapted collector may hash the actual constructor bytes, because
+those bytes are available at the selected APIs. The study must not hide this
+capability and call a path collector an inherent SDK/provenance limitation.
+The path ablation hashes the real spool before its scheduled mutation and after
+the final entry/block and close. The A→B→A control changes that file, lets the
+worker read B, then restores A; it is not an in-memory choice mislabeled a race.
+Caller manifest content, native message settings, explicit absent registry
+fields and full frame equality are fixed in the JSON. Only opaque nonce IDs can
+be consistently renamed. Artifact selectors, versions, digests, relationships
+and messages cannot be dropped after results to manufacture an equal-frame pair.
+
+Primary coverage is correct identified compliant/violation decisions divided
+by **all 22 planned observation load slots**, separately per method/cutoff.
+Setup failures, reference-unavailable and unexecuted slots stay in that coverage
+denominator. False-compliance/false-violation counts and their reference-assessable
+denominators are reported separately, alongside unknown/conflict. Cache-only
+slots are not credited as successful loads. Prevention reports blocks, false
+blocks, legal completions, residual violations and failures against its planned
+opportunities; a block is not compliant deserialization. Unweighted/per-family
+descriptive tables are planned. Repeated schedules, branches and cutoffs do not
+become independent N or population confidence intervals.
+
+The theory is inherited: partial/lost observations require a semantics that
+accounts for compatible executions, as in [Basin et al.](https://arxiv.org/abs/1909.11593).
+The conditional sufficiency test groups equal evidence and asks whether a group
+contains opposite contract statuses; this is not a new theorem. [in-toto](https://www.usenix.org/conference/usenixsecurity19/presentation/torres-arias)
+is the strong integrity comparator, while [Modelstamp](https://arxiv.org/abs/2609.01781)
+is close pre-deserialization prior art. This design does not reproduce Modelstamp
+or allege a defect in it. If S/P or the prevention baseline solves all cases,
+report that result and reject a new-checker advantage claim. A meaningful
+benchmark contribution still requires useful, systematic empirical findings;
+the design lock alone proves neither novelty nor publishability.
+
+### Prepare, preflight and next execution boundary
+
+```sh
+PYTHONPATH=src python scripts/model_load_validation.py prepare --root . --plan PRIVATE_NEW_PLAN.json
+PYTHONPATH=src python scripts/model_load_validation.py preflight --root . --plan PRIVATE_NEW_PLAN.json
+```
+
+The plan must be outside Git checkouts in an existing private directory, with
+no symlink components or overwrite. Its full design, deterministic slot census,
+code hashes and creation commit are replayed. Duplicate JSON fields, non-finite
+numbers, extra/tampered fields and type-confused rehashed plans fail closed.
+Merge commits descending from the creation commit do not invalidate unchanged
+code. Self-hashes provide consistency, not authentication against a malicious
+plan producer. Stdout contains aggregate identities/counts only.
+
+**INT-05 is next:** implement the selected adapters/reference and synthetic
+checks; obtain scoped preparation authority; create the artifacts without native
+loads; bind artifact/code/environment/platform identities in the final execution
+seal; then execute only with the matching scoped owner authority. This is one
+execution boundary, not another design review. No result-based source, threshold
+or exclusion changes are permitted; affected exposed units become development
+and any further design is forward. INT-03 and U remain conditional on a real
+cost/coverage gap and are not prerequisites for this benchmark-only validation.

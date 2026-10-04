@@ -260,3 +260,64 @@ def test_loader_refuses_unowned_or_unknown_bytes_before_native_unpickle(
             runtime._owned_model_path(stream, tmp_path / "consumer-0")
     finally:
         spool.close()
+
+
+@pytest.mark.parametrize("newline", [b"\n", b"\r\n"], ids=["lf", "crlf"])
+def test_capture_preserves_native_metadata_bytes_for_hash_only_replay(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    newline: bytes,
+) -> None:
+    from types import SimpleNamespace
+
+    from aletheia_lab.evaluation.model_load_contract import Record, Scope
+    from aletheia_lab.evaluation.model_load_runtime import Transport
+
+    raw = b"owned-local-buffer"
+    metadata = "name: native-café\nflavor: sklearn\n".encode().replace(b"\n", newline)
+    consumed: list[bytes] = []
+
+    def fake_unpickler(stream: Any) -> SimpleNamespace:
+        consumed.append(stream.read())
+        return SimpleNamespace(predict=lambda _: SimpleNamespace(tolist=lambda: [0, 1]))
+
+    def fake_load(uri: str, dst_path: str) -> Any:
+        directory = Path(dst_path)
+        (directory / "model.pkl").write_bytes(raw)
+        (directory / "MLmodel").write_bytes(metadata)
+        (directory / "registered_model_meta").write_bytes(
+            b"model_name: model-load-development\nmodel_version: '1'\n"
+        )
+        with (directory / "model.pkl").open("rb") as stream:
+            return pickle.load(stream)
+
+    monkeypatch.setattr(pickle, "load", fake_unpickler)
+    workflow = runtime.NativeWorkflow.__new__(runtime.NativeWorkflow)
+    workflow.sdk = SimpleNamespace(sklearn=SimpleNamespace(load_model=fake_load))
+    workflow.name = "model-load-development"
+    workflow.digests = {"A": runtime.content_sha256(raw), "B": "b" * 64}
+    scope = Scope("request", 0)
+    selected = Record(
+        "select", scope, "selection", workflow.digests["A"], "token", 1, "pin_at_acceptance"
+    )
+    spool = Transport(tmp_path / "observer.sqlite", "complete", scope)
+    try:
+        captured = workflow.consume(tmp_path, scope, selected, spool)
+    finally:
+        spool.close()
+    assert consumed == [raw]
+    assert captured["model_metadata_text"].encode("utf-8") == metadata
+    assert captured["model_metadata_sha256"] == runtime.content_sha256(metadata)
+    # A separate JSON round trip must retain native line endings, not normalize
+    # their hash away. Replay still rejects a changed byte or LF-only substitute.
+    import json
+
+    retained = json.loads(json.dumps(captured))
+    study._validate_buffer(retained, workflow.digests, "A", "A", False)
+    retained["model_metadata_text"] += "changed"
+    with pytest.raises(ValueError, match="native MLmodel hash changed"):
+        study._validate_buffer(retained, workflow.digests, "A", "A", False)
+    if newline == b"\r\n":
+        retained["model_metadata_text"] = captured["model_metadata_text"].replace("\r\n", "\n")
+        with pytest.raises(ValueError, match="native MLmodel hash changed"):
+            study._validate_buffer(retained, workflow.digests, "A", "A", False)

@@ -158,14 +158,17 @@ class NativeWorkflow:
             if len(raw) > 2_000_000 or content_sha256(raw) not in self.digests.values():
                 raise ValueError("unexpected or oversized deserializer input")
             buffer = io.BytesIO(raw)
+            # Hash and retain the same byte snapshot. Text-mode reading would
+            # normalize native CRLF on Windows and break exact-byte replay.
+            model_metadata = (path.parent / "MLmodel").read_bytes()
             captured.append(
                 {
                     "raw_hex": raw.hex(),
                     "before_sha256": content_sha256(before),
                     "after_sha256": file_sha256(path),
                     "uri": uri,
-                    "model_metadata_sha256": file_sha256(path.parent / "MLmodel"),
-                    "model_metadata_text": (path.parent / "MLmodel").read_text(encoding="utf-8"),
+                    "model_metadata_sha256": content_sha256(model_metadata),
+                    "model_metadata_text": model_metadata.decode("utf-8"),
                     "registered_model_meta": (path.parent / "registered_model_meta").read_text(
                         encoding="utf-8"
                     ),
