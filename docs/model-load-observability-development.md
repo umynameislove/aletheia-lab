@@ -377,11 +377,111 @@ Merge commits descending from the creation commit do not invalidate unchanged
 code. Self-hashes provide consistency, not authentication against a malicious
 plan producer. Stdout contains aggregate identities/counts only.
 
-**INT-05 is next:** implement the selected adapters/reference and synthetic
-checks; obtain scoped preparation authority; create the artifacts without native
-loads; bind artifact/code/environment/platform identities in the final execution
-seal; then execute only with the matching scoped owner authority. This is one
-execution boundary, not another design review. No result-based source, threshold
-or exclusion changes are permitted; affected exposed units become development
-and any further design is forward. INT-03 and U remain conditional on a real
-cost/coverage gap and are not prerequisites for this benchmark-only validation.
+### Validation runner and bounded execution
+
+The runner is now implemented separately in `scripts/run_model_load_validation.py`.
+The original design module, its CLI and protocol stay unchanged, so a retained
+design plan remains replayable. Its old `runner_implemented=false` field is the
+historical design snapshot, not the new runner's current status. The new entry
+point adds preparation, execution preflight, execute and hash-only verify.
+Implementation and synthetic tests do not establish real runtime compatibility
+or validation findings. No native validation outcome has been observed yet.
+
+The adapters import selected SDKs only on explicitly invoked preparation/loading.
+ORT intercepts actual `C.InferenceSession` calls, including same-object provider
+recreation; automatic constructor fallback is disabled. SKOPS offers the complete
+immutable archive and retains `trusted=[]`. Neither adapter accepts arbitrary
+downloaded artifacts. The fixed two local fits occur only during authorized
+preparation, before the actual generated buffers are sealed. Installed package
+versions, Python build and platform are recorded. This inventory is not a
+complete transitive ABI attestation; loading compatibility is an execution result.
+
+The lifecycle performs real spool replacement/restoration, file-backed alias
+resolution, SQLite delayed/misrouted delivery and root-record expiry. Reference
+snapshots are copied before observer routing; missing candidate records are never
+filled from them. Native constructor completion and successful outer SDK loading
+have separate counters. Closed cache reuse is not a new load. Equal-evidence
+grouping retains all frozen fields, exact messages and artifact selectors; only
+opaque request/root/URI identity is consistently renamed. Candidate S/T/P share
+the same observer facts; signed provenance verifies those facts without acquiring
+private reference access. Ephemeral signing keys are never saved.
+Path-evidence equality and complete scoped-evidence equality are reported
+separately; the scoped comparison retains cutoff, selection and parent binding.
+
+Each fixed slot uses a separate process. The 30-second worker limit covers
+loading and S/T/P evaluation; timeout kills and reaps the process. Its raw
+lifecycle row is retained before scoring. A missing native census consumes the
+entire slot allowance and stops subsequent slots; the worker is never retried.
+Known technical failures retain captured entries and stay in the census. Output
+capture uses bounded OS pipes rather than unbounded temporary log files. Native
+stdout/stderr retain at most 256 KiB each; outer worker stdout retains 4 KiB and
+stderr 256 KiB. Overflow or reader failure is terminal, not truncated evidence.
+Descriptor restoration and both capture readers are checked on failure paths.
+Storage for the next slot and the terminal census is reserved before entry, and private
+publication checks the 32 MiB cap before writing. All 48 planned rows remain,
+including unexecuted rows. Full independent signed replay is a separate `verify`
+operation and performs no deserialization, fit or native loading.
+
+Preparation and native execution are separate scoped actions. Preparation needs
+the exact original plan hash and a clean committed checkout; it consumes a new
+private directory before making the two fits. The seal binds actual generated
+A/B buffers, code, environment, platform and creation commit. Execution requires
+that exact seal hash and creates one immutable lease. Existing preparation or
+lease cannot be overwritten, resumed or rerun. Code/environment/artifact drift
+fails closed; the worker rehashes the actual bytes it read before offering them
+to the SDK. Python socket creation/resolution is blocked in workers. This is a
+trusted local-process guard, not an OS firewall or malicious-host attestation;
+the controlled runtime must also remain offline. There are no provider calls.
+
+After the implementation is committed and merged, use Python 3.12 with the
+seven dependency versions in the frozen JSON. A dedicated ignored `.venv` can
+avoid altering historical experiment environments. These commands require no
+OpenAI credential:
+
+```sh
+../working-baseline/.venv/bin/python -m venv .venv
+.venv/bin/python -m pip install -e . \
+  'onnxruntime==1.23.2' 'onnx==1.19.1' 'skops==0.15.0' \
+  'scikit-learn==1.9.0' 'numpy==2.5.1' \
+  'in-toto==3.0.0' 'securesystemslib[crypto]==1.5.1'
+```
+
+Run this setup once in a new dedicated environment, not an existing historical
+experiment environment. Installation success is not native compatibility
+evidence. If platform wheels are unavailable, stop rather than substituting
+versions or interpreting the unavailable runtime as a scientific result.
+
+```sh
+PYTHONPATH=src .venv/bin/python scripts/run_model_load_validation.py prepare \
+  --root . --plan ../memory/model-load-validation-plan-v1.json \
+  --study-dir ../memory/model-load-validation-v1 \
+  --confirm-plan-sha256 7c9a3ae4d2078128c8d3df0e35f640b58b8aefc81d55b8c9cf0a89c4ea24743e
+
+PYTHONPATH=src .venv/bin/python scripts/run_model_load_validation.py preflight \
+  --root . --plan ../memory/model-load-validation-plan-v1.json \
+  --study-dir ../memory/model-load-validation-v1
+```
+
+Preparation makes exactly the fixed two fits but does not load either SDK's
+model. Inspect its returned `seal_sha256`, then use that exact value for the
+single native execution:
+
+```sh
+PYTHONPATH=src .venv/bin/python scripts/run_model_load_validation.py execute \
+  --root . --plan ../memory/model-load-validation-plan-v1.json \
+  --study-dir ../memory/model-load-validation-v1 \
+  --confirm-seal-sha256 EXACT_SHA_FROM_PREPARATION
+
+PYTHONPATH=src .venv/bin/python scripts/run_model_load_validation.py verify \
+  --root . --plan ../memory/model-load-validation-plan-v1.json \
+  --study-dir ../memory/model-load-validation-v1
+```
+
+Stdout is aggregate only; exact buffers, SDK messages and references remain in
+the one private study directory outside all Git checkouts. `terminalized` is not
+`verification=pass`, scientific admission or a new-checker advantage. The frozen
+22-load denominator, separate prevention branch, no-substitution rule and
+contribution stop remain in force. No result-based source, threshold or exclusion
+changes are permitted; an affected exposed unit becomes development and further
+design is forward. This bounded loader-format transfer does not require a new
+method frontier, and cannot demonstrate one by itself.
