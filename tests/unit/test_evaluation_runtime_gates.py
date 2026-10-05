@@ -207,12 +207,15 @@ def test_windows_evaluation_budget_accounts_for_durable_filesystem_cost(
     monkeypatch.setattr(runner.subprocess, "run", fake_run)
 
     assert runner.run_profile("evaluation") == 0
-    assert [call["timeout"] for call in calls] == [900]
+    assert [call["timeout"] for call in calls] == [1500]
 
 
+@pytest.mark.parametrize("platform,budget", [("posix", 900), ("nt", 1500)])
 def test_profile_timeout_is_a_blocking_failure(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
+    platform: str,
+    budget: int,
 ) -> None:
     runner = _runner_module()
     attempts = []
@@ -221,11 +224,11 @@ def test_profile_timeout_is_a_blocking_failure(
         attempts.append(kwargs["timeout"])
         raise subprocess.TimeoutExpired(args[0], kwargs["timeout"])
 
-    monkeypatch.setattr(runner.os, "name", "posix")
+    monkeypatch.setattr(runner.os, "name", platform)
     monkeypatch.setattr(runner.subprocess, "run", raise_timeout)
     assert runner.run_profile("evaluation", repeat=3) == 124
-    assert attempts == [900]
-    assert "900-second runtime budget" in capsys.readouterr().err
+    assert attempts == [budget]
+    assert f"{budget}-second runtime budget" in capsys.readouterr().err
 
 
 def test_selected_evaluation_tests_do_not_use_real_sleep() -> None:

@@ -610,6 +610,148 @@ PYTHONPATH=src python scripts/model_load_evidence_development.py collector \
   --root . --output PRIVATE_NEW_COLLECTOR_REPORT.json --repeats 3
 ```
 
+## Native-load cost and multi-attempt retention development — 2026-10-05
+
+`model_load_runtime_development.py` extends exposed development, not the consumed
+validation. It constructs fresh trusted local artifacts using the unchanged
+ORT/SKOPS adapter factory. No historical artifact is deserialized, no protected
+study is rerun, and no provider request occurs. The fixed census is two SDKs ×
+four observer arms × three fresh worker processes × three loads = **72 native
+loads in 24 processes**, plus two local preparation fits. Every planned load and
+failed worker remains in the report. An unresponsive worker has an **unknown**
+entry count, not an assumed zero. The final source-bound report completed 72/72
+loads and passed a read-only verifier that does not enter either loader.
+
+### Timing boundaries and findings
+
+The four arms are observer-work-disabled, hash-only, full receipt retention, and
+static sufficient retention. All use the same adapter shell and hooks; the
+disabled arm is **not an untouched native SDK baseline**. SDK imports, artifact
+preparation, database creation/registration, common control-hash verification
+and resource sampling are outside the measured load endpoint and are separately
+reported where applicable. A first load after import is not OS-cold storage.
+The two later samples deserialize fresh objects, not cache hits. Configuration
+order rotates across three process blocks; this is not a fully balanced Latin
+square or a population performance study.
+
+`sdk_load_ns` surrounds the public adapter load and includes observer callbacks
+and SDK initialization. `native_entry_ns` surrounds its nested native entry.
+`object_release_ns` is separate. `load_and_observer_ns` includes the SDK load,
+object release, closure receipt, query and checker; `read_to_decision_ns` adds the
+artifact read. Hash, capture/encoding, SQLite write/commit, query and checker
+phases are retained individually. Nested phases and independently calculated
+medians **must not be added** to reconstruct a total. Write timing includes
+deduplication and serialization, not a pure fsync microbenchmark. These endpoints
+do not measure signing costs for P, RSS, physical write volume or native throughput.
+
+Final-run medians of `load_and_observer_ns`, in milliseconds:
+
+| SDK / sample condition | Disabled | Hash-only | Full | Static sufficient |
+| --- | ---: | ---: | ---: | ---: |
+| ORT / first use after import | 1.512 | 1.602 | 2.881 | 3.016 |
+| ORT / later fresh object | 0.165 | 0.176 | 1.134 | 1.259 |
+| SKOPS / first use after import | 0.745 | 0.700 | 2.295 | 2.028 |
+| SKOPS / later fresh object | 0.219 | 0.239 | 1.248 | 1.309 |
+
+The two constructed artifact sizes are only 148 and 5,366 bytes. Later-sample
+hash medians are approximately 1–4 microseconds; durable receipt-write medians
+are approximately 0.82–0.90 milliseconds in this SQLite DELETE/FULL setting.
+Thus receipt persistence dominates the small-model observer cost **on this
+machine and configuration**, not necessarily for large artifacts or a long-lived
+collector. Full and static receive the same three receipts in this isolated root
+query; their timing differences do not establish a retention optimization.
+The negative SKOPS first-use hash-only delta is retained as observed noise, not
+a claim that hashing accelerates loading. Three process replicates and their
+within-process loads are not independent deployment samples. Full ranges and
+all samples remain in the private aggregate; no confidence interval, p95,
+steady-state convergence or production speedup is claimed.
+
+[Kalibera and Jones (ISMM 2013)](https://kar.kent.ac.uk/33611/45/p63-kaliber.pdf)
+distinguish variation at iteration and execution levels, motivating fresh-worker
+replicates and limited interpretation of small differences here. This pilot does
+not implement their precision-driven statistical procedure.
+
+### Query-service-dependent retention and concurrent safety
+
+`AttemptReceiptStore` declares the complete producer-attempt census and query
+service **before capture**. Two primary requests each have a root and two child
+attempts. Two producer threads generate a coordinated 26-event tape containing
+20 deliveries, parent closure before child completion, delayed parent conflict,
+child load, duplicate delivery and true foreign scope. Two auxiliary requests
+advance audit age and add six receipts. The twelve comparisons are full/static
+× children-only/root-and-children queries × horizons 0/2/8. Collector replay is
+serialized to match event order: this is **not a concurrent-native throughput
+benchmark**. Separate tests execute actual concurrent SQLite submit/snapshot
+operations and a snapshot-copy versus retirement race.
+
+All six matched full/static pairs preserve complete decisions, admitted evidence
+frames, and retrospective availability. At horizon two:
+
+| Primary query service | Full payload written | Static payload written | Reduction | Payload byte-steps, full / static |
+| --- | ---: | ---: | ---: | ---: |
+| Children only | 6,569 B | 5,341 B | 18.69% | 230,817 / 173,186 |
+| Root and children | 6,569 B | 6,295 B | 4.17% | 273,762 / 261,432 |
+
+The matched sampling counts are 65 and 75 respectively; serialized bookkeeping
+adds 50,787 and 64,545 byte-steps to **both** policies in the corresponding service.
+Physical main-database peaks are identical at 28,672 bytes, so logical savings
+do not imply a smaller disk file. When root queries are required, all root
+load/closure receipts must remain; the remaining 274-byte difference removes
+only a foreign-scope receipt. The older single-query pilot's 25.05% is therefore
+not a transferable guarantee. Sufficiency depends on the declared query service,
+not merely on current child verdicts.
+
+For the same requested audit ages zero/one/two, horizons 0/2/8 serve 0/12, 8/12,
+12/12 child-only queries or 0/18, 12/18, 18/18 root-expanded queries. Every available
+query preserves its earlier admitted frame and decision. Reduced retention
+changes audit service, not free efficiency at equal coverage. A copied early-root
+deletion control turns a previously compliant child into unknown; it does not
+mutate the real collector or repair immutable validation results.
+
+One lock covers lifecycle admission, SQLite writes, fetch-all snapshot copies,
+release and retirement; no live cursor escapes to the checker. This follows the
+relevant [SQLite isolation constraint](https://www.sqlite.org/isolation.html):
+modifying a shared connection while stepping a query is not a safe snapshot
+contract. Attempt settlement alone never permits retirement. Request draining
+requires all declared attempts settled and no pending delivery, including
+filtered or already-visible duplicate deliveries. The caller must still provide
+a truthful no-future-descendant/no-future-delivery barrier; this is not a
+distributed watermark or crash-recovery protocol. Conflict variants and distinct
+occurrences survive deduplication. Expired audits fail explicitly rather than
+returning a cached guess. The implementation is bounded to 64 requests, 128
+attempts, 4,096 deliveries and 8,192 bytes per receipt; retained tombstones are
+counted, not an unbounded production-memory guarantee.
+
+### Disposition and reproducibility
+
+**Development slice complete; static sufficient/S remains the default.** This
+adds measured native endpoints and multi-attempt safety evidence, not a new
+checker, adaptive optimizer, production frontier or automatic Paper B/U unlock.
+The immutable validation remains S = T = P, 18/22 after delivery with four unknown
+violations. Preserve that result and its limitations.
+
+The aggregate binds all directly used code and contains samples/resources but
+no raw model bytes, credentials or local paths. Verification rebuilds fixed
+censuses, endpoint keys, sample/worker failure consistency, summary and matched
+retention queries; it does not independently remeasure wall-clock timings or
+authenticate a maliciously rewritten report. Earlier engineering runs remain
+private immutable records: the final run follows endpoint/verifier hardening,
+with the same fixed census and no outcome-based arm or replicate selection.
+Three worker contexts covered twelve logical research/prototype/assurance roles;
+the lead integrated and tested the final code, not twelve independent reviewers.
+
+```sh
+PYTHONPATH=src python scripts/model_load_runtime_development.py run \
+  --root . --report PRIVATE_NEW_RUNTIME_DEVELOPMENT_REPORT.json
+
+PYTHONPATH=src python scripts/model_load_runtime_development.py verify \
+  --root . --report PRIVATE_COMPLETED_RUNTIME_DEVELOPMENT_REPORT.json
+```
+
+Run requires the pinned local ORT/SKOPS development environment. Verification
+only reads the aggregate and code. Both refuse the repository and historical
+validation store as report destinations; run refuses replacing an existing report.
+
 Outputs are aggregate, immutable, capped at four MiB and outside the repository.
 Closeout output must also be outside the original study. No new execution seal,
 protected attempt or API credential is needed for these read-only/development

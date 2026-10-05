@@ -15,7 +15,9 @@ _ROOT: Final = Path(__file__).resolve().parents[1]
 # The optional native-provenance tests enlarged the complete profile; CI 3.12
 # reached the former 600-second cap near completion. Keep a bounded 15 minutes.
 _EVALUATION_TIMEOUT_SECONDS: Final = 900
-_WINDOWS_EVALUATION_TIMEOUT_SECONDS: Final = 900
+# Windows durable-file tests exhausted 900 seconds near 95% of the complete
+# profile. Keep every test and failure gate; bound this slower platform at 25 min.
+_WINDOWS_EVALUATION_TIMEOUT_SECONDS: Final = 1500
 _REPRODUCIBILITY_HASH_SEEDS: Final = ("1", "104729", "209759")
 _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
     "contract": (
@@ -168,6 +170,10 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_model_load_retention.py",
         "tests/unit/test_model_load_retention_development.py",
         "tests/integration/test_model_load_evidence_development_local.py",
+        "tests/unit/test_model_load_attempt_retention.py",
+        "tests/unit/test_model_load_retention_concurrency.py",
+        "tests/unit/test_model_load_runtime_cost.py",
+        "tests/integration/test_model_load_runtime_development_local.py",
         "tests/integration/test_model_load_validation_local.py",
         "tests/unit/test_native_cache_extraction.py",
         "tests/unit/test_native_cache_experiment.py",
