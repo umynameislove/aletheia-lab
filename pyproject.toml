@@ -57,6 +57,14 @@ provenance = [
   "in-toto==3.0.0",
   "securesystemslib[crypto]==1.5.1"
 ]
+application = [
+  "mlserver==1.7.1",
+  "mlserver-sklearn==1.7.1",
+  "joblib==1.6.0",
+  "httpx==0.27.2",
+  "in-toto==3.0.0",
+  "securesystemslib[crypto]==1.5.1"
+]
 
 [project.scripts]
 aletheia = "aletheia_lab.cli:app"
