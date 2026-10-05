@@ -883,3 +883,88 @@ checkpoints remain private; the final aggregate follows CLI/optional-runtime
 hardening with the same fixed source, arms and census, not favorable outcome
 selection. Historical
 validation, model artifacts and results are unchanged.
+
+## Read-only research acceptance and synthetic handoff checks
+
+The acceptance command pins a historical document to a **caller-supplied accepted
+canonical identity**. A document that merely recomputes its own hash is not an
+accepted replacement. It reads bounded JSON only and rejects duplicate members,
+nonfinite numbers, symlink inputs and repository-local research receipts. The
+output contains allowlisted aggregate endpoints, opaque hashes and the original
+scientific disposition, not retained rows, buffers, SDK messages, local paths or
+private keys. No new receipt, model fit, native load or provider request is made.
+
+Two operations are deliberately distinct:
+
+- Default replay invokes the existing artifact-specific verifier. Validation
+  requires the original plan and sealed study; closeout additionally binds the
+  accepted parent result and independently rebuilds its descriptive ablations.
+  Missing dependencies, changed historical source bindings or changed endpoints
+  fail closed. Replay does not silently degrade to identity-only inspection.
+- `--identity-only` checks the accepted document identity and typed summary. Its
+  status is `pinned_summary_only_not_replayed`, never a historical replay pass.
+  This can inspect a prior artifact without its optional SDK environment, but
+  does not reproduce its original runtime or source checks.
+
+Each rate keeps its own unit and denominator. Observability coverage uses
+load-eligible attempts, while its verdict histogram includes cache episodes;
+both denominators are explicit. Validation slots, observation-load comparisons,
+native entries and prevention opportunities are separate. Application HTTP
+outcomes, definite load decisions and `no_new_load` remain separate; native
+totals are labelled **known** and retain incomplete-census flags. Unknown
+retention comparisons and failed samples remain visible. No cross-study pooling
+or inference of an independent deployment count is performed.
+
+Validation and historical provenance replay perform fresh local in-toto rule
+checks with ephemeral signatures. This is not independent verification of
+retained historical signatures. Application replay instead reconstructs the
+represented rule-result consistency. These boundaries follow the declared
+layout and artifact-flow scope of [in-toto, §3.2–4](https://www.usenix.org/system/files/sec19-torres-arias.pdf);
+they do not authenticate a hostile capture host or observe absent buffers.
+
+```sh
+PYTHONPATH=src python scripts/accept_model_load_research.py receipt \
+  --root . --kind validation --receipt PRIVATE_RESULTS.json \
+  --expected-sha256 ACCEPTED_CANONICAL_SHA256 \
+  --plan PRIVATE_ORIGINAL_PLAN.json --study PRIVATE_ORIGINAL_STUDY
+```
+
+Use each artifact's original compatible environment, not an arbitrary current
+interpreter. The supported kinds are observability, provenance, validation,
+closeout, runtime and application. The accepted identity must come from the
+prior research checkpoint, not from a new candidate file. This command does
+not install dependencies, repair old source bindings, rerun protected outcomes
+or admit a scientific mechanism.
+
+### Selected canonical product-view acceptance
+
+The repository fixture `tests/fixtures/research_acceptance/synthetic_product_view.json`
+is the existing public synthetic project-audit handoff, not a research result.
+Its family denominator stays `null/not_estimated`; contexts, outputs and claims
+are distinct dimensions. Selected checks reject causal promotion, non-mock
+external execution, hidden/evaluator fields, unauthorized or dangling citations,
+foreign snapshot/turn references and invalid graph endpoint types. Noncausal
+graph relations and relative evidence references are checked against the same
+visible facts, consistent with the typed provenance relationships in
+[W3C PROV-DM, §5.2 and §7](https://www.w3.org/TR/prov-dm/).
+
+```sh
+PYTHONPATH=src python scripts/accept_model_load_research.py synthetic-view \
+  --reference tests/fixtures/research_acceptance/synthetic_product_view.json \
+  --candidate CANDIDATE_CANONICAL_PRODUCT_VIEW.json
+```
+
+The caller supplies the trusted reference. A candidate must match its full
+canonical JSON, including disposition, missing evidence and scope. Matching
+only hashes of evidence or aggregate counts is insufficient: synthetic tests
+keep those fingerprints unchanged while altering selection policy, citation
+authority or causal wording. Missing closure stays unknown; closed cache reuse
+stays `no_new_load`; HTTP failure is not automatically an artifact violation.
+The command rejects unsupported changes rather than repairing them.
+
+This is a bounded synthetic compatibility check, **not** a general DTO/privacy
+validator, a ResultEnvelope implementation, a scientific-report ingest adapter,
+or an executed ProductService/table/graph/export integration. Screenshots and
+arbitrary export formats are not canonical ProductViews. Real consumers must
+later supply their canonical projections through the existing product contract;
+successful fixture tests cannot mark those consumers accepted.

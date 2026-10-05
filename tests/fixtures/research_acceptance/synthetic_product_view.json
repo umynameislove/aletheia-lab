@@ -1,0 +1,88 @@
+{
+  "schema_version": "p6-product-view/v1",
+  "demo_only": true,
+  "mode": "project_audit",
+  "visibility": "diagnosis",
+  "project": {
+    "id": "demo-project-001",
+    "display_name": "Synthetic ML project"
+  },
+  "snapshot": {
+    "id": "demo-snapshot-after",
+    "baseline_id": "demo-snapshot-before",
+    "sha256": "70632c21a11eedb5491926cd1786ea755e6c384398f6d3a352e47d64689d8f02"
+  },
+  "runtime": {
+    "provider": "deterministic_mock",
+    "model": "synthetic-demo-only",
+    "external_call": false
+  },
+  "result": {
+    "id": "demo-result-001",
+    "status": "complete",
+    "disposition": "abstain",
+    "causal_status": "unverified",
+    "summary": "A validation metric decreased, but the visible evidence cannot identify one cause.",
+    "denominators": {
+      "independent_families": null,
+      "contexts": 1,
+      "outputs": 1,
+      "claims": 1
+    },
+    "allowed_wording": "The synthetic validation metric decreased between snapshots.",
+    "forbidden_wording": "The mapping configuration caused the decrease.",
+    "caveat": "Synthetic product fixture; no causal ground truth or model-quality result."
+  },
+  "conversation": {
+    "id": "demo-conversation-001",
+    "turns": [
+      {
+        "id": "demo-turn-001",
+        "snapshot_id": "demo-snapshot-after",
+        "question": "What explains the validation decrease?",
+        "answer": "The decrease is observed; its cause remains unverified.",
+        "abstained": true,
+        "visible_evidence_ids": ["demo-evidence-metric"],
+        "missing_evidence": ["A checked mapping trace and a controlled recomputation"]
+      }
+    ]
+  },
+  "claims": [
+    {
+      "id": "demo-claim-001",
+      "turn_id": "demo-turn-001",
+      "text": "The synthetic validation accuracy fell from 0.82 to 0.74.",
+      "epistemic_state": "observed",
+      "support": "fully_supported",
+      "citation_ids": ["demo-evidence-metric"],
+      "counterevidence_ids": [],
+      "missing_evidence": [],
+      "max_strength": "observation"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "demo-evidence-metric",
+      "kind": "metric_observation",
+      "title": "Synthetic validation accuracy comparison",
+      "text": "Synthetic validation accuracy changed from 0.82 to 0.74.",
+      "relative_path": "metrics/validation.json",
+      "source_sha256": "40c9ff8c85c45963daf85e4145f640259409da5c25e2c0c3d90e4baeba4e5ab1",
+      "visibility": "diagnosis",
+      "redacted": false
+    }
+  ],
+  "graph": {
+    "nodes": [
+      {"id": "demo-node-snapshot", "kind": "Snapshot", "source_id": "demo-snapshot-after", "visibility": "diagnosis"},
+      {"id": "demo-node-evidence", "kind": "EvidenceItem", "source_id": "demo-evidence-metric", "visibility": "diagnosis"},
+      {"id": "demo-node-claim", "kind": "AtomicClaim", "source_id": "demo-claim-001", "visibility": "diagnosis"},
+      {"id": "demo-node-disposition", "kind": "Disposition", "source_id": "demo-result-001", "visibility": "diagnosis"}
+    ],
+    "edges": [
+      {"id": "demo-edge-observed", "kind": "OBSERVED_IN", "source": "demo-node-evidence", "target": "demo-node-snapshot", "visibility": "diagnosis"},
+      {"id": "demo-edge-cites", "kind": "CITES", "source": "demo-node-claim", "target": "demo-node-evidence", "visibility": "diagnosis"},
+      {"id": "demo-edge-disposition", "kind": "ASSIGNED_DISPOSITION", "source": "demo-node-claim", "target": "demo-node-disposition", "visibility": "diagnosis"}
+    ]
+  }
+}
