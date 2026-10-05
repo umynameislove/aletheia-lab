@@ -332,11 +332,20 @@ def test_skops_block_does_not_load_or_record_completion(skops_stub: Any) -> None
 
 @pytest.mark.parametrize("backend", ["onnxruntime", "skops"])
 @pytest.mark.parametrize(
-    "payload", [b"", bytearray(b"mutable"), memoryview(b"view"), b"x" * 262_145]
+    "payload",
+    [b"", bytearray(b"mutable"), memoryview(b"view"), b"x" * 262_145],
+    ids=["empty", "mutable-bytearray", "memoryview", "oversized"],
 )
 def test_invalid_artifact_never_imports_loader_or_calls_hooks(
-    backend: str, payload: Any, monkeypatch: pytest.MonkeyPatch
+    backend: str,
+    payload: Any,
+    monkeypatch: pytest.MonkeyPatch,
+    request: pytest.FixtureRequest,
 ) -> None:
+    # Pytest exports this node ID during every phase; Windows limits each env value.
+    # Keep the oversized buffer intact, but never include its bytes in the node ID.
+    assert len(request.node.nodeid + " (teardown)") < 512
+
     def unexpected(*_: Any) -> Any:
         raise AssertionError("invalid buffer reached loader import or native hook")
 
