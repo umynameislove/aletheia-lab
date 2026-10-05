@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import json
 import subprocess
 import sys
@@ -102,10 +103,26 @@ def test_windows_job_budget_cannot_truncate_the_final_publication_gate() -> None
     windows_job = jobs.get("windows-project")
     assert isinstance(windows_job, dict)
 
-    # Evaluation retains its own 25-minute Windows fail-closed budget. The aggregate
-    # job also has to cover setup, project checks, data preparation, and the
-    # publication profile that follows evaluation.
-    assert windows_job.get("timeout-minutes") == 35
+    # Bind the aggregate limit to the runner's actual Windows budget, not just
+    # a second copy of a duration that could silently become inconsistent.
+    runner = ast.parse(_PROFILE_SCRIPT.read_text(encoding="utf-8"))
+    evaluation_budget = next(
+        ast.literal_eval(node.value)
+        for node in runner.body
+        if isinstance(node, ast.AnnAssign)
+        and isinstance(node.target, ast.Name)
+        and node.target.id == "_WINDOWS_EVALUATION_TIMEOUT_SECONDS"
+    )
+    assert evaluation_budget == 2100
+    assert windows_job.get("timeout-minutes") == 50
+    assert windows_job["timeout-minutes"] * 60 - evaluation_budget >= 15 * 60
+
+    steps = windows_job.get("steps")
+    assert isinstance(steps, list)
+    commands = [str(step.get("run", "")) for step in steps if isinstance(step, dict)]
+    assert commands.index("python scripts/run_test_profile.py evaluation") < commands.index(
+        "python scripts/run_test_profile.py windows-publication"
+    )
 
 
 def test_evaluation_reproducibility_and_compatibility_are_distinct_gates() -> None:

@@ -756,3 +756,130 @@ Outputs are aggregate, immutable, capped at four MiB and outside the repository.
 Closeout output must also be outside the original study. No new execution seal,
 protected attempt or API credential is needed for these read-only/development
 commands. An original native validation execution must not be repeated.
+
+## External application development: MLServer
+
+This is a bounded transfer into an externally authored application, not another
+author-written SDK scheduler or a deployed-incident benchmark. The application is
+[MLServer 1.7.1 at commit 1d1f3ee42f96744d809aca941ed2925347d198e9](https://github.com/SeldonIO/MLServer/tree/1d1f3ee42f96744d809aca941ed2925347d198e9),
+Apache-2.0. Six installed source files are checked byte-for-byte against that
+commit: registry, repository, repository handlers, DataPlane, REST app and sklearn
+runtime. The release-wheel digest is public provenance metadata, not a claim that
+this runner independently verified the downloaded wheel. The source was selected
+for its actual load/reload/resident-object/cache lifecycle, not for a positive
+checker gap.
+
+The runner invokes real ASGI REST handlers, with `parallel_workers=0` and native
+response caching enabled. It follows repository load through the application
+registry to `SKLearnModel.load` and Joblib, and inference through DataPlane.
+It does not replace these handlers with a fixture. There is no bound socket
+server, gRPC, Kafka, tracing collector or multiprocess serving deployment.
+Outbound socket connections are denied and counted in each worker.
+
+### Native policy, research overlay and capture boundary
+
+Native MLServer uses mutable model name/version/URI settings. A successful
+explicit reload replaces the resident object; changing a file alone does not
+reload it, and a failed reload can retain the prior object. Native inference can
+reuse a cached response. The runner verifies these relations, including original
+prediction-computation counts: equal responses alone do not prove a cache hit.
+See the pinned [registry](https://raw.githubusercontent.com/SeldonIO/MLServer/1d1f3ee42f96744d809aca941ed2925347d198e9/mlserver/registry.py)
+and [DataPlane](https://raw.githubusercontent.com/SeldonIO/MLServer/1d1f3ee42f96744d809aca941ed2925347d198e9/mlserver/handlers/dataplane.py).
+
+The **operator byte-pin is a declared research overlay**, not an authorization
+policy promised by MLServer. At a successful explicit load, a snapshot of the
+opened descriptor must match that pin. Cache/resident inference without a new
+load is `no_new_load`, not newly established whole-serving compliance.
+
+Only fresh trusted, bounded, uncompressed, single-file artifacts are admitted;
+the opened inode must remain immutable from first open through reconstruction.
+The observer snapshots the descriptor without replacing the original unpickler's
+stream or arguments. It rejects unsupported descriptors, offsets and mmap use.
+Normal native/captured lifecycles agree on all observed responses, object
+relations and counts. Both have the common diagnostic profiler, so this checks
+observed lifecycle transparency, **not zero observer overhead**.
+
+The immutable-inode condition is substantive. A regression counterexample
+overwrites the same inode after Joblib has buffered bytes: a descriptor snapshot
+can then see B while the original stream reconstructs A. Stat checks around the
+snapshot cannot certify absence of an earlier completed write. Consequently
+this observer does **not** prove every consumed byte or support arbitrary
+concurrent in-place writers. The admitted critical control uses atomic pathname
+replacement while the already-open inode remains unchanged.
+
+The private raw sink and reference predicate are separate from receipt/checker
+decisions, but share trusted instrumentation and the local host. S and adapted
+in-toto receive the same pin, descriptor digest and occurrence census. Real
+in-toto signatures/rules are verified during execution; ephemeral signing files
+are discarded. Replay checks report integrity and represented rule-result
+consistency, not independent re-verification of retained signatures or hostile
+host attestation. Modelstamp is not reproduced by this experiment.
+
+### Complete census and bounded result
+
+Two fresh local fits prepare A/B before the comparative outcomes. The fixed four
+arms are native, captured, path-legal and path-replaced. Each normal arm has twelve
+REST operations; each critical-pair arm has seven. The completed development
+aggregate has:
+
+| Endpoint | Observed result |
+| --- | --- |
+| Application/source clusters | 1; dependent authored controls |
+| REST operations | 38/38; six HTTP failures retained |
+| Actual Joblib loads / reconstruction entries | 6 / 6; declared upper allowance 8 |
+| Snapshot bytes | 2,268; not peak memory or total IO |
+| Matched instrumented operation decisions | S = P = reference on 26/26 |
+| Successful explicit loads within that comparison | 4: three compliant, one overlay violation |
+| Other operations | 22 `no_new_load`; includes one failed explicit reload |
+| Actual in-toto verifier calls | 4 |
+| Provider calls / socket connection attempts | 0 / 0 |
+
+The missing-file reload returns 422 **before** entering Joblib. It is retained
+as an application failure and zero native loads, not counted as an unpickler
+failure or silently dropped. Four post-unload inference failures return 404.
+Incomplete worker execution retains the planned 38/26 denominators and reports
+an unknown partial native census rather than claiming zero calls.
+
+The legal and replaced controls share the declared path/metadata frame: settings,
+native metadata, readiness/load status and pre/post pathname hashes. They have
+different opened-descriptor snapshots. Their predictions also differ (`[0,0]`
+versus `[1,1]`) and are excluded from that explicit ablation. Therefore the finding
+is **not** indistinguishability of all application evidence or a native MLServer
+policy violation. S and strong adapted provenance close this ablation equally.
+
+**Disposition: bounded application capture transfer, no new checker advantage.**
+This extends the earlier controlled loader evidence into real application
+handlers and exposes a capture-assumption counterexample. It does not establish
+natural-incident prevalence, an independent deployment benchmark, a new theorem,
+an algorithmic advantage, a production cost frontier or a second-paper result.
+The byte/count endpoints above are not wall-clock overhead measurements; earlier
+ORT/SKOPS cost estimates are not transferred to MLServer.
+
+### Reproduction and verification
+
+The optional `application` extra pins MLServer, sklearn runtime, Joblib, httpx,
+in-toto and securesystemslib separately from the historical MLflow environment.
+The public CLI accepts only `run` and `verify`; workers are internal and receive
+the artifacts freshly generated by the parent, not caller-supplied pickle files.
+The interface is not a security boundary against someone controlling Python or
+the host. Run refuses an existing report or a repository destination. Verify
+does not deserialize snapshots or modify the report; it binds source, contract,
+versions, code, occurrences and complete decisions.
+
+```sh
+PYTHONPATH=src python scripts/model_load_application.py run \
+  --root . --report PRIVATE_NEW_APPLICATION_REPORT.json
+
+PYTHONPATH=src python scripts/model_load_application.py verify \
+  --root . --report PRIVATE_COMPLETED_APPLICATION_REPORT.json
+```
+
+The dedicated Linux application CI job requires exact runtime/source preflight
+and subprocess-aware coverage; the existing Linux/Windows gates remain intact.
+Local application tests: **52 passed, 92.31% coverage** across the three modules,
+including actual native-worker lines; **68 contract tests** passed. These local
+checks do not assert remote CI or native Windows qualification. Engineering
+checkpoints remain private; the final aggregate follows CLI/optional-runtime
+hardening with the same fixed source, arms and census, not favorable outcome
+selection. Historical
+validation, model artifacts and results are unchanged.

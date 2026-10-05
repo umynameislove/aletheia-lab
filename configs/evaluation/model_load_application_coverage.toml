@@ -1,0 +1,9 @@
+# Dedicated native-application gate; do not alter historical matrix coverage.
+[tool.coverage.run]
+patch = ["subprocess"]
+parallel = true
+include = ["*/aletheia_lab/evaluation/model_load_application*.py"]
+
+[tool.coverage.report]
+fail_under = 88
+show_missing = true

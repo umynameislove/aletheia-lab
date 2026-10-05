@@ -15,11 +15,17 @@ _ROOT: Final = Path(__file__).resolve().parents[1]
 # The optional native-provenance tests enlarged the complete profile; CI 3.12
 # reached the former 600-second cap near completion. Keep a bounded 15 minutes.
 _EVALUATION_TIMEOUT_SECONDS: Final = 900
-# Windows durable-file tests exhausted 900 seconds near 95% of the complete
-# profile. Keep every test and failure gate; bound this slower platform at 25 min.
-_WINDOWS_EVALUATION_TIMEOUT_SECONDS: Final = 1500
+# Windows CI reached 97% of the complete profile before exhausting 1500 seconds.
+# Preserve the census and allow filesystem-heavy checks a bounded 35 minutes;
+# the CI job reserves another 15 minutes for setup and publication checks.
+_WINDOWS_EVALUATION_TIMEOUT_SECONDS: Final = 2100
 _REPRODUCIBILITY_HASH_SEEDS: Final = ("1", "104729", "209759")
 _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
+    "application": (
+        "tests/unit/test_model_load_application_capture.py",
+        "tests/unit/test_model_load_application_analysis.py",
+        "tests/integration/test_model_load_application_local.py",
+    ),
     "contract": (
         "tests/unit/test_filesystem_publication.py",
         "tests/unit/test_evaluation_attempt_store_architecture.py",
@@ -155,6 +161,9 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_source_evidence_acquisition.py",
         "tests/unit/test_source_evidence_sequential.py",
         "tests/unit/test_model_load_contract.py",
+        "tests/unit/test_model_load_application_capture.py",
+        "tests/unit/test_model_load_application_analysis.py",
+        "tests/integration/test_model_load_application_local.py",
         "tests/unit/test_model_load_observability.py",
         "tests/integration/test_model_load_observability_local.py",
         "tests/unit/test_model_load_provenance.py",
@@ -249,6 +258,35 @@ def _evaluation_timeout_seconds() -> int:
     return _EVALUATION_TIMEOUT_SECONDS
 
 
+def _run_windows_evaluation(
+    command: tuple[str, ...], environment: dict[str, str] | None, timeout: int
+) -> int:
+    """Own the pytest coordinator until its Windows worker tree is terminated."""
+
+    process = subprocess.Popen(command, cwd=_ROOT, env=environment)
+    try:
+        return process.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        # subprocess.run would kill the coordinator before we can terminate its
+        # descendants. Target only this newly spawned PID, never an image name.
+        try:
+            subprocess.run(
+                ("taskkill", "/PID", str(process.pid), "/T", "/F"),
+                check=True,
+                capture_output=True,
+                timeout=15,
+            )
+        except (OSError, subprocess.SubprocessError):
+            print("Windows evaluation tree cleanup failed", file=sys.stderr)
+        try:
+            if process.poll() is None:
+                process.kill()
+            process.wait(timeout=15)
+        except (OSError, subprocess.SubprocessError):
+            print("Windows evaluation coordinator cleanup failed", file=sys.stderr)
+        raise
+
+
 def run_profile(
     profile: str,
     extra: tuple[str, ...] = (),
@@ -271,13 +309,17 @@ def run_profile(
             )
         started = time.monotonic()
         try:
-            completed = subprocess.run(
-                command,
-                cwd=_ROOT,
-                check=False,
-                env=environment,
-                timeout=timeout,
-            )
+            if profile == "evaluation" and os.name == "nt":
+                assert timeout is not None
+                returncode = _run_windows_evaluation(command, environment, timeout)
+            else:
+                returncode = subprocess.run(
+                    command,
+                    cwd=_ROOT,
+                    check=False,
+                    env=environment,
+                    timeout=timeout,
+                ).returncode
         except subprocess.TimeoutExpired:
             print(
                 f"{profile} profile exceeded its {timeout}-second runtime budget",
@@ -290,8 +332,8 @@ def run_profile(
                 f"evaluation run {run_index + 1}/{repeat} completed in {elapsed:.3f}s",
                 flush=True,
             )
-        if completed.returncode != 0:
-            return completed.returncode
+        if returncode != 0:
+            return returncode
     return 0
 
 

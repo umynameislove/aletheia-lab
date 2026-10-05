@@ -16,6 +16,26 @@ permissions:
   contents: read
 
 jobs:
+  # Keep the external application dependency slice isolated from historical
+  # MLflow environments. Actual handlers run on Linux; Windows race is not qualified.
+  application:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install pinned application runtime
+        run: python -m pip install -e ".[dev,application]" "pytest-cov>=7.0" "coverage>=7.10.6"
+      - name: Require exact application runtime and upstream source
+        run: >-
+          python -c "from aletheia_lab.evaluation.model_load_application_analysis import environment; environment()"
+      - name: Test actual application and hash-only replay
+        run: >-
+          python scripts/run_test_profile.py application --
+          --cov --cov-config=configs/evaluation/model_load_application_coverage.toml
+          --cov-report=term-missing --cov-fail-under=88
   # ---------------------------------------------------------------------------
   # Matrix job — runs full pytest and strict mypy on every supported Python.
   # Cache key includes python-version so each interpreter gets its own cache.
@@ -85,8 +105,9 @@ jobs:
   windows-project:
     runs-on: windows-latest
     # This serial job includes install, dataset preparation, the independently
-    # bounded 25-minute evaluation profile, and the publication profile.
-    timeout-minutes: 35
+    # bounded 35-minute evaluation profile, and the publication profile. Keep
+    # 15 minutes outside evaluation rather than racing the aggregate ceiling.
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6

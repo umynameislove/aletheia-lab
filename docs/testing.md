@@ -30,7 +30,7 @@ python scripts/run_test_profile.py evaluation
   contract tests. Two pytest-xdist workers run the complete profile, grouping
   tests by module/class to reuse scoped fixtures. Verbose progress identifies
   tests even when a timeout prevents the final slow-test report. The whole run
-  retains its ten-minute POSIX and fifteen-minute Windows timeout; workers do not
+  retains its 15-minute POSIX and 35-minute Windows timeout; workers do not
   receive separate budgets. Install the `dev` extra to include pytest-xdist.
 - `windows-publication` exercises the shared filesystem primitive and every
   immutable store whose durability behavior differs across Windows and POSIX.
@@ -70,8 +70,10 @@ times under distinct process hash seeds:
 python scripts/run_test_profile.py evaluation --repeat 3
 ```
 
-The enforced budget is at most ten minutes per evaluation run on a reasonable
-POSIX development or CI machine and twelve minutes on Windows CI. Ordinary
+The enforced budget is 15 minutes per evaluation run on POSIX and 35 minutes
+on Windows. The Windows profile exhausted its former 25-minute limit at 97%
+completion; this platform allowance preserves the complete census and blocking
+failure/timeout behavior, not a promise about future runner speed. Ordinary
 unit/property tests target two seconds, and deterministic fixture-provider
 integration paths target 15 seconds. The profile output is the runtime report;
 investigate its top 20 entries rather than reducing property examples or
@@ -103,10 +105,16 @@ for Python 3.12 compatibility, and runs once in the blocking Windows job. The
 contract profile runs before dataset acquisition on both Linux interpreters.
 The dedicated Windows publication profile replaces an unversioned list of test
 paths. Pip caches are keyed from `pyproject.toml`; dependency-audit logs include
-the exact resolved inventory digest. The serial Windows job has a 35-minute
+the exact resolved inventory digest. The serial Windows job has a 50-minute
 aggregate ceiling so setup, dataset preparation, the independently bounded
-15-minute evaluation profile, and the final publication profile can all
-complete. This aggregate ceiling does not relax any profile or assertion.
+35-minute evaluation profile, and the final publication profile have separate
+headroom. A contract binds the job ceiling to the runner budget with at least
+15 minutes reserved outside evaluation and keeps publication after evaluation.
+Windows evaluation owns its pytest coordinator until timeout cleanup targets
+that PID and its worker tree, before reaping the coordinator. Cleanup has its
+own bounded waits; a tree-cleanup failure is reported, not treated as success.
+Timeouts still return exit code 124; failing tests still stop repetitions and
+fail CI. No profile, assertion, coverage floor or repeat gate was removed.
 
 ## Runtime interpretation
 
