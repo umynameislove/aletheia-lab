@@ -272,10 +272,30 @@ def test_native_output_captures_os_descriptors_and_restores_them(
             print("python stdout", flush=True)
             os.write(1, b"native stdout\n")
             os.write(2, b"native stderr\n")
-        assert messages == {"stdout": "python stdout\nnative stdout\n", "stderr": "native stderr\n"}
+        # Python's ordinary text stream translates newlines on Windows;
+        # os.write emits its literal bytes. Capture must preserve both.
+        assert messages == {
+            "stdout": f"python stdout{os.linesep}native stdout\n",
+            "stderr": "native stderr\n",
+        }
         assert [os.fstat(fd) for fd in (1, 2)] == before
         with pytest.raises(ValueError, match="native output exceeds"), native_output(tmp_path):
             os.write(1, b"x" * 262145)
+        assert [os.fstat(fd) for fd in (1, 2)] == before
+
+
+@pytest.mark.parametrize("raw", [b"LF\nCRLF\r\n", b"CRLF\r\nLF\n"])
+def test_native_output_preserves_mixed_line_endings(
+    tmp_path: Path,
+    capfd: pytest.CaptureFixture[str],
+    raw: bytes,
+) -> None:
+    with capfd.disabled():
+        before = [os.fstat(fd) for fd in (1, 2)]
+        with native_output(tmp_path) as messages:
+            os.write(1, raw)
+            os.write(2, raw)
+        assert messages == {"stdout": raw.decode("utf-8"), "stderr": raw.decode("utf-8")}
         assert [os.fstat(fd) for fd in (1, 2)] == before
 
 
