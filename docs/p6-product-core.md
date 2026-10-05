@@ -134,6 +134,89 @@ technical-failure invariants exist; K03 does not pre-commit that later shape.
   integrity mismatch, and concurrent source changes fail closed with safe
   `ProductError` values that do not retain raw internal exceptions.
 
+## K05 evidence visibility bridge
+
+K05 adds a product-owned, payload-free projection over the persisted P3
+`ProjectEvidenceBundle`. It does not change the nine `ProductService` method
+signatures or lock the complete `p6-product-view/v1` shape ahead of K06.
+
+The internal `p6-evidence-projection/v1` DTO contains:
+
+- `evidence_bundle_id`, `project_id`, and the authorized `visibility`;
+- stable evidence `id`, `role`, `source_id`, `source_sha256`, provenance links,
+  visibility, and redaction state for each visible item;
+- explicit `missing_categories` and `omitted_categories` without hidden item IDs;
+- `projection_sha256`, derived from canonical JSON for the complete projection.
+
+The generic projector preserves the P3 lattice
+`public < diagnosis < evaluator` for verification, while the persisted product
+bridge always selects `diagnosis`. Removing a hidden provenance dependency also
+removes every dependent item until the projected graph is closed, so an allowed
+item cannot retain a dangling link to an evaluator-only item.
+
+`ProductEvidenceReferences` binds `citation_ids`, `counterevidence_ids`, and
+`visible_evidence_ids` to one exact `projection_sha256`. Citation and
+counterevidence sets are disjoint, both are subsets of the visible evidence
+scope, and every ID must exist in the same authorized projection. Hidden,
+dangling, or cross-project IDs fail with one safe product error and are never
+echoed back.
+
+The store bridge resolves one exact `project_id` and `snapshot_id`, reloads the
+snapshot and evidence records through `ProjectStore`, verifies the evidence
+snapshot hash, rejects ambiguous generations, and maps missing/foreign scope or
+tampering to stable `ProductError` values. It never returns an evaluator
+projection and never exposes the source root or raw store exception.
+
+Security integration uses only synthetic inputs and covers instruction-like
+README/log text, a synthetic withheld credential, PII redaction, and a JSON
+payload scan. Imported text remains inert data and does not enter the product
+evidence DTO. K06 consumes this filtered projection; expanded claim graph
+semantics and reports remain owned by K07 and K10 rather than being fabricated
+in K05.
+
+## K06 immutable ProductView and deterministic analysis
+
+K06 locks the exact `p6-product-view/v1` DTO used by `demo_view`,
+`analyze_mock`, and `view`. The shared fixture is
+`tests/fixtures/synthetic_p6_view.json`, with SHA-256
+`634876aa5033fc62dbf74add537a4733957e1082a718d01b8ef44a6c8464fc3c`.
+An identical packaged copy supplies the offline demo; every call validates and
+returns a fresh value, so caller mutation cannot change later responses.
+
+The schema is strict and immutable. It rejects missing, extra, or incorrectly
+typed fields; duplicate IDs; dangling citations, counterevidence, graph edges,
+or graph sources; evaluator-visible evidence; and unsupported causal graph
+edges. `independent_families` is explicitly `null`. Runtime metadata states
+that analysis is a deterministic mock and made no external call.
+Each conversation turn binds its own `result_id` and complete runtime object;
+the latest turn must match the current result and top-level runtime. This keeps
+the contract correct when K08 adds immutable follow-up results or a later
+runtime differs from an earlier turn.
+
+`analyze_mock` loads one exact project/snapshot diagnosis projection through
+the K05 store bridge. Citations, counterevidence, and visible evidence IDs are
+resolved against that same projection. Product evidence contains stable IDs,
+hashes, safe role descriptions, logical reproduction references, and explicit
+missing/omitted categories; it does not copy raw imported text or host paths.
+The generated claim is limited to an observation, the result abstains from a
+causal conclusion, and causal status remains `unverified`.
+
+Non-demo views are stored as immutable `p6-result-envelope/v1` lifecycle
+records in the existing product SQLite store. Result identity includes the
+project, snapshot, and canonical envelope while binding the public result ID
+back into the view and disposition node. `view` reloads and revalidates the
+record hash, envelope, complete ProductView, project scope, snapshot scope,
+result ID, visibility, and non-demo state. Foreign-store IDs, mismatched scope,
+and tampered rows fail closed with safe `ProductError` values. A saved result
+remains byte-stable and readable after restart and after later project refreshes.
+
+Security integration passes instruction-like README/log content, synthetic PII,
+and a synthetic credential through import, refresh, evidence projection,
+analysis, persistence, and reload. JSON scans confirm that none of those values,
+file names, source paths, evaluator labels, or withheld markers enter the
+ProductView. K07 owns richer claim/lineage graph construction, K08 owns
+follow-up conversation behavior, and K10 owns report rendering.
+
 ## Implementation order
 
 1. Define the product contracts, safe errors, deterministic identifiers, and

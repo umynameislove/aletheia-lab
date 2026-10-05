@@ -5,10 +5,13 @@ from __future__ import annotations
 from pathlib import Path
 from typing import NoReturn
 
+from aletheia_lab.product.analysis import analyze_product_mock
 from aletheia_lab.product.boundary import ProductError
+from aletheia_lab.product.demo import demo_product_view
 from aletheia_lab.product.imports import confirm_product_import, preview_product_import
 from aletheia_lab.product.lifecycle import ProductLifecycleStore
 from aletheia_lab.product.refresh import refresh_product_project
+from aletheia_lab.product.results import load_product_result
 from aletheia_lab.project.persistence import ProjectStore
 
 _UNAVAILABLE_MESSAGE = "This product operation is not available yet."
@@ -36,9 +39,9 @@ class ProductService:
         self._store_root = prepared_root
 
     def demo_view(self) -> dict[str, object]:
-        """Return the deterministic synthetic product view when implemented."""
+        """Return the validated deterministic synthetic product view."""
 
-        self._unavailable()
+        return demo_product_view()
 
     def preview_import(self, root: str) -> dict[str, object]:
         """Preview a read-only project import without confirming a project."""
@@ -61,9 +64,14 @@ class ProductService:
         snapshot_id: str,
         question: str,
     ) -> dict[str, object]:
-        """Create an immutable deterministic mock result when implemented."""
+        """Create and persist an immutable deterministic mock result."""
 
-        self._unavailable()
+        return analyze_product_mock(
+            self._store_root,
+            project_id,
+            snapshot_id,
+            question,
+        ).model_dump(mode="json")
 
     def follow_up(
         self,
@@ -77,9 +85,9 @@ class ProductService:
         self._unavailable()
 
     def view(self, result_id: str) -> dict[str, object]:
-        """Reload an immutable product view when implemented."""
+        """Reload and revalidate an immutable diagnosis-visible product view."""
 
-        self._unavailable()
+        return load_product_result(self._store_root, result_id).model_dump(mode="json")
 
     def export_report(self, result_id: str, format: str) -> bytes:
         """Render an authorized saved view when implemented."""

@@ -161,10 +161,7 @@ def test_unimplemented_methods_fail_explicitly_instead_of_returning_fake_success
 ) -> None:
     service = ProductService(tmp_path / "store")
     calls: tuple[Callable[[], object], ...] = (
-        service.demo_view,
-        lambda: service.analyze_mock("project", "snapshot", "question"),
         lambda: service.follow_up("result", "claim", "claim-id", "question"),
-        lambda: service.view("result"),
         lambda: service.export_report("result", "json"),
         lambda: service.delete_project("project"),
     )

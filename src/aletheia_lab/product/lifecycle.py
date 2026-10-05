@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import re
 import sqlite3
@@ -17,6 +16,7 @@ from aletheia_lab.project.identity import (
     PROJECT_ID_PATTERN,
     SNAPSHOT_ID_PATTERN,
     canonical_project_sha256,
+    content_sha256,
 )
 
 PRODUCT_LIFECYCLE_SCHEMA_VERSION: Final[Literal["p6-lifecycle-record/v1"]] = (
@@ -51,6 +51,7 @@ _RECORD_NOT_FOUND_MESSAGE: Final[str] = "The requested product record is not ava
 _STORE_INTEGRITY_MESSAGE: Final[str] = "Stored product state failed its integrity check."
 _STORE_UNAVAILABLE_MESSAGE: Final[str] = "The product store could not be opened safely."
 _CONFIRMATION_CONFLICT_MESSAGE: Final[str] = "The preview was already confirmed differently."
+_RESULT_ENVELOPE_SCHEMA_VERSION: Final[str] = "p6-result-envelope/v1"
 
 _MIGRATION_V1: Final[str] = """
 CREATE TABLE IF NOT EXISTS product_records (
@@ -110,6 +111,21 @@ _MIGRATIONS: Final[tuple[str, ...]] = (
     _MIGRATION_V3,
     _MIGRATION_V4,
 )
+_PRODUCT_TABLE_COLUMNS: Final[dict[str, tuple[str, ...]]] = {
+    "product_records": (
+        "record_id",
+        "schema_version",
+        "record_kind",
+        "project_id",
+        "snapshot_id",
+        "parent_result_id",
+        "payload_json",
+        "canonical_sha256",
+    ),
+    "product_confirmations": ("preview_id", "project_state_record_id"),
+    "product_preview_leases": ("preview_id", "leased_at", "canonical_sha256"),
+    "product_projects": ("project_id", "project_state_record_id"),
+}
 
 
 def _canonical_json(payload: dict[str, object]) -> str:
@@ -124,7 +140,49 @@ def _canonical_json(payload: dict[str, object]) -> str:
 
 
 def _migration_sha256(sql: str) -> str:
-    return hashlib.sha256(sql.strip().encode("utf-8")).hexdigest()
+    return content_sha256(sql.strip().encode("utf-8"))
+
+
+def _validated_migration_versions(rows: list[sqlite3.Row]) -> set[int]:
+    versions: set[int] = set()
+    for row in rows:
+        version = int(row["version"])
+        if (
+            version < 1
+            or version > PRODUCT_LIFECYCLE_STORE_SCHEMA_VERSION
+            or str(row["migration_sha256"]) != _migration_sha256(_MIGRATIONS[version - 1])
+        ):
+            raise ProductError("store_integrity_error", _STORE_INTEGRITY_MESSAGE)
+        versions.add(version)
+    return versions
+
+
+def _apply_pending_migrations(
+    connection: sqlite3.Connection,
+    applied_versions: set[int],
+) -> None:
+    for version, migration in enumerate(_MIGRATIONS, start=1):
+        if version in applied_versions:
+            continue
+        for statement in migration.split(";"):
+            if statement.strip():
+                connection.execute(statement)
+        connection.execute(
+            """
+            INSERT INTO product_migration_history(version, migration_sha256)
+            VALUES (?, ?)
+            """,
+            (version, _migration_sha256(migration)),
+        )
+
+
+def _validate_product_table_columns(connection: sqlite3.Connection) -> None:
+    for table_name, expected_columns in _PRODUCT_TABLE_COLUMNS.items():
+        columns = tuple(
+            str(row["name"]) for row in connection.execute(f"PRAGMA table_info({table_name})")
+        )
+        if columns != expected_columns:
+            raise ProductError("store_integrity_error", _STORE_INTEGRITY_MESSAGE)
 
 
 def _canonical_utc_timestamp(value: str) -> str:
@@ -231,15 +289,79 @@ def _record_id(
     parent_result_id: str | None,
     payload: dict[str, object],
 ) -> str:
+    identity_payload = _result_identity_payload(record_kind, payload)
     identity = {
         "schema_version": PRODUCT_LIFECYCLE_SCHEMA_VERSION,
         "record_kind": record_kind,
         "project_id": project_id,
         "snapshot_id": snapshot_id,
         "parent_result_id": parent_result_id,
-        "payload": payload,
+        "payload": identity_payload,
     }
     return f"{_RECORD_PREFIX[record_kind]}-{canonical_project_sha256(identity)}"
+
+
+def _result_identity_payload(
+    record_kind: ProductRecordKind,
+    payload: dict[str, object],
+) -> dict[str, object]:
+    """Exclude the self-referential result ID from a typed result envelope identity."""
+
+    if record_kind != "result" or payload.get("schema_version") != _RESULT_ENVELOPE_SCHEMA_VERSION:
+        return payload
+    copied = cast(dict[str, object], json.loads(_canonical_json(payload)))
+    view = copied.get("view")
+    if not isinstance(view, dict):
+        return copied
+    result = view.get("result")
+    if not isinstance(result, dict):
+        return copied
+    bound_result_id = result.get("id")
+    result.pop("id", None)
+    conversation = view.get("conversation")
+    turns = conversation.get("turns") if isinstance(conversation, dict) else None
+    if isinstance(turns, list):
+        for turn in turns:
+            if isinstance(turn, dict) and turn.get("result_id") == bound_result_id:
+                turn.pop("result_id", None)
+    graph = view.get("graph")
+    nodes = graph.get("nodes") if isinstance(graph, dict) else None
+    if isinstance(nodes, list):
+        for node in nodes:
+            if isinstance(node, dict) and node.get("kind") == "Disposition":
+                node.pop("source_id", None)
+    return copied
+
+
+def _bind_result_id(
+    record_kind: ProductRecordKind,
+    payload: dict[str, object],
+    record_id: str,
+) -> dict[str, object]:
+    if record_kind != "result" or payload.get("schema_version") != _RESULT_ENVELOPE_SCHEMA_VERSION:
+        return payload
+    copied = cast(dict[str, object], json.loads(_canonical_json(payload)))
+    view = copied.get("view")
+    if not isinstance(view, dict):
+        return copied
+    result = view.get("result")
+    if not isinstance(result, dict):
+        return copied
+    pending_result_id = result.get("id")
+    result["id"] = record_id
+    conversation = view.get("conversation")
+    turns = conversation.get("turns") if isinstance(conversation, dict) else None
+    if isinstance(turns, list):
+        for turn in turns:
+            if isinstance(turn, dict) and turn.get("result_id") == pending_result_id:
+                turn["result_id"] = record_id
+    graph = view.get("graph")
+    nodes = graph.get("nodes") if isinstance(graph, dict) else None
+    if isinstance(nodes, list):
+        for node in nodes:
+            if isinstance(node, dict) and node.get("kind") == "Disposition":
+                node["source_id"] = record_id
+    return copied
 
 
 def build_product_lifecycle_record(
@@ -252,16 +374,18 @@ def build_product_lifecycle_record(
 ) -> ProductLifecycleRecord:
     """Build an immutable record and derive its stable scoped identifier."""
 
-    payload_json = _canonical_json(payload)
-    checked_payload = cast(dict[str, object], json.loads(payload_json))
+    checked_payload = cast(dict[str, object], json.loads(_canonical_json(payload)))
+    record_id = _record_id(
+        record_kind=record_kind,
+        project_id=project_id,
+        snapshot_id=snapshot_id,
+        parent_result_id=parent_result_id,
+        payload=checked_payload,
+    )
+    checked_payload = _bind_result_id(record_kind, checked_payload, record_id)
+    payload_json = _canonical_json(checked_payload)
     return ProductLifecycleRecord(
-        record_id=_record_id(
-            record_kind=record_kind,
-            project_id=project_id,
-            snapshot_id=snapshot_id,
-            parent_result_id=parent_result_id,
-            payload=checked_payload,
-        ),
+        record_id=record_id,
         record_kind=record_kind,
         project_id=project_id,
         snapshot_id=snapshot_id,
@@ -442,63 +566,10 @@ class ProductLifecycleStore:
             rows = self._connection.execute(
                 "SELECT version, migration_sha256 FROM product_migration_history ORDER BY version"
             ).fetchall()
-            for row in rows:
-                version = int(row["version"])
-                if (
-                    version < 1
-                    or version > PRODUCT_LIFECYCLE_STORE_SCHEMA_VERSION
-                    or str(row["migration_sha256"])
-                    != _migration_sha256(_MIGRATIONS[version - 1])
-                ):
-                    raise ProductError("store_integrity_error", _STORE_INTEGRITY_MESSAGE)
-            applied = {int(row["version"]) for row in rows}
-            for version, migration in enumerate(_MIGRATIONS, start=1):
-                if version in applied:
-                    continue
-                for statement in migration.split(";"):
-                    if statement.strip():
-                        self._connection.execute(statement)
-                self._connection.execute(
-                    """
-                    INSERT INTO product_migration_history(version, migration_sha256)
-                    VALUES (?, ?)
-                    """,
-                    (version, _migration_sha256(migration)),
-                )
+            applied_versions = _validated_migration_versions(rows)
+            _apply_pending_migrations(self._connection, applied_versions)
 
-        columns = tuple(
-            str(row["name"])
-            for row in self._connection.execute("PRAGMA table_info(product_records)")
-        )
-        if columns != (
-            "record_id",
-            "schema_version",
-            "record_kind",
-            "project_id",
-            "snapshot_id",
-            "parent_result_id",
-            "payload_json",
-            "canonical_sha256",
-        ):
-            raise ProductError("store_integrity_error", _STORE_INTEGRITY_MESSAGE)
-        confirmation_columns = tuple(
-            str(row["name"])
-            for row in self._connection.execute("PRAGMA table_info(product_confirmations)")
-        )
-        if confirmation_columns != ("preview_id", "project_state_record_id"):
-            raise ProductError("store_integrity_error", _STORE_INTEGRITY_MESSAGE)
-        lease_columns = tuple(
-            str(row["name"])
-            for row in self._connection.execute("PRAGMA table_info(product_preview_leases)")
-        )
-        if lease_columns != ("preview_id", "leased_at", "canonical_sha256"):
-            raise ProductError("store_integrity_error", _STORE_INTEGRITY_MESSAGE)
-        project_columns = tuple(
-            str(row["name"])
-            for row in self._connection.execute("PRAGMA table_info(product_projects)")
-        )
-        if project_columns != ("project_id", "project_state_record_id"):
-            raise ProductError("store_integrity_error", _STORE_INTEGRITY_MESSAGE)
+        _validate_product_table_columns(self._connection)
 
     def put(self, record: ProductLifecycleRecord) -> ProductRecordDisposition:
         """Persist one immutable record or accept an exact idempotent replay."""
