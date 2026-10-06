@@ -128,11 +128,16 @@ experiment artifacts remain local and are independently validated before use.
   development policy/transfer workflows. Historical attempts, protocols and
   reports keep their own identities; a technical correction or development
   guard is not a retrospective successful registered attempt or an admission.
-- The current forward method prioritizes **source-faithful evidence admission
-  into a fixed resolver**. Compare an LLM extractor against a producer-adapted
-  deterministic parser on the same raw input before claiming model value. Actual
-  read-only evidence acquisition is conditional on useful unresolved ambiguity
-  and must be compared with a cost-aware deterministic planner.
+- The current forward research studies **contract-relative model-load and
+  request auditability** on native runtimes with strong receipt/provenance
+  comparators and conditional resource bounds. Ordered inference must link
+  request authorization to the actual resident components; individually valid
+  loads or changed predictions alone do not decide compliance. Compare ordinary
+  compact certificates and lease-safe retention before claiming a new method.
+  See the [native workflow and audit boundaries](docs/model-load-observability-development.md).
+- Retained source-faithful extraction/acquisition studies compare LLMs with
+  producer-adapted parsers and deterministic planners. Their limited results do
+  not establish that an LLM is necessary for the current audit service.
 - Proof-guarded success is a hybrid system result, not necessarily model
   reasoning. Resolver correctness is conditional on admitted facts and the
   tested finite model; source authenticity and semantic extraction are separate
