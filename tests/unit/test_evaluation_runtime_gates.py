@@ -114,6 +114,8 @@ def test_evaluation_profile_has_required_boundaries_without_deselection() -> Non
         "tests/unit/test_project_bundle_contract.py",
         "tests/unit/test_evidence_contract_v2.py",
         "tests/unit/test_test_runtime_contract.py",
+        "tests/unit/test_response_origin_audit.py",
+        "tests/unit/test_response_origin_study.py",
     }
 
     assert required <= set(command)

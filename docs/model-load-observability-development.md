@@ -1451,3 +1451,108 @@ sign new records or make provider calls. Preserve executed source copies before
 later refactors. Synthetic tests require no Ray installation; optional native
 execution remains outside the default CI profile. Private source observations,
 signed records, database snapshots and empirical aggregates are not repo assets.
+
+## Response-origin transfer and standard cache repairs
+
+`scripts/response_origin_validation.py` studies an additional native boundary:
+the response may come from an earlier computation rather than a new invocation.
+A request-to-predict-only certificate therefore loses lawful cache hits as well
+as stale ones. The bounded origin graph is request → computation, or request →
+cache entry → producing computation → actual resident generation. It uses ordinary
+provenance joins and contract-relative identification, not a new tracing theorem,
+minimal-certificate proof or attestation against a hostile serving host.
+
+The [MLServer 1.7.1 DataPlane source](https://raw.githubusercontent.com/SeldonIO/MLServer/1.7.1/mlserver/handlers/dataplane.py)
+keys the response cache by payload JSON before generating a missing request ID.
+The cache is shared; route/version and resident generation are not separately
+included. A hit reconstructs the stored response without calling predict.
+The [native registry](https://raw.githubusercontent.com/SeldonIO/MLServer/1.7.1/mlserver/registry.py)
+loads a replacement before publishing it. Failed loading preserves the prior
+resident; an already selected in-flight object can complete lawfully after reload.
+These are source-informed mechanisms, not claims of newly discovered incidents.
+
+The route contract checks requested model/version, retaining full native response
+body and headers. The reload contract additionally requires the generation selected
+at request entry. This is an explicit service assumption, **not an OIP guarantee
+of immutable artifact bytes or cache freshness**. Generation refers to a realized
+resident object. A newly selected request differs from an old in-flight request;
+neither current registry state nor output agreement alone is reference truth.
+
+The fixed matrix has version routes, serial replacement and delayed old cache
+fill; each has six arms and two fresh process replicates in a fixed shuffled order.
+Arms are unchanged cache, cache disabled, model/version namespace, successful-load
+flush, namespace plus epoch-fenced insertion/flush, and selected-generation key.
+These repairs are established baselines. [Triton caching](https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/user_guide/response_cache.html)
+already includes model/version/inputs. [Scaling Memcache at Facebook, §3.2.1](https://www.usenix.org/system/files/conference/nsdi13/nsdi13-final170.pdf)
+already treats stale sets after invalidation with leases. The fence arm implements
+a local epoch rejection, not that distributed lease protocol. It must not be called
+a novel optimizer or an executed Triton comparison.
+
+Models are three locally fitted one-feature CPU predictors. Zero inputs give
+equal outputs despite different model identity. Native REST ASGI handlers,
+repository, registry, sklearn predictor and LocalCache run unchanged outside
+explicit repair hooks. A barrier delays the old native predict but does not replace
+its numerical result. Observer identity is a ContextVar only; it never enters the
+HTTP body, headers or cache key. Generation is bound inside the original selection
+context and reused consistently for lookup and insertion. The run is same-process
+ASGI with concurrent tasks, not TCP throughput, worker-pool or distributed serving.
+
+Reference replay reconstructs accepted insertions and hits from raw cache strings,
+checks actual object/load/owned-byte identity and recalculates numeric outputs from
+captured coefficients. The resolver and a separate ordinary graph join get exactly
+the same capture capability; equality is expected. The native-body comparator is
+only a name/version-consistency check, not an optimal checker using every native
+output, chronology and registry fact. It can detect a visible wrong version.
+The equal-output collision projection contains labels and input/output tensors;
+it omits response IDs, timing and registry history and is not global observational
+equivalence. Header-only checks are limited by actual available
+fields, and neither is falsely treated as a generation witness. Missing dependencies,
+open responses and failed/unattempted work abstain; cycles and incompatible operands
+conflict. All planned requests remain in the denominator, including startup failure,
+transport error, non-JSON response, timeout and failed reload. Raw logs stay private.
+Descriptive timing does not establish a comparative production latency claim.
+
+```sh
+PYTHONPATH=src python scripts/response_origin_validation.py run \
+  --root . --study-dir /path/to/private/fresh-development \
+  --native-python /path/to/isolated-mlserver-1.7.1/bin/python
+PYTHONPATH=src python scripts/response_origin_validation.py verify \
+  --root /path/to/executed/implementation \
+  --study-dir /path/to/private/completed-development
+```
+
+Do not resolve the virtualenv executable symlink out of its environment. Only
+owned locally created artifacts are loaded. Child network entry points are denied
+after asyncio self-pipe bootstrap; no provider or deployment is invoked. Run locks
+its code/design before native execution. Replay is read-only, with no native fitting,
+load, prediction or signature execution. Preserve executed modules before refactoring.
+Two process repeats are robustness checks nested in one cache implementation, not
+independent incidents. This prospective lifecycle development is not untouched
+external validation and does not reopen historical protected studies.
+
+Raw replay also checks structured responses against retained native response
+text, selected-generation/object equality with the load census, producer labels,
+and repair keys against independently recorded request inputs and the selected
+namespace. Headers were captured within the cache key, not as independent ingress
+wire bytes; their shape is checked without claiming full-wire attestation.
+Stronger analysis-only validation can replay a completed study against its
+preserved executed implementation; it must not alter the original plan, source
+observations or result aggregates, nor rerun the native lifecycle to repair a checker.
+
+An additional source-informed [BentoML timeout report #5642](https://github.com/bentoml/BentoML/issues/5642)
+motivates a different endpoint: HTTP completion versus actual synchronous worker
+exit. Offline closure replay keeps error responses unknown for response-origin
+compliance even if later model computation becomes visible. A worker may finish
+or fail after the client has received 504. The [proposed repair #5671](https://github.com/bentoml/BentoML/pull/5671)
+was open at source review; this comparison does not evaluate or claim an upstream
+fix. A finite local TCP prototype with normal-level log observation is supporting
+development evidence, not another set of MLServer repair trials. Absence from the
+captured logger set is not absence from every possible native telemetry source.
+
+The resulting architecture separates response-origin compliance, worker/attempt
+closure and retention of their respective dependencies. Signed roots and log
+volume cannot reconstruct a computation/cache edge that was never captured.
+Existing explicit joins or source-native repairs may solve the declared problem;
+their success does not establish a new checker or adaptive retention advantage.
+Raw observations, models, logs, plan/result aggregates and prototype artifacts
+remain outside the repository. Writing and held-out evaluation are separate work.
