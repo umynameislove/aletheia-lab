@@ -1148,3 +1148,95 @@ current-pool surrogate optima. This uses a shared crypto primitive but not the
 online selector's cost/enumeration logic. It does not certify all selector history,
 latency superiority or future optimality. Raw models, captures, databases and
 results remain private; public tests are synthetic and require no provider calls.
+
+## Native application transfer and independently drainable audit obligations
+
+`scripts/application_audit_development.py` runs two opt-in local applications:
+BentoML 1.4.39's real `Service.to_asgi()` with its model store and sklearn loader,
+and MLflow 3.9.0's native scoring application with a local SQL model registry.
+MLflow is a new serving workflow here, not a previously unseen framework. These
+are externally authored application implementations, not sampled deployments or
+naturally occurring incidents. Only newly fitted, trusted local estimators are
+loaded; no external pickle or historical artifact is accepted.
+
+Source selection precedes the development comparison. The inclusion criteria
+are an actual native application handler, inspectable selection/object caching,
+a local executable startup/use/failure boundary, and supported owned artifacts.
+A positive checker gap is not a source inclusion criterion. The fixed census
+contains initial startup, lawful version change, wrong B artifact, failed B
+startup, restoration, reverse substitution, and final restoration. Additional
+controls keep the old application across a registry/latest change, replace a
+path after startup, and try a failed new application while retaining the prior
+application. Keeping the previous app is an operator action; neither framework
+is claimed to provide an automatic rollback or live reload endpoint.
+BentoML new generations use a fresh Service/reference definition. Reinitializing
+the same already resolved descriptor in one process is not tested as a fresh
+latest lookup; native descriptor caching can outlive an individual app instance.
+
+Version/alias selection and cached-model behavior are native contracts. The
+released-byte digest is an explicit operator policy overlay. File corruption
+under an unchanged tag/version is a controlled stressor, not proof of a native
+framework bug. Native readiness, a current pathname hash, or a package version
+alone must not be labeled a cryptographic commitment to the resident object.
+Separate raw descriptor snapshots supply the load reference. Fingerprints and
+actual prediction responses check the post-request object sink; they do not
+enter the tested receipt checker. This serial source-local association is not
+distributed request attestation or an end-to-end inference integrity proof.
+
+The sufficient baseline uses the same admitted selection/closure/descriptor
+evidence as signed in-toto provenance. Full package signature/rule verification
+is executed during the census, not replaced by Python digest equality. Signing
+trusted local capture does not attest a hostile host. Read-only replay checks
+raw reference consistency and recorded decisions, not fresh signature execution.
+
+The admission experiment compares ordinary `drain_static`, `drain_lru`,
+`reserve_static`, and `reserve_lru` at 2, 4 and 8 KiB, two serial passes per
+source. Each arm invokes native startup and HTTP prediction/health handlers;
+refused operations are skipped **before** native dispatch. All arms use one
+durable collector, the same compressed closed frames, exact known dependency
+deduplication, fixed-width ledger fields, and protected accepted leases.
+These passes are nested runtime instances inside two worker processes, not
+independent process replications or concurrent throughput measurements.
+Hard-query scheduling is independent of later dispatch. Optional previous-load
+queries are conditional on a dispatched current operation and an observed prior
+scope; their counts are not a common fixed offered-query utility benchmark for
+all policies. Every offered operation and before/after-completion refusal is
+reported separately. Prediction and health HTTP statuses are checked in replay.
+
+Two promises must be distinguished:
+
+- Drain arms promise only already accepted, immutable completed-revision audits.
+  New work may run and its new audit lease may be refused at completion.
+- Reserve arms additionally reserve a bounded new load frame before dispatch.
+  Conservative unused reservation can reduce admission. This stronger promise
+  must not be compared as if it were the same capability as post-completion
+  admission, or credited as a new algorithm by itself.
+
+For supported serial load frames, canonical frame bytes are capped at 1,024,
+scope IDs at 64 ASCII characters, and the incremental evidence/manifest reserve
+at 2,048 bytes. Completion checks the realized bound. Overrun, unknown evidence
+and native failure remain explicit; they do not silently overcommit or erase an
+old lease. Previously accepted audits are serviced independently even when new
+ingress is refused. Deadlines are inclusive logical events, not wall-clock SLAs.
+
+The conditional capacity invariant is exact charged durable state plus remaining
+conservative reservations at most the budget. Admission preserves it; completion
+converts a reservation to charged evidence; deletion affects only unpinned
+revisions. This establishes retained availability under bounded conforming input
+and successful durability, not crash recovery, scheduling fairness, authenticity,
+arbitrary future demand or physical DB/RSS bounds. Reservation and demand envelopes
+are established ideas: see [Banker's algorithm](https://www.cs.utexas.edu/~EWD/transcriptions/EWD06xx/EWD623.html)
+and [RFC 2212](https://www.rfc-editor.org/rfc/rfc2212). These analogies do not transfer
+a network delay guarantee to this storage service.
+
+Run and verify write/read one explicitly chosen private study directory. Use
+isolated dependencies rather than modifying a historical research environment.
+The local MLflow scoring adapter requires FastAPI 0.115.14 / Starlette 0.46.2;
+newer FastAPI without `route` is incompatible with this MLflow startup path.
+BentoML is loaded separately so its dependency set is not forced onto MLflow.
+Disable telemetry before importing either SDK; worker network sockets are denied
+after asyncio bootstrap and through shutdown. No provider API calls are used.
+The design records selected source/package/code identities before the full run.
+Preserve its implementation if later internal refactors change code identities;
+`verify --root /path/to/frozen/implementation` binds historical executable files
+while reading the existing results. Native work is never repeated by verification.
