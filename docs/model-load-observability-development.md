@@ -1082,3 +1082,69 @@ Retain a valid conventional baseline when no residual method advantage is shown.
 Raw research records, models, timing results and plots remain outside the public
 repository. Focused synthetic tests are included in both the application and
 evaluation test profiles; passing them is distinct from executing the workload.
+
+## Completed-revision audit archive development screen
+
+`audit_bundle_archive.py` adds an opt-in, single-tier service over completed
+serial serving frames. It preserves each full closed operation revision and its
+resident-generation dependency using lossless compression and shared atoms.
+Scope/target/parent seals prevent compaction from silently dropping a conflicting
+observation. The trusted native census supplies each scope exactly once; this is
+not a global duplicate ledger or hostile-host attestation.
+
+The common admission layer pins the current resident and accepted post-completion
+audit leases through an inclusive load-slot expiry. Optional whole-bundle
+selection cannot weaken these pins. A lease may be refused before acceptance;
+future mandatory growth or failed persistence can still cause a reported service
+failure after acceptance. In-flight reservation/backpressure, arbitrary future
+queries, late revisions and crash recovery are not implemented guarantees.
+
+The budget charges the complete canonical persisted archive BLOB, including
+compressed/base64 frames, manifests, dependency/lease metadata and counters.
+SQLite/WAL/SHM peaks are separate diagnostics, not that logical cap or device I/O.
+Creation and access use a monotone event clock; TTL and lease expiry use load-slot
+age. Internal safety checks do not create artificial popularity observations.
+Audit reads resolve durable retained bytes only. No policy sees the source truth,
+future query targets or a mechanism for refetching discarded evidence.
+
+Seven arms share this representation and admission layer: compressed static
+newest-admission retention, TTL age two, LRU, LFU, standalone size/cost priorities,
+incremental union density and bounded exchange. The latter starts with density
+and permits at most four improving 1-out/1-or-2-in rounds over twelve-entry
+shortlists. Its declared surrogate is `sum(1 + past hits)`, not future audit
+coverage. No generic submodular, approximation or competitive guarantee follows.
+
+[Dependency-Aware Online Caching, §3.1](https://arxiv.org/html/2401.17146) is close
+prior art but includes refetching from a slow tier. Its guarantees do not transfer
+to irreversible evidence loss. Cost/size priorities are also established in
+[GreedyDual-Size](https://www.usenix.org/conference/usits-97/cost-aware-www-proxy-caching-algorithms).
+Dependency bundles or density scoring alone are not claimed new algorithms.
+
+```sh
+PYTHONPATH=src python scripts/audit_bundle_screen.py run \
+  --root . --study-dir /path/to/private/fresh-development
+PYTHONPATH=src python scripts/audit_bundle_screen.py verify \
+  --root . --study-dir /path/to/private/completed-development
+```
+
+Run requires the same pinned optional MLServer environment as the serving study.
+It seals a development design before capture/replay and writes only to a fresh
+directory outside the repository. Two fanouts, four logical budgets and two
+authored schedules yield 112 paired replay configurations on one source.
+Same-slot audits occur after the whole operation batch; delayed audits include
+the entire tail. Refusals, aborted configurations and unprocessed offered queries
+remain in the denominator. Replay metrics are not policy-interposed serving
+latency or independent deployment measurements.
+
+`--capture-dir /path/to/existing/development` optionally makes a separately sealed
+technical revision using the existing native captures. It records source hashes
+and does no fitting or runtime load; it is not fresh replication. Preserve earlier
+directories and use their original code for exact historical source binding.
+
+The verifier checks the native operation/reference census, complete configuration
+census, query/failure prefixes, hard-lease decisions, raw accounting and aggregate.
+It independently reconstructs snapshot union byte costs and enumerates finite
+current-pool surrogate optima. This uses a shared crypto primitive but not the
+online selector's cost/enumeration logic. It does not certify all selector history,
+latency superiority or future optimality. Raw models, captures, databases and
+results remain private; public tests are synthetic and require no provider calls.
