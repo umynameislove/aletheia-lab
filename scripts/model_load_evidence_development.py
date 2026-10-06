@@ -24,6 +24,8 @@ def main() -> int:
     try:
         if args.output.resolve().is_relative_to(args.root.resolve()):
             raise ValueError("private report must be outside repository")
+        if args.output.exists() or args.output.is_symlink():
+            raise ValueError("development report already exists")
         if args.command == "closeout":
             if args.plan is None or args.study_dir is None:
                 raise ValueError("closeout requires frozen plan and study directory")

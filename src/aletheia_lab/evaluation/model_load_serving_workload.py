@@ -390,14 +390,24 @@ def worker(
 
     cpu = process_time_ns()
     with (
+        # Windows creates a loopback self-pipe when the loop is initialized.
+        # Bootstrap it before denying application sockets, then close it while
+        # denial still covers pending tasks, async generators and the executor.
+        asyncio.Runner() as runner,
         patch.object(socket.socket, "connect", deny),
         patch.object(socket.socket, "connect_ex", deny),
         patch.object(socket, "create_connection", deny),
     ):
-        workload = Workload(config, directory, artifacts, models)
+        workload: Workload | None = None
         try:
-            result = asyncio.run(workload.run())
+            try:
+                workload = Workload(config, directory, artifacts, models)
+                result = runner.run(workload.run())
+            finally:
+                runner.close()
         except (ValueError, OSError, RuntimeError, TimeoutError) as exc:
+            if workload is None:
+                raise
             result = {
                 "config": config,
                 "status": "runtime_worker_failure",
