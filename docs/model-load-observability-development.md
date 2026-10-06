@@ -1240,3 +1240,114 @@ The design records selected source/package/code identities before the full run.
 Preserve its implementation if later internal refactors change code identities;
 `verify --root /path/to/frozen/implementation` binds historical executable files
 while reading the existing results. Native work is never repeated by verification.
+
+## Ordered native inference and compact audit certificates
+
+`scripts/joint_inference_development.py` adds a bounded development comparison
+on BentoML 1.4.39's real local `depends` path. A native encoder service transforms
+the request; a native classifier service consumes that output. Their model
+descriptors resolve and retain locally fitted sklearn objects. The ASGI handler,
+dependency invocation, startup failure and prediction/health requests execute;
+no network server, remote dependency or production deployment is simulated as
+having been measured. The source includes a simpler architectural control: the
+same fitted encoder/classifier packaged as one native sklearn Pipeline artifact.
+Service splitting needs a reason such as independent component management; two
+inference stages alone do not require two independent artifact obligations.
+[Bento's composition documentation](https://docs.bentoml.com/en/latest/build-with-bentoml/distributed-services.html)
+supports the native workflow, not the operator's release policy or deployment demand.
+
+The fixed question is whether a completed request used the authorized ordered
+encoder/classifier tuple. The operator pins that tuple **before dispatch**.
+Individually valid component loads are necessary but not sufficient: a request
+can use two correctly loaded components whose combination was not authorized.
+Conversely, a deliberately authorized mixed pair is not a violation merely
+because it differs from another release or changes a prediction. This is
+contract-relative authorization, not task accuracy or proof of performance harm.
+
+Twelve authored request slots include authorized retained generations, changed
+request authorization without a new load, lawful and forbidden mixes, an invalid
+input, corrupt owned startup and restoration. `attempt_one` checks an attempt
+annotation; it is not a native retry after an earlier failed attempt. All component
+artifacts exist before requests, so `authorized_old` is not a publication race,
+automatic rollback or observed alias-update experiment. Fresh service definitions
+are used for new retained generations; requests within each application are serial.
+
+The capture contract supplies request/attempt/revision, root authorization,
+ordered uses, operand/result identities, resident generation, load/object binding,
+declared occurrence census, closure and failure. The independent reference retains
+original descriptor bytes, actual object fingerprints and operands/results, then
+compares the actual byte tuple with the pre-dispatch authorization. It does not use
+the tested verdict resolver. It still shares the trusted serial invocation boundary;
+neither sink proves a hostile host or every consumed byte. Installed native package
+versions and consequential module hashes accompany each capture.
+
+The sufficient resolver and real in-toto role/artifact verification receive the
+same complete bindings. Signing eligibility uses visible completeness, not the
+reference verdict. The trusted adapter supplies order/dataflow/completeness;
+in-toto itself checks the two role/artifact rules. Executed signatures therefore
+are a conditional rule comparator, not an independent request attestation.
+[in-toto](https://www.usenix.org/system/files/sec19-torres-arias.pdf) already provides
+cross-step supply-chain artifact rules; this comparison does not invent signed provenance.
+
+`joint_inference_audit.py` implements two ordinary representations. Full frames
+retain named fields. Compact certificates positionally pack **all** admitted
+fields; `expand(materialize(frame)) == frame` for the supported exact schema.
+This reversible mapping preserves conflict and unknown basis as well as positive
+evidence. It proves no minimal-cardinality certificate or novel inference theorem.
+For the declared completed-revision query family, equality of materialized evidence
+implies equality of the resolver result. That statement does not extend to
+unrecorded facts, arbitrary future queries, late revisions or open histories.
+[Runtime verification](https://havelund.com/Publications/rv-2023-tutorial.pdf)
+already maintains verdict summaries; ordinary materialization is a required baseline.
+
+Full and compact arms share lossless compression, exact load-capsule deduplication,
+complete manifest/counter accounting, SQLite WAL/FULL durability and inclusive
+accepted lease pins. Static oldest-optional eviction, access-based LRU and optional
+TTL age two are compared at 2, 4 and 8 KiB. The cap measures the complete canonical
+persisted BLOB, not physical pages, WAL, process memory or device I/O. Physical
+SQLite/WAL/SHM bytes are sampled separately. Smaller logical representation does
+not necessarily save physical storage or latency.
+
+Two fresh native processes supply 36 matched durable retention replays. Every arm
+offers the same three optional query ages (0, 2, 6) for every slot, including native
+failures and lease refusals. Eligible completed audits may receive a hard lease
+through inclusive age four. Hard queries drain independently of later admission;
+native unknowns, capacity refusals, missing optional evidence, false decisions
+and unserved accepted leases are distinct counters. Native capture happens once
+per process: these are paired archive replays, **not policy-interposed native
+backpressure, concurrent throughput or wall-clock service measurements**.
+
+The conditional invariant is that durable charged state is at most the logical
+cap and successful admission retains the complete certificate/dependency union
+through its hard deadline. Eviction removes only unpinned entries; failure to fit
+refuses a new lease without deleting an old one. This assumes unique source-census
+ingress, fixed revisions, bounded schema and successful durability. It is not
+crash recovery, arbitrary late evidence, a global duplicate ledger or authenticity.
+Unknown frames may be retained without a conclusive hard promise.
+
+```sh
+PYTHONPATH=src python scripts/joint_inference_development.py run \
+  --root . --study-dir /path/to/private/fresh-development \
+  --dependencies /path/to/pinned/bento-dependencies \
+  --dependencies /path/to/pinned/provenance-dependencies
+PYTHONPATH=src python scripts/joint_inference_development.py verify \
+  --root /path/to/executed/implementation \
+  --study-dir /path/to/private/completed-development
+```
+
+Run seals source/code decisions before native work. It requires a fresh owned
+directory and explicit isolated dependencies. Only locally created trusted models
+are loaded; do not supply external pickle/Joblib artifacts. Child sockets are
+denied after asyncio bootstrap and through shutdown; telemetry is disabled.
+Verification performs no native load, fitting, signature re-execution or provider
+call. It rebuilds raw-reference verdicts, common query/lease counts and canonical
+durable byte/basis checks. Storage decoding is independently reconstructed but
+codec expansion and resolution are shared, not a wholly independent formal checker.
+Preserve executed source identities before later code refactors.
+
+Method development is conditional on a residual gap beyond ordinary compact static
+and lease-safe alternatives under equal promises. Representation packing, signed
+ties or a result on one authored schedule are not adaptive method novelty.
+If a conventional representation meets the declared service, close that candidate
+with a bounded negative method decision. Raw native captures, models, databases
+and aggregate outcomes remain outside the repository.
