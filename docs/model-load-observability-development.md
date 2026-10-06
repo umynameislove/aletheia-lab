@@ -1351,3 +1351,103 @@ ties or a result on one authored schedule are not adaptive method novelty.
 If a conventional representation meets the declared service, close that candidate
 with a bounded negative method decision. Raw native captures, models, databases
 and aggregate outcomes remain outside the repository.
+
+## Source-informed request/model serving replication
+
+`scripts/request_model_validation.py` executes a bounded development study of
+Ray Serve's multiplexed model selection across asynchronous batches. The source
+is the externally reported [Ray issue #56633](https://github.com/ray-project/ray/issues/56633);
+the upstream [repair #59334](https://github.com/ray-project/ray/pull/59334) captures
+per-item context, separates batches by model and restores batch-aware selection.
+The issue and repair are prior work, not a newly discovered fault or method.
+[PEP 567](https://peps.python.org/pep-0567/) explains task-local context inheritance;
+the relevant native batch worker is a different context boundary from the
+incoming HTTP request. More log text does not repair a missing correspondence.
+
+The fixed question is whether a completed request uses the model it requested.
+This is the application's multiplexing contract, not predictive accuracy or an
+operator rule forbidding all legitimate version changes. The study runs pinned
+Ray 2.48.0 and 2.54.0 in separate explicit Python environments. Their other
+recorded numerical and HTTP dependencies match. Comparing these releases is
+consistent with the upstream repair but does not isolate that commit from all
+other changes. The recorded Python/platform differ from the original issue;
+this is a source-informed replication, not an exact environment reproduction
+or unseen validation.
+
+Two modes must remain separate. Original mode retains the issue's object-naming
+responses and sequential singleton request order: output can already reveal a
+wrong model. The controlled ML extension uses two locally fitted linear models,
+both first-model orders, repeated warm batches, nonbatched controls, same-model
+and mixed-model concurrent requests, equal-output inputs and invalid inputs.
+Mixed-model co-membership alone is not labelled an old native violation: the
+test checks each member's actual requested/used model. The old API did not
+promise homogeneous multiplexed batches. Prediction agreement at a particular
+input does not establish model identity.
+
+The trusted adapter observes request tokens, actual batch membership, operand
+and result, model object/process identity, generation, and the same owned bytes
+loaded by that generation. HTTP response IDs, public selection context and
+available per-item batch contexts are retained rather than artificially hidden.
+Original mode admits ordinal correspondence only for a complete successful
+sequential singleton census. It is not a general concurrency join. The raw
+reference checks observed object/load consistency and recomputes numeric
+predictions from the recorded release coefficients without the tested resolver.
+Neither reference nor capture attests a hostile process or deployment.
+
+Comparators include output-only inference, native context with available item
+IDs, ordinary explicit item/object joins and executed in-toto artifact rules
+with the same complete trusted capture. An old scalar context is not assumed
+to carry each request's identity; fixed batch context is given its full available
+capability. Load identity alone is an ablation, not a competitive request-use
+baseline. Ordinary joins already address correspondence: see
+[OpenTelemetry batch links](https://opentelemetry.io/docs/specs/otel/overview/)
+and [Pivot Tracing](https://cs.brown.edu/people/jcmace/papers/mace15pivot.pdf).
+An agreement with adapted provenance is not checker superiority. The read-only
+replay validates recorded comparator outcomes and source bindings; it does not
+re-execute signatures or independently cryptographically verify the saved links.
+
+Retention uses the realized ML capture once, then matched durable SQLite replays.
+All policies share lossless compression, dependency deduplication, charged
+manifest/counter fields, WAL/FULL durability and inclusive accepted lease pins.
+Full and reversible compact frames are compared with static newest-first,
+LRU, LFU, size-cost, TTL and the existing union-density/exchange heuristics.
+The four logical budgets and two declared audit-delay schedules are fixed
+before measurement. All optional queries are offered, including failed native
+requests and requests whose hard lease was refused. Hard obligations arise
+only for eligible completed requests; refusal is distinct from losing an
+accepted obligation. No policy may recover discarded evidence from raw captures
+or inspect future queries during selection.
+
+The logical cap includes the canonical durable evidence BLOB and its complete
+dependency/manifest union. Sampled database, WAL and SHM bytes are separate;
+the cap is not a physical storage or RSS guarantee. Snapshots bind the durable
+basis of every answer. Failed writes preserve old accepted state or expose a
+failure; successful bounded admission retains its basis through the inclusive
+deadline. This is a conditional fixed-revision service invariant, not crash
+recovery, a global duplicate ledger, host authenticity or a wall-clock SLA.
+Selection/write/query timing is descriptive local replay cost, not randomized
+serving overhead or concurrent throughput. Compact packing is ordinary lossless
+materialization, not a minimum-certificate theorem. A heuristic that fails to
+beat tuned compact static is not admitted as a new retention contribution.
+
+```sh
+PYTHONPATH=src python scripts/request_model_validation.py run \
+  --root . --study-dir /path/to/private/fresh-development \
+  --before-python /path/to/isolated-ray-2.48/bin/python \
+  --fixed-python /path/to/isolated-ray-2.54/bin/python
+PYTHONPATH=src python scripts/request_model_validation.py verify \
+  --root /path/to/executed/implementation \
+  --study-dir /path/to/private/completed-development
+```
+
+The run requires fresh owned storage and the exact explicit Ray versions;
+the orchestrator also needs the pinned provenance dependencies above. Do not
+resolve a virtual-environment Python symlink to the underlying base executable.
+Only locally created hash-checked Joblib bytes are deserialized. Ray uses owned
+local clusters and loopback HTTP with telemetry disabled; no provider or public
+deployment is involved. Runs retain startup failures, timeouts and every planned
+request. Verification is read-only and does not rerun serving, fit/load models,
+sign new records or make provider calls. Preserve executed source copies before
+later refactors. Synthetic tests require no Ray installation; optional native
+execution remains outside the default CI profile. Private source observations,
+signed records, database snapshots and empirical aggregates are not repo assets.
