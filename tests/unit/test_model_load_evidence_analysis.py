@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import importlib.util
+import sys
 from copy import deepcopy
 from dataclasses import asdict, replace
 from itertools import combinations
@@ -227,3 +229,25 @@ def test_closeout_detects_source_change_before_publishing(tmp_path, monkeypatch)
     with pytest.raises(ValueError, match="changed"):
         closeout(root, Path("plan"), study, tmp_path / "closeout.json")
     assert not (tmp_path / "closeout.json").exists()
+
+
+def test_cli_rejects_existing_report_before_any_collector_work(tmp_path, monkeypatch, capsys):
+    root = Path(__file__).resolve().parents[2]
+    spec = importlib.util.spec_from_file_location(
+        "owned_evidence_development_cli", root / "scripts/model_load_evidence_development.py"
+    )
+    assert spec is not None and spec.loader is not None
+    cli = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cli)
+    output = tmp_path / "report.json"
+    original = b"owned immutable report"
+    output.write_bytes(original)
+    monkeypatch.setattr(cli, "run_pilot", lambda **kwargs: pytest.fail("collector reran"))
+    monkeypatch.setattr(cli, "publish_report", lambda *args: pytest.fail("report overwritten"))
+    monkeypatch.setattr(
+        sys, "argv", ["owned-cli", "collector", "--root", str(root), "--output", str(output)]
+    )
+    assert cli.main() == 1
+    assert output.read_bytes() == original
+    public = capsys.readouterr().out
+    assert str(tmp_path) not in public and "evidence_development_failed_closed" in public

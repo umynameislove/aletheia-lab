@@ -456,25 +456,151 @@ def test_worker_blocks_all_socket_entrypoints_and_cleans_only_child_settings(
         "KEEP_OWNED_TEST": "keep",
     }
     monkeypatch.setattr(study.os, "environ", environment)
+    phases: list[str] = []
+    generators: list[Any] = []
+    loops: list[Any] = []
+
+    def denied() -> None:
+        for entrypoint in (
+            socket.socket.connect,
+            socket.socket.connect_ex,
+            socket.create_connection,
+        ):
+            with pytest.raises(RuntimeError, match="cannot use sockets"):
+                entrypoint(None, ("127.0.0.1", 1))
+
+    def tcp_socketpair(*args: Any, **kwargs: Any) -> tuple[socket.socket, socket.socket]:
+        # Reproduce Windows' self-pipe connect on POSIX as well. This uses the
+        # live connect method so initializing after denial cannot pass the test.
+        listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            listener.settimeout(2)
+            client.settimeout(2)
+            listener.bind(("127.0.0.1", 0))
+            listener.listen(1)
+            client.connect(listener.getsockname())
+            accepted, _ = listener.accept()
+            phases.append("bootstrap")
+            return accepted, client
+        except BaseException:
+            client.close()
+            raise
+        finally:
+            listener.close()
+
+    monkeypatch.setattr(socket, "socketpair", tcp_socketpair)
 
     class FakeWorker:
         def __init__(self, *args: Any) -> None:
-            pass
+            denied()
+            phases.append("constructor")
 
         async def run(self) -> dict[str, Any]:
-            for entrypoint in (
-                socket.socket.connect,
-                socket.socket.connect_ex,
-                socket.create_connection,
-            ):
-                with pytest.raises(RuntimeError, match="cannot use sockets"):
-                    entrypoint(None, ("127.0.0.1", 1))
+            denied()
+            phases.append("run")
             assert environment == {"KEEP_OWNED_TEST": "keep", "OTEL_SDK_DISABLED": "true"}
+            started = asyncio.Event()
+
+            async def pending() -> None:
+                try:
+                    started.set()
+                    await asyncio.Event().wait()
+                finally:
+                    denied()
+                    phases.append("cancel")
+
+            async def retained_generator() -> Any:
+                try:
+                    yield None
+                finally:
+                    denied()
+                    phases.append("asyncgen")
+
+            asyncio.create_task(pending())
+            await started.wait()
+            generator = retained_generator()
+            await anext(generator)
+            generators.append(generator)
+            loop = asyncio.get_running_loop()
+            loops.append(loop)
+            shutdown = loop.shutdown_default_executor
+
+            async def guarded_shutdown(*args: Any, **kwargs: Any) -> None:
+                denied()
+                phases.append("executor")
+                await shutdown(*args, **kwargs)
+
+            monkeypatch.setattr(loop, "shutdown_default_executor", guarded_shutdown)
+            await loop.run_in_executor(None, lambda: None)
             return {"fake": True}
 
     monkeypatch.setattr(study, "Workload", FakeWorker)
     result = study.worker({}, tmp_path / "new-worker", tmp_path / "owned-artifacts", {})
     assert result["fake"] and result["cpu_ns"] >= 0
+    assert sorted(phases) == sorted(
+        ["bootstrap", "constructor", "run", "cancel", "asyncgen", "executor"]
+    )
+    assert len(loops) == 1 and loops[0].is_closed()
+    assert original == (socket.socket.connect, socket.socket.connect_ex, socket.create_connection)
+
+
+def test_worker_constructor_failure_closes_loop_and_restores_guards(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    original = (socket.socket.connect, socket.socket.connect_ex, socket.create_connection)
+    loops: list[Any] = []
+
+    class BrokenWorker:
+        def __init__(self, *args: Any) -> None:
+            loops.append(asyncio.get_event_loop())
+            with pytest.raises(RuntimeError, match="cannot use sockets"):
+                socket.create_connection(("127.0.0.1", 1))
+            raise ValueError("owned constructor failure")
+
+    monkeypatch.setattr(study, "Workload", BrokenWorker)
+    with pytest.raises(ValueError, match="owned constructor"):
+        study.worker({}, tmp_path / "new-worker", tmp_path / "owned-artifacts", {})
+    assert len(loops) == 1 and loops[0].is_closed()
+    assert original == (socket.socket.connect, socket.socket.connect_ex, socket.create_connection)
+
+
+@pytest.mark.parametrize("phase", ["run", "shutdown"])
+def test_worker_runtime_or_shutdown_failure_keeps_partial_census(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, phase: str
+) -> None:
+    original = (socket.socket.connect, socket.socket.connect_ex, socket.create_connection)
+    loops: list[Any] = []
+    store = SimpleNamespace(close=lambda: closed.append(True))
+    closed: list[bool] = []
+
+    class BrokenWorker:
+        def __init__(self, *args: Any) -> None:
+            self.rows = [{"owned": True}]
+            self.audits = [{"partial": True}]
+            self.capture = SimpleNamespace(events=[None])
+            self.store = store
+
+        async def run(self) -> dict[str, Any]:
+            loop = asyncio.get_running_loop()
+            loops.append(loop)
+            if phase == "run":
+                raise RuntimeError("owned run failure")
+
+            async def broken_shutdown(*args: Any, **kwargs: Any) -> None:
+                with pytest.raises(RuntimeError, match="cannot use sockets"):
+                    socket.create_connection(("127.0.0.1", 1))
+                raise RuntimeError("owned shutdown failure")
+
+            monkeypatch.setattr(loop, "shutdown_default_executor", broken_shutdown)
+            return {"fake": True}
+
+    monkeypatch.setattr(study, "Workload", BrokenWorker)
+    result = study.worker({}, tmp_path / "new-worker", tmp_path / "owned-artifacts", {})
+    assert result["status"] == "runtime_worker_failure" and result["error_type"] == "RuntimeError"
+    assert result["rows"] == [{"owned": True}] and result["audits"] == [{"partial": True}]
+    assert result["partial_captured_reconstructions"] == 1 and closed == [True]
+    assert len(loops) == 1 and loops[0].is_closed()
     assert original == (socket.socket.connect, socket.socket.connect_ex, socket.create_connection)
 
 
