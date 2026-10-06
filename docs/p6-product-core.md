@@ -179,7 +179,7 @@ in K05.
 K06 locks the exact `p6-product-view/v1` DTO used by `demo_view`,
 `analyze_mock`, and `view`. The shared fixture is
 `tests/fixtures/synthetic_p6_view.json`, with SHA-256
-`634876aa5033fc62dbf74add537a4733957e1082a718d01b8ef44a6c8464fc3c`.
+`3baa872c280d4d773bc658c0fc93a101130e5293f851e642d5fd9168425bcb8b`.
 An identical packaged copy supplies the offline demo; every call validates and
 returns a fresh value, so caller mutation cannot change later responses.
 
@@ -193,11 +193,31 @@ the latest turn must match the current result and top-level runtime. This keeps
 the contract correct when K08 adds immutable follow-up results or a later
 runtime differs from an earlier turn.
 
+Every claim has one required closed-enum `claim_type`. A technical-failure
+result has `disposition=null`, no claims, a zero claim denominator, and an
+abstaining turn. It may retain diagnosis-visible input evidence, but its graph
+contains only Snapshot/EvidenceItem nodes and `OBSERVED_IN` edges; it cannot
+contain a claim, disposition, citation, support conclusion, or causal edge.
+
+The snapshot carries canonical `metric_definitions` and `metric_changes` arrays.
+Each change is bound one-to-one to a diagnosis-visible metric-change evidence
+ID and to one `(run_id, metric_name, step)` identity. Multiple steps may produce
+multiple changes for the same metric name and share its definition. Before and
+after observations identify the baseline and analyzed snapshots explicitly;
+delta is `after - before`, normalized through decimal text arithmetic. Added or
+removed observations have a null missing side, null delta, and
+`adverse_status=not_applicable`. The backend supplies adverse status, so the UI
+does not recompute threshold semantics.
+
 `analyze_mock` loads one exact project/snapshot diagnosis projection through
 the K05 store bridge. Citations, counterevidence, and visible evidence IDs are
 resolved against that same projection. Product evidence contains stable IDs,
-hashes, safe role descriptions, logical reproduction references, and explicit
+hashes, safe role descriptions, immutable P3 reproduction references, and explicit
 missing/omitted categories; it does not copy raw imported text or host paths.
+Each `reproduction_ref` contains only the containing P3 `record_id` and its
+record kind. A metric-change reference points to the immutable snapshot
+comparison that contains it; the evidence ID and source hash identify the exact
+nested change. The former file-looking synthetic `relative_path` is not exposed.
 The generated claim is limited to an observation, the result abstains from a
 causal conclusion, and causal status remains `unverified`.
 

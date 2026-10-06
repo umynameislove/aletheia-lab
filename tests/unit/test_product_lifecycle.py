@@ -124,6 +124,8 @@ def test_current_project_state_advances_without_rewriting_history(tmp_path: Path
 
     with ProductLifecycleStore(store_root) as reopened:
         assert reopened.get_project_state(_PROJECT_ID) == second
+        assert reopened.get_project_state_for_snapshot(_PROJECT_ID, _SNAPSHOT_ID) == first
+        assert reopened.get_project_state_for_snapshot(_PROJECT_ID, _NEXT_SNAPSHOT_ID) == second
         assert reopened.get(first.record_id, expected_kind="project_state") == first
 
 

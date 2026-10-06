@@ -10,7 +10,35 @@
   "snapshot": {
     "id": "demo-snapshot-after",
     "baseline_id": "demo-snapshot-before",
-    "sha256": "70632c21a11eedb5491926cd1786ea755e6c384398f6d3a352e47d64689d8f02"
+    "sha256": "70632c21a11eedb5491926cd1786ea755e6c384398f6d3a352e47d64689d8f02",
+    "metric_definitions": [
+      {
+        "metric_name": "validation_accuracy",
+        "direction": "higher_is_better",
+        "regression_threshold": 0.08
+      }
+    ],
+    "metric_changes": [
+      {
+        "evidence_id": "demo-evidence-metric",
+        "metric_name": "validation_accuracy",
+        "kind": "decreased",
+        "before": {
+          "snapshot_id": "demo-snapshot-before",
+          "run_id": "candidate",
+          "step": null,
+          "value": 0.82
+        },
+        "after": {
+          "snapshot_id": "demo-snapshot-after",
+          "run_id": "candidate",
+          "step": null,
+          "value": 0.74
+        },
+        "delta": -0.08,
+        "adverse_status": "adverse"
+      }
+    ]
   },
   "runtime": {
     "provider": "deterministic_mock",
@@ -58,6 +86,7 @@
       "id": "demo-claim-001",
       "turn_id": "demo-turn-001",
       "text": "The synthetic validation accuracy fell from 0.82 to 0.74.",
+      "claim_type": "evidence_statement",
       "epistemic_state": "observed",
       "support": "fully_supported",
       "citation_ids": ["demo-evidence-metric"],
@@ -72,7 +101,10 @@
       "kind": "metric_observation",
       "title": "Synthetic validation accuracy comparison",
       "text": "Synthetic validation accuracy changed from 0.82 to 0.74.",
-      "relative_path": "metrics/validation.json",
+      "reproduction_ref": {
+        "record_id": "demo-comparison-001",
+        "record_kind": "snapshot_comparison"
+      },
       "source_sha256": "40c9ff8c85c45963daf85e4145f640259409da5c25e2c0c3d90e4baeba4e5ab1",
       "visibility": "diagnosis",
       "redacted": false

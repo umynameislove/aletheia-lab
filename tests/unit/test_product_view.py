@@ -16,7 +16,7 @@ _FIXTURE = Path(__file__).parents[1] / "fixtures" / "synthetic_p6_view.json"
 _PACKAGED_FIXTURE = (
     Path(__file__).parents[2] / "src" / "aletheia_lab" / "product" / "synthetic_p6_view.json"
 )
-_FIXTURE_SHA256 = "634876aa5033fc62dbf74add537a4733957e1082a718d01b8ef44a6c8464fc3c"
+_FIXTURE_SHA256 = "3baa872c280d4d773bc658c0fc93a101130e5293f851e642d5fd9168425bcb8b"
 
 
 def _payload() -> dict[str, object]:
@@ -42,6 +42,10 @@ def test_shared_fixture_is_exact_and_round_trips_through_product_view() -> None:
     assert view.conversation.turns[0].result_id == view.result.id
     assert view.conversation.turns[0].runtime == view.runtime
     assert view.result.denominators.independent_families is None
+    assert view.claims[0].claim_type == "evidence_statement"
+    assert view.snapshot.metric_changes[0].evidence_id == view.evidence[0].id
+    assert view.snapshot.metric_changes[0].delta == -0.08
+    assert view.evidence[0].reproduction_ref.record_kind == "snapshot_comparison"
 
 
 def test_demo_view_returns_a_fresh_exact_fixture_after_restart(tmp_path: Path) -> None:
@@ -73,6 +77,13 @@ def test_product_view_rejects_missing_extra_and_wrong_typed_fields() -> None:
     turns[0].pop("result_id")
     with pytest.raises(ValidationError):
         _validate(missing_turn_result)
+
+    missing_claim_type = _payload()
+    claims = missing_claim_type["claims"]
+    assert isinstance(claims, list)
+    claims[0].pop("claim_type")
+    with pytest.raises(ValidationError):
+        _validate(missing_claim_type)
 
     mismatched_turn_runtime = _payload()
     conversation = mismatched_turn_runtime["conversation"]
@@ -144,3 +155,71 @@ def test_product_view_rejects_hidden_causal_and_zero_for_unknown_family_count() 
     denominators["independent_families"] = 0
     with pytest.raises(ValidationError):
         _validate(fabricated_zero)
+
+
+def test_product_view_rejects_incoherent_metric_projection() -> None:
+    wrong_delta = _payload()
+    snapshot = wrong_delta["snapshot"]
+    assert isinstance(snapshot, dict)
+    changes = snapshot["metric_changes"]
+    assert isinstance(changes, list)
+    changes[0]["delta"] = -0.081
+    with pytest.raises(ValidationError, match="delta"):
+        _validate(wrong_delta)
+
+    wrong_snapshot = _payload()
+    snapshot = wrong_snapshot["snapshot"]
+    assert isinstance(snapshot, dict)
+    changes = snapshot["metric_changes"]
+    assert isinstance(changes, list)
+    changes[0]["before"]["snapshot_id"] = "demo-snapshot-other"
+    with pytest.raises(ValidationError, match="before observation"):
+        _validate(wrong_snapshot)
+
+    dangling_evidence = _payload()
+    snapshot = dangling_evidence["snapshot"]
+    assert isinstance(snapshot, dict)
+    changes = snapshot["metric_changes"]
+    assert isinstance(changes, list)
+    changes[0]["evidence_id"] = "demo-evidence-missing"
+    with pytest.raises(ValidationError, match="unavailable evidence"):
+        _validate(dangling_evidence)
+
+    wrong_reproduction_kind = _payload()
+    evidence = wrong_reproduction_kind["evidence"]
+    assert isinstance(evidence, list)
+    evidence[0]["reproduction_ref"]["record_kind"] = "snapshot"
+    with pytest.raises(ValidationError, match="reproduction record kind"):
+        _validate(wrong_reproduction_kind)
+
+
+def test_technical_failure_keeps_only_input_evidence_and_observation_graph() -> None:
+    payload = _payload()
+    result = payload["result"]
+    assert isinstance(result, dict)
+    result["status"] = "technical_failure"
+    result["disposition"] = None
+    denominators = result["denominators"]
+    assert isinstance(denominators, dict)
+    denominators["claims"] = 0
+    payload["claims"] = []
+    graph = payload["graph"]
+    assert isinstance(graph, dict)
+    nodes = graph["nodes"]
+    edges = graph["edges"]
+    assert isinstance(nodes, list)
+    assert isinstance(edges, list)
+    graph["nodes"] = [node for node in nodes if node["kind"] in {"Snapshot", "EvidenceItem"}]
+    graph["edges"] = [edge for edge in edges if edge["kind"] == "OBSERVED_IN"]
+
+    failure = _validate(payload)
+
+    assert failure.result.disposition is None
+    assert failure.claims == ()
+    assert failure.snapshot.metric_changes
+    assert failure.evidence
+
+    inconsistent = json.loads(json.dumps(payload))
+    inconsistent["result"]["disposition"] = "abstain"
+    with pytest.raises(ValidationError, match="technical failure"):
+        _validate(inconsistent)

@@ -32,6 +32,11 @@ def _view(*, project_id: str = _PROJECT_ID) -> ProductView:
     payload["project"]["display_name"] = "Imported project"
     payload["snapshot"]["id"] = _SNAPSHOT_ID
     payload["snapshot"]["baseline_id"] = _BASELINE_ID
+    for change in payload["snapshot"]["metric_changes"]:
+        if change["before"] is not None:
+            change["before"]["snapshot_id"] = _BASELINE_ID
+        if change["after"] is not None:
+            change["after"]["snapshot_id"] = _SNAPSHOT_ID
     payload["result"]["id"] = _PENDING_RESULT_ID
     payload["conversation"]["turns"][0]["snapshot_id"] = _SNAPSHOT_ID
     payload["conversation"]["turns"][0]["result_id"] = _PENDING_RESULT_ID
@@ -47,6 +52,21 @@ def _canonical_bytes(value: dict[str, object]) -> bytes:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode()
 
 
+def _technical_failure_view() -> ProductView:
+    payload = _view().model_dump(mode="json")
+    payload["result"]["status"] = "technical_failure"
+    payload["result"]["disposition"] = None
+    payload["result"]["denominators"]["claims"] = 0
+    payload["claims"] = []
+    payload["graph"]["nodes"] = [
+        node for node in payload["graph"]["nodes"] if node["kind"] in {"Snapshot", "EvidenceItem"}
+    ]
+    payload["graph"]["edges"] = [
+        edge for edge in payload["graph"]["edges"] if edge["kind"] == "OBSERVED_IN"
+    ]
+    return ProductView.model_validate_json(json.dumps(payload))
+
+
 def test_result_persists_idempotently_and_reloads_byte_stably(tmp_path: Path) -> None:
     store_root = tmp_path / "store"
     ProductService(store_root)
@@ -59,6 +79,21 @@ def test_result_persists_idempotently_and_reloads_byte_stably(tmp_path: Path) ->
     assert first.result.id.startswith("p6-result-")
     assert first.result.id != _PENDING_RESULT_ID
     assert _canonical_bytes(reloaded) == _canonical_bytes(first.model_dump(mode="json"))
+
+
+def test_technical_failure_persists_without_fabricating_a_disposition(tmp_path: Path) -> None:
+    store_root = tmp_path / "store"
+    ProductService(store_root)
+
+    persisted = persist_product_result(store_root, _technical_failure_view())
+    reloaded = ProductService(store_root).view(persisted.result.id)
+
+    assert reloaded == persisted.model_dump(mode="json")
+    assert persisted.result.status == "technical_failure"
+    assert persisted.result.disposition is None
+    assert persisted.claims == ()
+    assert persisted.snapshot.metric_changes
+    assert {node.kind for node in persisted.graph.nodes} == {"Snapshot", "EvidenceItem"}
 
 
 def test_result_rejects_demo_and_foreign_store_id(tmp_path: Path) -> None:

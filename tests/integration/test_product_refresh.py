@@ -64,6 +64,7 @@ def _mapping(
     *,
     direction: str = "lower_is_better",
     threshold: float = 0.08,
+    step_field: str | None = None,
 ) -> dict[str, object]:
     candidates = cast(
         dict[str, list[dict[str, object]]],
@@ -87,6 +88,7 @@ def _mapping(
                 "metric_name_field": "name",
                 "metric_value_field": "value",
                 "run_id_field": "run",
+                "step_field": step_field,
             }
         ],
         "runs": [
@@ -716,6 +718,27 @@ def test_analyze_mock_persists_filtered_view_and_old_result_survives_refresh(
         "external_call": False,
     }
     assert view["result"]["denominators"]["independent_families"] is None
+    metric_definitions = view["snapshot"]["metric_definitions"]
+    metric_changes = view["snapshot"]["metric_changes"]
+    assert metric_definitions == [
+        {
+            "metric_name": "loss",
+            "direction": "lower_is_better",
+            "regression_threshold": 0.08,
+        }
+    ]
+    assert len(metric_changes) == 1
+    assert metric_changes[0]["metric_name"] == "loss"
+    assert metric_changes[0]["kind"] == "increased"
+    assert metric_changes[0]["delta"] == 0.2
+    assert metric_changes[0]["adverse_status"] == "adverse"
+    assert metric_changes[0]["before"]["snapshot_id"] == view["snapshot"]["baseline_id"]
+    assert metric_changes[0]["after"]["snapshot_id"] == view["snapshot"]["id"]
+    evidence_ids = {item["id"] for item in view["evidence"]}
+    assert metric_changes[0]["evidence_id"] in evidence_ids
+    assert all("relative_path" not in item for item in view["evidence"])
+    assert all("reproduction_ref" in item for item in view["evidence"])
+    assert view["claims"][0]["claim_type"] == "evidence_statement"
     assert turn["result_id"] == result_id
     assert turn["runtime"] == view["runtime"]
     assert ProductService(store_root).view(result_id) == view
@@ -733,6 +756,13 @@ def test_analyze_mock_persists_filtered_view_and_old_result_survives_refresh(
 
     assert next_refresh["snapshot_id"] != refreshed["snapshot_id"]
     assert ProductService(store_root).view(result_id) == view
+    historical = ProductService(store_root).analyze_mock(
+        project_id,
+        str(refreshed["snapshot_id"]),
+        "Re-open the first immutable snapshot analysis.",
+    )
+    assert historical["snapshot"]["id"] == refreshed["snapshot_id"]
+    assert historical["snapshot"]["metric_changes"] == view["snapshot"]["metric_changes"]
 
 
 def test_analyze_mock_requires_exact_evidence_scope_and_valid_question(tmp_path: Path) -> None:
@@ -757,3 +787,55 @@ def test_analyze_mock_requires_exact_evidence_scope_and_valid_question(tmp_path:
 
     assert missing.value.code == "evidence_not_available"
     assert invalid_question.value.code == "invalid_question"
+
+
+def test_analyze_mock_keeps_multiple_steps_as_distinct_metric_changes(tmp_path: Path) -> None:
+    source_root = _project(tmp_path / "source")
+    (source_root / "metrics.csv").write_text(
+        "run,name,step,value\n"
+        "baseline,loss,1,0.4\n"
+        "baseline,loss,2,0.5\n"
+        "candidate,loss,1,0.6\n"
+        "candidate,loss,2,0.7\n",
+        encoding="utf-8",
+    )
+    _git(source_root, "add", "metrics.csv")
+    _git(source_root, "commit", "-q", "-m", "step baseline")
+    store_root = tmp_path / "store"
+    service = ProductService(store_root)
+    preview = service.preview_import(str(source_root))
+    confirmed = service.confirm_import(
+        str(preview["preview_id"]),
+        _mapping(preview, step_field="step"),
+    )
+    (source_root / "metrics.csv").write_text(
+        "run,name,step,value\n"
+        "baseline,loss,1,0.4\n"
+        "baseline,loss,2,0.5\n"
+        "candidate,loss,1,0.8\n"
+        "candidate,loss,2,0.9\n",
+        encoding="utf-8",
+    )
+    _git(source_root, "add", "metrics.csv")
+    _git(source_root, "commit", "-q", "-m", "two changed steps")
+    refreshed = service.refresh(str(confirmed["project_id"]))
+
+    view = service.analyze_mock(
+        str(confirmed["project_id"]),
+        str(refreshed["snapshot_id"]),
+        "Which metric steps changed?",
+    )
+
+    changes = view["snapshot"]["metric_changes"]
+    assert len(changes) == 2
+    assert {change["metric_name"] for change in changes} == {"loss"}
+    assert {change["before"]["step"] for change in changes} == {1, 2}
+    assert {change["after"]["step"] for change in changes} == {1, 2}
+    assert len({change["evidence_id"] for change in changes}) == 2
+    assert view["snapshot"]["metric_definitions"] == [
+        {
+            "metric_name": "loss",
+            "direction": "lower_is_better",
+            "regression_threshold": 0.08,
+        }
+    ]

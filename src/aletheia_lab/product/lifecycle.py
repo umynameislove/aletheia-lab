@@ -687,6 +687,51 @@ class ProductLifecycleStore:
             raise ProductError("store_integrity_error", _STORE_INTEGRITY_MESSAGE)
         return record
 
+    def get_project_state_for_snapshot(
+        self,
+        project_id: str,
+        snapshot_id: str,
+    ) -> ProductLifecycleRecord:
+        """Return the unique immutable project state that introduced a snapshot."""
+
+        checked_project_id = _validate_project_id(project_id)
+        if (
+            not isinstance(snapshot_id, str)
+            or re.fullmatch(SNAPSHOT_ID_PATTERN, snapshot_id) is None
+        ):
+            raise ProductError("invalid_id", "The supplied snapshot identifier is invalid.")
+        rows = self._connection.execute(
+            """
+            SELECT record_id, schema_version, record_kind, project_id, snapshot_id,
+                   parent_result_id, payload_json, canonical_sha256
+            FROM product_records
+            WHERE record_kind = 'project_state' AND project_id = ?
+            ORDER BY record_id
+            """,
+            (checked_project_id,),
+        ).fetchall()
+        matches: list[ProductLifecycleRecord] = []
+        for row in rows:
+            record = _record_from_row(row)
+            if (
+                record is None
+                or record.record_kind != "project_state"
+                or record.project_id != checked_project_id
+                or record.canonical_sha256() != str(row["canonical_sha256"])
+            ):
+                raise ProductError("store_integrity_error", _STORE_INTEGRITY_MESSAGE)
+            try:
+                payload_snapshot_id = record.payload().get("snapshot_id")
+            except (TypeError, ValueError):
+                raise ProductError("store_integrity_error", _STORE_INTEGRITY_MESSAGE) from None
+            if payload_snapshot_id == snapshot_id:
+                matches.append(record)
+        if not matches:
+            raise ProductError("record_not_found", _RECORD_NOT_FOUND_MESSAGE)
+        if len(matches) != 1:
+            raise ProductError("store_integrity_error", _STORE_INTEGRITY_MESSAGE)
+        return matches[0]
+
     def get(
         self,
         record_id: str,

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import unicodedata
 from collections.abc import Mapping
+from decimal import Decimal
 from pathlib import Path
 from typing import Final
 
@@ -15,11 +16,19 @@ from aletheia_lab.product.evidence import (
     resolve_product_evidence_references,
 )
 from aletheia_lab.product.evidence_store import load_diagnosis_evidence_projection
+from aletheia_lab.product.lifecycle import ProductLifecycleStore
+from aletheia_lab.product.mapping import adverse_metric_change_ids, load_stored_mapping
 from aletheia_lab.product.results import persist_product_result
 from aletheia_lab.product.view import ProductView
 from aletheia_lab.project.identity import canonical_project_sha256
+from aletheia_lab.project.mapping import MetricObservation, ProjectMappingConfiguration
 from aletheia_lab.project.persistence import ProjectStore
-from aletheia_lab.project.regression import EvidenceRole
+from aletheia_lab.project.regression import (
+    EvidenceRole,
+    ProjectMetricChange,
+    ProjectRegressionEvent,
+    ProjectSnapshotComparison,
+)
 from aletheia_lab.project.snapshots import ProjectSnapshot
 
 _PENDING_RESULT_ID: Final[str] = "p6-result-" + "0" * 64
@@ -73,8 +82,15 @@ def analyze_product_mock(
         project_id=project_id,
         snapshot_id=snapshot_id,
     )
-    snapshot = _load_snapshot(store_root, project_id, snapshot_id)
     baseline_id = _singleton_source_id(projection, "before_snapshot")
+    snapshot, comparison, configuration = _load_analysis_sources(
+        store_root,
+        project_id=project_id,
+        snapshot_id=snapshot_id,
+        baseline_id=baseline_id,
+        comparison_id=_singleton_source_id(projection, "snapshot_comparison"),
+        event_id=_singleton_source_id(projection, "regression_candidate"),
+    )
     visible_ids = tuple(item.evidence_id for item in projection.items)
     citation_ids = _citation_ids(projection)
     references = resolve_product_evidence_references(
@@ -99,7 +115,14 @@ def analyze_product_mock(
         "p6-conversation",
         {"project_id": project_id, "snapshot_id": snapshot_id},
     )
-    evidence = tuple(_product_evidence(item) for item in projection.items)
+    evidence = tuple(
+        _product_evidence(item, comparison_id=comparison.comparison_id) for item in projection.items
+    )
+    metric_definitions, metric_changes = _product_metrics(
+        projection,
+        comparison,
+        configuration,
+    )
     runtime = {
         "provider": "deterministic_mock",
         "model": "p6-deterministic-mock/v1",
@@ -115,6 +138,8 @@ def analyze_product_mock(
             "id": snapshot_id,
             "baseline_id": baseline_id,
             "sha256": snapshot.state_sha256,
+            "metric_definitions": list(metric_definitions),
+            "metric_changes": list(metric_changes),
         },
         "runtime": runtime,
         "result": {
@@ -163,6 +188,7 @@ def analyze_product_mock(
                 "id": claim_id,
                 "turn_id": turn_id,
                 "text": "The stored project evidence records an observed snapshot change.",
+                "claim_type": "evidence_statement",
                 "epistemic_state": "observed",
                 "support": "fully_supported",
                 "citation_ids": list(references.citation_ids),
@@ -198,13 +224,44 @@ def _checked_question(question: str) -> str:
     return question
 
 
-def _load_snapshot(store_root: Path, project_id: str, snapshot_id: str) -> ProjectSnapshot:
+def _load_analysis_sources(
+    store_root: Path,
+    *,
+    project_id: str,
+    snapshot_id: str,
+    baseline_id: str,
+    comparison_id: str,
+    event_id: str,
+) -> tuple[ProjectSnapshot, ProjectSnapshotComparison, ProjectMappingConfiguration]:
     try:
+        with ProductLifecycleStore(store_root) as lifecycle:
+            state = lifecycle.get_project_state_for_snapshot(project_id, snapshot_id)
+        state_payload = state.payload()
+        configuration = load_stored_mapping(state_payload.get("mapping_configuration"))
         with ProjectStore(store_root) as store:
+            baseline = store.load(baseline_id)
             snapshot = store.load(snapshot_id)
-        if not isinstance(snapshot, ProjectSnapshot) or snapshot.project_id != project_id:
-            raise ValueError("snapshot scope mismatch")
-        return snapshot
+            comparison = store.load(comparison_id)
+            event = store.load(event_id)
+        if (
+            configuration is None
+            or not isinstance(baseline, ProjectSnapshot)
+            or baseline.project_id != project_id
+            or not isinstance(snapshot, ProjectSnapshot)
+            or snapshot.project_id != project_id
+            or snapshot.mapping_configuration_sha256 != configuration.mapping_sha256
+            or not isinstance(comparison, ProjectSnapshotComparison)
+            or comparison.project_id != project_id
+            or comparison.before_snapshot_id != baseline_id
+            or comparison.after_snapshot_id != snapshot_id
+            or not isinstance(event, ProjectRegressionEvent)
+            or event.project_id != project_id
+            or event.comparison_id != comparison_id
+            or state_payload.get("comparison_id") != comparison_id
+            or state_payload.get("event_id") != event_id
+        ):
+            raise ValueError("analysis sources do not reconcile")
+        return snapshot, comparison, configuration
     except ProductError:
         raise
     except Exception:
@@ -238,18 +295,116 @@ def _missing_evidence(projection: ProductEvidenceProjection) -> tuple[str, ...]:
     return (*missing, *omitted)
 
 
-def _product_evidence(item: ProductEvidenceItem) -> dict[str, object]:
+def _product_evidence(
+    item: ProductEvidenceItem,
+    *,
+    comparison_id: str,
+) -> dict[str, object]:
     kind, title, text = _ROLE_PRESENTATION[item.role]
+    record_kind = {
+        "before_snapshot": "snapshot",
+        "after_snapshot": "snapshot",
+        "snapshot_comparison": "snapshot_comparison",
+        "metric_change": "snapshot_comparison",
+        "regression_candidate": "regression_event",
+    }[item.role]
+    record_id = comparison_id if item.role == "metric_change" else item.source_id
     return {
         "id": item.evidence_id,
         "kind": kind,
         "title": title,
         "text": text,
-        "relative_path": f"project-store/{item.role}.json",
+        "reproduction_ref": {"record_id": record_id, "record_kind": record_kind},
         "source_sha256": item.source_sha256,
         "visibility": "diagnosis",
         "redacted": False,
     }
+
+
+def _product_metrics(
+    projection: ProductEvidenceProjection,
+    comparison: ProjectSnapshotComparison,
+    configuration: ProjectMappingConfiguration,
+) -> tuple[tuple[dict[str, object], ...], tuple[dict[str, object], ...]]:
+    evidence_by_change = {
+        item.source_id: item.evidence_id
+        for item in projection.items
+        if item.role == "metric_change"
+    }
+    if set(evidence_by_change) != {change.metric_change_id for change in comparison.metric_changes}:
+        raise ProductError("store_integrity_error", _SOURCE_INTEGRITY_MESSAGE)
+    adverse_ids = set(adverse_metric_change_ids(comparison, configuration.metric_definitions))
+    definitions = tuple(
+        {
+            "metric_name": value.metric_name,
+            "direction": value.direction,
+            "regression_threshold": _json_number(value.regression_threshold),
+        }
+        for value in configuration.metric_definitions
+    )
+    changes = tuple(
+        _product_metric_change(
+            value,
+            evidence_id=evidence_by_change[value.metric_change_id],
+            before_snapshot_id=comparison.before_snapshot_id,
+            after_snapshot_id=comparison.after_snapshot_id,
+            adverse=value.metric_change_id in adverse_ids,
+        )
+        for value in comparison.metric_changes
+    )
+    return definitions, changes
+
+
+def _product_metric_change(
+    change: ProjectMetricChange,
+    *,
+    evidence_id: str,
+    before_snapshot_id: str,
+    after_snapshot_id: str,
+    adverse: bool,
+) -> dict[str, object]:
+    observation = change.after if change.after is not None else change.before
+    if observation is None:
+        raise ProductError("store_integrity_error", _SOURCE_INTEGRITY_MESSAGE)
+    return {
+        "evidence_id": evidence_id,
+        "metric_name": observation.metric_name,
+        "kind": change.kind,
+        "before": _product_metric_observation(change.before, before_snapshot_id),
+        "after": _product_metric_observation(change.after, after_snapshot_id),
+        "delta": None if change.delta is None else _metric_delta(change),
+        "adverse_status": (
+            "not_applicable"
+            if change.kind in {"added", "removed"}
+            else "adverse"
+            if adverse
+            else "not_adverse"
+        ),
+    }
+
+
+def _product_metric_observation(
+    observation: MetricObservation | None,
+    snapshot_id: str,
+) -> dict[str, object] | None:
+    if observation is None:
+        return None
+    return {
+        "snapshot_id": snapshot_id,
+        "run_id": observation.run_id,
+        "step": observation.step,
+        "value": _json_number(observation.metric_value),
+    }
+
+
+def _metric_delta(change: ProjectMetricChange) -> float:
+    if change.before is None or change.after is None:
+        raise ProductError("store_integrity_error", _SOURCE_INTEGRITY_MESSAGE)
+    return float(Decimal(str(change.after.metric_value)) - Decimal(str(change.before.metric_value)))
+
+
+def _json_number(value: float) -> float:
+    return float(Decimal(str(value)))
 
 
 def _minimal_graph(
