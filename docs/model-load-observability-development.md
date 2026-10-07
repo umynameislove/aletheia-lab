@@ -2273,3 +2273,90 @@ running. Read-only reproduction uses those `code-snapshot` roots; publication
 helper refactors, historical nomination-label updates and additive analysis do
 not substitute for the executed bytes. Current
 local checks do not imply commit, push, merge or remote Windows CI success.
+
+### Scientific closeout on a maintainer-authored nearest-neighbor workflow
+
+A new opt-in study preserves the installed scikit-learn 1.9.0
+`test_kneighbors_regressor` source body and records actual final-regressor inputs,
+fitted state and outputs. The harness interposes fitting/prediction and authors
+faults and seed variants. Source-file immutability does not mean unmodified
+execution, source blindness, a natural incident or an independently operated
+deployment. The declared footprint covers class, parameters, `_fit_X` and `_y`,
+not arbitrary native state. It assumes an honest host/hook, unchanged other native
+fields and no concurrent state mutation during a call.
+
+An actual two-model counterpair has equal declared behavior observations and
+different fitted-state compliance. This supports insufficiency of that projection,
+not insufficiency of every native observation. Ordinary complete fitted-state
+history already resolves the declared predicate. The adapter computes footprint
+equality before passing the compiled predicate to the existing resolver; this is
+not a new general-purpose checker. A finite 64-history control checks
+question-relative determinacy, an established concept, not a new theorem.
+
+The first seven-worker transfer retained a stale numeric object-ID enrollment
+defect and an extra captured row. Strong owner references corrected enrollment in
+a separately sealed extension. Its seven technical replications and fourteen
+unused-data trials all exited normally; source assertion failures remain failures.
+The corrected and fresh census contains 136 entered final-regressor predictions
+out of 168 planned, 70 captured chain rows and 105 offered audit obligations:
+84 accepted, 68 correctly completed, 16 accepted-but-unserved and 21 refused.
+There are zero false conclusive answers. Fresh-only counts are 82/112 predictions
+and 70 offers, 49 accepted, 41 complete, eight accepted-but-unserved and 21 refused.
+These are dependent arms within one source family, not independent incidents.
+
+The second source pair fails numerical equivalence at seed 59 before every arm's
+fourth intervention. This is one shared qualification falsification, not seven
+independent mechanism failures. Those fourth interventions are unattempted.
+Fitted-state identity remains compliant: the truncated nearest-neighbor graph
+omits radius-eligible neighbors in two query rows (30 and 27 needed). A forward
+repair supplies the full graph. Six prospectively specified numerical probe cells
+cover exposed seed 59 and previously unused seeds 62/67: full graph is equivalent
+in all three, while the original graph is equivalent at 62/67 already. Twelve
+native predictions and six extra inspection transforms are disclosed. This is an
+ordinary numerical repair, not capture repair or a universal new algorithm.
+
+Thirty separate cost workers measure 16/64 native calls with three process repeats
+in five fixed-order modes. All 1,200 predictions match an independent arithmetic
+reference. Raw static, whole-state compact and incremental compact each correctly
+serve 240 delayed fixed-read audits, for 720 total. Native and hash-only are
+cost floors, not equivalent audit-service comparators.
+
+| Median at 64 calls | Raw static | Whole-state compact | Incremental compact |
+| --- | ---: | ---: | ---: |
+| Instrumented serving stage (ms) | 32.406 | 260.211 | 412.721 |
+| Read-only query (ms) | 1.743 | 10.412 | 14.618 |
+| Submitted SQL payload (bytes) | 51,546 | 1,363,520 | 54,199 |
+| Closed database (bytes) | 73,728 | 94,208 | 69,632 |
+| Sampled DB/WAL/SHM peak (bytes) | 700,216 | 2,051,576 | 1,083,376 |
+
+Incremental row updates reduce submitted SQL payload by about 96% relative to
+whole-state rewriting here, but do not dominate raw static. Global state readback,
+validation and serialization remain CPU costs. Three fixed-order repetitions
+support descriptive component comparisons, not causal production overhead,
+concurrent throughput or a global minimum. The cost frame tests sufficient
+fixed-read storage; it does not establish equivalent online admission, leases,
+quota enforcement or a charged physical recovery tier for raw static.
+
+Twelve receipt-only policy/quota controls preserve whole/incremental service,
+including refusal and overlap/pin/drain behavior. Installing a supplied receipt
+under a new scope is not historical refetch. Four actual abrupt-child-exit controls
+preserve the prior state before commit and the acknowledged state after commit;
+they do not test power loss. Audit horizons/quotas are authored sensitivity,
+not operator SLOs. Original controls, failures, plans, receipts and execution
+snapshots remain immutable. `closeout` writes a separate synthesis;
+`verify-closeout` rebuilds it read-only without native reruns.
+
+The supported contribution is a bounded empirical/system account separating
+numerical correctness, fitted identity, capture completeness under assumptions,
+durable retention and accepted audit service. Broad field generalization,
+hostile-host completeness, arbitrary-state certification, power-loss guarantees,
+global optimality and algorithm superiority are not established. Independently
+grounded operator audit requirements remain an open acceptance item.
+
+The theory and repair scope are prior-aware:
+[query determinacy](https://dbucsd.github.io/paperpdfs/2010_3.pdf),
+[partial-observation monitoring](https://arxiv.org/pdf/2207.05678),
+[Hindsight](https://www.usenix.org/system/files/nsdi23-zhang-lei.pdf),
+[collector resiliency](https://opentelemetry.io/docs/collector/resiliency/) and
+[nearest-neighbor semantics](https://scikit-learn.org/stable/modules/neighbors.html)
+provide foundations, not a proof of first-ever novelty.
