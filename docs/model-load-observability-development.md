@@ -1556,3 +1556,132 @@ Existing explicit joins or source-native repairs may solve the declared problem;
 their success does not establish a new checker or adaptive retention advantage.
 Raw observations, models, logs, plan/result aggregates and prototype artifacts
 remain outside the repository. Writing and held-out evaluation are separate work.
+
+## Source-conditioned transfer on LitServe
+
+The optional pinned [LitServe 0.2.19 source](https://raw.githubusercontent.com/Lightning-AI/LitServe/v0.2.19/src/litserve/server.py)
+provides a previously unused serving implementation, selected for its CPU,
+queue and ordered-batching architecture before controlled failure outcomes.
+The eligible frame has three families: immutable endpoint batching, queue-age
+expiry and client abandonment after actual prediction entry. This is one
+implementation with authored workloads and nested process repeats, not a sample
+of independent deployments or a naturally occurring incident corpus. Existing
+cache/reload development evidence is not relabelled as fresh LitServe validation.
+
+The fixed design is two application arms (native and cooperative), two live
+SQLite persistence delays (zero and 0.5 seconds) and two fresh process repeats:
+eight cells with eleven offered requests each. Two owned bounded JSON affine
+models avoid untrusted model deserialization. All native UID allocation,
+default batching/unbatching and response transport remain in the actual SDK.
+The cooperative arm is explicitly application-owned deadline refusal before
+designated computation, not a claimed native cancellation guarantee. A start
+callback is not an actual prediction-entry witness. Queue-age expiry does not
+cancel an already running prediction.
+
+The live collector physically delays persistence while a separate trusted
+producer journal retains execution-boundary reference facts. Producer clocks,
+object and batch-slot identities, arithmetic, original client response bytes,
+native UID transport, per-PID sequence and SQLite census are rebuilt independently.
+This checks the representation and resolver against a second implementation of
+arithmetic/interval reasoning; it cannot independently attest the host or prove
+that the hooks observed every possible operation. Receipt time is recorded after
+commit. Neither missing evidence nor eventual worker exit proves closure at an
+earlier client cutoff.
+
+An initial adapter attempt failed before prediction because postponed HTTP
+annotations were not resolved by the SDK signature inspection. All attempted
+HTTP 422 responses and unattempted slots remain in a separate immutable report.
+A technical annotation correction retained the same design and full census;
+the corrected execution completed 88/88 offered requests. Both executed code
+snapshots and original reports are retained privately.
+
+| Actual application outcome | Native, 44 offers | Cooperative, 44 offers |
+| --- | ---: | ---: |
+| Delivered HTTP 200 | 28 | 31 |
+| Delivered HTTP 504 | 8 | 13 |
+| Client ReadTimeout | 8 | 0 |
+| Attempt closed at client cutoff, raw reference | 36 | 44 |
+| Attempt still open at client cutoff, raw reference | 8 | 0 |
+| Lawful batching successes / offers | 24/24 | 23/24 |
+
+The cooperative gate refuses all eight slow started attempts before numerical
+computation. Refusing four blockers also lets queued requests run, so the success
+count difference is queue redistribution, not a general success improvement.
+One lawful cooperative request expires in the queue and remains in the census.
+The policy does not establish an HTTP latency SLA or preemption of indivisible work.
+
+### Strong native controls and distinct evidence tiers
+
+The frozen `native_uid` comparator uses **persisted native UID evidence**. Its
+first-query count is not a test of every native capability: asynchronous receipt
+usually follows client completion even at zero artificial delay. An additive
+post-result analysis strengthens this control on exactly the same immutable raw
+data, without rerunning serving or changing the original forecasts or aggregates.
+
+Under the explicit trusted deployment contract (direct synchronous nonstreaming
+HTTP, immutable correct endpoint setup, default order/cardinality checks, no
+hidden background computation, proxy, cache or dispatch mutation), a successful
+native response supports conditional correspondence before collector receipt.
+Delivered known queue-expiry or cooperative-refusal responses also establish
+attempt closure. The source-conditioned response control classifies all 59
+delivered numerical origins correctly (29 unavailable) and 80 closed attempts
+correctly (eight unknown), with zero false conclusive answers against reference.
+At either persistence delay, it has 40 closed and four unknown. This explicitly
+rejects a claim that delayed collection causes a general native diagnostic gap.
+
+These source-contract implications are **not materialized per-request actual-use
+certificates**. Equal numbers do not identify a model without the source/setup
+premises, and these premises fail in several prior cache/context studies.
+ReadTimeout cannot imply closure: retained entry/terminal chronology later
+establishes all eight native attempts were open at the actual client cutoff.
+Unidentified HTTP 500 also remains unknown because handler errors can precede
+worker submission. No delivered HTTP 500 occurs in this frame.
+
+After collector drainage, ordinary same-access joins correctly reconstruct all
+88 closure classifications and all 59 available numerical origins, with zero
+false conclusive answers. Actual [in-toto](https://www.usenix.org/conference/usenixsecurity19/presentation/torres-arias)
+signature/rule verification covers the same captured event bundle; eight public
+layouts, keys and links replay successfully. Signatures add integrity, not
+missing observations or new inference accuracy. The frozen 36 nested forecast
+checks are supported with zero contradictions, not 36 independent source trials.
+
+### Measured cost and replay boundary
+
+Across eight cells, recorded capture encoding/journal IO is 163.322 ms; repeated
+collector scanning is 7.544 s; SQLite persistence is 442.263 ms; final archival IO
+plus journal reading is 14.508 ms; analysis is 9.454 ms; signing plus verification
+is 71.782 ms. These instrumented components may overlap and must not be added
+as an estimate of end-to-end overhead. Payload is 194,780 bytes, physical SQLite
+327,680 bytes, raw/log archive 559,507 bytes and provenance 20,072 bytes. The last
+stats write for each of 32 PIDs is explicitly unmeasured. No observer-free matched
+run, cheapest sufficient implementation, production speedup or storage optimizer
+advantage is established here.
+
+The optional runtime is isolated; the normal test profile has SDK-free contracts
+and does not install or start LitServe. Running needs a fresh caller-owned private
+directory, an explicit interpreter and native site directory. Dependencies and
+native source bytes are bound before serving. No provider, historical protected
+study or user model is invoked. Python audit hooks deny external networking but
+are not a kernel sandbox; the local serving child permits loopback/AF_UNIX only.
+
+```sh
+PYTHONPATH=src python scripts/litserve_evidence_validation.py prepare \
+  --root . --study-dir /private/fresh-study \
+  --native-python /isolated/bin/python --native-site /isolated/site-packages
+PYTHONPATH=src python scripts/litserve_evidence_validation.py run \
+  --root . --study-dir /private/fresh-study \
+  --native-python /isolated/bin/python --native-site /isolated/site-packages
+PYTHONPATH=src python scripts/litserve_evidence_validation.py verify \
+  --root /private/executed-code-snapshot --study-dir /private/completed-study
+PYTHONPATH=src python scripts/litserve_evidence_validation.py closeout \
+  --root /private/executed-code-snapshot --study-dir /private/completed-study
+```
+
+`prepare` reads metadata/design only and does not authorize or execute serving.
+`verify` rebuilds raw/reference, physical collector and actual public signature
+verification read-only. `closeout` additionally creates the separately labelled
+strong-native-control analysis once, or checks byte identity on repetition.
+Historical replay uses the retained executed implementation, not resealed current
+code. The supported finding is bounded evidence/repair transfer and native
+adequacy under stated contracts, **not a new checker, optimizer or universal
+minimal-evidence theorem**.
