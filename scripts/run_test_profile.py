@@ -221,6 +221,12 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_litserve_evidence_source.py",
         "tests/unit/test_litserve_evidence_study.py",
         "tests/unit/test_litserve_evidence_closeout.py",
+        "tests/unit/test_cache_lifecycle_analysis.py",
+        "tests/unit/test_cache_lifecycle_study.py",
+        "tests/unit/test_cache_lifecycle_certificate.py",
+        "tests/unit/test_cache_lifecycle_native_control.py",
+        "tests/unit/test_cache_lifecycle_materialization.py",
+        "tests/unit/test_cache_lifecycle_adequacy.py",
         "--durations=20",
     ),
     "windows-publication": (
