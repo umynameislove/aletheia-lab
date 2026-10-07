@@ -134,6 +134,11 @@ experiment artifacts remain local and are independently validated before use.
   request authorization to the actual resident components; individually valid
   loads or changed predictions alone do not decide compliance. Compare ordinary
   compact certificates and lease-safe retention before claiming a new method.
+  Retention admission does not guarantee successful execution, complete capture
+  or a conclusive audit. Executed source-informed development separates those
+  failures and credits ordinary baselines that match the tested full captured
+  service. Authored demand/resource budgets are not operator SLOs, and smaller
+  closed databases alone do not establish a latency or algorithmic advantage.
   See the [native workflow and audit boundaries](docs/model-load-observability-development.md).
 - Retained source-faithful extraction/acquisition studies compare LLMs with
   producer-adapted parsers and deterministic planners. Their limited results do
