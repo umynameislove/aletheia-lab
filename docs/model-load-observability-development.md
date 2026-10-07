@@ -1685,3 +1685,239 @@ Historical replay uses the retained executed implementation, not resealed curren
 code. The supported finding is bounded evidence/repair transfer and native
 adequacy under stated contracts, **not a new checker, optimizer or universal
 minimal-evidence theorem**.
+
+## Cache-producer lifecycle transfer and sufficient audit cost
+
+A forward, source-informed experiment uses previously unused **cachetools 6.2.6**
+memoization inside an application-owned **aiohttp 3.14.3** HTTP service. This is a
+controlled new implementation, not a naturally occurring incident or a claim
+that either library supplies hot-reload semantics. It runs immutable affine JSON
+models created locally; no user model, provider or historical protected study is
+loaded. Candidate parsing precedes atomic publication. A request's contract is
+the resident snapshot selected under lock after JSON decoding, not client arrival.
+An old request finishing after a reload is therefore not automatically wrong.
+
+### Mechanism and evidence requirements
+
+The locked [cachetools implementation](https://raw.githubusercontent.com/tkem/cachetools/v6.2.6/src/cachetools/_cached.py)
+computes a miss outside its cache lock and then uses `setdefault` to prefer an
+already inserted value. Clearing the cache does not cancel an earlier running
+miss. This predicts **two directions** of incorrect return:
+
+- Old computation finishes first: an old value refills the shared input-only key
+  and is served to a new-generation request.
+- New computation finishes first: the old request computes with its selected old
+  object, but the wrapper returns the new producer's already cached value.
+
+The latter shows why a computation witness alone does not establish response
+origin. For the declared retrospective service, the ordinary evidence join needs
+the actual wrapper-return producer linked to its computation and loaded model,
+plus the selected generation and scoped handler terminal. Client numeric equality
+alone does not identify that producer; equal-zero controls preserve this limit.
+Source-conditioned generation compliance and a named, retained per-request
+producer certificate are **different services**, not interchangeable metrics.
+The frozen resolver's concrete dependency checks reject missing or conflicting
+load, computation, return and terminal witnesses. These are dependencies of that
+linked-witness service, not universal information requirements. In particular,
+the forward refinement below removes a redundant wrapper record when the trusted
+handler terminal already carries the actual returned producer.
+
+Versioned keys and isolated per-generation wrapper/cache lifetimes are ordinary
+repairs, consistent with established cache-coherence principles such as
+[leases](https://www.usenix.org/system/files/conference/nsdi13/nsdi13-final170.pdf).
+They are not presented as a new algorithm. Native successful inference, lawful
+same-generation cache reuse and failed-reload rollback are retained as controls.
+
+### Executed results
+
+The design fixes four cache arms, two completion orders, three materialized-evidence
+modes and two fresh-process repetitions: **48 cells**, **3,456 HTTP inferences**
+and **96 HTTP reload offers**, with 216 numerical computations. Every cell
+completed. All source-informed violation-count predictions, rollback checks and
+materialized-join predictions match. Requests and repetitions are nested in one
+authored application; they are not independent incident samples.
+
+| Cache arm | Wrong-generation returns / 864 inferences |
+| --- | ---: |
+| Input-only key | 30 |
+| Clear shared cache on publication | 18 |
+| Generation included in key | 0 |
+| Isolated generation cache/wrapper | 0 |
+
+Twelve reverse-order cases independently confirm that an old request computes A
+but returns B's producer. Both ordinary generation controls prevent observed
+violations without disabling lawful cache reuse. This is evidence for a bounded
+repair footprint, not a general thread-safety or production-fault theorem.
+
+Persisted-only ordinary joins on sufficient and full records each correctly audit
+**1,152/1,152** requests, with zero false or unknown answers. The no-additional-store
+arm has 1,152 unknown materialized answers: it still collects the common raw
+reference and is **not an uninstrumented application baseline**. All 32 actual
+public in-toto bundles independently verify and bind their closed SQLite files;
+signatures protect retained evidence, not a hostile host or missing capture.
+
+The original secondary native comparison improperly used raw reference selection
+for unsafe shared-key arms. The execution/results snapshot is unchanged. An
+additive analysis-only closeout removes that uncharged premise: the conservative
+tier has 576 source-conditioned correct and 576 unknown answers per evidence mode.
+It is **not an exhaustive body/client-order comparator** and is excluded from any
+strongest-native gap claim. All primary materialized answers, forecasts, truth,
+timing and storage measurements are checked identical to the original report.
+
+### Matched cost and limits
+
+Both materialized modes use the same persistent collector and synchronous FULL
+SQLite transaction policy throughout a cell, with one commit per admitted record.
+Reported times include actual HTTP inference and instrumented hash, capture,
+write, query and signing/verification components. No component-time sum is called
+end-to-end overhead. All four nested samples per row are retained.
+
+| Strong repair / evidence | Steady inference median, ms (range of cell medians) | Write median, ms | Closed DB, KiB | Live DB + WAL + SHM median, bytes |
+| --- | ---: | ---: | ---: | ---: |
+| Generation key / sufficient | 0.330 (0.316–0.355) | 15.297 | 96 | 1,157,536 |
+| Generation key / full | 0.422 (0.384–0.441) | 21.327 | 108 | 1,511,856 |
+| Isolated cache / sufficient | 0.348 (0.319–0.357) | 15.657 | 96 | 1,157,536 |
+| Isolated cache / full | 0.394 (0.378–0.430) | 19.079 | 108 | 1,511,856 |
+
+Sufficient reduces closed database bytes by 11.11%; including the equal 2,509-byte
+public-provenance bundle gives about 10.865%. The generation-key/sufficient arm
+has the lowest measured strong-repair steady median in this candidate set. This
+does **not** establish global minimum, statistically robust latency superiority
+or uniform total-cost dominance: signing/total elapsed costs do not consistently
+favor sufficient. Live WAL footprint is not the final archive footprint. Native
+cache object bookkeeping is separately measured with identity-deduplicated
+`sys.getsizeof`, excluding wrappers, thread resources and RSS. Common raw journal,
+setup, trusted observer and reference costs remain present in every arm.
+
+### Replay and forward code
+
+The opt-in CLI exposes `prepare`, `run`, `verify`, `closeout` and an internal
+worker. Preparation locks runtime source bytes, code, design and predictions;
+starting a run prohibits silent retry/resume. Launch failures, timeouts and failed
+signature verification retain their planned denominator. A failed replica cannot
+make its surviving cost group qualify as sufficient. Offline tests need no SDK.
+
+Exact historical replay must execute the archived analysis/study, because forward
+maintenance and the labelled secondary analysis are not byte-identical to
+executed code. Snapshot directories omit package initializers; plain `PYTHONPATH`
+can accidentally select the live editable package. The current CLI explicitly
+loads the bound archived modules and first rejects changed shared helpers:
+
+```sh
+PYTHONPATH=src:/isolated/native-site /isolated/bin/python scripts/cache_lifecycle_validation.py \
+  verify --root /private/completed-study/code-snapshot --study-dir /private/completed-study
+PYTHONPATH=src:/isolated/native-site /isolated/bin/python \
+  scripts/cache_lifecycle_validation.py closeout \
+  --root /private/completed-study/code-snapshot --study-dir /private/completed-study
+```
+
+The latter writes/checks `analysis-closeout-v2.json` once, binding its analysis
+implementation and the unchanged original result. It performs no serving replay.
+The supported conclusion is **bounded evidence-requirement and ordinary-repair
+transfer with measured same-service sufficient cost**. It closes the declared
+experiment, not production coverage, native framework reload guarantees, a novel
+retention method or journal acceptance.
+
+### Post-result adequacy refinement: assumptions, query and materialization
+
+A second development pass uses the **same immutable 48-cell trace**. It neither
+reruns nor reseals the original native validation; its choices are post-result,
+not new held-out predictions. The additive output contains 96 real SQLite
+materializations/signature bundles over the 32 nonempty sufficient/full stores,
+plus analysis of all 48 client transcripts. Source/config/code bindings, exact
+planned census, physical payload/binding, actual public database signatures and
+dependency replays are verified independently of the stored summary.
+
+The organizing model is established
+[query determinacy](https://dbucsd.github.io/paperpdfs/2010_3.pdf) and
+[monitoring under partial observations](https://arxiv.org/pdf/2207.05678):
+for declared operational premises M and projection O, consider all compatible
+histories H_M(o) and the possible answers A_q(o) to a specified query q. A singleton
+answer is sound **if** the actual history satisfies M, the projection is faithful,
+and the analysis overapproximates compatible histories. Empty compatibility is a
+conflict, not compliance. The implemented rule comparator is conservative and
+tested against this bounded corpus; it is not a complete enumerator, a universal
+new theorem or proof for arbitrary cache deployments.
+
+Five queries remain distinct: generation compliance, named producer occurrence,
+handler closure, client delivery, and failed-reload resident preservation.
+Numerical equality and generation compliance do not establish a named actual-use
+certificate or counterfactual numerical harm. A trusted terminal can itself permit
+thinner conditional inferences. Requiring separate load/computation cross-links
+is an explicit trace-consistency service requirement, not semantic minimality.
+
+The stronger native comparator receives only a strict projection: HTTP route,
+operand, status/body, invocation/completion interval, known affine parameters and
+the declared cache arm. It receives no reference selection, producer, token,
+event index, completion-order label or barrier observation. Its three capabilities
+are separated rather than credited as evidence-free:
+
+| Conditional native capability | Correct generation verdicts / 3,456 | Unknown | False | Correctly recognized violations / 48 |
+| --- | ---: | ---: | ---: | ---: |
+| Client intervals/numeric output + immutable source-generation contract | 3,360 | 96 | 0 | 24 |
+| Also complete client census, initially empty LRU8, no hidden callers/eviction | 3,444 | 12 | 0 | 36 |
+| Also observer-assisted driver premise: sole old computation entered A before reload dispatch | 3,456 | 0 | 0 | 48 |
+
+The 12 residual unknowns concern an overlapping old request returning the new
+producer in unsafe `new_first` arms: client intervals alone do not locate its
+server selection. Adding the actual controlled driver premise resolves them.
+Thus the experiment does **not** prove universal native-telemetry inadequacy.
+Source assumptions, observer-assisted control and retained actual-use witnesses
+have different authority/cost and must not be silently exchanged.
+
+Offline deletion on 2,304 physically retained inference certificates shows that
+removing the separate wrapper keeps all answers; terminal-carried return is enough
+for this linked service. Removing load, computation or terminal leaves this
+resolver unknown. Removing client responses preserves producer/handler answers
+but removes delivery proof. Publication/failure records do not affect that
+inference tuple, yet are retained and charged for the separate two-offer reload
+ledger. These are resolver/service ablations, **not operational capture-loss
+experiments or a universal necessity/minimality proof**. Contradictory bindings,
+future computations, mismatched object/body and inconsistent publication/failure
+chronology are rejected; cross-request producer references remain lawful cache hits.
+
+Ordinary field projection removes wrapper duplication and unused fields while
+keeping load/computation/terminal, all HTTP responses and publication/failure
+records. Every candidate produces 2,304/2,304 correct linked certificates with
+observed client delivery, zero false/unknown, and the same reload ledger:
+
+| Offline candidate, median over 32 nested cells | Records | Commits | Logical bytes | Closed DB | Live DB/WAL/SHM bytes | Persistence, ms | Reconstruction, ms |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Source sufficient records | 227 | 228 | 82,235 | 100 KiB | 1,169,896 | 25.369 | 2.009 |
+| Projected, FULL per admitted record | 155 | 156 | 38,122 | 56 KiB | 782,616 | 17.678 | 1.271 |
+| Same projection, FULL after complete drain | 155 | 2 | 38,122 | 56 KiB | 111,056 | 1.465 | 1.209 |
+
+The replay schema charges its own scoped binding/ordinal bookkeeping; its 100 KiB
+baseline is not the original collector's 96 KiB. Projection saves **44% closed DB**,
+or **42.948%** including each equal 2,509-byte public-provenance bundle. Per-record
+projection writes faster in 30/32 paired cells; its persistence range is
+9.771–38.939 ms. Signing/verification medians are 4.244/4.259/4.269 ms and favor
+projection in only 18/32 pairs: no uniform total-cost dominance is claimed.
+After-drain writes take 1.249–5.017 ms but make **no earlier prefix-survival
+promise**. No crash or matched serving-overhead experiment was run. These are
+actual offline encoding/write/query/reconstruction/hash/sign costs, not HTTP
+speedups or global minima. The lowest observed archive footprint among these
+ordinary linked-service candidates is 56 KiB; a terminal-only conditional service
+has a different assurance contract and is not compared as equivalent.
+
+A separate exploratory cachetools 6.2.6 prototype ran three arms/nine native calls:
+an old `x=0` miss blocks, clear/publication B occurs, then A refills. New/repeated
+requests return producer A with the same zero value B would produce. Generation
+keys and isolated caches return B. This combines stale refill with noninjective
+output and tests the comparator's conservative guard; it is not another unseen
+validation or a newly discovered upstream bug. Source and result are archived
+inside the existing additive study output, never imported as executable replay.
+
+The opt-in `adequacy` action materializes this forward analysis once;
+`verify-adequacy` rebuilds it read-only, without timing/native rerun. Both take the
+original executed snapshot as `--root` and the completed study as `--study-dir`.
+Verification additionally rejects an unbound live WAL on a claimed closed store.
+This refinement strengthens **query-specific, capability-explicit evidence and
+repair limits**, while retaining ordinary baselines. It admits no new optimizer,
+Paper B method, host attestation, production guarantee or Q1 acceptance claim.
+
+Local verification: 96 focused tests and 68 contract tests pass; strict typing
+for Python 3.11/3.12, Ruff/format, maintainability and focused security checks pass.
+Independent realized-output checks cover raw arithmetic, all 96 physical stores,
+public signatures and archived probe hashes. Windows and the complete remote CI
+matrix have not been executed for this uncommitted change.
