@@ -235,6 +235,11 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_module_realization_forward.py",
         "tests/unit/test_module_realization_binding_cache.py",
         "tests/unit/test_module_realization_binding_study.py",
+        "tests/unit/test_incident_audit_archive.py",
+        "tests/unit/test_incident_audit_study.py",
+        "tests/unit/test_incident_audit_analysis.py",
+        "tests/unit/test_incident_audit_transfer.py",
+        "tests/unit/test_incident_audit_cost.py",
         "--durations=20",
     ),
     "windows-publication": (

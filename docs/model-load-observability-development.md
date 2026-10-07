@@ -2094,3 +2094,182 @@ hygiene and focused Bandit CI severity/confidence checks pass. The original
 54-cell additive closeout, 14 controls, 42-cell retention premise, 48-cell binding
 study and 36-cell HTTP study all replay read-only in the declared native dependency
 environment; public signatures require its optional provenance dependencies.
+
+## Incident audit obligations: runtime development and inference transfer
+
+Audit service concerns the lifecycle of evidence, not just a correct live
+resolver. This extension executes prospective reservations and later incident
+queries through a persistent SQLite WAL/FULL archive. It reuses the request-model
+resolver and ordinary shared-dependency compaction; it introduces no new checker,
+LLM, cryptographic attestation or admitted retention algorithm.
+
+### Source boundary and predictions
+
+The development source is ONNX Runtime 1.23.2's maintainer-authored
+[session initializer override test](https://github.com/microsoft/onnxruntime/blob/v1.23.2/onnxruntime/test/python/onnxruntime_test_python.py#L1162-L1185).
+Two legal CPU sessions share the same 130-byte graph but have different effective
+initializers. A graph-file digest alone therefore does not select an effective
+session. Complete native session/caller history already answers the model-use
+question under the fixed trusted source assumptions and receives full credit.
+The study's request routing, omissions, incident timetable and budgets are
+authored controls, not observed operator incidents.
+
+Predictions separate repairs: routing to the requested session corrects model-use
+violations, including an equal-zero-output case; capturing a missing association
+changes audit availability but not execution; retention/refetch of incomplete
+capture cannot invent the association. Pinning later cannot resurrect discarded
+evidence without a declared recovery store. Failed native calls remain unknown,
+not fulfilled conclusive audits.
+
+The archive compares compact static, incremental union, dependency-safe LRU and
+size/cost selection with the same leases, bounded future-growth reservations,
+dependency unions and independent drain operation. Logical quotas are 4/16/64 KiB,
+with a provisioned reference and an explicitly charged 256 KiB secondary tier.
+These are development allocations, not operator resource limits. Four KiB cannot
+fit a 4 KiB future-frame reservation plus its bookkeeping; resulting refusals are
+structural feasibility, not evidence of a new algorithm opportunity.
+
+The quota bounds the complete compressed state and pending growth, not physical
+SQLite pages, WAL/SHM, RSS or arbitrary future demand. Every offered audit is
+counted, including refused, missing, failed, late and admitted-but-unserved cases.
+Recovery restores the whole requested union atomically; it does not read the
+private ground-truth journal or install optional records one at a time and evict
+them before accepting the obligation. Post-commit telemetry failure does not
+retroactively roll back a durable acknowledgement.
+
+### Executed development results
+
+The original development pass and a separate post-result refinement are retained.
+The refinement separates capture omission from native failure and adds an ordinary
+no-eviction fast path; it is not held-out validation. Each pass offers nine fresh
+observer processes and three native-only controls: 288 instrumented calls plus
+96 control calls. The refined census has no failed process, nine native failures,
+273 correct captured conclusions, six capture-unknown conclusions and zero false
+conclusions. Requests and process repetitions are nested within one source family.
+
+| Refined source arm, 96 calls each | Model-use violations | Correct captured conclusions | Capture unknown | Native failures |
+| --- | ---: | ---: | ---: | ---: |
+| Observed routing | 12 | 90 | 3 | 3 |
+| Route repair | 0 | 90 | 3 | 3 |
+| Complete capture | 12 | 93 | 0 | 3 |
+
+Native source/history identifies all 93 conclusive calls in each arm. Its
+verdict history is not automatically the same as recovering a retained linked
+input/output/session/closure witness after an incident.
+
+Across the refined full-reference archives, 90 distinct offered audits are
+admitted: **57 are complete correct and 33 admitted-but-unserved**, with zero
+wrong answers. Twenty-seven unserved windows contain the native failed call;
+six additional windows contain only a missing capture. Complete capture recovers
+three complete audits, but does not repair native failure. Admission here promises
+bounded retention, not that a producer will successfully execute and capture every
+call. Reporting only accepted counts or treating unknown as fulfilled would hide
+this distinction.
+
+At 16 KiB, static/LRU serve the same 57 complete-correct audits, but refuse nine
+offered obligations and do not retain the full reference frontier. Equal correct
+coverage is not equal service. At 64 KiB, ordinary candidates match every reference
+query answer, admission and measured response-budget disposition. The lowest
+measured closed database allocation among these candidates is **49,152 bytes**,
+with median audit-query times about 7.82–7.86 ms. This is a closed-storage minimum
+over tested candidates, not a global cost optimum or a guarantee that all audits
+are conclusive. Secondary recovery is charged its full measured store allocation
+and per-query retrieval; it does not establish a same-budget method advantage.
+
+The 50 ms query-response cutoff and 1/10/50/100 ms sensitivity values are declared
+development budgets. Producer ticks define arrival ordering and are not elapsed
+wall time. Repetitions do not establish production SLOs, concurrent throughput or
+population confidence intervals. The common 37-archive observer workload cannot
+be used to estimate each policy's causal serving overhead. Independent replay
+checks 3,330 query frontiers and 342 closed databases. Eight abrupt process-exit
+controls recover the expected pre-commit or post-acknowledgement state; this is not
+a power-loss, hostile-host or distributed-concurrency guarantee.
+
+### Transfer to an externally authored inference dependency workflow
+
+ONNX 1.19.1's original
+[ModelContainer reference-evaluator tests](https://github.com/onnx/onnx/blob/b751946c3d59a3c8358abcc0569b59e6ddb08cdd/onnx/test/model_container_refeval_test.py)
+provide a distinct source-informed execution family. The installed release-wheel
+test is pinned by SHA-256; its Apache-2.0 source, helpers, assertions and method
+bodies are unchanged. One-file and multi-file layouts are related comparators,
+not two independent deployments. Source bodies/expected values were inspected
+before inference; this is not untouched source validation.
+
+Eight cells compare lawful behavior, replacement of the owned external A tensor,
+restoration before load, and omission of one captured association. The initial
+adapter incorrectly required an explicit external-data length; multi-file ONNX
+legally omits it. All four resulting failed workers and the initial successful
+one-file cells remain preserved. A separate technical correction uses the full
+file span when the length is omitted; it does not regain unused-outcome status.
+Each failed multi-file worker had already executed its first upstream inference,
+but its partial per-call rows were not retained. The initial eight one-file call
+receipts are not the total original native-call census; failed-process streams
+cannot reconstruct the missing outputs or timings. This limitation is retained,
+not filled with guessed records.
+The correction's inherited `unused` metadata is explicitly superseded by an
+additive closeout; no original receipt is resealed.
+
+The corrected eight-cell census executes **19 of 20 planned native inferences**.
+The two dependency-replacement cells retain the original upstream AssertionError;
+the multi-file method stops before its third inference, which remains unexecuted.
+Replacement changes the loaded dependency while the saved graph file remains
+unchanged. Restoring the dependency restores the original assertions in both
+layouts. Missing capture leaves native assertions correct but two linked-use
+audits unknown. Static and union archives recover the same 17 correct and two
+unknown answers, with zero false conclusions.
+
+Owned native-file receipts preserve the original weights and separately record
+the replacement `.changed` bytes with their before/changed/final hashes. Replaying
+the original filename alone reproduces lawful behavior, not the fault. A fault
+replay must apply the recorded replacement at the recorded post-save boundary;
+read-only verification checks that mutation mapping without re-executing it.
+
+Saved external-data graphs lack A/C payloads, but the effective post-load
+ModelProto embeds those tensors. Capturing that effective native object is already
+a sufficient strong baseline for the fixed numerical question. Source history can
+also reconstruct this deterministic fixture. This distinction rules out claiming
+that all graph-only observation is insufficient or that a new provenance method
+outperforms ordinary native evidence. The earlier four external-data serialization
+qualification cells have no inference outputs and are not counted as this transfer.
+
+### Separate component cost probe
+
+A further seed-ordered 12-process probe uses the identical native call path in
+all four modes, 16 calls each: native-only, hash-only, uncompressed per-request
+capture and compact static. All 192 calls are retained, including 12 invalid-shape
+failures. Capture and compact each retain 45 correct conclusive answers and three
+native-failure unknowns; hash-only does not claim linked-use witness service.
+
+| Component median, microseconds per request | Hash-only | Per-request capture | Compact static |
+| --- | ---: | ---: | ---: |
+| Input/output hashing | 4.813 | 6.209 | 7.334 |
+| Frame construction/resolve | — | 30.084 | 32.042 |
+| Write and acknowledgement | — | 108.792 | 1,639.250 |
+| Read-only query | — | 33.479 | 160.063 |
+| Reconstruction verification | — | 7.729 | 69.709 |
+| Closed database bytes | 0 | 28,672 | 24,576 |
+| Peak database + WAL + SHM bytes | 0 | 209,936 | 267,616 |
+
+Ordinary compaction saves 4 KiB of closed storage here, but is slower and has a
+higher measured persistence peak. Whole-state rewriting is a cost of this bounded
+implementation, not inherent to all compact storage. The measurements do not
+support efficiency dominance or a new retention algorithm. Native setup, shared
+numerical checking and raw receipts are disclosed; component stages are distinct
+and not added to the combined-workload timers. Tiny native fixtures, three nested
+process repeats, no operational arrival distribution, no IO-operation counters
+and no operator SLO forbid a production/minimum-cost claim.
+
+The result strengthens conditional evidence/repair boundaries and exposes the
+difference between live correctness, retained witnesses and promised audit
+service. It narrows the method claim: **ordinary baselines suffice for the tested
+full captured service; no separate algorithmic contribution is demonstrated**.
+Natural deployment/incident evidence remains unavailable. Independently justified
+operational demand/resource/deadline evaluation remains open; adding framework
+counts or tuning budgets until a policy wins does not close it.
+
+The opt-in incident development, transfer and cost commands create private stores
+outside the public repository. Exact execution implementations are archived before
+running. Read-only reproduction uses those `code-snapshot` roots; publication
+helper refactors, historical nomination-label updates and additive analysis do
+not substitute for the executed bytes. Current
+local checks do not imply commit, push, merge or remote Windows CI success.
