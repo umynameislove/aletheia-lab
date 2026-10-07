@@ -1921,3 +1921,176 @@ for Python 3.11/3.12, Ruff/format, maintainability and focused security checks p
 Independent realized-output checks cover raw arithmetic, all 96 physical stores,
 public signatures and archived probe hashes. Windows and the complete remote CI
 matrix have not been executed for this uncommitted change.
+
+## Source-informed dependency realization, capture loss and sufficient cost
+
+This additional experiment adapts the known MLflow `code_paths` limitation:
+two packaged models can contain differently implemented modules with the same
+name, while a shared process reuses the first imported implementation.
+[The upstream discussion](https://github.com/mlflow/mlflow/discussions/8905),
+[reported issue](https://github.com/mlflow/mlflow/issues/12377) and
+[documented limitation](https://mlflow.org/docs/latest/ml/model/dependencies/#limitation-of-code-paths-in-loading-multiple-models-with-the-same-module-name-but-different-implementations)
+motivate the mechanism; this is an exposed, source-informed adaptation on
+MLflow 3.9.0, not discovery of a new bug, reproduction of an original deployment,
+a blind holdout or a natural incident prevalence estimate. All artifacts are
+created locally. Only their trusted owned Python implementation is loaded.
+
+The query is which delivered requests after deployment used a mismatched resident
+dependency. Packaged artifact identity, callable dependency realization, numerical
+output, observed client delivery and complete attempt closure are separate facts.
+The service is serial; synchronized eviction of owned modules is not concurrent
+Python import isolation. Namespace separation and eviction are ordinary repairs.
+
+### Actual serving and operational capture interventions
+
+The complete 54-cell matrix executes 1,998 real HTTP prediction requests and
+54 deliberately invalid loads, including two load orders, three ordinary repair
+arms, native/compact/full evidence, five delivery interventions and eight kills
+of the SQLite-owning child. There are 360 dependency-contract violations;
+only 240 change the numerical output. Numerical equality at zero does not prove
+dependency identity. Body-only inference resolves 1,350 requests and leaves 648
+unknown, with zero false conclusions. A stronger comparator with the complete
+serial client history and known immutable source semantics resolves **all 1,998**
+correctly. The experiment therefore does not establish universal insufficiency
+of native information or superiority of a new checker.
+
+Captured actual-use evidence gives 1,454 correct answers, 544 unknown and zero
+false conclusions over all arms; this denominator includes the intentionally
+unobserved native arms and lossy stores. Missing load or predict witnesses remain
+unknown. Duplicate sequence delivery is deduplicated; delayed in-process delivery
+is unavailable before flush. The latter is a controlled buffer, not an external
+network outage. Dropped closure never becomes a complete-attempt certificate.
+
+All **1,672 acknowledged payloads** are recovered byte-for-byte across the
+non-native stores. Per-event acknowledgement is published only after SQLite
+WAL/FULL commit succeeds. Eight DB-owning process kills distinguish acknowledged
+event persistence from uncommitted drain buffering: after a drain-before-flush kill,
+all 37 queries remain unknown; after actual drain, all 37 are supported. This is
+process-crash evidence, not OS/power-loss durability. All 42 public in-toto bundles,
+including two empty databases, verify independently. Signatures bind retained
+bytes, not completeness or honesty of a compromised host/hook.
+
+The first full startup census failed because the sandbox prohibited loopback
+binding. It is retained separately, with zero serving calls. Technical execution
+then ran the same complete matrix. Original results and snapshots remain immutable;
+an additive closeout corrects empty-WAL state binding and removes a secondary
+raw-load-ID shortcut from the client-history comparator. Neither change selects
+favorable native outcomes.
+
+### Cost floor, real audit queries and limited retention premise
+
+Twelve additional fresh processes provide a no-observer floor: no child reference
+journal, binding hashes, collector or database. A common parent HTTP ledger is
+still charged as experiment control. Two further cells actually query the audit
+endpoint before and after delayed delivery: 37 unknown/no closure becomes
+25 compliant plus 12 violations/complete closure. Together these controls execute
+518 additional predictions. Median prediction latency is 4.022/4.081/3.858 ms for
+the collision/eviction/namespace floor arms and 4.214/4.223 ms for early/late
+compact/full audit cells. Separate nonrandomized epochs do **not** support causal
+observer-overhead subtraction, production throughput or a global minimum.
+
+An offline incident-window retention premise rematerializes all 42 store cells
+as 84 real SQLite databases. Ordinary shared-load interval union/pins retains
+944 records/498,080 payload bytes/1,064,960 closed-database bytes, versus full
+compact retention's 1,672/877,756/1,490,944. Complete scope/closure roots are retained;
+unrequested predictions are explicitly unknown, and missing input evidence is not
+dropped from the failure census. The 32 originally adequate stores satisfy the
+scoped demand. This measures projection/physical archive cost under a smaller
+declared query service, not equal-service compression, online capacity/admission,
+optimal retention or a distinct new method. The full retention research question
+remains open.
+
+### Second development pass: qualify a binding cache before amortizing capture
+
+The bounded architecture becomes **qualify footprint → obtain/reuse binding →
+link each request → persist → acknowledge → reconstruct**. Caching just at load
+is permitted under an immutable dependency premise, but not silently reused after
+that premise is relaxed. Qualified guarded memoization is ordinary prior-aware
+optimization, not a new general Python dependency algorithm:
+[precise-dependency function caching](https://grosskurth.ca/bib/2000/heydon-caching.pdf),
+[Build Systems à la Carte](https://simon.peytonjones.org/assets/pdfs/build-systems-original.pdf)
+and [guarded specialization in PEP 659](https://peps.python.org/pep-0659/)
+already motivate these ideas. Private dictionary version tags are not used;
+[PEP 699](https://peps.python.org/pep-0699/) rescinds their former contract.
+
+The fixed footprint accepts owned affine code shapes and pinned MLflow dispatch,
+holding strong references to the selected method/closure/global/module chain and
+checking coefficients and metadata. Dynamic module subclasses, PEP 562 lookup,
+instance/descriptor routes, changed wrapper closures, global `float` shadowing,
+unsupported bytecode/defaults and cycles are refused. Supported coefficient or
+same-shaped function changes cause a fresh binding scan. Files, builtins, SDK
+metadata/type hints/input conversion remain immutable and trusted; mutation
+during a call (including ABA), arbitrary Python dependencies and hostile-host
+attestation are outside the claim. Fresh qualification scans bypass the cache
+but use the same bounded introspection; they are not an independent oracle for
+arbitrary dynamic Python.
+
+A separate 48-process development matrix offers 1,440 predictions and executes
+1,428, with 12 unsupported calls refused before native execution. All 48 raw
+workloads and physical SQLite stores verify. The load-only ablation yields six
+stale certificates under supported coefficient/function mutation and six
+unqualified certifications under dynamic lookup/global shadowing. Quasi-identical
+fresh bindings in the latter case are not counted as sound: byte/object equality
+misses the changed execution footprint. Both qualified scan and guarded cache
+have zero stale/unqualified certificates in this finite matrix. Restoration and
+failed-load resident preservation are included.
+
+For the 36 immutable cells, all arms serve the same calls, per-request linkage and
+WAL/FULL service. Full scans fall from **924 to 36** for both ordinary caches;
+the guarded cache reuses 888 binding checks. Median of cell-level prediction
+component medians is 0.262188 ms for scan, 0.134292 ms for load-only and 0.168584 ms
+for guarded reuse: a 35.70% descriptive component reduction versus scan, not a
+35.70% HTTP speedup. Fresh pre/post reference scans are excluded from this component
+timer and reported separately. Fixed mode order/two nested repetitions do not
+justify population inference. Unsupported mutation cells have unequal executed
+censuses and are not used for speed ratios. A first worker's canonical JSON
+integer-key serialization failure is preserved separately, followed by the
+complete technically corrected matrix; neither failed receipt was resealed.
+
+The opt-in `binding`/`verify-binding` and `amortization`/`verify-amortization`
+actions use fresh private directories, archive executed code and refuse failed
+or altered censuses. Verification is read-only: snapshots, offered inputs/phases,
+actual responses/load linkage, recovered payloads, acknowledged digests and
+aggregates are checked. Results are development evidence, not retroactive changes
+to earlier registered studies or admission of a new retention algorithm.
+
+A further **36 fresh HTTP-serving processes**, with seed-fixed randomized mode
+order, execute 1,332 predictions and recover all 1,512 acknowledged payloads.
+All 1,332 actual-use audit answers are correct; ordinary repairs remove the
+dependency mismatch. These cells use the same compact WAL/FULL service and
+fresh reference journal in every arm. Reference hashing/journaling is measured
+separately but remains inside the HTTP endpoint, so this is an instrumented
+end-to-end comparison, not bare production overhead.
+
+| Immutable serving arm, median HTTP prediction ms | Qualified scan | Load-only cache | Guarded cache |
+| --- | ---: | ---: | ---: |
+| Shared names, no repair | 4.720 | 4.526 | 4.709 |
+| Shared names, owned serial eviction | 4.613 | 4.488 | 4.725 |
+| Distinct names | 4.764 | 4.581 | 4.638 |
+
+Guarded reuse is **not uniformly faster** end-to-end: cheaper binding scans do
+not dominate HTTP/journaling/persistence, and the eviction arm is slower than
+qualified scan. Load-only is the cheaper ordinary option when immutability can
+actually be guaranteed; guarded reuse buys a stricter between-call change
+contract. No inferential significance or global optimality follows from four
+nested cells per arm. The supported contribution is an experimentally qualified
+trade-off among footprint assumptions, binding validity, audit service and cost,
+not a prior-free cache algorithm or assured publication tier.
+
+Executed implementations are archived before measuring. The publication candidate
+removes the administrative task field from the protocol, decomposes
+census/application/shutdown helpers for the frozen complexity budget, constructs
+the constant-compiled rebinding function without `exec`, and propagates failed
+verification as a nonzero CLI exit. Archived protocol/code remains authoritative
+for exact original reproduction. Raw replay and focused semantic tests check
+the equivalent analysis/refactor paths; the rebinding equivalence is independently
+checked against archived function bytecode/globals/output.
+Full Windows/current remote CI has not been run; scientific completion does not
+imply the repository changes have been committed, pushed or merged.
+
+Final local checks: 191 focused tests and 68 contract tests pass. Strict typing
+for Python 3.11/3.12, Ruff/format, the unchanged maintainability budgets, repository
+hygiene and focused Bandit CI severity/confidence checks pass. The original
+54-cell additive closeout, 14 controls, 42-cell retention premise, 48-cell binding
+study and 36-cell HTTP study all replay read-only in the declared native dependency
+environment; public signatures require its optional provenance dependencies.
