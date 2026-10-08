@@ -2360,3 +2360,259 @@ The theory and repair scope are prior-aware:
 [collector resiliency](https://opentelemetry.io/docs/collector/resiliency/) and
 [nearest-neighbor semantics](https://scikit-learn.org/stable/modules/neighbors.html)
 provide foundations, not a proof of first-ever novelty.
+
+## Calibrated-classifier lifecycle and matched durable audit service
+
+An additive controlled study uses pinned scikit-learn 1.9.0 binary
+LogisticRegression, FrozenEstimator and sigmoid CalibratedClassifierCV. This
+boundary separates approved fitted state, actual active fit/calibration
+membership and numerical probability correctness. The
+[calibration contract](https://scikit-learn.org/stable/modules/generated/sklearn.calibration.CalibratedClassifierCV.html)
+requires disjoint fitting/calibration data for a pretrained classifier.
+[FrozenEstimator](https://scikit-learn.org/stable/modules/generated/sklearn.frozen.FrozenEstimator.html)
+prevents refitting but delegates other operations to its held estimator; it does
+not make that estimator's fitted coefficients immutable. These documented
+behaviors are not new upstream bugs.
+
+Twelve authored arms are fixed before two unused generated-data seeds: valid
+control, overlapping membership, disjoint refit, changed state with equal full
+output, ineffective frozen fit, state restoration, missing association,
+membership or closure, misjoin, native failure and wrong consumer probability
+report. All 24 arm forecasts are supported. Unknown/conflict forecasts remain
+unknown/conflict, not successful compliant certificates. Two intentional native
+failures remain in the 48 top-level transfer calls.
+
+| Certification query | Evidence sufficient within this footprint | What it does not establish |
+| --- | --- | --- |
+| Approved state | Enrollment footprint and actual held state linked to a closed call | Numerical correctness or calibration quality |
+| Active fitting/calibration separation | Recorded actual fit arrays/labels, stable sample IDs and exact content bindings | Group/subject independence or absence of near-duplicate leakage |
+| Sigmoid arithmetic | Actual coefficients, calibration parameters, input and reported output | Approved state or data separation |
+| Fulfilled delayed audit | Durable capsule, association/closure, admitted reservation, available dependencies and timely answer | Merely retaining correct evidence is not timely service |
+
+The independent reference rebuilds membership from actual native fit arrays and
+computes probabilities using scalar arithmetic. It does not call the adapter
+assessor, archive resolver or native predictor. Caller and adapter still share
+an honest host; this is computational independence, not independent-host
+attestation. Complete native/history receives the same facts and is credited as
+a strong ordinary baseline, not weakened to a log-only proxy.
+
+Changing a coefficient along a zeroed query feature violates the enrolled state
+with exactly equal full probability output on both fresh seeds. Frozen fit does
+not fix it; restoring the enrolled coefficient does. Separately, overlapping
+fit/calibration membership violates that policy while native sigmoid arithmetic
+remains valid; active disjoint refit repairs it in both cells. Equality in the
+overlap arm is not a valid-versus-overlapping fitted-model counterpair. Wrong
+consumer reporting violates arithmetic, not the two other predicates, and is
+not a failure of native sklearn computation. Historical fitting-data separation
+remains answerable even when a prediction fails; successful-call certification
+and historical fit questions are explicitly distinct.
+
+### Storage and service comparison
+
+Raw keyed, ordinary compact keyed and whole-state storage share complete
+capsules, future-growth reservations, leases, eviction/drain, common canonical
+compressed logical quota and WAL/FULL acknowledgement. Raw and compact share
+the same acknowledged owner-row cache and incremental SQL. Durable SELECT
+still checks actual rows; cache installation occurs only after commit and cached
+states returned to the caller are detached. Physical layouts differ; the common
+logical quota is not equal physical allocation. Native/hash-only are actual
+direct prediction floors, not admitted durable-audit services.
+
+Thirty core fresh-process workers cover five modes, 8/24 calls and three repeats.
+All 18 durable-service workers complete their 288 admitted obligations correctly
+within the fixed 30-second envelope; no refused, unknown, late, wrong or
+accepted-but-unserved core obligation is reported. Twelve native/hash workers
+are insufficient-evidence floors. Six additional fixed sensitivity workers
+include two terminal failures and are not silently dropped.
+
+| Median core envelope, three processes | Raw keyed | Compact keyed | Whole-state |
+| --- | ---: | ---: | ---: |
+| Eight-call instrumented workload, ms | 549.342 | 416.255 | 353.225 |
+| Eight-call closed DB, bytes | 184,320 | 69,632 | 73,728 |
+| Eight-call sampled DB/WAL/SHM peak, bytes | 440,656 | 321,176 | 1,281,136 |
+| 24-call instrumented workload, ms | 4,436.452 | 3,298.032 | 2,920.613 |
+| 24-call closed DB, bytes | 524,288 | 163,840 | 172,032 |
+| 24-call sampled DB/WAL/SHM peak, bytes | 1,338,816 | 1,091,616 | 4,403,112 |
+
+Compact uses the least closed DB and sampled physical peak among tested
+same-service candidates; whole-state has the least median workload time. No
+layout dominates all costs. Compact's 68.75% smaller 24-call closed DB versus
+raw is not a serving latency reduction, global minimum or new algorithm.
+Serving, capture, reserve/write ACK, query/verify, drain and private research
+witness generation have separate stage timers. Nested archive metrics cannot
+be added to them. Research instrumentation consumes workload time and deadlines;
+these measurements are not production observer overhead or concurrent throughput.
+
+At 24 calls, native prediction medians are10.122/9.969/11.632ms and capture
+excluding prediction16.736/16.720/17.725ms in raw/compact/whole. Reserve ACK
+705.433/499.374/450.220ms, write ACK802.257/580.167/528.240ms,
+query/verify1476.960/1087.240/969.649ms and drain1423.361/1053.198/913.220ms
+include full state-transition validation and serialization. All three commit97
+times; submitted SQL payload medians481864/109149/6288514bytes do not predict
+the wall-time ordering. Nested SQL read/write timers are inside those stages,
+not additional workload cost. Summing stage medians need not equal the median
+total; logical retained/peak charge83200/114302bytes matches across layouts.
+
+At 50 ms all three workers retain correct evidence but all 72 accepted
+obligations are late/unserved. At two seconds whole completes 24; raw and
+compact terminate without complete audit/timing rows. Their durable databases
+each show 24 admissions and 24 capsules, with five/fifteen query hits. Source
+inspection and memory-only replay identify a drain boundary where a previously
+present lease expires before the transition. Original child output was not
+preserved, so the exact original traceback and final service census remain
+unknown; neither worker is eligible for a complete two-second comparison.
+
+Publication code guards drain using the same timestamp as the transition and
+uses fixed literal internal SQL statements. Regression tests cover before,
+at and after expiry in every layout and reject unsupported table identifiers.
+These changes are post-result implementation corrections, not validation
+reruns. Original plans/results and exact execution sources remain unchanged;
+historical verification must use the corresponding archived root.
+
+Three real separately charged SQLite tiers persist original capsules before
+eviction, reopen, fetch and restore the exact original token/dependency union.
+All three succeed; unavailable fetch remains unavailable. Each tier has 138,984
+payload bytes and 155,648 closed physical bytes. Six actual child exits inside
+pre-commit INSERT or after durable ACK confirm correct absence/presence after
+reopen. Neither signatures nor WAL/FULL establish hostile-host completeness or
+arbitrary power-loss recovery.
+
+The final plan binds native environment and exact new/reused implementation
+files before execution. Read-only verification reconstructs admission and audit
+censuses, actual closed database bytes/state, native-history answers and control
+witnesses, rather than trusting a rehashed aggregate. Of 624 planned timed
+predictions, 576 have successful complete worker reports; the other 48 have
+retained capsules but partial service/timing census. No false conclusion is found
+in completed records, not a population zero-error guarantee. Authored demand,
+generated data, a serial honest host and explicit binary footprint limit transfer;
+no natural incident rate, operator SLO, global optimum, general leakage absence
+or novel retention-method superiority is established.
+
+## Composite preprocessing lifecycle: forward transfer contract
+
+The additive composite study keeps the prior calibrated-classifier receipts
+unchanged. Its enrolled footprint adds the actual StandardScaler before the
+LogisticRegression inside `Pipeline(memory=None)`, wrapped by FrozenEstimator
+and sigmoid calibration. Execution pins scikit-learn 1.9.0 and hashes native
+Pipeline, scaler, frozen-estimator and calibration source files. This is an
+unused generated-data composite boundary within one SDK ecosystem, not an
+independently operated deployment or a new upstream defect.
+
+The footprint includes Pipeline steps/memory, scaler configuration, mean/scale
+and feature dimensions, classifier configuration, coefficients/intercept/classes
+and feature dimensions, and the calibration parameters relevant to the declared
+queries. Scaler variance and training sample count are excluded from the
+effective inference footprint. Enrollment covers Pipeline/scaler/classifier
+state; observed sigmoid parameters support arithmetic, not an additional
+calibrator-enrollment predicate. No claim covers arbitrary estimator state,
+categorical or sparse transforms, cache cloning, concurrent in-call mutation,
+weighted fitting, or multiclass calibration.
+
+| Query or failure mechanism | Sufficient evidence under declared premises | Effective repair / ineffective substitute |
+| --- | --- | --- |
+| Enrollment of the effective Pipeline | Actual linked scaler and classifier state plus enrollment and call closure | Restore both state components / classifier-only repair or frozen fit cannot restore a mutated scaler |
+| Downstream sigmoid arithmetic | Actual transform-return, linked classifier/calibration state and reported probabilities | Authentic transform-return can suffice without the scaler state / output equality cannot certify enrollment |
+| Raw-input preprocessing formula | Raw input and actual scaler mean/scale or consistent paired formula and transform-return | A downstream transform witness alone does not certify a missing raw-input formula |
+| Active fit/calibration membership | Recorded actual fitting arrays/labels, stable sample IDs and content bindings | Active disjoint calibration refit / state restoration does not remove historical overlapping membership |
+| Conclusive timely audit service | Acknowledged retained capsule, linked dependencies, adequate reservation and an answer before the inclusive deadline | Durable capture/retention enables later audit / receipt existence, an expired lease or unknown answer is not fulfilled service |
+
+The transform witness is captured from the active scaler instance inside the
+delegated native prediction, not from an extra inspection transform presented
+as actual use. When both captured transform-return and state-derived transform
+are present, a discrepancy yields conflict. Missing preprocessing with authentic
+transform-return can leave enrollment unknown while downstream arithmetic is
+answerable. If a known classifier mismatch already disproves the enrollment,
+missing scaler state does not erase that violation.
+
+Two histories differing in enrolled preprocessing can produce exactly equal
+probability outputs on the chosen query. Consequently output-only observation
+cannot determine enrollment for this explicit pair. This is a concrete controlled
+instantiation of query-relative provenance disclosure, not a new determinacy
+theorem. [Cheney's provenance security framework](https://conferences.computer.org/sp/pdfs/csf/2011/2011-cheney-formal.pdf)
+and [A Core Calculus for Provenance](https://arxiv.org/abs/1310.6299) already
+formalize query disclosure and provenance views. Replay consistency is not
+independent proof that an honest capture host recorded every real event.
+
+### Durable progress and comparison boundary
+
+Each cost worker records a canonical, hash-chained, fsynced single-writer journal
+before and after reserve, native prediction, retain/ACK, audit, witness and drain.
+The parent preserves exact planned configuration, output bytes, exit status,
+timeout and elapsed time. Verification rebuilds service from those records and
+independently compares the final archive to its witnessed state. An unfinished
+stage is indeterminate, never silently inferred from a later database row.
+Interior corruption fails verification; an interrupted trailing fragment remains
+explicitly incomplete. Native failure returning unknown cannot count as
+success merely because the reference is also unknown. A completed audit lacking
+the following independent witness is unverified, not a proved successful service.
+
+Raw keyed, compact keyed and whole-state candidates keep identical canonical
+logical quota, growth reservation, leases, ACK durability and delayed burst
+obligations. Pressure quota and authored deadline sensitivities test admission
+and service limits; they are not operator-derived capacity or SLOs. Native/hash
+are direct application floors with no audit offer. Only candidates satisfying
+all planned obligations under the same envelope are eligible for sufficient
+cost ranking; refusing more requests cannot manufacture efficiency superiority.
+
+All per-call journal fsync and research-witness work consumes the workload time
+and deadline. Setup, final snapshot, archive close, terminal journal write and
+parent process startup are excluded from the workload timer and stated
+separately. The delegated predictor timer includes its scoped transform hook and
+output conversion; it is not pure native serving latency. Nested SQL timers
+cannot be added to enclosing stage times. Closed DB, sampled DB/WAL/SHM peak,
+canonical logical charge and separately retained journal bytes are distinct
+resources. Abrupt child exits and a killed timed-out child test owned process
+boundaries, not hostile-host completeness, power-loss recovery or throughput
+under concurrent serving.
+
+### Forward measured outcome
+
+All 36 frozen forecasts (18 arms on two unused generated-data seeds) are
+supported. The 72 top-level transfer predictions include two intentional native
+failures. Independent scalar/raw-fit-array replay confirms both equal-output
+counterpairs, the authentic-Z arithmetic route and repair locality; complete
+native/history is credited as sufficient. No false conclusive answer is found
+in the retained observations, not a population zero-error guarantee.
+
+All 40 timed workers finish 1,920 native calls. The 36 durable-service workers
+offer 1,728 obligations; four native/hash workers execute 192 application-floor
+calls without audit offers.
+
+| Matched envelope across three layouts | Offered | Accepted | Refused | Timely complete | Accepted but unserved |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Sufficient quota, 30s, two repeats at 32/64 calls | 576 | 576 | 0 | 576 | 0 |
+| Pressure quota, 30s, two repeats at 32/64 calls | 576 | 360 | 216 | 360 | 0 |
+| Pressure quota, 50ms | 288 | 288 | 0 | 0 | 288 |
+| Pressure quota, 2s | 288 | 288 | 0 | 0 | 288 |
+
+Expired leases allow new storage reservations, but do not guarantee that delayed
+audit can be performed before the deadline. All layouts have identical census
+outcomes here. This is a storage-service boundary finding, not a demonstration
+that every ordinary deadline-feasible admission policy must fail. Short-deadline
+unknown counts are 108 per envelope; they are not extra successes. Three owned
+exit/timeout controls reach reserve-only or acknowledged-retention prefixes;
+each retains one accepted-but-unserved obligation and three unstarted slots.
+No historical failed worker or receipt is rewritten as a success.
+
+| Sufficient 64-call service, median of two processes | Raw keyed | Compact keyed | Whole-state |
+| --- | ---: | ---: | ---: |
+| Instrumented workload, ms | 43,898.548 | 31,219.691 | 26,526.132 |
+| Closed DB, bytes | 1,646,592 | 397,312 | 622,592 |
+| Sampled DB/WAL/SHM peak, bytes | 5,811,752 | 3,349,376 | 4,944,312 |
+| Separately retained journal, bytes | 21,582,980.5 | 21,582,848.5 | 21,582,743 |
+
+Compact minimizes measured DB/peak, whole-state minimizes median workload time;
+none dominates every cost. Compact's 75.87% smaller DB versus raw corresponds
+to only about 5.38% less DB-plus-journal, not a latency or total-resource claim.
+Full state validation/readback dominates prediction and limits production
+interpretation. Each query deadline is relative to its own offer; total workload
+includes later witnesses/drain and need not finish within 30s. Two repetitions
+are descriptive, not independent deployment evidence or statistical superiority.
+
+The source and environment are sealed before the fresh execution. Read-only
+verification on both the working root and a support-complete archived source
+root reproduces all forecasts, stage/admission/service censuses, interruption
+qualification, final archive state/bytes and the same-service frontier. Original
+calibration receipts and exact executed source remain unchanged. Generated
+arrays, fitting history, native packets, journals, SQLite/WAL/SHM, raw diagnostics
+and execution archives are private study artifacts, not public repository files.
