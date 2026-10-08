@@ -8,6 +8,7 @@ from typing import NoReturn
 from aletheia_lab.product.analysis import analyze_product_mock
 from aletheia_lab.product.boundary import ProductError
 from aletheia_lab.product.demo import demo_product_view
+from aletheia_lab.product.follow_up import follow_up_product_result
 from aletheia_lab.product.imports import confirm_product_import, preview_product_import
 from aletheia_lab.product.lifecycle import ProductLifecycleStore
 from aletheia_lab.product.refresh import refresh_product_project
@@ -80,9 +81,15 @@ class ProductService:
         selection_id: str,
         question: str,
     ) -> dict[str, object]:
-        """Create a scoped immutable follow-up result when implemented."""
+        """Create and persist a scoped immutable deterministic follow-up."""
 
-        self._unavailable()
+        return follow_up_product_result(
+            self._store_root,
+            result_id,
+            selection_kind,
+            selection_id,
+            question,
+        ).model_dump(mode="json")
 
     def view(self, result_id: str) -> dict[str, object]:
         """Reload and revalidate an immutable diagnosis-visible product view."""

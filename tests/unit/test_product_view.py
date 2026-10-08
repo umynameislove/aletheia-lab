@@ -10,13 +10,13 @@ import pytest
 from pydantic import ValidationError
 
 from aletheia_lab.product import ProductService
-from aletheia_lab.product.view import ProductView
+from aletheia_lab.product.view import COUNTERFACTUAL_NOT_AVAILABLE, ProductView
 
 _FIXTURE = Path(__file__).parents[1] / "fixtures" / "synthetic_p6_view.json"
 _PACKAGED_FIXTURE = (
     Path(__file__).parents[2] / "src" / "aletheia_lab" / "product" / "synthetic_p6_view.json"
 )
-_FIXTURE_SHA256 = "3baa872c280d4d773bc658c0fc93a101130e5293f851e642d5fd9168425bcb8b"
+_FIXTURE_SHA256 = "0f5413427d1adf184639bff08181d5a81d41e25dad7c45bfb71788742d957fd2"
 
 
 def _payload() -> dict[str, object]:
@@ -46,6 +46,8 @@ def test_shared_fixture_is_exact_and_round_trips_through_product_view() -> None:
     assert view.snapshot.metric_changes[0].evidence_id == view.evidence[0].id
     assert view.snapshot.metric_changes[0].delta == -0.08
     assert view.evidence[0].reproduction_ref.record_kind == "snapshot_comparison"
+    assert view.conversation.turns[0].missing_evidence[-1] == COUNTERFACTUAL_NOT_AVAILABLE
+    assert view.claims[0].missing_evidence == (COUNTERFACTUAL_NOT_AVAILABLE,)
 
 
 def test_demo_view_returns_a_fresh_exact_fixture_after_restart(tmp_path: Path) -> None:
@@ -192,6 +194,84 @@ def test_product_view_rejects_incoherent_metric_projection() -> None:
     with pytest.raises(ValidationError, match="reproduction record kind"):
         _validate(wrong_reproduction_kind)
 
+    duplicate_identity = _payload()
+    snapshot = duplicate_identity["snapshot"]
+    assert isinstance(snapshot, dict)
+    changes = snapshot["metric_changes"]
+    assert isinstance(changes, list)
+    copied_change = json.loads(json.dumps(changes[0]))
+    copied_change["evidence_id"] = "demo-evidence-metric-duplicate-identity"
+    changes.append(copied_change)
+    with pytest.raises(ValidationError, match="unique run, metric and step identity"):
+        _validate(duplicate_identity)
+
+
+def test_product_view_requires_exact_graph_nodes_and_conclusion_edges() -> None:
+    empty_graph = _payload()
+    empty_graph["graph"] = {"nodes": [], "edges": []}
+    with pytest.raises(ValidationError, match="exact required node sources"):
+        _validate(empty_graph)
+
+    missing_citation = _payload()
+    missing_citation["graph"]["edges"] = [
+        edge for edge in missing_citation["graph"]["edges"] if edge["kind"] != "CITES"
+    ]
+    with pytest.raises(ValidationError, match="citation edges"):
+        _validate(missing_citation)
+
+    wrong_disposition = _payload()
+    disposition_edge = next(
+        edge
+        for edge in wrong_disposition["graph"]["edges"]
+        if edge["kind"] == "ASSIGNED_DISPOSITION"
+    )
+    disposition_edge["source"] = "demo-node-evidence"
+    with pytest.raises(ValidationError, match="disposition edges"):
+        _validate(wrong_disposition)
+
+    duplicate_observation = _payload()
+    observed = next(
+        edge for edge in duplicate_observation["graph"]["edges"] if edge["kind"] == "OBSERVED_IN"
+    )
+    copied_edge = dict(observed)
+    copied_edge["id"] = "demo-edge-observed-duplicate"
+    duplicate_observation["graph"]["edges"].append(copied_edge)
+    with pytest.raises(ValidationError, match="semantically unique"):
+        _validate(duplicate_observation)
+
+
+def test_product_view_locks_counterfactual_marker_and_metric_evidence_parity() -> None:
+    duplicate_marker = _payload()
+    marker = "Counterfactual comparison: not_available"
+    duplicate_marker["conversation"]["turns"][0]["missing_evidence"] = [marker, marker]
+    with pytest.raises(ValidationError, match="at most once"):
+        _validate(duplicate_marker)
+
+    duplicate_claim_marker = _payload()
+    duplicate_claim_marker["claims"][0]["missing_evidence"] = [marker, marker]
+    with pytest.raises(ValidationError, match="at most once"):
+        _validate(duplicate_claim_marker)
+
+    marker_not_last = _payload()
+    marker_not_last["conversation"]["turns"][0]["missing_evidence"] = [
+        marker,
+        "A real evidence request",
+    ]
+    with pytest.raises(ValidationError, match="must be last"):
+        _validate(marker_not_last)
+
+    marker_outside_missing = _payload()
+    marker_outside_missing["result"]["summary"] = marker
+    with pytest.raises(ValidationError, match="only in missing evidence"):
+        _validate(marker_outside_missing)
+
+    extra_metric_evidence = _payload()
+    copied_evidence = dict(extra_metric_evidence["evidence"][0])
+    copied_evidence["id"] = "demo-evidence-metric-extra"
+    extra_metric_evidence["evidence"].append(copied_evidence)
+    with pytest.raises(ValidationError, match="one-to-one parity"):
+        _validate(extra_metric_evidence)
+
 
 def test_technical_failure_keeps_only_input_evidence_and_observation_graph() -> None:
     payload = _payload()
@@ -203,6 +283,7 @@ def test_technical_failure_keeps_only_input_evidence_and_observation_graph() -> 
     assert isinstance(denominators, dict)
     denominators["claims"] = 0
     payload["claims"] = []
+    payload["conversation"]["turns"][-1]["missing_evidence"] = []
     graph = payload["graph"]
     assert isinstance(graph, dict)
     nodes = graph["nodes"]
@@ -218,6 +299,14 @@ def test_technical_failure_keeps_only_input_evidence_and_observation_graph() -> 
     assert failure.claims == ()
     assert failure.snapshot.metric_changes
     assert failure.evidence
+    assert COUNTERFACTUAL_NOT_AVAILABLE not in failure.conversation.turns[-1].missing_evidence
+
+    technical_with_marker = json.loads(json.dumps(payload))
+    technical_with_marker["conversation"]["turns"][-1]["missing_evidence"] = [
+        COUNTERFACTUAL_NOT_AVAILABLE
+    ]
+    with pytest.raises(ValidationError, match="technical failure"):
+        _validate(technical_with_marker)
 
     inconsistent = json.loads(json.dumps(payload))
     inconsistent["result"]["disposition"] = "abstain"

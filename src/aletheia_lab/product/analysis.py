@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import unicodedata
 from collections.abc import Mapping
 from decimal import Decimal
 from pathlib import Path
@@ -18,9 +17,12 @@ from aletheia_lab.product.evidence import (
 from aletheia_lab.product.evidence_store import load_diagnosis_evidence_projection
 from aletheia_lab.product.lifecycle import ProductLifecycleStore
 from aletheia_lab.product.mapping import adverse_metric_change_ids, load_stored_mapping
+from aletheia_lab.product.projection import build_product_graph_projection
+from aletheia_lab.product.questions import checked_product_question
 from aletheia_lab.product.results import persist_product_result
-from aletheia_lab.product.view import ProductView
+from aletheia_lab.product.view import COUNTERFACTUAL_NOT_AVAILABLE, ProductView
 from aletheia_lab.project.identity import canonical_project_sha256
+from aletheia_lab.project.lineage import ProjectLineageGraph
 from aletheia_lab.project.mapping import MetricObservation, ProjectMappingConfiguration
 from aletheia_lab.project.persistence import ProjectStore
 from aletheia_lab.project.regression import (
@@ -32,7 +34,6 @@ from aletheia_lab.project.regression import (
 from aletheia_lab.project.snapshots import ProjectSnapshot
 
 _PENDING_RESULT_ID: Final[str] = "p6-result-" + "0" * 64
-_QUESTION_INVALID_MESSAGE: Final[str] = "The analysis question is not valid."
 _SOURCE_INTEGRITY_MESSAGE: Final[str] = "Stored project evidence failed its integrity check."
 _ROLE_PRESENTATION: Final[dict[EvidenceRole, tuple[str, str, str]]] = {
     "before_snapshot": (
@@ -76,14 +77,14 @@ def analyze_product_mock(
 ) -> ProductView:
     """Create and persist one deterministic result without network or hidden evidence."""
 
-    checked_question = _checked_question(question)
+    checked_question = checked_product_question(question)
     projection = load_diagnosis_evidence_projection(
         store_root,
         project_id=project_id,
         snapshot_id=snapshot_id,
     )
     baseline_id = _singleton_source_id(projection, "before_snapshot")
-    snapshot, comparison, configuration = _load_analysis_sources(
+    snapshot, comparison, configuration, lineage = _load_analysis_sources(
         store_root,
         project_id=project_id,
         snapshot_id=snapshot_id,
@@ -198,30 +199,19 @@ def analyze_product_mock(
             }
         ],
         "evidence": list(evidence),
-        "graph": _minimal_graph(
+        "graph": build_product_graph_projection(
+            lineage,
+            projection,
             snapshot_id=snapshot_id,
-            evidence_ids=references.visible_evidence_ids,
-            citation_ids=references.citation_ids,
-            claim_id=claim_id,
-        ),
+            claim_citations={claim_id: references.citation_ids},
+            disposition_id=_PENDING_RESULT_ID,
+            result_scope_id=turn_id,
+        ).graph.model_dump(mode="json"),
     }
     view = ProductView.model_validate_json(
         json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
     )
     return persist_product_result(store_root, view)
-
-
-def _checked_question(question: str) -> str:
-    if (
-        not isinstance(question, str)
-        or not question
-        or question != question.strip()
-        or len(question) > 2000
-        or unicodedata.normalize("NFC", question) != question
-        or any(ord(character) < 32 or ord(character) == 127 for character in question)
-    ):
-        raise ProductError("invalid_question", _QUESTION_INVALID_MESSAGE)
-    return question
 
 
 def _load_analysis_sources(
@@ -232,17 +222,24 @@ def _load_analysis_sources(
     baseline_id: str,
     comparison_id: str,
     event_id: str,
-) -> tuple[ProjectSnapshot, ProjectSnapshotComparison, ProjectMappingConfiguration]:
+) -> tuple[
+    ProjectSnapshot,
+    ProjectSnapshotComparison,
+    ProjectMappingConfiguration,
+    ProjectLineageGraph,
+]:
     try:
         with ProductLifecycleStore(store_root) as lifecycle:
             state = lifecycle.get_project_state_for_snapshot(project_id, snapshot_id)
         state_payload = state.payload()
         configuration = load_stored_mapping(state_payload.get("mapping_configuration"))
+        lineage_id = state_payload.get("lineage_graph_id")
         with ProjectStore(store_root) as store:
             baseline = store.load(baseline_id)
             snapshot = store.load(snapshot_id)
             comparison = store.load(comparison_id)
             event = store.load(event_id)
+            lineage = store.load(lineage_id) if isinstance(lineage_id, str) else None
         if (
             configuration is None
             or not isinstance(baseline, ProjectSnapshot)
@@ -257,11 +254,14 @@ def _load_analysis_sources(
             or not isinstance(event, ProjectRegressionEvent)
             or event.project_id != project_id
             or event.comparison_id != comparison_id
+            or not isinstance(lineage, ProjectLineageGraph)
+            or lineage.project_id != project_id
             or state_payload.get("comparison_id") != comparison_id
             or state_payload.get("event_id") != event_id
+            or state_payload.get("lineage_graph_id") != lineage.graph_id
         ):
             raise ValueError("analysis sources do not reconcile")
-        return snapshot, comparison, configuration
+        return snapshot, comparison, configuration, lineage
     except ProductError:
         raise
     except Exception:
@@ -292,7 +292,11 @@ def _missing_evidence(projection: ProductEvidenceProjection) -> tuple[str, ...]:
         f"Omitted evidence category: {role.replace('_', ' ')}"
         for role in projection.omitted_categories
     )
-    return (*missing, *omitted)
+    return (
+        *missing,
+        *omitted,
+        COUNTERFACTUAL_NOT_AVAILABLE,
+    )
 
 
 def _product_evidence(
@@ -405,62 +409,6 @@ def _metric_delta(change: ProjectMetricChange) -> float:
 
 def _json_number(value: float) -> float:
     return float(Decimal(str(value)))
-
-
-def _minimal_graph(
-    *,
-    snapshot_id: str,
-    evidence_ids: tuple[str, ...],
-    citation_ids: tuple[str, ...],
-    claim_id: str,
-) -> dict[str, object]:
-    snapshot_node = _scoped_id("p6-node", {"kind": "Snapshot", "source_id": snapshot_id})
-    claim_node = _scoped_id("p6-node", {"kind": "AtomicClaim", "source_id": claim_id})
-    disposition_node = _scoped_id(
-        "p6-node", {"kind": "Disposition", "source_id": _PENDING_RESULT_ID}
-    )
-    evidence_nodes = {
-        evidence_id: _scoped_id("p6-node", {"kind": "EvidenceItem", "source_id": evidence_id})
-        for evidence_id in evidence_ids
-    }
-    nodes = [
-        {"id": snapshot_node, "kind": "Snapshot", "source_id": snapshot_id},
-        {"id": claim_node, "kind": "AtomicClaim", "source_id": claim_id},
-        {
-            "id": disposition_node,
-            "kind": "Disposition",
-            "source_id": _PENDING_RESULT_ID,
-        },
-        *(
-            {"id": node_id, "kind": "EvidenceItem", "source_id": evidence_id}
-            for evidence_id, node_id in evidence_nodes.items()
-        ),
-    ]
-    edges = [
-        _edge("OBSERVED_IN", evidence_nodes[evidence_id], snapshot_node)
-        for evidence_id in evidence_ids
-    ]
-    edges.extend(
-        _edge("CITES", claim_node, evidence_nodes[evidence_id]) for evidence_id in citation_ids
-    )
-    edges.append(_edge("ASSIGNED_DISPOSITION", claim_node, disposition_node))
-    return {
-        "nodes": [
-            {**node, "visibility": "diagnosis"}
-            for node in sorted(nodes, key=lambda value: str(value["id"]))
-        ],
-        "edges": sorted(edges, key=lambda value: str(value["id"])),
-    }
-
-
-def _edge(kind: str, source: str, target: str) -> dict[str, object]:
-    return {
-        "id": _scoped_id("p6-edge", {"kind": kind, "source": source, "target": target}),
-        "kind": kind,
-        "source": source,
-        "target": target,
-        "visibility": "diagnosis",
-    }
 
 
 def _scoped_id(prefix: str, payload: Mapping[str, object]) -> str:

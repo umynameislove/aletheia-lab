@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from aletheia_lab.project.identity import SHA256_PATTERN
 
 PRODUCT_VIEW_SCHEMA_VERSION: Final[Literal["p6-product-view/v1"]] = "p6-product-view/v1"
+COUNTERFACTUAL_NOT_AVAILABLE: Final[str] = "Counterfactual comparison: not_available"
 
 ProductVisibility: TypeAlias = Literal["diagnosis"]
 ProductMode: TypeAlias = Literal["project_audit"]
@@ -149,6 +150,11 @@ class ProductSnapshot(_StrictFrozenModel):
         ids = tuple(value.evidence_id for value in values)
         if len(ids) != len(set(ids)):
             raise ValueError("product metric changes must have unique evidence IDs")
+        identities = tuple(_metric_change_identity(value) for value in values)
+        if len(identities) != len(set(identities)):
+            raise ValueError(
+                "product metric changes must have unique run, metric and step identity"
+            )
         return tuple(sorted(values, key=lambda value: value.evidence_id))
 
     @model_validator(mode="after")
@@ -205,6 +211,11 @@ class ProductTurn(_StrictFrozenModel):
     def _valid_visible_ids(cls, values: tuple[str, ...]) -> tuple[str, ...]:
         return _unique_ids(values, label="turn-visible evidence")
 
+    @field_validator("missing_evidence")
+    @classmethod
+    def _counterfactual_marker_is_unique(cls, values: tuple[str, ...]) -> tuple[str, ...]:
+        return _bounded_counterfactual_marker(values)
+
 
 class ProductConversation(_StrictFrozenModel):
     id: str = Field(pattern=_ID_PATTERN)
@@ -238,6 +249,11 @@ class ProductClaim(_StrictFrozenModel):
     @classmethod
     def _valid_counterevidence_ids(cls, values: tuple[str, ...]) -> tuple[str, ...]:
         return _unique_ids(values, label="claim counterevidence IDs")
+
+    @field_validator("missing_evidence")
+    @classmethod
+    def _counterfactual_marker_is_unique(cls, values: tuple[str, ...]) -> tuple[str, ...]:
+        return _bounded_counterfactual_marker(values)
 
     @model_validator(mode="after")
     def _evidence_roles_are_disjoint(self) -> Self:
@@ -333,6 +349,8 @@ class ProductView(_StrictFrozenModel):
         turn_ids = self._turn_ids(evidence_ids)
         claim_ids = self._claim_ids(turn_ids, evidence_ids)
         self._graph_sources_reconcile(evidence_ids, claim_ids)
+        if _contains_counterfactual_marker_outside_missing_evidence(self.model_dump(mode="python")):
+            raise ValueError("counterfactual marker may appear only in missing evidence")
         if self.result.denominators.claims != len(self.claims):
             raise ValueError("product claim denominator does not match the projection")
         self._result_status_reconciles()
@@ -350,6 +368,14 @@ class ProductView(_StrictFrozenModel):
             for change in self.snapshot.metric_changes
         ):
             raise ValueError("product metric change references non-metric evidence")
+        metric_change_evidence_ids = {change.evidence_id for change in self.snapshot.metric_changes}
+        metric_evidence_ids = {
+            item.id for item in self.evidence if item.kind == "metric_observation"
+        }
+        if metric_change_evidence_ids != metric_evidence_ids:
+            raise ValueError(
+                "product metric changes and evidence must have exact one-to-one parity"
+            )
         return evidence_ids
 
     def _turn_ids(self, evidence_ids: set[str]) -> set[str]:
@@ -388,6 +414,8 @@ class ProductView(_StrictFrozenModel):
             raise ValueError("technical failure must not contain claims or a disposition")
         if not self.conversation.turns[-1].abstained:
             raise ValueError("technical failure turn must abstain")
+        if COUNTERFACTUAL_NOT_AVAILABLE in self.conversation.turns[-1].missing_evidence:
+            raise ValueError("technical failure must not assert counterfactual availability")
         if any(node.kind not in {"Snapshot", "EvidenceItem"} for node in self.graph.nodes):
             raise ValueError("technical failure graph contains a conclusion node")
         if any(edge.kind != "OBSERVED_IN" for edge in self.graph.edges):
@@ -398,12 +426,73 @@ class ProductView(_StrictFrozenModel):
             "Snapshot": {self.snapshot.id},
             "EvidenceItem": evidence_ids,
             "AtomicClaim": claim_ids,
-            "Disposition": {self.result.id},
+            "Disposition": ({self.result.id} if self.result.status == "complete" else set()),
         }
-        for node in self.graph.nodes:
-            allowed = sources_by_kind.get(node.kind)
-            if allowed is None or node.source_id not in allowed:
-                raise ValueError("product graph node source is unavailable in this view")
+        nodes_by_source: dict[tuple[str, str], str] = {}
+        for kind, expected_sources in sources_by_kind.items():
+            nodes = tuple(node for node in self.graph.nodes if node.kind == kind)
+            actual_sources = {node.source_id for node in nodes}
+            if len(nodes) != len(expected_sources) or actual_sources != expected_sources:
+                raise ValueError("product graph does not contain the exact required node sources")
+            nodes_by_source.update(((node.kind, node.source_id), node.id) for node in nodes)
+        if len(nodes_by_source) != len(self.graph.nodes):
+            raise ValueError("product graph node source is unavailable in this view")
+        self._graph_edges_reconcile(nodes_by_source)
+
+    def _graph_edges_reconcile(self, nodes_by_source: dict[tuple[str, str], str]) -> None:
+        allowed_kinds = {"OBSERVED_IN", "CITES", "ASSIGNED_DISPOSITION"}
+        if any(edge.kind not in allowed_kinds for edge in self.graph.edges):
+            raise ValueError("product graph contains an unsupported relationship")
+        semantic_edges = tuple((edge.kind, edge.source, edge.target) for edge in self.graph.edges)
+        if len(semantic_edges) != len(set(semantic_edges)):
+            raise ValueError("product graph relationships must be semantically unique")
+
+        snapshot_node_id = nodes_by_source[("Snapshot", self.snapshot.id)]
+        evidence_node_ids = {
+            node_id for (kind, _), node_id in nodes_by_source.items() if kind == "EvidenceItem"
+        }
+        observed = tuple(edge for edge in self.graph.edges if edge.kind == "OBSERVED_IN")
+        if any(
+            edge.source not in evidence_node_ids or edge.target != snapshot_node_id
+            for edge in observed
+        ):
+            raise ValueError("product graph observation edge has invalid endpoint roles")
+
+        expected_citations = {
+            (
+                nodes_by_source[("AtomicClaim", claim.id)],
+                nodes_by_source[("EvidenceItem", evidence_id)],
+            )
+            for claim in self.claims
+            for evidence_id in claim.citation_ids
+        }
+        actual_citations = {
+            (edge.source, edge.target) for edge in self.graph.edges if edge.kind == "CITES"
+        }
+        if actual_citations != expected_citations:
+            raise ValueError("product graph citation edges do not match its claims")
+
+        expected_dispositions: set[tuple[str, str]] = set()
+        if self.result.status == "complete":
+            disposition_node_id = nodes_by_source[("Disposition", self.result.id)]
+            expected_dispositions = {
+                (nodes_by_source[("AtomicClaim", claim.id)], disposition_node_id)
+                for claim in self.claims
+            }
+        actual_dispositions = {
+            (edge.source, edge.target)
+            for edge in self.graph.edges
+            if edge.kind == "ASSIGNED_DISPOSITION"
+        }
+        if actual_dispositions != expected_dispositions:
+            raise ValueError("product graph disposition edges do not match its claims")
+
+
+def _metric_change_identity(change: ProductMetricChange) -> tuple[str, str, int | None]:
+    observation = change.before if change.before is not None else change.after
+    if observation is None:
+        raise ValueError("product metric change requires an observation identity")
+    return observation.run_id, change.metric_name, observation.step
 
 
 def _require_unique(values: Iterable[str], *, label: str) -> None:
@@ -419,4 +508,29 @@ def _unique_ids(values: tuple[str, ...], *, label: str) -> tuple[str, ...]:
     return values
 
 
-__all__ = ["PRODUCT_VIEW_SCHEMA_VERSION", "ProductView"]
+def _bounded_counterfactual_marker(values: tuple[str, ...]) -> tuple[str, ...]:
+    count = values.count(COUNTERFACTUAL_NOT_AVAILABLE)
+    if count > 1:
+        raise ValueError("counterfactual not-available marker may appear at most once")
+    if count == 1 and values[-1] != COUNTERFACTUAL_NOT_AVAILABLE:
+        raise ValueError("counterfactual not-available marker must be last")
+    return values
+
+
+def _contains_counterfactual_marker_outside_missing_evidence(value: object) -> bool:
+    if isinstance(value, dict):
+        return any(
+            key != "missing_evidence"
+            and _contains_counterfactual_marker_outside_missing_evidence(item)
+            for key, item in value.items()
+        )
+    if isinstance(value, (list, tuple)):
+        return any(_contains_counterfactual_marker_outside_missing_evidence(item) for item in value)
+    return value == COUNTERFACTUAL_NOT_AVAILABLE
+
+
+__all__ = [
+    "COUNTERFACTUAL_NOT_AVAILABLE",
+    "PRODUCT_VIEW_SCHEMA_VERSION",
+    "ProductView",
+]

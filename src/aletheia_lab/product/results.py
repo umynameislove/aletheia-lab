@@ -42,23 +42,67 @@ class ProductResultEnvelope(BaseModel):
         return cast(dict[str, object], json.loads(json.dumps(value, allow_nan=False)))
 
 
-def persist_product_result(store_root: Path, view: ProductView) -> ProductView:
+def persist_product_result(
+    store_root: Path,
+    view: ProductView,
+    *,
+    parent_result_id: str | None = None,
+) -> ProductView:
     """Persist one validated non-demo ProductView or accept an identical replay."""
 
     checked = ProductView.model_validate(view.model_dump(mode="python"))
     if checked.demo_only:
         raise ProductError("result_invalid", _RESULT_INVALID_MESSAGE)
+    if parent_result_id is not None:
+        parent = load_product_result(store_root, parent_result_id)
+        _validate_derived_result(parent, checked)
     envelope = ProductResultEnvelope(view=checked.model_dump(mode="json"))
     record = build_product_lifecycle_record(
         record_kind="result",
         project_id=checked.project.id,
         snapshot_id=checked.snapshot.id,
+        parent_result_id=parent_result_id,
         payload=envelope.model_dump(mode="json"),
     )
     persisted = _view_from_record(record)
     with ProductLifecycleStore(store_root) as lifecycle:
         lifecycle.put(record)
     return persisted
+
+
+def _validate_derived_result(parent: ProductView, child: ProductView) -> None:
+    if (
+        child.project != parent.project
+        or child.snapshot != parent.snapshot
+        or child.visibility != parent.visibility
+        or child.mode != parent.mode
+        or child.runtime != parent.runtime
+        or child.demo_only
+        or child.conversation.id != parent.conversation.id
+        or child.evidence != parent.evidence
+        or len(child.conversation.turns) != len(parent.conversation.turns) + 1
+        or child.conversation.turns[:-1] != parent.conversation.turns
+        or child.claims[: len(parent.claims)] != parent.claims
+    ):
+        raise ProductError(
+            "result_parent_invalid",
+            "The parent product result does not match this follow-up.",
+        )
+    expected_new_claims = 0 if parent.result.status == "technical_failure" else 1
+    if (
+        child.result.status != parent.result.status
+        or len(child.claims) != len(parent.claims) + expected_new_claims
+    ):
+        raise ProductError(
+            "result_parent_invalid",
+            "The parent product result does not match this follow-up.",
+        )
+    new_turn_id = child.conversation.turns[-1].id
+    if any(claim.turn_id != new_turn_id for claim in child.claims[len(parent.claims) :]):
+        raise ProductError(
+            "result_parent_invalid",
+            "The parent product result does not match this follow-up.",
+        )
 
 
 def load_product_result(store_root: Path, result_id: str) -> ProductView:

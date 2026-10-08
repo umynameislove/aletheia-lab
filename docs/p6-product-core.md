@@ -179,7 +179,7 @@ in K05.
 K06 locks the exact `p6-product-view/v1` DTO used by `demo_view`,
 `analyze_mock`, and `view`. The shared fixture is
 `tests/fixtures/synthetic_p6_view.json`, with SHA-256
-`3baa872c280d4d773bc658c0fc93a101130e5293f851e642d5fd9168425bcb8b`.
+`0f5413427d1adf184639bff08181d5a81d41e25dad7c45bfb71788742d957fd2`.
 An identical packaged copy supplies the offline demo; every call validates and
 returns a fresh value, so caller mutation cannot change later responses.
 
@@ -236,6 +236,88 @@ analysis, persistence, and reload. JSON scans confirm that none of those values,
 file names, source paths, evaluator labels, or withheld markers enter the
 ProductView. K07 owns richer claim/lineage graph construction, K08 owns
 follow-up conversation behavior, and K10 owns report rendering.
+
+## K07 deterministic graph projection
+
+K07 projects the persisted P3 lineage through `project_lineage` and
+`project_lineage_table` at diagnosis visibility before creating the product
+graph. Every visible evidence source must resolve to one typed P3 lineage node;
+comparison, metric-change, and regression-event hashes must also match. Snapshot
+evidence uses the P3 state hash while its lineage node uses the record hash, so
+snapshot provenance reconciles by its typed content-addressed source ID. Foreign,
+hidden, duplicated, dangling, or tampered provenance fails closed with a safe
+`ProductError`.
+
+The projection also requires the persisted P3 edge topology: project containment
+of both snapshots, comparison `compares_before`/`compares_after`, comparison
+`reports` for every metric change, comparison `qualifies` the event, and both
+metric change and evidence bundle `supports` relations to that event. Evidence
+provenance links must describe the same topology. Removing lineage edges while
+retaining its nodes therefore fails closed rather than producing an inferred
+product graph.
+
+One immutable canonical projection supplies the sorted graph, row-oriented table,
+and textual paths. Text paths reuse the exact graph node and edge IDs. Supported
+product edges remain `OBSERVED_IN`, `CITES`, and `ASSIGNED_DISPOSITION`; causal or
+generic inferred edges are never created. Saved result graphs remain byte-stable
+after refresh, and a technical-failure projection contains only Snapshot and
+EvidenceItem nodes joined by `OBSERVED_IN`.
+`OBSERVED_IN` is emitted only for the after-snapshot evidence itself and evidence
+with a direct provenance link to that snapshot; it is not added to every visible
+evidence item. Follow-up results preserve this observation scope exactly. Graph
+validation requires one node for every in-view source and exact claim citation
+and disposition edges, so an empty or partial graph cannot pass validation.
+
+The exact counterfactual marker is
+`Counterfactual comparison: not_available`. It may appear only in
+`missing_evidence`, at most once per array, and always as the final element after
+real evidence requests. Its absence does not mean a pair is available. The demo
+fixture emits it once in its turn and claim because it has no valid pair;
+technical-failure turns do not emit it. Changing the literal requires a product
+view schema-version change.
+
+Metric changes and metric-observation evidence have exact one-to-one ID parity.
+For multiple steps, each `(run_id, metric_name, step)` is a separate change whose
+before and after observations retain that same run and step; no step is selected
+or pooled implicitly.
+
+## K08 deterministic mock and scoped follow-up
+
+`analyze_mock` and `follow_up` are offline deterministic product operations.
+Their runtime remains `deterministic_mock` with `external_call=false`; neither
+operation calls a provider or treats its output as a model evaluation. Questions
+use one shared strict validator, and public failures expose only bounded
+`ProductError` messages.
+
+`follow_up` first loads and integrity-checks one immutable parent result, then
+resolves an exact `claim` or `node` ID from that view. It never fuzzy-matches a
+foreign, hidden, or dangling selection. A claim or AtomicClaim node preserves
+the selected claim's citation and counterevidence roles; an EvidenceItem node
+selects only that evidence item; other visible node kinds do not silently add
+evidence. Conversation history is not evidence.
+
+The derived view retains the parent's project, snapshot, mode, visibility,
+runtime, conversation ID, authorized evidence, and complete prior turn/claim
+prefix. It appends exactly one turn. A normal result appends one abstaining
+uncertainty claim; a technical-failure result appends no claim or disposition
+and does not emit the counterfactual marker. The graph is rebuilt from the same
+authorized evidence and claims with the K07 canonical builder, so follow-up does
+not introduce a causal edge or widen evidence scope.
+
+Derived results are content-addressed immutable lifecycle records whose
+`parent_result_id` names the exact parent. Replaying the same parent, selection,
+and question returns the same result. Parent bytes remain unchanged across
+follow-up, restart, and project refresh; a follow-up from a historical result
+stays pinned to that historical snapshot. Stored tamper and foreign selections
+fail closed without exposing record IDs, host paths, imported text, or raw
+exceptions.
+
+Every derived result retains the exact parent runtime and result status. A normal
+parent adds exactly one claim; a technical-failure parent adds none and cannot be
+promoted to complete at the persistence boundary. Disposition graph identities
+are scoped by the derived turn, so a disposition node from an earlier result is
+not selectable in a later result even though both nodes ultimately reference
+their own bound result IDs.
 
 ## Implementation order
 

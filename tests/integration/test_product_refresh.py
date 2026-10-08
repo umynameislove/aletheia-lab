@@ -188,6 +188,15 @@ def test_product_evidence_never_promotes_imported_instructions_or_sensitive_text
     result_id = str(view["result"]["id"])
     assert ProductService(store_root).view(result_id) == view
     view_payload = json.dumps(view, ensure_ascii=False, sort_keys=True)
+    follow_up = ProductService(store_root).follow_up(
+        result_id,
+        "claim",
+        str(view["claims"][0]["id"]),
+        "What remains uncertain within the authorized evidence?",
+    )
+    follow_up_id = str(follow_up["result"]["id"])
+    assert ProductService(store_root).view(follow_up_id) == follow_up
+    follow_up_payload = json.dumps(follow_up, ensure_ascii=False, sort_keys=True)
 
     for forbidden in (
         instruction,
@@ -201,10 +210,13 @@ def test_product_evidence_never_promotes_imported_instructions_or_sensitive_text
     ):
         assert forbidden not in evidence_payload
         assert forbidden not in view_payload
+        assert forbidden not in follow_up_payload
     assert '"visibility":"evaluator"' not in evidence_payload
     assert '"visibility": "evaluator"' not in view_payload
+    assert '"visibility": "evaluator"' not in follow_up_payload
     assert "withheld" not in evidence_payload
     assert "withheld" not in view_payload
+    assert "withheld" not in follow_up_payload
 
 
 def test_unchanged_refresh_reuses_snapshot_without_persisting_new_state(
@@ -708,6 +720,12 @@ def test_analyze_mock_persists_filtered_view_and_old_result_survives_refresh(
     result_id = str(view["result"]["id"])
     turn = view["conversation"]["turns"][0]
     serialized = json.dumps(view, ensure_ascii=False, sort_keys=True)
+    graph_bytes = json.dumps(
+        view["graph"],
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
 
     assert view["schema_version"] == "p6-product-view/v1"
     assert view["demo_only"] is False
@@ -739,6 +757,8 @@ def test_analyze_mock_persists_filtered_view_and_old_result_survives_refresh(
     assert all("relative_path" not in item for item in view["evidence"])
     assert all("reproduction_ref" in item for item in view["evidence"])
     assert view["claims"][0]["claim_type"] == "evidence_statement"
+    assert "Counterfactual comparison: not_available" in turn["missing_evidence"]
+    assert "Counterfactual comparison: not_available" in view["claims"][0]["missing_evidence"]
     assert turn["result_id"] == result_id
     assert turn["runtime"] == view["runtime"]
     assert ProductService(store_root).view(result_id) == view
@@ -755,7 +775,27 @@ def test_analyze_mock_persists_filtered_view_and_old_result_survives_refresh(
     next_refresh = ProductService(store_root).refresh(project_id)
 
     assert next_refresh["snapshot_id"] != refreshed["snapshot_id"]
+    reloaded = ProductService(store_root).view(result_id)
+    assert reloaded == view
+    historical_follow_up = ProductService(store_root).follow_up(
+        result_id,
+        "claim",
+        str(view["claims"][0]["id"]),
+        "What remains uncertain in this historical result?",
+    )
+    assert historical_follow_up["snapshot"] == view["snapshot"]
+    assert historical_follow_up["evidence"] == view["evidence"]
+    assert historical_follow_up["conversation"]["turns"][:-1] == view["conversation"]["turns"]
     assert ProductService(store_root).view(result_id) == view
+    assert (
+        json.dumps(
+            reloaded["graph"],
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+        == graph_bytes
+    )
     historical = ProductService(store_root).analyze_mock(
         project_id,
         str(refreshed["snapshot_id"]),
@@ -763,6 +803,153 @@ def test_analyze_mock_persists_filtered_view_and_old_result_survives_refresh(
     )
     assert historical["snapshot"]["id"] == refreshed["snapshot_id"]
     assert historical["snapshot"]["metric_changes"] == view["snapshot"]["metric_changes"]
+
+
+def test_follow_up_is_scoped_persistent_offline_and_fails_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_root = _project(tmp_path / "source")
+    store_root = tmp_path / "store"
+    service = ProductService(store_root)
+    preview = service.preview_import(str(source_root))
+    confirmed = service.confirm_import(str(preview["preview_id"]), _mapping(preview))
+    project_id = str(confirmed["project_id"])
+    (source_root / "metrics.csv").write_text(
+        "run,name,value\nbaseline,loss,0.5\ncandidate,loss,0.8\n",
+        encoding="utf-8",
+    )
+    _git(source_root, "add", "metrics.csv")
+    _git(source_root, "commit", "-q", "-m", "follow-up regression")
+    refreshed = service.refresh(project_id)
+
+    def reject_network(*args: object, **kwargs: object) -> None:
+        raise AssertionError("deterministic follow-up attempted a network connection")
+
+    monkeypatch.setattr("socket.create_connection", reject_network)
+    parent = service.analyze_mock(
+        project_id,
+        str(refreshed["snapshot_id"]),
+        "What changed in the stored project evidence?",
+    )
+    parent_id = str(parent["result"]["id"])
+    parent_claim = parent["claims"][0]
+    question = "What remains uncertain about this exact claim?"
+
+    child = service.follow_up(parent_id, "claim", str(parent_claim["id"]), question)
+    replay = service.follow_up(parent_id, "claim", str(parent_claim["id"]), question)
+    child_id = str(child["result"]["id"])
+    reopened = ProductService(store_root)
+
+    assert child == replay
+    assert child_id != parent_id
+    assert reopened.view(parent_id) == parent
+    assert reopened.view(child_id) == child
+    assert child["project"] == parent["project"]
+    assert child["snapshot"] == parent["snapshot"]
+    assert child["visibility"] == parent["visibility"]
+    assert child["runtime"] == parent["runtime"]
+    assert child["evidence"] == parent["evidence"]
+    assert child["conversation"]["turns"][:-1] == parent["conversation"]["turns"]
+    expected_scope = sorted((*parent_claim["citation_ids"], *parent_claim["counterevidence_ids"]))
+    assert child["conversation"]["turns"][-1]["visible_evidence_ids"] == expected_scope
+    assert child["claims"][:-1] == parent["claims"]
+    assert child["claims"][-1]["citation_ids"] == parent_claim["citation_ids"]
+    assert child["claims"][-1]["counterevidence_ids"] == parent_claim["counterevidence_ids"]
+    assert not {"CAUSES", "RELATED_TO"} & {edge["kind"] for edge in child["graph"]["edges"]}
+    with ProductLifecycleStore(store_root) as lifecycle:
+        assert lifecycle.get(child_id, expected_kind="result").parent_result_id == parent_id
+
+    child_claim = child["claims"][-1]
+    grandchild = reopened.follow_up(
+        child_id,
+        "claim",
+        str(child_claim["id"]),
+        "What remains uncertain after this scoped follow-up?",
+    )
+    grandchild_id = str(grandchild["result"]["id"])
+    assert grandchild_id not in {parent_id, child_id}
+    assert grandchild["conversation"]["turns"][:-1] == child["conversation"]["turns"]
+    assert grandchild["claims"][:-1] == child["claims"]
+    assert ProductService(store_root).view(grandchild_id) == grandchild
+    disposition_ids = {
+        next(node["id"] for node in view["graph"]["nodes"] if node["kind"] == "Disposition")
+        for view in (parent, child, grandchild)
+    }
+    assert len(disposition_ids) == 3
+    with ProductLifecycleStore(store_root) as lifecycle:
+        assert lifecycle.get(grandchild_id, expected_kind="result").parent_result_id == child_id
+
+    child_disposition_id = next(
+        node["id"] for node in child["graph"]["nodes"] if node["kind"] == "Disposition"
+    )
+    with pytest.raises(ProductError) as stale_node:
+        reopened.follow_up(
+            grandchild_id,
+            "node",
+            child_disposition_id,
+            "Resolve a disposition from the previous result.",
+        )
+    assert stale_node.value.code == "selection_not_available"
+
+    foreign_claim_id = "p6-claim-" + "f" * 64
+    with pytest.raises(ProductError) as foreign_selection:
+        reopened.follow_up(parent_id, "claim", foreign_claim_id, "Resolve a foreign claim.")
+    assert foreign_selection.value.code == "selection_not_available"
+    assert foreign_claim_id not in foreign_selection.value.safe_message
+
+    with sqlite3.connect(store_root / "project-store.sqlite3") as connection:
+        connection.execute(
+            "UPDATE product_records SET payload_json = ? WHERE record_id = ?",
+            ('{"schema_version":"p6-result-envelope/v1","view":{}}', parent_id),
+        )
+    with pytest.raises(ProductError) as tampered:
+        reopened.follow_up(parent_id, "claim", str(parent_claim["id"]), question)
+    assert tampered.value.code == "store_integrity_error"
+    assert parent_id not in tampered.value.safe_message
+    assert str(store_root) not in tampered.value.safe_message
+    assert tampered.value.__context__ is None
+
+
+def test_analyze_mock_fails_closed_for_tampered_persisted_lineage(tmp_path: Path) -> None:
+    source_root = _project(tmp_path / "source")
+    store_root = tmp_path / "store"
+    service = ProductService(store_root)
+    preview = service.preview_import(str(source_root))
+    confirmed = service.confirm_import(str(preview["preview_id"]), _mapping(preview))
+    project_id = str(confirmed["project_id"])
+    (source_root / "metrics.csv").write_text(
+        "run,name,value\nbaseline,loss,0.5\ncandidate,loss,0.8\n",
+        encoding="utf-8",
+    )
+    _git(source_root, "add", "metrics.csv")
+    _git(source_root, "commit", "-q", "-m", "tamper test regression")
+    refreshed = service.refresh(project_id)
+
+    with ProductLifecycleStore(store_root) as lifecycle:
+        lineage_id = str(lifecycle.get_project_state(project_id).payload()["lineage_graph_id"])
+    with ProjectStore(store_root) as store:
+        lineage_record = next(
+            record
+            for record in store.list_records(project_id, "lineage_graph")
+            if record.record_id == lineage_id
+        )
+        lineage_path = store._object_path(lineage_record.object_sha256)
+    lineage_path.write_bytes(b"tampered")
+
+    with pytest.raises(ProductError) as captured:
+        service.analyze_mock(
+            project_id,
+            str(refreshed["snapshot_id"]),
+            "Analyze evidence whose stored lineage was modified.",
+        )
+
+    assert captured.value.code == "store_integrity_error"
+    assert captured.value.__suppress_context__ is True
+    assert "ProjectStoreError" not in str(captured.value)
+    assert "integrity verification" not in str(captured.value)
+    assert lineage_id not in captured.value.safe_message
+    assert str(store_root) not in captured.value.safe_message
 
 
 def test_analyze_mock_requires_exact_evidence_scope_and_valid_question(tmp_path: Path) -> None:

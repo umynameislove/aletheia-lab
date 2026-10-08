@@ -77,7 +77,10 @@
         "answer": "The decrease is observed; its cause remains unverified.",
         "abstained": true,
         "visible_evidence_ids": ["demo-evidence-metric"],
-        "missing_evidence": ["A checked mapping trace and a controlled recomputation"]
+        "missing_evidence": [
+          "A checked mapping trace and a controlled recomputation",
+          "Counterfactual comparison: not_available"
+        ]
       }
     ]
   },
@@ -91,7 +94,7 @@
       "support": "fully_supported",
       "citation_ids": ["demo-evidence-metric"],
       "counterevidence_ids": [],
-      "missing_evidence": [],
+      "missing_evidence": ["Counterfactual comparison: not_available"],
       "max_strength": "observation"
     }
   ],
