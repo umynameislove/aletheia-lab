@@ -1,0 +1,11 @@
+{
+  "host": "127.0.0.1",
+  "http_port": 18083,
+  "grpc_port": 18084,
+  "parallel_workers": 0,
+  "metrics_endpoint": null,
+  "debug": false,
+  "cache_enabled": false,
+  "kafka_enabled": false,
+  "load_models_at_startup": true
+}
