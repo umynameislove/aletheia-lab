@@ -122,6 +122,31 @@ def test_capture_cost_and_journal_have_explicit_measurement_boundary(tmp_path):
     assert cost["one_current_stats_update_not_included"] is True
 
 
+def test_journal_and_stats_request_binary_descriptors(tmp_path, monkeypatch):
+    binary_flag = getattr(source.os, "O_BINARY", 0x800000)
+    original_open = source.os.open
+    observed_flags = []
+
+    def opened(path, flags, mode):
+        observed_flags.append(flags)
+        # Exercise the flag contract on POSIX without passing a Windows-only bit.
+        native_flags = flags if source.os.name == "nt" else flags & ~binary_flag
+        return original_open(path, native_flags, mode)
+
+    monkeypatch.setattr(source.os, "O_BINARY", binary_flag, raising=False)
+    monkeypatch.setattr(source.os, "open", opened)
+    writer = source._EventWriter(tmp_path)
+    for token in ("first", "second"):
+        writer.emit("synthetic", "/a", token, {"text": "line\nnext"})
+    raw = (tmp_path / f"producer-{writer.pid}.jsonl").read_bytes()
+    cost = json.loads((tmp_path / f"capture-cost-{writer.pid}.json").read_bytes())
+    assert len(observed_flags) == 4
+    assert all(flags & binary_flag for flags in observed_flags)
+    assert raw.count(b"\n") == 2 and b"\r\n" not in raw
+    assert writer.event_bytes == cost["event_bytes"] == len(raw)
+    assert len(source.read_events([tmp_path / f"producer-{writer.pid}.jsonl"])) == 2
+
+
 def test_final_raw_reader_rejects_truncated_tail(tmp_path):
     path = tmp_path / "producer-1.jsonl"
     write_new_file(path, b'{"pid":1}')
@@ -137,3 +162,29 @@ def test_guard_blocks_external_connect_but_not_owned_loopback(monkeypatch):
     source._network_guard("socket.connect", (sock, ("127.0.0.1", 4321)))
     with pytest.raises(PermissionError):
         source._network_guard("socket.connect", (sock, ("203.0.113.1", 443)))
+
+
+@pytest.mark.parametrize("event", ["socket.connect", "socket.bind", "socket.sendto"])
+def test_guard_without_unix_socket_support_remains_fail_closed(monkeypatch, event):
+    import socket
+
+    monkeypatch.delattr(socket, "AF_UNIX", raising=False)
+    monkeypatch.setattr(source, "_event", lambda *a, **kw: None)
+    sock = SimpleNamespace(family=socket.AF_INET)
+    source._network_guard(event, (sock, ("127.0.0.1", 4321)))
+    source._network_guard(event, (sock, ("::1", 4321)))
+    with pytest.raises(PermissionError, match="only loopback"):
+        source._network_guard(event, (sock, ("203.0.113.1", 443)))
+    with pytest.raises(PermissionError, match="only loopback"):
+        source._network_guard(event, (SimpleNamespace(family=-1), "not-a-unix-socket"))
+
+
+def test_guard_keeps_supported_unix_sockets_available(monkeypatch):
+    import socket
+
+    if not hasattr(socket, "AF_UNIX"):
+        pytest.skip("platform has no Unix-domain sockets")
+    monkeypatch.setattr(source, "_event", lambda *a, **kw: None)
+    source._network_guard(
+        "socket.connect", (SimpleNamespace(family=socket.AF_UNIX), "owned-synthetic-socket")
+    )
