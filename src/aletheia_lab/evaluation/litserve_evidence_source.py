@@ -93,7 +93,13 @@ class _EventWriter:
             raw = _encode(event) + b"\n"
             if len(raw) > _MAX_EVENT_BYTES:
                 raise ValueError("producer event byte bound exceeded")
-            flags = os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
+            flags = (
+                os.O_WRONLY
+                | os.O_APPEND
+                | os.O_CREAT
+                | getattr(os, "O_NOFOLLOW", 0)
+                | getattr(os, "O_BINARY", 0)
+            )
             descriptor = os.open(self.directory / f"producer-{self.pid}.jsonl", flags, 0o600)
             try:
                 _write_all(descriptor, raw)
@@ -113,7 +119,13 @@ class _EventWriter:
                 "one_current_stats_update_not_included": True,
                 "meaning": "instrumented encoding/binary IO, not uninstrumented serving overhead",
             }
-            flags = os.O_WRONLY | os.O_TRUNC | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
+            flags = (
+                os.O_WRONLY
+                | os.O_TRUNC
+                | os.O_CREAT
+                | getattr(os, "O_NOFOLLOW", 0)
+                | getattr(os, "O_BINARY", 0)
+            )
             descriptor = os.open(self.directory / f"capture-cost-{self.pid}.json", flags, 0o600)
             try:
                 _write_all(descriptor, _encode(stats))
@@ -136,7 +148,8 @@ def _event(
 def _network_guard(event: str, arguments: tuple[Any, ...]) -> None:
     if event in {"socket.connect", "socket.bind", "socket.sendto"}:
         sock, address = arguments[0], arguments[-1]
-        allowed = sock.family == socket.AF_UNIX or (
+        unix_family = getattr(socket, "AF_UNIX", None)
+        allowed = (unix_family is not None and sock.family == unix_family) or (
             isinstance(address, tuple) and address[0] in {"127.0.0.1", "::1"}
         )
         _event(

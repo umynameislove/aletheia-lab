@@ -123,13 +123,56 @@ def test_bandit_suppression_is_narrow_and_documented() -> None:
                 suppressions.append(
                     (path.relative_to(_ROOT).as_posix(), match.group(1) or "", preceding)
                 )
-    assert suppressions == [
-        (
-            "src/aletheia_lab/data/download.py",
-            "B310",
-            "# The scheme allowlist above is the compensating control for Bandit B310.",
-        )
-    ]
+    # These exact execution sites require pinned source and reject changed bytes;
+    # the regression below checks that compensating control before execution.
+    assert sorted(suppressions) == sorted(
+        [
+            (
+                "src/aletheia_lab/data/download.py",
+                "B310",
+                "# The scheme allowlist above is the compensating control for Bandit B310.",
+            ),
+            (
+                "src/aletheia_lab/evaluation/serving_native_development.py",
+                "B102",
+                "# Only the fixed, hash-checked upstream method census is executable here.",
+            ),
+            (
+                "src/aletheia_lab/evaluation/serving_protocol_native.py",
+                "B102",
+                "# Execution consumes the same exact, pinned buffer checked above.",
+            ),
+            (
+                "src/aletheia_lab/evaluation/serving_protocol_native.py",
+                "B102",
+                "checked_source(roots, filename)",
+            ),
+        ]
+    )
+
+
+@pytest.mark.parametrize("entrypoint", ["methods", "module", "class"])
+def test_suppressed_execution_rejects_changed_pinned_source(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, entrypoint: str
+) -> None:
+    from aletheia_lab.evaluation import serving_native_development as development
+    from aletheia_lab.evaluation import serving_protocol_native as protocol
+    from aletheia_lab.project.identity import content_sha256
+
+    raw = b"class Fixture:\n    def value(self):\n        return 17\n"
+    path = tmp_path / "fixture.py"
+    path.write_bytes(raw)
+    owner = development if entrypoint == "methods" else protocol
+    monkeypatch.setattr(owner, "PINS", {path.name: content_sha256(raw)})
+    path.write_bytes(b"raise RuntimeError('changed source must not execute')\n")
+    roots = protocol.SourceRoots(tmp_path, tmp_path)
+    with pytest.raises(ValueError, match="pin mismatch"):
+        if entrypoint == "methods":
+            development._methods(path, "Fixture", ("value",), {})
+        elif entrypoint == "module":
+            protocol._source_module(roots, "serving_security_fixture", path.name)
+        else:
+            protocol._exact_class(roots, path.name, "Fixture", {})
 
 
 def test_dependency_workflow_triggers_are_complete(audit_workflow: dict) -> None:  # type: ignore[type-arg]
