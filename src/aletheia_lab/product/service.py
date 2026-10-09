@@ -12,6 +12,7 @@ from aletheia_lab.product.follow_up import follow_up_product_result
 from aletheia_lab.product.imports import confirm_product_import, preview_product_import
 from aletheia_lab.product.lifecycle import ProductLifecycleStore
 from aletheia_lab.product.refresh import refresh_product_project
+from aletheia_lab.product.reports import render_product_report
 from aletheia_lab.product.results import load_product_result
 from aletheia_lab.project.persistence import ProjectStore
 
@@ -97,9 +98,9 @@ class ProductService:
         return load_product_result(self._store_root, result_id).model_dump(mode="json")
 
     def export_report(self, result_id: str, format: str) -> bytes:
-        """Render an authorized saved view when implemented."""
+        """Render one authorized saved view without mutating persistent state."""
 
-        self._unavailable()
+        return render_product_report(load_product_result(self._store_root, result_id), format)
 
     def delete_project(self, project_id: str) -> dict[str, object]:
         """Delete product-owned state when implemented."""

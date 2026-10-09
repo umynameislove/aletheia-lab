@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import inspect
 import socket
-from collections.abc import Callable
 from pathlib import Path
 from typing import get_type_hints
 
@@ -156,17 +155,13 @@ def test_product_error_rejects_unsafe_public_messages(unsafe_message: str) -> No
         ProductError("invalid_request", unsafe_message)
 
 
-def test_unimplemented_methods_fail_explicitly_instead_of_returning_fake_success(
+def test_unimplemented_delete_fails_explicitly_instead_of_returning_fake_success(
     tmp_path: Path,
 ) -> None:
     service = ProductService(tmp_path / "store")
-    calls: tuple[Callable[[], object], ...] = (
-        lambda: service.export_report("result", "json"),
-        lambda: service.delete_project("project"),
-    )
 
-    for call in calls:
-        with pytest.raises(ProductError) as captured:
-            call()
-        assert captured.value.code == "feature_unavailable"
-        assert captured.value.safe_message == "This product operation is not available yet."
+    with pytest.raises(ProductError) as captured:
+        service.delete_project("project")
+
+    assert captured.value.code == "feature_unavailable"
+    assert captured.value.safe_message == "This product operation is not available yet."

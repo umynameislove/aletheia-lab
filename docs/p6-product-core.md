@@ -319,6 +319,70 @@ are scoped by the derived turn, so a disposition node from an earlier result is
 not selectable in a later result even though both nodes ultimately reference
 their own bound result IDs.
 
+## K09 external-send preflight boundary
+
+K09 does not add a send method, provider client, endpoint, credential lookup, or
+retry loop. The only external-send surface is the metadata already returned by
+`preview_import`. It describes what categories could be considered by a future
+authorized integration; it does not construct or transmit an outbound payload.
+
+`outbound_categories` is derived only from P3 decisions whose action is
+`include` or `redact`. Excluded, blocked, and locally withheld items do not
+contribute a category. The same response reports the canonical P3
+`redacted_count` and `withheld_count`, plus structured issue codes and occurrence
+counts. It never includes source bytes, imported instruction text, credential
+values, PII values, or an absolute source path. Mapping candidates remain the
+separate K03 metadata projection and do not grant send authority.
+
+The underlying `ProjectImportPolicy` fixes execution and network modes to
+`disabled` and source mutation to `forbidden`. Imported README, log, and config
+content is always untrusted data: fields that resemble provider settings,
+system instructions, tool requests, result state, visibility, or evidence scope
+cannot alter product control flow. Product analysis and follow-up continue to
+use `provider=deterministic_mock` with `external_call=false`.
+
+Previewing and then abandoning or reopening the service leaves only the
+content-addressed preview and its confirmation lease. It creates no P3 project
+record, product-project pointer, confirmation, outbound payload, or `sent`
+state. Preview failures are mapped once to a safe `ProductError`; K09 has no
+automatic retry. Dedicated unit and integration tests remove common API-key
+environment variables, reject Python socket creation, exercise synthetic prompt
+injection/PII/credentials, scan serialized payloads, verify restart behavior,
+and confirm source bytes, sizes, and mtimes remain unchanged.
+
+## K10 deterministic report export
+
+`export_report(result_id, format)` first resolves the immutable result through
+the existing `load_product_result` boundary. That read verifies the lifecycle
+record hash, envelope, result/project/snapshot scope, diagnosis visibility, and
+complete `ProductView` before any renderer runs. Export never queries an
+evaluator record or reconstructs evidence, graph, lineage, or claims from a
+second source.
+
+The supported format values are exactly `json`, `markdown`, and `pdf`. Matching
+is strict; aliases, whitespace, and case variants fail with a safe
+`ProductError`. JSON is the complete authorized ProductView encoded as
+canonical sorted UTF-8 JSON. Markdown presents the same project/snapshot/result
+scope, runtime, turns, claims, evidence and reproduction references, graph
+identities, wording constraints, caveat, and limitations. Null disposition and
+`independent_families` are explicit; the latter is labeled
+`not_estimated (null)` rather than rendered as zero.
+
+PDF is generated directly from that same stable Markdown semantic projection.
+It is a real multi-page PDF with extractable text, fixed page geometry and a
+built-in font. The writer emits no creation timestamp, random identifier, host
+path, or environment metadata, so identical result bytes produce identical PDF
+bytes across replay and service restart. It uses only the Python standard
+library; K10 adds no report dependency.
+
+All three formats are returned as bytes and no export record or file is
+persisted. Historical result exports therefore remain byte-identical after a
+project refresh and after creating a follow-up. A technical-failure result
+keeps `disposition=null`, contains no fabricated claim, and remains labeled as
+a technical failure in every format. Export performs no provider or network
+call and cannot modify the source project. Existing result lookup errors retain
+their safe fail-closed codes for missing, foreign, or tampered records.
+
 ## Implementation order
 
 1. Define the product contracts, safe errors, deterministic identifiers, and
