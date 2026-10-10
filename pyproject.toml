@@ -57,9 +57,6 @@ aletheia = "aletheia_lab.cli:app"
 [tool.setuptools.packages.find]
 where = ["src"]
 
-[tool.setuptools.package-data]
-"aletheia_lab.product" = ["synthetic_p6_view.json"]
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]

@@ -314,6 +314,20 @@ aletheia --help
 aletheia info --config configs/project.yaml
 ```
 
+Run the complete provider-free ProductService flow on a generated synthetic
+project. The command requires Git and an empty workspace; it creates a real
+metric regression, writes JSON/Markdown/PDF reports, deletes the product-owned
+store state, and leaves the synthetic source project intact:
+
+```powershell
+$demoRoot = Join-Path $env:TEMP ("aletheia-product-demo-" + [guid]::NewGuid().ToString("N"))
+.\.venv\Scripts\aletheia.exe product-demo $demoRoot
+```
+
+The JSON summary contains only stable IDs, counts, relative report paths, report
+hashes, and the verified deletion receipt. No provider, API key, or network
+connection is used. Generated files remain under `$demoRoot` for inspection.
+
 Download, verify, and preprocess the configured dataset:
 
 ```bash

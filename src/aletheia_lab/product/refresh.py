@@ -88,8 +88,80 @@ class _StoredProjectState:
     adverse_metric_change_ids: tuple[str, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class _StoredGeneration:
+    previous_snapshot_id: str | None = None
+    comparison_id: str | None = None
+    event_id: str | None = None
+    evidence_bundle_id: str | None = None
+    lineage_graph_id: str | None = None
+    adverse_metric_change_ids: tuple[str, ...] = ()
+
+
 def _utc_now() -> str:
     return datetime.now(UTC).isoformat(timespec="microseconds").replace("+00:00", "Z")
+
+
+def _stored_generation(
+    payload: dict[str, object],
+    status: str,
+) -> _StoredGeneration | None:
+    if status == "confirmed":
+        return _StoredGeneration()
+    raw_previous_snapshot_id = payload["previous_snapshot_id"]
+    raw_comparison_id = payload["comparison_id"]
+    raw_event_id = payload["event_id"]
+    raw_evidence_bundle_id = payload["evidence_bundle_id"]
+    raw_lineage_graph_id = payload["lineage_graph_id"]
+    raw_adverse_ids = payload["adverse_metric_change_ids"]
+    if (
+        not isinstance(raw_previous_snapshot_id, str)
+        or re.fullmatch(SNAPSHOT_ID_PATTERN, raw_previous_snapshot_id) is None
+        or not isinstance(raw_comparison_id, str)
+        or re.fullmatch(SNAPSHOT_COMPARISON_ID_PATTERN, raw_comparison_id) is None
+        or not isinstance(raw_adverse_ids, list)
+        or any(
+            not isinstance(value, str)
+            or re.fullmatch(r"p3-metric-change-[0-9a-f]{64}", value) is None
+            for value in raw_adverse_ids
+        )
+        or len(raw_adverse_ids) != len(set(raw_adverse_ids))
+    ):
+        return None
+    adverse_ids = tuple(sorted(raw_adverse_ids))
+    generation_ids = (raw_event_id, raw_evidence_bundle_id, raw_lineage_graph_id)
+    if not adverse_ids:
+        if any(value is not None for value in generation_ids):
+            return None
+        return _StoredGeneration(
+            previous_snapshot_id=raw_previous_snapshot_id,
+            comparison_id=raw_comparison_id,
+        )
+    if (
+        not isinstance(raw_event_id, str)
+        or re.fullmatch(REGRESSION_EVENT_ID_PATTERN, raw_event_id) is None
+        or not isinstance(raw_evidence_bundle_id, str)
+        or re.fullmatch(
+            PROJECT_EVIDENCE_BUNDLE_ID_PATTERN,
+            raw_evidence_bundle_id,
+        )
+        is None
+        or not isinstance(raw_lineage_graph_id, str)
+        or re.fullmatch(
+            r"p3-lineage-graph-[0-9a-f]{64}",
+            raw_lineage_graph_id,
+        )
+        is None
+    ):
+        return None
+    return _StoredGeneration(
+        previous_snapshot_id=raw_previous_snapshot_id,
+        comparison_id=raw_comparison_id,
+        event_id=raw_event_id,
+        evidence_bundle_id=raw_evidence_bundle_id,
+        lineage_graph_id=raw_lineage_graph_id,
+        adverse_metric_change_ids=adverse_ids,
+    )
 
 
 def _stored_project_state(record: ProductLifecycleRecord) -> _StoredProjectState | None:
@@ -142,64 +214,9 @@ def _stored_project_state(record: ProductLifecycleRecord) -> _StoredProjectState
         mapping = load_stored_mapping(payload["mapping_configuration"])
         if mapping is None or mapping.project_id != record.project_id:
             return None
-        previous_snapshot_id: str | None = None
-        comparison_id: str | None = None
-        event_id: str | None = None
-        evidence_bundle_id: str | None = None
-        lineage_graph_id: str | None = None
-        adverse_metric_change_ids: tuple[str, ...] = ()
-        if status == "refreshed":
-            raw_previous_snapshot_id = payload["previous_snapshot_id"]
-            raw_comparison_id = payload["comparison_id"]
-            raw_event_id = payload["event_id"]
-            raw_evidence_bundle_id = payload["evidence_bundle_id"]
-            raw_lineage_graph_id = payload["lineage_graph_id"]
-            raw_adverse_ids = payload["adverse_metric_change_ids"]
-            if (
-                not isinstance(raw_previous_snapshot_id, str)
-                or re.fullmatch(SNAPSHOT_ID_PATTERN, raw_previous_snapshot_id) is None
-                or not isinstance(raw_comparison_id, str)
-                or re.fullmatch(SNAPSHOT_COMPARISON_ID_PATTERN, raw_comparison_id) is None
-                or not isinstance(raw_adverse_ids, list)
-                or any(
-                    not isinstance(value, str)
-                    or re.fullmatch(r"p3-metric-change-[0-9a-f]{64}", value) is None
-                    for value in raw_adverse_ids
-                )
-                or len(raw_adverse_ids) != len(set(raw_adverse_ids))
-            ):
-                return None
-            previous_snapshot_id = raw_previous_snapshot_id
-            comparison_id = raw_comparison_id
-            adverse_metric_change_ids = tuple(sorted(raw_adverse_ids))
-            generation_ids = (
-                raw_event_id,
-                raw_evidence_bundle_id,
-                raw_lineage_graph_id,
-            )
-            if adverse_metric_change_ids:
-                if (
-                    not isinstance(raw_event_id, str)
-                    or re.fullmatch(REGRESSION_EVENT_ID_PATTERN, raw_event_id) is None
-                    or not isinstance(raw_evidence_bundle_id, str)
-                    or re.fullmatch(
-                        PROJECT_EVIDENCE_BUNDLE_ID_PATTERN,
-                        raw_evidence_bundle_id,
-                    )
-                    is None
-                    or not isinstance(raw_lineage_graph_id, str)
-                    or re.fullmatch(
-                        r"p3-lineage-graph-[0-9a-f]{64}",
-                        raw_lineage_graph_id,
-                    )
-                    is None
-                ):
-                    return None
-                event_id = raw_event_id
-                evidence_bundle_id = raw_evidence_bundle_id
-                lineage_graph_id = raw_lineage_graph_id
-            elif any(value is not None for value in generation_ids):
-                return None
+        generation = _stored_generation(payload, status)
+        if generation is None:
+            return None
         return _StoredProjectState(
             status=status,
             root=root,
@@ -208,12 +225,12 @@ def _stored_project_state(record: ProductLifecycleRecord) -> _StoredProjectState
             project_bundle_id=project_bundle_id,
             snapshot_id=snapshot_id,
             mapping=mapping,
-            previous_snapshot_id=previous_snapshot_id,
-            comparison_id=comparison_id,
-            event_id=event_id,
-            evidence_bundle_id=evidence_bundle_id,
-            lineage_graph_id=lineage_graph_id,
-            adverse_metric_change_ids=adverse_metric_change_ids,
+            previous_snapshot_id=generation.previous_snapshot_id,
+            comparison_id=generation.comparison_id,
+            event_id=generation.event_id,
+            evidence_bundle_id=generation.evidence_bundle_id,
+            lineage_graph_id=generation.lineage_graph_id,
+            adverse_metric_change_ids=generation.adverse_metric_change_ids,
         )
     except (KeyError, TypeError, ValueError, ProductError):
         return None
@@ -280,11 +297,7 @@ def _reconcile_refresh_generation(
         raise ValueError("stored adverse metric changes do not reconcile")
     if not expected_adverse:
         return
-    if (
-        state.event_id is None
-        or state.evidence_bundle_id is None
-        or state.lineage_graph_id is None
-    ):
+    if state.event_id is None or state.evidence_bundle_id is None or state.lineage_graph_id is None:
         raise ValueError("adverse generation omits regression records")
     event = store.load(state.event_id)
     evidence = store.load(state.evidence_bundle_id)

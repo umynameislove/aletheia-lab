@@ -128,6 +128,17 @@ class ImmutableObject:
     payload: bytes
 
 
+@dataclass(frozen=True)
+class ProjectPurgePlan:
+    """Exact P3 records and content-addressed objects owned by one project."""
+
+    project_id: str
+    record_ids: tuple[str, ...]
+    lineage_graph_ids: tuple[str, ...]
+    purge_object_sha256s: tuple[str, ...]
+    retained_shared_sha256s: tuple[str, ...]
+
+
 def _json_bytes(payload: object) -> bytes:
     return (
         json.dumps(
@@ -143,6 +154,27 @@ def _json_bytes(payload: object) -> bytes:
 
 def _migration_sha256(sql: str) -> str:
     return hashlib.sha256(sql.strip().encode("utf-8")).hexdigest()
+
+
+def _apply_store_migration(
+    connection: sqlite3.Connection,
+    target_version: int,
+    sql: str,
+) -> None:
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        for statement in sql.split(";"):
+            if statement.strip():
+                connection.execute(statement)
+        connection.execute(
+            "INSERT INTO migration_history(version, migration_sha256) VALUES (?, ?)",
+            (target_version, _migration_sha256(sql)),
+        )
+        connection.execute(f"PRAGMA user_version = {target_version}")
+        connection.commit()
+    except BaseException:
+        connection.rollback()
+        raise
 
 
 def _model_identity(model: StoredProjectModel) -> tuple[RecordType, str, str, str]:
@@ -231,20 +263,7 @@ class ProjectStore:
             )
         for target_version in range(version + 1, PROJECT_STORE_SCHEMA_VERSION + 1):
             sql = _MIGRATIONS[target_version - 1]
-            try:
-                self._connection.execute("BEGIN IMMEDIATE")
-                for statement in sql.split(";"):
-                    if statement.strip():
-                        self._connection.execute(statement)
-                self._connection.execute(
-                    "INSERT INTO migration_history(version, migration_sha256) VALUES (?, ?)",
-                    (target_version, _migration_sha256(sql)),
-                )
-                self._connection.execute(f"PRAGMA user_version = {target_version}")
-                self._connection.commit()
-            except BaseException:
-                self._connection.rollback()
-                raise
+            _apply_store_migration(self._connection, target_version, sql)
         rows = self._connection.execute(
             "SELECT version, migration_sha256 FROM migration_history ORDER BY version"
         ).fetchall()
@@ -420,20 +439,28 @@ class ProjectStore:
 
     def load(self, record_id: str) -> StoredProjectModel:
         row = self._connection.execute(
-            "SELECT record_type, canonical_sha256, object_sha256 FROM records WHERE record_id = ?",
+            "SELECT project_id, record_type, schema_version, canonical_sha256, object_sha256 "
+            "FROM records WHERE record_id = ?",
             (record_id,),
         ).fetchone()
         if row is None:
             raise KeyError(record_id)
-        record_type = str(row[0])
+        record_type = str(row[1])
         if record_type not in _MODEL_BY_TYPE:
             raise ProjectStoreError("stored record type is unsupported")
-        payload = self.read_object(str(row[2]))
+        payload = self.read_object(str(row[4]))
         model = _MODEL_BY_TYPE[record_type].model_validate_json(payload)
-        if canonical_project_sha256(model.model_dump(mode="json")) != str(row[1]):
+        if canonical_project_sha256(model.model_dump(mode="json")) != str(row[3]):
             raise ProjectStoreError("stored record canonical hash mismatch")
-        loaded_type, loaded_id, _, _ = _model_identity(model)  # type: ignore[arg-type]
-        if loaded_type != record_type or loaded_id != record_id:
+        loaded_type, loaded_id, loaded_project_id, loaded_schema = _model_identity(
+            model  # type: ignore[arg-type]
+        )
+        if (loaded_type, loaded_id, loaded_project_id, loaded_schema) != (
+            record_type,
+            record_id,
+            str(row[0]),
+            str(row[2]),
+        ):
             raise ProjectStoreError("stored record identity differs from index")
         return model  # type: ignore[return-value]
 
@@ -480,6 +507,148 @@ class ProjectStore:
                 )
             )
         return tuple(records)
+
+    def _artifact_references(self) -> dict[str, set[str]]:
+        references: dict[str, set[str]] = {}
+        rows = self._connection.execute(
+            "SELECT record_id, project_id FROM records "
+            "WHERE record_type = 'project_bundle' ORDER BY record_id"
+        ).fetchall()
+        for row in rows:
+            bundle = self.load(str(row["record_id"]))
+            if not isinstance(bundle, ProjectBundle) or bundle.project_id != str(row["project_id"]):
+                raise ProjectStoreError("stored project bundle scope does not reconcile")
+            project_references = references.setdefault(bundle.project_id, set())
+            for item in bundle.items:
+                artifact = item.artifact
+                metadata = self._connection.execute(
+                    "SELECT byte_size, media_type FROM objects WHERE sha256 = ?",
+                    (artifact.sha256,),
+                ).fetchone()
+                if metadata is None:
+                    raise ProjectStoreError("project artifact is missing from the object index")
+                if (int(metadata["byte_size"]), str(metadata["media_type"])) != (
+                    artifact.byte_size,
+                    artifact.media_type,
+                ):
+                    raise ProjectStoreError("project artifact metadata does not reconcile")
+                self.read_object(artifact.sha256)
+                project_references.add(artifact.sha256)
+        return references
+
+    def _project_purge_plan(self, project_id: str) -> ProjectPurgePlan:
+        rows = self._connection.execute(
+            "SELECT record_id, project_id, record_type, schema_version, canonical_sha256, "
+            "object_sha256 FROM records ORDER BY project_id, record_type, record_id"
+        ).fetchall()
+        for row in rows:
+            self.load(str(row["record_id"]))
+        target_rows = [row for row in rows if str(row["project_id"]) == project_id]
+        if not target_rows:
+            raise KeyError(project_id)
+
+        artifact_references = self._artifact_references()
+        target_references = {
+            *(str(row["object_sha256"]) for row in target_rows),
+            *artifact_references.get(project_id, set()),
+        }
+        surviving_references = {
+            str(row["object_sha256"]) for row in rows if str(row["project_id"]) != project_id
+        }
+        for owner, digests in artifact_references.items():
+            if owner != project_id:
+                surviving_references.update(digests)
+
+        purge_digests = tuple(sorted(target_references - surviving_references))
+        retained_digests = tuple(sorted(target_references & surviving_references))
+        for digest in (*purge_digests, *retained_digests):
+            self.read_object(digest)
+        return ProjectPurgePlan(
+            project_id=project_id,
+            record_ids=tuple(str(row["record_id"]) for row in target_rows),
+            lineage_graph_ids=tuple(
+                str(row["record_id"])
+                for row in target_rows
+                if str(row["record_type"]) == "lineage_graph"
+            ),
+            purge_object_sha256s=purge_digests,
+            retained_shared_sha256s=retained_digests,
+        )
+
+    def plan_project_purge(self, project_id: str) -> ProjectPurgePlan:
+        """Build and integrity-check one reference-safe project purge plan."""
+
+        self.verify_integrity()
+        return self._project_purge_plan(project_id)
+
+    def commit_project_purge(
+        self,
+        plan: ProjectPurgePlan,
+        *,
+        transaction_write: Callable[[sqlite3.Connection], None],
+    ) -> None:
+        """Remove one project's indexed state in one SQLite transaction.
+
+        Object files remain until :meth:`remove_purged_object_files` succeeds so
+        a caller can durably record a pending deletion in ``transaction_write``.
+        """
+
+        secure_delete = self._connection.execute("PRAGMA secure_delete = ON").fetchone()
+        if secure_delete is None or int(secure_delete[0]) != 1:
+            raise ProjectStoreError("SQLite secure deletion could not be enabled")
+        with self.transaction():
+            current = self._project_purge_plan(plan.project_id)
+            if current != plan:
+                raise ProjectStoreError("project purge ownership changed before commit")
+            for graph_id in plan.lineage_graph_ids:
+                self._connection.execute(
+                    "DELETE FROM lineage_edges WHERE graph_id = ?", (graph_id,)
+                )
+                self._connection.execute(
+                    "DELETE FROM lineage_nodes WHERE graph_id = ?", (graph_id,)
+                )
+            self._connection.execute("DELETE FROM records WHERE project_id = ?", (plan.project_id,))
+            for digest in plan.purge_object_sha256s:
+                self._connection.execute("DELETE FROM objects WHERE sha256 = ?", (digest,))
+            transaction_write(self._connection)
+        self.verify_integrity()
+
+    def remove_purged_object_files(self, digests: Iterable[str]) -> int:
+        """Unlink unindexed content-addressed files and retain any live digest."""
+
+        retained = 0
+        with self.transaction():
+            artifact_references = self._artifact_references()
+            live_artifacts: set[str] = set().union(*artifact_references.values())
+            for digest in tuple(digests):
+                indexed = self._connection.execute(
+                    "SELECT 1 FROM objects WHERE sha256 = ?", (digest,)
+                ).fetchone()
+                if indexed is not None or digest in live_artifacts:
+                    retained += 1
+                    continue
+                candidate = self._object_path(digest)
+                if candidate.parent.is_symlink() or candidate.is_symlink():
+                    raise ProjectStoreError("purged object path must not be a symlink")
+                try:
+                    candidate.resolve().relative_to(self.object_root)
+                except ValueError as exc:
+                    raise ProjectStoreError("purged object path escapes the object store") from exc
+                if candidate.exists() and not candidate.is_file():
+                    raise ProjectStoreError("purged object path is not a regular file")
+                candidate.unlink(missing_ok=True)
+                if candidate.exists() or candidate.is_symlink():
+                    raise ProjectStoreError("purged object file could not be removed")
+        return retained
+
+    def checkpoint_after_purge(self) -> None:
+        """Truncate the WAL after secure deletion has reached the main database."""
+
+        if self._connection.in_transaction:
+            raise ProjectStoreError("cannot checkpoint during a project-store transaction")
+        row = self._connection.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+        if row is None or int(row[0]) != 0 or int(row[1]) != int(row[2]):
+            raise ProjectStoreError("project-store deletion WAL checkpoint did not complete")
 
     def export_index(self, project_id: str) -> bytes:
         """Export a byte-stable, path-free index suitable for publication tooling."""

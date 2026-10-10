@@ -153,18 +153,10 @@ def adverse_metric_change_ids(
         definition = by_name.get(change.after.metric_name)
         if definition is None:
             continue
-        delta = Decimal(str(change.after.metric_value)) - Decimal(
-            str(change.before.metric_value)
-        )
+        delta = Decimal(str(change.after.metric_value)) - Decimal(str(change.before.metric_value))
         threshold = Decimal(str(definition.regression_threshold))
-        if (
-            definition.direction == "lower_is_better"
-            and delta > 0
-            and delta >= threshold
-        ) or (
-            definition.direction == "higher_is_better"
-            and delta < 0
-            and -delta >= threshold
+        if (definition.direction == "lower_is_better" and delta > 0 and delta >= threshold) or (
+            definition.direction == "higher_is_better" and delta < 0 and -delta >= threshold
         ):
             adverse.append(change.metric_change_id)
     return tuple(sorted(adverse))
@@ -179,9 +171,7 @@ def rebind_stored_mapping(
 ) -> ProjectMappingConfiguration:
     """Rebind validated mapping choices to the same paths in a new import state."""
 
-    if not (
-        configuration.project_id == before_bundle.project_id == after_bundle.project_id
-    ):
+    if not (configuration.project_id == before_bundle.project_id == after_bundle.project_id):
         raise ProductError("mapping_invalid", _MAPPING_INVALID_MESSAGE)
     before_items = {item.project_item_id: item for item in before_bundle.items}
     after_items = {item.relative_path: item for item in after_bundle.items}

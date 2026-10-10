@@ -66,6 +66,13 @@ class _PreviewState:
     preview: ProjectImportPreview
 
 
+@dataclass(frozen=True, slots=True)
+class _ConfirmationInput:
+    state: _PreviewState | None
+    leased_at: str | None
+    replay: dict[str, object] | None
+
+
 def _utc_now() -> str:
     return datetime.now(UTC).isoformat(timespec="microseconds").replace("+00:00", "Z")
 
@@ -255,26 +262,21 @@ def _write_product_confirmation(
     put_product_confirmation(connection, preview_id, record)
 
 
-def confirm_product_import(
+def _confirmation_input(
     store_root: Path,
     preview_id: str,
     mapping: dict[str, object],
-) -> dict[str, object]:
-    """Revalidate and atomically confirm one staged P3 import."""
-
+) -> _ConfirmationInput:
     with ProductLifecycleStore(store_root) as lifecycle:
         confirmed = lifecycle.get_confirmation(preview_id)
         if confirmed is not None:
-            replay = _confirmed_response(
-                confirmed,
-                mapping=mapping,
-            )
+            replay = _confirmed_response(confirmed, mapping=mapping)
             if replay is None:
                 raise ProductError(
                     "preview_already_confirmed",
                     "The preview was already confirmed differently.",
                 )
-            return replay
+            return _ConfirmationInput(None, None, replay)
         staged = lifecycle.get(preview_id, expected_kind="preview")
         leased_at = lifecycle.preview_leased_at(preview_id)
 
@@ -285,106 +287,135 @@ def confirm_product_import(
         issue.severity == "blocker" for issue in state.preview.issues
     ):
         raise ProductError("preview_blocked", _PREVIEW_BLOCKED_MESSAGE)
-    if state.source_state_sha256 is None:
+    if state.source_state_sha256 is None or _utc_timestamp(leased_at) is None:
         raise ProductError("store_integrity_error", _STORE_INTEGRITY_MESSAGE)
-    lease_time = _utc_timestamp(leased_at)
-    if lease_time is None:
-        raise ProductError("store_integrity_error", _STORE_INTEGRITY_MESSAGE)
+    return _ConfirmationInput(state, leased_at, None)
 
+
+def _confirmation_capture_time(leased_at: str) -> str:
+    lease_time = _utc_timestamp(leased_at)
     captured_at = _utc_now()
     captured_time = _utc_timestamp(captured_at)
-    if captured_time is None:
+    if lease_time is None or captured_time is None:
         raise ProductError("confirm_failed", _CONFIRM_FAILED_MESSAGE)
     if captured_time >= lease_time + _PREVIEW_TTL:
         raise ProductError("preview_expired", _PREVIEW_EXPIRED_MESSAGE)
+    return captured_at
 
+
+def _confirm_fresh_import(
+    store_root: Path,
+    preview_id: str,
+    mapping: dict[str, object],
+    state: _PreviewState,
+    captured_at: str,
+) -> dict[str, object]:
+    grant = grant_project_root(state.root)
+    current = inspect_local_project(grant, ingested_at=captured_at)
+    if current.source_state_sha256 != state.source_state_sha256 or current.preview != state.preview:
+        raise ProductError("preview_stale", _PREVIEW_STALE_MESSAGE)
+
+    imported = import_local_project(
+        grant,
+        display_name=_IMPORTED_PROJECT_NAME,
+        ingested_at=captured_at,
+    )
+    if imported.bundle is None or imported.preview != state.preview:
+        raise ProductError("preview_stale", _PREVIEW_STALE_MESSAGE)
+    collection = collect_project_files(imported.bundle, imported.artifacts)
+    configuration = build_confirm_mapping(
+        mapping,
+        project_id=imported.bundle.project_id,
+        project_bundle_id=imported.bundle.project_bundle_id,
+        file_collection_sha256=collection.collection_sha256,
+    )
+    current_candidates = build_mapping_candidates(current.items, current.artifacts)
+    if not confirm_mapping_is_eligible(configuration, current_candidates):
+        raise ProductError("mapping_invalid", _MAPPING_INVALID_MESSAGE)
+    mapping_result = validate_project_mapping(
+        imported.bundle,
+        imported.artifacts,
+        collection,
+        configuration,
+    )
+    if mapping_result.status != "valid" or not metric_definitions_match_observations(
+        configuration,
+        mapping_result,
+    ):
+        raise ProductError("mapping_invalid", _MAPPING_INVALID_MESSAGE)
+    git_state = collect_git_state(grant)
+    final_inspection = inspect_local_project(grant, ingested_at=captured_at)
+    if (
+        final_inspection.source_state_sha256 != state.source_state_sha256
+        or final_inspection.preview != state.preview
+    ):
+        raise ProductError("preview_stale", _PREVIEW_STALE_MESSAGE)
+
+    bound_bundle = bind_project_mapping(
+        imported.bundle,
+        configuration,
+        mapping_result,
+    )
+    snapshot = build_project_snapshot(
+        bound_bundle,
+        collection,
+        git_state,
+        configuration,
+        mapping_result,
+        captured_at=captured_at,
+    )
+    project_state = build_product_lifecycle_record(
+        record_kind="project_state",
+        project_id=bound_bundle.project_id,
+        payload={
+            "status": "confirmed",
+            "root": state.root,
+            "preview_id": preview_id,
+            "source_state_sha256": state.source_state_sha256,
+            "mapping_configuration": configuration.model_dump(mode="json"),
+            "project_bundle_id": bound_bundle.project_bundle_id,
+            "snapshot_id": snapshot.snapshot_id,
+        },
+    )
+    with ProjectStore(store_root) as store:
+        store.persist(
+            (bound_bundle, snapshot),
+            artifacts=_artifact_objects(imported.artifacts),
+            transaction_write=partial(
+                _write_product_confirmation,
+                preview_id=preview_id,
+                record=project_state,
+            ),
+        )
+    return {
+        "project_id": bound_bundle.project_id,
+        "snapshot_id": snapshot.snapshot_id,
+        "status": "confirmed",
+    }
+
+
+def confirm_product_import(
+    store_root: Path,
+    preview_id: str,
+    mapping: dict[str, object],
+) -> dict[str, object]:
+    """Revalidate and atomically confirm one staged P3 import."""
+
+    confirmation = _confirmation_input(store_root, preview_id, mapping)
+    if confirmation.replay is not None:
+        return confirmation.replay
+    if confirmation.state is None or confirmation.leased_at is None:
+        raise AssertionError("active confirmation input is incomplete")
+    captured_at = _confirmation_capture_time(confirmation.leased_at)
     failure: tuple[str, str] | None = None
     try:
-        grant = grant_project_root(state.root)
-        current = inspect_local_project(grant, ingested_at=captured_at)
-        if (
-            current.source_state_sha256 != state.source_state_sha256
-            or current.preview != state.preview
-        ):
-            raise ProductError("preview_stale", _PREVIEW_STALE_MESSAGE)
-
-        imported = import_local_project(
-            grant,
-            display_name=_IMPORTED_PROJECT_NAME,
-            ingested_at=captured_at,
-        )
-        if imported.bundle is None or imported.preview != state.preview:
-            raise ProductError("preview_stale", _PREVIEW_STALE_MESSAGE)
-        collection = collect_project_files(imported.bundle, imported.artifacts)
-        configuration = build_confirm_mapping(
+        return _confirm_fresh_import(
+            store_root,
+            preview_id,
             mapping,
-            project_id=imported.bundle.project_id,
-            project_bundle_id=imported.bundle.project_bundle_id,
-            file_collection_sha256=collection.collection_sha256,
+            confirmation.state,
+            captured_at,
         )
-        current_candidates = build_mapping_candidates(current.items, current.artifacts)
-        if not confirm_mapping_is_eligible(configuration, current_candidates):
-            raise ProductError("mapping_invalid", _MAPPING_INVALID_MESSAGE)
-        mapping_result = validate_project_mapping(
-            imported.bundle,
-            imported.artifacts,
-            collection,
-            configuration,
-        )
-        if mapping_result.status != "valid" or not metric_definitions_match_observations(
-            configuration,
-            mapping_result,
-        ):
-            raise ProductError("mapping_invalid", _MAPPING_INVALID_MESSAGE)
-        git_state = collect_git_state(grant)
-        final_inspection = inspect_local_project(grant, ingested_at=captured_at)
-        if (
-            final_inspection.source_state_sha256 != state.source_state_sha256
-            or final_inspection.preview != state.preview
-        ):
-            raise ProductError("preview_stale", _PREVIEW_STALE_MESSAGE)
-
-        bound_bundle = bind_project_mapping(
-            imported.bundle,
-            configuration,
-            mapping_result,
-        )
-        snapshot = build_project_snapshot(
-            bound_bundle,
-            collection,
-            git_state,
-            configuration,
-            mapping_result,
-            captured_at=captured_at,
-        )
-        project_state = build_product_lifecycle_record(
-            record_kind="project_state",
-            project_id=bound_bundle.project_id,
-            payload={
-                "status": "confirmed",
-                "root": state.root,
-                "preview_id": preview_id,
-                "source_state_sha256": state.source_state_sha256,
-                "mapping_configuration": configuration.model_dump(mode="json"),
-                "project_bundle_id": bound_bundle.project_bundle_id,
-                "snapshot_id": snapshot.snapshot_id,
-            },
-        )
-        with ProjectStore(store_root) as store:
-            store.persist(
-                (bound_bundle, snapshot),
-                artifacts=_artifact_objects(imported.artifacts),
-                transaction_write=partial(
-                    _write_product_confirmation,
-                    preview_id=preview_id,
-                    record=project_state,
-                ),
-            )
-        return {
-            "project_id": bound_bundle.project_id,
-            "snapshot_id": snapshot.snapshot_id,
-            "status": "confirmed",
-        }
     except ProductError:
         raise
     except ProjectImportBoundaryError:

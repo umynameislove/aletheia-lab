@@ -383,6 +383,141 @@ a technical failure in every format. Export performs no provider or network
 call and cannot modify the source project. Existing result lookup errors retain
 their safe fail-closed codes for missing, foreign, or tampered records.
 
+## K11 reference-safe retention and deletion
+
+`delete_project(project_id)` removes the confirmed project's complete P3
+generation and Product lifecycle scope. The owned Product set includes every
+project-scoped state/result/turn plus the confirmed preview and its lease and
+binding. The P3 set includes bundles, snapshots, comparisons, regression
+candidates, evidence, lineage rows, and their record objects. K10 reports are
+returned as bytes and are not persisted, so K11 does not invent a report cache
+or report store.
+
+P3 owns the content-addressed object index, so reference analysis is performed
+there rather than duplicated in Product. A purge plan validates every record
+and bundle artifact, then compares the target project's distinct SHA-256 set
+with record and artifact references from every surviving project. Only the
+difference is removed. The intersection remains byte- and index-verified and
+is reported as `retained_shared_count`.
+
+The SQLite phase is one `BEGIN IMMEDIATE` transaction with SQLite secure-delete
+enabled: lineage indexes, P3 records, unshared object rows, Product
+registrations/bindings/lifecycle rows, and the confirmed preview are removed
+together. That transaction writes an immutable `deletion` tombstone containing
+an exact pending CAS digest list. After commit, deletion revalidates both the
+object index and embedded bundle-artifact references under a write lock before
+unlinking only the still-unowned derived CAS paths one by one. It never
+recursively removes a directory. A digest that became live concurrently is
+retained and the receipt counts are reconciled accordingly.
+
+A completed tombstone replaces the pending one only after all removable files
+are absent, both stores confirm that the old project has no records, and the WAL
+has been checkpointed and truncated. The completed tombstone retains the safe
+digest manifest so every repeated delete rechecks Product, P3, and CAS state
+rather than taking an unchecked fast path. Interruption therefore returns no
+success receipt. A later call or reopened service resumes the exact pending
+list and completes safely.
+
+The first successful receipt uses `status="deleted"`. A repeated call uses
+`status="already_deleted"`, returns `deleted_count=0`, and preserves the
+original shared-object count. The first `deleted_count` is the sum of logical
+P3 records, Product lifecycle/confirmed-preview records, and distinct CAS
+objects actually purged; derived indexes and foreign-key rows are not counted
+again. The tombstone contains no source path or imported payload and cannot
+reconstruct the deleted project.
+
+Deletion never opens the stored source root. Malformed IDs fail as `invalid_id`,
+unknown well-formed IDs fail as `record_not_found`, and ownership, object-index,
+payload, or reference tampering fails closed as `store_integrity_error` without
+including an ID, filesystem path, or raw exception. Old refresh, analysis,
+result, follow-up, graph, and export lookups fail after the transaction, while
+other projects and shared objects remain fully loadable. Project-scoped writes
+also check the deletion tombstone inside their write transaction, preventing a
+stale confirmation, refresh, result, or follow-up from resurrecting the scope.
+
+### K11 verification on Windows
+
+K11 was verified on the existing Windows Python 3.11 environment without a
+provider, network call, API key, fixture change, or source-project mutation.
+The final focused delete/import/lifecycle/persistence/result gate passed all 44
+test cases. The complete selected Product plus affected P3 persistence,
+lineage, closeout, and persisted regression suites also passed.
+
+The final project profile completed with
+`424 passed, 1 skipped, 3930 deselected` in 94.07 seconds. The two slowest K11
+integration tests took 3.15 and 1.62 seconds. The final Windows publication
+profile completed with `147 passed` in 288.01 seconds. An earlier run used an
+unnecessarily long `--basetemp` and
+caused nine unrelated diagnosis-development CAS paths to exceed the practical
+Windows path limit; rerunning the unchanged checkout with the short unique
+basetemp `%TEMP%\k11wp2` passed. No source change was used to mask that
+environmental failure.
+
+Ruff lint, Ruff format on every K11 changed source/test file, strict mypy on
+the Product package plus P3 persistence, changed-source C901, and
+`git diff --check` passed. The maintainability audit still reports the two
+pre-existing Product C901 findings and the pre-existing 1419-line P3 importer
+against its stale 1231-line exemption. Neither legacy function was changed by
+K11. Refactoring the pre-existing P3 `_migrate` helper reduced the project C901
+count from 8 to 7, so K11 improves rather than worsens the frozen baseline.
+
+Both repository copies of `synthetic_p6_view.json` remain byte-identical at
+SHA-256 `0f5413427d1adf184639bff08181d5a81d41e25dad7c45bfb71788742d957fd2`.
+The older handoff copy was not imported or used to alter the locked contract.
+
+## K12 Windows/offline end-to-end delivery
+
+The `aletheia product-demo WORKSPACE` entrypoint is a thin CLI over the packaged
+`run_product_demo` orchestration. It accepts only a new empty real directory,
+then creates a bounded synthetic Git project with target, metric, and config
+files. The harness confirms the initial 0.6 candidate loss, records a second
+synthetic commit with candidate loss 0.8, and therefore exercises a real metric
+delta rather than inventing a regression label.
+
+The flow calls the nine-method ProductService boundary through preview,
+confirmation, changed-snapshot refresh, persisted regression evidence,
+deterministic mock analysis, claim-scoped follow-up, immutable reload and graph,
+all three report formats, and reference-safe deletion. JSON, Markdown, and PDF
+are published with the shared create-only filesystem primitive. The returned
+summary contains stable IDs, counts, relative report paths, report hashes, and
+the deletion receipt; it contains no absolute workspace path or imported text.
+The harness verifies source bytes immediately before and after deletion.
+
+The integration test rejects both Python socket entrypoints, invokes the real
+Typer command, checks the adverse metric input and non-empty evidence/graph,
+parses JSON, checks PDF magic bytes, verifies every report size and digest,
+confirms all P3 and non-tombstone Product records are gone, denies the old result
+deep link, and compares the complete source tree after deletion. A separate
+case proves that a non-empty workspace is rejected without mutation.
+
+K12 adds a named `product` test profile that discovers every Product unit and
+integration test and explicitly includes the persisted P3 import transaction
+and snapshot/regression pipeline. The Windows CI job runs this profile as a
+blocking step within its existing 35-minute budget. Strict matrix mypy now
+includes the complete Product package, and contract tests bind both changes so
+future CI edits cannot silently drop them.
+
+### K12 verification status on Windows
+
+The final Product profile passed all 156 tests in 148.06 seconds. The complete
+offline E2E took 3.06 seconds, and the slowest shared-object deletion case took
+8.77 seconds. The final contract profile passed all 70 tests in 44.49 seconds;
+strict mypy passed 23 source files, Ruff lint and format passed, the
+maintainability receipt reported `status: pass` with no findings, and
+`git diff --check` passed. Focused correction and post-format regression gates
+also passed 37 and 41 tests respectively. The previously recorded project and
+Windows-publication profiles remain `424 passed, 1 skipped` and `147 passed`.
+
+The repository-wide full profile is not claimed green on this Windows host. Its
+last intermediate run reached `4324 passed, 31 skipped` but exposed a deep
+research-attempt-store path beyond the host's disabled legacy Windows path
+limit (`LongPathsEnabled=0`). A separate frozen Qwen portability test also
+compares a Windows `Path` against a POSIX `/tmp` literal. Both files belong to
+the research freeze and this Product branch does not amend their bound bytes or
+deselect them. The required integrated UI smoke likewise remains a pre-merge
+activity led by Quân; this backend branch does not claim that external
+confirmation.
+
 ## Implementation order
 
 1. Define the product contracts, safe errors, deterministic identifiers, and
@@ -395,6 +530,10 @@ their safe fail-closed codes for missing, foreign, or tampered records.
 7. Implement reference-safe idempotent deletion.
 8. Add contract, security, persistence/restart, determinism, export-parity, and
    deletion tests; then run the repository quality gates.
+9. Add the bounded offline Product demo, its Windows profile, and blocking CI
+   contracts.
+10. Run the final project, publication, contract, full-coverage, quality,
+    hygiene, and security gates before integrated UI smoke.
 
 Each item is split into independently reviewable changes. A later step starts
 only after the preceding step has been verified.

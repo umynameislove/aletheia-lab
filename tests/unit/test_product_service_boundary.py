@@ -155,13 +155,14 @@ def test_product_error_rejects_unsafe_public_messages(unsafe_message: str) -> No
         ProductError("invalid_request", unsafe_message)
 
 
-def test_unimplemented_delete_fails_explicitly_instead_of_returning_fake_success(
+def test_delete_rejects_invalid_project_id_without_echoing_it(
     tmp_path: Path,
 ) -> None:
     service = ProductService(tmp_path / "store")
 
     with pytest.raises(ProductError) as captured:
-        service.delete_project("project")
+        service.delete_project("private-project")
 
-    assert captured.value.code == "feature_unavailable"
-    assert captured.value.safe_message == "This product operation is not available yet."
+    assert captured.value.code == "invalid_id"
+    assert captured.value.safe_message == "The supplied project identifier is invalid."
+    assert "private-project" not in captured.value.safe_message

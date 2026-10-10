@@ -15,6 +15,11 @@ _ROOT: Final = Path(__file__).resolve().parents[1]
 _EVALUATION_TIMEOUT_SECONDS: Final = 600
 _WINDOWS_EVALUATION_TIMEOUT_SECONDS: Final = 900
 _REPRODUCIBILITY_HASH_SEEDS: Final = ("1", "104729", "209759")
+_PRODUCT_TEST_PATHS: Final[tuple[str, ...]] = tuple(
+    path.relative_to(_ROOT).as_posix()
+    for directory in ("tests/unit", "tests/integration")
+    for path in sorted((_ROOT / directory).glob("test_product_*.py"))
+)
 _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
     "contract": (
         "tests/unit/test_filesystem_publication.py",
@@ -36,6 +41,12 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/property",
         "-k",
         "project",
+    ),
+    "product": (
+        *_PRODUCT_TEST_PATHS,
+        "tests/integration/test_project_import_transaction.py",
+        "tests/integration/test_project_snapshot_regression_pipeline.py",
+        "--durations=20",
     ),
     "research": ("-m", "research_regression"),
     "evaluation": (

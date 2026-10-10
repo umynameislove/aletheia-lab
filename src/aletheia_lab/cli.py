@@ -14,6 +14,7 @@ from aletheia_lab.benchmark.manifest import load_case
 from aletheia_lab.config import load_yaml
 from aletheia_lab.evaluation.metrics import binary_score
 from aletheia_lab.evidence.leakage import find_forbidden_terms
+from aletheia_lab.product.demo_flow import ProductDemoError, run_product_demo
 
 app = typer.Typer(help="Aletheia Lab research/evaluation toolkit.")
 console = Console()
@@ -67,3 +68,15 @@ def score_example(predicted: str, expected: str) -> None:
 
     score = binary_score(predicted.strip().lower() == expected.strip().lower())
     console.print({"score": score})
+
+
+@app.command("product-demo")
+def product_demo(workspace: Path) -> None:
+    """Run the complete offline product flow in a new empty workspace."""
+
+    try:
+        summary = run_product_demo(workspace)
+    except ProductDemoError as exc:
+        console.print(f"[red]Product demo failed:[/red] {exc}")
+        raise typer.Exit(code=1) from None
+    console.print_json(data=summary)

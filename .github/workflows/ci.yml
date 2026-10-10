@@ -76,6 +76,7 @@ jobs:
           src/aletheia_lab/evidence
           src/aletheia_lab/evaluation
           src/aletheia_lab/model_gateway
+          src/aletheia_lab/product
           src/aletheia_lab/project
           src/aletheia_lab/reporting
           --exclude src/aletheia_lab/benchmark/p2
@@ -100,6 +101,8 @@ jobs:
           python -m pip install -e ".[dev]"
       - name: Test Windows project boundary
         run: python scripts/run_test_profile.py project -- --durations=20
+      - name: Test Windows offline product flow
+        run: python scripts/run_test_profile.py product
       - name: Prepare pinned test dataset
         run: python scripts/download_dataset.py all --config configs/project.yaml
       - name: Test Windows evaluation boundary

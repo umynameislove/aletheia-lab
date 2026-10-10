@@ -22,9 +22,7 @@ UnavailableReason: TypeAlias = Literal[
     "unreadable_source",
 ]
 
-_IDENTIFIER: Final[re.Pattern[str]] = re.compile(
-    r"^[A-Za-z0-9][A-Za-z0-9._:@+-]{0,127}$"
-)
+_IDENTIFIER: Final[re.Pattern[str]] = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:@+-]{0,127}$")
 _SENSITIVE_LABEL: Final[re.Pattern[str]] = re.compile(
     r"(?i)(?:^|[^a-z0-9])(?:ssn|social[_ -]?security|e-?mail|phone|password|passwd|"
     r"secret|token|api[_ -]?key|private[_ -]?key|credential)(?:$|[^a-z0-9])"
@@ -34,9 +32,7 @@ _EMAIL: Final[re.Pattern[str]] = re.compile(
 )
 _PHONE: Final[re.Pattern[str]] = re.compile(r"(?<!\d)\+[1-9](?:[ -]?\d){7,14}(?!\d)")
 _RUN_FIELD_NAMES: Final[frozenset[str]] = frozenset({"run", "run_id", "runid"})
-_METRIC_NAME_FIELD_NAMES: Final[frozenset[str]] = frozenset(
-    {"metric", "metric_name", "name"}
-)
+_METRIC_NAME_FIELD_NAMES: Final[frozenset[str]] = frozenset({"metric", "metric_name", "name"})
 _SAFE_DATASET_LABEL: Final[str] = "A dataset with withheld field labels"
 _SAFE_METRIC_LABEL: Final[str] = "A metric source with withheld field labels"
 
@@ -157,11 +153,7 @@ def _mapping_id(kind: Literal["target", "metric", "config"], item: ProjectItem) 
 
 
 def _contains_sensitive_text(value: str) -> bool:
-    return bool(
-        _SENSITIVE_LABEL.search(value)
-        or _EMAIL.search(value)
-        or _PHONE.search(value)
-    )
+    return bool(_SENSITIVE_LABEL.search(value) or _EMAIL.search(value) or _PHONE.search(value))
 
 
 def _eligible_field_names(values: Iterable[object]) -> tuple[tuple[str, ...], bool]:
@@ -183,9 +175,7 @@ def _artifact_by_path(
     artifacts: tuple[ProjectImportArtifact, ...],
 ) -> dict[str, ProjectImportArtifact]:
     by_path = {value.relative_path: value for value in artifacts}
-    if len(by_path) != len(artifacts) or set(by_path) != {
-        item.relative_path for item in items
-    }:
+    if len(by_path) != len(artifacts) or set(by_path) != {item.relative_path for item in items}:
         raise ValueError("inspection artifacts do not reconcile with items")
     for item in items:
         if by_path[item.relative_path].reference != item.artifact:
@@ -261,12 +251,15 @@ def _records_at(value: object, path: tuple[str, ...]) -> tuple[dict[str, object]
 def _metric_structure(
     item: ProjectItem,
     artifact: ProjectImportArtifact,
-) -> tuple[
-    Literal["csv", "json"],
-    tuple[tuple[str, ...], ...],
-    tuple[str, ...],
-    tuple[dict[str, object], ...],
-] | None:
+) -> (
+    tuple[
+        Literal["csv", "json"],
+        tuple[tuple[str, ...], ...],
+        tuple[str, ...],
+        tuple[dict[str, object], ...],
+    ]
+    | None
+):
     suffix = item.relative_path.rsplit(".", maxsplit=1)[-1].lower()
     try:
         text = artifact.content.decode("utf-8", errors="strict")
@@ -278,19 +271,9 @@ def _metric_structure(
         if suffix == "json":
             payload: object = json.loads(text)
             paths = _json_record_paths(payload)
-            records = tuple(
-                record
-                for path in paths
-                for record in _records_at(payload, path)
-            )
+            records = tuple(record for path in paths for record in _records_at(payload, path))
             if paths:
-                fields = tuple(
-                    dict.fromkeys(
-                        key
-                        for record in records
-                        for key in record
-                    )
-                )
+                fields = tuple(dict.fromkeys(key for record in records for key in record))
             elif isinstance(payload, dict):
                 fields = tuple(str(key) for key in payload)
             else:
@@ -325,9 +308,7 @@ def _metric_name_values(
     records: tuple[dict[str, object], ...],
     fields: tuple[str, ...],
 ) -> tuple[tuple[str, ...], bool]:
-    name_fields = tuple(
-        value for value in fields if value.casefold() in _METRIC_NAME_FIELD_NAMES
-    )
+    name_fields = tuple(value for value in fields if value.casefold() in _METRIC_NAME_FIELD_NAMES)
     if len(name_fields) != 1 or not records:
         return (), False
     field = name_fields[0]
@@ -385,9 +366,7 @@ def _metric_candidate(
             ),
             (),
         )
-    run_fields = tuple(
-        value for value in fields if value.casefold() in _RUN_FIELD_NAMES
-    )
+    run_fields = tuple(value for value in fields if value.casefold() in _RUN_FIELD_NAMES)
     metric_names, sensitive_metric_name = _metric_name_values(records, fields)
     if sensitive_metric_name:
         return (
@@ -490,9 +469,7 @@ def confirm_mapping_is_eligible(
 ) -> bool:
     """Fail closed when a confirm request routes around preview eligibility."""
 
-    targets = {
-        value.project_item_id: value for value in candidates.targets if value.available
-    }
+    targets = {value.project_item_id: value for value in candidates.targets if value.available}
     target = targets.get(configuration.target.project_item_id)
     if target is None or any(
         field not in target.field_names
@@ -504,9 +481,7 @@ def confirm_mapping_is_eligible(
         return False
 
     metric_candidates = {
-        value.project_item_id: value
-        for value in candidates.metric_sources
-        if value.available
+        value.project_item_id: value for value in candidates.metric_sources if value.available
     }
     for mapping in configuration.metric_sources:
         candidate = metric_candidates.get(mapping.project_item_id)
@@ -534,9 +509,7 @@ def confirm_mapping_is_eligible(
         if mapping.format == "csv" and mapping.records_path:
             return False
 
-    config_ids = {
-        value.project_item_id for value in candidates.configs if value.available
-    }
+    config_ids = {value.project_item_id for value in candidates.configs if value.available}
     return not any(
         config_id not in config_ids
         for run in configuration.runs

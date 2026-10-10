@@ -9,24 +9,16 @@ no bundle, artifact payload, snapshot reference or evidence reference.
 
 from __future__ import annotations
 
-import csv
 import hashlib
-import io
-import json
-import math
 import os
 import re
 import stat
-import tomllib
 import unicodedata
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Final, Literal, NoReturn, cast
 
-import pyarrow as pa  # type: ignore[import-untyped]
-import pyarrow.parquet as pq  # type: ignore[import-untyped]
-import yaml
 from pydantic import ValidationError
 
 from aletheia_lab.project.contracts import (
@@ -43,13 +35,22 @@ from aletheia_lab.project.contracts import (
 from aletheia_lab.project.identity import (
     SHA256_PATTERN,
     ProjectIdentityError,
-    canonical_project_json,
     canonical_project_sha256,
     content_sha256,
     granted_root_fingerprint,
     normalize_relative_project_path,
     normalize_text,
     project_id_for_root,
+)
+from aletheia_lab.project.import_content import (
+    ImportContentError,
+    contains_prompt_injection,
+    dataset_metadata_bytes,
+    decode_and_validate,
+    path_contains_sensitive_content,
+    redact_pii,
+    secret_occurrences,
+    source_modified_at,
 )
 from aletheia_lab.project.import_policy import (
     ProjectDecisionReason,
@@ -68,24 +69,6 @@ _COLLECTOR: Final[ProjectCollector] = ProjectCollector(
     version="1.0.0",
 )
 _READ_CHUNK: Final[int] = 1 << 20
-_CONTROL_CHARACTER = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
-_PROMPT_INJECTION = re.compile(
-    r"(?i)(?:ignore\s+(?:all\s+)?previous\s+instructions|"
-    r"treat\s+this\s+.*system\s+message|run\s+this\s+shell\s+command|"
-    r"read\s+files\s+outside\s+the\s+project|upload\s+the\s+following\s+token)"
-)
-_EMAIL = re.compile(r"(?<![\w.+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?![\w.-])")
-_PHONE = re.compile(r"(?<!\d)\+[1-9](?:[ -]?\d){7,14}(?!\d)")
-_SECRET_PATTERNS: Final[tuple[re.Pattern[str], ...]] = (
-    re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
-    re.compile(r"\b(?:sk|ghp|github_pat)_[A-Za-z0-9_]{16,}\b"),
-    re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
-    re.compile(r"\b[a-z][a-z0-9+.-]*://[^\s/:]+:[^\s/@]+@[^\s]+", re.IGNORECASE),
-    re.compile(
-        r"(?im)\b(?:api[_-]?key|password|private[_-]?key|secret|token)\s*[:=]\s*"
-        r"[\"']?[^\s\"']{8,}"
-    ),
-)
 
 
 @dataclass(frozen=True, slots=True, init=False)
@@ -199,13 +182,12 @@ class ProjectImportInspection:
         blocker_exists = any(issue.severity == "blocker" for issue in self.preview.issues)
         if blocker_exists:
             if self.source_state_sha256 is not None or self.items or self.artifacts:
-                raise ValueError(
-                    "blocked inspections must not release admitted source state"
-                )
+                raise ValueError("blocked inspections must not release admitted source state")
             return
-        if self.source_state_sha256 is None or re.fullmatch(
-            SHA256_PATTERN, self.source_state_sha256
-        ) is None:
+        if (
+            self.source_state_sha256 is None
+            or re.fullmatch(SHA256_PATTERN, self.source_state_sha256) is None
+        ):
             raise ValueError("successful inspections require a valid source-state seal")
         item_by_path = {item.relative_path: item for item in self.items}
         artifact_by_path = {artifact.relative_path: artifact for artifact in self.artifacts}
@@ -260,12 +242,6 @@ class _ProjectInspection:
     preview: ProjectImportPreview
     prepared: tuple[_PreparedItem, ...]
     source_state_sha256: str | None
-
-
-class _ContentFailure(ValueError):
-    def __init__(self, code: ProjectIssueCode) -> None:
-        super().__init__(code)
-        self.code = code
 
 
 _PROFILES: Final[dict[str, _FileProfile]] = {
@@ -503,9 +479,7 @@ def _discover(
                 )
             continue
 
-        if _directory_signature(completed_directory_stat) != _directory_signature(
-            directory_stat
-        ):
+        if _directory_signature(completed_directory_stat) != _directory_signature(directory_stat):
             relative = "/".join(parent_parts) if parent_parts else None
             issues.append(
                 _issue(
@@ -537,13 +511,11 @@ def _discover(
             except (ProjectIdentityError, UnicodeEncodeError):
                 issues.append(_issue("path_invalid", subject=raw_relative))
                 continue
-            if _path_contains_sensitive_content(relative):
+            if path_contains_sensitive_content(relative):
                 issues.append(_issue("path_invalid", subject=relative))
                 continue
             if visited_entries > policy.max_discovered_entries:
-                issues.append(
-                    _issue("item_limit_exceeded", subject=grant.root_fingerprint)
-                )
+                issues.append(_issue("item_limit_exceeded", subject=grant.root_fingerprint))
                 decisions.append(
                     _decision_without_content(
                         relative, action="block", reason="item_limit_exceeded"
@@ -600,13 +572,9 @@ def _discover(
                 )
                 continue
             if not _contained(grant._path, candidate_path):
-                issues.append(
-                    _issue("path_outside_root", subject=relative, relative_path=relative)
-                )
+                issues.append(_issue("path_outside_root", subject=relative, relative_path=relative))
                 decisions.append(
-                    _decision_without_content(
-                        relative, action="block", reason="path_outside_root"
-                    )
+                    _decision_without_content(relative, action="block", reason="path_outside_root")
                 )
                 continue
             hidden = any(part.startswith(".") for part in raw_parts)
@@ -695,7 +663,9 @@ def _discover(
     )
 
 
-def _bounded_read(candidate: _Candidate, policy: ProjectImportPolicy) -> tuple[bytes, os.stat_result]:
+def _bounded_read(
+    candidate: _Candidate, policy: ProjectImportPolicy
+) -> tuple[bytes, os.stat_result]:
     flags = os.O_RDONLY
     flags |= int(getattr(os, "O_CLOEXEC", 0))
     flags |= int(getattr(os, "O_NOFOLLOW", 0))
@@ -704,9 +674,9 @@ def _bounded_read(candidate: _Candidate, policy: ProjectImportPolicy) -> tuple[b
         descriptor = os.open(candidate.path, flags)
         opened = os.fstat(descriptor)
         if not stat.S_ISREG(opened.st_mode):
-            raise _ContentFailure("source_changed_during_read")
+            raise ImportContentError("source_changed_during_read")
         if _stat_signature(opened) != _stat_signature(candidate.stat_result):
-            raise _ContentFailure("source_changed_during_read")
+            raise ImportContentError("source_changed_during_read")
         chunks: list[bytes] = []
         total = 0
         while True:
@@ -716,202 +686,21 @@ def _bounded_read(candidate: _Candidate, policy: ProjectImportPolicy) -> tuple[b
             chunks.append(chunk)
             total += len(chunk)
             if total > policy.max_item_bytes:
-                raise _ContentFailure("item_too_large")
+                raise ImportContentError("item_too_large")
         completed = os.fstat(descriptor)
         if _stat_signature(completed) != _stat_signature(opened):
-            raise _ContentFailure("source_changed_during_read")
+            raise ImportContentError("source_changed_during_read")
         after_path = candidate.path.lstat()
         if _stat_signature(after_path) != _stat_signature(opened):
-            raise _ContentFailure("source_changed_during_read")
+            raise ImportContentError("source_changed_during_read")
         return b"".join(chunks), completed
-    except _ContentFailure:
+    except ImportContentError:
         raise
     except OSError as exc:
-        raise _ContentFailure("source_read_failed") from exc
+        raise ImportContentError("source_read_failed") from exc
     finally:
         if descriptor is not None:
             os.close(descriptor)
-
-
-def _reject_duplicate_pairs(pairs: list[tuple[str, object]]) -> dict[str, object]:
-    result: dict[str, object] = {}
-    for key, value in pairs:
-        if key in result:
-            raise _ContentFailure("duplicate_structured_key")
-        result[key] = value
-    return result
-
-
-def _reject_non_finite(value: object) -> None:
-    if isinstance(value, float) and not math.isfinite(value):
-        raise _ContentFailure("non_finite_number")
-    if isinstance(value, dict):
-        for key, nested in value.items():
-            _reject_non_finite(key)
-            _reject_non_finite(nested)
-    elif isinstance(value, list | tuple | set):
-        for nested in value:
-            _reject_non_finite(nested)
-
-
-def _reject_yaml_duplicate_keys(node: yaml.Node) -> None:
-    if isinstance(node, yaml.MappingNode):
-        seen: set[str] = set()
-        for key_node, value_node in node.value:
-            key_identity = yaml.serialize(key_node)
-            if key_identity in seen:
-                raise _ContentFailure("duplicate_structured_key")
-            seen.add(key_identity)
-            _reject_yaml_duplicate_keys(key_node)
-            _reject_yaml_duplicate_keys(value_node)
-    elif isinstance(node, yaml.SequenceNode):
-        for nested in node.value:
-            _reject_yaml_duplicate_keys(nested)
-
-
-def _validate_structured_content(path: str, text: str) -> None:
-    extension = Path(path).suffix.lower()
-    try:
-        parsed: object
-        if extension in {".json", ".ipynb"}:
-            parsed = json.loads(
-                text,
-                object_pairs_hook=_reject_duplicate_pairs,
-                parse_constant=lambda _value: (_ for _ in ()).throw(
-                    _ContentFailure("non_finite_number")
-                ),
-            )
-            if extension == ".ipynb" and (
-                not isinstance(parsed, dict) or not isinstance(parsed.get("cells"), list)
-            ):
-                raise _ContentFailure("structured_content_invalid")
-        elif extension in {".yaml", ".yml"}:
-            node = yaml.compose(text, Loader=yaml.SafeLoader)
-            if node is not None:
-                _reject_yaml_duplicate_keys(node)
-            parsed = yaml.safe_load(text)
-        elif extension == ".toml":
-            parsed = tomllib.loads(text)
-        elif extension in {".csv", ".tsv"}:
-            delimiter = "," if extension == ".csv" else "\t"
-            rows = csv.reader(io.StringIO(text, newline=""), delimiter=delimiter, strict=True)
-            header = next(rows, None)
-            if header is not None and len(header) != len(set(header)):
-                raise _ContentFailure("duplicate_structured_key")
-            if header is not None and any(not column.strip() for column in header):
-                raise _ContentFailure("structured_content_invalid")
-            expected_width = None if header is None else len(header)
-            for row in rows:
-                if expected_width is not None and len(row) != expected_width:
-                    raise _ContentFailure("structured_content_invalid")
-            parsed = None
-        else:
-            return
-        _reject_non_finite(parsed)
-    except _ContentFailure:
-        raise
-    except (csv.Error, json.JSONDecodeError, tomllib.TOMLDecodeError, yaml.YAMLError) as exc:
-        raise _ContentFailure("structured_content_invalid") from exc
-
-
-def _decode_and_validate(
-    candidate: _Candidate,
-    source_bytes: bytes,
-    policy: ProjectImportPolicy,
-) -> str:
-    try:
-        text = source_bytes.decode("utf-8", errors="strict")
-    except UnicodeDecodeError as exc:
-        raise _ContentFailure("invalid_utf8") from exc
-    if _CONTROL_CHARACTER.search(text):
-        raise _ContentFailure("unsafe_control_character")
-    if any(len(line.encode("utf-8")) > policy.max_line_bytes for line in text.splitlines()):
-        raise _ContentFailure("line_too_long")
-    _validate_structured_content(candidate.relative_path, text)
-    return text
-
-
-def _safe_field_name(value: str, *, index: int) -> str:
-    """Keep schema labels useful without leaking embedded credentials or PII."""
-
-    _, pii_count = _redact_pii(value)
-    if _secret_occurrences(value) or pii_count:
-        return f"field_{index + 1}_redacted"
-    return value
-
-
-def _csv_metadata(text: str, *, delimiter: str) -> dict[str, object]:
-    rows = csv.reader(io.StringIO(text, newline=""), delimiter=delimiter, strict=True)
-    header = next(rows, None)
-    if header is None:
-        return {"column_count": 0, "columns": [], "format": "csv", "row_count": 0}
-    row_count = sum(1 for _ in rows)
-    return {
-        "column_count": len(header),
-        "columns": [_safe_field_name(column, index=index) for index, column in enumerate(header)],
-        "format": "tsv" if delimiter == "\t" else "csv",
-        "row_count": row_count,
-    }
-
-
-def _parquet_metadata(source_bytes: bytes) -> dict[str, object]:
-    try:
-        parquet = pq.ParquetFile(pa.BufferReader(source_bytes))
-        metadata = parquet.metadata
-        arrow_schema = parquet.schema_arrow
-    except (pa.ArrowException, OSError, ValueError) as exc:
-        raise _ContentFailure("structured_content_invalid") from exc
-    return {
-        "column_count": len(arrow_schema),
-        "columns": [
-            _safe_field_name(field.name, index=index) for index, field in enumerate(arrow_schema)
-        ],
-        "format": "parquet",
-        "row_count": metadata.num_rows,
-        "row_group_count": metadata.num_row_groups,
-        "types": [str(field.type) for field in arrow_schema],
-    }
-
-
-def _dataset_metadata_bytes(
-    candidate: _Candidate, source_bytes: bytes, text: str | None
-) -> bytes:
-    if candidate.profile.binary:
-        metadata = _parquet_metadata(source_bytes)
-    else:
-        assert text is not None
-        delimiter = "\t" if Path(candidate.relative_path).suffix.lower() == ".tsv" else ","
-        metadata = _csv_metadata(text, delimiter=delimiter)
-    payload = {
-        "schema_version": "project-dataset-metadata/v1",
-        **metadata,
-    }
-    return (canonical_project_json(payload) + "\n").encode("utf-8")
-
-
-def _secret_occurrences(text: str) -> int:
-    return sum(len(pattern.findall(text)) for pattern in _SECRET_PATTERNS)
-
-
-def _redact_pii(text: str) -> tuple[str, int]:
-    email_count = len(_EMAIL.findall(text))
-    phone_count = len(_PHONE.findall(text))
-    redacted = _EMAIL.sub("[REDACTED:pii.email]", text)
-    redacted = _PHONE.sub("[REDACTED:pii.phone]", redacted)
-    return redacted, email_count + phone_count
-
-
-def _path_contains_sensitive_content(value: str) -> bool:
-    return bool(
-        _EMAIL.search(value)
-        or _PHONE.search(value)
-        or any(pattern.search(value) for pattern in _SECRET_PATTERNS)
-    )
-
-
-def _source_modified_at(stat_result: os.stat_result) -> str:
-    stamp = datetime.fromtimestamp(stat_result.st_mtime_ns / 1_000_000_000, tz=UTC)
-    return stamp.isoformat(timespec="microseconds").replace("+00:00", "Z")
 
 
 def _prepare_item(
@@ -923,10 +712,12 @@ def _prepare_item(
 ) -> _PreparedItem:
     try:
         source_bytes, final_stat = _bounded_read(candidate, policy)
-        text = None if candidate.profile.binary else _decode_and_validate(
-            candidate, source_bytes, policy
+        text = (
+            None
+            if candidate.profile.binary
+            else decode_and_validate(candidate.relative_path, source_bytes, policy)
         )
-    except _ContentFailure as exc:
+    except ImportContentError as exc:
         raise exc
 
     issues: list[ProjectValidationIssue] = []
@@ -938,7 +729,7 @@ def _prepare_item(
     reason: ProjectDecisionReason = "included"
     action: Literal["include", "redact", "withhold"] = "include"
 
-    secret_count = 0 if text is None else _secret_occurrences(text)
+    secret_count = 0 if text is None else secret_occurrences(text)
     if secret_count:
         issues.append(
             _issue(
@@ -955,7 +746,7 @@ def _prepare_item(
         reason = "secret_withheld"
         action = "withhold"
     else:
-        artifact_text, pii_count = _redact_pii(artifact_text)
+        artifact_text, pii_count = redact_pii(artifact_text)
         if pii_count:
             issues.append(
                 _issue(
@@ -970,7 +761,7 @@ def _prepare_item(
             reason = "pii_redacted"
             action = "redact"
 
-    if text is not None and _PROMPT_INJECTION.search(text):
+    if text is not None and contains_prompt_injection(text):
         issues.append(
             _issue(
                 "untrusted_instruction_text",
@@ -987,10 +778,17 @@ def _prepare_item(
 
     artifact_bytes = artifact_text.encode("utf-8")
     artifact_media_type = (
-        "text/plain" if redaction_state in {"redacted", "withheld"} else candidate.profile.media_type
+        "text/plain"
+        if redaction_state in {"redacted", "withheld"}
+        else candidate.profile.media_type
     )
     if candidate.profile.source_type == "dataset":
-        artifact_bytes = _dataset_metadata_bytes(candidate, source_bytes, text)
+        artifact_bytes = dataset_metadata_bytes(
+            candidate.relative_path,
+            binary=candidate.profile.binary,
+            source_bytes=source_bytes,
+            text=text,
+        )
         artifact_media_type = "application/json"
         redaction_state = "redacted"
         redaction_reasons = ("dataset.raw_rows_withheld",)
@@ -1011,7 +809,7 @@ def _prepare_item(
         media_type=candidate.profile.media_type,
         source_schema=candidate.profile.source_schema,
         source_bytes=source_bytes,
-        source_modified_at=_source_modified_at(final_stat),
+        source_modified_at=source_modified_at(final_stat),
         ingested_at=ingested_at,
         collector=_COLLECTOR,
         visibility=visibility,
@@ -1094,9 +892,7 @@ def _source_state_sha256(
                 {
                     "relative_path": "/".join(relative.parts),
                     "stat": list(_directory_signature(observation.stat_result)),
-                    "entry_name_sha256": [
-                        content_sha256(name) for name in observation.entry_names
-                    ],
+                    "entry_name_sha256": [content_sha256(name) for name in observation.entry_names],
                 }
             )
         payload = {
@@ -1120,10 +916,9 @@ def _source_state_sha256(
         root_after = grant._path.lstat()
     except (OSError, ValueError):
         return None
-    if (
-        _directory_signature(root_before) != _directory_signature(root_after)
-        or not _grant_is_current(grant)
-    ):
+    if _directory_signature(root_before) != _directory_signature(
+        root_after
+    ) or not _grant_is_current(grant):
         return None
     return canonical_project_sha256(payload)
 
@@ -1148,10 +943,13 @@ def _report_sha256(
 
 def _canonical_ingested_at(value: str) -> str:
     normalize_text(value, label="ingested_at", max_length=32)
-    if re.fullmatch(
-        r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z",
-        value,
-    ) is None:
+    if (
+        re.fullmatch(
+            r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z",
+            value,
+        )
+        is None
+    ):
         raise ValueError("ingested_at must be a canonical UTC timestamp ending in Z")
     try:
         datetime.fromisoformat(value[:-1] + "+00:00")
@@ -1223,7 +1021,7 @@ def _inspect_granted_project(
                 selected_policy,
                 ingested_at=normalized_time,
             )
-        except _ContentFailure as exc:
+        except ImportContentError as exc:
             issue = _issue(
                 exc.code,
                 subject=candidate.relative_path,

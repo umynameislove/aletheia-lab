@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import NoReturn
 
 from aletheia_lab.product.analysis import analyze_product_mock
 from aletheia_lab.product.boundary import ProductError
+from aletheia_lab.product.deletion import delete_product_project
 from aletheia_lab.product.demo import demo_product_view
 from aletheia_lab.product.follow_up import follow_up_product_result
 from aletheia_lab.product.imports import confirm_product_import, preview_product_import
@@ -16,7 +16,6 @@ from aletheia_lab.product.reports import render_product_report
 from aletheia_lab.product.results import load_product_result
 from aletheia_lab.project.persistence import ProjectStore
 
-_UNAVAILABLE_MESSAGE = "This product operation is not available yet."
 _STORE_UNAVAILABLE_MESSAGE = "The product store could not be opened safely."
 
 
@@ -103,10 +102,6 @@ class ProductService:
         return render_product_report(load_product_result(self._store_root, result_id), format)
 
     def delete_project(self, project_id: str) -> dict[str, object]:
-        """Delete product-owned state when implemented."""
+        """Delete product-owned state and unshared P3 objects without touching source."""
 
-        self._unavailable()
-
-    @staticmethod
-    def _unavailable() -> NoReturn:
-        raise ProductError("feature_unavailable", _UNAVAILABLE_MESSAGE)
+        return delete_product_project(self._store_root, project_id)

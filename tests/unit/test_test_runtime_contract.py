@@ -96,6 +96,22 @@ def test_windows_project_boundary_is_a_blocking_ci_gate() -> None:
     assert boundary_steps[0].get("continue-on-error") is None
 
 
+def test_windows_product_flow_is_a_blocking_ci_gate() -> None:
+    jobs = _workflow().get("jobs")
+    assert isinstance(jobs, dict)
+    windows_job = jobs.get("windows-project")
+    assert isinstance(windows_job, dict)
+    steps = windows_job.get("steps")
+    assert isinstance(steps, list)
+    matches = [
+        step
+        for step in steps
+        if isinstance(step, dict) and "run_test_profile.py product" in str(step.get("run", ""))
+    ]
+    assert len(matches) == 1
+    assert matches[0].get("continue-on-error") is None
+
+
 def test_windows_job_budget_cannot_truncate_the_final_publication_gate() -> None:
     jobs = _workflow().get("jobs")
     assert isinstance(jobs, dict)
@@ -243,6 +259,7 @@ def test_named_profiles_resolve_without_collecting_tests() -> None:
         "contract",
         "fast",
         "project",
+        "product",
         "research",
         "evaluation",
         "windows-publication",
@@ -314,6 +331,27 @@ def test_full_profile_preserves_coverage_floor() -> None:
     assert "--cov=aletheia_lab" in command
     assert "--cov-fail-under=88" in command
     assert command[-3:] == ["-n", "2", "--dist=loadscope"]
+    assert not {"-k", "-m", "--ignore", "--ignore-glob"} & set(command[3:])
+
+
+def test_product_profile_includes_all_product_and_persisted_p3_integration_tests() -> None:
+    completed = subprocess.run(
+        [sys.executable, str(_PROFILE_SCRIPT), "product", "--show-command"],
+        cwd=_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    command = json.loads(completed.stdout)
+    expected_product_tests = {
+        path.relative_to(_ROOT).as_posix()
+        for directory in ("tests/unit", "tests/integration")
+        for path in (_ROOT / directory).glob("test_product_*.py")
+    }
+    assert expected_product_tests <= set(command)
+    assert "tests/integration/test_product_offline_e2e.py" in command
+    assert "tests/integration/test_project_import_transaction.py" in command
+    assert "tests/integration/test_project_snapshot_regression_pipeline.py" in command
     assert not {"-k", "-m", "--ignore", "--ignore-glob"} & set(command[3:])
 
 

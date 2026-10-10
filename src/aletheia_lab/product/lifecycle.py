@@ -53,6 +53,7 @@ _STORE_UNAVAILABLE_MESSAGE: Final[str] = "The product store could not be opened 
 _CONFIRMATION_CONFLICT_MESSAGE: Final[str] = "The preview was already confirmed differently."
 _RESULT_ENVELOPE_SCHEMA_VERSION: Final[str] = "p6-result-envelope/v1"
 
+
 _MIGRATION_V1: Final[str] = """
 CREATE TABLE IF NOT EXISTS product_records (
     record_id TEXT PRIMARY KEY,
@@ -408,7 +409,7 @@ def validate_product_record_id(
     return record_id
 
 
-def _validate_project_id(project_id: str) -> str:
+def validate_product_project_id(project_id: str) -> str:
     if not isinstance(project_id, str) or re.fullmatch(PROJECT_ID_PATTERN, project_id) is None:
         raise ProductError("invalid_id", "The supplied project identifier is invalid.")
     return project_id
@@ -431,7 +432,7 @@ def _record_from_row(row: sqlite3.Row) -> ProductLifecycleRecord | None:
         return None
 
 
-def _put_record(
+def put_product_lifecycle_record(
     connection: sqlite3.Connection,
     record: ProductLifecycleRecord,
 ) -> ProductRecordDisposition:
@@ -470,6 +471,24 @@ def _put_record(
     return "created"
 
 
+def ensure_product_project_active(connection: sqlite3.Connection, project_id: str) -> None:
+    rows = connection.execute(
+        """
+        SELECT record_id, schema_version, record_kind, project_id, snapshot_id,
+               parent_result_id, payload_json, canonical_sha256
+        FROM product_records
+        WHERE project_id = ? AND record_kind = 'deletion'
+        """,
+        (project_id,),
+    ).fetchall()
+    if not rows:
+        return
+    record = _record_from_row(rows[0]) if len(rows) == 1 else None
+    if record is None or record.canonical_sha256() != str(rows[0]["canonical_sha256"]):
+        raise ProductError("store_integrity_error", _STORE_INTEGRITY_MESSAGE)
+    raise ProductError("record_not_found", _RECORD_NOT_FOUND_MESSAGE)
+
+
 def put_current_project_state(
     connection: sqlite3.Connection,
     record: ProductLifecycleRecord,
@@ -479,7 +498,8 @@ def put_current_project_state(
     checked_record = ProductLifecycleRecord.model_validate(record.model_dump(mode="python"))
     if checked_record.record_kind != "project_state" or checked_record.project_id is None:
         raise TypeError("a current project state requires a project-state record")
-    disposition = _put_record(connection, checked_record)
+    ensure_product_project_active(connection, checked_record.project_id)
+    disposition = put_product_lifecycle_record(connection, checked_record)
     connection.execute(
         """
         INSERT INTO product_projects(project_id, project_state_record_id)
@@ -553,6 +573,12 @@ class ProductLifecycleStore:
     def __exit__(self, *_: object) -> None:
         self.close()
 
+    @property
+    def connection(self) -> sqlite3.Connection:
+        """Return the package-owned connection for coordinated transactions."""
+
+        return self._connection
+
     def _migrate(self) -> None:
         with self._connection:
             self._connection.execute(
@@ -575,7 +601,10 @@ class ProductLifecycleStore:
         """Persist one immutable record or accept an exact idempotent replay."""
 
         with self._connection:
-            return _put_record(self._connection, record)
+            checked = ProductLifecycleRecord.model_validate(record.model_dump(mode="python"))
+            if checked.project_id is not None and checked.record_kind != "deletion":
+                ensure_product_project_active(self._connection, checked.project_id)
+            return put_product_lifecycle_record(self._connection, checked)
 
     def put_preview(
         self,
@@ -590,7 +619,7 @@ class ProductLifecycleStore:
             raise TypeError("a preview lease requires a preview record")
         checked_time = _canonical_utc_timestamp(leased_at)
         with self._connection:
-            disposition = _put_record(self._connection, checked_record)
+            disposition = put_product_lifecycle_record(self._connection, checked_record)
             self._connection.execute(
                 """
                 INSERT INTO product_preview_leases(
@@ -661,7 +690,7 @@ class ProductLifecycleStore:
     def get_project_state(self, project_id: str) -> ProductLifecycleRecord:
         """Return the integrity-checked current state for one product project."""
 
-        checked_id = _validate_project_id(project_id)
+        checked_id = validate_product_project_id(project_id)
         row = self._connection.execute(
             """
             SELECT record_id, schema_version, record_kind, project_id, snapshot_id,
@@ -694,7 +723,7 @@ class ProductLifecycleStore:
     ) -> ProductLifecycleRecord:
         """Return the unique immutable project state that introduced a snapshot."""
 
-        checked_project_id = _validate_project_id(project_id)
+        checked_project_id = validate_product_project_id(project_id)
         if (
             not isinstance(snapshot_id, str)
             or re.fullmatch(SNAPSHOT_ID_PATTERN, snapshot_id) is None
