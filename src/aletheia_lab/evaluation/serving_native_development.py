@@ -32,6 +32,7 @@ from aletheia_lab.evaluation.official_model_signing import (
 )
 from aletheia_lab.evaluation.request_model_audit import digest
 from aletheia_lab.filesystem import write_new_file
+from aletheia_lab.project.identity import content_sha256
 
 PINS = {
     "ml581-affected-mlserver-registry.py": "543dbc33c1205d35c180f99c2a34c6ced52deed740a2c743652a4a9014ac974c",
@@ -55,7 +56,7 @@ def checked_sources(root: Path) -> dict[str, Path]:
 
 
 def _source_module(path: Path, label: str, legacy: bool = False) -> ModuleType:
-    _check_execution_source(path)
+    raw = _check_execution_source(path)
     name = f"mlserver._development_{label}"
     spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
@@ -64,7 +65,8 @@ def _source_module(path: Path, label: str, legacy: bool = False) -> ModuleType:
     legacy_module = importlib.import_module("pydantic.v1")
     replacement = {"pydantic": legacy_module} if legacy else {}
     with patch.dict(sys.modules, {name: module, **replacement}):
-        spec.loader.exec_module(module)
+        # Compile the exact pinned buffer; never reopen the path or use a bytecode cache.
+        exec(compile(raw, str(path), "exec", dont_inherit=True), module.__dict__)  # nosec B102
     return module
 
 
@@ -72,8 +74,8 @@ def _methods(
     path: Path, class_name: str, selected: tuple[str, ...], namespace: dict[str, Any]
 ) -> Any:
     """Compile original AST bodies with annotations deferred, never rewritten."""
-    _check_execution_source(path)
-    tree = ast.parse(path.read_text(encoding="utf-8"))
+    raw = _check_execution_source(path)
+    tree = ast.parse(raw, filename=str(path))
     owner = next(
         node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == class_name
     )
@@ -100,11 +102,13 @@ def _methods(
     return namespace[class_name]
 
 
-def _check_execution_source(path: Path) -> None:
+def _check_execution_source(path: Path) -> bytes:
     if path.is_symlink() or path.parent.is_symlink() or path.name not in PINS:
         raise ValueError("execution requires a pinned regular source")
-    if file_sha256(path) != PINS[path.name]:
+    raw = path.read_bytes()
+    if content_sha256(raw) != PINS[path.name]:
         raise ValueError("source pin mismatch before execution")
+    return raw
 
 
 def _runtime() -> tuple[Any, Any, Any]:

@@ -69,7 +69,8 @@ def _dev_dependencies(pyproject: dict) -> tuple[str, ...]:  # type: ignore[type-
 
 
 def _find_exact_command(
-    workflow: dict, expected: list[str]  # type: ignore[type-arg]
+    workflow: dict,
+    expected: list[str],  # type: ignore[type-arg]
 ) -> tuple[str, int, dict]:  # type: ignore[type-arg]
     matches = []
     for job_name, index, step in _steps(workflow):
@@ -123,13 +124,87 @@ def test_bandit_suppression_is_narrow_and_documented() -> None:
                 suppressions.append(
                     (path.relative_to(_ROOT).as_posix(), match.group(1) or "", preceding)
                 )
-    assert suppressions == [
-        (
-            "src/aletheia_lab/data/download.py",
-            "B310",
-            "# The scheme allowlist above is the compensating control for Bandit B310.",
-        )
-    ]
+    # These exact execution sites require pinned source and reject changed bytes;
+    # the regression below checks that compensating control before execution.
+    assert sorted(suppressions) == sorted(
+        [
+            (
+                "src/aletheia_lab/data/download.py",
+                "B310",
+                "# The scheme allowlist above is the compensating control for Bandit B310.",
+            ),
+            (
+                "src/aletheia_lab/evaluation/serving_native_development.py",
+                "B102",
+                "# Only the fixed, hash-checked upstream method census is executable here.",
+            ),
+            (
+                "src/aletheia_lab/evaluation/serving_native_development.py",
+                "B102",
+                "# Compile the exact pinned buffer; never reopen the path or use a bytecode cache.",
+            ),
+            (
+                "src/aletheia_lab/evaluation/serving_protocol_native.py",
+                "B102",
+                "# Execution consumes the same exact, pinned buffer checked above.",
+            ),
+            (
+                "src/aletheia_lab/evaluation/serving_protocol_native.py",
+                "B102",
+                "checked_source(roots, filename)",
+            ),
+        ]
+    )
+
+
+@pytest.mark.parametrize("entrypoint", ["methods", "module", "class"])
+def test_suppressed_execution_rejects_changed_pinned_source(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, entrypoint: str
+) -> None:
+    from aletheia_lab.evaluation import serving_native_development as development
+    from aletheia_lab.evaluation import serving_protocol_native as protocol
+    from aletheia_lab.project.identity import content_sha256
+
+    raw = b"class Fixture:\n    def value(self):\n        return 17\n"
+    path = tmp_path / "fixture.py"
+    path.write_bytes(raw)
+    owner = development if entrypoint == "methods" else protocol
+    monkeypatch.setattr(owner, "PINS", {path.name: content_sha256(raw)})
+    path.write_bytes(b"raise RuntimeError('changed source must not execute')\n")
+    roots = protocol.SourceRoots(tmp_path, tmp_path)
+    with pytest.raises(ValueError, match="pin mismatch"):
+        if entrypoint == "methods":
+            development._methods(path, "Fixture", ("value",), {})
+        elif entrypoint == "module":
+            protocol._source_module(roots, "serving_security_fixture", path.name)
+        else:
+            protocol._exact_class(roots, path.name, "Fixture", {})
+
+
+@pytest.mark.parametrize("entrypoint", ["methods", "module"])
+def test_execution_uses_checked_buffer_when_path_changes_after_pin_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, entrypoint: str
+) -> None:
+    from aletheia_lab.evaluation import serving_native_development as development
+    from aletheia_lab.project.identity import content_sha256
+
+    raw = b"class Fixture:\n    def value(self):\n        return 17\n"
+    path = tmp_path / "fixture.py"
+    path.write_bytes(raw)
+    monkeypatch.setattr(development, "PINS", {path.name: content_sha256(raw)})
+    original = development._check_execution_source
+
+    def replace_after_check(source: Path) -> bytes:
+        checked = original(source)
+        source.write_bytes(raw.replace(b"return 17", b"return 99"))
+        return checked
+
+    monkeypatch.setattr(development, "_check_execution_source", replace_after_check)
+    if entrypoint == "methods":
+        fixture = development._methods(path, "Fixture", ("value",), {})
+    else:
+        fixture = development._source_module(path, "security_buffer_fixture").Fixture
+    assert fixture().value() == 17
 
 
 def test_dependency_workflow_triggers_are_complete(audit_workflow: dict) -> None:  # type: ignore[type-arg]
@@ -160,17 +235,13 @@ def test_dependency_audit_upgrades_pip_before_install_and_audit(
     assert [command for _, command in commands_with_positions].count(pip_upgrade) == 1
     assert [command for _, command in commands_with_positions].count(project_install) == 1
     assert [command for _, command in commands_with_positions].count(audit) == 1
-    positions = {
-        tuple(command): position for position, command in commands_with_positions
-    }
+    positions = {tuple(command): position for position, command in commands_with_positions}
     assert positions[tuple(pip_upgrade)] <= positions[tuple(project_install)]
     assert positions[tuple(project_install)] < positions[tuple(audit)]
 
 
 def test_dependency_audit_command_is_exact_and_blocking(audit_workflow: dict) -> None:  # type: ignore[type-arg]
-    job_name, _, step = _find_exact_command(
-        audit_workflow, ["python", "-m", "pip_audit"]
-    )
+    job_name, _, step = _find_exact_command(audit_workflow, ["python", "-m", "pip_audit"])
     _assert_blocking_job(audit_workflow, job_name, step)
     assert "--ignore-vuln" not in str(step.get("run", ""))
 
@@ -205,11 +276,7 @@ def test_dependency_audit_permissions_are_read_only(audit_workflow: dict) -> Non
 
 def test_workflows_use_current_first_party_action_runtimes() -> None:
     for workflow in (_workflow(_CI_PATH), _workflow(_AUDIT_PATH)):
-        uses = [
-            str(step["uses"])
-            for _, _, step in _steps(workflow)
-            if step.get("uses")
-        ]
+        uses = [str(step["uses"]) for _, _, step in _steps(workflow) if step.get("uses")]
         assert set(uses) == {"actions/checkout@v5", "actions/setup-python@v6"}
 
 
