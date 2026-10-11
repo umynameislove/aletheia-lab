@@ -1,0 +1,6 @@
+{
+  "name": "probe",
+  "implementation": "runtime.Probe",
+  "cache_enabled": false,
+  "max_batch_size": 0
+}

@@ -1,0 +1,46 @@
+{
+  "schema": "module-realization-protocol/v1",
+  "runtime": {"mlflow-skinny": "3.9.0"},
+  "source_eligibility": "source-informed incident-mechanism adaptation; exposed qualification; not field deployment or blind bug discovery",
+  "sources": [
+    "https://github.com/mlflow/mlflow/discussions/8905",
+    "https://github.com/mlflow/mlflow/issues/12377",
+    "https://mlflow.org/docs/latest/ml/model/dependencies/#limitation-of-code-paths-in-loading-multiple-models-with-the-same-module-name-but-different-implementations"
+  ],
+  "arms": [
+    {"variant": "collision", "repair": "none"},
+    {"variant": "collision", "repair": "evict"},
+    {"variant": "unique", "repair": "none"}
+  ],
+  "orders": [["A", "B", "A"], ["B", "A", "B"]],
+  "evidence_modes": ["native", "compact", "full"],
+  "process_replicates": 2,
+  "requests_per_stage": 12,
+  "transport_faults": ["drop_predict", "drop_load", "delay", "duplicate", "drop_closure"],
+  "crash_frontiers": ["before_flush", "after_ack"],
+  "durability_modes": ["event", "drain"],
+  "incident_query": "which delivered requests after a deployment used a mismatched resident dependency?",
+  "audit_horizon": "immediate before flush and after workload drain or process recovery",
+  "assumptions": [
+    "trusted owned Python host, immutable owned artifact/code files and faithful instrumented callable binding",
+    "one serialized MLflow predict call per client request; no hidden retries, callers or subprocess computation",
+    "parent census and reference journaling are common control instrumentation, not free native observability",
+    "compact/full share event stream, SQLite WAL/FULL, acknowledgement frontier and query",
+    "eviction repair is owned-module serial policy, not concurrent import isolation",
+    "process kill is not OS/power loss or hostile-host completeness",
+    "incident demand is externally motivated; finite deployment-to-detection window is authored, not observed field timing"
+  ],
+  "predictions": {
+    "same_name_shared_process": "later different artifact can use first resident implementation",
+    "unique_namespace": "repairs collision",
+    "synchronized_owned_eviction": "repairs subsequent loads in this serial service",
+    "fresh_B_first": "B implementation used until another same-name implementation requested",
+    "required_binding_loss": "actual-use service returns unknown",
+    "delayed_delivery": "unknown before drain; recoverable after actual flush",
+    "acknowledged_FULL_prefix": "all acknowledged payloads recover after killing DB-owning child"
+  },
+  "retention_premise": "ordinary compact retention with interval pins/drain first; no algorithm admission from this small unpressured workload",
+  "ordering_seed": 20261007,
+  "provider_calls": 0,
+  "protected_results_mutated": false
+}

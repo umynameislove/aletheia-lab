@@ -1,0 +1,46 @@
+{
+  "schema": "cache-lifecycle-validation/v1",
+  "runtime": {"aiohttp": "3.14.3", "cachetools": "6.2.6"},
+  "selection": "Previously unused threaded memoization implementation and available CPU HTTP dependencies, selected before fault outcomes. Application-owned atomic reload, not a native aiohttp/cachetools reload guarantee or independent field incident.",
+  "arms": ["input_key", "clear", "generation_key", "isolated"],
+  "orders": ["old_first", "new_first"],
+  "evidence_modes": ["none", "sufficient", "full"],
+  "process_replicates": 2,
+  "steady_requests": 64,
+  "lifecycle_requests": 8,
+  "reload_requests": 2,
+  "cell_timeout_seconds": 90,
+  "ordering_seed": 20261007,
+  "contracts": {
+    "generation": "Snapshot published immutable model generation at the locked resident-selection point after request JSON decoding, not socket arrival. Old in-flight completion after reload is legitimate only if its returned value originates from that snapshot.",
+    "reload": "Construct and validate a candidate before publishing. Failed construction leaves the published object and generation unchanged.",
+    "audit_service": "Retrospective named computation/cache-producer identity, generation compliance and request terminal state after drainage; retain all offered requests and load outcomes for the entire cell.",
+    "conditional_native_service": "Generation compliance may follow from immutable per-generation wrapper/key semantics and publication records; this is a separate assumption-conditioned service, not a named actual-use certificate.",
+    "trust": "Trusted single host, observer/reference hooks and immutable owned affine JSON models. Independent arithmetic/state replay is not independent host attestation. Raw reference collection remains present in all modes.",
+    "cost": "Matched reference-instrumented service; actual synchronous SQLite persistence with the same transaction policy. No uninstrumented no-observer overhead, production throughput or global minimum claim. Report cheapest measured sufficient candidate and physical bookkeeping, with nested process ranges."
+  },
+  "sources": [
+    "https://cachetools.readthedocs.io/en/v6.2.6/",
+    "https://raw.githubusercontent.com/tkem/cachetools/v6.2.6/src/cachetools/_cached.py",
+    "https://docs.aiohttp.org/en/stable/web_advanced.html",
+    "https://www.usenix.org/system/files/conference/nsdi13/nsdi13-final170.pdf"
+  ],
+  "predictions": {
+    "violation_counts": {
+      "input_key": {"old_first": 3, "new_first": 2},
+      "clear": {"old_first": 2, "new_first": 1},
+      "generation_key": {"old_first": 0, "new_first": 0},
+      "isolated": {"old_first": 0, "new_first": 0}
+    },
+    "failed_reload_retains_B": true,
+    "same_generation_cache_reuse_is_lawful": true,
+    "numeric_zero_does_not_identify_generation": true,
+    "full_and_sufficient_same_service_answers_equal_reference": true,
+    "old_first_stale_fill": "clear invalidates warm entries but allows already running old work to refill a shared input-only cache",
+    "new_first_return_substitution": "cachetools locked setdefault can return a new-generation cached value to an older request that computed the old generation",
+    "ordinary_control": "generation keys or generation-local cache/wrapper lifetime should prevent both return-substitution directions; no new cache algorithm claimed"
+  },
+  "analysis": "Freeze before execution. All cells and failed/unattempted operations remain in the census. One authored serving application, two completion-order controls and nested repetitions, not independent deployments. No source replacement or outcome-conditioned exclusions; discrepancies narrow predictions. Cost/coverage frontier compares only identical materialized audit service, not conditional native against stronger witness service.",
+  "provider_calls": 0,
+  "protected_runs": 0
+}

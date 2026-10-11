@@ -12,8 +12,13 @@ from pathlib import Path
 from typing import Final
 
 _ROOT: Final = Path(__file__).resolve().parents[1]
-_EVALUATION_TIMEOUT_SECONDS: Final = 600
-_WINDOWS_EVALUATION_TIMEOUT_SECONDS: Final = 900
+# The optional native-provenance tests enlarged the complete profile; CI 3.12
+# reached the former 600-second cap near completion. Keep a bounded 15 minutes.
+_EVALUATION_TIMEOUT_SECONDS: Final = 900
+# Windows CI reached 97% of the complete profile before exhausting 1500 seconds.
+# Preserve the census and allow filesystem-heavy checks a bounded 35 minutes;
+# the CI job reserves another 15 minutes for setup and publication checks.
+_WINDOWS_EVALUATION_TIMEOUT_SECONDS: Final = 2100
 _REPRODUCIBILITY_HASH_SEEDS: Final = ("1", "104729", "209759")
 _PRODUCT_TEST_PATHS: Final[tuple[str, ...]] = tuple(
     path.relative_to(_ROOT).as_posix()
@@ -21,6 +26,16 @@ _PRODUCT_TEST_PATHS: Final[tuple[str, ...]] = tuple(
     for path in sorted((_ROOT / directory).glob("test_product_*.py"))
 )
 _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
+    "application": (
+        "tests/unit/test_model_load_application_capture.py",
+        "tests/unit/test_model_load_application_analysis.py",
+        "tests/integration/test_model_load_application_local.py",
+        "tests/unit/test_model_load_serving_capture.py",
+        "tests/unit/test_model_load_serving_store.py",
+        "tests/unit/test_model_load_serving_workload.py",
+        "tests/unit/test_model_load_serving_analysis.py",
+        "tests/unit/test_model_load_serving_study.py",
+    ),
     "contract": (
         "tests/unit/test_filesystem_publication.py",
         "tests/unit/test_evaluation_attempt_store_architecture.py",
@@ -145,6 +160,115 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_evidence_bounded_pilot.py",
         "tests/unit/test_evidence_bounded_sources.py",
         "tests/unit/test_evidence_bounded_continuation.py",
+        "tests/unit/test_artifact_lineage_policy.py",
+        "tests/unit/test_artifact_lineage_sources.py",
+        "tests/unit/test_artifact_lineage_pilot.py",
+        "tests/unit/test_compositional_lineage.py",
+        "tests/unit/test_compositional_lineage_cases.py",
+        "tests/unit/test_compositional_lineage_pilot.py",
+        "tests/unit/test_compositional_lineage_guard.py",
+        "tests/unit/test_compositional_lineage_guard_replay.py",
+        "tests/unit/test_proof_aware_lineage_transfer_cases.py",
+        "tests/unit/test_proof_aware_lineage_transfer.py",
+        "tests/unit/test_proof_aware_lineage_diagnostics.py",
+        "tests/unit/test_source_evidence_admission.py",
+        "tests/unit/test_source_evidence_headroom.py",
+        "tests/unit/test_source_evidence_extraction.py",
+        "tests/unit/test_source_evidence_acquisition.py",
+        "tests/unit/test_source_evidence_sequential.py",
+        "tests/unit/test_model_load_contract.py",
+        "tests/unit/test_model_load_research_acceptance.py",
+        "tests/unit/test_model_load_handoff_acceptance.py",
+        "tests/integration/test_model_load_research_acceptance_local.py",
+        "tests/unit/test_model_load_application_capture.py",
+        "tests/unit/test_model_load_application_analysis.py",
+        "tests/integration/test_model_load_application_local.py",
+        "tests/unit/test_model_load_serving_capture.py",
+        "tests/unit/test_model_load_serving_store.py",
+        "tests/unit/test_model_load_serving_workload.py",
+        "tests/unit/test_model_load_serving_analysis.py",
+        "tests/unit/test_model_load_serving_study.py",
+        "tests/unit/test_model_load_observability.py",
+        "tests/unit/test_audit_bundle_archive.py",
+        "tests/unit/test_audit_bundle_policy.py",
+        "tests/unit/test_audit_bundle_screen.py",
+        "tests/unit/test_audit_bundle_verify.py",
+        "tests/unit/test_audit_obligation_service.py",
+        "tests/unit/test_application_audit_development.py",
+        "tests/unit/test_joint_inference_audit.py",
+        "tests/unit/test_joint_inference_study.py",
+        "tests/unit/test_request_model_source.py",
+        "tests/unit/test_request_model_audit.py",
+        "tests/unit/test_request_model_study.py",
+        "tests/integration/test_model_load_observability_local.py",
+        "tests/unit/test_model_load_provenance.py",
+        "tests/unit/test_model_load_mlflow.py",
+        "tests/integration/test_model_load_provenance_local.py",
+        "tests/unit/test_model_load_validation.py",
+        "tests/unit/test_model_load_validation_adapters.py",
+        "tests/unit/test_model_load_validation_lifecycle.py",
+        "tests/unit/test_model_load_validation_replay.py",
+        "tests/unit/test_model_load_validation_run.py",
+        "tests/unit/test_model_load_validation_worker.py",
+        "tests/unit/test_model_load_evidence_analysis.py",
+        "tests/unit/test_model_load_retention.py",
+        "tests/unit/test_model_load_retention_development.py",
+        "tests/integration/test_model_load_evidence_development_local.py",
+        "tests/unit/test_model_load_attempt_retention.py",
+        "tests/unit/test_model_load_retention_concurrency.py",
+        "tests/unit/test_model_load_runtime_cost.py",
+        "tests/integration/test_model_load_runtime_development_local.py",
+        "tests/integration/test_model_load_validation_local.py",
+        "tests/unit/test_native_cache_extraction.py",
+        "tests/unit/test_native_cache_experiment.py",
+        "tests/unit/test_native_cache_citation.py",
+        "tests/unit/test_native_cache_citation_experiment.py",
+        "tests/unit/test_sqlite_evidence_source.py",
+        "tests/unit/test_sqlite_evidence_extraction.py",
+        "tests/unit/test_sqlite_evidence_transfer.py",
+        "tests/unit/test_response_origin_audit.py",
+        "tests/unit/test_response_origin_study.py",
+        "tests/unit/test_litserve_evidence_analysis.py",
+        "tests/unit/test_litserve_evidence_source.py",
+        "tests/unit/test_litserve_evidence_study.py",
+        "tests/unit/test_litserve_evidence_closeout.py",
+        "tests/unit/test_cache_lifecycle_analysis.py",
+        "tests/unit/test_cache_lifecycle_study.py",
+        "tests/unit/test_cache_lifecycle_certificate.py",
+        "tests/unit/test_cache_lifecycle_native_control.py",
+        "tests/unit/test_cache_lifecycle_materialization.py",
+        "tests/unit/test_cache_lifecycle_adequacy.py",
+        "tests/unit/test_module_realization_source.py",
+        "tests/unit/test_module_realization_store.py",
+        "tests/unit/test_module_realization_analysis.py",
+        "tests/unit/test_module_realization_retention.py",
+        "tests/unit/test_module_realization_floor.py",
+        "tests/unit/test_module_realization_forward.py",
+        "tests/unit/test_module_realization_binding_cache.py",
+        "tests/unit/test_module_realization_binding_study.py",
+        "tests/unit/test_incident_audit_archive.py",
+        "tests/unit/test_incident_audit_incremental.py",
+        "tests/unit/test_auditability_closeout.py",
+        "tests/unit/test_calibration_audit.py",
+        "tests/unit/test_calibration_audit_verification.py",
+        "tests/unit/test_pipeline_audit_source.py",
+        "tests/unit/test_audit_stage_journal.py",
+        "tests/unit/test_pipeline_audit_workload.py",
+        "tests/unit/test_pipeline_audit_study.py",
+        "tests/unit/test_serving_corpus_review.py",
+        "tests/unit/test_official_model_signing.py",
+        "tests/unit/test_serving_native_development.py",
+        "tests/unit/test_serving_large_model_review.py",
+        "tests/unit/test_serving_audit_cost.py",
+        "tests/unit/test_serving_protocol_transfer.py",
+        "tests/unit/test_serving_identity_native.py",
+        "tests/unit/test_serving_identity_transfer.py",
+        "tests/unit/test_onnx_packaging_exposure.py",
+        "tests/unit/test_mlserver_reload_example.py",
+        "tests/unit/test_incident_audit_study.py",
+        "tests/unit/test_incident_audit_analysis.py",
+        "tests/unit/test_incident_audit_transfer.py",
+        "tests/unit/test_incident_audit_cost.py",
         "--durations=20",
     ),
     "windows-publication": (
@@ -212,6 +336,35 @@ def _evaluation_timeout_seconds() -> int:
     return _EVALUATION_TIMEOUT_SECONDS
 
 
+def _run_windows_evaluation(
+    command: tuple[str, ...], environment: dict[str, str] | None, timeout: int
+) -> int:
+    """Own the pytest coordinator until its Windows worker tree is terminated."""
+
+    process = subprocess.Popen(command, cwd=_ROOT, env=environment)
+    try:
+        return process.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        # subprocess.run would kill the coordinator before we can terminate its
+        # descendants. Target only this newly spawned PID, never an image name.
+        try:
+            subprocess.run(
+                ("taskkill", "/PID", str(process.pid), "/T", "/F"),
+                check=True,
+                capture_output=True,
+                timeout=15,
+            )
+        except (OSError, subprocess.SubprocessError):
+            print("Windows evaluation tree cleanup failed", file=sys.stderr)
+        try:
+            if process.poll() is None:
+                process.kill()
+            process.wait(timeout=15)
+        except (OSError, subprocess.SubprocessError):
+            print("Windows evaluation coordinator cleanup failed", file=sys.stderr)
+        raise
+
+
 def run_profile(
     profile: str,
     extra: tuple[str, ...] = (),
@@ -234,13 +387,17 @@ def run_profile(
             )
         started = time.monotonic()
         try:
-            completed = subprocess.run(
-                command,
-                cwd=_ROOT,
-                check=False,
-                env=environment,
-                timeout=timeout,
-            )
+            if profile == "evaluation" and os.name == "nt":
+                assert timeout is not None
+                returncode = _run_windows_evaluation(command, environment, timeout)
+            else:
+                returncode = subprocess.run(
+                    command,
+                    cwd=_ROOT,
+                    check=False,
+                    env=environment,
+                    timeout=timeout,
+                ).returncode
         except subprocess.TimeoutExpired:
             print(
                 f"{profile} profile exceeded its {timeout}-second runtime budget",
@@ -253,8 +410,8 @@ def run_profile(
                 f"evaluation run {run_index + 1}/{repeat} completed in {elapsed:.3f}s",
                 flush=True,
             )
-        if completed.returncode != 0:
-            return completed.returncode
+        if returncode != 0:
+            return returncode
     return 0
 
 

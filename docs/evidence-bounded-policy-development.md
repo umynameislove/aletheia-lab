@@ -7,6 +7,16 @@ results. The shared question, candidate census, evidence, output grammar, model,
 token limits, parser and tool access are identical. Only the policy instruction
 changes. A3 can abstain and request evidence too.
 
+**Forward scope:** this document retains the original matched-policy pilot and
+continuation contract. Later compositional/transfer diagnostics and the
+source-faithful direction live in the
+[existing artifact-binding document](model-artifact-binding-control.md#forward-method-source-faithful-admission-before-resolution).
+They do not change this pilot's policies, decoder or scores. The new comparator
+is a producer-adapted parser with the same resolver, not a weaker prompt or an
+always-abstain-only baseline; acquisition is studied only when it is needed and
+actually executed. A3/A4 labels describe instructions here, not model families
+or evidence of causal-mechanism admission.
+
 ## Question and reference
 
 The pilot asks whether explicit rival exclusion reduces unwarranted unique

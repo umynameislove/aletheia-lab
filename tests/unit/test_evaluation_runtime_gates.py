@@ -114,6 +114,8 @@ def test_evaluation_profile_has_required_boundaries_without_deselection() -> Non
         "tests/unit/test_project_bundle_contract.py",
         "tests/unit/test_evidence_contract_v2.py",
         "tests/unit/test_test_runtime_contract.py",
+        "tests/unit/test_response_origin_audit.py",
+        "tests/unit/test_response_origin_study.py",
     }
 
     assert required <= set(command)
@@ -162,7 +164,7 @@ def test_repeated_profile_uses_distinct_hash_seeds_and_posix_budget(
     monkeypatch.setattr(runner.subprocess, "run", fake_run)
     assert runner.run_profile("evaluation", repeat=3) == 0
 
-    assert [call["timeout"] for call in calls] == [600, 600, 600]
+    assert [call["timeout"] for call in calls] == [900, 900, 900]
     seeds = [str(call["env"]["PYTHONHASHSEED"]) for call in calls]
     assert seeds == ["1", "104729", "209759"]
     assert len(set(seeds)) == 3
@@ -180,7 +182,8 @@ def test_evaluation_workers_preserve_the_complete_profile_and_scoped_fixtures() 
     assert "-n" not in runner.profile_command("contract")
 
 
-def test_worker_failure_stops_repeats_and_remains_blocking(monkeypatch) -> None:
+@pytest.mark.parametrize("platform", ["posix", "nt"])
+def test_worker_failure_stops_repeats_and_remains_blocking(monkeypatch, platform) -> None:
     runner = _runner_module()
     calls = []
 
@@ -188,7 +191,13 @@ def test_worker_failure_stops_repeats_and_remains_blocking(monkeypatch) -> None:
         calls.append(command)
         return SimpleNamespace(returncode=1)
 
+    monkeypatch.setattr(runner.os, "name", platform)
     monkeypatch.setattr(runner.subprocess, "run", failed_run)
+    monkeypatch.setattr(
+        runner,
+        "_run_windows_evaluation",
+        lambda command, environment, timeout: failed_run(command).returncode,
+    )
     assert runner.run_profile("evaluation", repeat=3) == 1
     assert len(calls) == 1
 
@@ -199,30 +208,125 @@ def test_windows_evaluation_budget_accounts_for_durable_filesystem_cost(
     runner = _runner_module()
     calls: list[dict[str, object]] = []
 
-    def fake_run(*_args: object, **kwargs: object) -> SimpleNamespace:
-        calls.append(kwargs)
-        return SimpleNamespace(returncode=0)
+    def fake_run(command: tuple[str, ...], environment: object, timeout: int) -> int:
+        calls.append({"command": command, "env": environment, "timeout": timeout})
+        return 0
 
     monkeypatch.setattr(runner.os, "name", "nt")
-    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    monkeypatch.setattr(runner, "_run_windows_evaluation", fake_run)
 
     assert runner.run_profile("evaluation") == 0
-    assert [call["timeout"] for call in calls] == [900]
+    assert [call["timeout"] for call in calls] == [2100]
 
 
+@pytest.mark.parametrize("platform,budget", [("posix", 900), ("nt", 2100)])
 def test_profile_timeout_is_a_blocking_failure(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
+    platform: str,
+    budget: int,
 ) -> None:
     runner = _runner_module()
+    attempts = []
 
     def raise_timeout(*args: object, **kwargs: object) -> None:
+        attempts.append(kwargs["timeout"])
         raise subprocess.TimeoutExpired(args[0], kwargs["timeout"])
 
-    monkeypatch.setattr(runner.os, "name", "posix")
+    monkeypatch.setattr(runner.os, "name", platform)
     monkeypatch.setattr(runner.subprocess, "run", raise_timeout)
-    assert runner.run_profile("evaluation") == 124
-    assert "600-second runtime budget" in capsys.readouterr().err
+    monkeypatch.setattr(
+        runner,
+        "_run_windows_evaluation",
+        lambda command, environment, timeout: raise_timeout(command, timeout=timeout),
+    )
+    assert runner.run_profile("evaluation", repeat=3) == 124
+    assert attempts == [budget]
+    assert f"{budget}-second runtime budget" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("returncode", [0, 1, 5])
+def test_windows_coordinator_preserves_returncode_and_environment(
+    monkeypatch: pytest.MonkeyPatch, returncode: int
+) -> None:
+    runner = _runner_module()
+    calls = []
+
+    def popen(command, **kwargs):
+        calls.append((command, kwargs))
+        return SimpleNamespace(wait=lambda *, timeout: returncode)
+
+    def unexpected_cleanup(*_args, **_kwargs):
+        pytest.fail("normal completion must not terminate a process tree")
+
+    monkeypatch.setattr(runner.subprocess, "Popen", popen)
+    monkeypatch.setattr(runner.subprocess, "run", unexpected_cleanup)
+    command = (sys.executable, "-m", "pytest")
+    environment = {"PYTHONHASHSEED": "104729"}
+    assert runner._run_windows_evaluation(command, environment, 2100) == returncode
+    assert calls == [(command, {"cwd": runner._ROOT, "env": environment})]
+
+
+@pytest.mark.parametrize(
+    "cleanup", ["success", "nonzero", "timeout", "missing", "kill_error", "reap_timeout"]
+)
+def test_windows_timeout_terminates_only_owned_tree_before_reaping(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    cleanup: str,
+) -> None:
+    runner = _runner_module()
+    events = []
+    command = (sys.executable, "-m", "pytest")
+
+    def wait(*, timeout):
+        events.append(("wait", timeout))
+        if timeout == 2100 or cleanup == "reap_timeout":
+            raise subprocess.TimeoutExpired(command, timeout)
+        return -1
+
+    def kill():
+        events.append(("kill", 4321))
+        if cleanup == "kill_error":
+            raise OSError("cannot terminate coordinator")
+
+    process = SimpleNamespace(
+        pid=4321,
+        wait=wait,
+        poll=lambda: -1 if cleanup == "success" else None,
+        kill=kill,
+    )
+
+    def taskkill(arguments, **kwargs):
+        events.append(("tree", arguments, kwargs))
+        if cleanup == "nonzero":
+            raise subprocess.CalledProcessError(1, arguments)
+        if cleanup == "timeout":
+            raise subprocess.TimeoutExpired(arguments, kwargs["timeout"])
+        if cleanup == "missing":
+            raise FileNotFoundError("taskkill")
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(runner.subprocess, "Popen", lambda *_args, **_kwargs: process)
+    monkeypatch.setattr(runner.subprocess, "run", taskkill)
+    with pytest.raises(subprocess.TimeoutExpired) as caught:
+        runner._run_windows_evaluation(command, None, 2100)
+    assert caught.value.timeout == 2100
+    assert events[0] == ("wait", 2100)
+    assert events[1] == (
+        "tree",
+        ("taskkill", "/PID", "4321", "/T", "/F"),
+        {"check": True, "capture_output": True, "timeout": 15},
+    )
+    expected = [("kill", 4321), ("wait", 15)]
+    if cleanup == "success":
+        expected = [("wait", 15)]
+    elif cleanup == "kill_error":
+        expected = [("kill", 4321)]
+    assert events[2:] == expected
+    errors = capsys.readouterr().err
+    assert ("tree cleanup failed" in errors) == (cleanup in {"nonzero", "timeout", "missing"})
+    assert ("coordinator cleanup failed" in errors) == (cleanup in {"kill_error", "reap_timeout"})
 
 
 def test_selected_evaluation_tests_do_not_use_real_sleep() -> None:

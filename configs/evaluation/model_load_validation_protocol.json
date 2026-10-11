@@ -1,0 +1,138 @@
+{
+  "schema_version": "model-load-validation-protocol/v1",
+  "task_id": "V6-INT-04",
+  "scope": "prospective_controlled_loader_format_and_lifecycle_composition_transfer",
+  "boundary": "complete_immutable_buffer_offered_to_native_loader_not_all_consumed_bytes_or_serving",
+  "trust": "honest_instrumented_local_process_and_scheduler_not_host_attestation",
+  "selection_rule": "two_prespecified_unused_loader_apis_no_outcome_based_substitution",
+  "prior_exposure": [
+    {"backend": "joblib-custom", "api": "pickle-buffer-deserialization", "status": "development_exposed"},
+    {"backend": "sqlite-file-cache", "api": "authored-model-handoff", "status": "development_exposed"},
+    {"backend": "mlflow-sklearn-3.9.0", "api": "models-uri-joblib-load", "status": "development_exposed"}
+  ],
+  "backends": [
+    {
+      "id": "onnxruntime",
+      "version": "1.23.2",
+      "api": "InferenceSession(bytes)",
+      "native_entry": "onnxruntime.capi._pybind_state.InferenceSession",
+      "reentry": "same_python_session_set_providers_recreates_native_session",
+      "artifact_recipe": "two_embedded_float32_MatMul_Add_graphs_one_input_tensor_2_features_one_output_weights_A_[1,2]_B_[2,1]_bias_0_opset_13_ir_10",
+      "restrictions": "CPUExecutionProvider_only_threads_1_enable_fallback_False_at_constructor_no_custom_ops_no_external_data_recursively",
+      "setup": "build_graphs_without_fitting_no_native_load_before_execution_seal"
+    },
+    {
+      "id": "skops",
+      "version": "0.15.0",
+      "api": "skops.io.loads(bytes,trusted=[])",
+      "native_entry": "skops.io.loads",
+      "reentry": "second_actual_loads_call_of_same_buffer_not_duplicate_delivery",
+      "artifact_recipe": "LinearRegression_fit_intercept_False_X_[[0,0],[1,0],[0,1],[1,1]]_y_A_[0,1,2,3]_B_[0,2,1,3]",
+      "restrictions": "entire_archive_is_input_unit_default_trust_only_get_untrusted_types_data_equals_empty_no_custom_attributes_or_auto_allowlist",
+      "setup": "authorized_preparation_then_two_local_fits_and_archive_creation_without_native_load_then_final_artifact_code_environment_seal_before_target_load"
+    }
+  ],
+  "dependencies": {
+    "python": "3.12",
+    "onnxruntime": "1.23.2",
+    "onnx": "1.19.1",
+    "skops": "0.15.0",
+    "scikit-learn": "1.9.0",
+    "numpy": "2.5.1",
+    "in-toto": "3.0.0",
+    "securesystemslib": "1.5.1"
+  },
+  "contract": {
+    "policy_values": ["pin_at_acceptance", "resolve_at_load"],
+    "retry_values": ["inherit", "reselect"],
+    "max_authorized_native_entries_per_attempt": 1,
+    "digest_domain_size": 2,
+    "scope": "request_root_attempt_and_native_occurrence_id",
+    "closure": "every_native_entry_receiving_buffer_counts_even_if_raises_completed_loads_and_failed_entries_separate_authoritative_attempt_closure",
+    "gamma": "all_contract_module_operational_completions_including_wrong_artifact_extra_load_and_unknown_root",
+    "cache_only": "separate_no_new_load_not_loaded_compliance_or_inference_correctness"
+  },
+  "branches": ["observation", "prevention"],
+  "cutoffs": ["after_attempt_close_before_delayed_delivery", "after_delayed_delivery_before_expiry_cleanup"],
+  "schedules": [
+    {"id": "handoff-pinned-drift", "family": "handoff", "policy": "pin_at_acceptance", "retry": "inherit", "target_entries": 1, "auxiliary_entries": 0, "operations": "accept_A;observer_precheck_spool_A;publish_B_to_same_spool;worker_read_actual_B;restore_spool_A;load_offered_B;close;observer_postcheck_A"},
+    {"id": "handoff-resolve-drift", "family": "handoff", "policy": "resolve_at_load", "retry": "reselect", "target_entries": 1, "auxiliary_entries": 0, "operations": "accept_A;publish_B_to_shared_spool;resolve_B_at_worker_read;load;close"},
+    {"id": "handoff-pinned-stable", "family": "handoff", "policy": "pin_at_acceptance", "retry": "inherit", "target_entries": 1, "auxiliary_entries": 0, "operations": "accept_A;worker_read_actual_A;load;close"},
+    {"id": "retry-inherited-foreign-mailbox", "family": "retry_delivery", "policy": "pin_at_acceptance", "retry": "inherit", "target_entries": 1, "auxiliary_entries": 1, "operations": "root_accept_load_A;child_inherits_A;child_read_spool_B;load_B;route_child_load_record_to_foreign_request_mailbox;close"},
+    {"id": "retry-reselect-legitimate", "family": "retry_delivery", "policy": "resolve_at_load", "retry": "reselect", "target_entries": 1, "auxiliary_entries": 1, "operations": "root_load_A;advance_B;child_reselect_B;load;close;delay_child_load_record_until_second_cutoff"},
+    {"id": "retry-root-expired", "family": "retry_delivery", "policy": "pin_at_acceptance", "retry": "inherit", "target_entries": 1, "auxiliary_entries": 1, "operations": "root_accept_load_A;expire_observer_root_binding;child_read_spool_B;load;close;never_restore_expired_binding_from_reference"},
+    {"id": "native-single-entry", "family": "native_reentry", "policy": "pin_at_acceptance", "retry": "inherit", "target_entries": 1, "auxiliary_entries": 0, "operations": "accept_A;read_A_once;one_actual_native_entry;close"},
+    {"id": "native-same-buffer-reentry", "family": "native_reentry", "policy": "pin_at_acceptance", "retry": "inherit", "target_entries": 2, "auxiliary_entries": 0, "operations": "accept_A;read_A_once;first_native_entry;backend_specific_native_reentry_same_buffer;close_count_2"},
+    {"id": "delivery-duplicate-only", "family": "native_reentry", "policy": "pin_at_acceptance", "retry": "inherit", "target_entries": 1, "auxiliary_entries": 0, "operations": "accept_A;one_native_entry;deliver_identical_occurrence_record_twice;deduplicate_by_occurrence_id;close_count_1"},
+    {"id": "cache-only-alias-advance", "family": "warm_cache", "policy": "resolve_at_load", "retry": "reselect", "target_entries": 0, "auxiliary_entries": 1, "operations": "warm_parent_with_A;advance_alias_B;serve_cached_object_in_child_without_native_load;close_count_0"},
+    {"id": "cache-explicit-reload-current", "family": "warm_cache", "policy": "resolve_at_load", "retry": "reselect", "target_entries": 1, "auxiliary_entries": 1, "operations": "warm_parent_with_A;advance_alias_B;child_resolve_B;read_B;native_load;close"},
+    {"id": "cache-reload-stale-buffer", "family": "warm_cache", "policy": "resolve_at_load", "retry": "reselect", "target_entries": 1, "auxiliary_entries": 1, "operations": "warm_parent_with_A;advance_alias_B;child_resolve_B;read_actual_old_A_from_spool;native_load;close"}
+  ],
+  "capture": {
+    "reference": "separate_harness_policy_root_ledger_and_actual_native_entry_buffer_copy_before_observer_routing_loss",
+    "native_available": "full_constructor_bytes_argument_available_to_adapted_observer_report_capability_not_inherent_sdk_blindness",
+    "path_ablation": "authored_pre_post_spool_hash_manifest_collector_not_native_or_in_toto_defect",
+    "path_frame_fields": ["backend", "backend_version", "policy", "retry_policy", "public_request_id", "public_root_id", "public_attempt", "requested_uri", "selected_version", "registered_metadata", "manifest", "pre_path_sha256", "post_path_sha256", "native_messages"],
+    "field_producers": "backend_version_from_installed_metadata_policy_retry_from_caller_contract_request_root_attempt_from_worker_envelope_requested_uri_from_caller_local_spool_uri_selected_version_and_registered_metadata_explicit_null_no_registry_API",
+    "path_collection": "pre_hash_same_spool_before_first_scheduled_mutation_post_hash_after_last_target_entry_or_block_and_close_before_first_cutoff_no_oracle_reads",
+    "manifest_collection": "caller_manifest_at_selection_with_schema_model-load-manifest_v1_selected_sha256_backend_and_format_hash_exact_manifest_bytes_preserve_selector_and_digest",
+    "native_messages_collection": "capture_stdout_stderr_and_sdk_logger_attempt_scoped_ORT_log_severity_3_verbosity_0_SKOPS_defaults_no_author_status_messages_no_time_field_deletion",
+    "frame_equality": "canonical_JSON_exact_field_equality_no_posthoc_field_drops_consistent_bijective_first_occurrence_renaming_of_opaque_request_root_and_URI_nonce_only_preserve_artifact_selectors_versions_digests_scope_relationships_and_native_messages",
+    "side_channels": "private_slot_schedule_branch_and_authored_status_never_candidate_evidence_unavailable_public_fields_explicit_null_not_oracle_filled",
+    "scoped": "same_selection_root_binding_entry_digest_occurrence_id_closure_and_routing_for_S_T_P",
+    "no_oracle_access": "checkers_never_read_reference_buffer_or_root_ledger_to_repair_missing_evidence",
+    "independence": "reference_recomputes_expected_policy_and_entry_counts_without_calling_S_T_P_or_using_authored_status_labels"
+  },
+  "comparators": {
+    "S": "existing_receipt_checker",
+    "T": "existing_exact_finite_completion_checker_no_U_policy",
+    "P": "existing_independent_provenance_checker_plus_actual_in_toto_signed_verify_REQUIRE_MATCH_DISALLOW_same_scoped_facts",
+    "prevention": "read_once_immutable_bytes_hash_check_same_buffer_atomic_root_attempt_bound_one_invocation_token_before_every_native_entry",
+    "guard_access": "same_authoritative_application_policy_and_binding_permissions_not_private_reference_ledger",
+    "manifest": "pre_post_path_hash_comparator_integrity_only_not_load_compliance"
+  },
+  "analysis": {
+    "primary": "observation_branch_S_T_P_correct_identified_compliant_or_violation_verdicts_divided_by_22_planned_observation_load_slots_per_method_per_cutoff_failures_and_reference_unavailable_remain_in_coverage_denominator",
+    "soundness": "false_compliance_false_violation_and_correct_commitments_among_reference_assessable_decisions_report_numerators_denominators_unknown_conflict_and_reference_unavailable_separately",
+    "sufficiency": "group_exact_equal_admitted_evidence_then_count_groups_with_opposite_reference_status_not_success_by_masking_alone",
+    "prevention": "separate_planned_opportunities_blocked_legal_completion_false_block_residual_violation_cache_only_technical_failure_no_block_credit_as_loaded_compliance",
+    "denominators": "all_48_planned_slots_44_load_slots_4_cache_slots_then_observed_entries_completed_loads_reference_unavailable_setup_failures_and_unexecuted_slots_separate",
+    "unit": "backend_by_lifecycle_family_repeated_schedules_branches_and_cutoffs_dependent",
+    "inference": "unweighted_counts_and_per_backend_per_family_tables_no_population_CI_p_values_or_two_independent_deployment_claim",
+    "failure": "no_drop_no_replacement_no_retry_to_pass_record_every_planned_slot_stop_on_reference_integrity_failure_or_resource_limit",
+    "reference_unavailable": "exclude_from_conditional_soundness_assessable_denominator_never_from_planned_coverage_denominator_keep_failure_census",
+    "contribution_stop": "if_full_buffer_adapted_S_or_P_or_simple_prevention_solves_all_then_no_new_checker_advantage_claim_no_tuned_validation"
+  },
+  "resources": {
+    "max_artifact_bytes": 262144,
+    "max_native_entries_total_including_auxiliary": 72,
+    "max_local_fits": 2,
+    "per_slot_timeout_seconds": 30,
+    "setup_timeout_seconds": 60,
+    "total_timeout_seconds": 1800,
+    "max_private_result_bytes": 33554432,
+    "provider_calls": 0,
+    "network_permitted_during_execution": false
+  },
+  "lock": {
+    "phase": "design_only_no_execution_authority",
+    "runner_implemented": false,
+    "execution_ready": false,
+    "execution_authorized": false,
+    "validation_outcomes_observed": false,
+    "next": "V6-INT-05_implement_adapters_synthetic_checks_then_execution_seal_before_target_loads",
+    "execution_seal_requires": ["unchanged_protocol", "adapter_and_reference_code_hashes", "exact_environment_and_platform", "generated_A_B_artifact_hashes_without_native_load", "readonly_single_attempt_authority"],
+    "pre_exposure_changes": "implementation_defects_fix_before_any_target_load_and_reseal_code_only_unchanged_decision_semantics",
+    "post_exposure_changes": "retain_original_attempt_and_move_affected_unit_to_development_new_forward_design_not_resealed_same_validation"
+  },
+  "sources": [
+    "https://raw.githubusercontent.com/microsoft/onnxruntime/v1.23.2/onnxruntime/python/onnxruntime_inference_collection.py",
+    "https://raw.githubusercontent.com/onnx/onnx/v1.19.1/onnx/onnx-ml.proto",
+    "https://github.com/skops-dev/skops/blob/f426e9e3ebee6685327534d4b922679b44d4225f/skops/io/_persist.py",
+    "https://pypi.org/project/skops/0.15.0/",
+    "https://arxiv.org/abs/1909.11593",
+    "https://www.usenix.org/conference/usenixsecurity19/presentation/torres-arias",
+    "https://arxiv.org/abs/2609.01781",
+    "https://arxiv.org/abs/1506.02629"
+  ]
+}
