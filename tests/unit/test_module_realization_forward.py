@@ -9,6 +9,7 @@ from typing import Any
 import pytest
 
 from aletheia_lab.evaluation import module_realization_forward as forward
+from aletheia_lab.evaluation.model_load_retention import encode
 from aletheia_lab.evaluation.module_realization_analysis import _client_intents, payload_digest
 from aletheia_lab.evaluation.module_realization_runtime import _control
 from aletheia_lab.evaluation.module_realization_store import Collector
@@ -286,3 +287,72 @@ def test_forward_failed_finding_retains_planned_census(forward_fixture) -> None:
     assert sum(group["cells"] for group in summary.values()) == 14
     assert all(group["verified_cells"] == 0 for group in summary.values())
     assert all(group["median_predict_ms"] is None for group in summary.values())
+
+
+@pytest.fixture
+def synthetic_forward(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """Exercise sealing/replay with authored responses, never a child process."""
+    root = Path(__file__).resolve().parents[2]
+    artifacts = tmp_path / "artifacts"
+    artifacts.mkdir()
+    (artifacts / "manifest.json").write_bytes(b'{"fixture":"synthetic"}')
+    calls = []
+    monkeypatch.setattr(forward, "_environment", lambda root, site: {"OWNED": "true"})
+
+    def drive(command, environment, target, config):
+        calls.append((command, environment))
+        rows = transcript(config)
+        intended, first = None, 1 if config["order"][0] == "A" else 2
+        for row in rows:
+            if row["kind"] != "response":
+                continue
+            if row["route"] == "load" and row["response"]["status"] == 200:
+                intended = 1 if row["value"]["label"] == "A" else 2
+            if row["route"] == "predict":
+                coefficient = (
+                    first
+                    if config["variant"] == "collision" and config["repair"] == "none"
+                    else intended
+                )
+                row["response"]["body"]["y"] = coefficient * row["value"]["x"]
+        parent = target.parent / (target.name + "-parent")
+        parent.mkdir()
+        (parent / "client.jsonl").write_bytes("".join(encode(row) + "\n" for row in rows).encode())
+        return {
+            "config": config,
+            "failure": None,
+            "returncode": 0,
+            "last_response": {"native": {"prediction_calls": 37, "actual_native_loads": 4}},
+        }
+
+    monkeypatch.setattr(forward, "drive", drive)
+    directory = tmp_path / "forward"
+    result = forward.run(root, directory, artifacts, Path("owned-python"), tmp_path)
+    return directory, result, calls
+
+
+def test_synthetic_forward_seals_all_cells_and_replays_without_reexecution(synthetic_forward):
+    directory, result, calls = synthetic_forward
+    assert result["verification"] == "pass" and len(calls) == 14
+    assert sum(row["predictions"] for row in result["analysis"].values()) == 14 * 37
+    assert all(options["OWNED"] == "true" for _, options in calls)
+    before = {path: path.read_bytes() for path in directory.rglob("*") if path.is_file()}
+    assert forward.verify(directory)["analysis"] == result["analysis"]
+    assert before == {path: path.read_bytes() for path in directory.rglob("*") if path.is_file()}
+
+
+@pytest.mark.parametrize("mutation", ["census", "snapshot", "finding"])
+def test_forward_reseal_cannot_hide_census_snapshot_or_finding_change(synthetic_forward, mutation):
+    directory, _, _ = synthetic_forward
+    result_path = directory / "results.json"
+    report = forward.read_sealed(result_path)
+    if mutation == "census":
+        report["executions"].pop()
+    elif mutation == "snapshot":
+        (directory / "code-snapshot" / forward.FILES[0]).write_bytes(b"changed")
+    else:
+        report["findings"][0]["numeric_changed"] += 1
+    report.pop("sha256")
+    result_path.write_bytes(encode(forward.seal(report)).encode())
+    with pytest.raises(ValueError, match="fixed census|snapshot differs|raw replay differs"):
+        forward.verify(directory)
