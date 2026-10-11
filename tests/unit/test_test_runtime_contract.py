@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
+import pytest
 import yaml
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -60,6 +63,89 @@ def test_coverage_runs_once_and_remains_blocking() -> None:
     assert coverage_steps[0].get("continue-on-error") is None
 
 
+def test_full_coverage_records_child_processes_without_source_exclusions() -> None:
+    from coverage.results import should_fail_under
+
+    configuration = tomllib.loads((_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    coverage = configuration["tool"]["coverage"]
+    assert "subprocess" in coverage["run"]["patch"]
+    assert "_exit" in coverage["run"]["patch"]
+    assert not coverage["run"].get("omit")
+    assert not coverage["run"].get("include")
+    assert not coverage.get("report", {}).get("omit")
+    assert not coverage.get("report", {}).get("ignore_errors", False)
+    assert coverage["report"]["precision"] == 2
+    assert should_fail_under(87.83, 88, coverage["report"]["precision"])
+
+    dependencies = configuration["project"]["optional-dependencies"]["dev"]
+    assert "pytest-cov>=7.1" in dependencies
+    assert "coverage>=7.10.6" in dependencies
+
+
+@pytest.mark.parametrize("module", ["cache_lifecycle_analysis", "cache_lifecycle_study"])
+def test_coverage_merges_only_archived_replay_alias_without_losing_lines(
+    tmp_path: Path, module: str
+) -> None:
+    from coverage import Coverage, CoverageData
+
+    relative = Path(f"src/aletheia_lab/evaluation/{module}.py")
+    original = (_ROOT / relative).resolve()
+    alias = tmp_path / "test_cli_archived_replay_prese0/snapshot" / relative
+    alias.parent.mkdir(parents=True)
+    alias.write_bytes(original.read_bytes())
+    assert alias.read_bytes() == original.read_bytes()
+    unrelated = tmp_path / "unrelated" / relative
+    unrelated.parent.mkdir(parents=True)
+    unrelated.write_bytes(b"# This is a different source, not an alias.\n")
+
+    # Authored measurement inputs test combination, not application execution.
+    data = CoverageData(basename=str(tmp_path / "measured.owned"))
+    data.add_lines({str(original): {1, 10}, str(alias): {10, 11}, str(unrelated): {1}})
+    data.write()
+    measured = Coverage(
+        config_file=str(_ROOT / "pyproject.toml"), data_file=str(tmp_path / "measured")
+    )
+    measured.combine(data_paths=[str(tmp_path)], strict=True)
+    combined = measured.get_data()
+    assert set(combined.measured_files()) == {str(original), str(unrelated)}
+    assert set(combined.lines(str(original)) or []) == {1, 10, 11}
+    assert combined.lines(str(unrelated)) == [1]
+
+
+def test_abrupt_child_exit_preserves_real_measurements_without_changing_exit_code(
+    tmp_path: Path,
+) -> None:
+    from coverage import Coverage
+
+    probe = tmp_path / "owned_probe.py"
+    probe.write_text(
+        "import os\nfrom pathlib import Path\n"
+        "Path(__file__).with_suffix('.ack').write_bytes(b'owned acknowledgement')\n"
+        "os._exit(19)\nraise AssertionError('unreachable')\n",
+        encoding="utf-8",
+    )
+    config = tmp_path / "coverage.ini"
+    config.write_text("[run]\npatch = _exit\ndata_file = .coverage-owned\n", encoding="utf-8")
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.startswith(("COVERAGE_", "COV_CORE_", "PYTEST_"))
+    }
+    completed = subprocess.run(
+        [sys.executable, "-m", "coverage", "run", f"--rcfile={config}", str(probe)],
+        cwd=tmp_path,
+        env=environment,
+        capture_output=True,
+        timeout=60,
+        check=False,
+    )
+    assert completed.returncode == 19 and completed.stdout == completed.stderr == b""
+    assert probe.with_suffix(".ack").read_bytes() == b"owned acknowledgement"
+    measured = Coverage(config_file=str(config), data_file=str(tmp_path / ".coverage-owned"))
+    measured.load()
+    assert measured.get_data().lines(str(probe)) == [1, 2, 3, 4]
+
+
 def test_python_312_still_runs_the_complete_unfiltered_suite() -> None:
     jobs = _workflow().get("jobs")
     assert isinstance(jobs, dict)
@@ -78,6 +164,19 @@ def test_python_312_still_runs_the_complete_unfiltered_suite() -> None:
     run = str(compatibility[0].get("run", ""))
     assert run.startswith("pytest ")
     assert "-m" not in run and "--ignore" not in run
+
+
+def test_dev_install_keeps_native_regressions_on_the_pinned_sklearn_runtime() -> None:
+    configuration = tomllib.loads((_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    dependencies = configuration["project"]["optional-dependencies"]["dev"]
+    sklearn = [item for item in dependencies if item.startswith("scikit-learn")]
+    assert sklearn == ["scikit-learn==1.9.0"]
+
+    jobs = _workflow()["jobs"]
+    for name in ("test", "windows-project"):
+        installs = [step for step in jobs[name]["steps"] if step.get("name") == "Install"]
+        assert len(installs) == 1
+        assert '".[dev,provenance]"' in installs[0]["run"]
 
 
 def test_windows_project_boundary_is_a_blocking_ci_gate() -> None:
