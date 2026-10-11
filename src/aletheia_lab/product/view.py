@@ -9,10 +9,13 @@ from typing import Final, Literal, Self, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from aletheia_lab.product.questions import (
+    COUNTERFACTUAL_NOT_AVAILABLE as COUNTERFACTUAL_NOT_AVAILABLE,
+)
+from aletheia_lab.product.questions import checked_product_question
 from aletheia_lab.project.identity import SHA256_PATTERN
 
 PRODUCT_VIEW_SCHEMA_VERSION: Final[Literal["p6-product-view/v1"]] = "p6-product-view/v1"
-COUNTERFACTUAL_NOT_AVAILABLE: Final[str] = "Counterfactual comparison: not_available"
 
 ProductVisibility: TypeAlias = Literal["diagnosis"]
 ProductMode: TypeAlias = Literal["project_audit"]
@@ -113,7 +116,7 @@ def _validate_metric_change_pair(change: ProductMetricChange) -> None:
     expected = Decimal(str(change.after.value)) - Decimal(str(change.before.value))
     if expected == 0:
         raise ValueError("changed product metric delta must be non-zero")
-    if Decimal(str(change.delta)) != expected:
+    if change.delta != float(expected):
         raise ValueError("product metric delta does not match observations")
     if (change.kind == "increased") != (expected > 0):
         raise ValueError("product metric kind does not match its delta")
@@ -205,6 +208,11 @@ class ProductTurn(_StrictFrozenModel):
     abstained: bool
     visible_evidence_ids: tuple[str, ...]
     missing_evidence: tuple[str, ...]
+
+    @field_validator("question")
+    @classmethod
+    def _safe_question(cls, value: str) -> str:
+        return checked_product_question(value)
 
     @field_validator("visible_evidence_ids")
     @classmethod
@@ -403,6 +411,15 @@ class ProductView(_StrictFrozenModel):
             for claim in self.claims
         ):
             raise ValueError("product claim references unavailable evidence")
+        scope_by_turn = {
+            turn.id: set(turn.visible_evidence_ids) for turn in self.conversation.turns
+        }
+        if any(
+            not (set(claim.citation_ids) | set(claim.counterevidence_ids))
+            <= scope_by_turn[claim.turn_id]
+            for claim in self.claims
+        ):
+            raise ValueError("product claim references evidence outside its originating turn")
         return claim_ids
 
     def _result_status_reconciles(self) -> None:

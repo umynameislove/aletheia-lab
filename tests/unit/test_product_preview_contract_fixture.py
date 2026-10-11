@@ -75,8 +75,7 @@ def test_shared_preview_fixture_has_exact_contract_and_stable_sha256() -> None:
     assert unavailable.relative_path is None
     assert unavailable.field_names == ()
     paths = {
-        value.relative_path: value.records_path_candidates
-        for value in candidates.metric_sources
+        value.relative_path: value.records_path_candidates for value in candidates.metric_sources
     }
     assert paths["metrics/validation.json"] == (("runs",), ("records",))
     assert paths["metrics/train.csv"] == ()
@@ -93,9 +92,7 @@ def test_shared_preview_fixture_has_exact_contract_and_stable_sha256() -> None:
         "metrics/legacy.json": (),
         "metrics/flat.json": ("accuracy",),
     }
-    withheld_metric = next(
-        value for value in candidates.metric_sources if not value.available
-    )
+    withheld_metric = next(value for value in candidates.metric_sources if not value.available)
     assert withheld_metric.unavailable_reason == "sensitive_fields_withheld"
     assert withheld_metric.relative_path is None
     assert withheld_metric.field_names == ()

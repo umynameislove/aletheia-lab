@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from dataclasses import dataclass
 from functools import partial
@@ -19,6 +20,7 @@ from aletheia_lab.product.lifecycle import (
     validate_product_project_id,
     validate_product_record_id,
 )
+from aletheia_lab.project.import_policy import ProjectImportPreview
 from aletheia_lab.project.persistence import ProjectPurgePlan, ProjectStore
 
 _RECORD_NOT_FOUND_MESSAGE: Final[str] = "The requested product record is not available."
@@ -170,10 +172,30 @@ def _product_scope(
 
     project_states, preview_id = _project_state_scope(records, current_id)
     _validate_confirmed_preview(connection, project_id, project_states, preview_id)
+    preview_rows = connection.execute(
+        """
+        SELECT record_id, schema_version, record_kind, project_id, snapshot_id,
+               parent_result_id, payload_json, canonical_sha256
+        FROM product_records WHERE record_kind = 'preview' ORDER BY record_id
+        """
+    ).fetchall()
+    preview_ids: list[str] = []
+    for row in preview_rows:
+        candidate = _record_from_row(row)
+        raw = candidate.payload().get("p3_preview")
+        if not isinstance(raw, dict) or raw.get("project_id") != project_id:
+            continue
+        try:
+            ProjectImportPreview.model_validate_json(json.dumps(raw, allow_nan=False))
+        except (TypeError, ValueError):
+            raise ProductError("store_integrity_error", _STORE_INTEGRITY_MESSAGE) from None
+        preview_ids.append(candidate.record_id)
+    if preview_id not in preview_ids:
+        raise ProductError("store_integrity_error", _STORE_INTEGRITY_MESSAGE)
     return _ProductDeletionScope(
         project_id=project_id,
         record_ids=tuple(record.record_id for record in records),
-        preview_ids=(preview_id,),
+        preview_ids=tuple(preview_ids),
     )
 
 

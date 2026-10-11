@@ -226,6 +226,7 @@ def test_follow_up_preserves_citation_and_counterevidence_roles() -> None:
     claim = payload["claims"][0]
     claim["citation_ids"] = [payload["evidence"][0]["id"]]
     claim["counterevidence_ids"] = [counterevidence_id]
+    payload["conversation"]["turns"][0]["visible_evidence_ids"].append(counterevidence_id)
     parent = ProductView.model_validate_json(json.dumps(payload))
     selection = resolve_product_follow_up_selection(
         parent,

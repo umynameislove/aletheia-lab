@@ -25,12 +25,8 @@ def test_preview_mapping_candidates_match_the_shared_ui_contract(tmp_path: Path)
         source_root / "resolved" / "metrics.json",
         json.dumps(
             {
-                "runs": [
-                    {"run_id": "run-before", "name": "loss", "value": 0.5}
-                ],
-                "records": [
-                    {"run_id": "run-after", "name": "loss", "value": 0.6}
-                ],
+                "runs": [{"run_id": "run-before", "name": "loss", "value": 0.5}],
+                "records": [{"run_id": "run-after", "name": "loss", "value": 0.6}],
             }
         ),
     )
@@ -96,9 +92,7 @@ def test_preview_mapping_candidates_match_the_shared_ui_contract(tmp_path: Path)
     ]
     assert metrics["resolved/metrics.json"]["metric_name_candidates"] == ["loss"]
     sensitive_metric = next(
-        value
-        for value in candidates["metric_sources"]
-        if value["available"] is False
+        value for value in candidates["metric_sources"] if value["available"] is False
     )
     assert sensitive_metric["label"] == "A metric source with withheld field labels"
     assert sensitive_metric["relative_path"] is None

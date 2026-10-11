@@ -17,6 +17,7 @@ from aletheia_lab.project import ProjectStore
 
 pytestmark = pytest.mark.integration
 
+
 def _git(root: Path, *arguments: str) -> None:
     subprocess.run(
         ("git", *arguments),
@@ -112,9 +113,7 @@ def _record_counts(store_root: Path) -> tuple[int, int, int]:
                     "SELECT COUNT(*) FROM product_records WHERE record_kind = 'project_state'"
                 ).fetchone()[0]
             ),
-            int(
-                connection.execute("SELECT COUNT(*) FROM product_confirmations").fetchone()[0]
-            ),
+            int(connection.execute("SELECT COUNT(*) FROM product_confirmations").fetchone()[0]),
         )
 
 
@@ -315,9 +314,7 @@ def test_blocker_and_invalid_mapping_cannot_create_a_project(tmp_path: Path) -> 
         dict[str, list[dict[str, object]]],
         preview["mapping_candidates"],
     )
-    sensitive_target = next(
-        value for value in candidates["targets"] if value["available"] is False
-    )
+    sensitive_target = next(value for value in candidates["targets"] if value["available"] is False)
     sensitive_mapping["target"] = {
         "mapping_id": "forged-sensitive-target",
         "project_item_id": sensitive_target["project_item_id"],

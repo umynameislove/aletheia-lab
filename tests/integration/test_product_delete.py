@@ -350,9 +350,8 @@ def test_delete_tombstone_blocks_reimport_and_in_flight_result(tmp_path: Path) -
     )
 
     assert service.delete_project(project_id)["status"] == "deleted"
-    replay = service.preview_import(str(source))
     with pytest.raises(ProductError) as confirmation:
-        service.confirm_import(str(replay["preview_id"]), _mapping(replay))
+        service.preview_import(str(source))
     with pytest.raises(ProductError) as result:
         persist_product_result(store_root, stale_view)
 

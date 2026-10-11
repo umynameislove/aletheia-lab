@@ -1,21 +1,4 @@
-# P6 Product Core implementation notes
-
-## Starting point
-
-- Repository: `https://github.com/umynameislove/aletheia-lab.git`
-- Working branch: `feat/p6-product-core-kien`
-- Base revision (`origin/main` and initial `HEAD`):
-  `ec781efcf533f626548d58c25e7ffc4372f01aa3`
-- Development environment: Windows PowerShell, Python 3.11.9, local `.venv`
-- Baseline command:
-  `.\.venv\Scripts\python.exe -m pytest tests/integration/test_project_import_transaction.py -q`
-- Baseline result: `3 passed`
-- Dependency check:
-  `.\.venv\Scripts\python.exe -m pip check`
-- Dependency result: `No broken requirements found.`
-
-These facts were captured before the first P6 source change. The handoff package is
-kept outside this repository and is not copied into the product source tree.
+# P6 Product Core technical guide
 
 ## Scope boundary
 
@@ -41,19 +24,19 @@ Public failures use a safe `ProductError(code, safe_message)`. Public views and
 errors must not expose filesystem paths, raw exceptions, secrets, imported text,
 raw dataset rows, or hidden/evaluator truth.
 
-## Reuse and gap map
+## Integration with the project pipeline
 
-| Product method | Existing P3 capability to reuse | P6 adapter or real gap |
+| Product method | Existing P3 capability | Product boundary |
 | --- | --- | --- |
-| `demo_view` | Existing public/diagnosis visibility conventions | Add a deterministic product fixture and `ProductView` projection. |
-| `preview_import` | Root grant, secure collection, import policy, and P3 validation | Add a staged preview lifecycle. A preview must not persist a valid project or snapshot. |
+| `demo_view` | Existing public/diagnosis visibility conventions | Return a deterministic product fixture and `ProductView` projection. |
+| `preview_import` | Root grant, secure collection, import policy, and P3 validation | Store a staged preview without persisting a valid project or snapshot. |
 | `confirm_import` | Mapping validation/binding, snapshot construction, and transactional `ProjectStore` writes | Revalidate the staged source at confirmation time and atomically persist the new product identity plus P3 records. |
-| `refresh` | Import, mapping, snapshot, regression, evidence, lineage, and store APIs | Add durable, safe refresh authorization/source metadata without exposing an absolute source path. Preserve the previous snapshot if refresh fails. |
-| `analyze_mock` | Diagnosis-visible evidence and lineage projections | Add deterministic offline analysis, immutable result storage, product claims, conversation state, and graph projection. No provider call is allowed. |
-| `follow_up` | Existing visibility rules can constrain referenced evidence | Add deterministic selection validation, conversation turns, and immutable derived results. |
-| `view` | `ProjectStore` record loading and P3 projection helpers | Add the stable `ProductView` schema and result lookup/scope checks. |
-| `export_report` | Stored result/evidence/lineage data | Add JSON, Markdown, and PDF renderers over the same saved product projection. |
-| `delete_project` | No P3 purge API exists | Add a reference-safe, idempotent product deletion transaction covering all product and owned P3 records. |
+| `refresh` | Import, mapping, snapshot, regression, evidence, lineage, and store APIs | Retain refresh authorization/source metadata privately; preserve the previous snapshot if refresh fails. |
+| `analyze_mock` | Diagnosis-visible evidence and lineage projections | Produce deterministic offline analysis, immutable results, claims, conversation state, and graph projection without a provider call. |
+| `follow_up` | Existing visibility rules constrain referenced evidence | Validate exact selections and create immutable derived results with new conversation turns. |
+| `view` | `ProjectStore` record loading and P3 projection helpers | Revalidate the stable `ProductView` schema and result scope. |
+| `export_report` | Stored result/evidence/lineage data | Render JSON, Markdown, and PDF over the same saved product projection. |
+| `delete_project` | Reference-safe P3 purge API | Atomically delete product-owned lifecycle and P3 records, preserving shared objects. |
 
 ## Current architectural constraints
 
@@ -75,14 +58,14 @@ raw dataset rows, or hidden/evaluator truth.
 - `independent_families` is unknown when unavailable and must be represented as
   `null`, never fabricated as zero.
 
-K02 keeps one physical SQLite store: product lifecycle records use dedicated
-`product_*` tables in the P3 `project-store.sqlite3` database. They do not
+Product lifecycle records use dedicated `product_*` tables in the P3
+`project-store.sqlite3` database. They do not
 duplicate P3 objects, importer logic, records, or graph storage. Lifecycle IDs
 include their project/snapshot/parent scope in the canonical digest and every
 read revalidates both content identity and the caller's expected scope.
 
-K03 keeps staged previews content-addressed and gives each preview a renewable
-30-minute confirmation lease stored separately from the immutable preview
+Staged previews are content-addressed and have a renewable 30-minute
+confirmation lease stored separately from the immutable preview
 record. Re-previewing identical source state preserves the same `preview_id`
 and renews that lease. Confirmation at or after expiry fails with
 `preview_expired`, requires a fresh preview, and persists no project or
@@ -95,16 +78,13 @@ It contains only synthetic values and covers resolved JSON, CSV, ambiguous
 manual-entry, root-array, and sensitive-withheld candidate behavior. Version 2
 adds stable `metric_name_candidates`; an unresolved source returns an empty
 list, while a sensitive metric name disables the candidate with a safe label,
-no path, and empty structural arrays. The UI type and tests are ready for this
-fixture. The backend fixture is available on the K04 branch; byte-for-byte UI
-verification remains pending the UI maintainer's confirmation of the v2 SHA.
+no path, and empty structural arrays. Byte-for-byte verification against an
+actual UI consumer remains unverified.
 
-The older `synthetic_p6_view.json` fixture is not the K03 preview contract and
-remains only a temporary UI fallback. A shared `p6-product-view/v1` fixture will
-be locked in K06 after the backend view, per-turn `result_id`/`runtime`, and
-technical-failure invariants exist; K03 does not pre-commit that later shape.
+The preview fixture is separate from `synthetic_p6_view.json`, which supplies
+the immutable `p6-product-view/v1` demo described below.
 
-## K04 snapshot and refresh invariants
+## Snapshot and refresh invariants
 
 - `confirm_import` persists the bound bundle, initial immutable snapshot, and
   current product-project pointer in one SQLite transaction.
@@ -128,17 +108,17 @@ technical-failure invariants exist; K03 does not pre-commit that later shape.
   Regression events retain `causal_status=unverified`, and lineage never adds a
   `causes` edge.
 - Previous snapshots and lifecycle results remain immutable and scoped to their
-  original snapshot after refresh. K04 verifies this with a lifecycle pinning
-  probe; K06 repeats it with the complete immutable ProductView result schema.
+  original snapshot after refresh. Lifecycle and complete ProductView tests
+  verify this pinning.
 - Transaction-write failure, unavailable roots, missing mapping sources,
   integrity mismatch, and concurrent source changes fail closed with safe
   `ProductError` values that do not retain raw internal exceptions.
 
-## K05 evidence visibility bridge
+## Evidence visibility bridge
 
-K05 adds a product-owned, payload-free projection over the persisted P3
+The product layer exposes a payload-free projection over the persisted P3
 `ProjectEvidenceBundle`. It does not change the nine `ProductService` method
-signatures or lock the complete `p6-product-view/v1` shape ahead of K06.
+signatures.
 
 The internal `p6-evidence-projection/v1` DTO contains:
 
@@ -170,13 +150,12 @@ projection and never exposes the source root or raw store exception.
 Security integration uses only synthetic inputs and covers instruction-like
 README/log text, a synthetic withheld credential, PII redaction, and a JSON
 payload scan. Imported text remains inert data and does not enter the product
-evidence DTO. K06 consumes this filtered projection; expanded claim graph
-semantics and reports remain owned by K07 and K10 rather than being fabricated
-in K05.
+evidence DTO. ProductView, graph construction, and report rendering consume
+this filtered projection rather than fabricating evidence.
 
-## K06 immutable ProductView and deterministic analysis
+## Immutable ProductView and deterministic analysis
 
-K06 locks the exact `p6-product-view/v1` DTO used by `demo_view`,
+The strict `p6-product-view/v1` DTO is used by `demo_view`,
 `analyze_mock`, and `view`. The shared fixture is
 `tests/fixtures/synthetic_p6_view.json`, with SHA-256
 `0f5413427d1adf184639bff08181d5a81d41e25dad7c45bfb71788742d957fd2`.
@@ -190,7 +169,7 @@ edges. `independent_families` is explicitly `null`. Runtime metadata states
 that analysis is a deterministic mock and made no external call.
 Each conversation turn binds its own `result_id` and complete runtime object;
 the latest turn must match the current result and top-level runtime. This keeps
-the contract correct when K08 adds immutable follow-up results or a later
+the contract correct for immutable follow-up results or when a later
 runtime differs from an earlier turn.
 
 Every claim has one required closed-enum `claim_type`. A technical-failure
@@ -210,8 +189,8 @@ removed observations have a null missing side, null delta, and
 does not recompute threshold semantics.
 
 `analyze_mock` loads one exact project/snapshot diagnosis projection through
-the K05 store bridge. Citations, counterevidence, and visible evidence IDs are
-resolved against that same projection. Product evidence contains stable IDs,
+the evidence store bridge. Citations, counterevidence, and visible evidence IDs
+are resolved against that same projection. Product evidence contains stable IDs,
 hashes, safe role descriptions, immutable P3 reproduction references, and explicit
 missing/omitted categories; it does not copy raw imported text or host paths.
 Each `reproduction_ref` contains only the containing P3 `record_id` and its
@@ -234,12 +213,12 @@ Security integration passes instruction-like README/log content, synthetic PII,
 and a synthetic credential through import, refresh, evidence projection,
 analysis, persistence, and reload. JSON scans confirm that none of those values,
 file names, source paths, evaluator labels, or withheld markers enter the
-ProductView. K07 owns richer claim/lineage graph construction, K08 owns
-follow-up conversation behavior, and K10 owns report rendering.
+ProductView. Graph construction, scoped follow-up, and report rendering preserve
+the same authorized projection.
 
-## K07 deterministic graph projection
+## Deterministic graph projection
 
-K07 projects the persisted P3 lineage through `project_lineage` and
+The regression graph projects persisted P3 lineage through `project_lineage` and
 `project_lineage_table` at diagnosis visibility before creating the product
 graph. Every visible evidence source must resolve to one typed P3 lineage node;
 comparison, metric-change, and regression-event hashes must also match. Snapshot
@@ -281,7 +260,7 @@ For multiple steps, each `(run_id, metric_name, step)` is a separate change whos
 before and after observations retain that same run and step; no step is selected
 or pooled implicitly.
 
-## K08 deterministic mock and scoped follow-up
+## Deterministic mock and scoped follow-up
 
 `analyze_mock` and `follow_up` are offline deterministic product operations.
 Their runtime remains `deterministic_mock` with `external_call=false`; neither
@@ -301,8 +280,8 @@ runtime, conversation ID, authorized evidence, and complete prior turn/claim
 prefix. It appends exactly one turn. A normal result appends one abstaining
 uncertainty claim; a technical-failure result appends no claim or disposition
 and does not emit the counterfactual marker. The graph is rebuilt from the same
-authorized evidence and claims with the K07 canonical builder, so follow-up does
-not introduce a causal edge or widen evidence scope.
+authorized evidence and claims with the canonical graph builder, so follow-up
+does not introduce a causal edge or widen evidence scope.
 
 Derived results are content-addressed immutable lifecycle records whose
 `parent_result_id` names the exact parent. Replaying the same parent, selection,
@@ -319,9 +298,9 @@ are scoped by the derived turn, so a disposition node from an earlier result is
 not selectable in a later result even though both nodes ultimately reference
 their own bound result IDs.
 
-## K09 external-send preflight boundary
+## External-send preflight boundary
 
-K09 does not add a send method, provider client, endpoint, credential lookup, or
+The service has no send method, provider client, endpoint, credential lookup, or
 retry loop. The only external-send surface is the metadata already returned by
 `preview_import`. It describes what categories could be considered by a future
 authorized integration; it does not construct or transmit an outbound payload.
@@ -332,7 +311,7 @@ contribute a category. The same response reports the canonical P3
 `redacted_count` and `withheld_count`, plus structured issue codes and occurrence
 counts. It never includes source bytes, imported instruction text, credential
 values, PII values, or an absolute source path. Mapping candidates remain the
-separate K03 metadata projection and do not grant send authority.
+separate preview metadata projection and do not grant send authority.
 
 The underlying `ProjectImportPolicy` fixes execution and network modes to
 `disabled` and source mutation to `forbidden`. Imported README, log, and config
@@ -344,13 +323,13 @@ use `provider=deterministic_mock` with `external_call=false`.
 Previewing and then abandoning or reopening the service leaves only the
 content-addressed preview and its confirmation lease. It creates no P3 project
 record, product-project pointer, confirmation, outbound payload, or `sent`
-state. Preview failures are mapped once to a safe `ProductError`; K09 has no
+state. Preview failures are mapped once to a safe `ProductError`; there is no
 automatic retry. Dedicated unit and integration tests remove common API-key
 environment variables, reject Python socket creation, exercise synthetic prompt
 injection/PII/credentials, scan serialized payloads, verify restart behavior,
 and confirm source bytes, sizes, and mtimes remain unchanged.
 
-## K10 deterministic report export
+## Deterministic report export
 
 `export_report(result_id, format)` first resolves the immutable result through
 the existing `load_product_result` boundary. That read verifies the lifecycle
@@ -373,7 +352,7 @@ It is a real multi-page PDF with extractable text, fixed page geometry and a
 built-in font. The writer emits no creation timestamp, random identifier, host
 path, or environment metadata, so identical result bytes produce identical PDF
 bytes across replay and service restart. It uses only the Python standard
-library; K10 adds no report dependency.
+library; production report rendering adds no dependency.
 
 All three formats are returned as bytes and no export record or file is
 persisted. Historical result exports therefore remain byte-identical after a
@@ -383,14 +362,14 @@ a technical failure in every format. Export performs no provider or network
 call and cannot modify the source project. Existing result lookup errors retain
 their safe fail-closed codes for missing, foreign, or tampered records.
 
-## K11 reference-safe retention and deletion
+## Reference-safe retention and deletion
 
 `delete_project(project_id)` removes the confirmed project's complete P3
 generation and Product lifecycle scope. The owned Product set includes every
 project-scoped state/result/turn plus the confirmed preview and its lease and
 binding. The P3 set includes bundles, snapshots, comparisons, regression
-candidates, evidence, lineage rows, and their record objects. K10 reports are
-returned as bytes and are not persisted, so K11 does not invent a report cache
+candidates, evidence, lineage rows, and their record objects. Reports are
+returned as bytes and are not persisted, so deletion needs no report cache
 or report store.
 
 P3 owns the content-addressed object index, so reference analysis is performed
@@ -435,37 +414,26 @@ other projects and shared objects remain fully loadable. Project-scoped writes
 also check the deletion tombstone inside their write transaction, preventing a
 stale confirmation, refresh, result, or follow-up from resurrecting the scope.
 
-### K11 verification on Windows
+### Historical Windows deletion checks
 
-K11 was verified on the existing Windows Python 3.11 environment without a
-provider, network call, API key, fixture change, or source-project mutation.
-The final focused delete/import/lifecycle/persistence/result gate passed all 44
-test cases. The complete selected Product plus affected P3 persistence,
-lineage, closeout, and persisted regression suites also passed.
+An earlier Windows Python 3.11 checkout passed 44 focused
+delete/import/lifecycle/persistence/result cases and the selected Product plus
+affected P3 persistence, lineage, closeout, and persisted regression suites.
+These checks used no provider, network call, API key, fixture change, or
+source-project mutation.
 
-The final project profile completed with
-`424 passed, 1 skipped, 3930 deselected` in 94.07 seconds. The two slowest K11
-integration tests took 3.15 and 1.62 seconds. The final Windows publication
-profile completed with `147 passed` in 288.01 seconds. An earlier run used an
-unnecessarily long `--basetemp` and
-caused nine unrelated diagnosis-development CAS paths to exceed the practical
-Windows path limit; rerunning the unchanged checkout with the short unique
-basetemp `%TEMP%\k11wp2` passed. No source change was used to mask that
-environmental failure.
-
-Ruff lint, Ruff format on every K11 changed source/test file, strict mypy on
-the Product package plus P3 persistence, changed-source C901, and
-`git diff --check` passed. The maintainability audit still reports the two
-pre-existing Product C901 findings and the pre-existing 1419-line P3 importer
-against its stale 1231-line exemption. Neither legacy function was changed by
-K11. Refactoring the pre-existing P3 `_migrate` helper reduced the project C901
-count from 8 to 7, so K11 improves rather than worsens the frozen baseline.
+That checkout's project profile recorded
+`424 passed, 1 skipped, 3930 deselected` in 94.07 seconds; the two slowest
+deletion integration tests took 3.15 and 1.62 seconds. Its Windows publication
+profile recorded `147 passed` in 288.01 seconds. Ruff lint and format, strict
+mypy on Product plus P3 persistence, changed-source C901, and
+`git diff --check` also passed. These historical measurements do not qualify
+the current integrated source on Windows.
 
 Both repository copies of `synthetic_p6_view.json` remain byte-identical at
 SHA-256 `0f5413427d1adf184639bff08181d5a81d41e25dad7c45bfb71788742d957fd2`.
-The older handoff copy was not imported or used to alter the locked contract.
 
-## K12 Windows/offline end-to-end delivery
+## Offline end-to-end demo
 
 The `aletheia product-demo WORKSPACE` entrypoint is a thin CLI over the packaged
 `run_product_demo` orchestration. It accepts only a new empty real directory,
@@ -490,50 +458,92 @@ confirms all P3 and non-tombstone Product records are gone, denies the old resul
 deep link, and compares the complete source tree after deletion. A separate
 case proves that a non-empty workspace is rejected without mutation.
 
-K12 adds a named `product` test profile that discovers every Product unit and
+The named `product` test profile discovers every Product unit and
 integration test and explicitly includes the persisted P3 import transaction
 and snapshot/regression pipeline. The Windows CI job runs this profile as a
-blocking step within its existing 35-minute budget. Strict matrix mypy now
+blocking step within current main's 50-minute budget. Strict matrix mypy now
 includes the complete Product package, and contract tests bind both changes so
 future CI edits cannot silently drop them.
 
-### K12 verification status on Windows
+### Historical Windows backend checks
 
-The final Product profile passed all 156 tests in 148.06 seconds. The complete
+An earlier feature checkout recorded `156 passed` in 148.06 seconds for the
+Product profile and `70 passed` in 44.49 seconds for the contract profile. Its
 offline E2E took 3.06 seconds, and the slowest shared-object deletion case took
-8.77 seconds. The final contract profile passed all 70 tests in 44.49 seconds;
-strict mypy passed 23 source files, Ruff lint and format passed, the
-maintainability receipt reported `status: pass` with no findings, and
-`git diff --check` passed. Focused correction and post-format regression gates
-also passed 37 and 41 tests respectively. The previously recorded project and
-Windows-publication profiles remain `424 passed, 1 skipped` and `147 passed`.
+8.77 seconds. Strict mypy passed 23 source files, Ruff lint and format passed,
+the maintainability receipt reported `status: pass` with no findings, and
+`git diff --check` passed. Focused correction and post-format regression tests
+recorded 37 and 41 passes respectively. Its previously recorded project and
+Windows-publication profiles were `424 passed, 1 skipped` and `147 passed`.
 
-The repository-wide full profile is not claimed green on this Windows host. Its
-last intermediate run reached `4324 passed, 31 skipped` but exposed a deep
-research-attempt-store path beyond the host's disabled legacy Windows path
-limit (`LongPathsEnabled=0`). A separate frozen Qwen portability test also
-compares a Windows `Path` against a POSIX `/tmp` literal. Both files belong to
-the research freeze and this Product branch does not amend their bound bytes or
-deselect them. The required integrated UI smoke likewise remains a pre-merge
-activity led by Quân; this backend branch does not claim that external
-confirmation.
+That checkout did not establish a green repository-wide Windows full profile.
+An intermediate run reached `4324 passed, 31 skipped` but encountered a deep
+research-attempt-store path beyond the legacy Windows path limit. A separate
+frozen Qwen portability test compared a Windows `Path` against a POSIX `/tmp`
+literal. No frozen file bytes or test selection were changed to hide these
+limitations. Current integrated Windows execution and the actual UI consumer
+smoke remain unverified.
 
-## Implementation order
+## Compatibility and verification limits
 
-1. Define the product contracts, safe errors, deterministic identifiers, and
-   projection validation.
-2. Implement persistent product metadata and staged preview/confirmation.
-3. Implement refresh with transactional failure safety and idempotency.
-4. Implement deterministic mock analysis, saved results, view, and follow-up.
-5. Implement claim/evidence/graph consistency checks.
-6. Implement JSON, Markdown, and PDF exports from one saved projection.
-7. Implement reference-safe idempotent deletion.
-8. Add contract, security, persistence/restart, determinism, export-parity, and
-   deletion tests; then run the repository quality gates.
-9. Add the bounded offline Product demo, its Windows profile, and blocking CI
-   contracts.
-10. Run the final project, publication, contract, full-coverage, quality,
-    hygiene, and security gates before integrated UI smoke.
+The local compatibility check reconciles the Product implementation with the
+current CI and project-store contracts. The Windows measurements above describe
+the earlier feature checkout and are not new integration runs.
 
-Each item is split into independently reviewable changes. A later step starts
-only after the preceding step has been verified.
+The source snapshot includes these bounded compatibility and regression fixes:
+
+- Changed refresh compares the expected current lifecycle record inside the
+  generation transaction. A concurrent refresh cannot overwrite a newer
+  pointer; the stale attempt fails with `refresh_stale`.
+- Confirmation rejects a second preview that would replace an already-imported
+  project and directs the caller to refresh. Project-scoped writes retain the
+  deletion guard. Deletion also purges every validated preview and lease for the
+  deleted P3 project identity, including abandoned previews containing private
+  refresh authorization, without opening or modifying the source root.
+- Claims may cite or countercite only evidence in their originating turn's
+  scope. Immutable reload and follow-up validation cannot widen that scope to
+  other evidence merely because it appears elsewhere in the same view.
+- Initial and non-adverse snapshots now support genuine offline analysis.
+  Initial imports use the analyzed snapshot as their baseline and report no
+  comparison or metric changes. Refreshed observations use the real persisted
+  comparison and metric deltas, including improvements, configuration-only
+  changes, and changes below the declared threshold. They create no regression
+  event, evidence bundle, or lineage generation; results explicitly abstain
+  from causality and retain `causal_status=unverified` and
+  `independent_families=null`. Corrupt or incomplete generations still fail
+  closed rather than being treated as missing evidence.
+- Evidence journal descriptors use binary mode where Windows requires it, so
+  reported byte counts match the written files. Socket guards also fail closed
+  when `AF_UNIX` is absent. The narrow Bandit suppression census is explicit;
+  pinned upstream methods and modules execute only the exact checked byte
+  buffer, not a subsequently changed file or a cached bytecode image. Binding
+  cache fixtures use canonical LF bytes rather than host newline translation.
+  These repairs do not establish native Windows integration success.
+- PDF verification uses the portable `pypdf` development reader. The production
+  report writer still uses only the standard library and exports the same
+  immutable saved projection without adding a runtime report dependency.
+- Coverage explicitly records Python subprocesses using the supported
+  coverage.py patch. The repository-wide 88% floor, source selection, and test
+  census are unchanged; recording children does not by itself satisfy that
+  floor.
+- Questions reject recognized private paths and credential values before
+  persistence, together with invalid Unicode and the reserved missing-evidence
+  marker. Finite metric deltas are validated in the declared float domain;
+  values that overflow that domain fail with a fixed public error rather than
+  reaching saved results or report exports.
+
+Executed macOS checks on this snapshot passed: the Product profile had
+`183 passed` with `90.45%` coverage of the Product package, the contract profile
+had `76 passed`, and the project profile had `482 passed` with four optional
+dependency skips. Strict mypy passed under Python 3.12; Ruff and Bandit passed.
+The full profile recorded `6909 passed, 28 skipped` in 1414.40 seconds, but its
+coverage was `83.59%`, below the unchanged `88%` floor: that gate failed.
+With the exact provenance dependencies installed in an isolated test directory,
+the focused native-provenance tests recorded `103 passed`, and the Product
+profile again recorded `183 passed`. These focused runs do not replace the full
+gate or establish coverage in a complete CI environment.
+
+The Product coverage is not the repository-wide coverage gate. Remote CI,
+current native Windows execution, and the actual integrated UI smoke remain
+unverified. Static checks targeting Python 3.11 are also not Python 3.11 runtime
+tests. No paper, frozen scientific result, or research-admission claim is changed.

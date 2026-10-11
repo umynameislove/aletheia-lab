@@ -15,6 +15,7 @@ from aletheia_lab.product.lifecycle import (
     ProductLifecycleRecord,
     ProductLifecycleStore,
     build_product_lifecycle_record,
+    ensure_product_project_active,
     put_current_project_state,
     validate_product_record_id,
 )
@@ -344,7 +345,16 @@ def _write_project_state(
     connection: sqlite3.Connection,
     *,
     record: ProductLifecycleRecord,
+    expected_record_id: str,
 ) -> None:
+    assert record.project_id is not None
+    ensure_product_project_active(connection, record.project_id)
+    current = connection.execute(
+        "SELECT project_state_record_id FROM product_projects WHERE project_id = ?",
+        (record.project_id,),
+    ).fetchone()
+    if current is None or str(current[0]) != expected_record_id:
+        raise ProductError("refresh_stale", _SOURCE_CHANGED_MESSAGE)
     put_current_project_state(connection, record)
 
 
@@ -474,7 +484,11 @@ def _changed_refresh(
             store.persist(
                 generation_models,
                 artifacts=_artifact_objects(imported.artifacts),
-                transaction_write=partial(_write_project_state, record=project_state),
+                transaction_write=partial(
+                    _write_project_state,
+                    record=project_state,
+                    expected_record_id=record.record_id,
+                ),
             )
         return {
             "project_id": record.project_id,

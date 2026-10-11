@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
+import io
 import json
-import shutil
 import socket
 import sqlite3
-import subprocess
 from pathlib import Path
 
 import pytest
+from pypdf import PdfReader
 
 from aletheia_lab.product import ProductError, ProductService
 from aletheia_lab.product.results import persist_product_result
@@ -82,30 +82,11 @@ def _persist(store_root: Path, view: ProductView) -> ProductView:
 
 
 def _extract_pdf_text(tmp_path: Path, payload: bytes) -> str:
-    pdfinfo = shutil.which("pdfinfo")
-    pdftotext = shutil.which("pdftotext")
-    assert pdfinfo is not None, "pdfinfo is required for the PDF contract test"
-    assert pdftotext is not None, "pdftotext is required for the PDF contract test"
-    report_path = tmp_path / "report.pdf"
-    report_path.write_bytes(payload)
-    info = subprocess.run(
-        [pdfinfo, str(report_path)],
-        check=True,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
-    assert "PDF version:" in info.stdout
-    extracted = subprocess.run(
-        [pdftotext, "-layout", str(report_path), "-"],
-        check=True,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
-    return extracted.stdout
+    reader = PdfReader(io.BytesIO(payload), strict=True)
+    assert reader.pdf_header == "%PDF-1.4"
+    assert not reader.is_encrypted
+    assert reader.pages
+    return "\n".join(page.extract_text(extraction_mode="layout") for page in reader.pages)
 
 
 def test_json_export_is_canonical_complete_and_restart_stable(tmp_path: Path) -> None:

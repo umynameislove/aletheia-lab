@@ -50,6 +50,34 @@ def test_shared_fixture_is_exact_and_round_trips_through_product_view() -> None:
     assert view.claims[0].missing_evidence == (COUNTERFACTUAL_NOT_AVAILABLE,)
 
 
+@pytest.mark.parametrize("field", ["citation_ids", "counterevidence_ids"])
+def test_claim_cannot_use_evidence_outside_its_originating_turn(field: str) -> None:
+    payload = _payload()
+    payload["conversation"]["turns"][0]["visible_evidence_ids"] = []
+    if field == "counterevidence_ids":
+        payload["claims"][0][field] = payload["claims"][0]["citation_ids"]
+        payload["claims"][0]["citation_ids"] = []
+    with pytest.raises(ValidationError, match="originating turn"):
+        _validate(payload)
+
+
+def test_finite_metric_delta_validates_in_the_declared_float_domain() -> None:
+    from decimal import Decimal
+
+    from aletheia_lab.product.view import ProductMetricChange
+
+    change = _payload()["snapshot"]["metric_changes"][0]
+    change["before"]["value"] = 0.9876543210987654
+    change["after"]["value"] = 0.12345678901234568
+    change["delta"] = float(
+        Decimal(str(change["after"]["value"])) - Decimal(str(change["before"]["value"]))
+    )
+    assert ProductMetricChange.model_validate_json(json.dumps(change)).delta == change["delta"]
+    change["delta"] += 0.000001
+    with pytest.raises(ValidationError, match="delta"):
+        ProductMetricChange.model_validate_json(json.dumps(change))
+
+
 def test_demo_view_returns_a_fresh_exact_fixture_after_restart(tmp_path: Path) -> None:
     expected = _payload()
 

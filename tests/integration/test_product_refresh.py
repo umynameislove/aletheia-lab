@@ -1047,12 +1047,11 @@ def test_analyze_mock_requires_exact_evidence_scope_and_valid_question(tmp_path:
     preview = service.preview_import(str(source_root))
     confirmed = service.confirm_import(str(preview["preview_id"]), _mapping(preview))
 
-    with pytest.raises(ProductError) as missing:
-        service.analyze_mock(
-            str(confirmed["project_id"]),
-            str(confirmed["snapshot_id"]),
-            "What changed?",
-        )
+    initial_view = service.analyze_mock(
+        str(confirmed["project_id"]),
+        str(confirmed["snapshot_id"]),
+        "What changed?",
+    )
     with pytest.raises(ProductError) as invalid_question:
         service.analyze_mock(
             str(confirmed["project_id"]),
@@ -1060,7 +1059,8 @@ def test_analyze_mock_requires_exact_evidence_scope_and_valid_question(tmp_path:
             "  ",
         )
 
-    assert missing.value.code == "evidence_not_available"
+    assert initial_view["result"]["disposition"] == "abstain"
+    assert initial_view["snapshot"]["metric_changes"] == []
     assert invalid_question.value.code == "invalid_question"
 
 
