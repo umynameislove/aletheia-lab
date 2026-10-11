@@ -34,6 +34,10 @@ python scripts/run_test_profile.py evaluation
   receive separate budgets. Install the `dev` extra to include pytest-xdist.
 - `windows-publication` exercises the shared filesystem primitive and every
   immutable store whose durability behavior differs across Windows and POSIX.
+  The diagnosis development store uses resolved Windows extended paths so a
+  short staging directory can become a full-digest run without making its
+  objects inaccessible under the legacy path limit. Deep Unicode-path tests
+  retain identity, replay, and fail-closed integrity checks.
 
 Additional pytest arguments may follow `--`, for example:
 

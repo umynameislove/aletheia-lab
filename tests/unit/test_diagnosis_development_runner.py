@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 import aletheia_lab.filesystem as filesystem_module
+from aletheia_lab.diagnosis._development import store as store_module
 from aletheia_lab.diagnosis.development import (
     DeterministicDevelopmentExecutor,
     DevelopmentArtifactStore,
@@ -56,6 +57,84 @@ def _completed_store(tmp_path: Path) -> tuple[object, object, object, Developmen
     store = DevelopmentArtifactStore(tmp_path / "store")
     terminal = run_development_pilot(plan, freeze, registry, store)  # type: ignore[arg-type]
     return plan, freeze, registry, store, terminal.run_id
+
+
+@pytest.mark.parametrize(
+    "resolved,expected",
+    [
+        ("C:\\store", "\\\\?\\C:\\store"),
+        ("D:\\a space\\café", "\\\\?\\D:\\a space\\café"),
+        ("\\\\server\\share\\store", "\\\\?\\UNC\\server\\share\\store"),
+        ("\\\\?\\C:\\store", "\\\\?\\C:\\store"),
+        ("\\\\?\\UNC\\server\\share\\store", "\\\\?\\UNC\\server\\share\\store"),
+        ("\\\\.\\C:\\store", "\\\\.\\C:\\store"),
+    ],
+)
+def test_windows_store_namespace_preserves_drive_unc_and_existing_prefixes(
+    resolved: str, expected: str,
+) -> None:
+    assert store_module._windows_extended_path(resolved) == expected
+
+
+@pytest.mark.parametrize("platform", ["win32", "darwin", "linux"])
+def test_extended_store_namespace_is_applied_after_resolution_only_on_windows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, platform: str,
+) -> None:
+    supplied = tmp_path / "parent" / ".." / "store"
+    resolved_roots: list[str] = []
+
+    def observe_root(resolved: str) -> str:
+        resolved_roots.append(resolved)
+        return resolved
+
+    monkeypatch.setattr(store_module.sys, "platform", platform)
+    monkeypatch.setattr(store_module, "_windows_extended_path", observe_root)
+    store = DevelopmentArtifactStore(supplied)
+
+    assert store.root == supplied.resolve()
+    assert resolved_roots == ([str(store.root)] if platform == "win32" else [])
+
+
+@pytest.mark.parametrize("damage", ["tampered", "missing", "untracked"])
+def test_long_unicode_store_reopens_without_changing_identity_and_fails_closed(
+    tmp_path: Path, damage: str,
+) -> None:
+    plan, freeze, registry, short_store, run_id = _completed_store(tmp_path)
+    short_terminal = short_store.load_terminal(run_id)
+    short_audit = audit_development_pilot(
+        plan, freeze, registry, short_store, run_id  # type: ignore[arg-type]
+    )
+    root = tmp_path / "store with spaces café" / ("nested-" + "a" * 60)
+    store = DevelopmentArtifactStore(root)
+    terminal = run_development_pilot(plan, freeze, registry, store)  # type: ignore[arg-type]
+    manifest = store.load_manifest(run_id)
+    digest = manifest.object_sha256s[0]
+    target = store.runs_root / run_id / "objects" / "sha256" / digest[:2] / digest[2:]
+    assert len(str(target)) > 260
+    assert terminal == short_terminal
+    assert audit_development_pilot(
+        plan, freeze, registry, store, run_id  # type: ignore[arg-type]
+    ) == short_audit
+
+    reopened = DevelopmentArtifactStore(root)
+    assert run_development_pilot(
+        plan, freeze, registry, reopened  # type: ignore[arg-type]
+    ) == terminal
+    assert reopened.list_runs() == (run_id,)
+    assert tuple(reopened.failures_root.iterdir()) == ()
+
+    if damage == "tampered":
+        target.write_bytes(b"tampered\n")
+    elif damage == "missing":
+        target.unlink()
+    else:
+        (reopened.runs_root / run_id / "ambient.txt").write_bytes(b"untracked\n")
+    with pytest.raises(DevelopmentPilotAuditError, match="failed closed"):
+        audit_development_pilot(
+            plan, freeze, registry, reopened, run_id  # type: ignore[arg-type]
+        )
+    with pytest.raises(DevelopmentPilotError):
+        DevelopmentArtifactStore(root)
 
 
 def test_tracked_plan_executes_exact_complete_variant_matrix(tmp_path: Path) -> None:

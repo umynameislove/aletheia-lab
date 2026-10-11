@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import shutil
+import sys
 import tempfile
 from pathlib import Path
 
@@ -45,6 +46,10 @@ class DevelopmentArtifactStore:
         if supplied.is_symlink() or not supplied.is_dir():
             raise DevelopmentPilotError("development store root must be a real directory")
         self.root = supplied.resolve()
+        if sys.platform == "win32":
+            # Publication lengthens object paths by replacing the short stage
+            # name with the full run digest. Keep those reads outside MAX_PATH.
+            self.root = Path(_windows_extended_path(str(self.root)))
         self.runs_root = self.root / "runs"
         self.failures_root = self.root / "failures"
         for directory in (self.runs_root, self.failures_root):
@@ -264,6 +269,15 @@ def load_run_response(
     digest: str,
 ) -> DevelopmentVariantResponse:
     return DevelopmentVariantResponse.model_validate_json(store.read_object(run_id, digest))
+
+
+def _windows_extended_path(resolved: str) -> str:
+    """Use the extended namespace for an already resolved Windows store root."""
+    if resolved.startswith(("\\\\?\\", "\\\\.\\")):
+        return resolved
+    if resolved.startswith("\\\\"):
+        return "\\\\?\\UNC\\" + resolved[2:]
+    return "\\\\?\\" + resolved
 
 
 def _canonical_model_bytes(model: BaseModel) -> bytes:
