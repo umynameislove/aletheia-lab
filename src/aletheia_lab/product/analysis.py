@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from collections.abc import Mapping
 from decimal import Decimal
 from pathlib import Path
@@ -17,6 +18,7 @@ from aletheia_lab.product.evidence import (
 from aletheia_lab.product.evidence_store import load_diagnosis_evidence_projection
 from aletheia_lab.product.lifecycle import ProductLifecycleStore
 from aletheia_lab.product.mapping import adverse_metric_change_ids, load_stored_mapping
+from aletheia_lab.product.observations import analyze_product_observation
 from aletheia_lab.product.projection import build_product_graph_projection
 from aletheia_lab.product.questions import checked_product_question
 from aletheia_lab.product.results import persist_product_result
@@ -78,6 +80,18 @@ def analyze_product_mock(
     """Create and persist one deterministic result without network or hidden evidence."""
 
     checked_question = checked_product_question(question)
+    with ProductLifecycleStore(store_root) as lifecycle:
+        state = lifecycle.get_project_state_for_snapshot(project_id, snapshot_id)
+    state_payload = state.payload()
+    if state_payload.get("status") == "confirmed" or (
+        state_payload.get("status") == "refreshed"
+        and all(
+            state_payload.get(field) is None
+            for field in ("event_id", "evidence_bundle_id", "lineage_graph_id")
+        )
+        and state_payload.get("adverse_metric_change_ids") == []
+    ):
+        return analyze_product_observation(store_root, project_id, snapshot_id, checked_question)
     projection = load_diagnosis_evidence_projection(
         store_root,
         project_id=project_id,
@@ -208,9 +222,14 @@ def analyze_product_mock(
             result_scope_id=turn_id,
         ).graph.model_dump(mode="json"),
     }
-    view = ProductView.model_validate_json(
-        json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
-    )
+    try:
+        view = ProductView.model_validate_json(
+            json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
+        )
+    except (TypeError, ValueError):
+        raise ProductError(
+            "result_invalid", "The product result could not be built safely."
+        ) from None
     return persist_product_result(store_root, view)
 
 
@@ -404,7 +423,14 @@ def _product_metric_observation(
 def _metric_delta(change: ProjectMetricChange) -> float:
     if change.before is None or change.after is None:
         raise ProductError("store_integrity_error", _SOURCE_INTEGRITY_MESSAGE)
-    return float(Decimal(str(change.after.metric_value)) - Decimal(str(change.before.metric_value)))
+    delta = float(
+        Decimal(str(change.after.metric_value)) - Decimal(str(change.before.metric_value))
+    )
+    if not math.isfinite(delta):
+        raise ProductError(
+            "result_invalid", "The product result could not be built safely."
+        ) from None
+    return delta
 
 
 def _json_number(value: float) -> float:
