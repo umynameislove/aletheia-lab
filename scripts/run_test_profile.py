@@ -37,6 +37,7 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_diagnosis_development_architecture.py",
         "tests/unit/test_maintainability_contract.py",
         "tests/unit/test_test_runtime_contract.py",
+        "tests/unit/test_evaluation_profile_sharding.py",
         "tests/unit/test_ci_quality_contract.py",
         "tests/unit/test_security_ci_contract.py",
         "--durations=20",
@@ -288,8 +289,37 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
 }
 
 
-def profile_command(profile: str, extra: tuple[str, ...] = ()) -> tuple[str, ...]:
+def profile_command(
+    profile: str,
+    extra: tuple[str, ...] = (),
+    *,
+    shard_index: int = 0,
+    shard_count: int = 1,
+) -> tuple[str, ...]:
     """Build the interpreter-stable command for a named test profile."""
+
+    if (
+        type(shard_count) is not int
+        or type(shard_index) is not int
+        or not 1 <= shard_count <= 4
+        or not 0 <= shard_index < shard_count
+    ):
+        raise ValueError("invalid bounded profile shard")
+    arguments = _PROFILE_ARGS[profile]
+    if shard_count > 1:
+        if profile != "evaluation":
+            raise ValueError("only the evaluation profile supports sharding")
+        paths = tuple(argument for argument in arguments if argument.startswith("tests/"))
+        if len(paths) != len(set(paths)):
+            raise ValueError("evaluation profile contains duplicate test modules")
+        selected = set(paths[shard_index::shard_count])
+        if not selected:
+            raise ValueError("evaluation shard must not be empty")
+        arguments = tuple(
+            argument
+            for argument in arguments
+            if not argument.startswith("tests/") or argument in selected
+        )
 
     # Keep module-scoped fixtures together and bound concurrency on CI runners.
     # Every selected test still runs exactly once, including under coverage.
@@ -304,7 +334,7 @@ def profile_command(profile: str, extra: tuple[str, ...] = ()) -> tuple[str, ...
         sys.executable,
         "-m",
         "pytest",
-        *_PROFILE_ARGS[profile],
+        *arguments,
         *workers,
         *extra,
     )
@@ -365,10 +395,12 @@ def run_profile(
     extra: tuple[str, ...] = (),
     *,
     repeat: int = 1,
+    shard_index: int = 0,
+    shard_count: int = 1,
 ) -> int:
     """Run a profile, enforcing the evaluation budget and repeat seeds."""
 
-    command = profile_command(profile, extra)
+    command = profile_command(profile, extra, shard_index=shard_index, shard_count=shard_count)
     timeout = _evaluation_timeout_seconds() if profile == "evaluation" else None
     for run_index in range(repeat):
         environment = None
@@ -424,6 +456,8 @@ def _parser() -> argparse.ArgumentParser:
         default=1,
         help="repeat the evaluation profile with distinct process hash seeds",
     )
+    parser.add_argument("--shard-index", type=int, default=0)
+    parser.add_argument("--shard-count", type=_positive_int, default=1)
     return parser
 
 
@@ -436,14 +470,26 @@ def main() -> int:
     else:
         profile_args = raw
         extra = ()
-    args = _parser().parse_args(profile_args)
-    command = profile_command(args.profile, extra)
+    parser = _parser()
+    args = parser.parse_args(profile_args)
     if args.repeat != 1 and args.profile != "evaluation":
-        _parser().error("--repeat is supported only by the evaluation profile")
+        parser.error("--repeat is supported only by the evaluation profile")
+    try:
+        command = profile_command(
+            args.profile, extra, shard_index=args.shard_index, shard_count=args.shard_count
+        )
+    except ValueError as exc:
+        parser.error(str(exc))
     if args.show_command:
         print(json.dumps(command, ensure_ascii=True, separators=(",", ":")))
         return 0
-    return run_profile(args.profile, extra, repeat=args.repeat)
+    return run_profile(
+        args.profile,
+        extra,
+        repeat=args.repeat,
+        shard_index=args.shard_index,
+        shard_count=args.shard_count,
+    )
 
 
 if __name__ == "__main__":

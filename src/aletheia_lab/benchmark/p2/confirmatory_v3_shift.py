@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping, Sequence
-from typing import Annotated, Final, Literal, NoReturn
+from typing import Annotated, Final, Literal, NoReturn, cast
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -381,7 +381,7 @@ def _rank_rows(record_ids: Sequence[str], *, seed: int, label: int, role: str) -
 
 def _rbf(x: np.ndarray, y: np.ndarray, bandwidth_squared: float) -> np.ndarray:
     squared = np.sum((x - y) ** 2, axis=1)
-    return np.exp(-squared / (2.0 * bandwidth_squared))
+    return cast(np.ndarray, np.exp(-squared / (2.0 * bandwidth_squared)))
 
 
 def _linear_mmd_statistic(x: np.ndarray, y: np.ndarray, bandwidth_squared: float) -> float:
