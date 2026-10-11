@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+from time import perf_counter_ns
 
 import pytest
 
-from aletheia_lab.evaluation.audit_stage_journal import StageJournal, read_progress, token_progress
+from aletheia_lab.evaluation.audit_stage_journal import (
+    StageJournal,
+    read_progress,
+    roster,
+    token_progress,
+)
 from aletheia_lab.evaluation.model_load_retention import encode
 from aletheia_lab.evaluation.request_model_audit import digest
 
@@ -92,3 +99,57 @@ def test_error_is_not_a_completed_worker(tmp_path):
     assert read_progress(path, config(), interrupted=True)["records"][-1]["event"] == "error"
     with pytest.raises(ValueError, match="disposition"):
         read_progress(path, config(), interrupted=False)
+
+
+@pytest.mark.parametrize("count", [True, 1.0, 0, -1, 65])
+def test_planned_roster_is_bounded_integer_census(count):
+    with pytest.raises(ValueError, match="bounded nonempty"):
+        roster({"count": count})
+    assert roster({"count": 64})[-1] == "call-063"
+
+
+def test_empty_progress_is_not_completed(tmp_path):
+    path = tmp_path / "empty.jsonl"
+    path.write_bytes(b"")
+    assert read_progress(path, config(), interrupted=True)["records"] == []
+    with pytest.raises(ValueError, match="empty completed"):
+        read_progress(path, config(), interrupted=False)
+
+
+def test_owned_symlink_boundaries_fail_closed(tmp_path):
+    path = tmp_path / "empty.jsonl"
+    path.write_bytes(b"")
+    link = tmp_path / "linked.jsonl"
+    try:
+        link.symlink_to(path)
+    except OSError:
+        pytest.skip("host does not permit creating the symlink capability fixture")
+    with pytest.raises(ValueError, match="owned journal"):
+        StageJournal(link, config())
+    with pytest.raises(ValueError, match="owned journal"):
+        read_progress(link, config(), interrupted=True)
+
+
+def test_real_stage_writer_returns_a_hash_linked_owned_prefix(tmp_path):
+    path = tmp_path / "progress.jsonl"
+    writer = StageJournal(path, config())
+    try:
+        writer.origin = perf_counter_ns()
+        writer.append("setup", "start", None, {})
+        writer.append("setup", "complete", None, {"duration_ns": 0})
+    finally:
+        writer.close()
+    encoded = [json.loads(line) for line in path.read_bytes().splitlines()]
+    previous = "0" * 64
+    for index, record in enumerate(encoded):
+        checksum = record.pop("sha256")
+        raw = json.dumps(record, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        assert record["seq"] == index
+        assert record["previous"] == previous
+        assert checksum == hashlib.sha256(raw).hexdigest()
+        previous = checksum
+    observed = read_progress(path, config(), interrupted=True)
+    assert len(observed["records"]) == 3
+    assert token_progress(observed["records"], config())[0]["stages"]["reserve"]["status"] == (
+        "not_started"
+    )
