@@ -155,6 +155,12 @@ this filtered projection rather than fabricating evidence.
 
 ## Immutable ProductView and deterministic analysis
 
+The [current product handoff checks](product-handoff-acceptance.md) distinguish
+byte-pinned demo compatibility, selected backend source semantics and saved
+projection/export consistency. They retain the historical research acceptance
+contract separately; local backend checks do not accept an HTTP/dashboard
+consumer that has not run.
+
 The strict `p6-product-view/v1` DTO is used by `demo_view`,
 `analyze_mock`, and `view`. The shared fixture is
 `tests/fixtures/synthetic_p6_view.json`, with SHA-256

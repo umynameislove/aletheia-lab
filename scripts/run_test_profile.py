@@ -179,6 +179,8 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_model_load_contract.py",
         "tests/unit/test_model_load_research_acceptance.py",
         "tests/unit/test_model_load_handoff_acceptance.py",
+        "tests/unit/test_product_handoff_acceptance.py",
+        "tests/integration/test_product_handoff_local.py",
         "tests/integration/test_model_load_research_acceptance_local.py",
         "tests/unit/test_model_load_application_capture.py",
         "tests/unit/test_model_load_application_analysis.py",
