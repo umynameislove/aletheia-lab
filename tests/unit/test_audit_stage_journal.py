@@ -66,9 +66,21 @@ def test_even_rehashed_interior_damage_is_rejected(tmp_path, field, value):
     record.pop("sha256")
     record[field] = value
     lines[1] = encode({**record, "sha256": digest(record)})
-    path.write_text("\n".join(lines) + "\n")
+    path.write_bytes(("\n".join(lines) + "\n").encode("utf-8"))
     with pytest.raises(ValueError, match="prefix"):
         read_progress(path, config(), interrupted=True)
+
+
+@pytest.mark.parametrize("interrupted", [False, True])
+def test_crlf_translation_is_not_a_canonical_journal(tmp_path, interrupted):
+    path = tmp_path / "progress.jsonl"
+    prefix(path)
+    raw = path.read_bytes()
+    assert b"\r\n" not in raw
+    assert len(read_progress(path, config(), interrupted=True)["records"]) == 4
+    path.write_bytes(raw.replace(b"\n", b"\r\n"))
+    with pytest.raises(ValueError, match="journal prefix identity/encoding differs"):
+        read_progress(path, config(), interrupted=interrupted)
 
 
 def test_parent_config_is_authoritative_and_missing_file_is_not_success(tmp_path):
