@@ -33,6 +33,7 @@ from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import (
     transform_features,
 )
 from aletheia_lab.benchmark.p2.confirmatory_v3_shift import (
+    _rbf,
     adjust_probabilities_for_prior,
     classwise_mmd_diagnostic,
     estimate_label_shift,
@@ -398,6 +399,40 @@ def test_oracle_prior_adjustment_and_reference_score_are_well_defined() -> None:
         probabilities=(0.2, 0.3, 0.2, 0.3, 0.7, 0.8),
     )
     assert base == pytest.approx(duplicated)
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64, np.int64])
+def test_rbf_return_annotation_preserves_dtype_shape_and_exact_bytes(dtype) -> None:
+    x = np.arange(24, dtype=dtype).reshape(4, 6)[:, ::2]
+    y = np.asarray((1, 3, 5), dtype=dtype)
+    bandwidth_squared = 0.75
+    expected = np.exp(-np.sum((x - y) ** 2, axis=1) / (2.0 * bandwidth_squared))
+
+    actual = _rbf(x, y, bandwidth_squared)
+
+    assert type(actual) is np.ndarray
+    assert actual.shape == expected.shape
+    assert actual.dtype == expected.dtype
+    assert actual.tobytes() == expected.tobytes()
+
+
+def test_rbf_returns_the_original_ufunc_array_without_conversion(monkeypatch) -> None:
+    returned = np.asarray((0.5, 0.25), dtype=np.float32)
+    returned.setflags(write=False)
+    arguments = []
+
+    def capture_exp(argument):
+        arguments.append(argument)
+        return returned
+
+    monkeypatch.setattr(np, "exp", capture_exp)
+    x = np.asarray(((1.0, 2.0), (3.0, 4.0)))
+    y = np.asarray(((0.0, 0.0), (0.0, 0.0)))
+
+    assert _rbf(x, y, 2.0) is returned
+    assert len(arguments) == 1
+    np.testing.assert_array_equal(arguments[0], (-1.25, -6.25))
+    assert returned.flags.writeable is False
 
 
 def test_classwise_mmd_is_deterministic_and_holm_family_is_complete() -> None:

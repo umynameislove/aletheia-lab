@@ -381,7 +381,8 @@ def _rank_rows(record_ids: Sequence[str], *, seed: int, label: int, role: str) -
 
 def _rbf(x: np.ndarray, y: np.ndarray, bandwidth_squared: float) -> np.ndarray:
     squared = np.sum((x - y) ** 2, axis=1)
-    return np.exp(-squared / (2.0 * bandwidth_squared))
+    result: np.ndarray = np.exp(-squared / (2.0 * bandwidth_squared))
+    return result
 
 
 def _linear_mmd_statistic(x: np.ndarray, y: np.ndarray, bandwidth_squared: float) -> float:
