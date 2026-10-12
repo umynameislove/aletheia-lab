@@ -127,6 +127,6 @@ def test_resealed_terminal_timer_reduction_is_rejected(tmp_path):
         record["previous"] = previous
         previous = digest(record)
         lines.append(encode({**record, "sha256": previous}))
-    path.write_text("\n".join(lines) + "\n")
+    path.write_bytes(("\n".join(lines) + "\n").encode("utf-8"))
     with pytest.raises(ValueError, match="timers differ"):
         rebuild(directory, specification, interrupted=False)

@@ -602,7 +602,7 @@ def database_bindings(directory: Path) -> dict[str, str]:
     for path in sorted(directory.rglob("*.sqlite")):
         if path.is_symlink():
             raise ValueError("owned study database must not be a symlink")
-        result[str(path.relative_to(directory))] = file_sha256(path)
+        result[path.relative_to(directory).as_posix()] = file_sha256(path)
     return result
 
 

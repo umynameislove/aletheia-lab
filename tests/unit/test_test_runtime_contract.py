@@ -484,3 +484,5 @@ def test_publication_profile_resolves_the_shared_core_and_all_immutable_stores()
     assert "tests/unit/test_evaluation_attempt_store.py" in command
     assert "tests/unit/test_diagnosis_development_runner.py" in command
     assert "tests/unit/test_project_persistence.py" in command
+    assert "tests/unit/test_claim_support_corpus_materialization.py" in command
+    assert "tests/unit/test_terminal_preservation_contracts.py" in command

@@ -12,13 +12,14 @@ import importlib
 import io
 import json
 import logging
+import tempfile
 from functools import partial
 from pathlib import Path
 from typing import Any
 
 from aletheia_lab.content_hashing import file_sha256
 from aletheia_lab.evaluation.warrant_development_io import _private_dir, _write
-from aletheia_lab.filesystem import publish_immutable_file
+from aletheia_lab.filesystem import publish_immutable_file, windows_io_path
 from aletheia_lab.project.identity import content_sha256
 
 CONTROLS = (
@@ -136,12 +137,31 @@ def _one_load(
 def generate_source(output: Path) -> dict[str, Any]:
     """Create every fixed control; any native failure blocks the whole plan.
 
-    The working directory must be the new private output. Relative cache paths
-    keep native text shareable without paraphrasing the messages.
+    The caller's working directory must be the new private output. Joblib runs
+    in a short owned temporary directory because its relative cache paths and
+    UUID-suffixed staging names can exceed Windows MAX_PATH. Native messages
+    remain unmodified; only the generated snapshots are retained in output.
     """
-    directory = _private_dir(output)
-    if Path.cwd().resolve() != directory.resolve() or (directory / "source.json").exists():
+    directory = windows_io_path(_private_dir(output).resolve())
+    if windows_io_path(Path.cwd().resolve()) != directory or (directory / "source.json").exists():
         raise ValueError("source requires a fresh private subprocess working directory")
+    with (
+        tempfile.TemporaryDirectory(prefix="nc-", dir=Path(tempfile.gettempdir()).resolve()) as cache,
+        contextlib.chdir(_private_dir(Path(cache))),
+    ):
+        cases = _generate_cases(directory)
+    result = {
+        "schema_version": "native-cache-source/v1",
+        "producer": producer_identity(),
+        "source_cluster_count": 1,
+        "source_type": "controlled_native_producer_with_synthetic_values",
+        "cases": cases,
+    }
+    _write(directory / "source.json", result)
+    return result
+
+
+def _generate_cases(directory: Path) -> list[dict[str, Any]]:
     memory = joblib.Memory("cache", verbose=0, mmap_mode=None)
     # Import by its package name even under ``python -m``. Joblib otherwise
     # embeds the __main__ source filename in the native cache path.
@@ -187,15 +207,7 @@ def generate_source(output: Path) -> dict[str, Any]:
                 }
             )
         cached._verbose = 0
-    result = {
-        "schema_version": "native-cache-source/v1",
-        "producer": producer_identity(),
-        "source_cluster_count": 1,
-        "source_type": "controlled_native_producer_with_synthetic_values",
-        "cases": cases,
-    }
-    _write(directory / "source.json", result)
-    return result
+    return cases
 
 
 def main() -> None:

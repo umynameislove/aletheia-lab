@@ -38,6 +38,14 @@ python scripts/run_test_profile.py evaluation
   short staging directory can become a full-digest run without making its
   objects inaccessible under the legacy path limit. Deep Unicode-path tests
   retain identity, replay, and fail-closed integrity checks.
+  Attempt shards, claim-corpus readers and terminal preservation use the same
+  extended I/O namespace without shortening content addresses or resolving
+  symlink aliases. The native Joblib source generator uses a short owned
+  temporary workspace for relative cache writes and their UUID-suffixed stages;
+  retained snapshots and native messages keep their exact bytes.
+  Active readiness bindings track implementation corrections, not new outcomes.
+  Historical source-cohort replay reads inputs from its recorded Git commits;
+  original authorization, terminal bytes and failure closeout remain unchanged.
 
 Additional pytest arguments may follow `--`, for example:
 

@@ -30,6 +30,10 @@ from aletheia_lab.evaluation.claim_support_v3_cohort_execution import (
     V3DeterministicB0Adapter,
     prepare_source_requests,
 )
+from aletheia_lab.evaluation.claim_support_v3_cohort_failure import (
+    FAILED_PROTOCOL_SHA256,
+    verify_failure_closeout,
+)
 from aletheia_lab.evaluation.claim_validation_v3_design import (
     build_design,
     source_payload,
@@ -97,9 +101,10 @@ def prepared(plan: dict[str, object], authorization: dict[str, object]):
     return prepare_source_requests(ROOT, plan, authorization)
 
 
-def test_qualification_protocol_hash_is_unchanged_by_separate_cohort_modules():
+def test_qualification_bindings_exclude_cohort_modules_and_keep_failure_identity():
     protocol = verify_protocol(ROOT)
-    assert protocol["protocol_sha256"] == (
+    # Active implementation bindings may change; the consumed attempt may not.
+    assert verify_failure_closeout(ROOT)["protocol_sha256"] == FAILED_PROTOCOL_SHA256 == (
         "26ee09f82c92a6a822e296827bcb3946eb01b0889171ca080dcea5389ab2b141"
     )
     assert not any(

@@ -345,7 +345,8 @@ def test_materializer_rejects_missing_evidence_and_unactivated_reserve() -> None
         )
 
 
-def test_store_replay_and_independent_audit_are_idempotent(tmp_path: Path) -> None:
+@pytest.mark.parametrize("deep", [False, True])
+def test_store_replay_and_independent_audit_are_idempotent(tmp_path: Path, deep: bool) -> None:
     request = _request()
     output = _output()
     binding = _binding(request)
@@ -355,7 +356,8 @@ def test_store_replay_and_independent_audit_are_idempotent(tmp_path: Path) -> No
         binding,
         {"claim-1": _assignment(request, output, binding)},
     )[0]
-    store = ClaimCorpusArtifactStore(tmp_path)
+    root = tmp_path / ("café-" * 10) / ("owned-" * 10) if deep else tmp_path
+    store = ClaimCorpusArtifactStore(root)
     kwargs = {
         "protocol_sha256": "3" * 64,
         "census_sha256": "4" * 64,
@@ -365,12 +367,15 @@ def test_store_replay_and_independent_audit_are_idempotent(tmp_path: Path) -> No
 
     first = store.publish(**kwargs)  # type: ignore[arg-type]
     second = store.publish(**kwargs)  # type: ignore[arg-type]
-    audit = audit_claim_corpus_run(tmp_path, first.run_id)
+    audit = audit_claim_corpus_run(root, first.run_id)
 
     assert first == second
     assert audit.ready
     assert audit.entry_count == 1
     assert not audit.writer_state_trusted
+    if deep:
+        assert len(str(next((store.runs_root / first.run_id / "objects").rglob("*.json")))) > 260
+        assert ClaimCorpusArtifactStore(root).verify_run(first.run_id) == first
 
 
 def test_independent_audit_detects_missing_and_untracked_objects(tmp_path: Path) -> None:
@@ -390,7 +395,7 @@ def test_independent_audit_detects_missing_and_untracked_objects(tmp_path: Path)
         entries=(entry,),
         provider_calls_recorded=1,
     )
-    run_root = tmp_path / "runs" / receipt.run_id
+    run_root = store.runs_root / receipt.run_id
     object_path = next((run_root / "objects").rglob("*.json"))
     object_path.unlink()
     (run_root / "writer-success.txt").write_text("untrusted", encoding="utf-8")

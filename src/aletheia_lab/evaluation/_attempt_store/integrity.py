@@ -7,6 +7,7 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
+from aletheia_lab.filesystem import windows_io_path
 from aletheia_lab.project.identity import content_sha256
 
 from .contracts import (
@@ -37,8 +38,8 @@ class AttemptStoreIntegrityVerifier(AttemptStoreReader):
             request_root=request_root,
             terminal_root=terminal_root,
         )
-        self.root = root
-        self.failure_root = failure_root
+        self.root = windows_io_path(root)
+        self.failure_root = windows_io_path(failure_root)
 
     def store_sha256(self) -> str:
         self.verify_integrity()

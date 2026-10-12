@@ -266,6 +266,19 @@ def test_resealed_report_cannot_hide_analysis_database_or_binding_change(
         study.verify(ROOT, directory, "development")
 
 
+def test_database_bindings_canonicalize_windows_relative_names(monkeypatch):
+    from pathlib import PureWindowsPath
+    from types import SimpleNamespace
+
+    path = SimpleNamespace(
+        is_symlink=lambda: False,
+        relative_to=lambda _: PureWindowsPath("nested\\owned.sqlite"),
+    )
+    directory = SimpleNamespace(rglob=lambda _: [path])
+    monkeypatch.setattr(study, "file_sha256", lambda _: "a" * 64)
+    assert study.database_bindings(directory) == {"nested/owned.sqlite": "a" * 64}
+
+
 def test_database_binding_rejects_alias_and_sealed_reader_rejects_symlink(tmp_path):
     directory = tmp_path / "nested"
     directory.mkdir()

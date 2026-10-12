@@ -38,9 +38,10 @@ def test_historical_v7_candidate_fails_closed_on_post_result_analysis_change() -
     assert report["execution_authorized"] is False
     assert report["blocker_codes"] == []
     failed = [finding for finding in report["findings"] if finding["status"] != "pass"]
-    # The provenance optional extra changed packaging after this historical
-    # freeze. Keep the old manifest intact and require that drift to fail too.
+    # Packaging and the portable-test binding changed after this historical
+    # freeze. Keep its manifest intact and require every such drift to fail.
     changed_paths = (
+        "configs/evaluation/diagnosis_qwen38_calibration_technical_correction.json",
         "pyproject.toml",
         "src/aletheia_lab/evaluation/diagnosis_main_analysis.py",
         "tests/unit/test_diagnosis_main_freeze_candidate.py",

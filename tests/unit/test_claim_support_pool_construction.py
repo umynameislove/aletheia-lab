@@ -45,6 +45,7 @@ from aletheia_lab.evaluation.execution_contracts import (
     canonical_execution_json,
     canonical_execution_sha256,
 )
+from aletheia_lab.filesystem import windows_io_path
 from aletheia_lab.model_gateway import (
     ClaimRelationProviderContext,
     ProviderCall,
@@ -729,7 +730,7 @@ def test_closeout_fails_when_a_published_object_is_tampered(
         relation_results=bundle,
         store_root=tmp_path / "pool",
     )
-    run_root = tmp_path / "pool" / "runs" / publication.corpus_store_receipt.run_id
+    run_root = windows_io_path(tmp_path / "pool") / "runs" / publication.corpus_store_receipt.run_id
     object_path = next((run_root / "objects" / "sha256").rglob("*.json"))
     object_path.write_bytes(object_path.read_bytes() + b" ")
 

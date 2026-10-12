@@ -282,6 +282,8 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_project_persistence.py",
         "tests/unit/test_evaluation_attempt_store.py",
         "tests/unit/test_diagnosis_development_runner.py",
+        "tests/unit/test_claim_support_corpus_materialization.py",
+        "tests/unit/test_terminal_preservation_contracts.py",
         "--durations=20",
     ),
     "full": (

@@ -26,7 +26,7 @@ from aletheia_lab.benchmark.p2.p2r_closeout import (
     load_and_verify_terminal_store,
 )
 from aletheia_lab.benchmark.p2.p2r_v1_2_execution import P2RV12Registration
-from aletheia_lab.filesystem import publish_staged_directory
+from aletheia_lab.filesystem import publish_staged_directory, windows_io_path
 
 PUBLICATION_SUMMARY_SCHEMA_VERSION: Final[Literal["p2r-v1-2-publication-summary/1"]] = (
     "p2r-v1-2-publication-summary/1"
@@ -420,7 +420,7 @@ def verify_p2r_v1_2_publication_summary(
 
 
 def preservation_destination(preservation_root: str | Path) -> Path:
-    return Path(preservation_root) / STUDY_ID / _CONTENT_ADDRESS
+    return windows_io_path(Path(preservation_root)) / STUDY_ID / _CONTENT_ADDRESS
 
 
 def _json_bytes(model: BaseModel) -> bytes:
@@ -464,7 +464,7 @@ def _require_read_only_tree(root: Path) -> None:
 
 
 def verify_preserved_p2r_v1_2(path: str | Path) -> P2RV12PreservationReceipt:
-    root = Path(path)
+    root = windows_io_path(Path(path))
     if root.is_symlink() or not root.is_dir():
         _fail("P2R v1.2 preservation directory is unavailable")
     try:
@@ -502,7 +502,7 @@ def preserve_p2r_v1_2_evidence(
 
     base = Path(root).resolve()
     source = Path(terminal_store_path)
-    store = source if source.is_absolute() else base / source
+    store = windows_io_path(source if source.is_absolute() else base / source)
     archive = Path(preservation_root)
     archive_root = archive if archive.is_absolute() else base / archive
     destination = preservation_destination(archive_root)

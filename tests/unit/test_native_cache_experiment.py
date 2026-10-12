@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import importlib
 import json
+import os
 import re
 import runpy
 import shutil
@@ -18,6 +20,7 @@ from aletheia_lab.evaluation import warrant_development_live
 from aletheia_lab.evaluation.native_cache_extraction import parser_facts
 from aletheia_lab.evaluation.warrant_development import DevelopmentCall
 from aletheia_lab.evaluation.warrant_development_io import MAX_CALL_USD
+from aletheia_lab.filesystem import windows_io_path
 from aletheia_lab.project.identity import content_sha256
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -292,3 +295,57 @@ def test_direct_native_generation_preserves_process_state(tmp_path, monkeypatch)
     assert result["cases"][1]["consumer_observation"]["returned"] == [3, 2, 1]
     with pytest.raises(ValueError, match="fresh private"):
         source.generate_source(tmp_path)
+
+
+def test_deep_output_uses_short_owned_cache_and_preserves_native_buffers(tmp_path, monkeypatch):
+    output = windows_io_path(tmp_path / ("café-" * 10) / ("owned-" * 10) / ("deep-" * 10))
+    output.mkdir(parents=True)
+    monkeypatch.chdir(output)
+    caller_cwd = Path.cwd()
+    backends = importlib.import_module("joblib._store_backends")
+    original = backends.FileSystemStoreBackend._open_item
+    opened, workspaces = [], set()
+
+    def bounded_open(path, mode):
+        # Joblib's UUID-suffixed temporary name, not just output.pkl, must fit.
+        absolute = os.path.abspath(path)
+        if len(absolute) >= 260:
+            raise FileNotFoundError("synthetic Windows cache path limit")
+        opened.append((absolute, mode))
+        workspaces.add(Path.cwd())
+        return original(path, mode)
+
+    monkeypatch.setattr(backends.FileSystemStoreBackend, "_open_item", staticmethod(bounded_open))
+    legacy = output / "legacy"
+    legacy.mkdir()
+    monkeypatch.chdir(legacy)
+    with pytest.raises(FileNotFoundError):
+        source._generate_cases(legacy)
+    opened.clear()
+    workspaces.clear()
+    monkeypatch.chdir(output)
+    result = source.generate_source(output)
+    assert Path.cwd() == caller_cwd
+    assert opened and any(".pkl." in name for name, _ in opened)
+    assert workspaces and all(not path.exists() for path in workspaces)
+    assert not (output / "cache").exists()
+    assert (output / "frozen-a.pkl").read_bytes() != (output / "frozen-b.pkl").read_bytes()
+    assert len(result["cases"]) == 5
+    for case in result["cases"]:
+        for document in case["documents"]:
+            assert document["sha256"] == content_sha256(document["text"].encode("utf-8"))
+            assert str(output) not in document["text"]
+
+
+def test_cache_failure_restores_working_directory_and_does_not_publish_source(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    def fail(_directory):
+        assert Path.cwd() != tmp_path
+        raise OSError("owned native cache failure")
+
+    monkeypatch.setattr(source, "_generate_cases", fail)
+    with pytest.raises(OSError, match="owned native cache failure"):
+        source.generate_source(tmp_path)
+    assert Path.cwd() == tmp_path
+    assert not (tmp_path / "source.json").exists()

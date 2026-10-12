@@ -263,6 +263,19 @@ def test_raw_digest_and_creation_commit_are_verified(
         validation.preflight(checkout, path)
 
 
+def test_git_checkout_identity_decodes_unicode_as_utf8(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    identity = str(tmp_path / "Trung Kiên")
+
+    def git(*args, **kwargs):
+        assert kwargs["encoding"] == "utf-8"
+        return SimpleNamespace(returncode=0, stdout=identity + "\n")
+
+    monkeypatch.setattr(validation.subprocess, "run", git)
+    assert validation._git(tmp_path, "rev-parse", "--show-toplevel") == identity
+
+
 def test_guard_baseline_and_failure_contracts_are_not_checker_win_labels() -> None:
     protocol = validation.load_protocol(ROOT)
     assert "atomic_root_attempt_bound_one_invocation_token" in protocol["comparators"]["prevention"]

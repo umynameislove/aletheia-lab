@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Literal
 
 from aletheia_lab.evaluation.execution_contracts import AttemptIdentity, canonical_execution_sha256
+from aletheia_lab.filesystem import windows_io_path
 from aletheia_lab.model_gateway.contracts import (
     AttemptRecord,
     GatewayExecutionResult,
@@ -44,13 +45,13 @@ class ImmutableAttemptStore:
     """File-backed immutable ledger with independently verified terminal state."""
 
     def __init__(self, root: str | Path, *, clock: StoreClock) -> None:
-        supplied = Path(root)
+        supplied = windows_io_path(Path(root))
         supplied.mkdir(parents=True, exist_ok=True)
         if supplied.is_symlink() or not supplied.is_dir():
             raise AttemptStoreIntegrityError(
                 "integrity_error", "store root must be a real directory"
             )
-        self.root = supplied.resolve()
+        self.root = windows_io_path(supplied.resolve())
         self.clock = clock
         self.object_root = self.root / "objects" / "sha256"
         self.request_root = self.root / "requests"

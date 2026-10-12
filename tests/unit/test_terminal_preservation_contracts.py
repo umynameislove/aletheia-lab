@@ -15,6 +15,7 @@ from pydantic import ValidationError
 
 from aletheia_lab.benchmark.p2 import p2r_v1_2_results as results
 from aletheia_lab.benchmark.p2.confirmatory_v3_runtime import V3RuntimeError
+from aletheia_lab.filesystem import windows_io_path
 
 
 def digest(path):
@@ -55,9 +56,13 @@ def preserve(tmp_path, store):
     return results.preservation_destination(archive), receipt
 
 
+@pytest.mark.parametrize("deep", [False, True])
 def test_preservation_copies_owned_bytes_once_and_reconciles_receipt(
-    tmp_path, preservation_boundary
+    tmp_path, preservation_boundary, deep
 ):
+    if deep:
+        tmp_path = windows_io_path(tmp_path / ("café-" * 10) / ("owned-" * 10))
+        tmp_path.mkdir(parents=True)
     store = owned_store(tmp_path)
     before = {p.name: digest(p) for p in store.iterdir()}
     destination, receipt = preserve(tmp_path, store)
@@ -71,6 +76,8 @@ def test_preservation_copies_owned_bytes_once_and_reconciles_receipt(
     assert preserve(tmp_path, store) == (destination, receipt)
     assert len(preservation_boundary[1]) == 1
     assert len(receipt.canonical_sha256()) == 64
+    if deep:
+        assert len(str(destination / "result-store/manifest.json")) > 260
 
 
 @pytest.mark.parametrize("change", ["manifest", "bytes", "extra", "receipt", "writable"])

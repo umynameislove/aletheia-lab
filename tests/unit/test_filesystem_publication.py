@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -13,7 +14,41 @@ from aletheia_lab.filesystem import (
     ImmutablePublicationIntegrityError,
     publish_immutable_file,
     publish_staged_directory,
+    windows_io_path,
 )
+
+
+@pytest.mark.parametrize(
+    "absolute,expected",
+    [
+        ("C:\\store", "\\\\?\\C:\\store"),
+        ("D:\\a space\\café", "\\\\?\\D:\\a space\\café"),
+        ("\\\\server\\share\\store", "\\\\?\\UNC\\server\\share\\store"),
+        ("\\\\?\\C:\\store", "\\\\?\\C:\\store"),
+        ("\\\\?\\UNC\\server\\share\\store", "\\\\?\\UNC\\server\\share\\store"),
+    ],
+)
+def test_windows_io_namespace_uses_absolute_paths_without_resolving_links(
+    monkeypatch: pytest.MonkeyPatch, absolute: str, expected: str,
+) -> None:
+    supplied = Path("relative") / ".." / "store"
+    calls: list[Path] = []
+
+    def abspath(path: Path) -> str:
+        calls.append(path)
+        return absolute
+
+    monkeypatch.setattr(filesystem_module, "sys", SimpleNamespace(platform="win32"))
+    monkeypatch.setattr(filesystem_module.os.path, "abspath", abspath)
+    assert str(windows_io_path(supplied)) == expected
+    assert calls == [supplied]
+
+
+@pytest.mark.parametrize("platform", ["darwin", "linux"])
+def test_non_windows_io_paths_keep_the_supplied_spelling(monkeypatch, platform) -> None:
+    monkeypatch.setattr(filesystem_module, "sys", SimpleNamespace(platform=platform))
+    supplied = Path("relative") / ".." / "store"
+    assert windows_io_path(supplied) is supplied
 
 
 def test_immutable_file_publication_is_create_only_and_idempotent(tmp_path: Path) -> None:

@@ -366,13 +366,12 @@ def test_process_helpers_and_server_guards_are_portable(
     assert "--reasoning=off" in server_flags
     assert "--parallel=1" in server_flags
     assert "--presence-penalty=1.5" in server_flags
-    command = calibration.server_command(
-        Path("/tmp/llama-server"), Path("/tmp/model.gguf"), server_flags
-    )
+    binary, model = Path("/tmp/llama-server"), Path("/tmp/model.gguf")
+    command = calibration.server_command(binary, model, server_flags)
     assert command[:4] == [
-        "/tmp/llama-server",
+        str(binary),
         "--model",
-        "/tmp/model.gguf",
+        str(model),
         "--host",
     ]
     assert command[command.index("--reasoning") + 1] == "off"

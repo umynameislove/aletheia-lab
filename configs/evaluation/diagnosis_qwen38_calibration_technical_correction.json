@@ -81,7 +81,7 @@
     "src/aletheia_lab/evaluation/qwen_calibration_transport.py": "70b801cda8667fb22317df97ea7f4e6178f162c74ceb0066a2342c574bf3e189",
     "src/aletheia_lab/evaluation/qwen_local_calibration.py": "eef2063ec6c4541cb1e1a9f0662c68e2b8e20edef3a38a40f3dd9d5118e0eda6",
     "tests/unit/test_qwen_local_calibration.py": "c40f6f51065b83944fc2c1e03ce610c8e71a852f6b8e90b1bbd188ca33bc659e",
-    "tests/unit/test_qwen_local_calibration_portable.py": "545581d5f2e8c7d4d703cd45fea36e12aaf7b4c6d51ae88d00357e68a59d9599"
+    "tests/unit/test_qwen_local_calibration_portable.py": "da4c8e1c391415a2ed494c7e738588e2dda71fd9636db373e2033d3e5d6cc2ba"
   },
   "public_documentation": {
     "path": "docs/diagnosis-qwen38-calibration-transport-correction-2026-09-21.md",
@@ -95,5 +95,5 @@
     "another_failure_must_be_preserved_and_reviewed": true
   },
   "authorization_boundary": "This correction permits only the seven-call synthetic development calibration after merge and green CI. It does not authorize the 72-request Qwen sensitivity, main outcome opening, or any registered main attempt.",
-  "correction_sha256": "bc158c27f8881e1ad0995793adceaef52c6e7f7fbe3f6fc21c8a80e4de077ed4"
+  "correction_sha256": "4f37c9096f96772e3b6135440579ac6bf85216ef1954223d973d82fa13901438"
 }

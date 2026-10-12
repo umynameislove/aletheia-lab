@@ -2,28 +2,46 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from aletheia_lab.evaluation.claim_corpus_contracts import VisibleEvidenceRelation
+from aletheia_lab.evaluation.claim_corpus_contracts import (
+    ClaimCorpusRequestCensus,
+    VisibleEvidenceRelation,
+)
 from aletheia_lab.evaluation.claim_corpus_readiness import (
     build_family_inventory,
     build_request_census,
 )
 from aletheia_lab.evaluation.claim_support_instrument import classify_visible_support
+from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
 
 ROOT = Path(__file__).resolve().parents[2]
 PARENT_SHA = "b7381f9b4c855d87f21143f4fe7278c3c00cc15aa40e3e5b633fe1f79d6c5867"
 
 
+@pytest.fixture(scope="module")
+def request_census() -> ClaimCorpusRequestCensus:
+    inventory = build_family_inventory(ROOT, PARENT_SHA)
+    return build_request_census(inventory)
+
+
 @given(st.permutations(("A1", "A2", "A3", "B0", "B1", "B2", "CodeGraph", "FULL")))
 def test_request_census_identity_does_not_depend_on_external_variant_order(
-    unused_order: list[str],
+    request_census: ClaimCorpusRequestCensus, order: list[str],
 ) -> None:
-    del unused_order
-    inventory = build_family_inventory(ROOT, PARENT_SHA)
-
-    assert build_request_census(inventory) == build_request_census(inventory)
+    # Build the filesystem-backed frame once, then exercise each external order.
+    # This remains an identity property, not an I/O-speed benchmark.
+    payload = request_census.identity_payload()
+    for field in ("primary_requests", "reserve_requests"):
+        requests = getattr(request_census, field)
+        ranks = {request.request_sha256: index for index, request in enumerate(requests)}
+        external = [request for variant in order for request in requests if request.variant == variant]
+        canonical = sorted(external, key=lambda request: ranks[request.request_sha256])
+        assert tuple(canonical) == requests
+        payload[field] = tuple(request.model_dump(mode="json") for request in canonical)
+    assert canonical_execution_sha256(payload) == request_census.census_sha256
 
 
 @given(st.permutations(("neutral", "partial", "entire")))

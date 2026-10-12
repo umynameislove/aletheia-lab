@@ -15,6 +15,7 @@ from aletheia_lab.evaluation.claim_corpus_contracts import (
     ClaimSupportCorpusEntry,
 )
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
+from aletheia_lab.filesystem import windows_io_path
 from aletheia_lab.project.identity import SHA256_PATTERN, content_sha256
 
 Sha256 = Annotated[str, Field(pattern=SHA256_PATTERN)]
@@ -75,7 +76,7 @@ def audit_claim_corpus_run(store_root: Path, run_id: str) -> ClaimCorpusAuditRec
         findings.append(ClaimCorpusAuditFinding(code="invalid_run_id", subject=run_id))
         return _receipt(run_id, findings, entries)
 
-    run_root = store_root / "runs" / run_id
+    run_root = windows_io_path(store_root) / "runs" / run_id
     loaded = _load_metadata(run_root, run_id, findings)
     if loaded is None:
         return _receipt(run_id, findings, entries)
@@ -105,6 +106,7 @@ def load_audited_claim_corpus_run(
 ]:
     """Load one verified immutable snapshot without consulting writer state."""
 
+    store_root = windows_io_path(store_root)
     audit = audit_claim_corpus_run(store_root, run_id)
     if not audit.ready:
         raise ClaimCorpusContractError("claim corpus failed independent byte audit")
