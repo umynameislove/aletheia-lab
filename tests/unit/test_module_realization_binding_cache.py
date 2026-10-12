@@ -54,13 +54,13 @@ class PyFuncModel:
 def owned(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
     helper = ModuleType("val02_shared_helper")
     helper.__file__ = str(tmp_path / "val02_shared_helper.py")
-    Path(helper.__file__).write_text(HELPER_TEXT)
+    Path(helper.__file__).write_bytes(HELPER_TEXT.encode("utf-8"))
     exec(compile(HELPER_TEXT, helper.__file__, "exec", dont_inherit=True), vars(helper))
     namespace = ModuleType("val02_shared_model")
     namespace.__file__ = str(tmp_path / "val02_shared_model.py")
     namespace.val02_shared_helper = helper
     monkeypatch.setitem(sys.modules, helper.__name__, helper)
-    Path(namespace.__file__).write_text(MODEL_TEXT)
+    Path(namespace.__file__).write_bytes(MODEL_TEXT.encode("utf-8"))
     # Class-defined native code is intentional: its flags differ from a module
     # function, so this fixture must not replace the qualification shapes.
     exec(compile(MODEL_TEXT, namespace.__file__, "exec", dont_inherit=True), vars(namespace))
@@ -105,6 +105,14 @@ def test_legitimate_class_defined_chain_is_qualified(owned: SimpleNamespace) -> 
     guard = _guard(owned.loaded, owned.sdk)
     assert guard.token == _guard(owned.loaded, owned.sdk).token
     assert owned.loaded.predict([3.0]) == [6.0]
+
+
+def test_fixture_source_bytes_match_enrollment_hashes(owned: SimpleNamespace) -> None:
+    artifact = owned.manifest["models"]["collision"]["B"]
+    assert Path(owned.helper.__file__).read_bytes() == HELPER_TEXT.encode("utf-8")
+    assert Path(owned.namespace.__file__).read_bytes() == MODEL_TEXT.encode("utf-8")
+    assert content_sha256(Path(owned.helper.__file__).read_bytes()) == artifact["helper_sha256"]
+    assert content_sha256(Path(owned.namespace.__file__).read_bytes()) == artifact["source_sha256"]
 
 
 def test_scalar_change_invalidates_cached_binding_and_cannot_keep_old_verdict(

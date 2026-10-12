@@ -140,6 +140,13 @@ experiment artifacts remain local and are independently validated before use.
   service. Authored demand/resource budgets are not operator SLOs, and smaller
   closed databases alone do not establish a latency or algorithmic advantage.
   See the [native workflow and audit boundaries](docs/model-load-observability-development.md).
+  The [prospective serving contract-boundary checker](docs/serving-contract-boundary-development.md)
+  validates design declarations only; it does not execute or authorize a study.
+  Its amendment separates lifecycle/enrollment evidence from bounded actual-use
+  measurements; opaque state remains query-relative unknown and native control
+  qualification is not a completed transfer experiment.
+  The [scoped capture toolkit](docs/serving-capture-toolkit.md) provides reusable
+  entry observations without certifying immutability, native use or full closure.
 - Retained source-faithful extraction/acquisition studies compare LLMs with
   producer-adapted parsers and deterministic planners. Their limited results do
   not establish that an LLM is necessary for the current audit service.

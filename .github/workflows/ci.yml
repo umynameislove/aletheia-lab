@@ -104,7 +104,11 @@ jobs:
   # project boundary portable without duplicating the full Linux matrix.
   windows-project:
     runs-on: windows-latest
-    # This serial job includes install, dataset preparation, the independently
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1]
+    # Each shard includes install, dataset preparation, the independently
     # bounded 35-minute evaluation profile, and the publication profile. Keep
     # 15 minutes outside evaluation rather than racing the aggregate ceiling.
     timeout-minutes: 50
@@ -124,7 +128,9 @@ jobs:
       - name: Prepare pinned test dataset
         run: python scripts/download_dataset.py all --config configs/project.yaml
       - name: Test Windows evaluation boundary
-        run: python scripts/run_test_profile.py evaluation
+        run: >-
+          python scripts/run_test_profile.py evaluation
+          --shard-index ${{ matrix.shard }} --shard-count 2
       - name: Test Windows filesystem publication
         run: python scripts/run_test_profile.py windows-publication
 
