@@ -58,6 +58,14 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_evaluation_execution_contracts.py",
         "tests/property/test_evaluation_contract_properties.py",
         "tests/unit/test_context_evaluation_boundary.py",
+        "tests/unit/test_p2_ground_truth_validity.py",
+        "tests/integration/test_p2_ground_truth_validity_local.py",
+        "tests/unit/test_active_diagnosis_policy.py",
+        "tests/unit/test_active_diagnosis_replay.py",
+        "tests/unit/test_active_diagnosis_replay_proofs.py",
+        "tests/unit/test_active_diagnosis_local_selector.py",
+        "tests/integration/test_active_diagnosis_local.py",
+        "tests/integration/test_study_artifacts_local.py",
         "tests/property/test_context_visibility_properties.py",
         "tests/integration/test_context_p3_projection.py",
         "tests/unit/test_model_gateway_runtime.py",
@@ -111,6 +119,11 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_claim_support_v3_2_closeout.py",
         "tests/unit/test_diagnosis_main_response.py",
         "tests/unit/test_diagnosis_main_analysis.py",
+        "tests/unit/test_diagnosis_main_measurement_impact.py",
+        "tests/unit/test_diagnosis_main_forward_decomposition.py",
+        "tests/unit/test_diagnosis_main_paired_pilot.py",
+        "tests/unit/test_diagnosis_comparison_robustness.py",
+        "tests/integration/test_diagnosis_comparison_robustness_local.py",
         "tests/unit/test_diagnosis_main_census.py",
         "tests/unit/test_diagnosis_main_fairness_audit.py",
         "tests/unit/test_diagnosis_main_runtime.py",
@@ -269,6 +282,9 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
     ),
     "windows-publication": (
         "tests/unit/test_filesystem_publication.py",
+        "tests/unit/test_active_diagnosis_replay.py",
+        "tests/unit/test_active_diagnosis_replay_proofs.py",
+        "tests/integration/test_study_artifacts_local.py",
         "tests/unit/test_evidence_store.py",
         "tests/unit/test_matched_diagnosis_pilot.py",
         "tests/unit/test_p1_closeout.py",
@@ -403,9 +419,13 @@ def run_profile(
     command = profile_command(profile, extra, shard_index=shard_index, shard_count=shard_count)
     timeout = _evaluation_timeout_seconds() if profile == "evaluation" else None
     for run_index in range(repeat):
-        environment = None
+        environment = dict(os.environ)
+        source_root = str(_ROOT / "src")
+        inherited_path = environment.get("PYTHONPATH", "")
+        environment["PYTHONPATH"] = source_root + (
+            os.pathsep + inherited_path if inherited_path else ""
+        )
         if repeat > 1:
-            environment = dict(os.environ)
             environment["PYTHONHASHSEED"] = _hash_seed(run_index)
             print(
                 f"evaluation run {run_index + 1}/{repeat} "
