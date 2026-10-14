@@ -186,6 +186,7 @@ def test_census_build_is_portable_without_private_preserved_artifacts(
 
 def test_offline_batch_rehearsal_is_canonical_resumable_and_store_bound(
     tmp_path: Path,
+    file_tree_snapshot,
 ) -> None:
     source_root = tmp_path / "sources"
     source_root.mkdir()
@@ -213,11 +214,7 @@ def test_offline_batch_rehearsal_is_canonical_resumable_and_store_bound(
         store=store,
         request_ids=request_ids,
     )
-    persisted = {
-        path.relative_to(store.root): path.read_bytes()
-        for path in store.root.rglob("*")
-        if path.is_file()
-    }
+    persisted = file_tree_snapshot(store.root)
     second = rehearse_main_execution(
         packet=packet,
         contract=contract,
@@ -235,11 +232,7 @@ def test_offline_batch_rehearsal_is_canonical_resumable_and_store_bound(
     assert first.expected_provider_turn_count == 11
     assert first.completed_provider_turn_count == 11
     assert first.terminal_status_counts == {"completed": 7, "deterministic_completed": 1}
-    assert persisted == {
-        path.relative_to(store.root): path.read_bytes()
-        for path in store.root.rglob("*")
-        if path.is_file()
-    }
+    assert persisted == file_tree_snapshot(store.root)
 
     different_selection = tuple(
         request.request_id for request in packet.analysis_census.requests[:8]
@@ -483,6 +476,7 @@ def test_full_materialization_rehearsal_is_blind_complete_and_fail_closed(
 def test_offline_main_pipeline_is_end_to_end_resumable_and_network_incapable(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    file_tree_snapshot,
 ) -> None:
     source_root = tmp_path / "pipeline-sources"
     source_root.mkdir()
@@ -524,11 +518,7 @@ def test_offline_main_pipeline_is_end_to_end_resumable_and_network_incapable(
     }
 
     first = _rehearse_main_pipeline_components(**arguments)
-    persisted = {
-        path.relative_to(workspace): path.read_bytes()
-        for path in workspace.rglob("*")
-        if path.is_file()
-    }
+    persisted = file_tree_snapshot(workspace)
     second = _rehearse_main_pipeline_components(**arguments)
 
     assert first == second
@@ -546,11 +536,7 @@ def test_offline_main_pipeline_is_end_to_end_resumable_and_network_incapable(
         "claim_type",
         "visible_evidence",
     )
-    assert persisted == {
-        path.relative_to(workspace): path.read_bytes()
-        for path in workspace.rglob("*")
-        if path.is_file()
-    }
+    assert persisted == file_tree_snapshot(workspace)
 
     monkeypatch.setattr(
         main_pipeline, "load_main_runtime_inputs", lambda _root: (runtime, fairness, response)

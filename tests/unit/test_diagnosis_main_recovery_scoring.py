@@ -252,6 +252,7 @@ def test_read_only_relation_verifier_never_creates_missing_store(tmp_path: Path)
 
 def test_read_only_relation_verifier_rebuilds_a_real_terminal_without_writes(
     tmp_path: Path,
+    file_tree_snapshot,
 ) -> None:
     evidence = build_visible_evidence_item(
         evidence_id="evidence-1",
@@ -310,19 +311,11 @@ def test_read_only_relation_verifier_rebuilds_a_real_terminal_without_writes(
         adapter=offline_relation_adapter(prepared),
         clock=SystemMonotonicClock(),
     )
-    before = tuple(
-        (item.relative_to(store), item.read_bytes())
-        for item in sorted(store.rglob("*"))
-        if item.is_file()
-    )
+    before = file_tree_snapshot(store)
     rebuilt, counts = read_pipeline_relation_stage(
         prepared=prepared, preparation=preparation, store_root=store
     )
-    after = tuple(
-        (item.relative_to(store), item.read_bytes())
-        for item in sorted(store.rglob("*"))
-        if item.is_file()
-    )
+    after = file_tree_snapshot(store)
     assert rebuilt.results_sha256 == executed.results_sha256
     assert counts == {"parsed": 1}
     assert before == after

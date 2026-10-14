@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from types import SimpleNamespace
@@ -15,6 +17,7 @@ from aletheia_lab.filesystem import (
     publish_immutable_file,
     publish_staged_directory,
     windows_io_path,
+    write_new_file,
 )
 
 
@@ -49,6 +52,121 @@ def test_non_windows_io_paths_keep_the_supplied_spelling(monkeypatch, platform) 
     monkeypatch.setattr(filesystem_module, "sys", SimpleNamespace(platform=platform))
     supplied = Path("relative") / ".." / "store"
     assert windows_io_path(supplied) is supplied
+
+
+def test_tree_snapshot_reads_deep_unicode_paths_without_namespace_in_keys(
+    tmp_path: Path,
+    file_tree_snapshot: Callable[[Path], dict[Path, bytes]],
+) -> None:
+    supplied = tmp_path / "người dùng" / ("deep-" * 10) / ("owned-" * 10) / ("nested-" * 10)
+    io_root = windows_io_path(supplied)
+    request = "a" * 64
+    relative = Path("requests") / request / "requests" / request / "ledger" / "000001.json"
+    expected = {relative: b'{"state":"terminal"}\n', Path("payload.bin"): b"\x00\xff\r\n"}
+    for name, payload in expected.items():
+        write_new_file(io_root / name, payload)
+    assert len(str(io_root / relative)) > 400
+
+    assert file_tree_snapshot(supplied) == expected
+    assert file_tree_snapshot(io_root) == expected
+    assert all(not key.is_absolute() for key in file_tree_snapshot(supplied))
+
+
+@pytest.mark.parametrize("mutation", ["bytes", "missing", "additional"])
+def test_tree_snapshot_detects_byte_and_membership_changes(
+    tmp_path: Path,
+    file_tree_snapshot: Callable[[Path], dict[Path, bytes]],
+    mutation: str,
+) -> None:
+    io_root = windows_io_path(tmp_path)
+    target = io_root / "nested" / "payload.json"
+    write_new_file(target, b"original\n")
+    before = file_tree_snapshot(tmp_path)
+    if mutation == "bytes":
+        target.write_bytes(b"changed\n")
+    elif mutation == "missing":
+        target.unlink()
+    else:
+        write_new_file(io_root / "unexpected.json", b"extra\n")
+
+    assert before == {Path("nested/payload.json"): b"original\n"}
+    assert before != file_tree_snapshot(tmp_path)
+
+
+def test_tree_snapshot_rejects_missing_or_non_directory_roots(
+    tmp_path: Path,
+    file_tree_snapshot: Callable[[Path], dict[Path, bytes]],
+) -> None:
+    with pytest.raises(FileNotFoundError):
+        file_tree_snapshot(tmp_path / "missing")
+    target = tmp_path / "not-a-directory"
+    target.write_bytes(b"file")
+    with pytest.raises(ValueError, match="real directory"):
+        file_tree_snapshot(target)
+
+
+@pytest.mark.parametrize("error", [FileNotFoundError, PermissionError])
+def test_tree_snapshot_propagates_directory_scan_errors(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    file_tree_snapshot: Callable[[Path], dict[Path, bytes]],
+    error: type[OSError],
+) -> None:
+    blocked = windows_io_path(tmp_path / "blocked")
+    blocked.mkdir()
+    write_new_file(blocked / "payload.json", b"must not silently disappear")
+    original_scandir = os.scandir
+
+    def fail_owned_scan(path):
+        if path == blocked:
+            raise error("synthetic owned scan failure")
+        return original_scandir(path)
+
+    monkeypatch.setattr(os, "scandir", fail_owned_scan)
+    with pytest.raises(error, match="owned scan failure"):
+        file_tree_snapshot(tmp_path)
+
+
+def test_tree_snapshot_propagates_payload_read_errors(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    file_tree_snapshot: Callable[[Path], dict[Path, bytes]],
+) -> None:
+    target = windows_io_path(tmp_path / "payload.json")
+    write_new_file(target, b"must not silently disappear")
+    original_read = Path.read_bytes
+
+    def fail_owned_read(path):
+        if path == target:
+            raise PermissionError("synthetic owned read failure")
+        return original_read(path)
+
+    monkeypatch.setattr(Path, "read_bytes", fail_owned_read)
+    with pytest.raises(PermissionError, match="owned read failure"):
+        file_tree_snapshot(tmp_path)
+
+
+@pytest.mark.parametrize("kind", ["root", "directory", "file"])
+def test_tree_snapshot_rejects_symlink_aliases(
+    tmp_path: Path,
+    make_symlink: Callable[[Path, str | Path], None],
+    file_tree_snapshot: Callable[[Path], dict[Path, bytes]],
+    kind: str,
+) -> None:
+    target = tmp_path / "owned"
+    target.mkdir()
+    payload = target / "payload.json"
+    payload.write_bytes(b"owned")
+    root = tmp_path / "snapshot"
+    if kind == "root":
+        make_symlink(root, target)
+        message = "real directory"
+    else:
+        root.mkdir()
+        make_symlink(root / "alias", target if kind == "directory" else payload)
+        message = "real files or directories"
+    with pytest.raises(ValueError, match=message):
+        file_tree_snapshot(root)
 
 
 def test_immutable_file_publication_is_create_only_and_idempotent(tmp_path: Path) -> None:

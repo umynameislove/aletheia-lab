@@ -617,6 +617,7 @@ def test_uppercase_request_directory_is_rejected_cross_platform(tmp_path: Path) 
 def test_atomic_terminal_failure_leaves_closeout_pending(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    file_tree_snapshot,
 ) -> None:
     request = _request()
     result = _result(request)
@@ -635,12 +636,13 @@ def test_atomic_terminal_failure_leaves_closeout_pending(
 
     assert store.current_state(result.request_identity_sha256) == "closeout_pending"
     assert not store.is_terminal(result.request_identity_sha256)
-    assert not tuple(tmp_path.rglob("*.stage"))
+    assert not any(path.suffix == ".stage" for path in file_tree_snapshot(tmp_path))
 
 
 def test_post_link_byte_mismatch_preserves_the_io_error_contract(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    file_tree_snapshot,
 ) -> None:
     store = ImmutableAttemptStore(tmp_path, clock=_Clock())
     destination = tmp_path / "failures" / f"{'2' * 64}.json"
@@ -654,7 +656,7 @@ def test_post_link_byte_mismatch_preserves_the_io_error_contract(
         store._atomic_create(destination, b"expected bytes\n")
 
     assert error.value.code == "io_error"
-    assert not tuple(tmp_path.rglob("*.stage"))
+    assert not any(path.suffix == ".stage" for path in file_tree_snapshot(tmp_path))
 
 
 def test_failure_receipt_is_public_safe_and_has_no_scientific_disposition(

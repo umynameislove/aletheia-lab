@@ -43,6 +43,12 @@ python scripts/run_test_profile.py evaluation
   symlink aliases. The native Joblib source generator uses a short owned
   temporary workspace for relative cache writes and their UUID-suffixed stages;
   retained snapshots and native messages keep their exact bytes.
+  Read-only test inventories use the shared `file_tree_snapshot` fixture: it
+  enters the extended namespace before walking the caller's root, not only
+  inside the store. Relative paths and every payload byte remain unchanged;
+  missing/unreadable paths and symlink members fail instead of being skipped.
+  Snapshot regressions cover deep Unicode paths, byte changes and membership
+  changes without requiring registry edits or a shorter pytest temporary root.
   Active readiness bindings track implementation corrections, not new outcomes.
   Historical source-cohort replay reads inputs from its recorded Git commits;
   original authorization, terminal bytes and failure closeout remain unchanged.

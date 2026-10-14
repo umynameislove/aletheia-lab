@@ -406,7 +406,7 @@ class FakeAdapter:
         )
 
 
-def test_end_to_end_store_replay_and_failure_denominators(authorized):
+def test_end_to_end_store_replay_and_failure_denominators(authorized, file_tree_snapshot):
     run, plan, auth, prepared, payloads = authorized
     target = prepared[0].request.initial_attempt.request_identity_sha256
     semantic_target = prepared[1].request.initial_attempt.request_identity_sha256
@@ -431,9 +431,9 @@ def test_end_to_end_store_replay_and_failure_denominators(authorized):
     assert receipt["provider_attempt_count"] == 33
     assert receipt["cohort_planning_unlocked"] is False
     assert receipt["cohort_execution_authorized"] is False
-    before = {p.relative_to(run): p.read_bytes() for p in run.rglob("*") if p.is_file()}
+    before = file_tree_snapshot(run)
     assert verify(ROOT, run, plan, auth) == receipt
-    assert before == {p.relative_to(run): p.read_bytes() for p in run.rglob("*") if p.is_file()}
+    assert before == file_tree_snapshot(run)
     with pytest.raises(ValueError, match="already registered"):
         execute(ROOT, run, plan, auth, confirmation=auth["authorization_sha256"], adapter=adapter)
     assert adapter.calls == 33
