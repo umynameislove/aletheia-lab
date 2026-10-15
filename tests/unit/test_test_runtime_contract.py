@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import json
 import os
+import runpy
 import subprocess
 import sys
 import tomllib
@@ -427,6 +428,39 @@ def test_full_profile_preserves_coverage_floor() -> None:
     assert "--cov-fail-under=88" in command
     assert command[-3:] == ["-n", "2", "--dist=loadscope"]
     assert not {"-k", "-m", "--ignore", "--ignore-glob"} & set(command[3:])
+
+
+@pytest.mark.parametrize("profile", ["evaluation", "windows-publication"])
+def test_study_replay_and_artifact_guards_are_selected_by_blocking_profiles(profile) -> None:
+    completed = subprocess.run(
+        [sys.executable, str(_PROFILE_SCRIPT), profile, "--show-command"],
+        cwd=_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    command = json.loads(completed.stdout)
+    assert "tests/unit/test_active_diagnosis_replay.py" in command
+    assert "tests/integration/test_study_artifacts_local.py" in command
+
+
+def test_profile_subprocesses_import_from_the_checked_checkout(monkeypatch) -> None:
+    runner = runpy.run_path(str(_PROFILE_SCRIPT))
+    captured = []
+
+    def run(command, *, cwd, check, env, timeout):
+        from types import SimpleNamespace
+
+        captured.append((command, cwd, env))
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setenv("PYTHONPATH", "SYNTHETIC_OTHER_CHECKOUT")
+    monkeypatch.setattr(runner["subprocess"], "run", run)
+    assert runner["run_profile"]("contract") == 0
+    assert captured[0][1] == _ROOT
+    assert captured[0][2]["PYTHONPATH"].split(os.pathsep)[0] == str(_ROOT / "src")
+    assert "SYNTHETIC_OTHER_CHECKOUT" in captured[0][2]["PYTHONPATH"]
+    assert os.environ["PYTHONPATH"] == "SYNTHETIC_OTHER_CHECKOUT"
 
 
 def test_publication_profile_resolves_the_shared_core_and_all_immutable_stores() -> None:

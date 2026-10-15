@@ -586,6 +586,7 @@ documentation, and reproducible artifacts.
 - [Main diagnosis freeze candidate](docs/diagnosis-main-freeze-candidate.md)
 - [Release-profile stability and dependency-drift audit](docs/release-profile-stability-audit.md)
 - [Diagnosis development validation](docs/diagnosis-development-validation.md)
+- [Verified diagnosis foundations and product boundaries](docs/diagnosis-foundations.md)
 - [Dataset card](docs/dataset-card.md)
 - [Matched-diagnosis feasibility report](docs/p1-feasibility-report.md)
 - [Matched-diagnosis frozen closeout package](reports/p1/README.md)
