@@ -44,6 +44,7 @@ from aletheia_lab.evaluation.execution_contracts import (
     ModelPolicyReference,
     canonical_execution_sha256,
 )
+from aletheia_lab.filesystem import windows_io_path
 from aletheia_lab.model_gateway import (
     GatewayExecutionResult,
     GatewayRequest,
@@ -615,7 +616,7 @@ def test_offline_main_pipeline_is_end_to_end_resumable_and_network_incapable(
         main_pipeline.verify_completed_pipeline(run_dir=run_dir, authorization=authority) == receipt
     )
 
-    report_path = run_dir / "analysis-report.json"
+    report_path = windows_io_path(run_dir / "analysis-report.json")
     report_payload = json.loads(report_path.read_text())
     report_payload["input_sha256"] = "0" * 64
     report_payload["report_sha256"] = canonical_execution_sha256(
@@ -625,7 +626,8 @@ def test_offline_main_pipeline_is_end_to_end_resumable_and_network_incapable(
     with pytest.raises(DiagnosisMainPipelineError, match="do not reconcile"):
         main_pipeline.verify_completed_pipeline(run_dir=run_dir, authorization=authority)
 
-    turn_root = next((workspace / "main-store").glob("dmr-*/turn-*"))
+    io_workspace = windows_io_path(workspace)
+    turn_root = next((io_workspace / "main-store").glob("dmr-*/turn-*"))
     request = GatewayRequest.model_validate_json((turn_root / "request.json").read_bytes())
     result = GatewayExecutionResult.model_validate_json((turn_root / "result.json").read_bytes())
     restored_budget = SharedProviderBudget(100.0)
@@ -635,8 +637,10 @@ def test_offline_main_pipeline_is_end_to_end_resumable_and_network_incapable(
     insufficient_budget.restore(request, result.attempts)
     assert insufficient_budget.exhausted is True
 
-    terminal = next((workspace / "relation-store" / "requests").glob("*/terminal/*.json"))
+    terminal = next((io_workspace / "relation-store" / "requests").glob("*/terminal/*.json"))
+    assert terminal.is_file()
     terminal.unlink()
+    assert not terminal.exists()
     with pytest.raises(
         DiagnosisMainPipelineError,
         match="incomplete relation request forbids automatic provider replay",

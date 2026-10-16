@@ -32,7 +32,9 @@ from aletheia_lab.filesystem import (
     ],
 )
 def test_windows_io_namespace_uses_absolute_paths_without_resolving_links(
-    monkeypatch: pytest.MonkeyPatch, absolute: str, expected: str,
+    monkeypatch: pytest.MonkeyPatch,
+    absolute: str,
+    expected: str,
 ) -> None:
     supplied = Path("relative") / ".." / "store"
     calls: list[Path] = []
@@ -70,6 +72,34 @@ def test_tree_snapshot_reads_deep_unicode_paths_without_namespace_in_keys(
     assert file_tree_snapshot(supplied) == expected
     assert file_tree_snapshot(io_root) == expected
     assert all(not key.is_absolute() for key in file_tree_snapshot(supplied))
+
+
+@pytest.mark.parametrize("already_extended", [False, True])
+def test_owned_terminal_glob_and_strict_unlink_support_long_unicode_paths(
+    tmp_path: Path,
+    file_tree_snapshot: Callable[[Path], dict[Path, bytes]],
+    already_extended: bool,
+) -> None:
+    supplied = tmp_path / "người dùng" / ("deep-" * 10) / ("owned-" * 10) / ("nested-" * 10)
+    io_root = windows_io_path(supplied)
+    for digest in ("a" * 64, "b" * 64):
+        relative = Path("requests") / digest / "terminal" / f"{digest}.json"
+        write_new_file(io_root / relative, b'{"state":"terminal"}\n')
+    before = file_tree_snapshot(supplied)
+    caller_root = io_root if already_extended else supplied
+    terminal = next(windows_io_path(caller_root).glob("requests/*/terminal/*.json"))
+    removed = terminal.relative_to(io_root)
+    assert len(str(terminal)) > 400
+    assert terminal.read_bytes() == before[removed]
+
+    terminal.unlink()
+
+    assert not terminal.exists()
+    assert file_tree_snapshot(supplied) == {
+        relative: payload for relative, payload in before.items() if relative != removed
+    }
+    with pytest.raises(FileNotFoundError):
+        terminal.unlink()
 
 
 @pytest.mark.parametrize("mutation", ["bytes", "missing", "additional"])

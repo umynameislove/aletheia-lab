@@ -49,6 +49,10 @@ python scripts/run_test_profile.py evaluation
   missing/unreadable paths and symlink members fail instead of being skipped.
   Snapshot regressions cover deep Unicode paths, byte changes and membership
   changes without requiring registry edits or a shorter pytest temporary root.
+  Tests that mutate owned artifacts also normalize the caller's I/O root before
+  globbing or opening a file; a normalized read-only inventory does not change
+  a separate caller-held path. Terminal deletion stays strict and must remove
+  the file before the incomplete-replay assertion is exercised.
   Active readiness bindings track implementation corrections, not new outcomes.
   Historical source-cohort replay reads inputs from its recorded Git commits;
   original authorization, terminal bytes and failure closeout remain unchanged.
