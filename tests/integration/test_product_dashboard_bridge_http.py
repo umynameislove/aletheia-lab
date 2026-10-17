@@ -127,3 +127,48 @@ def test_oversized_or_non_json_bodies_are_refused(server: DashboardServer) -> No
     )
     assert connection.getresponse().status == 400
     connection.close()
+
+
+@pytest.mark.parametrize(
+    "headers",
+    [
+        {BRIDGE_HEADER: ""},
+        {"Host": "evil.example:80"},
+        {"Origin": "http://evil.example"},
+    ],
+)
+def test_refusals_with_a_large_body_still_reach_the_client(
+    server: DashboardServer, headers: dict[str, str]
+) -> None:
+    # The bridge reads the whole body before refusing; a refusal sent over unread bytes made
+    # Windows reset the connection (WinError 10053) instead of delivering the 403.
+    large = {"result_id": "r" * (512 * 1024)}
+
+    status, _, body = _request(server, "POST", "/api/view", large, headers)
+
+    assert status == 403
+    assert json.loads(body) == {
+        "code": "forbidden",
+        "safe_message": "The request did not come from this dashboard.",
+    }
+    assert server.service.calls == []  # type: ignore[union-attr]
+
+
+def test_an_over_limit_body_is_refused_without_being_read(server: DashboardServer) -> None:
+    port = server.server_address[1]
+    connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+    connection.putrequest("POST", "/api/view", skip_host=True)
+    for name, value in {
+        "Host": f"127.0.0.1:{port}",
+        BRIDGE_HEADER: "1",
+        "Content-Type": "application/json",
+        "Content-Length": str(2 * 1024 * 1024),
+    }.items():
+        connection.putheader(name, value)
+    connection.endheaders()
+
+    response = connection.getresponse()
+
+    assert response.status == 400
+    assert json.loads(response.read())["code"] == "invalid_request"
+    connection.close()

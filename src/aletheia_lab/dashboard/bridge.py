@@ -230,7 +230,26 @@ class _Handler(BaseHTTPRequestHandler):
 
     do_HEAD = do_GET
 
+    def _read_body(self) -> bytes | None:
+        """Read the whole request body before any answer, so no refusal leaves unread bytes.
+
+        Closing a socket with unread data makes Windows reset the connection, and the client then
+        sees ConnectionAbortedError instead of the refusal. The bytes are read, never parsed or
+        logged, unless every check below passes. ``None`` means the length is missing, malformed
+        or over the limit; that request is refused and the connection closed.
+        """
+
+        try:
+            length = int(self.headers.get("Content-Length") or "-1")
+        except ValueError:
+            length = -1
+        if not 0 <= length <= MAX_REQUEST_BYTES:
+            self.close_connection = True
+            return None
+        return self.rfile.read(length)
+
     def do_POST(self) -> None:  # noqa: N802 - http.server naming
+        body = self._read_body()
         if not self._host_allowed() or self.headers.get(BRIDGE_HEADER) != "1":
             self._send(error_response(FORBIDDEN, HTTPStatus.FORBIDDEN))
             return
@@ -239,15 +258,11 @@ class _Handler(BaseHTTPRequestHandler):
             self._send(error_response(UNKNOWN_METHOD, HTTPStatus.NOT_FOUND))
             return
         media = (self.headers.get("Content-Type") or "").split(";", 1)[0].strip().lower()
-        try:
-            length = int(self.headers.get("Content-Length") or "-1")
-        except ValueError:
-            length = -1
-        if media != "application/json" or not 0 <= length <= MAX_REQUEST_BYTES:
+        if media != "application/json" or body is None:
             self._send(error_response(INVALID_REQUEST, HTTPStatus.BAD_REQUEST))
             return
         try:
-            payload = json.loads(self.rfile.read(length).decode("utf-8"))
+            payload = json.loads(body.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError):
             self._send(error_response(INVALID_REQUEST, HTTPStatus.BAD_REQUEST))
             return
