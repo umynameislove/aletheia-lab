@@ -54,6 +54,9 @@ python scripts/run_test_profile.py evaluation
   a separate caller-held path. Terminal deletion stays strict and must remove
   the file before the incomplete-replay assertion is exercised.
   Active readiness bindings track implementation corrections, not new outcomes.
+  Historical freeze regressions compare every bound artifact against the original
+  manifest and its current raw bytes, including later portability changes. The
+  manifest stays unchanged and post-result drift still blocks execution readiness.
   Historical source-cohort replay reads inputs from its recorded Git commits;
   original authorization, terminal bytes and failure closeout remain unchanged.
 
