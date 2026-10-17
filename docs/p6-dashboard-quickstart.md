@@ -107,8 +107,72 @@ and delete, with sockets disabled. The web tests
 include a parity check that `LiveProductPort` sends exactly the bridge's parameter names for all
 nine methods.
 
+## Accessibility (Q12)
+
+The audit used the Live build against a synthetic project. It covered every screen in the dark
+and light themes, at 1440px, at 720px (the width of a 1440px screen at 200% zoom) and at 390px.
+
+- **Reflow:** no screen scrolls sideways at 390px or 720px. Long service IDs are shortened in
+  compact places; the full ID is in the tooltip, and copying the text copies the full ID.
+- **Contrast:** all text meets WCAG AA (4.5:1, or 3:1 for large text) in both themes. The `·`
+  separators are decorative and hidden from assistive tech.
+- **Keyboard:**
+  - Tab order runs skip link, then navigation, top bar, lineage nodes, claims and follow-up
+    question.
+  - Every stop shows a focus ring, or the accent border on inputs.
+  - `j`/`k` move between claims; `Esc` clears the selection.
+  - Dialogs trap Tab, close on `Esc` and return focus. Cancelling a delete calls nothing.
+- **Colour:** status colours are always paired with words (adverse, abstain, unverified…).
+- **Reduced motion:** transitions and animations are off under `prefers-reduced-motion`.
+- **CSP:** the bridge serves the app with `script-src 'self'`; every script loads from a file.
+
+`tests/a11y.test.mjs` keeps the guards that can be checked from source.
+
+## Lineage render benchmark (Q08)
+
+`dashboard/web/bench.html` mounts the real Lineage component with a synthetic 1,000-node graph:
+1 snapshot, 599 evidence items, 399 claims and 1 disposition, joined by 1,795 edges. The node
+order is shuffled on every run. Each run is timed from render until the browser has laid out
+and painted (two animation frames). Every run must draw the same lanes in the same order.
+
+```bash
+cd dashboard/web
+npm run bench:build
+npm run bench:serve
+```
+
+Then open <http://127.0.0.1:5275/bench.html?n=1000&runs=30>. The page builds only into
+`dist-bench/` and is never part of the app or the regular test suite.
+
+Measured on a MacBook Pro, Apple M1 (MacBookPro17,1), 8 GB, macOS 15.3.2. Production React
+build, 30 runs after 3 warm-up runs:
+
+| Browser | Viewport | p50 | p95 | max | Same layout every run |
+| --- | --- | --- | --- | --- | --- |
+| Chromium 152 | 1440×900 | 29.6 ms | 42.5 ms | 46.0 ms | yes |
+| Headless Chrome 155 | 1440×900 | 29.7 ms | 47.7 ms | 65.2 ms | yes |
+| Headless Chrome 155 | 390×844 | 30.2 ms | 47.2 ms | 73.0 ms | yes |
+
+The target was p95 ≤ 2 s. The layout itself (`src/data/lineage.ts`) sorts each lane by node ID,
+so the drawing does not depend on arrival order. A dangling edge or a reused node ID stops the
+drawing instead of producing a partial graph; the claim table stays complete either way.
+`tests/lineage.test.mjs` checks permutation invariance, fail-closed handling, that no edge is
+invented, and graph–table parity.
+
+## Demo walkthrough
+
+For the 7–10 minute recording, use only synthetic data:
+
+1. Start the Live build.
+2. Connect a synthetic project and show the import scope and the mapping checks.
+3. Confirm the project and ask about the first snapshot.
+4. Change a metric adversely, refresh, and ask again.
+5. Trace a claim through the table, the lineage and the inspector.
+6. Ask a follow-up and go back and forward between the results.
+7. Export JSON, Markdown and PDF.
+8. Delete the project and show that the old link is refused.
+
 ## Known gaps
 
-- The 1,000-node graph render benchmark has not been measured yet.
 - PDF text is limited to the built-in font; Vietnamese glyphs need a font decision with the
   service owner.
