@@ -139,8 +139,8 @@ export function Investigation() {
           <div className="turn-row">
             <span className="turn-pill"><MessageSquareText size={12} aria-hidden="true" />Turn {turnNo} of {turns.length}</span>
             <span className="turn-meta">
-              <Id v={turn.id} /><span className="sep">·</span><Id v={turn.snapshot_id} /><span className="sep">·</span><Id v={turn.result_id} />
-              <span className="sep">·</span><span title="visible_evidence_ids">sees {turn.visible_evidence_ids.length ? turn.visible_evidence_ids.map(shortId).join(", ") : "no evidence"}</span>
+              <Id v={turn.id} /><span className="sep" aria-hidden="true">·</span><Id v={turn.snapshot_id} /><span className="sep" aria-hidden="true">·</span><Id v={turn.result_id} />
+              <span className="sep" aria-hidden="true">·</span><span title="visible_evidence_ids">sees {turn.visible_evidence_ids.length ? turn.visible_evidence_ids.map(shortId).join(", ") : "no evidence"}</span>
             </span>
           </div>
           <h1 className="question">{turn.question}</h1>
@@ -380,7 +380,7 @@ function FailedRun() {
       <div className="center" id="main" tabIndex={-1}>
         <div className="center-inner" style={{ paddingBottom: "var(--s8)" }}>
           <div className="turn-row"><span className="turn-pill"><MessageSquareText size={12} aria-hidden="true" />{turn ? `Turn ${v.conversation.turns.length} of ${v.conversation.turns.length}` : "No turns"}</span>
-            {turn && <span className="turn-meta"><Id v={turn.id} /><span className="sep">·</span><span>against <Id v={turn.snapshot_id} /></span></span>}</div>
+            {turn && <span className="turn-meta"><Id v={turn.id} /><span className="sep" aria-hidden="true">·</span><span>against <Id v={turn.snapshot_id} /></span></span>}</div>
           <h1 className="question">{turn ? turn.question : "The conversation was deleted"}</h1>
 
           <div className="notice notice--stop" style={{ marginTop: "var(--s6)" }}>
