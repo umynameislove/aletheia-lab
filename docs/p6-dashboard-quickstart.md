@@ -174,5 +174,9 @@ For the 7–10 minute recording, use only synthetic data:
 
 ## Known gaps
 
+- P6 ProductView v1 does not expose a diagnosis-visible sibling/counterfactual pair. The screen
+  remains gated; explicit missing-evidence markers render Not available, while absence of the
+  marker renders Not evaluated. A future pair needs a new schema version, field shape, fixture and
+  contract tests agreed on both sides first.
 - PDF text is limited to the built-in font; Vietnamese glyphs need a font decision with the
   service owner.
