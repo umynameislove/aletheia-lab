@@ -2,12 +2,14 @@ import { Fragment } from "react";
 import { ChevronRight } from "lucide-react";
 import type { GraphNode, ProductView } from "../types";
 import { observedInSnapshot } from "../data/view";
-import { Mark, shortId } from "./primitives";
+import { LANE_KINDS, lineageLayout } from "../data/lineage";
+import { Absent, Mark, shortId } from "./primitives";
 
 /* The lineage as a left-to-right graph: Snapshot → Evidence → Claim → Disposition.
    Columns are fixed by stage; the labels between them are the backend's own edge `kind`, so the
-   drawing never invents a relation the projection does not carry. Position carries no weight. */
-const LANES: { h: string; kind: string }[] = [
+   drawing never invents a relation the projection does not carry. Position carries no weight;
+   order within a lane is by node ID (data/lineage.ts), never by arrival order. */
+const LANES: { h: string; kind: (typeof LANE_KINDS)[number] }[] = [
   { h: "Snapshot", kind: "Snapshot" },
   { h: "Evidence", kind: "EvidenceItem" },
   { h: "Claim", kind: "AtomicClaim" },
@@ -24,24 +26,28 @@ export function Lineage({ v, selectedClaim, selectedEvidence, selectedNode, show
   // OBSERVED_IN is emitted only for evidence observed in the analyzed snapshot, so the first link
   // says how many evidence items it actually joins instead of implying all of them
   const observed = observedInSnapshot(v);
-  const nodes = v.graph.nodes, edges = v.graph.edges;
-  const byId = new Map(nodes.map(n => [n.id, n]));
-  const lane = (kind: string) => nodes.filter(n => n.kind === kind);
-  const evCount = lane("EvidenceItem").length;
-  const between = (a: string, b: string) =>
-    edges.filter(e => {
-      const s = byId.get(e.source)?.kind, t = byId.get(e.target)?.kind;
-      return (s === a && t === b) || (s === b && t === a);
-    });
+  const layout = lineageLayout(v.graph.nodes, v.graph.edges);
+  const byId = new Map(v.graph.nodes.map(n => [n.id, n]));
+  const evCount = layout.lanes[1].length;
+
+  // a dangling edge or a reused node ID means the projection is not trustworthy: draw nothing
+  // rather than a partial graph. The claim table above stays complete without it.
+  if (layout.dangling.length || layout.duplicates.length) {
+    return (
+      <Absent title="Lineage not drawn" code={layout.dangling.length ? `dangling edge ${layout.dangling[0]}` : `duplicate node ${layout.duplicates[0]}`}>
+        The graph refers to nodes it does not contain. Use the claim table instead.
+      </Absent>
+    );
+  }
 
   return (
     <div className="lg" aria-label="Lineage">
       <div className="lg-canvas">
         <div className="lg-row">
           {LANES.map((l, i) => {
-            const ns = lane(l.kind);
-            const es = i < LANES.length - 1 ? between(l.kind, LANES[i + 1].kind) : [];
-            const kinds = [...new Set(es.map(e => e.kind))].join(" · ");
+            const ns = layout.lanes[i];
+            const linkKinds = i < LANES.length - 1 ? layout.links[i] : [];
+            const kinds = linkKinds.join(" · ");
             return (
               <Fragment key={l.h}>
                 <div className="lg-col">
@@ -59,9 +65,9 @@ export function Lineage({ v, selectedClaim, selectedEvidence, selectedNode, show
                   }) : <div className="lg-node none"><Mark hollow /><span className="i">none</span></div>}
                 </div>
                 {i < LANES.length - 1 && (
-                  <div className={`lg-link${es.length ? "" : " none"}`} aria-hidden="true">
+                  <div className={`lg-link${linkKinds.length ? "" : " none"}`} aria-hidden="true">
                     <i className="lg-line" />
-                    {es.length
+                    {linkKinds.length
                       ? <span>{breakable(kinds)}{l.kind === "Snapshot" && observed.size < evCount ? ` ${observed.size}/${evCount}` : ""}</span>
                       : <em>—</em>}
                   </div>
@@ -72,9 +78,9 @@ export function Lineage({ v, selectedClaim, selectedEvidence, selectedNode, show
         </div>
       </div>
       <details className="lg-foot">
-        <summary><ChevronRight size={13} aria-hidden="true" />Edges <span className="dim">{edges.length}</span></summary>
+        <summary><ChevronRight size={13} aria-hidden="true" />Edges <span className="dim">{layout.edges.length}</span></summary>
         <div className="path">
-          {edges.map(e => (
+          {layout.edges.map(e => (
             <div className="path-row" key={e.id}>
               <span>{byId.get(e.source)?.source_id ?? e.source}</span>
               <span className="v">{e.kind}</span>
