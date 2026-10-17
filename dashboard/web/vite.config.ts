@@ -9,6 +9,8 @@ const BRIDGE = process.env.P6_BRIDGE ?? "http://127.0.0.1:8765";
 
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
+  // `--mode bench` builds only the lineage benchmark page, into its own folder
+  build: mode === "bench" ? { outDir: "dist-bench", rollupOptions: { input: "bench.html" } } : undefined,
   server: {
     host: "127.0.0.1",
     port: 5274,

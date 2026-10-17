@@ -8,6 +8,8 @@
     "dev:live": "vite --mode live --host 127.0.0.1 --port 5274",
     "build": "tsc -b && vite build",
     "build:live": "tsc -b && vite build --mode live",
+    "bench:build": "tsc -b && vite build --mode bench",
+    "bench:serve": "vite preview --mode bench --outDir dist-bench --host 127.0.0.1 --port 5275",
     "preview": "vite preview --host 127.0.0.1 --port 5274",
     "test": "node --disable-warning=ExperimentalWarning --test tests/contract.test.mjs tests/product-view.test.mjs tests/port.test.mjs tests/live.test.mjs tests/lineage.test.mjs tests/a11y.test.mjs"
   },
