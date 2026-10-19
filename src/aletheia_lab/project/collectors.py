@@ -361,6 +361,15 @@ def _decode_git(value: bytes, *, label: str, trim: bool = True) -> str:
         raise ProjectCollectionError(f"{label} is not a canonical public value") from exc
 
 
+def _git_root_matches_grant(raw: bytes, root: Path) -> bool:
+    try:
+        # This native path is private, not a canonical public identity string.
+        reported = raw.decode("utf-8", errors="strict").removesuffix("\n").removesuffix("\r")
+        return Path(reported).is_absolute() and os.path.samefile(reported, root)
+    except (OSError, UnicodeDecodeError, ValueError):
+        return False
+
+
 def _changed_files(raw: bytes) -> tuple[GitChangedFile, ...]:
     fields = raw.split(b"\0")
     if fields and fields[-1] == b"":
@@ -391,7 +400,7 @@ def collect_git_state(grant: GrantedProjectRoot) -> ProjectGitState:
         raise ProjectCollectionError("granted project root is no longer current")
     root = grant._path
     top = _run_git(root, _GitCommand(("rev-parse", "--show-toplevel"), allow_failure=True))
-    if top is None or os.path.normcase(os.path.realpath(_decode_git(top, label="Git root"))) != os.path.normcase(os.path.realpath(root)):
+    if top is None or not _git_root_matches_grant(top, root):
         raise ProjectCollectionError("granted project root is not an exact Git worktree root")
     commit_raw = _run_git(root, _GitCommand(("rev-parse", "--verify", "HEAD"), allow_failure=True))
     branch_raw = _run_git(root, _GitCommand(("symbolic-ref", "--quiet", "--short", "HEAD"), allow_failure=True))

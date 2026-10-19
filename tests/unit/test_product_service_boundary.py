@@ -124,6 +124,32 @@ def test_constructor_does_not_touch_a_source_or_connect_to_network(
     assert (marker.read_bytes(), marker.stat().st_mtime_ns) == before
 
 
+@pytest.mark.parametrize("linked_part", ("root", "objects", "sha256"))
+def test_constructor_refuses_linked_store_directories_before_writing(
+    tmp_path: Path, linked_part: str
+) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    root = tmp_path / "store"
+    directory = {
+        "root": root,
+        "objects": root / "objects",
+        "sha256": root / "objects" / "sha256",
+    }[linked_part]
+    directory.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        directory.symlink_to(outside, target_is_directory=True)
+    except (OSError, NotImplementedError):
+        pytest.skip("directory symlinks are unavailable")
+
+    with pytest.raises(ProductError) as captured:
+        ProductService(root)
+
+    assert captured.value.code == "store_unavailable"
+    assert list(outside.iterdir()) == []
+    assert not (root / "project-store.sqlite3").exists()
+
+
 def test_constructor_maps_private_store_failure_to_safe_product_error(tmp_path: Path) -> None:
     invalid_root = tmp_path / "private-source-name"
     invalid_root.write_text("not a directory", encoding="utf-8")

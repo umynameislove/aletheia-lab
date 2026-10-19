@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import stat
 from pathlib import Path
 
 from aletheia_lab.product.analysis import analyze_product_mock
@@ -19,8 +20,24 @@ from aletheia_lab.project.persistence import ProjectStore
 _STORE_UNAVAILABLE_MESSAGE = "The product store could not be opened safely."
 
 
+def _owned_directories_are_real(root: Path) -> bool:
+    for directory in (root, root / "objects", root / "objects" / "sha256"):
+        try:
+            inspected = directory.lstat()
+        except FileNotFoundError:
+            continue
+        attributes = getattr(inspected, "st_file_attributes", 0)
+        reparse = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+        if not stat.S_ISDIR(inspected.st_mode) or attributes & reparse:
+            return False
+    return True
+
+
 def _prepare_store_root(store_root: Path) -> Path | None:
     try:
+        # ProjectStore creates descendants; reject linked owned parents before that write.
+        if not _owned_directories_are_real(store_root):
+            return None
         with ProjectStore(store_root) as store:
             prepared_root = store.root
         with ProductLifecycleStore(prepared_root):

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import mimetypes
+import socket
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from http import HTTPStatus
@@ -28,6 +29,21 @@ from typing import Any, Final, Protocol
 
 BRIDGE_HEADER: Final = "X-P6-Bridge"
 MAX_REQUEST_BYTES: Final = 1 << 20
+REQUEST_TIMEOUT_SECONDS: Final = 5.0
+
+
+def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate JSON member")
+        result[key] = value
+    return result
+
+
+def _reject_constant(value: str) -> object:
+    raise ValueError("nonfinite JSON value")
+
 
 REPORT_MEDIA_TYPES: Final[Mapping[str, str]] = {
     "json": "application/json",
@@ -246,7 +262,15 @@ class _Handler(BaseHTTPRequestHandler):
         if not 0 <= length <= MAX_REQUEST_BYTES:
             self.close_connection = True
             return None
-        return self.rfile.read(length)
+        try:
+            body = self.rfile.read(length)
+        except OSError:
+            self.close_connection = True
+            return None
+        if len(body) != length:
+            self.close_connection = True
+            return None
+        return body
 
     def do_POST(self) -> None:  # noqa: N802 - http.server naming
         body = self._read_body()
@@ -262,8 +286,12 @@ class _Handler(BaseHTTPRequestHandler):
             self._send(error_response(INVALID_REQUEST, HTTPStatus.BAD_REQUEST))
             return
         try:
-            payload = json.loads(body.decode("utf-8"))
-        except (UnicodeDecodeError, json.JSONDecodeError):
+            payload = json.loads(
+                body.decode("utf-8"),
+                object_pairs_hook=_unique_object,
+                parse_constant=_reject_constant,
+            )
+        except (UnicodeDecodeError, ValueError):
             self._send(error_response(INVALID_REQUEST, HTTPStatus.BAD_REQUEST))
             return
         self._send(dispatch(self.server.service, self.path[len(prefix) :], payload))
@@ -271,6 +299,11 @@ class _Handler(BaseHTTPRequestHandler):
 
 class DashboardServer(HTTPServer):
     """Single-threaded loopback server: one service call at a time."""
+
+    def get_request(self) -> tuple[socket.socket, tuple[str, int]]:
+        connection, address = super().get_request()
+        connection.settimeout(REQUEST_TIMEOUT_SECONDS)
+        return connection, address
 
     def __init__(
         self,

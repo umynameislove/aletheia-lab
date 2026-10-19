@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import http.client
 import json
+import socket
 import threading
 from collections.abc import Iterator
 from pathlib import Path
@@ -172,3 +173,49 @@ def test_an_over_limit_body_is_refused_without_being_read(server: DashboardServe
     assert response.status == 400
     assert json.loads(response.read())["code"] == "invalid_request"
     connection.close()
+
+
+def test_incomplete_body_is_bounded_and_next_request_can_proceed(
+    server: DashboardServer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from aletheia_lab.dashboard import bridge
+
+    monkeypatch.setattr(bridge, "REQUEST_TIMEOUT_SECONDS", 0.1)
+    port = server.server_address[1]
+    with socket.create_connection(("127.0.0.1", port), timeout=3) as connection:
+        connection.sendall(
+            (
+                f"POST /api/view HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\n"
+                "X-P6-Bridge: 1\r\nContent-Type: application/json\r\n"
+                "Content-Length: 2\r\n\r\n{"
+            ).encode("ascii")
+        )
+        response = http.client.HTTPResponse(connection)
+        response.begin()
+        assert response.status == 400
+        assert json.loads(response.read())["code"] == "invalid_request"
+
+    assert server.service.calls == []  # type: ignore[union-attr]
+    assert _request(server, "POST", "/api/demo_view", {})[0] == 200
+
+
+@pytest.mark.parametrize(
+    "body",
+    (b'{"result_id":"a","result_id":"b"}', b'{"result_id":NaN}'),
+)
+def test_ambiguous_or_nonfinite_json_never_reaches_service(
+    server: DashboardServer, body: bytes
+) -> None:
+    port = server.server_address[1]
+    connection = http.client.HTTPConnection("127.0.0.1", port, timeout=3)
+    connection.request(
+        "POST",
+        "/api/view",
+        body,
+        {"Content-Type": "application/json", BRIDGE_HEADER: "1"},
+    )
+    response = connection.getresponse()
+    assert response.status == 400
+    assert json.loads(response.read())["code"] == "invalid_request"
+    connection.close()
+    assert server.service.calls == []  # type: ignore[union-attr]

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import unicodedata
 from pathlib import Path
 
 import pyarrow as pa
@@ -214,6 +215,20 @@ def test_git_collector_requires_exact_granted_worktree_root(tmp_path: Path) -> N
 
     with pytest.raises(ProjectCollectionError, match="exact Git worktree root"):
         collect_git_state(grant_project_root(nested))
+
+
+def test_git_collector_accepts_native_decomposed_unicode_root(tmp_path: Path) -> None:
+    root = tmp_path / unicodedata.normalize("NFD", "dữ liệu Việt")
+    root.mkdir()
+    _repository(root)
+
+    state = collect_git_state(grant_project_root(root))
+
+    assert state.repository_state == "attached"
+    assert state.commit_sha is not None
+    assert not state.dirty
+    assert "dữ liệu" not in state.model_dump_json()
+    assert str(root) not in state.model_dump_json()
 
 
 def test_git_collector_rejects_noncanonical_public_path(tmp_path: Path) -> None:
