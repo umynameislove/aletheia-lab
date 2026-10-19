@@ -13,6 +13,7 @@ import { KNOWN_CODES, remedyFor } from "../src/service/errors.ts";
 import { COUNTERFACTUAL_MARKER } from "../src/service/markers.ts";
 import { canonicalQuestion, questionProblem } from "../src/service/question.ts";
 import { projectView } from "../src/data/projection.ts";
+import { declaredRuns, runMappings } from "../src/service/transitions.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = f => JSON.parse(readFileSync(join(ROOT, "src/data", f), "utf8"));
@@ -152,6 +153,31 @@ test("M3c a declared run with no metric observations in the source is refused", 
   const p = new DemoProductPort({ view: VIEW, preview });
   await p.preview_import("x");
   await rejects(p.confirm_import(preview.preview_id, okMapping()), "mapping_invalid");
+});
+
+test("M3d three-plus selected runs retain per-run configs and confirm through the port", async () => {
+  const preview = structuredClone(PREVIEW);
+  const template = preview.mapping_candidates.runs.find(r => r.available && r.source_metric_item_ids.includes(MS.project_item_id));
+  preview.mapping_candidates.runs.push({ ...structuredClone(template), run_id: "run-third" });
+  preview.mapping_candidates.runs.push({ ...structuredClone(template), run_id: "run-fourth" });
+  const configs = { "run-third": [...template.available_config_item_ids] };
+  const selection = { runs: ["run-after", "run-before", "run-third", "run-fourth", "run-third"], baseline: "run-before", configs };
+  const runs = runMappings(selection);
+  assert.deepEqual(declaredRuns(selection), ["run-after", "run-before", "run-third", "run-fourth"]);
+  assert.deepEqual(runs.find(r => r.run_id === "run-third").config_item_ids, configs["run-third"]);
+  assert.deepEqual(runs.find(r => r.run_id === "run-fourth").config_item_ids, [], "no config is attached by default");
+  assert.equal(runs.length, 4);
+  const p = new DemoProductPort({ view: VIEW, preview });
+  await p.preview_import("x");
+  assert.equal((await p.confirm_import(preview.preview_id, okMapping({ runs }))).status, "confirmed");
+});
+
+test("M3e choosing a reference run includes it once without losing other selections", () => {
+  assert.deepEqual(runMappings({ runs: ["a", "b"], baseline: "c", configs: { c: ["config-c"] } }), [
+    { run_id: "a", config_item_ids: [] }, { run_id: "b", config_item_ids: [] }, { run_id: "c", config_item_ids: ["config-c"] },
+  ]);
+  assert.deepEqual(declaredRuns({ runs: ["a"], baseline: "a" }), ["a"]);
+  assert.deepEqual(declaredRuns({ runs: [], baseline: "" }), []);
 });
 
 /* ---------------------------------------------------------- 5 analyze_mock */

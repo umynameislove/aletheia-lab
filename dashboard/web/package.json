@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5274",
     "dev:live": "vite --mode live --host 127.0.0.1 --port 5274",
@@ -26,6 +29,6 @@
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.7.0",
     "typescript": "^5.9.3",
-    "vite": "^5.4.21"
+    "vite": "7.3.7"
   }
 }

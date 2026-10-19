@@ -7,6 +7,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { BRIDGE_HEADER, LiveProductPort } from "../src/service/live.ts";
+import { activateProject, projectDeleted, resultTransitions } from "../src/service/transitions.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const BRIDGE = readFileSync(join(ROOT, "../../src/aletheia_lab/dashboard/bridge.py"), "utf8");
@@ -124,4 +125,109 @@ test("L8 the kept project holds opaque IDs only and survives bad storage", async
   assert.equal(openedProject(), null);
   rememberProject({ project_id: "p3-project-abc", snapshot_id: "p3-snapshot-def" });
   delete globalThis.localStorage;
+});
+
+function deferred() {
+  let resolve, reject;
+  const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
+  return { promise, resolve, reject };
+}
+
+function transitionHarness() {
+  const calls = [], accepted = [], rejected = [];
+  const requests = resultTransitions({
+    read(id) { const d = deferred(); calls.push({ id, ...d }); return d.promise; },
+    identify: view => view.id,
+    accept: view => accepted.push(view.id),
+    reject: error => rejected.push(error.message),
+  });
+  return { requests, calls, accepted, rejected };
+}
+
+test("L9 a late initial success or error cannot replace a newer navigation", async () => {
+  for (const fails of [false, true]) {
+    const h = transitionHarness();
+    const initial = h.requests.load("a");
+    const next = h.requests.navigate("b");
+    h.calls[1].resolve({ id: "b" }); await next;
+    if (fails) h.calls[0].reject(new Error("stale initial error"));
+    else h.calls[0].resolve({ id: "a" });
+    await initial;
+    assert.deepEqual(h.accepted, ["b"]);
+    assert.deepEqual(h.rejected, []);
+  }
+});
+
+test("L10 Back to the displayed result cancels pending success and error", async () => {
+  for (const fails of [false, true]) {
+    const h = transitionHarness();
+    h.requests.show({ id: "a" });
+    const pending = h.requests.navigate("b");
+    await h.requests.navigate("a");
+    if (fails) h.calls[0].reject(new Error("stale navigation error"));
+    else h.calls[0].resolve({ id: "b" });
+    await pending;
+    assert.deepEqual(h.accepted, ["a", "a"]);
+    assert.equal(h.calls.length, 1, "Back uses the displayed immutable result");
+    assert.deepEqual(h.rejected, []);
+  }
+});
+
+test("L11 direct analysis/follow-up results invalidate pending success and error", async () => {
+  for (const fails of [false, true]) {
+    const h = transitionHarness();
+    const pending = h.requests.load("old");
+    h.requests.show({ id: "child" });
+    await h.requests.navigate("child"); // hashchange after showResult must not refetch
+    if (fails) h.calls[0].reject(new Error("stale error"));
+    else h.calls[0].resolve({ id: "old" });
+    await pending;
+    assert.deepEqual(h.accepted, ["child"]);
+    assert.deepEqual(h.rejected, []);
+    assert.equal(h.calls.length, 1);
+  }
+});
+
+test("L12 clearing the result or unmounting invalidates in-flight work", async () => {
+  for (const cancel of [h => h.requests.navigate(null), h => h.requests.cancel()]) {
+    const h = transitionHarness();
+    const pending = h.requests.load("old");
+    await cancel(h);
+    h.calls[0].resolve({ id: "old" }); await pending;
+    assert.deepEqual(h.accepted, []);
+  }
+});
+
+test("L13 current errors surface and Back restores the displayed view", async () => {
+  const h = transitionHarness();
+  h.requests.show({ id: "a" });
+  const pending = h.requests.navigate("b");
+  h.calls[0].reject(new Error("current error")); await pending;
+  assert.deepEqual(h.rejected, ["current error"]);
+  await h.requests.navigate("a");
+  assert.deepEqual(h.accepted, ["a", "a"]);
+});
+
+test("L14 selection changes on a pending result do not restart the request", async () => {
+  const h = transitionHarness();
+  const pending = h.requests.load("a");
+  await h.requests.navigate("a");
+  assert.equal(h.calls.length, 1);
+  h.calls[0].resolve({ id: "a" }); await pending;
+  assert.deepEqual(h.accepted, ["a"]);
+});
+
+test("L15 deletion state closes only its own project, including late responses", () => {
+  const fresh = { deletedConversation: false, deletedProject: false, receipt: null, review: { claim: "checked" } };
+  const receipt = { project_id: "a", status: "deleted", deleted_count: 2, retained_shared_count: 0, scope: "" };
+  const a = activateProject(fresh, "a");
+  const deleted = projectDeleted(a, receipt);
+  assert.equal(deleted.deletedProject, true);
+  assert.equal(activateProject(deleted, "a"), deleted, "same-project views do not undo deletion");
+  const b = activateProject(deleted, "b");
+  assert.equal(b.deletedProject, false);
+  assert.equal(b.deletedConversation, false);
+  assert.equal(b.receipt, null);
+  assert.deepEqual(b.review, fresh.review, "unrelated reviewer annotations are preserved");
+  assert.equal(projectDeleted(b, receipt), b, "a late response for A cannot close B");
 });

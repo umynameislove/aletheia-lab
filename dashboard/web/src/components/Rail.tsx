@@ -87,7 +87,7 @@ export function Rail({ open, onClose, onOpenProject }: { open: boolean; onClose:
   );
 }
 
-/* The account row, laid out like Claude's: round avatar, name · plan, chevron. The demo controls
+/* The account row uses a round avatar, name, plan and chevron. The demo controls
    and the local-only note live in its menu instead of taking room in the rail. */
 function Account() {
   const { go } = useRoute();

@@ -24,13 +24,15 @@ Live failure is shown with its code. The app never falls back to demo data.
 
 ## Run
 
+Use Node.js 22.12 or newer; CI uses Node.js 24. Vite is locked to 7.3.7.
+
 Setup, once:
 
 ```bash
 python3.12 -m venv .venv
 .venv/bin/python -m pip install -e ".[dev]"
 cd dashboard/web
-npm ci
+npm ci --ignore-scripts
 ```
 
 Demo, offline (no Python needed):
@@ -87,6 +89,12 @@ again is never used to find a project. A deleted or unknown result shows its cod
 over" action; another result is never substituted. Deleting a project also clears its kept IDs.
 The demo keeps its results in memory and puts no IDs in the URL.
 
+Each accepted result reconciles the URL's project and snapshot to that result.
+Older pending responses, including errors, cannot replace a newer result.
+Deleting one project does not disable a different project connected afterward.
+The Connect form supports multiple tracked runs and one designated reference run;
+every selected run keeps its own metric and config mapping.
+
 ## Tests
 
 ```bash
@@ -106,6 +114,18 @@ confirm, a non-adverse refresh, and an adverse refresh with follow-up, view, the
 and delete, with sockets disabled. The web tests
 include a parity check that `LiveProductPort` sends exactly the bridge's parameter names for all
 nine methods.
+
+The bridge rejects duplicate JSON members and nonfinite numbers before calling
+the service. Accepted connections have a five-second inactivity timeout, so an
+unfinished body cannot wait indefinitely without sending data. This is not an
+absolute request deadline or a hostile-network availability guarantee. The
+service also rejects linked owned store directories before creating descendants.
+Use a store controlled by the current user; concurrent hostile filesystem
+mutation is outside this local-product boundary.
+
+Git collection compares the private native repository path by filesystem
+identity. Decomposed Unicode folder names are accepted without relaxing the
+canonical public identity strings or exposing source paths in results.
 
 ## Accessibility (Q12)
 

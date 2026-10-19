@@ -275,9 +275,35 @@ def test_dependency_audit_permissions_are_read_only(audit_workflow: dict) -> Non
 
 
 def test_workflows_use_current_first_party_action_runtimes() -> None:
-    for workflow in (_workflow(_CI_PATH), _workflow(_AUDIT_PATH)):
+    for path in (_CI_PATH, _AUDIT_PATH):
+        workflow = _workflow(path)
         uses = [str(step["uses"]) for _, _, step in _steps(workflow) if step.get("uses")]
-        assert set(uses) == {"actions/checkout@v5", "actions/setup-python@v6"}
+        expected = {"actions/checkout@v5", "actions/setup-python@v6"}
+        if path == _CI_PATH:
+            expected.add("actions/setup-node@v6")
+        assert set(uses) == expected
+
+
+def test_dashboard_job_checks_locked_dependencies_tests_and_both_builds(ci_workflow: dict) -> None:  # type: ignore[type-arg]
+    job = ci_workflow["jobs"]["dashboard"]
+    assert job["defaults"]["run"]["working-directory"] == "dashboard/web"
+    setup = [step for step in job["steps"] if step.get("uses") == "actions/setup-node@v6"]
+    assert len(setup) == 1
+    assert setup[0]["with"] == {
+        "node-version": "24",
+        "cache": "npm",
+        "cache-dependency-path": "dashboard/web/package-lock.json",
+    }
+    commands = []
+    for step in job["steps"]:
+        _assert_blocking_job(ci_workflow, "dashboard", step)
+        commands.extend(_commands(str(step.get("run", ""))))
+    assert commands == [
+        ["npm", "ci", "--ignore-scripts"],
+        ["npm", "test"],
+        ["npm", "run", "build"],
+        ["npm", "run", "build:live"],
+    ]
 
 
 def test_public_property_tests_contain_no_internal_tracking_language() -> None:

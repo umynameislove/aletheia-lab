@@ -97,7 +97,7 @@ acceptance and product export tests remain in place. Native Windows, remote CI,
 real Git collection and HTTP/dashboard execution are separate checks; a local
 pass does not substitute for them.
 
-## API/dashboard acceptance still required
+## API/dashboard acceptance boundary
 
 The consumer must use the current [product contract](p6-product-core.md), including
 `reproduction_ref`, per-turn `result_id`/`runtime`, claim type, metric definitions
@@ -111,3 +111,17 @@ the same saved result for JSON export. Graph/table rendering and follow-up
 selection must be exercised in that consumer, not inferred from fixture parity
 or a screenshot. This local bridge does not attest HTTP routes, dashboard
 rendering or interaction behavior.
+
+A separate local acceptance on 19 October 2026 exercised the built Live app in
+Chromium through the actual HTTP bridge and `ProductService`, using synthetic
+Git/CSV projects. Eighteen lifecycle checks passed: three-run import, initial
+analysis, unchanged and adverse refresh, claim follow-up, reload/back-forward,
+stale-response handling, canonical result links, exact JSON/Markdown/PDF
+downloads, deletion, and connecting another project without a document reload.
+The browser made no non-loopback requests and raised no page exceptions.
+One settled 390px Investigation view was also inspected; this is not a complete
+accessibility certification or a new benchmark measurement.
+
+That execution used `deterministic_mock`, not a live model provider. It does not
+replace native Windows or remote CI qualification, authorize a release, validate
+causal claims, or extend the guarantees of the projection checker described above.

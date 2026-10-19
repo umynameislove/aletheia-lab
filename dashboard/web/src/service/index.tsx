@@ -6,6 +6,8 @@ import { DemoProductPort } from "./demo";
 import { LiveProductPort } from "./live";
 import { rememberProject } from "./opened";
 import { isProductError, ProductError, type ProductPort } from "./port";
+import { resultTransitions } from "./transitions";
+import { useStore } from "../store";
 
 /* The app talks to the backend only through this port. The build picks it once:
    `--mode live` → LiveProductPort over the local bridge to ProductService; otherwise the
@@ -52,39 +54,43 @@ const ViewCtx = createContext<ViewState | null>(null);
 
 export function ServiceProvider({ children, fallback }: { children: ReactNode; fallback: (b: Boot) => ReactNode }) {
   const [boot, setBoot] = useState<Boot>({ status: "loading" });
-  const shown = useRef<string | null>(null);
+  const { dispatch } = useStore();
+  const transitions = useRef<ReturnType<typeof resultTransitions<ProductView>> | null>(null);
+  if (!transitions.current) transitions.current = resultTransitions<ProductView>({
+    read: id => id ? port.view(id) : port.demo_view(),
+    identify: view => view.result.id,
+    accept: view => {
+      dispatch({ type: "activateProject", project_id: view.project.id });
+      remember(view);
+      if (linked && !view.demo_only) {
+        linkIds({ project: view.project.id, snapshot: view.snapshot.id, result: view.result.id });
+      }
+      setBoot({ status: "ready", view });
+    },
+    reject: error => setBoot({ status: "error", error: safe(error) }),
+  });
+  const requests = transitions.current;
 
-  const load = useCallback((id: string | null) => {
-    let live = true;
-    (id ? port.view(id) : port.demo_view())
-      .then(view => { if (live) { shown.current = view.result.id; remember(view); setBoot({ status: "ready", view }); } })
-      .catch(e => { if (live) setBoot({ status: "error", error: safe(e) }); });
-    return () => { live = false; };
-  }, []);
-
-  useEffect(() => load(linked ? hashResult() : null), [load]);
+  useEffect(() => {
+    void requests.load(linked ? hashResult() : null);
+    return () => requests.cancel();
+  }, [requests]);
 
   // back/forward or a pasted link to another stored result: open that one, nothing else
   useEffect(() => {
     if (!linked) return;
-    let cancel = () => {};
-    const on = () => {
-      const id = hashResult();
-      if (id && id !== shown.current) { cancel(); cancel = load(id); }
-    };
+    const on = () => { void requests.navigate(hashResult()); };
     window.addEventListener("hashchange", on);
-    return () => { cancel(); window.removeEventListener("hashchange", on); };
-  }, [load]);
+    return () => window.removeEventListener("hashchange", on);
+  }, [requests]);
 
   const showResult = useCallback((view: ProductView) => {
-    shown.current = view.result.id;
-    setBoot({ status: "ready", view });
+    requests.show(view);
     if (linked && !view.demo_only) {
-      remember(view);
       linkIds({ project: view.project.id, snapshot: view.snapshot.id, result: view.result.id });
     }
-  }, []);
-  const resetResult = useCallback(() => port.demo_view().then(view => { shown.current = view.result.id; setBoot({ status: "ready", view }); }), []);
+  }, [requests]);
+  const resetResult = useCallback(() => requests.load(null), [requests]);
   const value = useMemo(() => (boot.status === "ready" ? { view: boot.view, showResult, resetResult } : null), [boot, showResult, resetResult]);
   if (!value) return <>{fallback(boot)}</>;
   return <ViewCtx.Provider value={value}>{children}</ViewCtx.Provider>;

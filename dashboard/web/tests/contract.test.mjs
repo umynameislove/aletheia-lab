@@ -86,9 +86,8 @@ test("D1 Connect reads preview_import through the port and holds no hand-written
     [/target: \{ mapping_id: t\?\.mapping_id \?\? "", project_item_id: m\.target, target_field: m\.targetLabel, identifier_field: m\.targetField \}/, "target mapping"],
     [/mapping_id: ms\?\.mapping_id \?\? "", project_item_id: m\.metric, format: ms\?\.format/, "metric source mapping_id + format"],
     [/step_field: m\.stepField \|\| null/, "step_field null when unset"],
-    [/const run = \(run_id: string\) => \(\{ run_id, config_item_ids: m\.configs\[run_id\] \?\? \[\] \}\)/, "config_item_ids per run"],
     // tracked runs, each once; baseline_run_id only designates the reference run among them (Kiên, 2026-10-08)
-    [/runs: \[\.\.\.new Set\(\[m\.run, m\.baseline\]\)\]\.filter\(Boolean\)\.map\(run\)/, "tracked runs sent once, reference run among them"],
+    [/runs: runMappings\(m\)/, "tracked runs and their configs use the executable run-mapping helper"],
     [/baseline_run_id: m\.baseline,/, "baseline_run_id names the reference run"],
     [/if \(!ms \|\| ms\.format === "csv"\) return \[\];/, "records_path [] for CSV, never null"],
   ];
@@ -118,7 +117,7 @@ test("D3 runs are labelled as tracked and reference runs — never as two runs c
   const src = readFileSync(join(ROOT, "src/components/Connect.tsx"), "utf8");
   for (const stale of ["Run under audit", "Baseline run", "Baseline names a different run"])
     assert.ok(!src.includes(stale), `stale run wording in Connect.tsx: ${stale}`);
-  assert.match(src, /label="Tracked run"/);
+  assert.match(src, /aria-label="Tracked runs"/);
   assert.match(src, /label="Reference run" code="baseline_run_id"/);
   assert.match(src, /Metric changes are calculated per run across snapshots, not between two runs\./);
   // a run with observations must be declared; a declared run must have observations (Kiên, 2026-10-08)

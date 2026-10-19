@@ -16,6 +16,27 @@ permissions:
   contents: read
 
 jobs:
+  dashboard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: dashboard/web
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: dashboard/web/package-lock.json
+      - name: Install locked frontend dependencies
+        run: npm ci --ignore-scripts
+      - name: Test dashboard contracts and lifecycle
+        run: npm test
+      - name: Build demo and live dashboard
+        run: |
+          npm run build
+          npm run build:live
   # Keep the external application dependency slice isolated from historical
   # MLflow environments. Actual handlers run on Linux; Windows race is not qualified.
   application:
@@ -90,6 +111,7 @@ jobs:
           src/aletheia_lab/filesystem.py
           src/aletheia_lab/baseline
           src/aletheia_lab/data
+          src/aletheia_lab/dashboard
           src/aletheia_lab/benchmark
           src/aletheia_lab/context
           src/aletheia_lab/diagnosis

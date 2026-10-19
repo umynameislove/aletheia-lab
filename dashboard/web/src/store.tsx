@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from "react";
 import type { ReviewState } from "./types";
+import { activateProject, projectDeleted } from "./service/transitions";
 
 /* ------------------------------------------------------------------ routing --
    Hash routing with deep-linkable selection: #/investigation?project=&snapshot=&result=&claim=&evidence=&view=&filter=&q=
@@ -57,10 +58,11 @@ export interface Receipt {
 }
 
 export interface DemoState {
+  activeProjectId?: string;
   review: Record<string, ReviewState>;
   notes: Record<string, string>;
   failed: boolean;
-  /* deletion only changes this in-memory demo state; no file on disk is ever touched */
+  /* UI state reflects the deletion receipt; Live deletion itself is performed by the port. */
   deletedConversation: boolean;
   deletedProject: boolean;
   receipt: Receipt | null;
@@ -73,6 +75,7 @@ type Action =
   | { type: "toggleFailed" }
   | { type: "deleteConversation"; receipt: Receipt }
   | { type: "deleteProject"; receipt: Receipt }
+  | { type: "activateProject"; project_id: string }
   | { type: "reset" };
 
 const fresh = (): DemoState => ({ review: {}, notes: {}, failed: false, deletedConversation: false, deletedProject: false, receipt: null });
@@ -93,7 +96,8 @@ function reduce(s: DemoState, a: Action): DemoState {
     case "note": return { ...s, notes: { ...s.notes, [a.id]: a.text } };
     case "toggleFailed": return { ...s, failed: !s.failed };
     case "deleteConversation": return { ...s, deletedConversation: true, receipt: a.receipt };
-    case "deleteProject": return { ...s, deletedConversation: true, deletedProject: true, receipt: a.receipt };
+    case "deleteProject": return projectDeleted(s, a.receipt);
+    case "activateProject": return activateProject(s, a.project_id);
     case "reset": return fresh();
   }
 }

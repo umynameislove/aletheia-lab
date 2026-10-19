@@ -94,7 +94,7 @@ code { font: var(--t-mono); }
 .nav-count { margin-left: auto; font: var(--t-mono-s); color: var(--ink-3); }
 
 .rail-foot { flex: none; border-top: 1px solid var(--line); padding: var(--s2) var(--s2) var(--s3); }
-/* account row — Claude's layout: round avatar, name · plan, chevron */
+/* account row — round avatar, name, plan and chevron */
 .acct-wrap { position: relative; }
 .acct {
   display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: 0; border-radius: var(--r-2);

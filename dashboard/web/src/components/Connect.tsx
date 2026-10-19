@@ -3,6 +3,7 @@ import { ArrowRight, Check, ChevronDown, ChevronRight, FolderOpen, Lock, Plus, R
 import { isProductError, port, PREVIEW_VERSION, useResultSwitch, linkIds, linked } from "../service";
 import { rememberProject } from "../service/opened";
 import { canonicalQuestion } from "../service/question";
+import { declaredRuns, runMappings } from "../service/transitions";
 import type { ConfirmResult } from "../service/port";
 import { remedyFor } from "../service/errors";
 import type { ConfirmMapping, IssueDTO, MappingCandidates, MetricDefinition, MetricDirection, PreviewImportResult, ProductView, UnavailableReason } from "../types";
@@ -24,7 +25,7 @@ interface Mapping {
   metric: string; recordsPath: string; nameField: string; valueField: string; runIdField: string;
   stepField: string;                                          // "" means null — no step column
   defs: Def[];
-  run: string; baseline: string;
+  runs: string[]; baseline: string;
   configs: Record<string, string[]>;                          // run_id → attached config ids, none by default
 }
 
@@ -65,13 +66,14 @@ function defaultMapping(C: MappingCandidates): Mapping {
   const t = C.targets.find(c => c.available);
   const m = C.metric_sources.find(c => c.available && c.format === "json" && c.records_path_candidates.length)
     ?? C.metric_sources.find(c => c.available);
-  const [run, base] = C.runs.filter(r => r.available);
+  const runs = C.runs.filter(r => r.available && r.source_metric_item_ids.includes(m?.project_item_id ?? ""));
+  const base = runs[1] ?? runs[0];
   return {
     target: t?.project_item_id ?? "", targetField: t ? pick(t.field_names, "run_id") : "",
     // only a column literally named "target" is offered up front; otherwise the user picks
     targetLabel: t ? pick(t.field_names, "target") : "",
     metric: m?.project_item_id ?? "", ...metricFields(C, m?.project_item_id ?? ""),
-    run: run?.run_id ?? "", baseline: base?.run_id ?? "",
+    runs: runs.map(r => r.run_id), baseline: base?.run_id ?? "",
     configs: {},
   };
 }
@@ -88,7 +90,6 @@ function recordsPath(C: MappingCandidates, m: Mapping): string[] {
    verbatim from mapping_candidates; nothing here is invented. */
 export function confirmPayload(C: MappingCandidates, m: Mapping): ConfirmMapping {
   const t = target(C, m.target), ms = metric(C, m.metric);
-  const run = (run_id: string) => ({ run_id, config_item_ids: m.configs[run_id] ?? [] });
   return {
     target: { mapping_id: t?.mapping_id ?? "", project_item_id: m.target, target_field: m.targetLabel, identifier_field: m.targetField },
     metric_sources: [{
@@ -97,13 +98,12 @@ export function confirmPayload(C: MappingCandidates, m: Mapping): ConfirmMapping
     }],
     // runs are the tracked runs; baseline_run_id designates one of them as the reference run.
     // It is not "the other side" of a comparison: metric changes are per run across snapshots.
-    runs: [...new Set([m.run, m.baseline])].filter(Boolean).map(run),
+    runs: runMappings(m),
     baseline_run_id: m.baseline,
     metric_definitions: definitionsPayload(m.defs),
   };
 }
 
-const declaredRuns = (m: Mapping) => [...new Set([m.run, m.baseline])].filter(Boolean);
 /** runs the chosen metric source has observations for, as the preview reports them */
 const observedRuns = (C: MappingCandidates, m: Mapping) =>
   C.runs.filter(r => r.available && r.source_metric_item_ids.includes(m.metric)).map(r => r.run_id);
@@ -122,7 +122,8 @@ function checks(C: MappingCandidates, m: Mapping): [string, boolean, string, boo
     ["Target field and identifier field exist on it", !!t && t.field_names.includes(m.targetLabel) && t.field_names.includes(m.targetField), "mapping_invalid"],
     ["Metric source resolves to a collected item", !!ms?.available, "mapping_invalid"],
     ["Metric name and value fields exist on it", !!ms && ms.field_names.includes(m.nameField) && ms.field_names.includes(m.valueField), "mapping_invalid"],
-    ["Run identity is present", C.runs.some(r => r.available && r.run_id === m.run), "mapping_invalid"],
+    ["Run identity is present", declaredRuns(m).length > 0 && declaredRuns(m).every(id => C.runs.some(r => r.available && r.run_id === id)), "mapping_invalid"],
+    ["Reference run is selected", !!m.baseline && declaredRuns(m).includes(m.baseline), "mapping_invalid"],
     // Kiên, 2026-10-08: every run with observations in the source must be declared, and a declared
     // run without observations is refused; baseline_run_id names one of the declared runs
     // Only checked when the preview names the runs it saw in this source; otherwise the service decides on confirm.
@@ -353,14 +354,26 @@ function Preview({ preview, m, setM, busy, refusal, onConfirm, onCancel }: {
           <MetricDefinitions C={C} m={m} set={set} />
 
           <h3 className="form-h">Runs</h3>
+          <fieldset className="config-pick" aria-label="Tracked runs">
+            <legend className="fld-label">Tracked runs <code className="fld-code">runs[].run_id</code></legend>
+            {C.runs.map(r => {
+              const on = declaredRuns(m).includes(r.run_id);
+              return <label className="ack" key={r.run_id}>
+                <input type="checkbox" checked={on} disabled={!r.available} onChange={() => set({
+                  runs: on ? declaredRuns(m).filter(id => id !== r.run_id) : [...declaredRuns(m), r.run_id],
+                  baseline: on && m.baseline === r.run_id ? "" : m.baseline,
+                })} />
+                <span><code className="mono-s">{r.run_id}</code>{!r.available && " — unavailable"}</span>
+              </label>;
+            })}
+          </fieldset>
           <div className="form-grid">
-            <Picker label="Tracked run" code="runs[].run_id" value={m.run} options={runOpts} onChange={v => set({ run: v })} />
             <Picker label="Reference run" code="baseline_run_id" value={m.baseline} options={runOpts} onChange={v => set({ baseline: v })} />
           </div>
           <p className="fld-note"><Mark hollow />Metric changes are calculated per run across snapshots, not between two runs.</p>
           <div className="config-pick" role="group" aria-label="Configs attached to each run">
             <span className="fld-label">Configs attached <code className="fld-code">runs[].config_item_ids</code></span>
-            {[m.run, m.baseline].filter((r, i, a) => r && a.indexOf(r) === i).map(run_id => {
+            {declaredRuns(m).map(run_id => {
               const offered = C.runs.find(r => r.run_id === run_id)?.available_config_item_ids ?? [];
               return offered.length ? offered.map(id => {
                 const on = (m.configs[run_id] ?? []).includes(id);
