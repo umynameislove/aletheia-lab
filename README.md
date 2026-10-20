@@ -354,6 +354,20 @@ aletheia --help
 aletheia info --config configs/project.yaml
 ```
 
+Run the complete provider-free ProductService flow on a generated synthetic
+project. The command requires Git and an empty workspace; it creates a real
+metric regression, writes JSON/Markdown/PDF reports, deletes the product-owned
+store state, and leaves the synthetic source project intact:
+
+```powershell
+$demoRoot = Join-Path $env:TEMP ("aletheia-product-demo-" + [guid]::NewGuid().ToString("N"))
+.\.venv\Scripts\aletheia.exe product-demo $demoRoot
+```
+
+The JSON summary contains only stable IDs, counts, relative report paths, report
+hashes, and the verified deletion receipt. No provider, API key, or network
+connection is used. Generated files remain under `$demoRoot` for inspection.
+
 Download, verify, and preprocess the configured dataset:
 
 ```bash
@@ -591,6 +605,8 @@ documentation, and reproducible artifacts.
 - [Matched-diagnosis feasibility report](docs/p1-feasibility-report.md)
 - [Matched-diagnosis frozen closeout package](reports/p1/README.md)
 - [Project persistence-lineage closeout](docs/p3-closeout.md)
+- [Local dashboard quickstart](docs/p6-dashboard-quickstart.md)
+- [Offline product service and lifecycle](docs/p6-product-core.md)
 - [Project scope amendment and deferred gates](docs/p3-scope-amendment.md)
 - [Instrument-validity and empty-evidence contract](docs/p2r-instrument-validity.md)
 - [Registered instrument-validity execution](docs/p2r-confirmatory-execution.md)

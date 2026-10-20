@@ -20,6 +20,11 @@ _EVALUATION_TIMEOUT_SECONDS: Final = 900
 # the CI job reserves another 15 minutes for setup and publication checks.
 _WINDOWS_EVALUATION_TIMEOUT_SECONDS: Final = 2100
 _REPRODUCIBILITY_HASH_SEEDS: Final = ("1", "104729", "209759")
+_PRODUCT_TEST_PATHS: Final[tuple[str, ...]] = tuple(
+    path.relative_to(_ROOT).as_posix()
+    for directory in ("tests/unit", "tests/integration")
+    for path in sorted((_ROOT / directory).glob("test_product_*.py"))
+)
 _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
     "application": (
         "tests/unit/test_model_load_application_capture.py",
@@ -52,6 +57,12 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/property",
         "-k",
         "project",
+    ),
+    "product": (
+        *_PRODUCT_TEST_PATHS,
+        "tests/integration/test_project_import_transaction.py",
+        "tests/integration/test_project_snapshot_regression_pipeline.py",
+        "--durations=20",
     ),
     "research": ("-m", "research_regression"),
     "evaluation": (
@@ -182,6 +193,8 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_model_load_contract.py",
         "tests/unit/test_model_load_research_acceptance.py",
         "tests/unit/test_model_load_handoff_acceptance.py",
+        "tests/unit/test_product_handoff_acceptance.py",
+        "tests/integration/test_product_handoff_local.py",
         "tests/integration/test_model_load_research_acceptance_local.py",
         "tests/unit/test_model_load_application_capture.py",
         "tests/unit/test_model_load_application_analysis.py",
@@ -294,6 +307,8 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_project_persistence.py",
         "tests/unit/test_evaluation_attempt_store.py",
         "tests/unit/test_diagnosis_development_runner.py",
+        "tests/unit/test_claim_support_corpus_materialization.py",
+        "tests/unit/test_terminal_preservation_contracts.py",
         "--durations=20",
     ),
     "full": (

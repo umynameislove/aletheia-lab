@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 from aletheia_lab.benchmark.p2.canonical import canonical_sha256
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -29,8 +31,34 @@ def _run(*extra: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def test_historical_v7_candidate_fails_closed_on_post_result_analysis_change() -> None:
-    completed = _run("--manifest", str(MANIFEST_V7))
+@pytest.mark.parametrize(
+    "additional_drift",
+    (None, "tests/unit/test_diagnosis_main_fairness_audit.py"),
+    ids=("checkout-drift", "additional-bound-artifact"),
+)
+def test_historical_v7_candidate_fails_closed_on_post_result_analysis_change(
+    tmp_path: Path, additional_drift: str | None
+) -> None:
+    frozen_bytes = MANIFEST_V7.read_bytes()
+    assert hashlib.sha256(frozen_bytes).hexdigest() == (
+        "fc32531e15ba80e5729c7977c43765f2779064de0698ae063c75b2acd0f4f47e"
+    )
+    manifest = json.loads(frozen_bytes)
+    candidate_path = MANIFEST_V7
+    if additional_drift is not None:
+        bindings = manifest["repo_artifact_bindings"]
+        assert (
+            hashlib.sha256((ROOT / additional_drift).read_bytes()).hexdigest()
+            == (bindings[additional_drift])
+        )
+        bindings[additional_drift] = "0" * 64
+        manifest["manifest_sha256"] = canonical_sha256(
+            {key: value for key, value in manifest.items() if key != "manifest_sha256"}
+        )
+        candidate_path = tmp_path / "candidate-additional-drift.json"
+        candidate_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    completed = _run("--manifest", str(candidate_path))
     assert completed.returncode == 1
     report = json.loads(completed.stdout)
     assert report["integrity_status"] == "fail"
@@ -38,25 +66,37 @@ def test_historical_v7_candidate_fails_closed_on_post_result_analysis_change() -
     assert report["execution_authorized"] is False
     assert report["blocker_codes"] == []
     failed = [finding for finding in report["findings"] if finding["status"] != "pass"]
-    # The provenance optional extra changed packaging after this historical
-    # freeze. Keep the old manifest intact and require that drift to fail too.
-    changed_paths = (
-        "pyproject.toml",
-        "src/aletheia_lab/evaluation/diagnosis_main_analysis.py",
-        "tests/unit/test_diagnosis_main_freeze_candidate.py",
+    # Compare every pinned artifact, not a stale list of changed paths. Later
+    # portability fixes must fail the old freeze without resealing its manifest.
+    expected_artifacts = []
+    for relative, expected_hash in sorted(manifest["repo_artifact_bindings"].items()):
+        actual_hash = hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()
+        expected_artifacts.append(
+            {
+                "code": f"artifact.{relative}",
+                "status": "pass" if actual_hash == expected_hash else "fail",
+                "evidence": actual_hash,
+            }
+        )
+    assert [item for item in report["findings"] if item["code"].startswith("artifact.")] == (
+        expected_artifacts
     )
-    assert failed == [
-        {
-            "code": f"artifact.{path}",
-            "status": "fail",
-            "evidence": hashlib.sha256((ROOT / path).read_bytes()).hexdigest(),
-        }
-        for path in changed_paths
-    ]
+    assert failed == [item for item in expected_artifacts if item["status"] == "fail"]
+    required_failures = {
+        "artifact.src/aletheia_lab/evaluation/diagnosis_main_analysis.py",
+        "artifact.tests/unit/test_diagnosis_main_census_portable.py",
+        "artifact.tests/unit/test_diagnosis_main_freeze_candidate.py",
+    }
+    if additional_drift is not None:
+        required_failures.add(f"artifact.{additional_drift}")
+    assert required_failures <= {item["code"] for item in failed}
 
-    ready_gate = _run("--manifest", str(MANIFEST_V7), "--require-ready")
+    ready_gate = _run("--manifest", str(candidate_path), "--require-ready")
     assert ready_gate.returncode == 1
-    assert json.loads(ready_gate.stdout)["readiness_status"] == "invalid"
+    ready_report = json.loads(ready_gate.stdout)
+    assert ready_report["readiness_status"] == "invalid"
+    assert ready_report["execution_authorized"] is False
+    assert MANIFEST_V7.read_bytes() == frozen_bytes
 
 
 def test_resigned_policy_drift_fails_cross_artifact_reconciliation(tmp_path: Path) -> None:

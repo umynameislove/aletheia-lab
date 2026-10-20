@@ -21,6 +21,7 @@ from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha2
 from aletheia_lab.filesystem import (
     fsync_directory_tree,
     publish_staged_directory,
+    windows_io_path,
     write_new_file,
 )
 from aletheia_lab.project.identity import canonical_project_json, content_sha256
@@ -38,7 +39,7 @@ class ClaimCorpusArtifactStore:
     """Write complete runs atomically and reject every non-identical replay."""
 
     def __init__(self, root: Path) -> None:
-        self.root = root
+        self.root = windows_io_path(root)
 
     @property
     def runs_root(self) -> Path:

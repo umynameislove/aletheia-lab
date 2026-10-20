@@ -69,7 +69,8 @@ def _dev_dependencies(pyproject: dict) -> tuple[str, ...]:  # type: ignore[type-
 
 
 def _find_exact_command(
-    workflow: dict, expected: list[str]  # type: ignore[type-arg]
+    workflow: dict,
+    expected: list[str],  # type: ignore[type-arg]
 ) -> tuple[str, int, dict]:  # type: ignore[type-arg]
     matches = []
     for job_name, index, step in _steps(workflow):
@@ -138,6 +139,11 @@ def test_bandit_suppression_is_narrow_and_documented() -> None:
                 "# Only the fixed, hash-checked upstream method census is executable here.",
             ),
             (
+                "src/aletheia_lab/evaluation/serving_native_development.py",
+                "B102",
+                "# Compile the exact pinned buffer; never reopen the path or use a bytecode cache.",
+            ),
+            (
                 "src/aletheia_lab/evaluation/serving_protocol_native.py",
                 "B102",
                 "# Execution consumes the same exact, pinned buffer checked above.",
@@ -175,6 +181,32 @@ def test_suppressed_execution_rejects_changed_pinned_source(
             protocol._exact_class(roots, path.name, "Fixture", {})
 
 
+@pytest.mark.parametrize("entrypoint", ["methods", "module"])
+def test_execution_uses_checked_buffer_when_path_changes_after_pin_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, entrypoint: str
+) -> None:
+    from aletheia_lab.evaluation import serving_native_development as development
+    from aletheia_lab.project.identity import content_sha256
+
+    raw = b"class Fixture:\n    def value(self):\n        return 17\n"
+    path = tmp_path / "fixture.py"
+    path.write_bytes(raw)
+    monkeypatch.setattr(development, "PINS", {path.name: content_sha256(raw)})
+    original = development._check_execution_source
+
+    def replace_after_check(source: Path) -> bytes:
+        checked = original(source)
+        source.write_bytes(raw.replace(b"return 17", b"return 99"))
+        return checked
+
+    monkeypatch.setattr(development, "_check_execution_source", replace_after_check)
+    if entrypoint == "methods":
+        fixture = development._methods(path, "Fixture", ("value",), {})
+    else:
+        fixture = development._source_module(path, "security_buffer_fixture").Fixture
+    assert fixture().value() == 17
+
+
 def test_dependency_workflow_triggers_are_complete(audit_workflow: dict) -> None:  # type: ignore[type-arg]
     triggers = audit_workflow["on"]
     expected_paths = {
@@ -203,17 +235,13 @@ def test_dependency_audit_upgrades_pip_before_install_and_audit(
     assert [command for _, command in commands_with_positions].count(pip_upgrade) == 1
     assert [command for _, command in commands_with_positions].count(project_install) == 1
     assert [command for _, command in commands_with_positions].count(audit) == 1
-    positions = {
-        tuple(command): position for position, command in commands_with_positions
-    }
+    positions = {tuple(command): position for position, command in commands_with_positions}
     assert positions[tuple(pip_upgrade)] <= positions[tuple(project_install)]
     assert positions[tuple(project_install)] < positions[tuple(audit)]
 
 
 def test_dependency_audit_command_is_exact_and_blocking(audit_workflow: dict) -> None:  # type: ignore[type-arg]
-    job_name, _, step = _find_exact_command(
-        audit_workflow, ["python", "-m", "pip_audit"]
-    )
+    job_name, _, step = _find_exact_command(audit_workflow, ["python", "-m", "pip_audit"])
     _assert_blocking_job(audit_workflow, job_name, step)
     assert "--ignore-vuln" not in str(step.get("run", ""))
 
@@ -247,13 +275,35 @@ def test_dependency_audit_permissions_are_read_only(audit_workflow: dict) -> Non
 
 
 def test_workflows_use_current_first_party_action_runtimes() -> None:
-    for workflow in (_workflow(_CI_PATH), _workflow(_AUDIT_PATH)):
-        uses = [
-            str(step["uses"])
-            for _, _, step in _steps(workflow)
-            if step.get("uses")
-        ]
-        assert set(uses) == {"actions/checkout@v5", "actions/setup-python@v6"}
+    for path in (_CI_PATH, _AUDIT_PATH):
+        workflow = _workflow(path)
+        uses = [str(step["uses"]) for _, _, step in _steps(workflow) if step.get("uses")]
+        expected = {"actions/checkout@v5", "actions/setup-python@v6"}
+        if path == _CI_PATH:
+            expected.add("actions/setup-node@v6")
+        assert set(uses) == expected
+
+
+def test_dashboard_job_checks_locked_dependencies_tests_and_both_builds(ci_workflow: dict) -> None:  # type: ignore[type-arg]
+    job = ci_workflow["jobs"]["dashboard"]
+    assert job["defaults"]["run"]["working-directory"] == "dashboard/web"
+    setup = [step for step in job["steps"] if step.get("uses") == "actions/setup-node@v6"]
+    assert len(setup) == 1
+    assert setup[0]["with"] == {
+        "node-version": "24",
+        "cache": "npm",
+        "cache-dependency-path": "dashboard/web/package-lock.json",
+    }
+    commands = []
+    for step in job["steps"]:
+        _assert_blocking_job(ci_workflow, "dashboard", step)
+        commands.extend(_commands(str(step.get("run", ""))))
+    assert commands == [
+        ["npm", "ci", "--ignore-scripts"],
+        ["npm", "test"],
+        ["npm", "run", "build"],
+        ["npm", "run", "build:live"],
+    ]
 
 
 def test_public_property_tests_contain_no_internal_tracking_language() -> None:

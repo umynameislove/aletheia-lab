@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import sys
 import tempfile
 import time
 from pathlib import Path
@@ -26,6 +27,24 @@ class ImmutablePublicationConflictError(FileExistsError):
 
 class ImmutablePublicationIntegrityError(OSError):
     """Publication encountered an invalid path or non-identical final bytes."""
+
+
+def windows_io_path(path: Path) -> Path:
+    """Keep Windows artifact I/O outside MAX_PATH without resolving symlinks.
+
+    This is an I/O spelling, not an artifact identity. Relative paths are made
+    absolute before entering the extended drive or UNC namespace; POSIX paths
+    are left unchanged.
+    """
+
+    if sys.platform != "win32":
+        return path
+    absolute = os.path.abspath(path)
+    if absolute.startswith(("\\\\?\\", "\\\\.\\")):
+        return Path(absolute)
+    if absolute.startswith("\\\\"):
+        return Path("\\\\?\\UNC\\" + absolute[2:])
+    return Path("\\\\?\\" + absolute)
 
 
 def _fsync_directory(directory: Path) -> None:

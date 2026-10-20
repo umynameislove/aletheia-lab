@@ -15,7 +15,7 @@ from aletheia_lab.evaluation.claim_corpus_terminal_reader import (
     ClaimCorpusTerminalReader,
 )
 from aletheia_lab.evaluation.execution_contracts import canonical_execution_sha256
-from aletheia_lab.filesystem import publish_immutable_file
+from aletheia_lab.filesystem import publish_immutable_file, windows_io_path
 from aletheia_lab.project.identity import canonical_project_json, content_sha256
 
 if TYPE_CHECKING:
@@ -31,10 +31,11 @@ class ClaimCorpusAttemptStore:
     """
 
     def __init__(self, root: Path, *, clock: StoreClock) -> None:
+        root = windows_io_path(root)
         root.mkdir(parents=True, exist_ok=True)
         if root.is_symlink() or not root.is_dir():
             raise ClaimCorpusExecutionError("claim-corpus store root must be a real directory")
-        self.root = root.resolve()
+        self.root = windows_io_path(root.resolve())
         self.clock = clock
         self.request_root = self.root / "requests"
         self.authority_root = self.root / "authorities"
@@ -111,6 +112,7 @@ def verified_complete_claim_corpus_store_sha256(
 ) -> str:
     """Verify exact sharded-store membership without invoking write primitives."""
 
+    root = windows_io_path(root)
     expected = {
         item.request.initial_attempt.request_identity_sha256: item for item in prepared
     }

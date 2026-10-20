@@ -44,6 +44,22 @@ def test_copy_rejects_changed_bytes_before_ack(tmp_path, monkeypatch):
         study._copy(source, tmp_path / "copy")
 
 
+def test_copy_ack_fsync_uses_a_writable_descriptor(tmp_path, monkeypatch):
+    source, target = tmp_path / "source", tmp_path / "copy"
+    source.write_bytes(b"owned copy")
+    real_open, modes = Path.open, []
+
+    def opened(path, mode="r", *args, **kwargs):
+        if path == target and "+" in mode:
+            modes.append(mode)
+        return real_open(path, mode, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", opened)
+    study._copy(source, target)
+    assert modes == ["r+b"]
+    assert target.read_bytes() == b"owned copy"
+
+
 def test_runtime_version_table_is_exact_not_minimum(monkeypatch):
     monkeypatch.setattr(study.importlib.metadata, "version", study.RUNTIME.__getitem__)
     assert study._runtime() == study.RUNTIME

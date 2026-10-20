@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
+from test_diagnosis_main_census_portable import _portable_sources
 
 from aletheia_lab.evaluation.diagnosis_main_census import (
     DiagnosisMainCensusError,
@@ -21,11 +22,6 @@ PRESERVED = (
     / "result-store"
 )
 
-pytestmark = pytest.mark.skipif(
-    not PRESERVED.is_dir(),
-    reason="private preserved P2 artifacts are available only in the project workspace",
-)
-
 
 def _sources() -> DiagnosisMainCensusSources:
     return DiagnosisMainCensusSources(
@@ -37,9 +33,34 @@ def _sources() -> DiagnosisMainCensusSources:
     )
 
 
-def test_complete_prior_source_census_is_deterministic_and_fail_closed() -> None:
-    first_packet, first_seal, first_qwen = build_diagnosis_main_census(_sources())
-    second_packet, second_seal, second_qwen = build_diagnosis_main_census(_sources())
+@pytest.fixture(params=("portable", "preserved"))
+def census_sources(
+    request: pytest.FixtureRequest, tmp_path: Path
+) -> DiagnosisMainCensusSources:
+    if request.param == "portable":
+        source_root = tmp_path / "sources"
+        source_root.mkdir()
+        return _portable_sources(source_root)
+    sources = _sources()
+    if not all(
+        path.is_file()
+        for path in (
+            sources.source_contract,
+            sources.p2r_measurements,
+            sources.label_noise_primary,
+            sources.label_noise_replication,
+            sources.label_noise_protocol,
+        )
+    ):
+        pytest.skip("complete private preserved P2 sources are unavailable in this checkout")
+    return sources
+
+
+def test_complete_prior_source_census_is_deterministic_and_fail_closed(
+    census_sources: DiagnosisMainCensusSources,
+) -> None:
+    first_packet, first_seal, first_qwen = build_diagnosis_main_census(census_sources)
+    second_packet, second_seal, second_qwen = build_diagnosis_main_census(census_sources)
 
     assert serialize_census_artifact(first_packet) == serialize_census_artifact(second_packet)
     assert first_seal == second_seal
@@ -68,8 +89,10 @@ def test_complete_prior_source_census_is_deterministic_and_fail_closed() -> None
     )
 
 
-def test_each_family_has_exact_sibling_transformations_and_eight_paths() -> None:
-    packet, _, _ = build_diagnosis_main_census(_sources())
+def test_each_family_has_exact_sibling_transformations_and_eight_paths(
+    census_sources: DiagnosisMainCensusSources,
+) -> None:
+    packet, _, _ = build_diagnosis_main_census(census_sources)
     census = packet.analysis_census
     visible = {item.context_id: item for item in packet.visible_contexts}
     contexts_by_family: dict[str, dict[str, set[str]]] = {}
@@ -95,8 +118,10 @@ def test_each_family_has_exact_sibling_transformations_and_eight_paths() -> None
     )
 
 
-def test_qwen_subset_is_two_families_per_superfamily_and_exact_72_requests() -> None:
-    packet, seal, qwen = build_diagnosis_main_census(_sources())
+def test_qwen_subset_is_two_families_per_superfamily_and_exact_72_requests(
+    census_sources: DiagnosisMainCensusSources,
+) -> None:
+    packet, seal, qwen = build_diagnosis_main_census(census_sources)
     families = {family.family_id: family for family in packet.analysis_census.families}
     superfamilies = [families[family_id].superfamily_id for family_id in qwen.family_ids]
 
@@ -111,8 +136,10 @@ def test_qwen_subset_is_two_families_per_superfamily_and_exact_72_requests() -> 
     assert seal.qwen_census_sha256 == qwen.census_sha256
 
 
-def test_source_mutation_is_rejected_before_census_construction(tmp_path: Path) -> None:
-    sources = _sources()
+def test_source_mutation_is_rejected_before_census_construction(
+    tmp_path: Path, census_sources: DiagnosisMainCensusSources
+) -> None:
+    sources = census_sources
     modified = json.loads(sources.p2r_measurements.read_text(encoding="utf-8"))
     modified[0]["clean_accuracy"] = 0.0
     path = tmp_path / "measurements.json"

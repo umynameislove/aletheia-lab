@@ -92,8 +92,8 @@
         "rationale": "Accepted project schema compatibility surface."
       },
       "src/aletheia_lab/project/importer.py": {
-        "maximum_lines": 1231,
-        "rationale": "Security-sensitive project import boundary pending isolated decomposition."
+        "maximum_lines": 1217,
+        "rationale": "Security-sensitive project import boundary after isolated content-validation decomposition."
       },
       "src/aletheia_lab/project/regression.py": {
         "maximum_lines": 843,

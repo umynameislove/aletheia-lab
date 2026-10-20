@@ -74,7 +74,7 @@ def _copy(source: Path, destination: Path) -> dict[str, Any]:
     shutil.copyfile(source, destination)
     if file_sha256(source) != file_sha256(destination):
         raise ValueError("snapshot bytes differ")
-    with destination.open("rb") as handle:
+    with destination.open("r+b") as handle:
         os.fsync(handle.fileno())
     return {"bytes": destination.stat().st_size, "sha256": file_sha256(destination)}
 

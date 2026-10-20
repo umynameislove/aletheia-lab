@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import stat
 from collections.abc import Callable
 from pathlib import Path
 
@@ -18,6 +19,7 @@ from aletheia_lab.baseline.schema import (
 )
 from aletheia_lab.benchmark.case_schema import case_family_id_for
 from aletheia_lab.evidence.rubric import expected_behavior_for
+from aletheia_lab.filesystem import windows_io_path
 
 _CATEGORY_VALUES: dict[str, list[str]] = {
     "gender": ["Male", "Female"],
@@ -66,6 +68,34 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
             item.add_marker(pytest.mark.property)
         if path.stem.startswith(_RESEARCH_TEST_PREFIXES):
             item.add_marker(pytest.mark.research_regression)
+
+
+@pytest.fixture
+def file_tree_snapshot() -> Callable[[Path], dict[Path, bytes]]:
+    """Read all owned files, including long Windows paths, without hiding I/O errors."""
+
+    def snapshot(root: Path) -> dict[Path, bytes]:
+        io_root = windows_io_path(root)
+        if not stat.S_ISDIR(io_root.stat(follow_symlinks=False).st_mode):
+            raise ValueError("snapshot root must be a real directory")
+        files: dict[Path, bytes] = {}
+
+        def visit(directory: Path) -> None:
+            with os.scandir(directory) as entries:
+                for entry in entries:
+                    path = Path(entry.path)
+                    mode = entry.stat(follow_symlinks=False).st_mode
+                    if stat.S_ISDIR(mode):
+                        visit(path)
+                    elif stat.S_ISREG(mode):
+                        files[path.relative_to(io_root)] = path.read_bytes()
+                    else:
+                        raise ValueError("snapshot members must be real files or directories")
+
+        visit(io_root)
+        return files
+
+    return snapshot
 
 
 @pytest.fixture

@@ -159,6 +159,24 @@ class RunMapping(_StrictFrozenModel):
         return tuple(sorted(values))
 
 
+class MetricDefinition(_StrictFrozenModel):
+    metric_name: str
+    direction: Literal["higher_is_better", "lower_is_better"]
+    regression_threshold: float = Field(ge=0)
+
+    @field_validator("metric_name")
+    @classmethod
+    def _canonical_name(cls, value: str) -> str:
+        return _identifier(value, label="metric_name")
+
+    @field_validator("regression_threshold")
+    @classmethod
+    def _finite_threshold(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("regression_threshold must be finite")
+        return 0.0 if value == 0.0 else value
+
+
 def _configuration_payload(
     *,
     project_id: str,
@@ -168,8 +186,9 @@ def _configuration_payload(
     metric_sources: tuple[MetricSourceMapping, ...],
     runs: tuple[RunMapping, ...],
     baseline_run_id: str,
+    metric_definitions: tuple[MetricDefinition, ...] = (),
 ) -> dict[str, object]:
-    return {
+    payload: dict[str, object] = {
         "schema_version": MAPPING_SCHEMA_VERSION,
         "project_id": project_id,
         "project_bundle_id": project_bundle_id,
@@ -179,6 +198,11 @@ def _configuration_payload(
         "runs": [value.model_dump(mode="json") for value in runs],
         "baseline_run_id": baseline_run_id,
     }
+    if metric_definitions:
+        payload["metric_definitions"] = [
+            value.model_dump(mode="json") for value in metric_definitions
+        ]
+    return payload
 
 
 class ProjectMappingConfiguration(_StrictFrozenModel):
@@ -190,6 +214,7 @@ class ProjectMappingConfiguration(_StrictFrozenModel):
     metric_sources: tuple[MetricSourceMapping, ...]
     runs: tuple[RunMapping, ...]
     baseline_run_id: str
+    metric_definitions: tuple[MetricDefinition, ...] = ()
     mapping_sha256: Sha256
 
     @field_validator("metric_sources")
@@ -211,6 +236,17 @@ class ProjectMappingConfiguration(_StrictFrozenModel):
             raise ValueError("run mappings must be non-empty and unique")
         return tuple(sorted(values, key=lambda value: value.run_id))
 
+    @field_validator("metric_definitions")
+    @classmethod
+    def _canonical_definitions(
+        cls,
+        values: tuple[MetricDefinition, ...],
+    ) -> tuple[MetricDefinition, ...]:
+        names = tuple(value.metric_name for value in values)
+        if len(names) != len(set(names)):
+            raise ValueError("metric definitions must have unique names")
+        return tuple(sorted(values, key=lambda value: value.metric_name))
+
     @field_validator("baseline_run_id")
     @classmethod
     def _canonical_baseline(cls, value: str) -> str:
@@ -226,6 +262,7 @@ class ProjectMappingConfiguration(_StrictFrozenModel):
             metric_sources=self.metric_sources,
             runs=self.runs,
             baseline_run_id=self.baseline_run_id,
+            metric_definitions=self.metric_definitions,
         )
         if self.mapping_sha256 != canonical_project_sha256(payload):
             raise ValueError("mapping_sha256 does not match mapping configuration")
@@ -241,9 +278,13 @@ def build_project_mapping_configuration(
     metric_sources: tuple[MetricSourceMapping, ...],
     runs: tuple[RunMapping, ...],
     baseline_run_id: str,
+    metric_definitions: tuple[MetricDefinition, ...] = (),
 ) -> ProjectMappingConfiguration:
     sorted_metrics = tuple(sorted(metric_sources, key=lambda value: value.mapping_id))
     sorted_runs = tuple(sorted(runs, key=lambda value: value.run_id))
+    sorted_definitions = tuple(
+        sorted(metric_definitions, key=lambda value: value.metric_name)
+    )
     payload = _configuration_payload(
         project_id=project_id,
         project_bundle_id=project_bundle_id,
@@ -252,6 +293,7 @@ def build_project_mapping_configuration(
         metric_sources=sorted_metrics,
         runs=sorted_runs,
         baseline_run_id=baseline_run_id,
+        metric_definitions=sorted_definitions,
     )
     return ProjectMappingConfiguration(
         project_id=project_id,
@@ -261,6 +303,7 @@ def build_project_mapping_configuration(
         metric_sources=sorted_metrics,
         runs=sorted_runs,
         baseline_run_id=baseline_run_id,
+        metric_definitions=sorted_definitions,
         mapping_sha256=canonical_project_sha256(payload),
     )
 

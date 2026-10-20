@@ -52,6 +52,8 @@ def _ruff_complexity_diagnostics(root: Path) -> list[dict[str, object]]:
         cwd=root,
         check=False,
         capture_output=True,
+        encoding="utf-8",
+        errors="strict",
         text=True,
     )
     if completed.returncode not in {0, 1}:

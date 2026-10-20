@@ -13,6 +13,7 @@ Run the profile nearest to the code being changed while iterating:
 python scripts/run_test_profile.py fast
 python scripts/run_test_profile.py contract
 python scripts/run_test_profile.py project
+python scripts/run_test_profile.py product
 python scripts/run_test_profile.py research
 python scripts/run_test_profile.py evaluation
 ```
@@ -23,6 +24,10 @@ python scripts/run_test_profile.py evaluation
   maintainability, CI and security contracts as an early fail-fast gate.
 - `project` runs tests whose node IDs concern the project import and identity
   boundary across unit, integration, and property directories.
+- `product` runs every product unit/integration module plus the persisted P3
+  import and snapshot/regression pipelines. It covers the offline service,
+  dashboard bridge, reports and deletion without a provider call; it is not
+  sharded or filtered.
 - `research` runs frozen benchmark/scientific regression tests without adding
   coverage instrumentation.
 - `evaluation` runs the provider-neutral execution, visibility, immutable-store,
@@ -34,6 +39,31 @@ python scripts/run_test_profile.py evaluation
   receive separate budgets. Install the `dev` extra to include pytest-xdist.
 - `windows-publication` exercises the shared filesystem primitive and every
   immutable store whose durability behavior differs across Windows and POSIX.
+  The diagnosis development store uses resolved Windows extended paths so a
+  short staging directory can become a full-digest run without making its
+  objects inaccessible under the legacy path limit. Deep Unicode-path tests
+  retain identity, replay, and fail-closed integrity checks.
+  Attempt shards, claim-corpus readers and terminal preservation use the same
+  extended I/O namespace without shortening content addresses or resolving
+  symlink aliases. The native Joblib source generator uses a short owned
+  temporary workspace for relative cache writes and their UUID-suffixed stages;
+  retained snapshots and native messages keep their exact bytes.
+  Read-only test inventories use the shared `file_tree_snapshot` fixture: it
+  enters the extended namespace before walking the caller's root, not only
+  inside the store. Relative paths and every payload byte remain unchanged;
+  missing/unreadable paths and symlink members fail instead of being skipped.
+  Snapshot regressions cover deep Unicode paths, byte changes and membership
+  changes without requiring registry edits or a shorter pytest temporary root.
+  Tests that mutate owned artifacts also normalize the caller's I/O root before
+  globbing or opening a file; a normalized read-only inventory does not change
+  a separate caller-held path. Terminal deletion stays strict and must remove
+  the file before the incomplete-replay assertion is exercised.
+  Active readiness bindings track implementation corrections, not new outcomes.
+  Historical freeze regressions compare every bound artifact against the original
+  manifest and its current raw bytes, including later portability changes. The
+  manifest stays unchanged and post-result drift still blocks execution readiness.
+  Historical source-cohort replay reads inputs from its recorded Git commits;
+  original authorization, terminal bytes and failure closeout remain unchanged.
 
 Additional pytest arguments may follow `--`, for example:
 
@@ -97,6 +127,20 @@ Both jobs must succeed; either failure or timeout keeps CI red. Sharding does
 not remove cases or enlarge the 35-minute budget of either evaluation process.
 The full coverage gate and three-seed Linux gate remain unsharded.
 
+The dashboard has a separate Node 24 gate with locked dependency installation,
+executable lifecycle/contract tests, and both demo and live builds:
+
+```bash
+cd dashboard/web
+npm ci --ignore-scripts
+npm test
+npm run build
+npm run build:live
+```
+
+These frontend checks complement the real Python bridge/product integrations;
+they do not replace the unfiltered Python suite or its coverage floor.
+
 Record the exact resolved environment and run the controlled guard audit with:
 
 ```bash
@@ -124,7 +168,7 @@ contract profile runs before dataset acquisition on both Linux interpreters.
 The dedicated Windows publication profile replaces an unversioned list of test
 paths. Pip caches are keyed from `pyproject.toml`; dependency-audit logs include
 the exact resolved inventory digest. Each Windows shard has a 50-minute
-aggregate ceiling so setup, dataset preparation, the independently bounded
+aggregate ceiling so setup, project/product checks, dataset preparation, the independently bounded
 35-minute evaluation profile, and the final publication profile have separate
 headroom. A contract binds the job ceiling to the runner budget with at least
 15 minutes reserved outside evaluation and keeps publication after evaluation.

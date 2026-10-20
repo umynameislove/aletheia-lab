@@ -1,0 +1,34 @@
+{
+  "name": "aletheia-p6-app",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5274",
+    "dev:live": "vite --mode live --host 127.0.0.1 --port 5274",
+    "build": "tsc -b && vite build",
+    "build:live": "tsc -b && vite build --mode live",
+    "bench:build": "tsc -b && vite build --mode bench",
+    "bench:serve": "vite preview --mode bench --outDir dist-bench --host 127.0.0.1 --port 5275",
+    "preview": "vite preview --host 127.0.0.1 --port 5274",
+    "test": "node --disable-warning=ExperimentalWarning --test tests/contract.test.mjs tests/product-view.test.mjs tests/port.test.mjs tests/live.test.mjs tests/lineage.test.mjs tests/a11y.test.mjs"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-sans": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "lucide-react": "^1.49.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "^5.9.3",
+    "vite": "7.3.7"
+  }
+}

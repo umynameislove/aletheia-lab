@@ -38,6 +38,7 @@ dev = [
   "pytest>=8.2",
   "pytest-cov>=7.1",
   "pytest-xdist>=3.6,<4",
+  "pypdf>=6.10,<7",
   "ruff>=0.5",
   "scikit-learn==1.9.0",
   "setuptools>=83.0.0",

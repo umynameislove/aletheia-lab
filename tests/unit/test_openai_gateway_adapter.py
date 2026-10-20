@@ -710,6 +710,7 @@ def test_recovery_reasons_survive_terminal_publication_without_content(
     model: str,
     code: str,
     tmp_path: Path,
+    file_tree_snapshot,
 ) -> None:
     from aletheia_lab.evaluation.attempt_store import ImmutableAttemptStore
     from aletheia_lab.model_gateway.openai_recovery import OpenAIRecoveryAdapter
@@ -747,7 +748,7 @@ def test_recovery_reasons_survive_terminal_publication_without_content(
     store.mark_closeout_pending(request, result)
     store.publish_terminal(request, result)
     assert store.terminal_inventories()[0].gateway_status == "provider_failed"
-    contents = [p.read_bytes() for p in (tmp_path / "store").rglob("*") if p.is_file()]
+    contents = file_tree_snapshot(tmp_path / "store").values()
     assert any(f'"code":"{code}"'.encode() in content for content in contents)
     assert all(b"private refusal text" not in content for content in contents)
 

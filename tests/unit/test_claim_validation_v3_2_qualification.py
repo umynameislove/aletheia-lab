@@ -259,7 +259,10 @@ def test_prepared_requests_are_twelve_new_relation_only_wire_messages(authorized
         assert forbidden not in messages
 
 
-def test_all_exact_results_unlock_planning_but_not_relation_execution(authorized) -> None:
+def test_all_exact_results_unlock_planning_but_not_relation_execution(
+    authorized,
+    file_tree_snapshot,
+) -> None:
     run, plan, auth, prepared, payloads = authorized
     adapter = FakeAdapter(prepared, payloads)
     receipt = execute(
@@ -281,11 +284,9 @@ def test_all_exact_results_unlock_planning_but_not_relation_execution(authorized
     assert receipt["relation_execution_authorized"] is False
     assert receipt["claims_materialized"] is False
     assert receipt["blind_packets_generated"] is False
-    before = {path.relative_to(run): path.read_bytes() for path in run.rglob("*") if path.is_file()}
+    before = file_tree_snapshot(run)
     assert verify(ROOT, run, plan, auth) == receipt
-    assert before == {
-        path.relative_to(run): path.read_bytes() for path in run.rglob("*") if path.is_file()
-    }
+    assert before == file_tree_snapshot(run)
     with pytest.raises(ValueError, match="already registered"):
         execute(
             ROOT,

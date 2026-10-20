@@ -44,6 +44,7 @@ from aletheia_lab.evaluation.execution_contracts import (
     ModelPolicyReference,
     canonical_execution_sha256,
 )
+from aletheia_lab.filesystem import windows_io_path
 from aletheia_lab.model_gateway import (
     GatewayExecutionResult,
     GatewayRequest,
@@ -186,6 +187,7 @@ def test_census_build_is_portable_without_private_preserved_artifacts(
 
 def test_offline_batch_rehearsal_is_canonical_resumable_and_store_bound(
     tmp_path: Path,
+    file_tree_snapshot,
 ) -> None:
     source_root = tmp_path / "sources"
     source_root.mkdir()
@@ -213,11 +215,7 @@ def test_offline_batch_rehearsal_is_canonical_resumable_and_store_bound(
         store=store,
         request_ids=request_ids,
     )
-    persisted = {
-        path.relative_to(store.root): path.read_bytes()
-        for path in store.root.rglob("*")
-        if path.is_file()
-    }
+    persisted = file_tree_snapshot(store.root)
     second = rehearse_main_execution(
         packet=packet,
         contract=contract,
@@ -235,11 +233,7 @@ def test_offline_batch_rehearsal_is_canonical_resumable_and_store_bound(
     assert first.expected_provider_turn_count == 11
     assert first.completed_provider_turn_count == 11
     assert first.terminal_status_counts == {"completed": 7, "deterministic_completed": 1}
-    assert persisted == {
-        path.relative_to(store.root): path.read_bytes()
-        for path in store.root.rglob("*")
-        if path.is_file()
-    }
+    assert persisted == file_tree_snapshot(store.root)
 
     different_selection = tuple(
         request.request_id for request in packet.analysis_census.requests[:8]
@@ -483,6 +477,7 @@ def test_full_materialization_rehearsal_is_blind_complete_and_fail_closed(
 def test_offline_main_pipeline_is_end_to_end_resumable_and_network_incapable(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    file_tree_snapshot,
 ) -> None:
     source_root = tmp_path / "pipeline-sources"
     source_root.mkdir()
@@ -524,11 +519,7 @@ def test_offline_main_pipeline_is_end_to_end_resumable_and_network_incapable(
     }
 
     first = _rehearse_main_pipeline_components(**arguments)
-    persisted = {
-        path.relative_to(workspace): path.read_bytes()
-        for path in workspace.rglob("*")
-        if path.is_file()
-    }
+    persisted = file_tree_snapshot(workspace)
     second = _rehearse_main_pipeline_components(**arguments)
 
     assert first == second
@@ -546,11 +537,7 @@ def test_offline_main_pipeline_is_end_to_end_resumable_and_network_incapable(
         "claim_type",
         "visible_evidence",
     )
-    assert persisted == {
-        path.relative_to(workspace): path.read_bytes()
-        for path in workspace.rglob("*")
-        if path.is_file()
-    }
+    assert persisted == file_tree_snapshot(workspace)
 
     monkeypatch.setattr(
         main_pipeline, "load_main_runtime_inputs", lambda _root: (runtime, fairness, response)
@@ -629,7 +616,7 @@ def test_offline_main_pipeline_is_end_to_end_resumable_and_network_incapable(
         main_pipeline.verify_completed_pipeline(run_dir=run_dir, authorization=authority) == receipt
     )
 
-    report_path = run_dir / "analysis-report.json"
+    report_path = windows_io_path(run_dir / "analysis-report.json")
     report_payload = json.loads(report_path.read_text())
     report_payload["input_sha256"] = "0" * 64
     report_payload["report_sha256"] = canonical_execution_sha256(
@@ -639,7 +626,8 @@ def test_offline_main_pipeline_is_end_to_end_resumable_and_network_incapable(
     with pytest.raises(DiagnosisMainPipelineError, match="do not reconcile"):
         main_pipeline.verify_completed_pipeline(run_dir=run_dir, authorization=authority)
 
-    turn_root = next((workspace / "main-store").glob("dmr-*/turn-*"))
+    io_workspace = windows_io_path(workspace)
+    turn_root = next((io_workspace / "main-store").glob("dmr-*/turn-*"))
     request = GatewayRequest.model_validate_json((turn_root / "request.json").read_bytes())
     result = GatewayExecutionResult.model_validate_json((turn_root / "result.json").read_bytes())
     restored_budget = SharedProviderBudget(100.0)
@@ -649,8 +637,10 @@ def test_offline_main_pipeline_is_end_to_end_resumable_and_network_incapable(
     insufficient_budget.restore(request, result.attempts)
     assert insufficient_budget.exhausted is True
 
-    terminal = next((workspace / "relation-store" / "requests").glob("*/terminal/*.json"))
+    terminal = next((io_workspace / "relation-store" / "requests").glob("*/terminal/*.json"))
+    assert terminal.is_file()
     terminal.unlink()
+    assert not terminal.exists()
     with pytest.raises(
         DiagnosisMainPipelineError,
         match="incomplete relation request forbids automatic provider replay",

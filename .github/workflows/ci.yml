@@ -16,6 +16,27 @@ permissions:
   contents: read
 
 jobs:
+  dashboard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: dashboard/web
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: dashboard/web/package-lock.json
+      - name: Install locked frontend dependencies
+        run: npm ci --ignore-scripts
+      - name: Test dashboard contracts and lifecycle
+        run: npm test
+      - name: Build demo and live dashboard
+        run: |
+          npm run build
+          npm run build:live
   # Keep the external application dependency slice isolated from historical
   # MLflow environments. Actual handlers run on Linux; Windows race is not qualified.
   application:
@@ -90,12 +111,14 @@ jobs:
           src/aletheia_lab/filesystem.py
           src/aletheia_lab/baseline
           src/aletheia_lab/data
+          src/aletheia_lab/dashboard
           src/aletheia_lab/benchmark
           src/aletheia_lab/context
           src/aletheia_lab/diagnosis
           src/aletheia_lab/evidence
           src/aletheia_lab/evaluation
           src/aletheia_lab/model_gateway
+          src/aletheia_lab/product
           src/aletheia_lab/project
           src/aletheia_lab/reporting
           --exclude src/aletheia_lab/benchmark/p2
@@ -108,7 +131,7 @@ jobs:
       fail-fast: false
       matrix:
         shard: [0, 1]
-    # Each shard includes install, dataset preparation, the independently
+    # Each shard includes install, project/product checks, dataset preparation, the independently
     # bounded 35-minute evaluation profile, and the publication profile. Keep
     # 15 minutes outside evaluation rather than racing the aggregate ceiling.
     timeout-minutes: 50
@@ -125,6 +148,8 @@ jobs:
           python -m pip install -e ".[dev,provenance]"
       - name: Test Windows project boundary
         run: python scripts/run_test_profile.py project -- --durations=20
+      - name: Test Windows offline product flow
+        run: python scripts/run_test_profile.py product
       - name: Prepare pinned test dataset
         run: python scripts/download_dataset.py all --config configs/project.yaml
       - name: Test Windows evaluation boundary

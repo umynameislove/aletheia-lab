@@ -10,6 +10,7 @@ from typing import cast
 from pydantic import ValidationError
 
 from aletheia_lab.evaluation.execution_contracts import TechnicalIssue, canonical_execution_sha256
+from aletheia_lab.filesystem import windows_io_path
 from aletheia_lab.model_gateway.contracts import AttemptRecord, TerminalStatus
 from aletheia_lab.project.identity import content_sha256
 
@@ -33,9 +34,9 @@ class AttemptStoreReader:
     """Read and reconcile persisted state without any write authority."""
 
     def __init__(self, *, object_root: Path, request_root: Path, terminal_root: Path) -> None:
-        self.object_root = object_root
-        self.request_root = request_root
-        self.terminal_root = terminal_root
+        self.object_root = windows_io_path(object_root)
+        self.request_root = windows_io_path(request_root)
+        self.terminal_root = windows_io_path(terminal_root)
 
     def _load_chain(
         self,

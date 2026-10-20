@@ -26,6 +26,7 @@ from aletheia_lab.evaluation.execution_contracts import (
     ModelPolicyReference,
     canonical_execution_sha256,
 )
+from aletheia_lab.filesystem import windows_io_path
 from aletheia_lab.model_gateway import (
     DeterministicFakeAdapter,
     FakeFixture,
@@ -246,6 +247,29 @@ def _record_until(
     if state == "closeout_pending":
         return
     store.publish_terminal(request, result)
+
+
+def test_deep_unicode_attempt_store_replays_through_a_read_only_reader(tmp_path: Path) -> None:
+    request, result = _request(), _result(_request())
+    deep = tmp_path / ("café-" * 10) / ("owned-" * 10) / ("deep-" * 10)
+    stores = [ImmutableAttemptStore(root, clock=_Clock()) for root in (tmp_path / "short", deep)]
+    for store in stores:
+        _record_until(store, request, result, "terminal_published")
+    assert stores[0].store_sha256() == stores[1].store_sha256()
+    assert len(str(next(stores[1].object_root.rglob("?" * 62)))) > 260
+    root = windows_io_path(deep)
+    reader = ClaimCorpusTerminalReader(
+        root=deep,
+        object_root=deep / "objects/sha256",
+        request_root=deep / "requests",
+        terminal_root=deep / "terminal",
+        failure_root=deep / "failures",
+    )
+    assert reader.store_sha256() == stores[0].store_sha256()
+    target = next((root / "objects/sha256").rglob("?" * 62))
+    target.write_bytes(target.read_bytes() + b"changed")
+    with pytest.raises(AttemptStoreIntegrityError):
+        reader.verify_integrity()
 
 
 def test_complete_lifecycle_has_explicit_states_and_atomic_terminal_index(
@@ -593,6 +617,7 @@ def test_uppercase_request_directory_is_rejected_cross_platform(tmp_path: Path) 
 def test_atomic_terminal_failure_leaves_closeout_pending(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    file_tree_snapshot,
 ) -> None:
     request = _request()
     result = _result(request)
@@ -611,12 +636,13 @@ def test_atomic_terminal_failure_leaves_closeout_pending(
 
     assert store.current_state(result.request_identity_sha256) == "closeout_pending"
     assert not store.is_terminal(result.request_identity_sha256)
-    assert not tuple(tmp_path.rglob("*.stage"))
+    assert not any(path.suffix == ".stage" for path in file_tree_snapshot(tmp_path))
 
 
 def test_post_link_byte_mismatch_preserves_the_io_error_contract(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    file_tree_snapshot,
 ) -> None:
     store = ImmutableAttemptStore(tmp_path, clock=_Clock())
     destination = tmp_path / "failures" / f"{'2' * 64}.json"
@@ -630,7 +656,7 @@ def test_post_link_byte_mismatch_preserves_the_io_error_contract(
         store._atomic_create(destination, b"expected bytes\n")
 
     assert error.value.code == "io_error"
-    assert not tuple(tmp_path.rglob("*.stage"))
+    assert not any(path.suffix == ".stage" for path in file_tree_snapshot(tmp_path))
 
 
 def test_failure_receipt_is_public_safe_and_has_no_scientific_disposition(

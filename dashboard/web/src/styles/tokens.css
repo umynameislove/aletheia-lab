@@ -1,0 +1,145 @@
+/* ============================================================================
+   Aletheia P6 — "Evidence Workbench" tokens
+   Built with the ui-ux-pro-max skill: Minimalism/Swiss for professional tools,
+   density 8/10, IBM Plex Sans + JetBrains Mono, subtle motion.
+   The skill's suggested green accent was NOT taken: green already means
+   "supported" here, and one hue may not carry two meanings.
+
+   Contrast, measured (WCAG, every text token against every surface):
+     dark   ink 13.5–16.3 · ink-2 7.4–8.9 · ink-3 5.1–6.2   all >= 4.5
+     light  ink 15.5–18.3 · ink-2 7.3–8.7 · ink-3 4.8–5.7   all >= 4.5
+   ink-4 is for borders and hollow marks only — never for text.
+
+   Status ramp, dark: validated with validate_palette.js, all six checks pass.
+   Status ramp, light: validated earlier in the project, all six checks pass.
+   Status colour is a MARK beside ink-coloured words. Never a text colour.
+   ============================================================================ */
+
+/* Dark — warm graphite surfaces, with NO orange: the accent is the
+   ink itself (Quân, 2026-10-09: keep the warm background, drop the orange buttons). No blue, navy or
+   moss anywhere. Colour is left only to the small status marks and the reviewed tick.
+   Darkened a notch on 2026-10-09. Contrast on all eight surfaces: ink 11.4–15.6 · ink-2 7.0–9.6 · ink-3 4.9–6.7;
+   filled button: #1b1a19 on #f4f3ee 15.6:1. */
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg-app: #222220;      /* page */
+  --bg-rail: #1b1a19;     /* sidebar */
+  --bg-1: #272624;        /* card / panel */
+  --bg-2: #2c2b29;        /* slightly elevated */
+  --bg-3: #34332f;        /* pressed / current */
+  --bg-input: #272624;    /* inputs and selects */
+  --bg-hover: #302f2c;    /* hover: neutral, a touch lighter, never tinted */
+  --bg-insp: #1f1e1c;     /* inspector interior */
+  --line: #302f2b;        /* subtle separators */
+  --line-2: #3a3935;      /* borders */
+  --line-3: #4e4c46;      /* dashed / absent outlines */
+
+  --ink: #f4f3ee;
+  --ink-2: #c3c1b8;
+  --ink-3: #a3a199;
+  --ink-4: #6b6963;
+
+  /* the accent is ink: selection, focus and the primary action are cream on graphite */
+  --accent: #f4f3ee;
+  --accent-strong: #ffffff;
+  --accent-fill: #f4f3ee;
+  --accent-fill-hover: #ffffff;
+  --accent-bg: rgba(244, 243, 238, .06);
+  --accent-bg-2: rgba(244, 243, 238, .14);
+  --accent-line: rgba(244, 243, 238, .55);
+  --on-accent: #1b1a19;
+
+  /* reviewed tick — Quân's lime; 7.4:1 on cards */
+  --tick: #a0c92c;
+  --on-tick: #1b1a19;
+
+  /* status marks are small indicators, never text or fills */
+  --ok: #2fae80;      --ok-bg: rgba(47, 174, 128, .12);  --ok-line: rgba(47, 174, 128, .42);
+  --partial: #c9963a; --partial-bg: rgba(201, 150, 58, .12); --partial-line: rgba(201, 150, 58, .42);
+  --no: #d4523f;      --no-bg: rgba(212, 82, 63, .12);   --no-line: rgba(212, 82, 63, .45);
+  --contra: #9a72dc;  --contra-bg: rgba(154, 114, 220, .12); --contra-line: rgba(154, 114, 220, .45);
+
+  --edge-hi: 0 0 0 transparent;
+  --edge-hi-2: 0 0 0 transparent;
+  --shadow-pop: 0 24px 64px rgba(0, 0, 0, .5), 0 2px 8px rgba(0, 0, 0, .35);
+  --scrim: rgba(0, 0, 0, .55);
+}
+
+/* Light — warm paper (about 5% brighter than the first light theme), ink accent, no orange.
+   ink 14.8–17.2 · ink-2 7.8–9.0 · ink-3 4.8–5.9; white on the filled button 17.2:1 */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg-app: #fcfbf9;
+  --bg-rail: #f7f6f3;
+  --bg-1: #ffffff;
+  --bg-2: #fdfcfa;
+  --bg-3: #ebe9e3;        /* current: clearly apart from hover */
+  --bg-input: #ffffff;
+  --bg-hover: #f1f0eb;
+  --bg-insp: #fbfaf7;
+  --line: #ecebe6;
+  --line-2: #e2e0da;
+  --line-3: #cfccc4;
+
+  --ink: #1c1b18;
+  --ink-2: #4b4943;
+  --ink-3: #67645d;
+  --ink-4: #aaa79f;
+
+  --accent: #1c1b18;
+  --accent-strong: #000000;
+  --accent-bg: rgba(28, 27, 24, .05);
+  --accent-bg-2: rgba(28, 27, 24, .10);
+  --accent-line: rgba(28, 27, 24, .55);
+  --accent-fill: #1c1b18;
+  --accent-fill-hover: #000000;
+  --on-accent: #ffffff;
+
+  /* same lime, darkened: #a0c92c is only 1.9:1 on white */
+  --tick: #6f8c1b;
+  --on-tick: #ffffff;
+
+  --ok: #11866a;      --ok-bg: rgba(17, 134, 106, .09);  --ok-line: rgba(17, 134, 106, .4);
+  --partial: #b07e00; --partial-bg: rgba(176, 126, 0, .10); --partial-line: rgba(176, 126, 0, .45);
+  --no: #c0452a;      --no-bg: rgba(192, 69, 42, .08);   --no-line: rgba(192, 69, 42, .42);
+  --contra: #8e2472;  --contra-bg: rgba(142, 36, 114, .08); --contra-line: rgba(142, 36, 114, .4);
+
+  --edge-hi: 0 1px 2px rgba(28, 27, 24, .04);
+  --edge-hi-2: 0 1px 2px rgba(28, 27, 24, .06), 0 1px 1px rgba(28, 27, 24, .03);
+  --shadow-pop: 0 24px 64px rgba(28, 27, 24, .16), 0 2px 8px rgba(28, 27, 24, .07);
+  --scrim: rgba(28, 27, 24, .35);
+}
+
+:root {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* type ramp — real gaps between steps, three weights only */
+  --t-display: 600 24px/1.22 var(--font-sans);
+  --t-title: 600 17px/1.35 var(--font-sans);
+  --t-lead: 400 16px/1.55 var(--font-sans);
+  --t-body: 400 14px/1.55 var(--font-sans);
+  --t-ui: 400 13px/1.45 var(--font-sans);
+  --t-small: 400 12px/1.45 var(--font-sans);
+  --t-label: 600 11px/1.3 var(--font-sans);
+  --t-mono: 400 12px/1.45 var(--font-mono);
+  --t-mono-s: 400 11px/1.4 var(--font-mono);
+
+  /* spacing rhythm — the big steps get used */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s7: 32px; --s8: 40px; --s9: 56px;
+
+  --r-1: 5px;
+  --r-2: 8px;
+  --r-3: 8px;
+
+  --rail-w: 232px;
+  --insp-w: 396px;
+  --top-h: 48px;
+
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --d-fast: 120ms;
+  --d-med: 200ms;
+}

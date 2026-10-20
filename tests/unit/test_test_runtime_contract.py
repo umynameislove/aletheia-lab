@@ -193,6 +193,22 @@ def test_windows_project_boundary_is_a_blocking_ci_gate() -> None:
     assert boundary_steps[0].get("continue-on-error") is None
 
 
+def test_windows_product_flow_is_a_blocking_ci_gate() -> None:
+    windows_job = _workflow()["jobs"]["windows-project"]
+    matches = [
+        step for step in windows_job["steps"]
+        if "run_test_profile.py product" in str(step.get("run", ""))
+    ]
+    assert len(matches) == 1
+    assert matches[0].get("continue-on-error") is None
+    assert not windows_job.get("continue-on-error", False)
+    assert not matches[0].get("if")
+    commands = [str(step.get("run", "")) for step in windows_job["steps"]]
+    assert commands.index("python scripts/run_test_profile.py product") < commands.index(
+        "python scripts/download_dataset.py all --config configs/project.yaml"
+    ) < commands.index(_WINDOWS_EVALUATION_COMMAND)
+
+
 def test_windows_job_budget_cannot_truncate_the_final_publication_gate() -> None:
     jobs = _workflow().get("jobs")
     assert isinstance(jobs, dict)
@@ -356,6 +372,7 @@ def test_named_profiles_resolve_without_collecting_tests() -> None:
         "contract",
         "fast",
         "project",
+        "product",
         "research",
         "evaluation",
         "windows-publication",
@@ -463,6 +480,55 @@ def test_profile_subprocesses_import_from_the_checked_checkout(monkeypatch) -> N
     assert os.environ["PYTHONPATH"] == "SYNTHETIC_OTHER_CHECKOUT"
 
 
+def test_product_profile_includes_all_product_and_persisted_p3_integration_tests() -> None:
+    runner = runpy.run_path(str(_PROFILE_SCRIPT))
+    command = runner["profile_command"]("product")
+    selected = [argument for argument in command[3:] if argument.startswith("tests/")]
+    expected = {
+        path.relative_to(_ROOT).as_posix()
+        for directory in ("tests/unit", "tests/integration")
+        for path in (_ROOT / directory).glob("test_product_*.py")
+    } | {
+        "tests/integration/test_project_import_transaction.py",
+        "tests/integration/test_project_snapshot_regression_pipeline.py",
+    }
+    assert set(selected) == expected
+    assert len(selected) == len(set(selected))
+    assert "tests/integration/test_product_offline_e2e.py" in selected
+    assert not {"-k", "-m", "--ignore", "--ignore-glob"} & set(command[3:])
+    with pytest.raises(ValueError, match="only the evaluation"):
+        runner["profile_command"]("product", shard_count=2)
+
+
+def test_evaluation_profile_keeps_combined_research_and_product_boundaries() -> None:
+    runner = runpy.run_path(str(_PROFILE_SCRIPT))
+    selected = set(runner["profile_command"]("evaluation"))
+    required = {
+        "tests/unit/test_p2_ground_truth_validity.py",
+        "tests/integration/test_p2_ground_truth_validity_local.py",
+        "tests/unit/test_active_diagnosis_policy.py",
+        "tests/unit/test_active_diagnosis_replay.py",
+        "tests/unit/test_active_diagnosis_replay_proofs.py",
+        "tests/unit/test_active_diagnosis_local_selector.py",
+        "tests/integration/test_active_diagnosis_local.py",
+        "tests/integration/test_study_artifacts_local.py",
+        "tests/unit/test_diagnosis_main_measurement_impact.py",
+        "tests/unit/test_diagnosis_main_forward_decomposition.py",
+        "tests/unit/test_diagnosis_main_paired_pilot.py",
+        "tests/unit/test_diagnosis_comparison_robustness.py",
+        "tests/integration/test_diagnosis_comparison_robustness_local.py",
+        "tests/unit/test_serving_contract_design.py",
+        "tests/unit/test_serving_contract_extension.py",
+        "tests/unit/test_serving_contract_evidence.py",
+        "tests/unit/test_resident_state_capture.py",
+        "tests/unit/test_resident_footprint.py",
+        "tests/unit/test_serving_capture_adapter.py",
+        "tests/unit/test_product_handoff_acceptance.py",
+        "tests/integration/test_product_handoff_local.py",
+    }
+    assert required <= selected
+
+
 def test_publication_profile_resolves_the_shared_core_and_all_immutable_stores() -> None:
     completed = subprocess.run(
         [sys.executable, str(_PROFILE_SCRIPT), "windows-publication", "--show-command"],
@@ -476,3 +542,5 @@ def test_publication_profile_resolves_the_shared_core_and_all_immutable_stores()
     assert "tests/unit/test_evaluation_attempt_store.py" in command
     assert "tests/unit/test_diagnosis_development_runner.py" in command
     assert "tests/unit/test_project_persistence.py" in command
+    assert "tests/unit/test_claim_support_corpus_materialization.py" in command
+    assert "tests/unit/test_terminal_preservation_contracts.py" in command
