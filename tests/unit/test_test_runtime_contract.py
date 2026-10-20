@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import json
 import os
+import runpy
 import subprocess
 import sys
 import tomllib
@@ -16,6 +17,10 @@ import yaml
 _ROOT = Path(__file__).resolve().parents[2]
 _CI = _ROOT / ".github/workflows/ci.yml"
 _PROFILE_SCRIPT = _ROOT / "scripts/run_test_profile.py"
+_WINDOWS_EVALUATION_COMMAND = (
+    "python scripts/run_test_profile.py evaluation "
+    "--shard-index ${{ matrix.shard }} --shard-count 2"
+)
 
 
 def _workflow() -> dict[object, object]:
@@ -68,22 +73,18 @@ def test_full_coverage_records_child_processes_without_source_exclusions() -> No
 
     configuration = tomllib.loads((_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     coverage = configuration["tool"]["coverage"]
-    assert "subprocess" in coverage["run"]["patch"]
-    assert "_exit" in coverage["run"]["patch"]
-    assert not coverage["run"].get("omit")
-    assert not coverage["run"].get("include")
-    assert not coverage.get("report", {}).get("omit")
-    assert not coverage.get("report", {}).get("ignore_errors", False)
+    assert set(coverage["run"]["patch"]) == {"subprocess", "_exit"}
+    assert not coverage["run"].get("omit") and not coverage["run"].get("include")
+    assert not coverage["report"].get("omit")
+    assert not coverage["report"].get("ignore_errors", False)
     assert coverage["report"]["precision"] == 2
     assert should_fail_under(87.83, 88, coverage["report"]["precision"])
-
     dependencies = configuration["project"]["optional-dependencies"]["dev"]
-    assert "pytest-cov>=7.1" in dependencies
-    assert "coverage>=7.10.6" in dependencies
+    assert "pytest-cov>=7.1" in dependencies and "coverage>=7.10.6" in dependencies
 
 
 @pytest.mark.parametrize("module", ["cache_lifecycle_analysis", "cache_lifecycle_study"])
-def test_coverage_merges_only_archived_replay_alias_without_losing_lines(
+def test_coverage_merges_only_identical_replay_copies_without_losing_lines(
     tmp_path: Path, module: str
 ) -> None:
     from coverage import Coverage, CoverageData
@@ -96,9 +97,7 @@ def test_coverage_merges_only_archived_replay_alias_without_losing_lines(
     assert alias.read_bytes() == original.read_bytes()
     unrelated = tmp_path / "unrelated" / relative
     unrelated.parent.mkdir(parents=True)
-    unrelated.write_bytes(b"# This is a different source, not an alias.\n")
-
-    # Authored measurement inputs test combination, not application execution.
+    unrelated.write_bytes(b"# A different source, not an alias.\n")
     data = CoverageData(basename=str(tmp_path / "measured.owned"))
     data.add_lines({str(original): {1, 10}, str(alias): {10, 11}, str(unrelated): {1}})
     data.write()
@@ -112,9 +111,7 @@ def test_coverage_merges_only_archived_replay_alias_without_losing_lines(
     assert combined.lines(str(unrelated)) == [1]
 
 
-def test_abrupt_child_exit_preserves_real_measurements_without_changing_exit_code(
-    tmp_path: Path,
-) -> None:
+def test_abrupt_child_exit_preserves_real_measurements_and_exit_code(tmp_path: Path) -> None:
     from coverage import Coverage
 
     probe = tmp_path / "owned_probe.py"
@@ -146,6 +143,19 @@ def test_abrupt_child_exit_preserves_real_measurements_without_changing_exit_cod
     assert measured.get_data().lines(str(probe)) == [1, 2, 3, 4]
 
 
+def test_dev_install_keeps_native_regressions_on_the_pinned_sklearn_runtime() -> None:
+    configuration = tomllib.loads((_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    dependencies = configuration["project"]["optional-dependencies"]["dev"]
+    assert [item for item in dependencies if item.startswith("scikit-learn")] == [
+        "scikit-learn==1.9.0"
+    ]
+    for name in ("test", "windows-project"):
+        installs = [
+            step for step in _workflow()["jobs"][name]["steps"] if step.get("name") == "Install"
+        ]
+        assert len(installs) == 1 and '".[dev,provenance]"' in installs[0]["run"]
+
+
 def test_python_312_still_runs_the_complete_unfiltered_suite() -> None:
     jobs = _workflow().get("jobs")
     assert isinstance(jobs, dict)
@@ -166,19 +176,6 @@ def test_python_312_still_runs_the_complete_unfiltered_suite() -> None:
     assert "-m" not in run and "--ignore" not in run
 
 
-def test_dev_install_keeps_native_regressions_on_the_pinned_sklearn_runtime() -> None:
-    configuration = tomllib.loads((_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    dependencies = configuration["project"]["optional-dependencies"]["dev"]
-    sklearn = [item for item in dependencies if item.startswith("scikit-learn")]
-    assert sklearn == ["scikit-learn==1.9.0"]
-
-    jobs = _workflow()["jobs"]
-    for name in ("test", "windows-project"):
-        installs = [step for step in jobs[name]["steps"] if step.get("name") == "Install"]
-        assert len(installs) == 1
-        assert '".[dev,provenance]"' in installs[0]["run"]
-
-
 def test_windows_project_boundary_is_a_blocking_ci_gate() -> None:
     jobs = _workflow().get("jobs")
     assert isinstance(jobs, dict)
@@ -197,19 +194,19 @@ def test_windows_project_boundary_is_a_blocking_ci_gate() -> None:
 
 
 def test_windows_product_flow_is_a_blocking_ci_gate() -> None:
-    jobs = _workflow().get("jobs")
-    assert isinstance(jobs, dict)
-    windows_job = jobs.get("windows-project")
-    assert isinstance(windows_job, dict)
-    steps = windows_job.get("steps")
-    assert isinstance(steps, list)
+    windows_job = _workflow()["jobs"]["windows-project"]
     matches = [
-        step
-        for step in steps
-        if isinstance(step, dict) and "run_test_profile.py product" in str(step.get("run", ""))
+        step for step in windows_job["steps"]
+        if "run_test_profile.py product" in str(step.get("run", ""))
     ]
     assert len(matches) == 1
     assert matches[0].get("continue-on-error") is None
+    assert not windows_job.get("continue-on-error", False)
+    assert not matches[0].get("if")
+    commands = [str(step.get("run", "")) for step in windows_job["steps"]]
+    assert commands.index("python scripts/run_test_profile.py product") < commands.index(
+        "python scripts/download_dataset.py all --config configs/project.yaml"
+    ) < commands.index(_WINDOWS_EVALUATION_COMMAND)
 
 
 def test_windows_job_budget_cannot_truncate_the_final_publication_gate() -> None:
@@ -235,7 +232,7 @@ def test_windows_job_budget_cannot_truncate_the_final_publication_gate() -> None
     steps = windows_job.get("steps")
     assert isinstance(steps, list)
     commands = [str(step.get("run", "")) for step in steps if isinstance(step, dict)]
-    assert commands.index("python scripts/run_test_profile.py evaluation") < commands.index(
+    assert commands.index(_WINDOWS_EVALUATION_COMMAND) < commands.index(
         "python scripts/run_test_profile.py windows-publication"
     )
 
@@ -328,7 +325,7 @@ def test_windows_prepares_pinned_dataset_before_evaluation() -> None:
     dataset_index = commands.index(
         "python scripts/download_dataset.py all --config configs/project.yaml"
     )
-    evaluation_index = commands.index("python scripts/run_test_profile.py evaluation")
+    evaluation_index = commands.index(_WINDOWS_EVALUATION_COMMAND)
 
     assert dataset_index < evaluation_index
 
@@ -450,25 +447,86 @@ def test_full_profile_preserves_coverage_floor() -> None:
     assert not {"-k", "-m", "--ignore", "--ignore-glob"} & set(command[3:])
 
 
-def test_product_profile_includes_all_product_and_persisted_p3_integration_tests() -> None:
+@pytest.mark.parametrize("profile", ["evaluation", "windows-publication"])
+def test_study_replay_and_artifact_guards_are_selected_by_blocking_profiles(profile) -> None:
     completed = subprocess.run(
-        [sys.executable, str(_PROFILE_SCRIPT), "product", "--show-command"],
+        [sys.executable, str(_PROFILE_SCRIPT), profile, "--show-command"],
         cwd=_ROOT,
         check=True,
         capture_output=True,
         text=True,
     )
     command = json.loads(completed.stdout)
-    expected_product_tests = {
+    assert "tests/unit/test_active_diagnosis_replay.py" in command
+    assert "tests/integration/test_study_artifacts_local.py" in command
+
+
+def test_profile_subprocesses_import_from_the_checked_checkout(monkeypatch) -> None:
+    runner = runpy.run_path(str(_PROFILE_SCRIPT))
+    captured = []
+
+    def run(command, *, cwd, check, env, timeout):
+        from types import SimpleNamespace
+
+        captured.append((command, cwd, env))
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setenv("PYTHONPATH", "SYNTHETIC_OTHER_CHECKOUT")
+    monkeypatch.setattr(runner["subprocess"], "run", run)
+    assert runner["run_profile"]("contract") == 0
+    assert captured[0][1] == _ROOT
+    assert captured[0][2]["PYTHONPATH"].split(os.pathsep)[0] == str(_ROOT / "src")
+    assert "SYNTHETIC_OTHER_CHECKOUT" in captured[0][2]["PYTHONPATH"]
+    assert os.environ["PYTHONPATH"] == "SYNTHETIC_OTHER_CHECKOUT"
+
+
+def test_product_profile_includes_all_product_and_persisted_p3_integration_tests() -> None:
+    runner = runpy.run_path(str(_PROFILE_SCRIPT))
+    command = runner["profile_command"]("product")
+    selected = [argument for argument in command[3:] if argument.startswith("tests/")]
+    expected = {
         path.relative_to(_ROOT).as_posix()
         for directory in ("tests/unit", "tests/integration")
         for path in (_ROOT / directory).glob("test_product_*.py")
+    } | {
+        "tests/integration/test_project_import_transaction.py",
+        "tests/integration/test_project_snapshot_regression_pipeline.py",
     }
-    assert expected_product_tests <= set(command)
-    assert "tests/integration/test_product_offline_e2e.py" in command
-    assert "tests/integration/test_project_import_transaction.py" in command
-    assert "tests/integration/test_project_snapshot_regression_pipeline.py" in command
+    assert set(selected) == expected
+    assert len(selected) == len(set(selected))
+    assert "tests/integration/test_product_offline_e2e.py" in selected
     assert not {"-k", "-m", "--ignore", "--ignore-glob"} & set(command[3:])
+    with pytest.raises(ValueError, match="only the evaluation"):
+        runner["profile_command"]("product", shard_count=2)
+
+
+def test_evaluation_profile_keeps_combined_research_and_product_boundaries() -> None:
+    runner = runpy.run_path(str(_PROFILE_SCRIPT))
+    selected = set(runner["profile_command"]("evaluation"))
+    required = {
+        "tests/unit/test_p2_ground_truth_validity.py",
+        "tests/integration/test_p2_ground_truth_validity_local.py",
+        "tests/unit/test_active_diagnosis_policy.py",
+        "tests/unit/test_active_diagnosis_replay.py",
+        "tests/unit/test_active_diagnosis_replay_proofs.py",
+        "tests/unit/test_active_diagnosis_local_selector.py",
+        "tests/integration/test_active_diagnosis_local.py",
+        "tests/integration/test_study_artifacts_local.py",
+        "tests/unit/test_diagnosis_main_measurement_impact.py",
+        "tests/unit/test_diagnosis_main_forward_decomposition.py",
+        "tests/unit/test_diagnosis_main_paired_pilot.py",
+        "tests/unit/test_diagnosis_comparison_robustness.py",
+        "tests/integration/test_diagnosis_comparison_robustness_local.py",
+        "tests/unit/test_serving_contract_design.py",
+        "tests/unit/test_serving_contract_extension.py",
+        "tests/unit/test_serving_contract_evidence.py",
+        "tests/unit/test_resident_state_capture.py",
+        "tests/unit/test_resident_footprint.py",
+        "tests/unit/test_serving_capture_adapter.py",
+        "tests/unit/test_product_handoff_acceptance.py",
+        "tests/integration/test_product_handoff_local.py",
+    }
+    assert required <= selected
 
 
 def test_publication_profile_resolves_the_shared_core_and_all_immutable_stores() -> None:

@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from aletheia_lab.evaluation.claim_corpus_contracts import (
@@ -24,9 +24,14 @@ PARENT_SHA = "b7381f9b4c855d87f21143f4fe7278c3c00cc15aa40e3e5b633fe1f79d6c5867"
 @pytest.fixture(scope="module")
 def request_census() -> ClaimCorpusRequestCensus:
     inventory = build_family_inventory(ROOT, PARENT_SHA)
-    return build_request_census(inventory)
+    census = build_request_census(inventory)
+    assert build_request_census(inventory) == census
+    return census
 
 
+# Identity invariance is not a per-example disk-I/O latency benchmark.
+# Keep the default example count and all checks under the profile's own budget.
+@settings(deadline=None)
 @given(st.permutations(("A1", "A2", "A3", "B0", "B1", "B2", "CodeGraph", "FULL")))
 def test_request_census_identity_does_not_depend_on_external_variant_order(
     request_census: ClaimCorpusRequestCensus, order: list[str],

@@ -42,6 +42,7 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_diagnosis_development_architecture.py",
         "tests/unit/test_maintainability_contract.py",
         "tests/unit/test_test_runtime_contract.py",
+        "tests/unit/test_evaluation_profile_sharding.py",
         "tests/unit/test_ci_quality_contract.py",
         "tests/unit/test_security_ci_contract.py",
         "--durations=20",
@@ -68,6 +69,14 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_evaluation_execution_contracts.py",
         "tests/property/test_evaluation_contract_properties.py",
         "tests/unit/test_context_evaluation_boundary.py",
+        "tests/unit/test_p2_ground_truth_validity.py",
+        "tests/integration/test_p2_ground_truth_validity_local.py",
+        "tests/unit/test_active_diagnosis_policy.py",
+        "tests/unit/test_active_diagnosis_replay.py",
+        "tests/unit/test_active_diagnosis_replay_proofs.py",
+        "tests/unit/test_active_diagnosis_local_selector.py",
+        "tests/integration/test_active_diagnosis_local.py",
+        "tests/integration/test_study_artifacts_local.py",
         "tests/property/test_context_visibility_properties.py",
         "tests/integration/test_context_p3_projection.py",
         "tests/unit/test_model_gateway_runtime.py",
@@ -121,6 +130,11 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_claim_support_v3_2_closeout.py",
         "tests/unit/test_diagnosis_main_response.py",
         "tests/unit/test_diagnosis_main_analysis.py",
+        "tests/unit/test_diagnosis_main_measurement_impact.py",
+        "tests/unit/test_diagnosis_main_forward_decomposition.py",
+        "tests/unit/test_diagnosis_main_paired_pilot.py",
+        "tests/unit/test_diagnosis_comparison_robustness.py",
+        "tests/integration/test_diagnosis_comparison_robustness_local.py",
         "tests/unit/test_diagnosis_main_census.py",
         "tests/unit/test_diagnosis_main_fairness_audit.py",
         "tests/unit/test_diagnosis_main_runtime.py",
@@ -258,6 +272,12 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
         "tests/unit/test_pipeline_audit_workload.py",
         "tests/unit/test_pipeline_audit_study.py",
         "tests/unit/test_serving_corpus_review.py",
+        "tests/unit/test_serving_contract_design.py",
+        "tests/unit/test_serving_contract_extension.py",
+        "tests/unit/test_serving_contract_evidence.py",
+        "tests/unit/test_resident_state_capture.py",
+        "tests/unit/test_resident_footprint.py",
+        "tests/unit/test_serving_capture_adapter.py",
         "tests/unit/test_official_model_signing.py",
         "tests/unit/test_serving_native_development.py",
         "tests/unit/test_serving_large_model_review.py",
@@ -275,6 +295,9 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
     ),
     "windows-publication": (
         "tests/unit/test_filesystem_publication.py",
+        "tests/unit/test_active_diagnosis_replay.py",
+        "tests/unit/test_active_diagnosis_replay_proofs.py",
+        "tests/integration/test_study_artifacts_local.py",
         "tests/unit/test_evidence_store.py",
         "tests/unit/test_matched_diagnosis_pilot.py",
         "tests/unit/test_p1_closeout.py",
@@ -297,8 +320,37 @@ _PROFILE_ARGS: Final[dict[str, tuple[str, ...]]] = {
 }
 
 
-def profile_command(profile: str, extra: tuple[str, ...] = ()) -> tuple[str, ...]:
+def profile_command(
+    profile: str,
+    extra: tuple[str, ...] = (),
+    *,
+    shard_index: int = 0,
+    shard_count: int = 1,
+) -> tuple[str, ...]:
     """Build the interpreter-stable command for a named test profile."""
+
+    if (
+        type(shard_count) is not int
+        or type(shard_index) is not int
+        or not 1 <= shard_count <= 4
+        or not 0 <= shard_index < shard_count
+    ):
+        raise ValueError("invalid bounded profile shard")
+    arguments = _PROFILE_ARGS[profile]
+    if shard_count > 1:
+        if profile != "evaluation":
+            raise ValueError("only the evaluation profile supports sharding")
+        paths = tuple(argument for argument in arguments if argument.startswith("tests/"))
+        if len(paths) != len(set(paths)):
+            raise ValueError("evaluation profile contains duplicate test modules")
+        selected = set(paths[shard_index::shard_count])
+        if not selected:
+            raise ValueError("evaluation shard must not be empty")
+        arguments = tuple(
+            argument
+            for argument in arguments
+            if not argument.startswith("tests/") or argument in selected
+        )
 
     # Keep module-scoped fixtures together and bound concurrency on CI runners.
     # Every selected test still runs exactly once, including under coverage.
@@ -313,7 +365,7 @@ def profile_command(profile: str, extra: tuple[str, ...] = ()) -> tuple[str, ...
         sys.executable,
         "-m",
         "pytest",
-        *_PROFILE_ARGS[profile],
+        *arguments,
         *workers,
         *extra,
     )
@@ -374,15 +426,21 @@ def run_profile(
     extra: tuple[str, ...] = (),
     *,
     repeat: int = 1,
+    shard_index: int = 0,
+    shard_count: int = 1,
 ) -> int:
     """Run a profile, enforcing the evaluation budget and repeat seeds."""
 
-    command = profile_command(profile, extra)
+    command = profile_command(profile, extra, shard_index=shard_index, shard_count=shard_count)
     timeout = _evaluation_timeout_seconds() if profile == "evaluation" else None
     for run_index in range(repeat):
-        environment = None
+        environment = dict(os.environ)
+        source_root = str(_ROOT / "src")
+        inherited_path = environment.get("PYTHONPATH", "")
+        environment["PYTHONPATH"] = source_root + (
+            os.pathsep + inherited_path if inherited_path else ""
+        )
         if repeat > 1:
-            environment = dict(os.environ)
             environment["PYTHONHASHSEED"] = _hash_seed(run_index)
             print(
                 f"evaluation run {run_index + 1}/{repeat} "
@@ -433,6 +491,8 @@ def _parser() -> argparse.ArgumentParser:
         default=1,
         help="repeat the evaluation profile with distinct process hash seeds",
     )
+    parser.add_argument("--shard-index", type=int, default=0)
+    parser.add_argument("--shard-count", type=_positive_int, default=1)
     return parser
 
 
@@ -445,14 +505,26 @@ def main() -> int:
     else:
         profile_args = raw
         extra = ()
-    args = _parser().parse_args(profile_args)
-    command = profile_command(args.profile, extra)
+    parser = _parser()
+    args = parser.parse_args(profile_args)
     if args.repeat != 1 and args.profile != "evaluation":
-        _parser().error("--repeat is supported only by the evaluation profile")
+        parser.error("--repeat is supported only by the evaluation profile")
+    try:
+        command = profile_command(
+            args.profile, extra, shard_index=args.shard_index, shard_count=args.shard_count
+        )
+    except ValueError as exc:
+        parser.error(str(exc))
     if args.show_command:
         print(json.dumps(command, ensure_ascii=True, separators=(",", ":")))
         return 0
-    return run_profile(args.profile, extra, repeat=args.repeat)
+    return run_profile(
+        args.profile,
+        extra,
+        repeat=args.repeat,
+        shard_index=args.shard_index,
+        shard_count=args.shard_count,
+    )
 
 
 if __name__ == "__main__":

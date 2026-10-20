@@ -13,6 +13,7 @@ Run the profile nearest to the code being changed while iterating:
 python scripts/run_test_profile.py fast
 python scripts/run_test_profile.py contract
 python scripts/run_test_profile.py project
+python scripts/run_test_profile.py product
 python scripts/run_test_profile.py research
 python scripts/run_test_profile.py evaluation
 ```
@@ -23,6 +24,10 @@ python scripts/run_test_profile.py evaluation
   maintainability, CI and security contracts as an early fail-fast gate.
 - `project` runs tests whose node IDs concern the project import and identity
   boundary across unit, integration, and property directories.
+- `product` runs every product unit/integration module plus the persisted P3
+  import and snapshot/regression pipelines. It covers the offline service,
+  dashboard bridge, reports and deletion without a provider call; it is not
+  sharded or filtered.
 - `research` runs frozen benchmark/scientific regression tests without adding
   coverage instrumentation.
 - `evaluation` runs the provider-neutral execution, visibility, immutable-store,
@@ -87,6 +92,11 @@ python scripts/run_test_profile.py full
 The full profile enforces the 88 percent coverage floor. Large-artifact tests
 remain part of this profile when their ignored local evidence stores are
 available; they are never silently removed from the default suite.
+The development environment pins scikit-learn 1.9.0 for native regressions.
+Coverage measures Python subprocesses and abrupt child exits through
+coverage.py patches. Only the archived-replay test's byte-identical source
+copies share canonical module identities; no module or executed line is omitted.
+Two decimal places prevent a below-floor result from passing through rounding.
 
 Before changing evaluation infrastructure, run its reproducibility gate three
 times under distinct process hash seeds:
@@ -103,6 +113,33 @@ unit/property tests target two seconds, and deterministic fixture-provider
 integration paths target 15 seconds. The profile output is the runtime report;
 investigate its top 20 entries rather than reducing property examples or
 removing regression tests.
+
+Windows CI partitions evaluation modules across two required matrix jobs:
+
+```bash
+python scripts/run_test_profile.py evaluation --shard-index 0 --shard-count 2
+python scripts/run_test_profile.py evaluation --shard-index 1 --shard-count 2
+```
+
+The two ordered partitions are disjoint and their union is the unsharded module
+inventory. Each whole module keeps its scoped fixtures and two xdist workers.
+Both jobs must succeed; either failure or timeout keeps CI red. Sharding does
+not remove cases or enlarge the 35-minute budget of either evaluation process.
+The full coverage gate and three-seed Linux gate remain unsharded.
+
+The dashboard has a separate Node 24 gate with locked dependency installation,
+executable lifecycle/contract tests, and both demo and live builds:
+
+```bash
+cd dashboard/web
+npm ci --ignore-scripts
+npm test
+npm run build
+npm run build:live
+```
+
+These frontend checks complement the real Python bridge/product integrations;
+they do not replace the unfiltered Python suite or its coverage floor.
 
 Record the exact resolved environment and run the controlled guard audit with:
 
@@ -126,12 +163,12 @@ where the 88 percent threshold remains blocking. Pushes to feature branches do
 not duplicate an open pull request's matrix; pushes to `main` remain fully
 validated. New commits cancel stale in-progress runs for the same pull request.
 The evaluation profile repeats under three hash seeds on Python 3.11, runs once
-for Python 3.12 compatibility, and runs once in the blocking Windows job. The
+for Python 3.12 compatibility, and runs across both blocking Windows shards. The
 contract profile runs before dataset acquisition on both Linux interpreters.
 The dedicated Windows publication profile replaces an unversioned list of test
 paths. Pip caches are keyed from `pyproject.toml`; dependency-audit logs include
-the exact resolved inventory digest. The serial Windows job has a 50-minute
-aggregate ceiling so setup, dataset preparation, the independently bounded
+the exact resolved inventory digest. Each Windows shard has a 50-minute
+aggregate ceiling so setup, project/product checks, dataset preparation, the independently bounded
 35-minute evaluation profile, and the final publication profile have separate
 headroom. A contract binds the job ceiling to the runner budget with at least
 15 minutes reserved outside evaluation and keeps publication after evaluation.

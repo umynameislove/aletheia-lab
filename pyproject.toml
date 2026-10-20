@@ -92,16 +92,15 @@ markers = [
 patch = ["subprocess", "_exit"]
 
 [tool.coverage.paths]
-# The archived-replay regression imports these byte-identical snapshot copies.
-# Combine their observations with the original files instead of counting each
-# copy as an additional source module. No source is excluded from measurement.
+# Only byte-identical archived-replay copies share the original module identity.
+# No source module or executed line is excluded from the blocking report.
 archived_replay = [
   "src/aletheia_lab/evaluation",
   "*/test_cli_archived_replay_prese*/snapshot/src/aletheia_lab/evaluation"
 ]
 
 [tool.coverage.report]
-# The blocking floor must not round a below-threshold result to an integer.
+# Do not round a result below the blocking floor to an integer percentage.
 precision = 2
 
 [tool.ruff]

@@ -140,6 +140,13 @@ experiment artifacts remain local and are independently validated before use.
   service. Authored demand/resource budgets are not operator SLOs, and smaller
   closed databases alone do not establish a latency or algorithmic advantage.
   See the [native workflow and audit boundaries](docs/model-load-observability-development.md).
+  The [prospective serving contract-boundary checker](docs/serving-contract-boundary-development.md)
+  validates design declarations only; it does not execute or authorize a study.
+  Its amendment separates lifecycle/enrollment evidence from bounded actual-use
+  measurements; opaque state remains query-relative unknown and native control
+  qualification is not a completed transfer experiment.
+  The [scoped capture toolkit](docs/serving-capture-toolkit.md) provides reusable
+  entry observations without certifying immutability, native use or full closure.
 - Retained source-faithful extraction/acquisition studies compare LLMs with
   producer-adapted parsers and deterministic planners. Their limited results do
   not establish that an LLM is necessary for the current audit service.
@@ -593,10 +600,13 @@ documentation, and reproducible artifacts.
 - [Main diagnosis freeze candidate](docs/diagnosis-main-freeze-candidate.md)
 - [Release-profile stability and dependency-drift audit](docs/release-profile-stability-audit.md)
 - [Diagnosis development validation](docs/diagnosis-development-validation.md)
+- [Verified diagnosis foundations and product boundaries](docs/diagnosis-foundations.md)
 - [Dataset card](docs/dataset-card.md)
 - [Matched-diagnosis feasibility report](docs/p1-feasibility-report.md)
 - [Matched-diagnosis frozen closeout package](reports/p1/README.md)
 - [Project persistence-lineage closeout](docs/p3-closeout.md)
+- [Local dashboard quickstart](docs/p6-dashboard-quickstart.md)
+- [Offline product service and lifecycle](docs/p6-product-core.md)
 - [Project scope amendment and deferred gates](docs/p3-scope-amendment.md)
 - [Instrument-validity and empty-evidence contract](docs/p2r-instrument-validity.md)
 - [Registered instrument-validity execution](docs/p2r-confirmatory-execution.md)

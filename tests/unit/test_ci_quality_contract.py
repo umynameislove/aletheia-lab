@@ -206,6 +206,7 @@ def test_pandas_stubs_declared_in_dev_deps() -> None:
 _MYPY_EXPANDED_MODULES: tuple[str, ...] = (
     "src/aletheia_lab/baseline",
     "src/aletheia_lab/data",
+    "src/aletheia_lab/dashboard",
     "src/aletheia_lab/benchmark",
     "src/aletheia_lab/context",
     "src/aletheia_lab/diagnosis",

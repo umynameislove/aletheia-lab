@@ -14,6 +14,85 @@ from aletheia_lab.evaluation import incident_audit_study as study
 from aletheia_lab.evaluation.incident_audit_archive import IncidentAuditArchive
 from aletheia_lab.evaluation.incident_audit_service import RecoveryTier, summarize
 from aletheia_lab.evaluation.incident_audit_verification import witness_answers
+from aletheia_lab.project.identity import content_sha256
+
+
+@pytest.mark.parametrize("source_arm", ["complete_capture", "route_repair"])
+def test_inert_source_runs_real_archive_obligations_and_preserves_unknown(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, source_arm: str
+) -> None:
+    """Owned frames exercise service orchestration, not a native study outcome."""
+    calls = []
+
+    class InertSource:
+        identity = {"fixture": "owned frames, no SDK"}
+        load_ns = 0
+
+        def call(self, ordinal, *, captured, route_repair):
+            calls.append((ordinal, captured, route_repair))
+            failed = ordinal == 5
+            value = frame(f"request-{ordinal:03d}", failed=failed)
+            if not captured:
+                value["uses"] = []
+            reference = "unknown" if failed else "compliant"
+            return {
+                "frame": value,
+                "reference": reference,
+                "native_error": "owned failure" if failed else None,
+                "strong_source_history": reference,
+                "capture_answer": reference if captured else "unknown",
+            }
+
+    monkeypatch.setattr(study, "InitializerWorkload", InertSource)
+    directory = tmp_path / "owned-worker"
+    config = {
+        "source_arm": source_arm,
+        "logical_capacity_bytes": [2048, 32768],
+        "policies": ["static", "lru"],
+        "recovery_tiers": ["none", "durable_secondary"],
+        "full_reference_capacity_bytes": 65536,
+        "secondary_logical_capacity_bytes": 65536,
+        "response_budget_ns": 10**9,
+        "preknown_obligation_every_calls": 4,
+        "preknown_audit_delay_ticks": 2,
+        "future_frame_growth_bound_bytes": 2048,
+        "capture_omission_ordinal": 3,
+        "incident_window_calls": 4,
+        "incident_audit_delay_ticks": 2,
+        "native_calls_per_process": 16,
+        "retrospective_window_calls": 8,
+        "retrospective_audit_delay_ticks": 4,
+    }
+    result = study.worker(config, directory)
+    assert len(calls) == len(result["rows"]) == 16
+    assert calls == [
+        (i, source_arm == "complete_capture" or i != 3, source_arm == "route_repair")
+        for i in range(16)
+    ]
+    assert result["source_identity"] == InertSource.identity
+    assert result["source_summary"]["offered_native_calls"] == 16
+    assert result["source_summary"]["native_failures"] == 1
+    assert result["source_summary"]["strong_source_history_correct"] == 15
+    assert result["source_summary"]["captured_unknown"] == int(source_arm == "route_repair")
+    assert result["source_summary"]["captured_false"] == 0
+    assert result["source_summary"]["independent_operator_incident"] is False
+    assert result["provider_calls"] == 0
+    assert result["schedule"][-1]["kind"] == "retrospective"
+    assert len(result["archives"]) == 9
+    for name, report in result["archives"].items():
+        database = directory / f"{name}.sqlite"
+        assert report["closed_db_bytes"] == database.stat().st_size
+        assert report["db_sha256"] == content_sha256(database.read_bytes())
+        assert report["summary"]["offered"] == (
+            len(report["offers"]) + len(report["prospective_admissions"])
+        )
+        assert report["summary"]["wrong"] == 0
+        assert all(
+            item["queried_at"] == item["deadline"] for item in report["prospective_admissions"]
+        )
+    assert result["secondary"]["closed_db_bytes"] > 0
+    with pytest.raises(ValueError, match="fresh owned worker directory"):
+        study.worker(config, directory)
 
 
 def test_offered_denominator_does_not_hide_unknown_refusal_or_deadline() -> None:
