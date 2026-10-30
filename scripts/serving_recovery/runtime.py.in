@@ -1,0 +1,156 @@
+"""Finite source-qualified MLServer runtime; placeholders fixed by prepare.py."""
+
+import asyncio
+import hashlib
+import json
+import math
+import os
+import time
+import types
+import uuid
+from pathlib import Path
+
+import numpy as np
+from sklearn.linear_model import LinearRegression
+from mlserver import MLModel
+from mlserver.types import InferenceResponse, Parameters, ResponseOutput
+import continuation_helper
+
+RUNTIME_REVISION = "__RUNTIME_REVISION__"
+RUNTIME_OFFSET = __RUNTIME_OFFSET__
+RUNTIME_BYTES = Path(__file__).read_bytes()
+
+
+def sha(body):
+    return hashlib.sha256(body).hexdigest()
+
+
+def code_in(code, name):
+    if code.co_qualname == name:
+        return code
+    for item in code.co_consts:
+        if isinstance(item, types.CodeType):
+            found = code_in(item, name)
+            if found is not None:
+                return found
+    return None
+
+
+def source_matches(function, body):
+    return function.__code__ == code_in(
+        compile(body, function.__code__.co_filename, "exec", dont_inherit=True),
+        function.__qualname__,
+    )
+
+
+def event(kind, **fields):
+    row = {"kind": kind, "native_ns": time.monotonic_ns(), "pid": os.getpid(), **fields}
+    path = Path(os.environ["CONTINUATION_NATIVE_EVENTS"])
+    with path.open("a", encoding="utf-8") as stream:
+        stream.write(json.dumps(row, sort_keys=True) + "\n")
+        stream.flush()
+    return row
+
+
+class ContinuationRuntime(MLModel):
+    async def load(self):
+        self.generation = uuid.uuid4().hex
+        self.runtime_bytes = RUNTIME_BYTES
+        self.runtime_revision = RUNTIME_REVISION
+        self.runtime_offset = float(RUNTIME_OFFSET)
+        self.helper = continuation_helper.component
+        self.helper_bytes = continuation_helper.SOURCE_BYTES
+        self.helper_revision = continuation_helper.REVISION
+        path = Path(os.environ["CONTINUATION_REPOSITORY"]) / "training.json"
+        self.training_bytes = path.read_bytes()
+        training = json.loads(self.training_bytes)
+        self.training_revision = training["revision"]
+        x = np.asarray(training["x"], dtype=np.float64).reshape(-1, 1)
+        y = np.asarray(training["y"], dtype=np.float64)
+        self.fitted = LinearRegression().fit(x, y)
+        self.wrapper_source_qualified = (
+            source_matches(type(self).load, self.runtime_bytes)
+            and source_matches(type(self).predict, self.runtime_bytes)
+            and source_matches(type(self).unload, self.runtime_bytes)
+            and source_matches(self.helper, self.helper_bytes)
+        )
+        event("native_load_completed", generation=self.generation,
+              instance_id=id(self), training_revision=self.training_revision,
+              sourcehashes=self.sourcehashes())
+        return True
+
+    def sourcehashes(self):
+        return {"runtime": sha(self.runtime_bytes), "helper": sha(self.helper_bytes),
+                "training": sha(self.training_bytes)}
+
+    async def unload(self):
+        # This finite ordinary recipe has no destructive resource finalizer.
+        event("native_unload_called", generation=self.generation, instance_id=id(self))
+        return True
+
+    async def predict(self, payload):
+        selected_ns = time.monotonic_ns()
+        request_id = payload.id
+        if not isinstance(request_id, str) or not request_id or len(request_id) > 100:
+            raise ValueError("bounded explicit request id required")
+        if any(c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-" for c in request_id):
+            raise ValueError("simple owned request id required")
+        if len(payload.inputs) != 1 or payload.inputs[0].name != "x":
+            raise ValueError("exact one declared x input required")
+        raw_x = list(payload.inputs[0].data.root)
+        if len(raw_x) != 1 or raw_x[0] not in (0, 3):
+            raise ValueError("prospectively declared input x=0 or x=3 required")
+        value = float(raw_x[0])
+        model, helper = self.fitted, self.helper
+        generation, offset = self.generation, self.runtime_offset
+        before = {"coef": model.coef_.tolist(), "intercept": float(model.intercept_),
+                  "n_features_in": int(model.n_features_in_)}
+        selected = event("native_selected_binding", request_id=request_id,
+                         generation=generation, instance_id=id(self), fitted_id=id(model))
+        hold = bool(payload.parameters and getattr(payload.parameters, "hold", False))
+        if hold:
+            root = Path(os.environ["CONTINUATION_BARRIERS"])
+            with (root / (request_id + ".entered.json")).open("x") as stream:
+                json.dump(selected, stream)
+            ceiling = time.monotonic() + 12
+            while not (root / (request_id + ".release")).exists():
+                if time.monotonic() > ceiling:
+                    raise TimeoutError("prospective held-request ceiling exceeded")
+                await asyncio.sleep(0.01)
+        consumed_ns = time.monotonic_ns()
+        helper_value = float(helper())
+        fitted_output = float(model.predict(np.asarray([[value]], dtype=np.float64))[0])
+        output = fitted_output + helper_value + offset
+        after = {"coef": model.coef_.tolist(), "intercept": float(model.intercept_),
+                 "n_features_in": int(model.n_features_in_)}
+        components = {"coef": before["coef"], "intercept": before["intercept"],
+                      "n_features_in": before["n_features_in"], "helper": helper_value,
+                      "runtime_offset": offset, "runtime_revision": self.runtime_revision,
+                      "helper_revision": self.helper_revision,
+                      "training_revision": self.training_revision}
+        qualified = (self.wrapper_source_qualified and before == after
+                     and model is self.fitted and generation == self.generation
+                     and all(math.isfinite(v) for v in
+                             [value, output, helper_value, offset, *before["coef"], before["intercept"]]))
+        record = {"request_id": request_id, "input": value, "output": output,
+                  "fitted_output": fitted_output, "actualcomponents": components,
+                  "sourcehashes": self.sourcehashes(), "generation": generation,
+                  "pid": os.getpid(), "instance_id": id(self), "fitted_id": id(model),
+                  "selected_ns": selected_ns, "consumed_ns": consumed_ns,
+                  "completed_ns": time.monotonic_ns(), "source_qualified": qualified,
+                  "evidence_origin": "authored lawful runtime acquisition/selection/use instrumentation",
+                  "_reference": {"fitted_before": before, "fitted_after": after,
+                                 "coef_bytes_hex": model.coef_.tobytes().hex(),
+                                 "coef_dtype": str(model.coef_.dtype),
+                                 "coef_shape": list(model.coef_.shape),
+                                 "intercept_hex": float(model.intercept_).hex(),
+                                 "helper_value": helper_value, "runtime_offset": offset,
+                                 "selected_model_consumed": model is self.fitted}}
+        event("native_consumed", request_id=request_id, generation=generation,
+              sourcehashes=record["sourcehashes"], actualcomponents=components,
+              selected_ns=selected_ns, consumed_ns=consumed_ns)
+        return InferenceResponse(
+            model_name=self.name,
+            parameters=Parameters(record=record),
+            outputs=[ResponseOutput(name="prediction", shape=[1], datatype="FP64", data=[output])],
+        )
