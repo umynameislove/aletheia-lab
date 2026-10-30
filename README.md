@@ -630,6 +630,7 @@ documentation, and reproducible artifacts.
 - [Claim-support V3.2 relation closeout and human packets](docs/claim-support-validation-v3.md#v32-relation-closeout-and-held-human-packets)
 - [Claim-support V3.2 late-reference-freeze amendment](docs/claim-support-v3-2-late-reference-freeze-amendment.md)
 - [Related work and research positioning](docs/related-work.md)
+- [Serving continuation and exact-record recovery](docs/serving-recovery-study.md)
 - [Architecture decisions](docs/adr/)
 
 ## Evidence and safety model

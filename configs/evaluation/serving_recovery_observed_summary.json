@@ -1,0 +1,79 @@
+{
+  "schema": "serving-recovery-observed-summary/v1",
+  "observed_date": "2026-10-31",
+  "scope": "Source-known authored MLServer continuation; finite development sequence, not unseen incidents or a method superiority study.",
+  "native": {
+    "requests": 16,
+    "source_qualified": 16,
+    "actual_arithmetic_correct": 16,
+    "authorized_state": {
+      "compliant": 12,
+      "violation": 4
+    },
+    "actual_owner_processes": 3,
+    "continuation_correct": 6
+  },
+  "recovery": {
+    "unique_records": 16,
+    "blocks_per_layout": 5,
+    "deadline_seconds": 2,
+    "failure_tier": "owner SIGKILL; collector ingests a previously captured trace",
+    "layouts": [
+      {
+        "arm": "static_amortized",
+        "planned_processes": 5,
+        "completed_processes": 5,
+        "offered": 80,
+        "accepted": 80,
+        "accepted_but_unserved": 0,
+        "correct_on_time": 80,
+        "correct_but_late": 0,
+        "median_logical_bytes": 292336,
+        "median_allocated_bytes": 294912,
+        "median_recovery_ms": 50.686959
+      },
+      {
+        "arm": "compact",
+        "planned_processes": 5,
+        "completed_processes": 5,
+        "offered": 80,
+        "accepted": 80,
+        "accepted_but_unserved": 0,
+        "correct_on_time": 80,
+        "correct_but_late": 0,
+        "median_logical_bytes": 271736,
+        "median_allocated_bytes": 274432,
+        "median_recovery_ms": 45.302292
+      },
+      {
+        "arm": "full",
+        "planned_processes": 5,
+        "completed_processes": 5,
+        "offered": 80,
+        "accepted": 80,
+        "accepted_but_unserved": 0,
+        "correct_on_time": 80,
+        "correct_but_late": 0,
+        "median_logical_bytes": 238776,
+        "median_allocated_bytes": 241664,
+        "median_recovery_ms": 51.891167
+      }
+    ]
+  },
+  "retained_cost": {
+    "reuse": {
+      "collector_saving_percent": 95.101,
+      "with_common_recovery_saving_percent": 16.938
+    },
+    "reload": {
+      "collector_saving_percent": 95.071,
+      "with_common_recovery_saving_percent": 16.934
+    },
+    "scope": "Historical separate workload; not comparable to the small trace clock."
+  },
+  "source_bindings": {
+    "native_requests_sha256": "e4bcdf97ec69cf0601b278c73c384fd1a7bcad7f420532c8e473ed067cfb993d",
+    "recovery_inputs_sha256": "83a49796ea9209b0eb448c41eef0ba42bb39be7523775006f37c9ebc253dab05"
+  },
+  "excluded": "Raw logs, databases, private evaluation artifacts, human responses and local environment paths are not distributed. The port is not byte-identical to historical execution source."
+}
