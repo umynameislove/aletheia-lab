@@ -10,13 +10,15 @@ export const ROUTES = [
   "start", "connect", "project", "investigation", "results", "retention", "counterfactual", "prospective",
 ] as const;
 export type RouteName = (typeof ROUTES)[number];
+/** An address this app has no screen for. It is reported, never rerouted to some other screen. */
+export const NOT_FOUND = "not-found" as const;
 const STICKY = ["project", "snapshot", "result"] as const;
 
-function readHash(): { name: RouteName; q: URLSearchParams } {
-  const raw = (location.hash || "#/investigation").replace(/^#\/?/, "");
+function readHash(): { name: RouteName | typeof NOT_FOUND; q: URLSearchParams } {
+  const raw = (location.hash || "#/start").replace(/^#\/?/, "");
   const [name, qs] = raw.split("?");
   return {
-    name: (ROUTES as readonly string[]).includes(name) ? (name as RouteName) : "investigation",
+    name: (ROUTES as readonly string[]).includes(name) ? (name as RouteName) : NOT_FOUND,
     q: new URLSearchParams(qs || ""),
   };
 }
@@ -42,7 +44,15 @@ export function useRoute() {
     const qs = cur.q.toString();
     location.hash = "#/" + cur.name + (qs ? "?" + qs : "");
   }, []);
-  return { name: r.name, q: r.q, go, setQ };
+  /** A real address for the same move, so links can be opened in a new tab and copied. */
+  const hrefFor = useCallback((name: RouteName, params?: Record<string, string>) => {
+    const cur = readHash().q;
+    const all: Record<string, string> = { ...params };
+    for (const k of STICKY) { const v = cur.get(k); if (v && !(params && k in params)) all[k] = v; }
+    const qs = Object.keys(all).length ? "?" + new URLSearchParams(all) : "";
+    return "#/" + name + qs;
+  }, []);
+  return { name: r.name, q: r.q, go, setQ, hrefFor };
 }
 
 /* ------------------------------------------------------- local demo state --
@@ -112,6 +122,9 @@ interface Ctx {
   toasts: Toast[];
   theme: "dark" | "light";
   toggleTheme: () => void;
+  /** Contract terms and field names beside the plain words. Off by default. */
+  terms: boolean;
+  toggleTerms: () => void;
 }
 const StoreCtx = createContext<Ctx | null>(null);
 
@@ -125,6 +138,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 5000);
   }, []);
 
+  const [terms, setTerms] = useState(() => document.documentElement.dataset.terms === "show");
+  const toggleTerms = useCallback(() => {
+    setTerms(on => {
+      const next = !on;
+      if (next) document.documentElement.dataset.terms = "show"; else delete document.documentElement.dataset.terms;
+      try { localStorage.setItem("p6-terms", next ? "show" : "hide"); } catch { /* storage may be blocked; the toggle still works */ }
+      return next;
+    });
+  }, []);
   const [theme, setTheme] = useState<"dark" | "light">(
     () => (document.documentElement.dataset.theme === "light" ? "light" : "dark"));
   const toggleTheme = useCallback(() => {
@@ -136,7 +158,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const value = useMemo(() => ({ s, dispatch, toast, toasts, theme, toggleTheme }), [s, toast, toasts, theme, toggleTheme]);
+  const value = useMemo(() => ({ s, dispatch, toast, toasts, theme, toggleTheme, terms, toggleTerms }), [s, toast, toasts, theme, toggleTheme, terms, toggleTerms]);
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
 }
 

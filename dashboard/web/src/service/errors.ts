@@ -16,6 +16,7 @@ const REMEDIATION: Record<string, string> = {
   preview_stale: "Scan the project again.",
   preview_expired: "Scan the project again.",
   preview_already_confirmed: "Scan again to import anew.",
+  project_already_imported: "Nothing new was created. Go to Start to continue it, then use Refresh.",
   confirm_failed: "Not confirmed. Nothing was created.",
   mapping_invalid: "Mapping doesn't match the scan. Fix the flagged fields.",
   refresh_stale: "Project changed meanwhile. Refresh again.",
@@ -36,6 +37,12 @@ const REMEDIATION: Record<string, string> = {
   backend_unavailable: "Install the product package in this checkout.",
   service_failure: "Service failed safely. Nothing changed; try again.",
   forbidden: "Open the dashboard from its own address.",
+  // the client boundary (service/contract.ts, service/live.ts)
+  schema_unsupported: "App and service versions differ. Update both, then reload.",
+  response_invalid: "Nothing from that answer was shown. Try again; report it if it repeats.",
+  response_out_of_scope: "Nothing from that answer was shown. Reopen it from the project.",
+  deadline_exceeded: "Nothing was changed by this read. Try again.",
+  outcome_unknown: "Check the project before retrying. Asking the same question again is safe.",
 };
 
 export interface Remedy { code: string; known: boolean; advice: string | null }

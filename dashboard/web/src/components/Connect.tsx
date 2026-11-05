@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, Check, ChevronDown, ChevronRight, FolderOpen, Lock, Plus, RefreshCw, ScanSearch, X } from "lucide-react";
-import { isProductError, port, PREVIEW_VERSION, useResultSwitch, linkIds, linked } from "../service";
+import { capabilities, isProductError, port, PREVIEW_VERSION, scoped, useResultSwitch, linkIds, linked } from "../service";
 import { rememberProject } from "../service/opened";
 import { canonicalQuestion } from "../service/question";
 import { declaredRuns, runMappings } from "../service/transitions";
@@ -67,15 +67,49 @@ function defaultMapping(C: MappingCandidates): Mapping {
   const m = C.metric_sources.find(c => c.available && c.format === "json" && c.records_path_candidates.length)
     ?? C.metric_sources.find(c => c.available);
   const runs = C.runs.filter(r => r.available && r.source_metric_item_ids.includes(m?.project_item_id ?? ""));
-  const base = runs[1] ?? runs[0];
+  // which run is the reference is the person's call: the order of the source is no evidence of it
   return {
     target: t?.project_item_id ?? "", targetField: t ? pick(t.field_names, "run_id") : "",
     // only a column literally named "target" is offered up front; otherwise the user picks
     targetLabel: t ? pick(t.field_names, "target") : "",
     metric: m?.project_item_id ?? "", ...metricFields(C, m?.project_item_id ?? ""),
-    runs: runs.map(r => r.run_id), baseline: base?.run_id ?? "",
+    runs: runs.map(r => r.run_id), baseline: "",
     configs: {},
   };
+}
+
+/* After a rescan: every choice the new scan still offers is kept, anything it no longer offers goes
+   back to empty, so nothing is carried over onto a source version it does not match. */
+export function carryMapping(C: MappingCandidates, old: Mapping, was: MappingCandidates): { mapping: Mapping; dropped: boolean } {
+  const fresh = defaultMapping(C);
+  // an item's ID changes with its content, so a changed file is found again by its name in the project
+  const same = <T extends { project_item_id: string; label: string; available: boolean }>(now: T[], before: T[], id: string) => {
+    const label = before.find(c => c.project_item_id === id)?.label;
+    return now.find(c => c.available && c.project_item_id === id) ?? now.find(c => c.available && c.label === label);
+  };
+  const t = same(C.targets, was.targets, old.target);
+  const ms = same(C.metric_sources, was.metric_sources, old.metric);
+  if (!t || !ms) return { mapping: fresh, dropped: true };
+  const runIds = C.runs.filter(r => r.available).map(r => r.run_id);
+  const defs = old.defs.filter(d => ms.metric_name_candidates.length === 0 || ms.metric_name_candidates.includes(d.name));
+  const added = ms.metric_name_candidates.filter(name => !defs.some(d => d.name === name)).map(name => ({ name, direction: "" as const, threshold: "" }));
+  const mapping: Mapping = {
+    ...old,
+    target: t.project_item_id,
+    metric: ms.project_item_id,
+    targetField: pick(t.field_names, old.targetField),
+    targetLabel: pick(t.field_names, old.targetLabel),
+    nameField: pick(ms.field_names, old.nameField),
+    valueField: pick(ms.field_names, old.valueField),
+    runIdField: pick(ms.run_id_field_candidates, old.runIdField),
+    stepField: pick(ms.field_names, old.stepField),
+    defs: [...defs, ...added],
+    runs: old.runs.filter(r => runIds.includes(r)),
+    baseline: pick(runIds, old.baseline),
+  };
+  const dropped = defs.length !== old.defs.length || mapping.runs.length !== old.runs.length || added.length > 0
+    || [["targetField", "targetLabel", "nameField", "valueField", "runIdField"] as const].flat().some(k => mapping[k] !== old[k]);
+  return { mapping, dropped };
 }
 
 /* records_path is always an array of segments: CSV [], JSON root array [], a picked candidate as-is,
@@ -137,6 +171,40 @@ function checks(C: MappingCandidates, m: Mapping): [string, boolean, string, boo
   ];
 }
 
+/* Which field to send someone to when a check fails, by the check's own label. */
+const CHECK_FIELD: Record<string, string> = {
+  "Target resolves to a collected item": "f-target-project-item-id",
+  "Target field and identifier field exist on it": "f-target-target-field",
+  "Metric source resolves to a collected item": "f-metric-sources-0-project-item-id",
+  "Metric name and value fields exist on it": "f-metric-sources-0-metric-name-field",
+  "Run identity is present": "tracked-runs",
+  "Reference run is selected": "f-baseline-run-id",
+  "Every run with metrics in this source is declared": "tracked-runs",
+  "Every declared run has metrics in this source": "tracked-runs",
+  "Every metric has a direction and a threshold": "metric-definitions",
+  "Thresholds are finite and ≥ 0": "metric-definitions",
+  "Metric names are unique": "metric-definitions",
+};
+/* What each check means, said to the person fixing it. */
+const CHECK_HELP: Record<string, string> = {
+  "Target field and identifier field exist on it": "Choose the label column and the row identifier column.",
+  "Metric name and value fields exist on it": "Choose the columns holding the metric's name and its value.",
+  "Run identity is present": "Tick at least one run to track.",
+  "Reference run is selected": "Choose which run is the reference. It is not picked for you.",
+  "Every run with metrics in this source is declared": "A run with metrics in this source is not ticked.",
+  "Every declared run has metrics in this source": "A ticked run has no metrics in this source.",
+  "Every metric has a direction and a threshold": "Say which way is better and how much change counts, for every metric.",
+  "Thresholds are finite and ≥ 0": "A threshold is a number of 0 or more, like 0.05.",
+  "Metric names are unique": "The same metric is listed twice.",
+};
+const helpFor = (label: string) => CHECK_HELP[label] ?? label;
+
+/* The folder and mapping survive leaving this screen and coming back. They live in memory for this
+   tab only: never in the URL or storage. A hosted build clears this when the account changes. */
+let draft: { root: string; preview: PreviewImportResult | null; mapping: Mapping | null } = { root: "", preview: null, mapping: null };
+
+const STALE_PREVIEW = new Set(["preview_stale", "preview_expired", "preview_already_confirmed"]);
+
 const SEV_TONE: Record<IssueDTO["severity"], Tone> = { blocker: "no", error: "no", warning: "partial", info: "" };
 const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
 
@@ -151,49 +219,69 @@ export function Connect() {
   const { go } = useRoute();
   const { toast } = useStore();
   const { showResult } = useResultSwitch();
-  const [step, setStep] = useState<Step>(1);
-  // the folder the service may read: typed in Live, fixed in the demo. Held in this screen's state and
-  // sent only in the preview_import request body — never in the URL, storage or a log.
-  const [root, setRoot] = useState("");
+  // the folder the service may read: typed in Live, fixed in the demo. Held in memory and sent only
+  // in the preview_import request body: never in the URL, storage or a log.
+  const [root, setRoot] = useState(draft.root);
   const granted = !!root.trim();
-  const [preview, setPreview] = useState<PreviewImportResult | null>(null);
+  const [preview, setPreview] = useState<PreviewImportResult | null>(draft.preview);
+  const [step, setStep] = useState<Step>(draft.preview ? 2 : 1);
   const [result, setResult] = useState<ConfirmResult | null>(null);
-  const [m, setM] = useState<Mapping | null>(null);
+  const [m, setM] = useState<Mapping | null>(draft.mapping);
   const [refusal, setRefusal] = useState<Refusal>(null);
   const [busy, setBusy] = useState(false);
+  const [rescanned, setRescanned] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
   const scanned = !!preview, confirmed = !!result;
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // once confirmed there is nothing left to resume: that preview cannot be confirmed twice
+  useEffect(() => { draft = result ? { root: "", preview: null, mapping: null } : { root, preview, mapping: m }; }, [root, preview, m, result]);
+  // a step change is a page change for a keyboard or screen reader user
+  const firstStep = useRef(true);
+  useEffect(() => { if (firstStep.current) { firstStep.current = false; return; } headingRef.current?.focus(); }, [step]);
 
   const refuse = (e: unknown) => setRefusal(isProductError(e)
     ? { code: e.code, message: e.safe_message }
     : { code: "unavailable", message: "The service did not answer." });
-  const reset = () => { setStep(1); setRoot(""); setPreview(null); setResult(null); setM(null); setRefusal(null); };
+  const reset = () => { setStep(1); setRoot(""); setPreview(null); setResult(null); setM(null); setRefusal(null); setRescanned(false); setShowErrors(false); };
   const reached = (s: Step) => s === 1 || (s === 2 && scanned) || (s === 3 && confirmed);
 
-  const scan = async () => {
+  const scan = () => {
     setBusy(true); setRefusal(null);
-    try {
-      // the demo port opens nothing; the live port hands the typed root to the service, which reads it read-only
-      const p = await port.preview_import(root.trim());
-      setPreview(p); setM(defaultMapping(p.mapping_candidates)); setStep(2);
-      toast("Scan complete", `${p.included_count} included, ${p.redacted_count} redacted, ${p.excluded_count} excluded, ${p.withheld_count} withheld`);
-    } catch (e) { refuse(e); } finally { setBusy(false); }
+    const keep = m;
+    const was = preview?.mapping_candidates;
+    // the demo port opens nothing; the live port hands the typed root to the service, which reads it read-only
+    return scoped("scan", async () => await port.preview_import(root.trim()), {
+      done: p => {
+        const carried = keep && was ? carryMapping(p.mapping_candidates, keep, was) : null;
+        setPreview(p); setM(carried?.mapping ?? defaultMapping(p.mapping_candidates)); setStep(2);
+        setRescanned(!!keep);
+        toast("Scan complete", `${p.included_count} included, ${p.redacted_count} redacted, ${p.excluded_count} excluded, ${p.withheld_count} withheld`);
+      },
+      fail: refuse,
+      always: () => setBusy(false),
+    });
   };
-  const confirm = async () => {
+  const confirm = () => {
     if (!preview || !m) return;
     setBusy(true); setRefusal(null);
-    try {
-      const confirmed = await port.confirm_import(preview.preview_id, confirmPayload(preview.mapping_candidates, m));
-      openProject(confirmed);
-      setResult(confirmed);
-      setStep(3);
-    } catch (e) { refuse(e); } finally { setBusy(false); }
+    return scoped("confirm", async () => await port.confirm_import(preview.preview_id, confirmPayload(preview.mapping_candidates, m)), {
+      done: confirmed => {
+        openProject(confirmed);
+        setResult(confirmed);
+        setStep(3);
+      },
+      fail: refuse,
+      always: () => setBusy(false),
+    });
   };
 
   return (
     <div className="page" id="main" tabIndex={-1}>
       <div className="page-inner">
         <header className="page-head">
-          <h1>Connect a project</h1>
+          <h1 ref={headingRef} tabIndex={-1}>Connect a project</h1>
+          <p className="lede">{step === 1 ? "Choose one folder. Nothing is stored until you confirm." : step === 2 ? "Check what would be read, and say what the metrics mean." : "The snapshot is stored. Ask your first question about it."}</p>
         </header>
 
         <ol className="stepper" aria-label="Import steps">
@@ -212,9 +300,9 @@ export function Connect() {
 
         {step === 1 && <Permission root={root} setRoot={setRoot} granted={granted} busy={busy} refusal={refusal}
           onScan={scan} />}
-        {step === 2 && preview && m && <Preview preview={preview} m={m} setM={setM} busy={busy} refusal={refusal}
-          onConfirm={confirm}
-          onCancel={() => { reset(); toast("Import cancelled · nothing created"); }} />}
+        {step === 2 && preview && m && <Preview preview={preview} m={m} setM={setM} busy={busy} refusal={refusal} rescanned={rescanned} showErrors={showErrors} setShowErrors={setShowErrors}
+          onConfirm={confirm} onRescan={scan} canRescan={granted}
+          onCancel={() => { reset(); toast("Import cancelled", "Nothing was created."); }} />}
         {step === 3 && preview && result && <Validation preview={preview} result={result} onAnalyzed={view => {
           reset(); showResult(view); go("investigation");
           toast("Analysis recorded", shortId(view.result.id));
@@ -229,19 +317,20 @@ const DEMO_ROOT = "synthetic-ml-project";
 const folderName = (root: string) => root.trim().replace(/[\\/]+$/, "").split(/[\\/]/).pop() || root.trim();
 
 function Permission({ root, setRoot, granted, busy, refusal, onScan }: {
-  root: string; setRoot: (r: string) => void; granted: boolean; busy: boolean; refusal: Refusal; onScan: () => void;
+  root: string; setRoot: (r: string) => void; granted: boolean; busy: boolean; refusal: Refusal; onScan: () => Promise<void>;
 }) {
-  const demo = port.kind === "demo";
+  const demo = !capabilities.supported_source_types.includes("local_folder");
   return (
     <>
       <div className="pair">
         <section className="panel">
-          <div className="sec-head"><span className="eyebrow">Grant one folder</span></div>
+          <div className="sec-head"><span className="eyebrow">Choose one folder</span></div>
           {!demo && (
             <label className="fld path-fld">
-              <span className="fld-label">Folder path</span>
+              <span className="fld-label">Folder on this computer</span>
               <input className="input mono-in" value={root} spellCheck={false} autoComplete="off" placeholder="/path/to/your-ml-project"
-                onChange={e => setRoot(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && granted && !busy) onScan(); }} />
+                onChange={e => setRoot(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && granted && !busy) void onScan(); }} />
+              <span className="fld-note">The folder holding your dataset, metrics and config files, as a full path.</span>
             </label>
           )}
           {granted ? (
@@ -252,24 +341,24 @@ function Permission({ root, setRoot, granted, busy, refusal, onScan }: {
           ) : (
             <div className="grant-empty">
               <FolderOpen size={22} aria-hidden="true" />
-              <div><b>No folder chosen</b></div>
+              <div><b>No folder chosen</b><p>Scanning only reads the folder. You see the result before anything is stored.</p></div>
             </div>
           )}
           <div className="actions">
             {demo && <button className={`btn${granted ? "" : " btn--primary"}`} onClick={() => setRoot(DEMO_ROOT)}><FolderOpen size={14} aria-hidden="true" />{granted ? "Choose a different folder" : "Choose folder"}</button>}
-            <button className={`btn${granted ? " btn--primary" : ""}`} onClick={onScan} disabled={!granted || busy}><ScanSearch size={14} aria-hidden="true" />{busy ? "Scanning…" : "Scan project"}</button>
+            <button className={`btn${granted ? " btn--primary" : ""}`} onClick={() => void onScan()} disabled={!granted || busy} aria-busy={busy}><ScanSearch size={14} aria-hidden="true" />{busy ? "Scanning…" : "Scan project"}</button>
           </div>
           <RefusalNote refusal={refusal} />
-          <p className="local-note"><Lock size={12} aria-hidden="true" />The path stays on this screen.</p>
+          <p className="local-note"><Lock size={13} aria-hidden="true" />The path stays in this tab. It is not put in the address bar or saved.</p>
         </section>
 
         <aside className="panel">
-          <div className="sec-head"><span className="eyebrow">What this grant allows</span></div>
-          {([["Read", true], ["Execute", false], ["External send", false], ["Write to source", false]] as const).map(([k, on]) => (
+          <div className="sec-head"><span className="eyebrow">What Aletheia may do with it</span></div>
+          {([["Read the files", true], ["Run any code in it", false], ["Send it anywhere", false], ["Change your files", false]] as const).map(([k, on]) => (
             <div className="np-row" key={k}>
               {on ? <Mark tone="ok" /> : <Mark hollow />}
               <span style={{ color: "var(--ink)", fontWeight: 500 }}>{k}</span>
-              <span className="v">{on ? "allowed" : "blocked"}</span>
+              <span className="v">{on ? "Yes" : "No"}</span>
             </div>
           ))}
         </aside>
@@ -280,8 +369,10 @@ function Permission({ root, setRoot, granted, busy, refusal, onScan }: {
 }
 
 /* ------------------------------------------------------------------ step 2 */
-function Preview({ preview, m, setM, busy, refusal, onConfirm, onCancel }: {
-  preview: PreviewImportResult; m: Mapping; setM: (m: Mapping) => void; busy: boolean; refusal: Refusal; onConfirm: () => void; onCancel: () => void;
+function Preview({ preview, m, setM, busy, refusal, rescanned, showErrors, setShowErrors, canRescan, onConfirm, onRescan, onCancel }: {
+  preview: PreviewImportResult; m: Mapping; setM: (m: Mapping) => void; busy: boolean; refusal: Refusal; rescanned: boolean;
+  showErrors: boolean; setShowErrors: (on: boolean) => void; canRescan: boolean;
+  onConfirm: () => Promise<void> | undefined; onRescan: () => Promise<void>; onCancel: () => void;
 }) {
   const C = preview.mapping_candidates;
   const t = target(C, m.target), ms = metric(C, m.metric);
@@ -292,6 +383,28 @@ function Preview({ preview, m, setM, busy, refusal, onConfirm, onCancel }: {
   const runOpts = C.runs.map(r => ({ value: r.run_id, label: r.run_id, available: r.available, reason: r.unavailable_reason }));
   const cfgLabel = (id: string) => C.configs.find(c => c.project_item_id === id)?.label ?? id;
   const ws = preview.warnings;
+  const blocked = preview.blockers.length > 0;
+  // Confirm stays pressable: pressing it with something missing says what, and goes there
+  const submit = () => {
+    if (failing.length > 0 || blocked) {
+      setShowErrors(true);
+      // after the errors have rendered: the first field marked invalid, else the group that failed, else the summary
+      window.setTimeout(() => {
+        const summary = document.getElementById("confirm-errors");
+        const invalid = document.querySelector<HTMLElement>('main [aria-invalid="true"]');
+        const group = failing.length ? document.getElementById(CHECK_FIELD[failing[0][0]] ?? "") : null;
+        (invalid ?? group?.querySelector<HTMLElement>("input, select, button") ?? summary)?.focus();
+      }, 0);
+      return;
+    }
+    setShowErrors(false);
+    void onConfirm();
+  };
+  const errorFor = (...labels: string[]) => {
+    if (!showErrors) return undefined;
+    const hit = failing.find(f => labels.includes(f[0]));
+    return hit ? helpFor(hit[0]) : undefined;
+  };
   const sevSummary = (["error", "warning", "info"] as const).map(s => [s, ws.filter(w => w.severity === s).length] as const)
     .filter(([, n]) => n).map(([s, n]) => plural(n, s)).join(" · ");
 
@@ -299,7 +412,7 @@ function Preview({ preview, m, setM, busy, refusal, onConfirm, onCancel }: {
     <div className="cols">
       <div className="stack-lg">
         <section>
-          <div className="sec-head"><span className="eyebrow">Scope of this import</span><code className="aside mono-s">preview_import {PREVIEW_VERSION}</code></div>
+          <div className="sec-head"><span className="eyebrow">What would be read</span><code className="aside mono-s fld-code">preview_import {PREVIEW_VERSION}</code></div>
           <div className="denoms" role="list">
             {([["Included", preview.included_count, "usable as they are", "ok"], ["Redacted", preview.redacted_count, "kept, content masked", "partial"],
               ["Excluded", preview.excluded_count, "left out of the bundle", null], ["Withheld", preview.withheld_count, "counted, content not kept", null]] as const).map(([k, v, sub, tone]) => (
@@ -311,23 +424,26 @@ function Preview({ preview, m, setM, busy, refusal, onConfirm, onCancel }: {
           </div>
           <p className="foot-note">
             {preview.outbound_categories.length
-              ? <>Outbound: <code className="mono-s">{preview.outbound_categories.join(", ")}</code></>
-              : <>Outbound: none <code className="mono-s">outbound_categories = []</code></>}
-            {" "}· counted separately, not additive.
+              ? <>Nothing is sent anywhere now. If sending to a model is ever enabled, these kinds of data could be included: <code className="mono-s">{preview.outbound_categories.join(", ")}</code>.</>
+              : <>Nothing is sent anywhere, and no data here could be included if sending is ever enabled.</>}
+            {" "}These counts overlap, so they do not add up to a total.
           </p>
         </section>
 
         <section className="panel">
-          <div className="sec-head"><span className="eyebrow">Mapping</span><code className="aside mono-s">project-mapping-configuration/v1</code></div>
+          <div className="sec-head"><span className="eyebrow">Tell Aletheia what the files mean</span><code className="aside mono-s fld-code">project-mapping-configuration/v1</code></div>
+          {rescanned && <div className="notice notice--warn" role="status"><Mark tone="partial" /><div><b>Scanned again</b>Choices the new scan still offers were kept, and the rest are empty. Check them against the source as it is now.</div></div>}
 
           <h3 className="form-h">Target</h3>
           <div className="form-grid">
             <Picker label="Target dataset" code="target.project_item_id" value={m.target}
               options={C.targets.map(c => ({ value: c.project_item_id, label: c.label, available: c.available, reason: c.unavailable_reason }))}
               onChange={v => { const tc = target(C, v); set({ target: v, targetField: tc ? pick(tc.field_names, m.targetField) || pick(tc.field_names, "run_id") : "", targetLabel: tc ? pick(tc.field_names, m.targetLabel) : "" }); }} />
-            <Picker label="Target field" code="target.target_field" value={m.targetLabel}
+            <Picker label="Target field" code="target.target_field" value={m.targetLabel} hint="The column holding the label, for example target or churned."
+              error={errorFor("Target field and identifier field exist on it") && !t?.field_names.includes(m.targetLabel) ? "Choose the label column." : undefined}
               options={(t?.field_names ?? []).map(f => ({ value: f, label: f }))} onChange={v => set({ targetLabel: v })} placeholder="choose a field" />
-            <Picker label="Row identifier field" code="target.identifier_field" value={m.targetField}
+            <Picker label="Row identifier field" code="target.identifier_field" value={m.targetField} hint="The column that names each row, for example id."
+              error={errorFor("Target field and identifier field exist on it") && !t?.field_names.includes(m.targetField) ? "Choose the identifier column." : undefined}
               options={(t?.field_names ?? []).map(f => ({ value: f, label: f }))} onChange={v => set({ targetField: v })} />
           </div>
 
@@ -340,9 +456,11 @@ function Preview({ preview, m, setM, busy, refusal, onConfirm, onCancel }: {
               ? <div className="fld"><span className="fld-label">Where the records are</span><div className="locked"><Mark hollow />not needed for csv</div><code className="fld-code">metric_sources[0].records_path</code></div>
               : <Picker label="Where the records are" code="metric_sources[0].records_path" value={m.recordsPath}
                   options={(ms?.records_path_candidates ?? []).map(p => ({ value: pathKey(p), label: pathLabel(p) }))} onChange={v => set({ recordsPath: v })} />}
-            <Picker label="Metric name field" code="metric_sources[0].metric_name_field" value={m.nameField}
+            <Picker label="Metric name field" code="metric_sources[0].metric_name_field" value={m.nameField} hint="The column saying which metric a row is, for example name."
+              error={errorFor("Metric name and value fields exist on it") && !ms?.field_names.includes(m.nameField) ? "Choose the metric name column." : undefined}
               options={(ms?.field_names ?? []).map(f => ({ value: f, label: f }))} onChange={v => set({ nameField: v })} placeholder="choose a field" />
-            <Picker label="Metric value field" code="metric_sources[0].metric_value_field" value={m.valueField}
+            <Picker label="Metric value field" code="metric_sources[0].metric_value_field" value={m.valueField} hint="The column holding the number, for example value."
+              error={errorFor("Metric name and value fields exist on it") && !ms?.field_names.includes(m.valueField) ? "Choose the metric value column." : undefined}
               options={(ms?.field_names ?? []).map(f => ({ value: f, label: f }))} onChange={v => set({ valueField: v })} placeholder="choose a field" />
             <Picker label="Run id field" code="metric_sources[0].run_id_field" value={m.runIdField}
               options={(ms?.run_id_field_candidates ?? []).map(f => ({ value: f, label: f }))} onChange={v => set({ runIdField: v })} />
@@ -351,10 +469,10 @@ function Preview({ preview, m, setM, busy, refusal, onConfirm, onCancel }: {
           </div>
           {ms && <p className="foot-note"><code className="mono-s">{ms.label}</code> is <code className="mono-s">{ms.format}</code>, read from the source profile — not guessed from its field names.</p>}
 
-          <MetricDefinitions C={C} m={m} set={set} />
+          <MetricDefinitions C={C} m={m} set={set} error={errorFor("Every metric has a direction and a threshold", "Thresholds are finite and ≥ 0", "Metric names are unique")} />
 
           <h3 className="form-h">Runs</h3>
-          <fieldset className="config-pick" aria-label="Tracked runs">
+          <fieldset className="config-pick" id="tracked-runs" aria-label="Tracked runs">
             <legend className="fld-label">Tracked runs <code className="fld-code">runs[].run_id</code></legend>
             {C.runs.map(r => {
               const on = declaredRuns(m).includes(r.run_id);
@@ -368,7 +486,9 @@ function Preview({ preview, m, setM, busy, refusal, onConfirm, onCancel }: {
             })}
           </fieldset>
           <div className="form-grid">
-            <Picker label="Reference run" code="baseline_run_id" value={m.baseline} options={runOpts} onChange={v => set({ baseline: v })} />
+            <Picker label="Reference run" code="baseline_run_id" value={m.baseline} options={runOpts} onChange={v => set({ baseline: v })} placeholder="choose a run"
+              hint="The run you treat as the reference, usually your current production model."
+              error={errorFor("Reference run is selected")} />
           </div>
           <p className="fld-note"><Mark hollow />Metric changes are calculated per run across snapshots, not between two runs.</p>
           <div className="config-pick" role="group" aria-label="Configs attached to each run">
@@ -399,7 +519,7 @@ function Preview({ preview, m, setM, busy, refusal, onConfirm, onCancel }: {
           <div className="sec-head"><span className="eyebrow">Checks</span><span className="aside">{res.filter(r => r[1]).length} of {res.length} pass</span></div>
           <ul className="checklist">
             {res.map(([label, ok, code, warn]) => (
-              <li key={label}>{ok ? <Mark tone="ok" /> : warn ? <Mark tone="partial" /> : <Mark hollow />}<span>{label}</span><code>{ok ? "pass" : warn ? "checked on confirm" : code}</code></li>
+              <li key={label}>{ok ? <Mark tone="ok" /> : warn ? <Mark tone="partial" /> : <Mark hollow />}<span>{label}</span><code className="fld-code">{ok ? "pass" : warn ? "checked on confirm" : code}</code></li>
             ))}
           </ul>
         </section>
@@ -423,10 +543,22 @@ function Preview({ preview, m, setM, busy, refusal, onConfirm, onCancel }: {
             <div><b>{failing.length ? plural(failing.length, "check") + " failing" : warned.length ? "No blocking check" : "All checks pass"}</b>{warned.length > 0 && !failing.length && <span className="dim">{plural(warned.length, "run check")} left to the service on confirm.</span>}</div>
           </div>
           <div className="actions">
-            <button className="btn btn--primary" disabled={failing.length > 0 || preview.blockers.length > 0 || busy} onClick={onConfirm}>{busy ? "Confirming…" : "Confirm import"}<ArrowRight size={14} aria-hidden="true" /></button>
+            <button className="btn btn--primary" disabled={busy} aria-busy={busy} onClick={submit}>{busy ? "Confirming…" : "Confirm import"}<ArrowRight size={14} aria-hidden="true" /></button>
             <button className="btn btn--ghost" onClick={onCancel}>Cancel</button>
           </div>
+          {showErrors && (failing.length > 0 || blocked) && (
+            <div className="fld-errors" id="confirm-errors" role="alert" tabIndex={-1}>
+              <b>{blocked ? "This scan cannot be imported as it is." : "Before confirming:"}</b>
+              <ul>{failing.map(f => <li key={f[0]}><button className="link-btn" onClick={() => document.getElementById(CHECK_FIELD[f[0]] ?? "")?.scrollIntoView({ block: "center" })}>{helpFor(f[0])}</button></li>)}</ul>
+            </div>
+          )}
           <RefusalNote refusal={refusal} />
+          {refusal && STALE_PREVIEW.has(refusal.code) && canRescan && (
+            <div className="actions"><button className="btn" disabled={busy} onClick={() => void onRescan()}><RefreshCw size={14} aria-hidden="true" />Scan again and keep my choices</button></div>
+          )}
+          {refusal?.code === "project_already_imported" && (
+            <div className="actions"><a className="btn" href="#/start">Go to Start</a></div>
+          )}
         </section>
       </aside>
     </div>
@@ -436,8 +568,8 @@ function Preview({ preview, m, setM, busy, refusal, onConfirm, onCancel }: {
 interface Opt { value: string; label: string; available?: boolean; reason?: UnavailableReason | null }
 
 /* Three honest states: pick from candidates · locked because withheld (no typing) · type it in because unresolved */
-function Picker({ label, code, value, options, onChange, placeholder }: {
-  label: string; code: string; value: string; options: Opt[]; onChange: (v: string) => void; placeholder?: string;
+function Picker({ label, code, value, options, onChange, placeholder, hint, error }: {
+  label: string; code: string; value: string; options: Opt[]; onChange: (v: string) => void; placeholder?: string; hint?: string; error?: string;
 }) {
   const id = "f-" + code.replace(/[^a-z0-9]+/gi, "-");
   const usable = options.filter(o => o.available !== false);
@@ -457,9 +589,10 @@ function Picker({ label, code, value, options, onChange, placeholder }: {
     return (
       <div className="fld">
         <label className="fld-label" htmlFor={id}>{label}</label>
-        <input id={id} className="input mono-in" value={value} onChange={e => onChange(e.target.value)} placeholder="type it in" />
+        <input id={id} className="input mono-in" value={value} onChange={e => onChange(e.target.value)} placeholder="type it in" aria-invalid={!!error} aria-describedby={error ? id + "-err" : undefined} />
         <code className="fld-code">{code}</code>
-        <p className="fld-note"><Mark hollow />Not resolved by the service. Type it.</p>
+        <p className="fld-note"><Mark hollow />The scan could not tell. Type it exactly as in your file.</p>
+        {error && <p className="fld-error" id={id + "-err"}><Mark tone="no" />{error}</p>}
       </div>
     );
   }
@@ -467,13 +600,15 @@ function Picker({ label, code, value, options, onChange, placeholder }: {
     <div className="fld">
       <label className="fld-label" htmlFor={id}>{label}</label>
       <span className="select-wrap">
-        <select id={id} className="select" value={value} onChange={e => onChange(e.target.value)}>
+        <select id={id} className="select" value={value} onChange={e => onChange(e.target.value)} aria-invalid={!!error} aria-describedby={error ? id + "-err" : hint ? id + "-hint" : undefined}>
           {!usable.some(o => o.value === value) && <option value={value} disabled>{placeholder ?? "choose one"}</option>}
           {options.map(o => <option key={o.value} value={o.value} disabled={o.available === false}>{o.label}{o.available === false ? " — unavailable" : ""}</option>)}
         </select>
         <ChevronDown size={14} aria-hidden="true" />
       </span>
       <code className="fld-code">{code}</code>
+      {hint && !error && <p className="fld-note" id={id + "-hint"}>{hint}</p>}
+      {error && <p className="fld-error" id={id + "-err"}><Mark tone="no" />{error}</p>}
       {blocked.length > 0 && <p className="fld-note"><Lock size={12} aria-hidden="true" />{blocked.length} unavailable: {blocked[0].reason ? REASON[blocked[0].reason] : "unavailable"}</p>}
     </div>
   );
@@ -489,11 +624,13 @@ function Validation({ preview, result, onAnalyzed }: { preview: PreviewImportRes
   const [snap, setSnap] = useState<Pick<ConfirmResult, "project_id" | "snapshot_id" | "status">>(result);
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<Refusal>(null);
-  const refresh = async () => {
+  const refresh = () => {
     setBusy(true); setRefusal(null);
-    try { const r = await port.refresh(result.project_id); openProject(r); setSnap(r); }
-    catch (e) { setRefusal(isProductError(e) ? { code: e.code, message: e.safe_message } : { code: "unavailable", message: "The service did not answer." }); }
-    finally { setBusy(false); }
+    return scoped("refresh", () => port.refresh(result.project_id), {
+      done: r => { openProject(r); setSnap(r); },
+      fail: e => setRefusal(isProductError(e) ? { code: e.code, message: e.safe_message } : { code: "unavailable", message: "The service did not answer." }),
+      always: () => setBusy(false),
+    });
   };
   return (
     <>
@@ -512,9 +649,9 @@ function Validation({ preview, result, onAnalyzed }: { preview: PreviewImportRes
       ) : (
         <div className="notice notice--ok">
           <Mark tone="ok" />
-          <div><b>Snapshot {snap === result ? "recorded" : "refreshed"} · {snap.status}{port.kind === "demo" && " (demo)"}</b>
-            <code className="mono-s"><Id v={snap.project_id} /></code> · <code className="mono-s"><Id v={snap.snapshot_id} /></code></div>
-          <button className="btn btn--sm push-right" onClick={() => void refresh()} disabled={busy} title="refresh(project_id): re-scan the granted source">
+          <div><b>Snapshot {snap === result ? "stored" : snap.status === "unchanged" ? "unchanged, the source is the same" : "refreshed"}{port.kind === "demo" && " (demo)"}</b>
+            <code className="mono-s"><Id v={snap.snapshot_id} /></code></div>
+          <button className="btn btn--sm push-right" onClick={() => void refresh()} disabled={busy} title="Read the granted folder again">
             <RefreshCw size={13} aria-hidden="true" />{busy ? "Refreshing…" : "Refresh"}
           </button>
         </div>
@@ -554,7 +691,7 @@ const DIRECTIONS: { value: MetricDirection; label: string }[] = [
   { value: "lower_is_better", label: "Lower is better" },
 ];
 
-function MetricDefinitions({ C, m, set }: { C: MappingCandidates; m: Mapping; set: (patch: Partial<Mapping>) => void }) {
+function MetricDefinitions({ C, m, set, error }: { C: MappingCandidates; m: Mapping; set: (patch: Partial<Mapping>) => void; error?: string }) {
   const ms = metric(C, m.metric);
   const offered = ms?.metric_name_candidates ?? [];
   const manual = !!ms && offered.length === 0;
@@ -562,7 +699,9 @@ function MetricDefinitions({ C, m, set }: { C: MappingCandidates; m: Mapping; se
   const names = m.defs.map(d => d.name.trim());
 
   return <>
-    <h3 className="form-h">Metric definitions <code className="fld-code">metric_definitions</code></h3>
+    <h3 className="form-h">What each metric means <code className="fld-code">metric_definitions</code></h3>
+    <p className="fld-note">Aletheia does not guess these. A threshold of 0.05 means a change of more than 0.05, in the worse direction, counts as a regression.</p>
+    {error && <p className="fld-error" role="alert"><Mark tone="no" />{error}</p>}
 
     {!ms ? (
       <Absent title="Choose a metric source first" />
@@ -575,7 +714,7 @@ function MetricDefinitions({ C, m, set }: { C: MappingCandidates; m: Mapping; se
       )}
 
       {m.defs.length > 0 && (
-        <div className="defs" role="table" aria-label="Metric definitions">
+        <div className="defs" id="metric-definitions" role="table" aria-label="Metric definitions">
           <div className="def-row def-head" role="row">
             <span role="columnheader"><span className="fld-label">Metric</span><code className="fld-code">metric_name</code></span>
             <span role="columnheader"><span className="fld-label">Which way is better</span><code className="fld-code">direction</code></span>
@@ -635,19 +774,22 @@ export function FirstQuestion({ result, onAnalyzed, bare = false }: { result: Pi
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<Refusal>(null);
   const q = canonicalQuestion(text);
-  const ask = async () => {
+  const ask = () => {
     if (!q) return;
     setBusy(true); setRefusal(null);
-    try { onAnalyzed(await port.analyze_mock(result.project_id, result.snapshot_id, q)); }
-    catch (e) { setRefusal(isProductError(e) ? { code: e.code, message: e.safe_message } : { code: "unavailable", message: "The service did not answer." }); }
-    finally { setBusy(false); }
+    return scoped("analyze", () => port.analyze_mock(result.project_id, result.snapshot_id, q), {
+      done: onAnalyzed,
+      fail: e => setRefusal(isProductError(e) ? { code: e.code, message: e.safe_message } : { code: "unavailable", message: "The service did not answer." }),
+      late: view => ({ project_id: view.project.id, snapshot_id: view.snapshot.id, result_id: view.result.id, question: q }),
+      always: () => setBusy(false),
+    });
   };
   const form = (
     <>
       <div className="ask-row">
-        <input className="input" aria-label="First question" placeholder="e.g. What explains the validation decrease?" value={text} disabled={busy}
+        <input className="input" aria-label="First question" placeholder="For example: what changed in validation accuracy?" value={text} disabled={busy}
           onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && q && !busy) { e.preventDefault(); void ask(); } }} />
-        <button className="btn btn--primary" disabled={!q || busy} onClick={() => void ask()}>{busy ? "Asking…" : "Ask"}<ArrowRight size={14} aria-hidden="true" /></button>
+        <button className="btn btn--primary" disabled={!q || busy} aria-busy={busy} onClick={() => void ask()}>{busy ? "Asking…" : "Ask"}<ArrowRight size={14} aria-hidden="true" /></button>
       </div>
       <RefusalNote refusal={refusal} />
     </>
@@ -655,7 +797,8 @@ export function FirstQuestion({ result, onAnalyzed, bare = false }: { result: Pi
   if (bare) return <div className="ask-bare">{form}</div>;
   return (
     <section className="panel" style={{ marginTop: "var(--s5)" }}>
-      <div className="sec-head"><span className="eyebrow">Ask the first question</span><code className="aside mono-s">analyze_mock</code></div>
+      <div className="sec-head"><span className="eyebrow">Ask the first question</span></div>
+      <p className="fld-note" style={{ marginBottom: "var(--s3)" }}>The answer is scripted and local: no model runs, and nothing leaves this computer.</p>
       {form}
     </section>
   );

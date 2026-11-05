@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Info } from "lucide-react";
-import { useView } from "./service";
-import { useRoute, useStore } from "./store";
+import { port, useView } from "./service";
+import { NOT_FOUND, useRoute, useStore } from "./store";
 import { Rail } from "./components/Rail";
 import { Topbar } from "./components/Topbar";
 import { Investigation } from "./components/Investigation";
@@ -9,7 +9,7 @@ import { Start } from "./components/Start";
 import { Project } from "./components/Project";
 import { Results } from "./components/Results";
 import { Retention } from "./components/Retention";
-import { Counterfactual, Prospective, ProjectDeleted } from "./components/Gated";
+import { Counterfactual, NotFound, Prospective, ProjectDeleted } from "./components/Gated";
 import { Connect } from "./components/Connect";
 import { Kbd } from "./components/primitives";
 import { Modal } from "./components/Modal";
@@ -23,8 +23,9 @@ export function App() {
   const [railOpen, setRailOpen] = useState(false);
   const [modal, setModal] = useState<ModalKind>(null);
 
+  // the first screen says where to begin; it never opens the sample as if it were someone's result
   useEffect(() => {
-    if (!location.hash) location.replace("#/investigation");
+    if (!location.hash) location.replace("#/start");
   }, []);
 
   useEffect(() => {
@@ -45,7 +46,7 @@ export function App() {
         <div className="shell">
           <Topbar onMenu={() => setRailOpen(true)} onShortcuts={() => setModal("shortcuts")} />
           <main className="content">
-            {s.deletedProject && (name === "project" || name === "investigation" || name === "results")
+            {name === NOT_FOUND ? <NotFound /> : s.deletedProject && (name === "project" || name === "investigation" || name === "results")
               ? <ProjectDeleted />
               : {
                 start: <Start />, connect: <Connect />, project: <Project />, investigation: <Investigation />,
@@ -65,7 +66,7 @@ export function App() {
         <Modal title="Keyboard shortcuts" onClose={() => setModal(null)}>
           {([
             [["j", "↓"], "Next claim"], [["k", "↑"], "Previous claim"], [["x"], "Mark reviewed"],
-            [["e"], "Open evidence"], [["/"], "Search"], [["Esc"], "Clear / close"], [["?"], "This list"],
+            [["e"], "Open source"], [["/"], "Search"], [["Esc"], "Clear / close"], [["?"], "This list"],
           ] as [string[], string][]).map(([keys, label]) => (
             <div className="shortcut" key={label}>{label}<span className="keys-r">{keys.map(k => <Kbd key={k}>{k}</Kbd>)}</span></div>
           ))}
@@ -83,7 +84,7 @@ export function App() {
           </dl>
           <div style={{ display: "flex", gap: "var(--s2)", justifyContent: "flex-end", marginTop: "var(--s5)" }}>
             <button className="btn" onClick={() => setModal(null)}>Close</button>
-            <button className="btn btn--primary" onClick={() => { setModal(null); go("connect"); }}>Connect another</button>
+            {port.kind === "live" && <button className="btn btn--primary" onClick={() => { setModal(null); go("connect"); }}>Connect another</button>}
           </div>
         </Modal>
       )}

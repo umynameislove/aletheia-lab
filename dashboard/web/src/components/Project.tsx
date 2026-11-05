@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { ArrowRight, FileText, RefreshCw, Share2 } from "lucide-react";
 import type { MetricChange, MetricObservation, ProductView, Turn } from "../types";
 import { evidenceRequests, lastTurn, observedInSnapshot, projectView } from "../data/view";
-import { isProductError, port, useResultSwitch, useView } from "../service";
+import { formatNumber, formatSigned, ADVERSE_WORDS, definitionWords } from "../data/format";
+import { isProductError, port, scoped, useResultSwitch, useView } from "../service";
 import type { RefreshResult } from "../service/port";
 import { FirstQuestion, RefusalNote, type Refusal } from "./Connect";
 import { useRoute, useStore } from "../store";
@@ -25,11 +26,13 @@ export function Project() {
 
   /* refresh re-reads the granted source. This result stays pinned to its own snapshot either way;
      a new snapshot is only analysed when someone asks about it. */
-  const refresh = async () => {
+  const refresh = () => {
     setBusy(true); setRefusal(null); setRefreshed(null);
-    try { setRefreshed(await port.refresh(v.project.id)); }
-    catch (e) { setRefusal(isProductError(e) ? { code: e.code, message: e.safe_message } : { code: "unavailable", message: "The service did not answer." }); }
-    finally { setBusy(false); }
+    return scoped("refresh", () => port.refresh(v.project.id), {
+      done: setRefreshed,
+      fail: e => setRefusal(isProductError(e) ? { code: e.code, message: e.safe_message } : { code: "unavailable", message: "The service did not answer." }),
+      always: () => setBusy(false),
+    });
   };
 
   return (
@@ -38,7 +41,7 @@ export function Project() {
         <header className="page-head page-head--row">
           <h1>{v.project.display_name}</h1>
           <div className="actions" style={{ marginTop: 0 }}>
-            <button className="btn" onClick={() => void refresh()} disabled={busy || sample || s.deletedProject} title={sample ? "Sample view. Connect a project first." : "refresh(project_id)"}>
+            <button className="btn" onClick={() => void refresh()} disabled={busy || sample || s.deletedProject} title={sample ? "This is sample data. Connect a project first." : "Read the granted folder again"}>
               <RefreshCw size={14} aria-hidden="true" />{busy ? "Refreshing…" : "Refresh"}
             </button>
             <button className="btn" onClick={() => go("retention")}><Share2 size={14} aria-hidden="true" />Export or delete</button>
@@ -176,9 +179,9 @@ function Row({ on, tone = "accent", k, val, mono = false }: { on: boolean; tone?
 function MetricChanges({ v }: { v: ProductView }) {
   const defs = new Map(v.snapshot.metric_definitions.map(d => [d.metric_name, d]));
   const rows = v.snapshot.metric_changes;
-  const val = (o: MetricObservation | null) => (o === null ? <span className="dim">—</span> : String(o.value));
+  const val = (o: MetricObservation | null) => (o === null ? <span className="dim">No value</span> : formatNumber(o.value));
   const runStep = (c: MetricChange) => { const o = c.after ?? c.before; return o ? `${o.run_id} · ${o.step === null ? "no step" : `step ${o.step}`}` : "—"; };
-  const signed = (d: number | null) => (d === null ? <span className="dim">null</span> : `${d > 0 ? "+" : ""}${d}`);
+  const signed = (d: number | null) => (d === null ? <span className="dim">No value</span> : formatSigned(d));
   const tone = (a: MetricChange["adverse_status"]) => (a === "adverse" ? "no" : a === "not_adverse" ? "ok" : "") as "no" | "ok" | "";
   return (
     <section className="panel">
@@ -186,27 +189,26 @@ function MetricChanges({ v }: { v: ProductView }) {
       {rows.length ? (
         <div className="tbl-wrap">
           <table className="tbl">
-            <thead><tr><th>Metric</th><th>Run · step</th><th className="num">Before</th><th className="num">After</th><th className="num">Delta</th><th>Change</th><th>Adverse</th><th>Definition</th></tr></thead>
+            <thead><tr><th>Metric</th><th>Run · step</th><th className="num">Before</th><th className="num">After</th><th className="num">Change</th><th>Against threshold</th><th>Declared as</th></tr></thead>
             <tbody>
               {rows.map(c => {
                 const d = defs.get(c.metric_name);
                 return (
                   <tr key={c.evidence_id}>
-                    <td><code className="mono-s">{c.metric_name}</code><div className="dim mono-s"><Id v={c.evidence_id} /></div></td>
+                    <td>{c.metric_name}</td>
                     <td className="mono-s">{runStep(c)}</td>
                     <td className="num">{val(c.before)}</td>
                     <td className="num">{val(c.after)}</td>
                     <td className="num">{signed(c.delta)}</td>
-                    <td><code className="mono-s">{c.kind}</code></td>
-                    <td><span className="term-plain">{tone(c.adverse_status) ? <Mark tone={tone(c.adverse_status)} /> : <Mark hollow />}<code className="mono-s">{c.adverse_status}</code></span></td>
-                    <td className="mono-s">{d ? `${d.direction} · threshold ${d.regression_threshold}` : <span className="dim">no definition</span>}</td>
+                    <td><span className="term-plain term-plain--wrap">{tone(c.adverse_status) ? <Mark tone={tone(c.adverse_status)} /> : <Mark hollow />}{ADVERSE_WORDS[c.adverse_status]}</span></td>
+                    <td>{definitionWords(d)}</td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
         </div>
-      ) : <p className="foot-note">No changes <code className="mono-s">metric_changes = []</code></p>}
+      ) : <p className="foot-note">No metric change is recorded for this snapshot.</p>}
     </section>
   );
 }

@@ -1,9 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import viewJson from "../data/synthetic_p6_view.json";
 import { PREVIEW, PREVIEW_VERSION } from "../data/preview";
 import type { ProductView } from "../types";
 import { DemoProductPort } from "./demo";
 import { LiveProductPort } from "./live";
+import { checkedPort } from "./contract";
+import { localCapabilities } from "./capabilities";
+import { createFence, scopeFromHash, type LateWork } from "./fence";
 import { rememberProject } from "./opened";
 import { isProductError, ProductError, type ProductPort } from "./port";
 import { resultTransitions } from "./transitions";
@@ -14,9 +17,45 @@ import { useStore } from "../store";
    offline DemoProductPort over the shared fixtures. A Live failure is shown, never swapped for demo. */
 export const demoPort = new DemoProductPort({ view: viewJson as ProductView, preview: PREVIEW });
 export const port: ProductPort = import.meta.env.MODE === "live"
-  ? new LiveProductPort({ fetch: (url, init) => fetch(url, init) })
+  ? checkedPort(new LiveProductPort({ fetch: (url, init) => fetch(url, init) }))
   : demoPort;
+export const capabilities = localCapabilities(port.kind);
 export { PREVIEW_VERSION, ProductError, isProductError };
+
+/* The scope every async call is fenced against (service/fence.ts). */
+export const fence = createFence(() => scopeFromHash(location.hash));
+
+/* Work that finished after the person moved on. It changes nothing on screen; it waits here
+   until they choose to open it (components/Late.tsx). In memory, and gone with the session. */
+let lateWork: LateWork[] = [];
+let lateId = 0;
+const lateListeners = new Set<() => void>();
+const lateChanged = () => lateListeners.forEach(l => l());
+const subscribeLate = (l: () => void) => { lateListeners.add(l); return () => { lateListeners.delete(l); }; };
+export function useLateWork() { return useSyncExternalStore(subscribeLate, () => lateWork); }
+export function dismissLate(id: number) { lateWork = lateWork.filter(w => w.id !== id); lateChanged(); }
+function addLate(work: Omit<LateWork, "id">) { lateWork = [{ ...work, id: ++lateId }, ...lateWork].slice(0, 20); lateChanged(); }
+
+/** Run one async operation inside the current scope. `done`/`fail` run only if that scope is still
+    the one on screen; otherwise the outcome goes to the late list and touches nothing else. */
+export async function scoped<T>(op: string, work: () => Promise<T>, then: {
+  done: (value: T) => void;
+  fail: (error: unknown) => void;
+  late?: (value: T) => LateWork["result"];
+  always?: () => void;
+}): Promise<void> {
+  const ticket = fence.ticket();
+  try {
+    const value = await work();
+    if (fence.current(ticket)) then.done(value);
+    else addLate({ op, result: then.late?.(value) });
+  } catch (error) {
+    if (fence.current(ticket)) then.fail(error);
+    else addLate({ op, error: isProductError(error) ? error.code : "unavailable" });
+  } finally {
+    then.always?.();
+  }
+}
 
 /** What to do after a delete: the demo can be reset; a Live delete is final. */
 export const AFTER_DELETE = port.kind === "demo"
@@ -30,12 +69,16 @@ export type Boot = { status: "loading" } | { status: "ready"; view: ProductView 
    opaque IDs are kept locally so a cold start can continue the open project (service/opened.ts).
    The demo keeps its results in memory only, so it never puts one in the URL. */
 export const linked = port.kind === "live";
+const SCREEN_PARAMS = ["claim", "evidence", "node", "page", "q", "filter", "turn", "panel", "pane"];
 const hashResult = () => new URLSearchParams(location.hash.split("?")[1] ?? "").get("result");
 export function linkIds(ids: { project?: string; snapshot?: string; result?: string | null }) {
   if (!linked) return;
   const [route, qs] = (location.hash || "#/investigation").split("?");
   const q = new URLSearchParams(qs ?? "");
   const before = q.toString();
+  // another project is another scope: its selection, page and filter do not carry over
+  const leaving = q.get("project");
+  if (ids.project && leaving && ids.project !== leaving) for (const k of SCREEN_PARAMS) q.delete(k);
   for (const [k, v] of Object.entries(ids)) {
     if (v === undefined) continue;
     if (v === null) q.delete(k); else q.set(k, v);

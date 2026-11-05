@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { ArrowRight, FolderInput, GitBranch, LayoutList, MessageSquareText, RefreshCw } from "lucide-react";
-import { AFTER_DELETE, isProductError, linked, linkIds, port, useResultSwitch, useView } from "../service";
+import { ArrowRight, FolderInput, LayoutList, RefreshCw } from "lucide-react";
+import { AFTER_DELETE, isProductError, linked, linkIds, port, scoped, useResultSwitch, useView } from "../service";
 import { openedProject, type OpenedProject } from "../service/opened";
 import { FirstQuestion, openProject, RefusalNote, type Refusal } from "./Connect";
+import { LateWorkList } from "./Late";
 import { useRoute, useStore } from "../store";
 import { Absent, Id } from "./primitives";
 
-/* Where a session begins: the three-step path, then two equal ways in. */
+/* Where a session begins: your own project first, the sample clearly second. Opening the app never
+   lands on a result the person did not ask for. */
 export function Start() {
   const VIEW = useView();
   const { go } = useRoute();
@@ -18,44 +20,38 @@ export function Start() {
 
   return (
     <div className="page" id="main" tabIndex={-1}>
-      <div className="page-inner">
+      <div className="page-inner page-inner--narrow">
         <header className="page-head">
           <h1>Check what the evidence supports</h1>
+          <p className="lede">Import a project snapshot, ask about a change, then read each claim next to the source it cites. Aletheia states what was observed and what stays unknown.</p>
         </header>
 
-        <ol className="path3" aria-label="How it works">
-          <li><FolderInput size={16} aria-hidden="true" /><span><b>Import</b>a project snapshot</span></li>
-          <li><MessageSquareText size={16} aria-hidden="true" /><span><b>Ask</b>about a change</span></li>
-          <li><GitBranch size={16} aria-hidden="true" /><span><b>Trace</b>each claim to its evidence</span></li>
-        </ol>
+        <LateWorkList />
 
-        <div className="pair" style={{ marginTop: "var(--s6)" }}>
-          <section className="panel panel--col">
-            <div className="sec-head"><span className="eyebrow">Demo project</span></div>
-            {gone ? (
-              <Absent title="Deleted in this session">{AFTER_DELETE}</Absent>
-            ) : <>
-              <dl className="kv">
-                <dt>project</dt><dd>{VIEW.project.id}</dd>
-                <dt>snapshot</dt><dd>{VIEW.snapshot.baseline_id} → {VIEW.snapshot.id}</dd>
-                <dt>mode</dt><dd>{VIEW.mode}</dd>
-              </dl>
-              <div className="actions push-end">
-                <button className="btn btn--primary" onClick={() => go("investigation")}><LayoutList size={14} aria-hidden="true" />Open investigation</button>
-                <button className="btn" onClick={() => go("project")}>Overview<ArrowRight size={14} aria-hidden="true" /></button>
-              </div>
-            </>}
-          </section>
-
+        <div className="stack-lg" style={{ marginTop: "var(--s6)" }}>
           {opened ? <Continue opened={opened} /> : (
-            <section className="panel panel--col">
-              <div className="sec-head"><span className="eyebrow">Your project</span>{demo && <span className="aside">demo — no real folder is read</span>}</div>
-              <p className="body-copy">Grant one folder, review the scan, then confirm.</p>
-              <div className="actions push-end">
-                <button className="btn" onClick={() => go("connect")}><FolderInput size={14} aria-hidden="true" />Connect a project</button>
+            <section className="panel">
+              <h2 className="panel-title">Start with your project</h2>
+              {demo
+                ? <p className="body-copy">This demo build cannot read a real folder. You can walk through connecting with sample data.</p>
+                : <p className="body-copy">Choose one folder on this computer. You review what would be read, and map its metrics, before anything is stored. Your source files are never changed.</p>}
+              <div className="actions">
+                <button className="btn btn--primary" onClick={() => go("connect")}><FolderInput size={15} aria-hidden="true" />Connect a project</button>
               </div>
             </section>
           )}
+
+          <section className="panel">
+            <h2 className="panel-title">Look around with sample data</h2>
+            {gone ? (
+              <Absent title="Deleted in this session">{AFTER_DELETE}</Absent>
+            ) : <>
+              <p className="body-copy">A made-up project, so you can see how a claim and its source read together. It is not your data and no model produced it.</p>
+              <div className="actions">
+                <button className="btn" onClick={() => go("investigation")}><LayoutList size={15} aria-hidden="true" />Open the sample: {VIEW.demo_only ? VIEW.project.display_name : "result"}</button>
+              </div>
+            </>}
+          </section>
         </div>
       </div>
     </div>
@@ -70,26 +66,25 @@ function Continue({ opened }: { opened: OpenedProject }) {
   const [snap, setSnap] = useState(opened);
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<Refusal>(null);
-  const refresh = async () => {
+  const refresh = () => {
     setBusy(true); setRefusal(null);
-    try { const r = await port.refresh(snap.project_id); openProject(r); setSnap({ project_id: r.project_id, snapshot_id: r.snapshot_id }); }
-    catch (e) { setRefusal(isProductError(e) ? { code: e.code, message: e.safe_message } : { code: "unavailable", message: "The service did not answer." }); }
-    finally { setBusy(false); }
+    return scoped("refresh", () => port.refresh(snap.project_id), {
+      done: r => { openProject(r); setSnap({ project_id: r.project_id, snapshot_id: r.snapshot_id }); },
+      fail: e => setRefusal(isProductError(e) ? { code: e.code, message: e.safe_message } : { code: "unavailable", message: "The service did not answer." }),
+      always: () => setBusy(false),
+    });
   };
   return (
-    <section className="panel panel--col">
-      <div className="sec-head"><span className="eyebrow">Your project</span><span className="aside">kept on this machine</span></div>
-      <dl className="kv">
-        <dt>project</dt><dd><Id v={snap.project_id} /></dd>
-        <dt>snapshot</dt><dd><Id v={snap.snapshot_id} /></dd>
-      </dl>
+    <section className="panel">
+      <h2 className="panel-title">Continue your project</h2>
+      <p className="body-copy">Kept on this computer from your last visit: snapshot <Id className="mono-s" v={snap.snapshot_id} />.</p>
       <RefusalNote refusal={refusal} />
-      <FirstQuestion bare key={snap.snapshot_id} result={snap} onAnalyzed={view => { showResult(view); go("investigation"); }} />
-      <div className="actions push-end">
-        {snap.result_id && <button className="btn btn--primary" onClick={() => { linkIds({ project: snap.project_id, snapshot: snap.snapshot_id, result: snap.result_id }); go("investigation"); }}><LayoutList size={14} aria-hidden="true" />Open last result</button>}
-        <button className="btn" onClick={() => void refresh()} disabled={busy}><RefreshCw size={14} aria-hidden="true" />{busy ? "Refreshing…" : "Refresh"}</button>
-        <button className="btn" onClick={() => go("connect")}><FolderInput size={14} aria-hidden="true" />Connect another</button>
+      <div className="actions">
+        {snap.result_id && <button className="btn btn--primary" onClick={() => { linkIds({ project: snap.project_id, snapshot: snap.snapshot_id, result: snap.result_id }); go("investigation"); }}><LayoutList size={15} aria-hidden="true" />Open last result<ArrowRight size={15} aria-hidden="true" /></button>}
+        <button className="btn" onClick={() => void refresh()} disabled={busy} aria-busy={busy}><RefreshCw size={15} aria-hidden="true" />{busy ? "Refreshing…" : "Refresh"}</button>
+        <button className="btn" onClick={() => go("connect")}><FolderInput size={15} aria-hidden="true" />Connect another</button>
       </div>
+      <FirstQuestion bare key={snap.snapshot_id} result={snap} onAnalyzed={view => { showResult(view); go("investigation"); }} />
     </section>
   );
 }

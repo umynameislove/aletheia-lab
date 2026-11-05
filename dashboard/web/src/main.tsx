@@ -20,10 +20,13 @@ function BootScreen({ boot }: { boot: { status: string; error?: { code: string; 
     <div className="boot" role={boot.status === "error" ? "alert" : "status"}>
       {boot.status === "error" && boot.error ? <>
         <span className="mk hollow" aria-hidden="true" />
-        <div><b>The product view could not be loaded</b><code className="mono-s">{boot.error.code}</code><p>{remedyFor(boot.error.code).advice ?? ""} {boot.error.safe_message}</p>
+        <div><b>This could not be opened</b><p>{remedyFor(boot.error.code).advice ?? ""} {boot.error.safe_message}</p><code className="mono-s">{boot.error.code}</code>
           {/* a dead or deleted link must not trap the page: drop it and start from Start, nothing substituted */}
-          <button className="btn btn--sm" onClick={() => { location.replace(location.pathname + "#/start"); location.reload(); }}>Start over</button></div>
-      </> : <span className="dim">Loading the view…</span>}
+          <div className="actions">
+            <button className="btn btn--sm" onClick={() => location.reload()}>Try again</button>
+            <button className="btn btn--sm" onClick={() => { location.replace(location.pathname + "#/start"); location.reload(); }}>Start over</button>
+          </div></div>
+      </> : <span className="dim">Loading…</span>}
     </div>
   );
 }

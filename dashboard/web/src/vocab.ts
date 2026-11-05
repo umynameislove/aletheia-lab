@@ -18,7 +18,9 @@ export const TERM: Record<string, [plain: string, gloss: string]> = {
   observation: ["Observation", "state what was seen"],
   project_audit: ["Project audit", "no hidden answer key"],
   diagnosis: ["Visible to diagnosis", ""],
-  deterministic_mock: ["Demo answer, no model", "not a model result"],
+  mixed: ["Mixed evidence", "evidence points both ways"],
+  not_assessed: ["Not assessed", "this was not evaluated, which is not a failure"],
+  deterministic_mock: ["Scripted answer, no model", "a fixed local answer, not a model result"],
   not_estimated: ["Not counted", "null, not 0"],
   // claim_type — closed enum (K08)
   evidence_statement: ["States what was seen", ""],

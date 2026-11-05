@@ -4,6 +4,7 @@ import { useView } from "../service";
 import { useStore } from "../store";
 import { plain } from "../vocab";
 import { Absent, Id, Mark, Term } from "./primitives";
+import { LateWorkList } from "./Late";
 
 /* How many independent things is this built on, and could someone else arrive here again? */
 export function Results() {
@@ -33,7 +34,10 @@ export function Results() {
       <div className="page-inner">
         <header className="page-head">
           <h1>Results &amp; reproduction</h1>
+          <p className="lede">The result open now. A list of past results needs a service method that does not exist yet.</p>
         </header>
+
+        <LateWorkList />
 
         <h2 className="sec-title">Denominators <span className="sec-note">never pooled</span></h2>
         <div className="denoms" role="list" aria-label="Denominators">

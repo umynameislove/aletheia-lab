@@ -10,7 +10,7 @@ import { Absent } from "./primitives";
 function GatedPage({ title, heading, code, children }: { title: string; heading: string; code?: string; children?: ReactNode }) {
   return (
     <div className="page" id="main" tabIndex={-1}>
-      <div className="page-inner">
+      <div className="page-inner page-inner--narrow">
         <header className="page-head"><h1>{title}</h1></header>
         <div style={{ marginTop: "var(--s6)", maxWidth: 640 }}>
           <Absent title={heading} code={code}>{children}</Absent>
@@ -41,6 +41,16 @@ export function ProjectDeleted() {
   return (
     <GatedPage title="Project deleted" heading="Deleted in this session">
       {AFTER_DELETE} <button className="btn btn--sm" style={{ marginLeft: 8 }} onClick={() => go("retention")}>See the receipt</button>
+    </GatedPage>
+  );
+}
+
+/* An address this app has no screen for. It says so and offers the way back. */
+export function NotFound() {
+  const { go } = useRoute();
+  return (
+    <GatedPage title="Page not found" heading="This address does not match any screen">
+      Nothing was opened in its place. <button className="btn btn--sm" style={{ marginLeft: 8 }} onClick={() => go("start")}>Go to Start</button>
     </GatedPage>
   );
 }

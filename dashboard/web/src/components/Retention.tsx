@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Download, Lock, Trash2 } from "lucide-react";
 import { projectView } from "../data/view";
-import { AFTER_DELETE, isProductError, port, useView } from "../service";
+import { AFTER_DELETE, capabilities, fence, isProductError, port, useView } from "../service";
 import { remedyFor } from "../service/errors";
 import { forgetProject } from "../service/opened";
 import { downloadJSON, downloadMarkdown, downloadPdf, downloadReview } from "../export";
@@ -25,18 +25,22 @@ export function Retention() {
   // the failure preview is a demo scaffold over the screens; files always come from the stored result
   // Live shows the service's demo_view until a project is connected; that view is not stored, so
   // the service has nothing to export or delete for it
-  const sample = !demo && VIEW.demo_only ? "Sample view. Connect a project first." : null;
+  const sample = !demo && VIEW.demo_only ? "This is sample data. Connect a project first." : null;
+  const formatOff = (f: "json" | "markdown" | "pdf") => (capabilities.supported_export_formats.includes(f) ? exportOff : "Not available in this build.");
   const exportOff = sample ?? (s.failed ? "Turn off “Preview a failed run” to export." : null);
 
   const del = async (scope: Scope) => {
     if (scope !== "project") return; // no service method deletes a conversation alone
     setBusy(true);
+    const ticket = fence.ticket();
     try {
       const receipt = await port.delete_project(VIEW.project.id);
+      // the project is gone wherever the person is now, so its state closes either way; the receipt
+      // names its project and cannot close another (service/transitions.ts). Only the toast is scoped.
       forgetProject(VIEW.project.id);
       dispatch({ type: "deleteProject", receipt: { ...receipt, scope: "" } });
-      toast("Project deleted");
-    } catch (e) { fail(e); } finally { setBusy(false); setConfirm(null); }
+      if (fence.current(ticket)) toast("Project deleted");
+    } catch (e) { if (fence.current(ticket)) fail(e); } finally { setBusy(false); setConfirm(null); }
   };
 
   return (
@@ -50,12 +54,12 @@ export function Retention() {
           <section className="panel receipt" aria-label="Deletion receipt">
             <div className="sec-head"><span className="eyebrow">Deletion receipt</span>{demo && <span className="aside">demo</span>}</div>
             <dl className="kv">
-              <dt>project_id</dt><dd>{r.project_id}</dd>
-              <dt>status</dt><dd>{r.status}</dd>
-              <dt>deleted_count</dt><dd>{r.deleted_count}</dd>
-              <dt>retained_shared_count</dt><dd>{r.retained_shared_count}</dd>
+              <dt>Project</dt><dd>{r.project_id}</dd>
+              <dt>Status</dt><dd>{r.status}</dd>
+              <dt>Items deleted</dt><dd>{r.deleted_count}</dd>
+              <dt>Kept, shared with other projects</dt><dd>{r.retained_shared_count}</dd>
             </dl>
-            <p className="foot-note">From <code className="mono-s">delete_project</code>. IDs and counts only.</p>
+            <p className="foot-note">Reported by the service. It holds IDs and counts only.</p>
           </section>
         )}
 
@@ -68,22 +72,22 @@ export function Retention() {
             <div className="pair">
               <section className="panel">
                 <div className="sec-head"><span className="eyebrow">Export</span><span className="aside">from the stored result</span></div>
-                <ExportRow name="JSON" desc="export_report(json), exact bytes"
-                  off={exportOff} onClick={() => downloadJSON(v).then(() => toast("JSON downloaded"), fail)} />
-                <ExportRow name="Markdown" desc="export_report(markdown), exact bytes"
-                  off={exportOff} onClick={() => downloadMarkdown(v).then(() => toast("Markdown downloaded"), fail)} />
-                <ExportRow name="PDF" desc="export_report(pdf), exact bytes" off={demo ? "Not in the demo port." : exportOff}
+                <ExportRow name="JSON" desc="The result exactly as stored, for tools"
+                  off={formatOff("json")} onClick={() => downloadJSON(v).then(() => toast("JSON downloaded"), fail)} />
+                <ExportRow name="Markdown" desc="A readable report"
+                  off={formatOff("markdown")} onClick={() => downloadMarkdown(v).then(() => toast("Markdown downloaded"), fail)} />
+                <ExportRow name="PDF" desc="A report to share. Vietnamese text is not reliable in PDF yet." off={formatOff("pdf")}
                   onClick={demo ? undefined : () => downloadPdf(v).then(() => toast("PDF downloaded"), fail)} />
-                <ExportRow name="Your review" desc="reviewer_pass — local, a separate file"
+                <ExportRow name="Your review" desc="Your marks and notes from this tab, as a separate file"
                   onClick={() => { downloadReview(v, s); toast("Review downloaded"); }} />
-                <ExportRow name="External send" desc="no method in the contract" off="" />
+                
               </section>
 
               <section className="panel panel--col">
                 <div className="sec-head"><span className="eyebrow">Delete</span><span className="aside">irreversible</span></div>
-                <DeleteRow title="Delete the conversation" desc="Turns and answers."
-                  done={s.deletedConversation} off="No service method for this." onClick={() => setConfirm("conversation")} />
-                <DeleteRow title="Delete the project" desc="Snapshots, evidence, conversation, claims. Shared objects kept."
+                <DeleteRow title="Delete the conversation" desc="The questions and answers only."
+                  done={s.deletedConversation} off="Not available yet." onClick={() => setConfirm("conversation")} />
+                <DeleteRow title="Delete the project" desc="Snapshots, evidence, questions and claims stored by Aletheia. Your source folder is not touched."
                   done={s.deletedProject} off={sample ?? (busy ? "Deleting…" : null)} onClick={() => setConfirm("project")} />
                 {demo && <p className="local-note push-end"><Lock size={12} aria-hidden="true" />Demo: in-memory state only.</p>}
               </section>
@@ -142,12 +146,12 @@ function ConfirmDelete({ scope, onCancel, onConfirm }: { scope: Scope; onCancel:
       <div className="notice notice--stop" style={{ marginTop: 0 }}>
         <Mark tone="no" />
         <div><b>This cannot be undone</b>{project
-          ? "Snapshots, evidence, the conversation and every claim."
-          : "The turns and answers. The snapshot and evidence stay."}</div>
+          ? "Deleted: this project's snapshots, evidence, questions and claims. Kept: your source folder, and objects other projects still use."
+          : "Deleted: the questions and answers. Kept: the snapshot and evidence."}</div>
       </div>
       <label className="ack">
         <input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} />
-        <span>I&rsquo;ve read the scope.</span>
+        <span>I understand what will be deleted.</span>
       </label>
       <div className="modal-actions">
         <button className="btn" onClick={onCancel}>Cancel</button>
