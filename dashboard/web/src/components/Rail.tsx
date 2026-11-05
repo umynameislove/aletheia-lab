@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent } from "react";
 import {
   ChevronDown, ChevronRight, ChevronsUpDown, FileCheck2, FlaskConical, FolderInput, Gauge, Home, LayoutList, RotateCcw, ShieldCheck, TriangleAlert, X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { AFTER_DELETE, capabilities, demoPort, port, useResultSwitch, useView } from "../service";
+import { AFTER_DELETE, capabilities, demoPort, port, previewSession, useResultSwitch, useView } from "../service";
 import { FEATURES, modeWords } from "../service/capabilities";
 import { useRoute, useStore, type RouteName } from "../store";
+import { useNarrow } from "./primitives";
 
 /** Two-letter avatar from the project's own name, never hard-coded. */
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]!.toUpperCase()).join("") || "P";
@@ -34,6 +35,25 @@ export function Rail({ open, onClose, onOpenProject }: { open: boolean; onClose:
   const { name, go, hrefFor } = useRoute();
   const { s } = useStore();
   const sample = VIEW.demo_only;
+  const drawer = useNarrow(900);
+  const shut = drawer && !open;
+  const ref = useRef<HTMLElement>(null);
+
+  // the drawer takes focus while open, and hands it back to the menu button when it closes
+  useEffect(() => {
+    if (!drawer || !open) return;
+    const before = document.activeElement as HTMLElement | null;
+    ref.current?.querySelector<HTMLElement>(".rail-x")?.focus();
+    return () => { if (before?.isConnected) before.focus(); };
+  }, [drawer, open]);
+  const onTrap = (e: ReactKeyboardEvent<HTMLElement>) => {
+    if (!drawer || e.key !== "Tab" || !ref.current) return;
+    const items = [...ref.current.querySelectorAll<HTMLElement>("a[href], button:not(:disabled), summary")].filter(el => el.offsetParent !== null);
+    if (!items.length) return;
+    const first = items[0], last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
 
   // a deleted project closes the screens that belong to it; gated screens stay reachable on purpose
   const dead = (id: RouteName) => s.deletedProject && (id === "project" || id === "investigation" || id === "results");
@@ -60,7 +80,7 @@ export function Rail({ open, onClose, onOpenProject }: { open: boolean; onClose:
   return (
     <>
       {open && <div className="rail-scrim" onClick={onClose} aria-hidden="true" />}
-      <aside className={`rail${open ? " open" : ""}`} aria-label="Sections">
+      <aside ref={ref} className={`rail${open ? " open" : ""}`} aria-label="Sections" onKeyDown={onTrap} {...(shut ? { inert: "" } : {})}>
         <div className="rail-head">
           <div className="brand"><span className="brand-mark" aria-hidden="true"><span className="bm-a" /><span className="bm-b" /></span>Aletheia</div>
           <button className="icon-btn rail-x" onClick={onClose} aria-label="Close navigation"><X size={16} /></button>
@@ -136,9 +156,15 @@ function Account() {
           </button>
           <button
             className="demo-btn" role="menuitem"
-            onClick={() => { demoPort.reset(); void resetResult(); dispatch({ type: "reset" }); go("start"); setOpen(false); toast("Demo data reset"); }}
+            onClick={() => { demoPort?.reset(); void resetResult(); dispatch({ type: "reset" }); go("start"); setOpen(false); toast("Demo data reset"); }}
           >
             <RotateCcw size={14} aria-hidden="true" />Reset demo data
+          </button>
+          <button className="demo-btn" role="menuitem" onClick={() => { setOpen(false); previewSession({ status: "expired" }); }}>
+            <TriangleAlert size={14} aria-hidden="true" />Preview: session ended
+          </button>
+          <button className="demo-btn" role="menuitem" onClick={() => { setOpen(false); previewSession({ status: "revoked" }); }}>
+            <TriangleAlert size={14} aria-hidden="true" />Preview: access removed
           </button>
           </>}
         </div>

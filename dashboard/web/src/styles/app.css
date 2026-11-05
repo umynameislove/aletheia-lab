@@ -341,7 +341,7 @@ textarea.input { height: auto; padding: 9px 11px; resize: vertical; line-height:
 .wl-row.reviewed .wl-text { color: var(--ink-2); }
 
 .check {
-  width: 20px; height: 20px; margin-top: 2px; flex: none; padding: 0;
+  width: 24px; height: 24px; margin-top: 0; flex: none; padding: 0;
   display: grid; place-items: center; border-radius: 6px;
   border: 1.5px solid var(--ink-3); background: var(--bg-app); color: transparent;
   transition: background var(--d-fast) var(--ease), border-color var(--d-fast) var(--ease), transform 80ms var(--ease);
@@ -386,7 +386,7 @@ textarea.input { height: auto; padding: 9px 11px; resize: vertical; line-height:
 .empty .btn { margin-top: var(--s4); }
 
 .absent { border: 1px dashed var(--line-3); border-radius: var(--r-2); padding: var(--s4); }
-.absent h3 { font: var(--t-ui); font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 9px; }
+.absent-title { font: var(--t-ui); font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 9px; }
 .absent p { font: var(--t-small); color: var(--ink-3); margin-top: 6px; }
 .absent .code { display: block; margin-top: 10px; font: var(--t-mono-s); color: var(--ink-3); }
 
@@ -396,7 +396,7 @@ textarea.input { height: auto; padding: 9px 11px; resize: vertical; line-height:
 .composer-in { display: flex; align-items: center; gap: var(--s3); padding: 10px 10px 10px var(--s4); }
 .composer-in input { flex: 1; min-width: 0; border: 0; background: none; height: 32px; font: var(--t-body); color: var(--ink); }
 .composer-in input:disabled { cursor: not-allowed; }
-.composer-scope { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 8px; border-radius: var(--r-1); background: var(--bg-3); font: var(--t-mono-s); color: var(--ink-2); white-space: nowrap; max-width: 210px; overflow: hidden; text-overflow: ellipsis; }
+.composer-scope { display: block; line-height: 24px; height: 24px; padding: 0 8px; border-radius: var(--r-1); background: var(--bg-3); font-family: var(--font-sans); font-size: 12px; color: var(--ink-2); white-space: nowrap; max-width: 210px; overflow: hidden; text-overflow: ellipsis; }
 .composer-why { display: flex; align-items: center; gap: var(--s2); padding: 8px var(--s4); border-top: 1px solid var(--line); font: var(--t-small); color: var(--ink-3); }
 .composer-why svg { color: var(--ink-3); flex: none; }
 .composer-why details { margin-left: auto; }
@@ -778,6 +778,7 @@ textarea.input { height: auto; padding: 9px 11px; resize: vertical; line-height:
 a.btn { text-decoration: none; }
 .link-btn { padding: 0; border: 0; background: none; color: var(--accent); text-align: left; font: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .link-btn:hover { color: var(--accent-strong); }
+.tl-q { display: block; min-height: 24px; }
 .link-btn[aria-pressed="true"] { font-weight: 600; }
 .input[aria-invalid="true"], .select[aria-invalid="true"] { border-color: var(--no); }
 .fld-error { display: flex; gap: 8px; align-items: flex-start; font: var(--t-small); color: var(--ink); }
@@ -921,3 +922,28 @@ a.btn { text-decoration: none; }
   .lg-line { left: 18px; right: auto; top: 0; bottom: 0; border-top: 0; border-left: 1.5px solid var(--line-3); }
   .lg-link.none .lg-line { border-left-style: dashed; }
 }
+
+/* a focused row is never left under the sticky composer (WCAG 2.4.11) */
+.center { scroll-padding-bottom: 170px; scroll-padding-top: var(--s4); }
+#main:focus { outline: none; }
+.page-loading { padding: var(--s6); font: var(--t-small); color: var(--ink-3); }
+.export-for { margin-bottom: var(--s2); overflow-wrap: anywhere; }
+.export-for b { color: var(--ink); font-weight: 500; }
+.row-k { overflow-wrap: anywhere; }
+.question, .verdict-answer, .quote blockquote, .notice, .tt-q, .np-row, .kv dd { overflow-wrap: anywhere; }
+
+/* imported names, questions and IDs can be one very long token: nothing may push a screen sideways */
+.content, .crumbs { overflow-wrap: anywhere; }
+.crumbs { flex: 1; min-width: 0; }
+.crumbs button, .crumbs .here { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.np-row > span:not(.mk):not(.v) { min-width: 0; }
+.proj-name { max-width: 100%; }
+@media (max-width: 420px) { .topbar { gap: var(--s2); } .mode { padding: 0 6px; } }
+
+/* a session that changed: the app is hidden or gone, and only this is on screen */
+.session-app { display: contents; }
+.session-cover { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: var(--s5); background: var(--bg-app); overflow: auto; }
+.session-card { width: min(460px, 100%); padding: var(--s6); border: 1px solid var(--line-2); border-radius: var(--r-3); background: var(--bg-1); }
+.session-card h1 { margin-top: var(--s3); font: var(--t-title); }
+.session-card h1:focus { outline: none; }
+.session-card p { margin-top: var(--s2); font: var(--t-body); color: var(--ink-2); }

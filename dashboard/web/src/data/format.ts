@@ -35,3 +35,13 @@ export function definitionWords(d: MetricDefinition | undefined, locale?: string
   const better = d.direction === "higher_is_better" ? "Higher is better" : "Lower is better";
   return `${better}; threshold ${formatNumber(d.regression_threshold, locale)}`;
 }
+
+/** A file name that says what it is: readable project name, the result's short ID. ASCII only, because
+    file names travel through systems that mangle anything else; nothing here is a path. */
+export function reportFilename(project: string, resultId: string, ext: string): string {
+  const slug = project.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[đĐ]/g, "d")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40).replace(/-+$/, "");
+  const hex = /([0-9a-f]{8,})$/.exec(resultId)?.[1];
+  const short = hex ? hex.slice(0, 8) : resultId.replace(/[^A-Za-z0-9]+/g, "-").slice(-16);
+  return `aletheia-${slug || "project"}-${short}.${ext}`;
+}

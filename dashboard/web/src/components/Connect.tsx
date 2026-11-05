@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, Check, ChevronDown, ChevronRight, FolderOpen, Lock, Plus, RefreshCw, ScanSearch, X } from "lucide-react";
-import { capabilities, isProductError, port, PREVIEW_VERSION, scoped, useResultSwitch, linkIds, linked } from "../service";
-import { rememberProject } from "../service/opened";
-import { canonicalQuestion } from "../service/question";
+import { capabilities, isProductError, port, scoped, useResultSwitch } from "../service";
 import { declaredRuns, runMappings } from "../service/transitions";
 import type { ConfirmResult } from "../service/port";
-import { remedyFor } from "../service/errors";
 import type { ConfirmMapping, IssueDTO, MappingCandidates, MetricDefinition, MetricDirection, PreviewImportResult, ProductView, UnavailableReason } from "../types";
 import { useRoute, useStore } from "../store";
 import type { Tone } from "../vocab";
+import { onWipe } from "../service/wipe";
+import { FirstQuestion, openProject, RefusalNote, type Refusal } from "./Ask";
 import { Absent, Id, Mark, shortId } from "./primitives";
 
 /* Connect a project — permission, then a scan you asked for, then a report you can act on.
@@ -203,17 +202,12 @@ const helpFor = (label: string) => CHECK_HELP[label] ?? label;
    tab only: never in the URL or storage. A hosted build clears this when the account changes. */
 let draft: { root: string; preview: PreviewImportResult | null; mapping: Mapping | null } = { root: "", preview: null, mapping: null };
 
+onWipe(() => { draft = { root: "", preview: null, mapping: null }; });
+
 const STALE_PREVIEW = new Set(["preview_stale", "preview_expired", "preview_already_confirmed"]);
 
 const SEV_TONE: Record<IssueDTO["severity"], Tone> = { blocker: "no", error: "no", warning: "partial", info: "" };
 const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
-
-/** Live keeps the confirmed or refreshed IDs (URL + local), so a reload can continue this project. */
-export function openProject(r: { project_id: string; snapshot_id: string }) {
-  if (!linked) return;
-  rememberProject({ project_id: r.project_id, snapshot_id: r.snapshot_id });
-  linkIds({ project: r.project_id, snapshot: r.snapshot_id, result: null });
-}
 
 export function Connect() {
   const { go } = useRoute();
@@ -258,7 +252,12 @@ export function Connect() {
         setRescanned(!!keep);
         toast("Scan complete", `${p.included_count} included, ${p.redacted_count} redacted, ${p.excluded_count} excluded, ${p.withheld_count} withheld`);
       },
-      fail: refuse,
+      fail: e => {
+        // the service answers a scan of a deleted project's folder with this general code
+        if (isProductError(e) && e.code === "record_not_found") {
+          setRefusal({ code: e.code, message: e.safe_message, advice: "This folder may belong to a project that was deleted. A deleted project cannot be imported again into this store." });
+        } else refuse(e);
+      },
       always: () => setBusy(false),
     });
   };
@@ -412,7 +411,7 @@ function Preview({ preview, m, setM, busy, refusal, rescanned, showErrors, setSh
     <div className="cols">
       <div className="stack-lg">
         <section>
-          <div className="sec-head"><span className="eyebrow">What would be read</span><code className="aside mono-s fld-code">preview_import {PREVIEW_VERSION}</code></div>
+          <div className="sec-head"><span className="eyebrow">What would be read</span></div>
           <div className="denoms" role="list">
             {([["Included", preview.included_count, "usable as they are", "ok"], ["Redacted", preview.redacted_count, "kept, content masked", "partial"],
               ["Excluded", preview.excluded_count, "left out of the bundle", null], ["Withheld", preview.withheld_count, "counted, content not kept", null]] as const).map(([k, v, sub, tone]) => (
@@ -434,7 +433,7 @@ function Preview({ preview, m, setM, busy, refusal, rescanned, showErrors, setSh
           <div className="sec-head"><span className="eyebrow">Tell Aletheia what the files mean</span><code className="aside mono-s fld-code">project-mapping-configuration/v1</code></div>
           {rescanned && <div className="notice notice--warn" role="status"><Mark tone="partial" /><div><b>Scanned again</b>Choices the new scan still offers were kept, and the rest are empty. Check them against the source as it is now.</div></div>}
 
-          <h3 className="form-h">Target</h3>
+          <h2 className="form-h">Target</h2>
           <div className="form-grid">
             <Picker label="Target dataset" code="target.project_item_id" value={m.target}
               options={C.targets.map(c => ({ value: c.project_item_id, label: c.label, available: c.available, reason: c.unavailable_reason }))}
@@ -447,7 +446,7 @@ function Preview({ preview, m, setM, busy, refusal, rescanned, showErrors, setSh
               options={(t?.field_names ?? []).map(f => ({ value: f, label: f }))} onChange={v => set({ targetField: v })} />
           </div>
 
-          <h3 className="form-h">Metric source</h3>
+          <h2 className="form-h">Metric source</h2>
           <div className="form-grid">
             <Picker label="Metric source" code="metric_sources[0].project_item_id" value={m.metric}
               options={C.metric_sources.map(c => ({ value: c.project_item_id, label: `${c.label} · ${c.format}`, available: c.available, reason: c.unavailable_reason }))}
@@ -471,7 +470,7 @@ function Preview({ preview, m, setM, busy, refusal, rescanned, showErrors, setSh
 
           <MetricDefinitions C={C} m={m} set={set} error={errorFor("Every metric has a direction and a threshold", "Thresholds are finite and ≥ 0", "Metric names are unique")} />
 
-          <h3 className="form-h">Runs</h3>
+          <h2 className="form-h">Runs</h2>
           <fieldset className="config-pick" id="tracked-runs" aria-label="Tracked runs">
             <legend className="fld-label">Tracked runs <code className="fld-code">runs[].run_id</code></legend>
             {C.runs.map(r => {
@@ -699,7 +698,7 @@ function MetricDefinitions({ C, m, set, error }: { C: MappingCandidates; m: Mapp
   const names = m.defs.map(d => d.name.trim());
 
   return <>
-    <h3 className="form-h">What each metric means <code className="fld-code">metric_definitions</code></h3>
+    <h2 className="form-h">What each metric means <code className="fld-code">metric_definitions</code></h2>
     <p className="fld-note">Aletheia does not guess these. A threshold of 0.05 means a change of more than 0.05, in the worse direction, counts as a regression.</p>
     {error && <p className="fld-error" role="alert"><Mark tone="no" />{error}</p>}
 
@@ -764,56 +763,4 @@ function MetricDefinitions({ C, m, set, error }: { C: MappingCandidates; m: Mapp
 
     </>}
   </>;
-}
-
-/* The step after import: ask the first question. analyze_mock returns the new project's own view,
-   so the screens never fall back to the packaged demo. */
-/** `bare` drops the panel frame, for use inside another panel. */
-export function FirstQuestion({ result, onAnalyzed, bare = false }: { result: Pick<ConfirmResult, "project_id" | "snapshot_id">; onAnalyzed: (v: ProductView) => void; bare?: boolean }) {
-  const [text, setText] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [refusal, setRefusal] = useState<Refusal>(null);
-  const q = canonicalQuestion(text);
-  const ask = () => {
-    if (!q) return;
-    setBusy(true); setRefusal(null);
-    return scoped("analyze", () => port.analyze_mock(result.project_id, result.snapshot_id, q), {
-      done: onAnalyzed,
-      fail: e => setRefusal(isProductError(e) ? { code: e.code, message: e.safe_message } : { code: "unavailable", message: "The service did not answer." }),
-      late: view => ({ project_id: view.project.id, snapshot_id: view.snapshot.id, result_id: view.result.id, question: q }),
-      always: () => setBusy(false),
-    });
-  };
-  const form = (
-    <>
-      <div className="ask-row">
-        <input className="input" aria-label="First question" placeholder="For example: what changed in validation accuracy?" value={text} disabled={busy}
-          onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && q && !busy) { e.preventDefault(); void ask(); } }} />
-        <button className="btn btn--primary" disabled={!q || busy} aria-busy={busy} onClick={() => void ask()}>{busy ? "Asking…" : "Ask"}<ArrowRight size={14} aria-hidden="true" /></button>
-      </div>
-      <RefusalNote refusal={refusal} />
-    </>
-  );
-  if (bare) return <div className="ask-bare">{form}</div>;
-  return (
-    <section className="panel" style={{ marginTop: "var(--s5)" }}>
-      <div className="sec-head"><span className="eyebrow">Ask the first question</span></div>
-      <p className="fld-note" style={{ marginBottom: "var(--s3)" }}>The answer is scripted and local: no model runs, and nothing leaves this computer.</p>
-      {form}
-    </section>
-  );
-}
-
-export type Refusal = { code: string; message: string } | null;
-
-/* code + what to do + the service's safe message; an unknown code still shows the safe message */
-export function RefusalNote({ refusal }: { refusal: Refusal }) {
-  if (!refusal) return null;
-  const r = remedyFor(refusal.code);
-  return (
-    <div className="notice notice--stop" role="alert">
-      <Mark tone="no" />
-      <div><b>Refused · <code className="mono-s">{refusal.code}</code></b>{r.advice && <>{r.advice} </>}<span className="dim">{refusal.message}</span></div>
-    </div>
-  );
 }

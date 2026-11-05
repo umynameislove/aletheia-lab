@@ -55,3 +55,61 @@ export interface LateWork {
   result?: { project_id: string; snapshot_id: string; result_id: string; question: string };
   error?: string;
 }
+
+export interface RunningWork { id: number; op: string; label?: string }
+
+type Fence = ReturnType<typeof createFence>;
+
+/** Runs async work inside the current scope. `done`/`fail` run only if that scope is still the one on
+    screen; otherwise the outcome goes to the late list and touches nothing else. A key already in
+    flight is not sent twice, so a double click or a second Enter cannot start a second operation. */
+export function createTracker(fence: Fence) {
+  let late: LateWork[] = [];
+  let running: RunningWork[] = [];
+  let lastId = 0;
+  const inFlight = new Set<string>();
+  const listeners = new Set<() => void>();
+  const changed = () => listeners.forEach(l => l());
+  return {
+    subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; },
+    late: () => late,
+    running: () => running,
+    dismiss(id: number) { late = late.filter(w => w.id !== id); changed(); },
+    /** Logout or account switch: nothing about the old scope stays in memory. */
+    clear() { late = []; changed(); },
+    async run<T>(op: string, work: () => Promise<T>, then: {
+      done: (value: T) => void;
+      fail: (error: unknown) => void;
+      late?: (value: T) => LateWork["result"];
+      always?: () => void;
+      key?: string;
+      label?: string;
+      /** the code of an error, for the late list */
+      codeOf?: (error: unknown) => string;
+    }): Promise<void> {
+      if (then.key && inFlight.has(then.key)) return;
+      if (then.key) inFlight.add(then.key);
+      const ticket = fence.ticket();
+      const id = ++lastId;
+      running = [...running, { id, op, label: then.label }];
+      changed();
+      const stop = () => {
+        if (then.key) inFlight.delete(then.key);
+        running = running.filter(w => w.id !== id);
+        changed();
+      };
+      try {
+        const value = await work();
+        stop();
+        if (fence.current(ticket)) then.done(value);
+        else { late = [{ id, op, result: then.late?.(value) }, ...late].slice(0, 20); changed(); }
+      } catch (error) {
+        stop();
+        if (fence.current(ticket)) then.fail(error);
+        else { late = [{ id, op, error: then.codeOf?.(error) ?? "unavailable" }, ...late].slice(0, 20); changed(); }
+      } finally {
+        then.always?.();
+      }
+    },
+  };
+}

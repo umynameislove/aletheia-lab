@@ -202,3 +202,23 @@ for (const theme of ["light", "dark"]) {
     for (const mark of ["ok", "partial", "no", "contra", "tick"]) assert.notEqual(t.accent.toLowerCase(), t[mark].toLowerCase());
   });
 }
+
+/* ---- report file names ---- */
+import { reportFilename } from "../src/data/format.ts";
+
+test("E1 a report's file name says which project and result, in plain ASCII", () => {
+  const id = "p6-result-7ff78b3669c373b04c0217d4f2748f6321eced25a6dc41f559d788e981eec52c";
+  assert.equal(reportFilename("Imported project", id, "json"), "aletheia-imported-project-7ff78b36.json");
+  assert.equal(reportFilename("Dự án Đánh giá", id, "pdf"), "aletheia-du-an-danh-gia-7ff78b36.pdf");
+  assert.equal(reportFilename("Dự án Đánh giá".normalize("NFD"), id, "pdf"), "aletheia-du-an-danh-gia-7ff78b36.pdf", "NFC and NFD give the same name");
+});
+
+test("E2 a name can never be a path, and an empty one still works", () => {
+  for (const hostile of ["../../etc/passwd", "a/b\\c", "C:\\Users\\x", "..", "name\u0000null"]) {
+    const name = reportFilename(hostile, "demo-result-001", "md");
+    assert.ok(/^[a-z0-9.-]+$/.test(name), name);
+    assert.ok(!name.includes(".."), name);
+  }
+  assert.equal(reportFilename("日本語", "demo-result-001", "md"), "aletheia-project-demo-result-001.md");
+  assert.ok(reportFilename("x".repeat(500), "r", "md").length < 80, "bounded");
+});

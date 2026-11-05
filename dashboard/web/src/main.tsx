@@ -1,16 +1,24 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 // fonts are bundled with the app — no request leaves the machine at runtime
-import "@fontsource/ibm-plex-sans/400.css";
-import "@fontsource/ibm-plex-sans/500.css";
-import "@fontsource/ibm-plex-sans/600.css";
-import "@fontsource/jetbrains-mono/400.css";
-import "@fontsource/jetbrains-mono/500.css";
+// Latin and Vietnamese for product text; other scripts in imported data use the system font. Mono is for IDs.
+import "@fontsource/ibm-plex-sans/vietnamese-400.css";
+import "@fontsource/ibm-plex-sans/vietnamese-500.css";
+import "@fontsource/ibm-plex-sans/vietnamese-600.css";
+import "@fontsource/ibm-plex-sans/latin-400.css";
+import "@fontsource/ibm-plex-sans/latin-500.css";
+import "@fontsource/ibm-plex-sans/latin-600.css";
+import "@fontsource/ibm-plex-sans/latin-ext-400.css";
+import "@fontsource/ibm-plex-sans/latin-ext-500.css";
+import "@fontsource/ibm-plex-sans/latin-ext-600.css";
+import "@fontsource/jetbrains-mono/latin-400.css";
+import "@fontsource/jetbrains-mono/latin-500.css";
 import "./styles/tokens.css";
 import "./styles/app.css";
 import { StoreProvider } from "./store";
 import { App } from "./App";
 import { ServiceProvider } from "./service";
+import { SessionGate } from "./components/SessionGate";
 import { remedyFor } from "./service/errors";
 
 /* Shown only while the port answers, or when it answers with a ProductError: the code and the
@@ -34,9 +42,11 @@ function BootScreen({ boot }: { boot: { status: string; error?: { code: string; 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <StoreProvider>
-      <ServiceProvider fallback={boot => <BootScreen boot={boot} />}>
-        <App />
-      </ServiceProvider>
+      <SessionGate>
+        <ServiceProvider fallback={boot => <BootScreen boot={boot} />}>
+          <App />
+        </ServiceProvider>
+      </SessionGate>
     </StoreProvider>
   </StrictMode>,
 );

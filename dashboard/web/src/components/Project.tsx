@@ -5,9 +5,9 @@ import { evidenceRequests, lastTurn, observedInSnapshot, projectView } from "../
 import { formatNumber, formatSigned, ADVERSE_WORDS, definitionWords } from "../data/format";
 import { isProductError, port, scoped, useResultSwitch, useView } from "../service";
 import type { RefreshResult } from "../service/port";
-import { FirstQuestion, RefusalNote, type Refusal } from "./Connect";
+import { FirstQuestion, RefusalNote, type Refusal } from "./Ask";
 import { useRoute, useStore } from "../store";
-import { Absent, Id, Mark, shortId, Term } from "./primitives";
+import { Absent, Id, Mark, shortId, tabKeys, Term } from "./primitives";
 
 /* The project at a glance. Every value here is read from the view; what the view does not
    carry is shown as absent with the reason — never derived from text, never filled in. */
@@ -60,9 +60,9 @@ export function Project() {
           <FirstQuestion result={refreshed} onAnalyzed={view => { setRefreshed(null); showResult(view); go("investigation"); }} />
         )}
 
-        <div className="tabbar" role="tablist" aria-label="Project views">
-          <button role="tab" aria-selected={tab === "overview"} onClick={() => setQ({ tab: null })}>Overview</button>
-          <button role="tab" aria-selected={tab === "timeline"} onClick={() => setQ({ tab: "timeline" })}>Timeline</button>
+        <div className="tabbar" role="tablist" aria-label="Project views" onKeyDown={tabKeys}>
+          <button role="tab" aria-selected={tab === "overview"} tabIndex={tab === "overview" ? 0 : -1} onClick={() => setQ({ tab: null })}>Overview</button>
+          <button role="tab" aria-selected={tab === "timeline"} tabIndex={tab === "timeline" ? 0 : -1} onClick={() => setQ({ tab: "timeline" })}>Timeline</button>
         </div>
 
         {tab === "overview" ? <Overview /> : <Timeline />}

@@ -6,7 +6,7 @@
 
 const REMEDIATION: Record<string, string> = {
   invalid_id: "Malformed link. Reopen the result from the project.",
-  record_not_found: "Not found. Reopen it from the project.",
+  record_not_found: "Not found. It may have been deleted, or the link may be from elsewhere.",
   invalid_selection_kind: "Select a claim or lineage node, then ask.",
   selection_not_available: "Selection is gone. Pick a claim or node again.",
   store_unavailable: "Store unreachable. Try again shortly.",
@@ -37,6 +37,14 @@ const REMEDIATION: Record<string, string> = {
   backend_unavailable: "Install the product package in this checkout.",
   service_failure: "Service failed safely. Nothing changed; try again.",
   forbidden: "Open the dashboard from its own address.",
+  // what an HTTP status means when a proxy answers instead of the service (service/live.ts)
+  session_expired: "Sign in again. Your work on this screen is kept.",
+  permission_denied: "You do not have access to this. Ask a workspace owner.",
+  not_found: "Not found, or you do not have access. Go back to Start.",
+  revision_conflict: "Someone changed this first. Reload to see their version; your text is kept.",
+  payload_too_large: "That is larger than this service accepts. Make it smaller and try again.",
+  rate_limited: "Too many requests. Wait a moment, then try again.",
+  service_busy: "The service is busy or under maintenance. Nothing was changed. Try again shortly.",
   // the client boundary (service/contract.ts, service/live.ts)
   schema_unsupported: "App and service versions differ. Update both, then reload.",
   response_invalid: "Nothing from that answer was shown. Try again; report it if it repeats.",

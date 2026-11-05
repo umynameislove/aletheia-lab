@@ -200,3 +200,93 @@ test("R6 a mutation past its deadline is unknown, not failed", async () => {
   });
   await assert.rejects(port.refresh("p"), coded("outcome_unknown"));
 });
+
+/* ---- the tracker: double sends, late outcomes and what stays visible ---- */
+import { createTracker } from "../src/service/fence.ts";
+
+function tracked() {
+  const state = { hash: "#/investigation?result=r1" };
+  const fence = createFence(() => scopeFromHash(state.hash));
+  const tracker = createTracker(fence);
+  return { state, fence, tracker };
+}
+const gated = () => { let release, fail; const p = new Promise((yes, no) => { release = yes; fail = no; }); return { p, release, fail }; };
+
+test("T1 the same key in flight is not sent twice, and can be sent again once finished", async () => {
+  const { tracker } = tracked();
+  let sends = 0;
+  const g = gated();
+  const work = () => { sends += 1; return g.p; };
+  const then = { key: "k", done() {}, fail() {} };
+  const first = tracker.run("follow_up", work, then);
+  await tracker.run("follow_up", work, then);
+  assert.equal(sends, 1, "a double click sends once");
+  g.release("x");
+  await first;
+  await tracker.run("follow_up", async () => { sends += 1; }, then);
+  assert.equal(sends, 2);
+});
+
+test("T2 a success that arrives after moving on changes nothing and can be found later", async () => {
+  const { state, tracker } = tracked();
+  const g = gated();
+  let shown = 0;
+  const running = tracker.run("analyze", () => g.p, { done() { shown += 1; }, fail() {}, label: "Q", late: v => ({ project_id: "p", snapshot_id: "s", result_id: v, question: "Q" }) });
+  assert.deepEqual(tracker.running().map(w => w.label), ["Q"], "running work is visible");
+  state.hash = "#/connect?result=r1";
+  g.release("r2");
+  await running;
+  assert.equal(shown, 0);
+  assert.deepEqual(tracker.running(), []);
+  assert.equal(tracker.late()[0].result.result_id, "r2");
+  tracker.dismiss(tracker.late()[0].id);
+  assert.deepEqual(tracker.late(), []);
+});
+
+test("T3 an error that arrives after moving on shows no toast, and is recorded by code only", async () => {
+  const { state, tracker } = tracked();
+  const g = gated();
+  let failures = 0;
+  const running = tracker.run("refresh", () => g.p, { done() {}, fail() { failures += 1; }, codeOf: e => e.code });
+  state.hash = "#/investigation?result=r2";
+  g.fail({ code: "refresh_failed", safe_message: "private detail" });
+  await running;
+  assert.equal(failures, 0);
+  assert.deepEqual(tracker.late().map(w => [w.op, w.error, w.result]), [["refresh", "refresh_failed", undefined]]);
+});
+
+test("T4 the current screen gets its own outcome directly, and the late list stays empty", async () => {
+  const { tracker } = tracked();
+  const seen = [];
+  await tracker.run("analyze", async () => "ok", { done: v => seen.push(v), fail() {} });
+  await tracker.run("analyze", async () => { throw new Error("no"); }, { done() {}, fail: e => seen.push(e.message) });
+  assert.deepEqual(seen, ["ok", "no"]);
+  assert.deepEqual(tracker.late(), []);
+});
+
+test("T5 logout or account switch forgets late work", async () => {
+  const { state, fence, tracker } = tracked();
+  const g = gated();
+  const running = tracker.run("analyze", () => g.p, { done() {}, fail() {} });
+  fence.advance();
+  void state;
+  g.release("x");
+  await running;
+  assert.equal(tracker.late().length, 1);
+  tracker.clear();
+  assert.deepEqual(tracker.late(), []);
+});
+
+test("S1 a proxy's status still says what to do next, and a service error body wins over it", async () => {
+  for (const [status, code] of [[401, "session_expired"], [403, "permission_denied"], [404, "not_found"], [409, "revision_conflict"], [413, "payload_too_large"], [429, "rate_limited"], [503, "service_busy"]]) {
+    const port = new LiveProductPort({ fetch: async () => ({ ok: false, status, json: async () => { throw new Error("html"); }, arrayBuffer: async () => new ArrayBuffer(0) }), delay: async () => {} });
+    await assert.rejects(port.view("r"), coded(code), String(status));
+  }
+  const port = new LiveProductPort({ fetch: async () => reply({ code: "backend_unavailable", safe_message: "Not installed." }, 503), delay: async () => {} });
+  await assert.rejects(port.view("r"), coded("backend_unavailable"));
+});
+
+test("S2 a status with no fixed meaning stays generic", async () => {
+  const port = new LiveProductPort({ fetch: async () => reply({ nothing: true }, 500), delay: async () => {} });
+  await assert.rejects(port.view("r"), coded("service_failure"));
+});

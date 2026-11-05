@@ -6,11 +6,12 @@ import { ADVERSE_WORDS, definitionWords, formatNumber, formatSigned } from "../d
 import { pageOf, pageOfIndex } from "../data/paging";
 import { isProductError, port, ProductError, scoped, useResultSwitch, useView } from "../service";
 import { remedyFor } from "../service/errors";
+import { onWipe } from "../service/wipe";
 import { canonicalQuestion, QUESTION_MAX, questionProblem } from "../service/question";
 import type { SelectionKind } from "../service/port";
 import { reviewOf, useRoute, useStore } from "../store";
 import { plain } from "../vocab";
-import { Absent, Id, Kbd, Mark, shortId, Term } from "./primitives";
+import { Absent, Id, Kbd, Mark, shortId, tabKeys, Term, useNarrow } from "./primitives";
 import { ClaimAndSource, Reader, type Panel } from "./Reader";
 import { ReviewBar, Worklist } from "./Worklist";
 
@@ -28,7 +29,7 @@ export function Investigation() {
   const turn: Turn | undefined = turns[turnNo - 1];
   const searchRef = useRef<HTMLInputElement>(null);
   const debounce = useRef<number>();
-  const drawer = useNarrow();
+  const drawer = useNarrow(NARROW);
 
   const filter = q.get("filter") || "all";
   const query = q.get("q") || "";
@@ -70,7 +71,7 @@ export function Investigation() {
   useEffect(() => { if (nodeId && !selectedNode) setQ({ node: null }); }, [nodeId, selectedNode, setQ]);
   const selection: Selection | null = selectedNode
     ? { kind: "node", id: selectedNode.id, label: `${selectedNode.kind} · ${shortId(selectedNode.source_id)}` }
-    : selectedClaim ? { kind: "claim", id: selectedClaim.id, label: shortId(selectedClaim.text) } : null;
+    : selectedClaim ? { kind: "claim", id: selectedClaim.id, label: selectedClaim.text } : null;
   const filteredOut = !!selectedClaim && selectedIndex < 0;
   // a link to a claim this result does not have: say so, and open nothing in its place
   const staleClaim = !!selectedId && !selectedClaim;
@@ -157,9 +158,9 @@ export function Investigation() {
           {turn ? <>
           {/* every turn stays readable: the history is the questions themselves, not numbers */}
           {turns.length > 1 && (
-            <div className="turn-tabs" role="tablist" aria-label="Questions asked on this result">
+            <div className="turn-tabs" role="tablist" aria-label="Questions asked on this result" onKeyDown={tabKeys}>
               {turns.map((t, i) => (
-                <button key={t.id} role="tab" aria-selected={i + 1 === turnNo} title={t.question}
+                <button key={t.id} role="tab" aria-selected={i + 1 === turnNo} tabIndex={i + 1 === turnNo ? 0 : -1} title={t.question}
                   onClick={() => setQ({ turn: i + 1 === turns.length ? null : String(i + 1) })}>
                   <span className="tt-n">{i + 1}</span><span className="tt-q">{t.question}</span>
                 </button>
@@ -334,27 +335,22 @@ export function Investigation() {
   );
 }
 
-/** Below this width the reader is a drawer. */
-function useNarrow() {
-  const [narrow, setNarrow] = useState(() => window.innerWidth <= NARROW);
-  useEffect(() => {
-    const media = window.matchMedia(`(max-width: ${NARROW}px)`);
-    const on = () => setNarrow(media.matches);
-    on();
-    media.addEventListener("change", on);
-    return () => media.removeEventListener("change", on);
-  }, []);
-  return narrow;
-}
-
 interface Selection { kind: SelectionKind; id: string; label: string }
 
 /* follow_up (K08). Scoped to exactly one claim or one lineage node of the result on screen; the
    answer is a new child result, the parent is never changed. The question is trimmed and put in
    NFC before it is sent, then checked against the service's own rules so a refusal is explained
    before the call. Replaying the same question on the same selection returns the same child. */
+/* A question being written survives leaving the screen, per result. In memory for this tab only. */
+const composerDrafts = new Map<string, string>();
+onWipe(() => composerDrafts.clear());
+
 function Composer({ v, selection, onDone }: { v: ProductView; selection: Selection | null; onDone: (child: ProductView) => void }) {
-  const [text, setText] = useState("");
+  const [text, setTextState] = useState(() => composerDrafts.get(v.result.id) ?? "");
+  const setText = (t: string) => {
+    if (t) composerDrafts.set(v.result.id, t); else composerDrafts.delete(v.result.id);
+    setTextState(t);
+  };
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<{ code: string; message: string; advice: string | null } | null>(null);
   const question = canonicalQuestion(text);
@@ -376,6 +372,8 @@ function Composer({ v, selection, onDone }: { v: ProductView; selection: Selecti
       },
       late: child => ({ project_id: child.project.id, snapshot_id: child.snapshot.id, result_id: child.result.id, question }),
       always: () => setBusy(false),
+      key: `follow_up:${v.result.id}:${selection.kind}:${selection.id}:${question}`,
+      label: question,
     });
   }
 

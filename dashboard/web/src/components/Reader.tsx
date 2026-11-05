@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Check, ChevronRight, Copy, FileText, Link2, Lock, X } from "lucide-react";
 import type { Claim, Evidence, GraphNode, ProductView, Turn } from "../types";
 import { reviewOf, useStore } from "../store";
@@ -6,8 +6,10 @@ import { evidenceRequests, hasCounterfactualMarker } from "../data/view";
 import { claimsCiting, readingFor, referenceText, sourcesOf, type Relation } from "../data/relation";
 import { ADVERSE_WORDS, definitionWords, formatNumber, formatSigned, KIND_WORDS } from "../data/format";
 import { ABSTAIN_CEILING, LADDER, plain, supportTone } from "../vocab";
-import { Id, Mark, Term } from "./primitives";
-import { LineagePanel, TimelinePanel } from "./Lineage";
+import { Id, Mark, tabKeys, Term } from "./primitives";
+
+const LineagePanel = lazy(() => import("./Lineage").then(m => ({ default: m.LineagePanel })));
+const TimelinePanel = lazy(() => import("./Lineage").then(m => ({ default: m.TimelinePanel })));
 
 export type Panel = "source" | "lineage" | "timeline";
 
@@ -53,7 +55,7 @@ export function Reader({ v, turn, claim, evidenceId, panel, drawer, open, select
   return (
     <>
       {drawer && open && <div className="insp-scrim" onClick={onClose} aria-hidden="true" />}
-      <aside
+      <section
         ref={ref}
         className={`insp${drawer ? " insp--drawer" : ""}${open ? " open" : ""}`}
         aria-label={title}
@@ -63,21 +65,23 @@ export function Reader({ v, turn, claim, evidenceId, panel, drawer, open, select
         {...(shut ? { inert: "" } : {})}
       >
         <div className="insp-head">
-          <div className="seg" role="tablist" aria-label="What to read">
+          <div className="seg" role="tablist" aria-label="What to read" onKeyDown={tabKeys}>
             {(["source", "lineage", "timeline"] as const).map(p => (
-              <button key={p} role="tab" aria-selected={panel === p} className={panel === p ? "reader-focus" : undefined} onClick={() => onPanel(p)}>
+              <button key={p} role="tab" id={`reader-tab-${p}`} aria-controls="reader-panel" aria-selected={panel === p} tabIndex={panel === p ? 0 : -1} className={panel === p ? "reader-focus" : undefined} onClick={() => onPanel(p)}>
                 {p === "source" ? "Source" : p === "lineage" ? "Lineage" : "Timeline"}
               </button>
             ))}
           </div>
           <button className="icon-btn" onClick={onClose} aria-label="Close" title="Close  Esc"><X size={15} /></button>
         </div>
-        <div className="insp-body">
-          {panel === "source" && <ClaimAndSource v={v} turn={turn} claim={claim} evidenceId={evidenceId} onEvidence={onEvidence} />}
-          {panel === "lineage" && <LineagePanel v={v} selectedClaim={claim?.id ?? null} selectedEvidence={evidenceId} selectedNode={selectedNode} shownIds={shownIds} onNode={onNode} />}
-          {panel === "timeline" && <TimelinePanel v={v} />}
+        <div className="insp-body" id="reader-panel" role="tabpanel" aria-labelledby={`reader-tab-${panel}`} tabIndex={0}>
+          <Suspense fallback={<p className="page-loading" role="status">Loading…</p>}>
+            {panel === "source" && <ClaimAndSource v={v} turn={turn} claim={claim} evidenceId={evidenceId} onEvidence={onEvidence} />}
+            {panel === "lineage" && <LineagePanel v={v} selectedClaim={claim?.id ?? null} selectedEvidence={evidenceId} selectedNode={selectedNode} shownIds={shownIds} onNode={onNode} />}
+            {panel === "timeline" && <TimelinePanel v={v} />}
+          </Suspense>
         </div>
-      </aside>
+      </section>
     </>
   );
 }

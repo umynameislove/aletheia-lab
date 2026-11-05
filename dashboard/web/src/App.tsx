@@ -1,18 +1,20 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Info } from "lucide-react";
 import { port, useView } from "./service";
 import { NOT_FOUND, useRoute, useStore } from "./store";
 import { Rail } from "./components/Rail";
-import { Topbar } from "./components/Topbar";
+import { CRUMB, Topbar } from "./components/Topbar";
 import { Investigation } from "./components/Investigation";
 import { Start } from "./components/Start";
-import { Project } from "./components/Project";
-import { Results } from "./components/Results";
-import { Retention } from "./components/Retention";
 import { Counterfactual, NotFound, Prospective, ProjectDeleted } from "./components/Gated";
-import { Connect } from "./components/Connect";
-import { Kbd } from "./components/primitives";
+import { Kbd, ScreenBoundary } from "./components/primitives";
 import { Modal } from "./components/Modal";
+
+// the two screens people land on are in the main file; the rest load when opened
+const Connect = lazy(() => import("./components/Connect").then(m => ({ default: m.Connect })));
+const Project = lazy(() => import("./components/Project").then(m => ({ default: m.Project })));
+const Results = lazy(() => import("./components/Results").then(m => ({ default: m.Results })));
+const Retention = lazy(() => import("./components/Retention").then(m => ({ default: m.Retention })));
 
 type ModalKind = "shortcuts" | "project" | null;
 
@@ -27,6 +29,23 @@ export function App() {
   useEffect(() => {
     if (!location.hash) location.replace("#/start");
   }, []);
+
+  // a new screen is a new page: name it, and move a keyboard or screen reader user to its content
+  const firstRoute = useRef(true);
+  useEffect(() => {
+    document.title = `${name === NOT_FOUND ? "Page not found" : CRUMB[name]} · Aletheia`;
+    if (firstRoute.current) { firstRoute.current = false; return; }
+    document.getElementById("main")?.focus({ preventScroll: true });
+  }, [name]);
+
+  // review marks live only in this tab, so say so before they are lost
+  const unsaved = Object.keys(s.review).length > 0;
+  useEffect(() => {
+    if (!unsaved) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [unsaved]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -46,12 +65,16 @@ export function App() {
         <div className="shell">
           <Topbar onMenu={() => setRailOpen(true)} onShortcuts={() => setModal("shortcuts")} />
           <main className="content">
-            {name === NOT_FOUND ? <NotFound /> : s.deletedProject && (name === "project" || name === "investigation" || name === "results")
-              ? <ProjectDeleted />
-              : {
-                start: <Start />, connect: <Connect />, project: <Project />, investigation: <Investigation />,
-                results: <Results />, retention: <Retention />, counterfactual: <Counterfactual />, prospective: <Prospective />,
-              }[name]}
+            <ScreenBoundary key={name}>
+              <Suspense fallback={<div className="page" id="main" tabIndex={-1}><p className="page-loading" role="status">Loading…</p></div>}>
+                {name === NOT_FOUND ? <NotFound /> : s.deletedProject && (name === "project" || name === "investigation" || name === "results")
+                  ? <ProjectDeleted />
+                  : {
+                    start: <Start />, connect: <Connect />, project: <Project />, investigation: <Investigation />,
+                    results: <Results />, retention: <Retention />, counterfactual: <Counterfactual />, prospective: <Prospective />,
+                  }[name]}
+              </Suspense>
+            </ScreenBoundary>
           </main>
         </div>
       </div>

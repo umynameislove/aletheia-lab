@@ -42,15 +42,28 @@ const READ_DEADLINE_MS = 30_000;
 const MUTATION_DEADLINE_MS = 120_000;
 const READ_ATTEMPTS = 3;
 
+/* A proxy can answer before the service does. The status still says what to do next, so it is not
+   flattened into one generic failure. Only these statuses: their meaning does not depend on the body. */
+const BY_STATUS: Record<number, [code: string, message: string]> = {
+  401: ["session_expired", "The session is no longer valid."],
+  403: ["permission_denied", "This was refused."],
+  404: ["not_found", "This was not found."],
+  409: ["revision_conflict", "This changed before your request reached it."],
+  413: ["payload_too_large", "The request was too large."],
+  429: ["rate_limited", "The service asked to slow down."],
+  503: ["service_busy", "The service is not available right now."],
+};
+
 /** Only a well-formed {code, safe_message} becomes the error shown; anything else is generic. */
-function asProductError(body: unknown): ProductError {
+function asProductError(body: unknown, status: number): ProductError {
   if (typeof body === "object" && body !== null) {
     const { code, safe_message } = body as { code?: unknown; safe_message?: unknown };
     if (typeof code === "string" && /^[a-z][a-z0-9_.-]{0,63}$/.test(code) && typeof safe_message === "string" && safe_message.length <= 256) {
       return new ProductError(code, safe_message);
     }
   }
-  return MALFORMED();
+  const known = BY_STATUS[status];
+  return known ? new ProductError(known[0], known[1]) : MALFORMED();
 }
 
 const realDelay = (attempt: number) => new Promise<void>(resolve => setTimeout(resolve, 250 * 2 ** attempt * (0.5 + Math.random())));
@@ -63,13 +76,15 @@ export class LiveProductPort implements ProductPort {
   readonly #readDeadline: number;
   readonly #mutationDeadline: number;
   readonly #pending = new Map<string, Promise<unknown>>();
+  readonly #onAnswer?: (status: number, code: string | null) => void;
 
-  constructor(options: { fetch: Fetch; base?: string; delay?: (attempt: number) => Promise<void>; readDeadlineMs?: number; mutationDeadlineMs?: number }) {
+  constructor(options: { fetch: Fetch; base?: string; delay?: (attempt: number) => Promise<void>; readDeadlineMs?: number; mutationDeadlineMs?: number; onAnswer?: (status: number, code: string | null) => void }) {
     this.#fetch = options.fetch;
     this.#base = options.base ?? "/api/";
     this.#delay = options.delay ?? realDelay;
     this.#readDeadline = options.readDeadlineMs ?? READ_DEADLINE_MS;
     this.#mutationDeadline = options.mutationDeadlineMs ?? MUTATION_DEADLINE_MS;
+    this.#onAnswer = options.onAnswer;
   }
 
   async #attempt(method: string, args: Record<string, unknown>) {
@@ -93,8 +108,11 @@ export class LiveProductPort implements ProductPort {
     if (!response.ok) {
       let body: unknown = null;
       try { body = await response.json(); } catch { /* not JSON: stays generic */ }
-      throw asProductError(body);
+      const error = asProductError(body, response.status);
+      this.#onAnswer?.(response.status, error.code);
+      throw error;
     }
+    this.#onAnswer?.(response.status, null);
     return response;
   }
 

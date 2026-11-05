@@ -48,3 +48,8 @@ export function forgetProject(project_id: string): void {
   if (openedProject()?.project_id !== project_id) return;
   try { storage()?.removeItem(KEY); } catch { /* nothing to forget */ }
 }
+
+/** Whoever this was, the next person on this browser does not continue their project. */
+export function forgetAllProjects(): void {
+  try { storage()?.removeItem(KEY); } catch { /* nothing to forget */ }
+}

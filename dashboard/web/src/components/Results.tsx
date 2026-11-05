@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { projectView } from "../data/view";
-import { useView } from "../service";
-import { useStore } from "../store";
+import { linkIds, useResultHistory, useView } from "../service";
+import { useRoute, useStore } from "../store";
 import { plain } from "../vocab";
 import { Absent, Id, Mark, Term } from "./primitives";
 import { LateWorkList } from "./Late";
@@ -14,6 +14,12 @@ export function Results() {
   const d = v.result.denominators;
   const ev = v.evidence[0];
   const failed = v.result.status === "technical_failure";
+  const history = useResultHistory();
+  const { go } = useRoute();
+  const open = (ids: { project?: string; snapshot?: string; result: string }) => { linkIds(ids); go("investigation"); };
+  // every question on this result's line keeps its own immutable result; opening one runs nothing
+  const line = v.conversation.turns;
+  const others = history.filter(h => h.result_id !== v.result.id && !line.some(t => t.result_id === h.result_id));
 
   const cells: [string, string, number | null][] = [
     ["Independent families", "independent_families", d.independent_families],
@@ -34,10 +40,31 @@ export function Results() {
       <div className="page-inner">
         <header className="page-head">
           <h1>Results &amp; reproduction</h1>
-          <p className="lede">The result open now. A list of past results needs a service method that does not exist yet.</p>
+          <p className="lede">The result open now, and the ones you can reach from here. A full list of past results needs a service method that does not exist yet.</p>
         </header>
 
         <LateWorkList />
+
+        {!v.demo_only && (
+          <section className="panel" style={{ marginTop: "var(--s5)" }} aria-label="Results you can open">
+            <div className="sec-head"><span className="eyebrow">Questions on this result</span><span className="aside">Stored results do not change</span></div>
+            {line.map(t => (
+              <div className="np-row action-row" key={t.id}>
+                {t.result_id === v.result.id ? <Mark tone="accent" /> : <Mark hollow />}
+                <span><span className="row-k">{t.question}</span><span className="sub-line">{t.abstained ? "Did not conclude" : "Answered"}</span></span>
+                {t.result_id === v.result.id ? <span className="v">Open now</span> : <button className="btn btn--sm" onClick={() => open({ result: t.result_id })}>Open</button>}
+              </div>
+            ))}
+            {others.length > 0 && <div className="sec-head" style={{ marginTop: "var(--s4)" }}><span className="eyebrow">Also opened in this tab</span></div>}
+            {others.map(h => (
+              <div className="np-row action-row" key={h.result_id}>
+                <Mark hollow />
+                <span><span className="row-k">{h.question}</span><span className="sub-line">{h.project}</span></span>
+                <button className="btn btn--sm" onClick={() => open({ project: h.project_id, snapshot: h.snapshot_id, result: h.result_id })}>Open</button>
+              </div>
+            ))}
+          </section>
+        )}
 
         <h2 className="sec-title">Denominators <span className="sec-note">never pooled</span></h2>
         <div className="denoms" role="list" aria-label="Denominators">

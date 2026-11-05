@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ArrowRight, FolderInput, LayoutList, RefreshCw } from "lucide-react";
 import { AFTER_DELETE, isProductError, linked, linkIds, port, scoped, useResultSwitch, useView } from "../service";
 import { openedProject, type OpenedProject } from "../service/opened";
-import { FirstQuestion, openProject, RefusalNote, type Refusal } from "./Connect";
+import { FirstQuestion, openProject, RefusalNote, type Refusal } from "./Ask";
 import { LateWorkList } from "./Late";
 import { useRoute, useStore } from "../store";
 import { Absent, Id } from "./primitives";

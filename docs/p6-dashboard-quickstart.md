@@ -30,6 +30,10 @@ citation or another result's ID is refused with `schema_unsupported`, `response_
 `outcome_unknown`. An answer that arrives after the person moved to another screen, result or project
 changes nothing on screen (`src/service/fence.ts`); it is listed under "Finished after you moved on".
 
+The session guard (`src/service/session.ts`) decides what the client does when access can change while
+a tab is open. The local app has no accounts and does not run it. The demo drives it from a simulated
+answer, with previews in the account menu. A hosted build gets its answers from `GET /v1/session`.
+
 ## Run
 
 Use Node.js 22.12 or newer; CI uses Node.js 24. `npm test` passes `--experimental-strip-types`, which
@@ -110,6 +114,7 @@ every selected run keeps its own metric and config mapping.
 cd dashboard/web
 npm test
 npx tsc -b
+npm run build:live && npm run budget   # gzip size limits for the Live bundle
 ```
 
 ```bash

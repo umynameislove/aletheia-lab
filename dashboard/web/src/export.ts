@@ -1,6 +1,6 @@
 import type { ProductView } from "./types";
 import { reviewOf, reviewStats, type DemoState } from "./store";
-import { port } from "./service";
+import { reportFilename } from "./data/format";
 
 /* Files are built from port.export_report — the same projection the screens read
    (PRODUCT_CONTRACT §2). The reviewer's own pass is local to this machine, so the UI adds it
@@ -23,21 +23,23 @@ const reviewerPass = (v: ProductView, s: DemoState) => ({
   claims: Object.fromEntries(v.claims.map(c => [c.id, { state: reviewOf(s, c.id), objection: s.notes[c.id] || null }])),
 });
 
-/** Throws ProductError from the port as-is; the caller shows its code and safe message.
-    Q11: the file is export_report's bytes, untouched. */
-export async function downloadJSON(v: ProductView) {
-  download(`aletheia-p6-${v.result.id}.json`, await port.export_report(v.result.id, "json") as BlobPart, "application/json");
-}
+export type ReportKind = "json" | "markdown" | "pdf";
 
-export async function downloadMarkdown(v: ProductView) {
-  download(`aletheia-p6-${v.result.id}.md`, await port.export_report(v.result.id, "markdown") as BlobPart, "text/markdown; charset=utf-8");
-}
+const KIND: Record<ReportKind, { ext: string; mime: string }> = {
+  json: { ext: "json", mime: "application/json" },
+  markdown: { ext: "md", mime: "text/markdown;charset=utf-8" },
+  pdf: { ext: "pdf", mime: "application/pdf" },
+};
 
-export async function downloadPdf(v: ProductView) {
-  download(`aletheia-p6-${v.result.id}.pdf`, await port.export_report(v.result.id, "pdf") as BlobPart, "application/pdf");
+/** The name a report of this result is saved under. */
+export const reportName = (v: ProductView, kind: ReportKind) => reportFilename(v.project.display_name, v.result.id, KIND[kind].ext);
+
+/** Saves the service's bytes untouched (Q11). The caller decides whether the scope is still current. */
+export function saveReport(v: ProductView, kind: ReportKind, bytes: Uint8Array) {
+  download(reportName(v, kind), bytes as BlobPart, KIND[kind].mime);
 }
 
 /** The reviewer's own pass, as its own file — never merged into the service's bytes. */
 export function downloadReview(v: ProductView, s: DemoState) {
-  download(`aletheia-p6-${v.result.id}-review.json`, JSON.stringify({ result_id: v.result.id, reviewer_pass: reviewerPass(v, s) }, null, 2), "application/json");
+  download(reportFilename(v.project.display_name, v.result.id, "review.json"), JSON.stringify({ result_id: v.result.id, reviewer_pass: reviewerPass(v, s) }, null, 2), "application/json");
 }

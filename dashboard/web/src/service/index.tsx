@@ -1,13 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import viewJson from "../data/synthetic_p6_view.json";
-import { PREVIEW, PREVIEW_VERSION } from "../data/preview";
+import { PREVIEW } from "../data/preview";
 import type { ProductView } from "../types";
 import { DemoProductPort } from "./demo";
 import { LiveProductPort } from "./live";
 import { checkedPort } from "./contract";
 import { localCapabilities } from "./capabilities";
-import { createFence, scopeFromHash, type LateWork } from "./fence";
-import { rememberProject } from "./opened";
+import { createFence, createTracker, scopeFromHash } from "./fence";
+import { forgetAllProjects, rememberProject } from "./opened";
+import { createSessionGuard, sessionChannel, type SessionAnswer } from "./session";
+import { onWipe, wipeAll } from "./wipe";
 import { isProductError, ProductError, type ProductPort } from "./port";
 import { resultTransitions } from "./transitions";
 import { useStore } from "../store";
@@ -15,52 +17,67 @@ import { useStore } from "../store";
 /* The app talks to the backend only through this port. The build picks it once:
    `--mode live` → LiveProductPort over the local bridge to ProductService; otherwise the
    offline DemoProductPort over the shared fixtures. A Live failure is shown, never swapped for demo. */
-export const demoPort = new DemoProductPort({ view: viewJson as ProductView, preview: PREVIEW });
-export const port: ProductPort = import.meta.env.MODE === "live"
-  ? checkedPort(new LiveProductPort({ fetch: (url, init) => fetch(url, init) }))
-  : demoPort;
+// the condition is resolved at build time, so a Live bundle carries neither the demo port nor its fixtures
+export const demoPort = import.meta.env.MODE === "live" ? null : new DemoProductPort({ view: viewJson as ProductView, preview: PREVIEW });
+export const port: ProductPort = demoPort ?? checkedPort(new LiveProductPort({
+  fetch: (url, init) => fetch(url, init),
+  onAnswer: (status, code) => sessionGuard?.noteResponse(status, code),
+}));
 export const capabilities = localCapabilities(port.kind);
-export { PREVIEW_VERSION, ProductError, isProductError };
+export { ProductError, isProductError };
 
 /* The scope every async call is fenced against (service/fence.ts). */
 export const fence = createFence(() => scopeFromHash(location.hash));
 
-/* Work that finished after the person moved on. It changes nothing on screen; it waits here
-   until they choose to open it (components/Late.tsx). In memory, and gone with the session. */
-let lateWork: LateWork[] = [];
-let lateId = 0;
-const lateListeners = new Set<() => void>();
-const lateChanged = () => lateListeners.forEach(l => l());
-const subscribeLate = (l: () => void) => { lateListeners.add(l); return () => { lateListeners.delete(l); }; };
-export function useLateWork() { return useSyncExternalStore(subscribeLate, () => lateWork); }
-export function dismissLate(id: number) { lateWork = lateWork.filter(w => w.id !== id); lateChanged(); }
-function addLate(work: Omit<LateWork, "id">) { lateWork = [{ ...work, id: ++lateId }, ...lateWork].slice(0, 20); lateChanged(); }
+/* Work in flight, and work that finished after the person moved on. In memory, gone with the session. */
+const tracker = createTracker(fence);
+export function useLateWork() { return useSyncExternalStore(tracker.subscribe, tracker.late); }
+export function useRunningWork() { return useSyncExternalStore(tracker.subscribe, tracker.running); }
+export const dismissLate = (id: number) => tracker.dismiss(id);
 
-/** Run one async operation inside the current scope. `done`/`fail` run only if that scope is still
-    the one on screen; otherwise the outcome goes to the late list and touches nothing else. */
-export async function scoped<T>(op: string, work: () => Promise<T>, then: {
-  done: (value: T) => void;
-  fail: (error: unknown) => void;
-  late?: (value: T) => LateWork["result"];
-  always?: () => void;
-}): Promise<void> {
-  const ticket = fence.ticket();
-  try {
-    const value = await work();
-    if (fence.current(ticket)) then.done(value);
-    else addLate({ op, result: then.late?.(value) });
-  } catch (error) {
-    if (fence.current(ticket)) then.fail(error);
-    else addLate({ op, error: isProductError(error) ? error.code : "unavailable" });
-  } finally {
-    then.always?.();
-  }
+type ScopedThen<T> = Parameters<typeof tracker.run<T>>[2];
+export function scoped<T>(op: string, work: () => Promise<T>, then: ScopedThen<T>): Promise<void> {
+  return tracker.run(op, work, { codeOf: e => (isProductError(e) ? e.code : "unavailable"), ...then });
+}
+
+/* Ending a session forgets the scope: nothing in flight may touch the screen afterwards. */
+onWipe(() => { fence.advance(); tracker.clear(); });
+onWipe(forgetAllProjects);
+
+/* Sessions (service/session.ts). The local app has no accounts, so it has no guard. The demo drives the
+   real guard from a simulated answer, so the screens can be reviewed and tested; a hosted build gets
+   its guard from GET /v1/session when K-03 exists. */
+let demoAnswer: SessionAnswer = { status: "ok", context_id: "demo-session" };
+const channel = demoPort ? sessionChannel(message => sessionGuard?.onPeer(message)) : null;
+export const sessionGuard = demoPort
+  ? createSessionGuard({ check: async () => demoAnswer, contextId: "demo-session", now: Date.now, tell: m => channel?.tell(m), onWipe: wipeAll })
+  : null;
+export function previewSession(answer: SessionAnswer) { demoAnswer = answer; void sessionGuard?.check(true); }
+export const sessionActions = {
+  signIn() { demoAnswer = { status: "ok", context_id: "demo-session" }; sessionGuard?.resume("demo-session"); },
+  startOver() { location.replace(location.pathname + "#/start"); location.reload(); },
+};
+
+/* The results opened in this tab. There is no listing method yet, so this is what can be offered
+   for going back. The question is held in memory only and never written to storage. */
+export interface OpenedResult { result_id: string; project_id: string; snapshot_id: string; question: string; project: string }
+let history: OpenedResult[] = [];
+const historyListeners = new Set<() => void>();
+const subscribeHistory = (l: () => void) => { historyListeners.add(l); return () => { historyListeners.delete(l); }; };
+onWipe(() => { history = []; historyListeners.forEach(l => l()); });
+export function useResultHistory() { return useSyncExternalStore(subscribeHistory, () => history); }
+function noteResult(view: ProductView) {
+  if (view.demo_only || history[0]?.result_id === view.result.id) return;
+  const turns = view.conversation.turns;
+  const entry = { result_id: view.result.id, project_id: view.project.id, snapshot_id: view.snapshot.id, question: turns[turns.length - 1]?.question ?? "", project: view.project.display_name };
+  history = [entry, ...history.filter(h => h.result_id !== view.result.id)].slice(0, 50);
+  historyListeners.forEach(l => l());
 }
 
 /** What to do after a delete: the demo can be reset; a Live delete is final. */
 export const AFTER_DELETE = port.kind === "demo"
   ? "Reset demo data from the account menu to restore it."
-  : "Deleted from the store. Connect a project to start again.";
+  : "Deleted from the store. The same folder cannot be imported again here; you can connect a different one.";
 
 export type Boot = { status: "loading" } | { status: "ready"; view: ProductView } | { status: "error"; error: ProductError };
 
@@ -105,6 +122,7 @@ export function ServiceProvider({ children, fallback }: { children: ReactNode; f
     accept: view => {
       dispatch({ type: "activateProject", project_id: view.project.id });
       remember(view);
+      noteResult(view);
       if (linked && !view.demo_only) {
         linkIds({ project: view.project.id, snapshot: view.snapshot.id, result: view.result.id });
       }
