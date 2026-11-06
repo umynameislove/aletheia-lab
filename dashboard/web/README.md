@@ -3,11 +3,15 @@
 The web UI for the P6 product: Start, Connect a project, Project overview, Investigation, Results &
 reproduction, and Data & retention, plus the gated Counterfactual and Prospective quality areas.
 
-It talks to the product only through `src/service/port.ts`, which holds the nine `ProductService`
+It talks to the product only through `src/service/port.ts`, which holds the ten `ProductService`
 methods under the backend's own names. Two ports implement them:
 
 - `src/service/demo.ts` is the offline DemoProductPort, over the shared fixtures in `src/data/`.
 - `src/service/live.ts` is the LiveProductPort, over the local bridge `python -m aletheia_lab.dashboard`.
+
+Live questions compute metric observations through `analyze_observations`; they
+do not infer a cause, call a model, execute imported code or apply repairs. Demo
+answers retain their explicit mock runtime.
 
 ```bash
 npm ci

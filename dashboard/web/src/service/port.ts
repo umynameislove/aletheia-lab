@@ -1,5 +1,5 @@
 /* The single integration boundary, mirrored from aletheia_lab.product.service.ProductService
-   (branch feat/p6-product-core-kien, commit 99f8ea46) and PRODUCT_CONTRACT.md §1.
+   and docs/p6-product-core.md, including actual local metric analysis.
 
    - Method names and parameters are the backend's, verbatim (snake_case), so a LiveProductPort
      can forward them one-to-one.
@@ -57,6 +57,7 @@ export interface ProductPort {
   confirm_import(preview_id: string, mapping: ConfirmMapping): Promise<ConfirmResult>;
   refresh(project_id: string): Promise<RefreshResult>;
   analyze_mock(project_id: string, snapshot_id: string, question: string): Promise<ProductView>;
+  analyze_observations(project_id: string, snapshot_id: string, question: string): Promise<ProductView>;
   follow_up(result_id: string, selection_kind: SelectionKind, selection_id: string, question: string): Promise<ProductView>;
   view(result_id: string): Promise<ProductView>;
   export_report(result_id: string, format: ReportFormat): Promise<Uint8Array>;

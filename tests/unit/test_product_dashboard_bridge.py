@@ -39,6 +39,13 @@ class _FakeService:
             "analyze_mock", project_id=project_id, snapshot_id=snapshot_id, question=question
         )
 
+    def analyze_observations(
+        self, project_id: str, snapshot_id: str, question: str
+    ) -> dict[str, object]:
+        return self._record(
+            "analyze_observations", project_id=project_id, snapshot_id=snapshot_id, question=question
+        )
+
     def follow_up(
         self, result_id: str, selection_kind: str, selection_id: str, question: str
     ) -> dict[str, object]:
@@ -87,7 +94,7 @@ def test_every_contract_method_is_forwarded_with_its_exact_arguments(method: str
         assert json.loads(response.body) == {"method": method}
 
 
-def test_the_bridge_exposes_exactly_the_nine_service_methods() -> None:
+def test_the_bridge_exposes_exactly_the_service_contract_methods() -> None:
     from aletheia_lab.product import ProductService
 
     public = {name for name in vars(ProductService) if not name.startswith("_")}

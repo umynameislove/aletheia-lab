@@ -35,6 +35,7 @@ const CALLS = {
   confirm_import: ["preview-1", { baseline_run_id: "baseline" }],
   refresh: ["project-1"],
   analyze_mock: ["project-1", "snapshot-1", "Why?"],
+  analyze_observations: ["project-1", "snapshot-1", "What changed?"],
   follow_up: ["result-1", "claim", "claim-1", "And?"],
   view: ["result-1"],
   export_report: ["result-1", "pdf"],

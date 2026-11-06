@@ -174,7 +174,7 @@ class ProductSnapshot(_StrictFrozenModel):
 
 
 class ProductRuntime(_StrictFrozenModel):
-    provider: Literal["deterministic_mock"]
+    provider: Literal["deterministic_mock", "local_evidence"]
     model: str = Field(min_length=1, max_length=160)
     external_call: Literal[False]
 

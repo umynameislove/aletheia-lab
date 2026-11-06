@@ -638,7 +638,7 @@ export function FirstQuestion({ result, onAnalyzed, bare = false }: { result: Pi
   const ask = async () => {
     if (!q) return;
     setBusy(true); setRefusal(null);
-    try { onAnalyzed(await port.analyze_mock(result.project_id, result.snapshot_id, q)); }
+    try { onAnalyzed(await (port.kind === "live" ? port.analyze_observations(result.project_id, result.snapshot_id, q) : port.analyze_mock(result.project_id, result.snapshot_id, q))); }
     catch (e) { setRefusal(isProductError(e) ? { code: e.code, message: e.safe_message } : { code: "unavailable", message: "The service did not answer." }); }
     finally { setBusy(false); }
   };
@@ -655,7 +655,7 @@ export function FirstQuestion({ result, onAnalyzed, bare = false }: { result: Pi
   if (bare) return <div className="ask-bare">{form}</div>;
   return (
     <section className="panel" style={{ marginTop: "var(--s5)" }}>
-      <div className="sec-head"><span className="eyebrow">Ask the first question</span><code className="aside mono-s">analyze_mock</code></div>
+      <div className="sec-head"><span className="eyebrow">Ask the first question</span><span className="aside">{port.kind === "live" ? "Local metric analysis" : "Demo answer"}</span></div>
       {form}
     </section>
   );
