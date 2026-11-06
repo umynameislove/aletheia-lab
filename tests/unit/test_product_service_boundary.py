@@ -17,6 +17,7 @@ def test_product_service_exposes_exact_contract_method_parameters() -> None:
         "confirm_import": ("self", "preview_id", "mapping"),
         "refresh": ("self", "project_id"),
         "analyze_mock": ("self", "project_id", "snapshot_id", "question"),
+        "analyze_observations": ("self", "project_id", "snapshot_id", "question"),
         "follow_up": (
             "self",
             "result_id",
@@ -62,6 +63,12 @@ def test_product_service_contract_annotations_are_exact() -> None:
         "return": dict[str, object],
     }
     assert get_type_hints(ProductService.analyze_mock) == {
+        "project_id": str,
+        "snapshot_id": str,
+        "question": str,
+        "return": dict[str, object],
+    }
+    assert get_type_hints(ProductService.analyze_observations) == {
         "project_id": str,
         "snapshot_id": str,
         "question": str,

@@ -93,6 +93,9 @@ export class LiveProductPort implements ProductPort {
   analyze_mock(project_id: string, snapshot_id: string, question: string): Promise<ProductView> {
     return this.#json("analyze_mock", { project_id, snapshot_id, question });
   }
+  analyze_observations(project_id: string, snapshot_id: string, question: string): Promise<ProductView> {
+    return this.#json("analyze_observations", { project_id, snapshot_id, question });
+  }
   follow_up(result_id: string, selection_kind: SelectionKind, selection_id: string, question: string): Promise<ProductView> {
     return this.#json("follow_up", { result_id, selection_kind, selection_id, question });
   }

@@ -18,7 +18,7 @@ from aletheia_lab.product.evidence import (
 from aletheia_lab.product.evidence_store import load_diagnosis_evidence_projection
 from aletheia_lab.product.lifecycle import ProductLifecycleStore
 from aletheia_lab.product.mapping import adverse_metric_change_ids, load_stored_mapping
-from aletheia_lab.product.observations import analyze_product_observation
+from aletheia_lab.product.observations import build_product_observation
 from aletheia_lab.product.projection import build_product_graph_projection
 from aletheia_lab.product.questions import checked_product_question
 from aletheia_lab.product.results import persist_product_result
@@ -71,13 +71,13 @@ _CITATION_ROLE_ORDER: Final[tuple[EvidenceRole, ...]] = (
 )
 
 
-def analyze_product_mock(
+def build_product_analysis(
     store_root: Path,
     project_id: str,
     snapshot_id: str,
     question: str,
 ) -> ProductView:
-    """Create and persist one deterministic result without network or hidden evidence."""
+    """Build an unpersisted deterministic view without network or hidden evidence."""
 
     checked_question = checked_product_question(question)
     with ProductLifecycleStore(store_root) as lifecycle:
@@ -91,7 +91,7 @@ def analyze_product_mock(
         )
         and state_payload.get("adverse_metric_change_ids") == []
     ):
-        return analyze_product_observation(store_root, project_id, snapshot_id, checked_question)
+        return build_product_observation(store_root, project_id, snapshot_id, checked_question)
     projection = load_diagnosis_evidence_projection(
         store_root,
         project_id=project_id,
@@ -230,7 +230,7 @@ def analyze_product_mock(
         raise ProductError(
             "result_invalid", "The product result could not be built safely."
         ) from None
-    return persist_product_result(store_root, view)
+    return view
 
 
 def _load_analysis_sources(
@@ -442,3 +442,12 @@ def _scoped_id(prefix: str, payload: Mapping[str, object]) -> str:
 
 
 __all__ = ["analyze_product_mock"]
+
+
+def analyze_product_mock(
+    store_root: Path, project_id: str, snapshot_id: str, question: str
+) -> ProductView:
+    """Persist the existing deterministic demonstration view."""
+    return persist_product_result(
+        store_root, build_product_analysis(store_root, project_id, snapshot_id, question)
+    )

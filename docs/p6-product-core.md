@@ -19,6 +19,7 @@ The public surface is `ProductService(store_root: Path)` with these methods:
 7. `view(result_id)`
 8. `export_report(result_id, format)`
 9. `delete_project(project_id)`
+10. `analyze_observations(project_id, snapshot_id, question)`
 
 Public failures use a safe `ProductError(code, safe_message)`. Public views and
 errors must not expose filesystem paths, raw exceptions, secrets, imported text,
@@ -33,6 +34,7 @@ raw dataset rows, or hidden/evaluator truth.
 | `confirm_import` | Mapping validation/binding, snapshot construction, and transactional `ProjectStore` writes | Revalidate the staged source at confirmation time and atomically persist the new product identity plus P3 records. |
 | `refresh` | Import, mapping, snapshot, regression, evidence, lineage, and store APIs | Retain refresh authorization/source metadata privately; preserve the previous snapshot if refresh fails. |
 | `analyze_mock` | Diagnosis-visible evidence and lineage projections | Produce deterministic offline analysis, immutable results, claims, conversation state, and graph projection without a provider call. |
+| `analyze_observations` | Validated snapshot comparisons and exact metric operands | Compute local metric observations, with one claim per change and a citation to its own evidence; preserve causal uncertainty without executing project code. |
 | `follow_up` | Existing visibility rules constrain referenced evidence | Validate exact selections and create immutable derived results with new conversation turns. |
 | `view` | `ProjectStore` record loading and P3 projection helpers | Revalidate the stable `ProductView` schema and result scope. |
 | `export_report` | Stored result/evidence/lineage data | Render JSON, Markdown, and PDF over the same saved product projection. |
@@ -117,7 +119,7 @@ the immutable `p6-product-view/v1` demo described below.
 ## Evidence visibility bridge
 
 The product layer exposes a payload-free projection over the persisted P3
-`ProjectEvidenceBundle`. It does not change the nine `ProductService` method
+`ProjectEvidenceBundle`. It does not change the existing `ProductService` method
 signatures.
 
 The internal `p6-evidence-projection/v1` DTO contains:
@@ -266,11 +268,36 @@ For multiple steps, each `(run_id, metric_name, step)` is a separate change whos
 before and after observations retain that same run and step; no step is selected
 or pooled implicitly.
 
+## Actual local metric analysis
+
+`analyze_observations` loads the same validated project/snapshot comparison as
+the mock path, then computes the visible observation statements from the stored
+metric operands. Its runtime is `local_evidence` /
+`snapshot-metric-analysis/v1`, with `external_call=false`. Each change retains
+its run, metric and step, exact before/after values, decimal delta and the
+caller's declared adverse policy. Added or removed observations have no invented
+delta. An initial snapshot explicitly has no comparable change.
+
+Each observation cites its own metric evidence. The readable evidence contains
+the operands and resolves to the content-bound snapshot/comparison sources;
+it is a derived measurement, not an independent semantic judge. The causal
+status stays `unverified`, maximum claim strength is `observation`, and the turn
+abstains from attributing a cause. The question selects this bounded analysis
+scope; it does not grant free-form diagnosis, imported-code execution, repair,
+or access to a provider. Existing mock calls keep their original behavior.
+
+The saved view is revalidated and persisted once, with the ordinary result,
+export, follow-up and deletion scope rules. Oversized output is refused with
+`analysis_too_large` (more than 20 statements, a statement over 1,000 characters,
+or an answer over 4,000 characters), rather than silently selecting favorable
+metrics. These are presentation limits, not a quality or coverage claim.
+
 ## Deterministic mock and scoped follow-up
 
-`analyze_mock` and `follow_up` are offline deterministic product operations.
-Their runtime remains `deterministic_mock` with `external_call=false`; neither
-operation calls a provider or treats its output as a model evaluation. Questions
+`analyze_mock` is an offline deterministic operation with runtime
+`deterministic_mock` and `external_call=false`. `follow_up` retains its parent's
+runtime; it performs scoped selection resolution without a provider call and
+does not evaluate a model. Questions
 use one shared strict validator, and public failures expose only bounded
 `ProductError` messages.
 
@@ -323,8 +350,9 @@ The underlying `ProjectImportPolicy` fixes execution and network modes to
 `disabled` and source mutation to `forbidden`. Imported README, log, and config
 content is always untrusted data: fields that resemble provider settings,
 system instructions, tool requests, result state, visibility, or evidence scope
-cannot alter product control flow. Product analysis and follow-up continue to
-use `provider=deterministic_mock` with `external_call=false`.
+cannot alter product control flow. Product analysis and follow-up use either the
+explicit mock runtime or the local measurement runtime described below, always
+with `external_call=false`.
 
 Previewing and then abandoning or reopening the service leaves only the
 content-addressed preview and its confirmation lease. It creates no P3 project
@@ -448,7 +476,7 @@ files. The harness confirms the initial 0.6 candidate loss, records a second
 synthetic commit with candidate loss 0.8, and therefore exercises a real metric
 delta rather than inventing a regression label.
 
-The flow calls the nine-method ProductService boundary through preview,
+The flow calls the ProductService boundary through preview,
 confirmation, changed-snapshot refresh, persisted regression evidence,
 deterministic mock analysis, claim-scoped follow-up, immutable reload and graph,
 all three report formats, and reference-safe deletion. JSON, Markdown, and PDF

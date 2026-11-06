@@ -154,7 +154,7 @@ export function Investigation() {
             <div className="verdict-body">
               <div className="verdict-glyph" aria-hidden="true"><CircleDashed size={17} /></div>
               <div>
-                <div className="verdict-kicker">{turn.abstained ? <><Mark hollow />{plain("abstained")}</> : <><Mark tone="accent" />{plain("answered")}</>}</div>
+                <div className="verdict-kicker">{turn.abstained ? <><Mark hollow />{turn.runtime.provider === "local_evidence" ? "Observations computed; cause not established" : plain("abstained")}</> : <><Mark tone="accent" />{plain("answered")}</>}</div>
                 <p className="verdict-answer">{turn.answer}</p>
               </div>
             </div>
@@ -346,7 +346,7 @@ function Composer({ v, selection, onDone }: { v: ProductView; selection: Selecti
         )}
         <div className="composer-why">
           <Info size={12} aria-hidden="true" />
-          <span>Offline mock · <code className="mono-s">external_call {String(v.runtime.external_call)}</code></span>
+          <span>{v.runtime.provider === "local_evidence" ? "Local analysis" : "Offline mock"} · <code className="mono-s">external_call {String(v.runtime.external_call)}</code></span>
           <details>
             <summary>What is sent <ChevronUp size={12} aria-hidden="true" /></summary>
             <div className="scope-pop">

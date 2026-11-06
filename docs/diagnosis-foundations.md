@@ -122,11 +122,13 @@ itself.
 
 ## Product handoff: ready interfaces, pending consumer acceptance
 
-This package does not add an HTTP route, ProductView type or deployment-repair
-endpoint. The current product runtime is a deterministic mock with causal
-abstention; its reproduction references resolve P3 records, not research
-NativeCase proofs. Research evaluator grades cannot be relabeled as product
-diagnosis results.
+The diagnosis-foundations package does not add an HTTP route, ProductView type
+or deployment-repair endpoint. The product also has a bounded local metric
+observation path, `analyze_observations`, alongside the deterministic mock.
+Both preserve causal abstention; their reproduction references resolve P3
+records, not research NativeCase proofs. Research evaluator grades cannot be
+relabeled as product diagnosis results. See [the product contract](p6-product-core.md)
+for the local metric scope and limits.
 
 The API/dashboard consumer must preserve the existing service contract:
 
