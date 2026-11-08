@@ -13,36 +13,38 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --bg-app: #182128;      /* canvas */
-  --bg-rail: #141c22;     /* sidebar */
-  --bg-1: #202d36;        /* surface */
-  --bg-2: #253441;        /* slightly elevated */
-  --bg-3: #2d3f4d;        /* pressed / current */
-  --bg-input: #1c2830;    /* inputs and selects */
-  --bg-hover: #293947;    /* hover */
-  --bg-insp: #1c2830;     /* reader interior */
-  --line: #2f3f4b;        /* separators */
-  --line-2: #3a4b58;      /* borders */
-  --line-3: #566875;      /* dashed / absent outlines */
+  /* the earlier warm graphite, accent included (Quân, 2026-11-06: the navy and the blue read as too blue) */
+  --bg-app: #222220;      /* canvas */
+  --bg-rail: #1b1a19;     /* sidebar */
+  --bg-1: #272624;        /* surface */
+  --bg-2: #2c2b29;        /* slightly elevated */
+  --bg-3: #34332f;        /* pressed / current */
+  --bg-input: #272624;    /* inputs and selects */
+  --bg-hover: #302f2c;    /* hover: neutral, never tinted */
+  --bg-insp: #1f1e1c;     /* reader interior */
+  --line: #302f2b;        /* separators */
+  --line-2: #3a3935;      /* borders */
+  --line-3: #4e4c46;      /* dashed / absent outlines */
 
-  --ink: #eef3f7;
-  --ink-2: #c9d5de;
-  --ink-3: #b3c2ce;
-  --ink-4: #6f8290;
+  --ink: #f4f3ee;
+  --ink-2: #c3c1b8;
+  --ink-3: #a3a199;
+  --ink-4: #6b6963;
 
-  /* the action colour, and only the action colour */
-  --accent: #8ac5ea;
-  --accent-strong: #b5dbf3;
-  --accent-fill: #8ac5ea;
-  --accent-fill-hover: #a6d3f0;
-  --accent-bg: rgba(138, 197, 234, .08);
-  --accent-bg-2: rgba(138, 197, 234, .18);
-  --accent-line: rgba(138, 197, 234, .6);
-  --on-accent: #10202b;
+  /* the action colour is the ink itself: cream on graphite. It is still never a state colour, and
+     links keep their underline, so acting is not told apart by colour alone */
+  --accent: #f4f3ee;
+  --accent-strong: #ffffff;
+  --accent-fill: #f4f3ee;
+  --accent-fill-hover: #ffffff;
+  --accent-bg: rgba(244, 243, 238, .06);
+  --accent-bg-2: rgba(244, 243, 238, .14);
+  --accent-line: rgba(244, 243, 238, .55);
+  --on-accent: #1b1a19;
 
   /* a reviewed tick is a state, so it does not borrow the action colour */
   --tick: #7fd0ae;
-  --on-tick: #10202b;
+  --on-tick: #1b1a19;
 
   --ok: #5cc79f;      --ok-bg: rgba(92, 199, 159, .12);  --ok-line: rgba(92, 199, 159, .45);
   --partial: #e0b463; --partial-bg: rgba(224, 180, 99, .12); --partial-line: rgba(224, 180, 99, .45);
@@ -52,7 +54,7 @@
   --edge-hi: 0 0 0 transparent;
   --edge-hi-2: 0 0 0 transparent;
   --shadow-pop: 0 24px 64px rgba(0, 0, 0, .5), 0 2px 8px rgba(0, 0, 0, .35);
-  --scrim: rgba(6, 12, 16, .6);
+  --scrim: rgba(0, 0, 0, .55);
 }
 
 :root[data-theme="light"] {

@@ -1,39 +1,31 @@
-import { useMemo, useState } from "react";
-import { ArrowRight, FileText, RefreshCw, Share2 } from "lucide-react";
+import { useMemo } from "react";
+import { ArrowRight, FileText, Share2 } from "lucide-react";
 import type { MetricChange, MetricObservation, ProductView, Turn } from "../types";
 import { evidenceRequests, lastTurn, observedInSnapshot, projectView } from "../data/view";
 import { formatNumber, formatSigned, ADVERSE_WORDS, definitionWords } from "../data/format";
-import { isProductError, port, scoped, useResultSwitch, useView } from "../service";
-import type { RefreshResult } from "../service/port";
-import { FirstQuestion, RefusalNote, type Refusal } from "./Ask";
+import { port, useResultSwitch, useView } from "../service";
+import { FirstQuestion, RefreshButton, RefreshStatus, RefusalNote, useRefresh } from "./Ask";
 import { useRoute, useStore } from "../store";
-import { Absent, Id, Mark, shortId, tabKeys, Term } from "./primitives";
+import { Absent, Id, Mark, shortId, tabKeys, TableScroll, Term } from "./primitives";
 
 /* The project at a glance. Every value here is read from the view; what the view does not
    carry is shown as absent with the reason — never derived from text, never filled in. */
 export function Project() {
   const VIEW = useView();
-  const { q, setQ, go } = useRoute();
+  const { q, setQ, go, hrefFor } = useRoute();
   const { s } = useStore();
   const v = useMemo(() => projectView(VIEW, s), [VIEW, s]);
   const tab = q.get("tab") === "timeline" ? "timeline" : "overview";
   const { showResult } = useResultSwitch();
-  const [refreshed, setRefreshed] = useState<RefreshResult | null>(null);
-  const [refusal, setRefusal] = useState<Refusal>(null);
-  const [busy, setBusy] = useState(false);
   // Live shows the service's demo_view until a project is connected; it has no stored project to refresh
   const sample = port.kind === "live" && VIEW.demo_only;
+  // why Refresh is off, said beside it: a disabled button gets no focus, so a tooltip alone is never seen by keyboard or touch
+  const refreshOff = sample ? "This is sample data. Connect a project first." : s.deletedProject ? "This project was deleted." : null;
 
   /* refresh re-reads the granted source. This result stays pinned to its own snapshot either way;
      a new snapshot is only analysed when someone asks about it. */
-  const refresh = () => {
-    setBusy(true); setRefusal(null); setRefreshed(null);
-    return scoped("refresh", () => port.refresh(v.project.id), {
-      done: setRefreshed,
-      fail: e => setRefusal(isProductError(e) ? { code: e.code, message: e.safe_message } : { code: "unavailable", message: "The service did not answer." }),
-      always: () => setBusy(false),
-    });
-  };
+  const refresh = useRefresh(v.project.id);
+  const refreshed = refresh.outcome;
 
   return (
     <div className="page" id="main" tabIndex={-1}>
@@ -41,23 +33,18 @@ export function Project() {
         <header className="page-head page-head--row">
           <h1>{v.project.display_name}</h1>
           <div className="actions" style={{ marginTop: 0 }}>
-            <button className="btn" onClick={() => void refresh()} disabled={busy || sample || s.deletedProject} title={sample ? "This is sample data. Connect a project first." : "Read the granted folder again"}>
-              <RefreshCw size={14} aria-hidden="true" />{busy ? "Refreshing…" : "Refresh"}
-            </button>
-            <button className="btn" onClick={() => go("retention")}><Share2 size={14} aria-hidden="true" />Export or delete</button>
+            <RefreshButton r={refresh} disabled={!!refreshOff} aria-describedby={refreshOff ? "refresh-off" : undefined} title={refreshOff ? undefined : "Read the granted folder again"} />
+            <a className="btn" href={hrefFor("retention")}><Share2 size={14} aria-hidden="true" />Export or delete</a>
+            {refreshOff && <span className="sub-line off-why" id="refresh-off">Refresh: {refreshOff}</span>}
           </div>
         </header>
 
-        <RefusalNote refusal={refusal} />
-        {refreshed && (
-          <div className={`notice${refreshed.status === "new_snapshot" ? " notice--ok" : ""}`} role="status">
-            <Mark tone={refreshed.status === "new_snapshot" ? "ok" : "accent"} hollow={refreshed.status !== "new_snapshot"} />
-            <div><b>{refreshed.status === "new_snapshot" ? "New snapshot" : "Unchanged"}</b><code className="mono-s"><Id v={refreshed.snapshot_id} /></code>
-              {refreshed.snapshot_id !== v.snapshot.id && <span className="dim"> This result stays on <Id v={v.snapshot.id} />.</span>}</div>
-          </div>
-        )}
+        <RefusalNote refusal={refresh.refusal} />
+        <RefreshStatus r={refresh}>
+          {refreshed && refreshed.snapshot_id !== v.snapshot.id && <span className="dim"> This result stays on <Id v={v.snapshot.id} />.</span>}
+        </RefreshStatus>
         {refreshed && refreshed.snapshot_id !== v.snapshot.id && (
-          <FirstQuestion result={refreshed} onAnalyzed={view => { setRefreshed(null); showResult(view); go("investigation"); }} />
+          <FirstQuestion result={refreshed} onAnalyzed={view => { refresh.setOutcome(null); showResult(view); go("investigation"); }} />
         )}
 
         <div className="tabbar" role="tablist" aria-label="Project views" onKeyDown={tabKeys}>
@@ -107,7 +94,7 @@ export function Project() {
               </span>
             </div>
             <div className="actions push-end">
-              <button className="btn btn--primary" onClick={() => go("investigation")}>Investigate<ArrowRight size={14} aria-hidden="true" /></button>
+              <a className="btn btn--primary" href={hrefFor("investigation")}>Investigate<ArrowRight size={14} aria-hidden="true" /></a>
             </div>
           </section>
         </div>
@@ -187,9 +174,10 @@ function MetricChanges({ v }: { v: ProductView }) {
     <section className="panel">
       <div className="sec-head"><span className="eyebrow">Metric changes</span><span className="aside">baseline → current</span></div>
       {rows.length ? (
-        <div className="tbl-wrap">
+        <TableScroll label="Metric changes">
           <table className="tbl">
-            <thead><tr><th>Metric</th><th>Run · step</th><th className="num">Before</th><th className="num">After</th><th className="num">Change</th><th>Against threshold</th><th>Declared as</th></tr></thead>
+            <caption className="sr">Each metric's change from the baseline to the current snapshot</caption>
+            <thead><tr><th scope="col">Metric</th><th scope="col">Run · step</th><th scope="col" className="num">Before</th><th scope="col" className="num">After</th><th scope="col" className="num">Change</th><th scope="col">Against threshold</th><th scope="col">Declared as</th></tr></thead>
             <tbody>
               {rows.map(c => {
                 const d = defs.get(c.metric_name);
@@ -207,7 +195,7 @@ function MetricChanges({ v }: { v: ProductView }) {
               })}
             </tbody>
           </table>
-        </div>
+        </TableScroll>
       ) : <p className="foot-note">No metric change is recorded for this snapshot.</p>}
     </section>
   );

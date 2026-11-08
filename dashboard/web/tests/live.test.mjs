@@ -35,6 +35,7 @@ const CALLS = {
   confirm_import: ["preview-1", { baseline_run_id: "baseline" }],
   refresh: ["project-1"],
   analyze_mock: ["project-1", "snapshot-1", "Why?"],
+  analyze_observations: ["project-1", "snapshot-1", "What changed?"],
   follow_up: ["result-1", "claim", "claim-1", "And?"],
   view: ["result-1"],
   export_report: ["result-1", "pdf"],
@@ -51,7 +52,7 @@ function bridgeParameters() {
 
 test("L1 every method posts its exact arguments to /api/<method> with the bridge header", async () => {
   const params = bridgeParameters();
-  assert.deepEqual(Object.keys(params).sort(), Object.keys(CALLS).sort(), "nine methods on both sides");
+  assert.deepEqual(Object.keys(params).sort(), Object.keys(CALLS).sort(), "ten methods on both sides");
   for (const [method, args] of Object.entries(CALLS)) {
     const { calls, port } = recorder(() => ({ status: 200, body: {}, bytes: method === "export_report" ? new Uint8Array([37, 80, 68, 70]) : undefined }));
     await port[method](...args);
@@ -110,7 +111,7 @@ test("L8 the kept project holds opaque IDs only and survives bad storage", async
   globalThis.localStorage = { getItem: k => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, v), removeItem: k => mem.delete(k) };
   const { openedProject, rememberProject, forgetProject } = await import("../src/service/opened.ts");
   rememberProject({ project_id: "p3-project-abc", snapshot_id: "p3-snapshot-def", result_id: "p6-result-123", root: "/Users/x/secret", mapping: { a: 1 } });
-  assert.deepEqual(JSON.parse(mem.get("p6.opened")), { project_id: "p3-project-abc", snapshot_id: "p3-snapshot-def", result_id: "p6-result-123" }, "nothing but the three IDs is stored");
+  assert.deepEqual(JSON.parse(mem.get("p6.opened")), { v: 1, project_id: "p3-project-abc", snapshot_id: "p3-snapshot-def", result_id: "p6-result-123" }, "nothing but the version and the three IDs is stored");
   assert.deepEqual(openedProject(), { project_id: "p3-project-abc", snapshot_id: "p3-snapshot-def", result_id: "p6-result-123" });
   rememberProject({ project_id: "/Users/x/secret", snapshot_id: "s" });
   assert.equal(openedProject().project_id, "p3-project-abc", "a path is never accepted as an ID");

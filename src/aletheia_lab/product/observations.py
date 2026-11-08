@@ -191,13 +191,13 @@ def _observation_evidence(
     return tuple(sorted(evidence, key=lambda item: item.id)), tuple(changes), after_evidence.id
 
 
-def analyze_product_observation(
+def build_product_observation(
     store_root: Path,
     project_id: str,
     snapshot_id: str,
     question: str,
 ) -> ProductView:
-    """Persist a genuine snapshot/comparison observation with causal abstention."""
+    """Build an unpersisted snapshot/comparison view with causal abstention."""
 
     checked_question = checked_product_question(question)
     before, snapshot, configuration, comparison = _load_sources(store_root, project_id, snapshot_id)
@@ -305,7 +305,16 @@ def analyze_product_observation(
             observed_evidence_ids=(after_evidence_id,),
         ),
     )
-    return persist_product_result(store_root, view)
+    return view
 
 
 __all__ = ["analyze_product_observation"]
+
+
+def analyze_product_observation(
+    store_root: Path, project_id: str, snapshot_id: str, question: str
+) -> ProductView:
+    """Persist the existing observation view without changing its public contract."""
+    return persist_product_result(
+        store_root, build_product_observation(store_root, project_id, snapshot_id, question)
+    )

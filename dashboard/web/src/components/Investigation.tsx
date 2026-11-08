@@ -4,8 +4,7 @@ import type { Claim, GraphNode, ProductView, Turn } from "../types";
 import { counterfactualStatus, evidenceRequests, observedInSnapshot, projectView } from "../data/view";
 import { ADVERSE_WORDS, definitionWords, formatNumber, formatSigned } from "../data/format";
 import { pageOf, pageOfIndex } from "../data/paging";
-import { isProductError, port, ProductError, scoped, useResultSwitch, useView } from "../service";
-import { remedyFor } from "../service/errors";
+import { port, scoped, useResultSwitch, useView } from "../service";
 import { onWipe } from "../service/wipe";
 import { canonicalQuestion, QUESTION_MAX, questionProblem } from "../service/question";
 import type { SelectionKind } from "../service/port";
@@ -13,14 +12,15 @@ import { reviewOf, useRoute, useStore } from "../store";
 import { plain } from "../vocab";
 import { Absent, Id, Kbd, Mark, shortId, tabKeys, Term, useNarrow } from "./primitives";
 import { ClaimAndSource, Reader, type Panel } from "./Reader";
-import { ReviewBar, Worklist } from "./Worklist";
+import { RefusalNote, refusalOf, type Refusal } from "./Ask";
+import { keepFocusInList, ReviewBar, Worklist } from "./Worklist";
 
 const NARROW = 1023;
 
 export function Investigation() {
   const VIEW = useView();
-  const { q, setQ, go } = useRoute();
-  const { s, dispatch, toast } = useStore();
+  const { q, setQ, hrefFor } = useRoute();
+  const { s, dispatch, toast, letterKeys } = useStore();
   const v = useMemo(() => projectView(VIEW, s), [VIEW, s]);
   const { showResult } = useResultSwitch();
   // ?turn= is 1-based and defaults to the latest turn; undefined once the conversation is deleted
@@ -68,7 +68,7 @@ export function Investigation() {
   // in the URL counts only if it exists in the result on screen: it is never carried across
   const nodeId = q.get("node");
   const selectedNode = nodeId ? v.graph.nodes.find(n => n.id === nodeId) ?? null : null;
-  useEffect(() => { if (nodeId && !selectedNode) setQ({ node: null }); }, [nodeId, selectedNode, setQ]);
+  useEffect(() => { if (nodeId && !selectedNode) setQ({ node: null }, { replace: true }); }, [nodeId, selectedNode, setQ]);
   const selection: Selection | null = selectedNode
     ? { kind: "node", id: selectedNode.id, label: `${selectedNode.kind} · ${shortId(selectedNode.source_id)}` }
     : selectedClaim ? { kind: "claim", id: selectedClaim.id, label: selectedClaim.text } : null;
@@ -109,15 +109,22 @@ export function Investigation() {
       const typing = el?.closest("input, textarea, select, [contenteditable]");
       if (e.key === "Escape") { if (typing) el!.blur(); else if (readerOpen) clear(); return; }
       if (typing || e.metaKey || e.ctrlKey || e.altKey || s.failed) return;
+      // the claim keys belong to the list and the page around it. Inside the reader, a dialog, the rail or a
+      // widget with arrow keys of its own, ↓ scrolls or moves within it, as it does everywhere else
+      if (el?.closest('.insp, [role="dialog"], [role="tablist"], [role="menu"], .rail')) return;
+      // with single-key shortcuts off, only the arrow keys still move between claims
+      if (!letterKeys && e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
       if (e.key === "/") { e.preventDefault(); searchRef.current?.focus(); return; }
       if (!shown.length) return;
       const i = shown.findIndex(c => c.id === selectedId);
       const focusRow = (id: string) => requestAnimationFrame(() => (document.querySelector(`[data-claim="${CSS.escape(id)}"]`) as HTMLElement | null)?.focus());
-      const move = (index: number) => { const c = shown[index]; setQ({ claim: c.id, evidence: null, node: null, page: String(pageOfIndex(index)) }); focusRow(c.id); };
+      const move = (index: number) => { const c = shown[index]; setQ({ claim: c.id, evidence: null, node: null, page: String(pageOfIndex(index)) }, { replace: true }); focusRow(c.id); };
       if (e.key === "j" || e.key === "ArrowDown") { e.preventDefault(); move(Math.min(shown.length - 1, i + 1)); }
       else if (e.key === "k" || e.key === "ArrowUp") { e.preventDefault(); move(Math.max(0, i - 1)); }
       else if ((e.key === "x" || e.key === "X") && selectedClaim) {
         e.preventDefault();
+        // under a review filter the row leaves the list: focus stays in the list instead of falling to the page
+        keepFocusInList(el);
         dispatch({ type: "review", id: selectedClaim.id, value: reviewOf(s, selectedClaim.id) === "checked" ? "unchecked" : "checked" });
       }
       else if ((e.key === "e" || e.key === "E") && selectedClaim?.citation_ids[0]) {
@@ -126,7 +133,7 @@ export function Investigation() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [shown, selectedId, selectedClaim, readerOpen, s, setQ, clear, dispatch]);
+  }, [shown, selectedId, selectedClaim, readerOpen, s, setQ, clear, dispatch, letterKeys]);
 
   // a failure the service reported and the demo's preview of one read the same
   if (s.failed || VIEW.result.status === "technical_failure") return <FailedRun />;
@@ -149,8 +156,8 @@ export function Investigation() {
         <div className="center-inner">
           {VIEW.demo_only && (
             <div className="sample-note" role="note">
-              <b>Sample data.</b> This is a made-up project for looking around, not your result.
-              {port.kind === "live" && <button className="link-btn" onClick={() => go("connect")}>Connect your project</button>}
+              <b>Sample data</b> · not your project.
+              {port.kind === "live" && <a className="link-btn" href={hrefFor("connect")}>Connect your project</a>}
             </div>
           )}
 
@@ -180,8 +187,8 @@ export function Investigation() {
             <div className="verdict-facts">
               <div className="fact"><span className="eyebrow">Conclusion</span><Term k={turn?.abstained ? "abstained" : (v.result.disposition ?? "null")} hollow={!!turn?.abstained} /></div>
               <div className="fact"><span className="eyebrow">Cause</span><Term k={v.result.causal_status} hollow /></div>
-              <div className="fact"><span className="eyebrow">Answered by</span><Term k={runtime.provider} hollow />
-                <span className="fact-note">{runtime.external_call ? "Sent to an external service" : "Nothing left this computer"}</span></div>
+              {/* where the question went is said once, under the composer */}
+              <div className="fact"><span className="eyebrow">Answered by</span><Term k={runtime.provider} hollow /></div>
             </div>
           </section>
 
@@ -201,7 +208,7 @@ export function Investigation() {
                   <span className="metric-def">{definitionWords(defs.get(c.metric_name))}</span>
                 </div>
               ))}
-              {changes.length > 3 && <button className="link-btn" onClick={() => go("project")}>{changes.length - 3} more in the project overview</button>}
+              {changes.length > 3 && <a className="link-btn" href={hrefFor("project")}>{changes.length - 3} more in the project overview</a>}
             </section>
           )}
           {changes.length === 0 && <p className="foot-note">No metric change is recorded for this snapshot.</p>}
@@ -216,9 +223,9 @@ export function Investigation() {
           <section className={`bench${readerOpen && !drawer ? " bench--open" : ""}`} aria-label="Claims and sources">
             <div className="claims-sec">
               <div className="claims-head">
-                <h2 id="claims-h">Claims <span className="count-badge">{v.claims.length.toLocaleString()}</span></h2>
+                <h2 id="claims-h" tabIndex={-1}>Claims <span className="count-badge">{v.claims.length.toLocaleString()}</span></h2>
                 <span className="claims-tools">
-                  <button className="btn btn--sm btn--ghost" aria-pressed={compact} onClick={toggleDensity}>{compact ? "Comfortable" : "Compact"}</button>
+                  <button className="btn btn--sm btn--ghost" aria-pressed={compact} onClick={toggleDensity}>Compact</button>
                   <button className="btn btn--sm btn--ghost" onClick={() => setQ({ panel: "lineage" })}><GitBranch size={14} aria-hidden="true" />Lineage</button>
                 </span>
               </div>
@@ -229,7 +236,7 @@ export function Investigation() {
                   <input
                     ref={searchRef} className="input" aria-label="Search claims and citations" placeholder="Search claims"
                     value={text}
-                    onChange={e => { const t = e.target.value; setText(t); window.clearTimeout(debounce.current); debounce.current = window.setTimeout(() => setQ({ q: t, page: null }), 200); }}
+                    onChange={e => { const t = e.target.value; setText(t); window.clearTimeout(debounce.current); debounce.current = window.setTimeout(() => setQ({ q: t, page: null }, { replace: true }), 200); }}
                   />
                   <Kbd>/</Kbd>
                 </div>
@@ -245,7 +252,8 @@ export function Investigation() {
                     <option value="not_estimated">Support not assessed</option>
                   </optgroup>
                 </select><ChevronDown size={14} aria-hidden="true" /></span>
-                {shown.length !== v.claims.length && <span className="shown" role="status">{shown.length.toLocaleString()} of {v.claims.length.toLocaleString()} shown</span>}
+                {/* always in the page, so the first filtered count is read too; empty when all are shown */}
+                <span className="shown" role="status">{shown.length !== v.claims.length && `${shown.length.toLocaleString()} of ${v.claims.length.toLocaleString()} shown`}</span>
               </div>
 
               <ReviewBar v={v} />
@@ -293,7 +301,7 @@ export function Investigation() {
 
           {/* ------------------------------------------------ limits and technical detail, on request */}
           <details className="more">
-            <summary><ChevronRight size={14} aria-hidden="true" />Limits of this result and technical details</summary>
+            <summary><ChevronRight size={14} aria-hidden="true" />Limits and details</summary>
             <div className="wording">
               <div className="word">
                 <div className="word-head"><Mark tone="ok" />You may say</div>
@@ -352,24 +360,24 @@ function Composer({ v, selection, onDone }: { v: ProductView; selection: Selecti
     setTextState(t);
   };
   const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<{ code: string; message: string; advice: string | null } | null>(null);
+  const [err, setErr] = useState<Refusal>(null);
   const question = canonicalQuestion(text);
   const problem = question ? questionProblem(question) : null;
   const length = [...question].length;
   // in Live, the service's demo_view is a sample that was never stored, so nothing can follow up on it
   const sample = port.kind === "live" && v.demo_only;
   const can = !sample && !!selection && !!question && !problem && !busy;
+  // the placeholder said what to select, but it is gone once something is typed, and the scope chip is hidden on a phone
+  const unscoped = !sample && !selection && !!question;
+  const note = !!(err || problem || unscoped) || length > QUESTION_MAX - 200;
 
   function ask() {
-    if (!selection || !question) return;
-    if (problem) { setErr({ code: "invalid_question", message: problem, advice: null }); return; }
+    if (busy || sample || !selection || !question) return;
+    if (problem) { setErr({ code: "invalid_question", message: problem }); return; }
     setBusy(true); setErr(null);
     void scoped("follow_up", () => port.follow_up(v.result.id, selection.kind, selection.id, question), {
       done: child => { setText(""); onDone(child); },
-      fail: e => {
-        const pe = isProductError(e) ? e : new ProductError("unavailable", "The follow-up could not be sent.");
-        setErr({ code: pe.code, message: pe.safe_message, advice: remedyFor(pe.code).advice });
-      },
+      fail: e => setErr(refusalOf(e, "The follow-up could not be sent.")),
       late: child => ({ project_id: child.project.id, snapshot_id: child.snapshot.id, result_id: child.result.id, question }),
       always: () => setBusy(false),
       key: `follow_up:${v.result.id}:${selection.kind}:${selection.id}:${question}`,
@@ -381,27 +389,35 @@ function Composer({ v, selection, onDone }: { v: ProductView; selection: Selecti
     <div className="composer-wrap">
       <div className="composer">
         <div className="composer-in">
+          {/* while asking, the box is read-only and the button aria-disabled, so Enter never drops focus; sample
+              data cannot change while focused, so there the box is disabled. A sent question clears the box,
+              which would disable a focused button: it stays aria-disabled instead. */}
           <input
-            aria-label="Ask a follow-up" value={text} disabled={busy || sample}
+            aria-label="Ask a follow-up" value={text} readOnly={busy} disabled={sample}
+            aria-invalid={!!(err || problem)} aria-describedby={note ? "composer-err" : undefined}
             placeholder={sample ? "Sample data. Connect a project to ask." : selection ? (selection.kind === "claim" ? "Ask about this claim…" : "Ask about this node…") : "Select a claim above to ask about it"}
             onChange={e => { setText(e.target.value); setErr(null); }}
             onKeyDown={e => { if (e.key === "Enter" && can) { e.preventDefault(); ask(); } }}
           />
           <span className="composer-scope" title="What the follow-up is scoped to">{selection ? selection.label : "nothing selected"}</span>
-          <button className="btn btn--primary btn--sm" disabled={!can} aria-busy={busy} onClick={ask}>{busy ? "Asking…" : "Ask"}</button>
+          <button className="btn btn--primary btn--sm" aria-disabled={!can || undefined} aria-busy={busy} onClick={ask}>{busy ? "Asking…" : "Ask"}</button>
         </div>
-        {(err || problem || length > QUESTION_MAX - 200) && (
-          <div className="composer-err" role="status">
-            <Mark tone={err || problem ? "no" : "partial"} />
-            {err
-              ? <span><code className="mono-s">{err.code}</code> {err.message}{err.advice ? ` ${err.advice}` : ""}</span>
-              : problem ? <span>{problem}</span>
-              : <span>{length} of {QUESTION_MAX} characters.</span>}
-          </div>
-        )}
+        {/* the box names this as its error. A service error is the shared RefusalNote, its own alert; the notes
+            about the question go through a status that is always in the page, so the first one is read too */}
+        <div id="composer-err">
+          <div role="status">{note && !err && (
+            <div className="composer-err">
+              <Mark tone={problem ? "no" : "partial"} />
+              {problem ? <span>{problem}</span>
+                : unscoped ? <span>Select a claim or node first.</span>
+                : <span>{length} of {QUESTION_MAX} characters.</span>}
+            </div>
+          )}</div>
+          {err && <div className="composer-err"><RefusalNote refusal={err} compact /></div>}
+        </div>
         <div className="composer-why">
           <Info size={12} aria-hidden="true" />
-          <span>{plain(v.runtime.provider)} · {v.runtime.external_call ? "sent to an external service" : "nothing leaves this computer"}</span>
+          <span>{v.runtime.external_call ? "Sent to an external service" : "Nothing leaves this computer"}</span>
           <details>
             <summary>What is sent <ChevronUp size={12} aria-hidden="true" /></summary>
             <div className="scope-pop">

@@ -1,6 +1,6 @@
 # P6 dashboard quickstart
 
-The P6 dashboard is a React app in `dashboard/web`. It reaches the product only through the nine
+The P6 dashboard is a React app in `dashboard/web`. It reaches the product only through the ten
 `ProductService` methods. Two ports implement them:
 
 - **DemoProductPort** (`dashboard/web/src/service/demo.ts`): offline and in memory, over the
@@ -33,6 +33,13 @@ changes nothing on screen (`src/service/fence.ts`); it is listed under "Finished
 The session guard (`src/service/session.ts`) decides what the client does when access can change while
 a tab is open. The local app has no accounts and does not run it. The demo drives it from a simulated
 answer, with previews in the account menu. A hosted build gets its answers from `GET /v1/session`.
+
+Asking about a connected project in Live uses `analyze_observations`. It computes
+exact changes from imported metric snapshots and shows `local_evidence`, keeping
+added/removed metrics noncomparable and causal status unverified. It does not
+call an external model, execute project code or apply a repair. Demo continues
+to use `analyze_mock`. The explicit backend mock method is still available for
+its existing callers; a Live connection alone is not a model-quality claim.
 
 ## Run
 
@@ -80,7 +87,7 @@ the URL.
 | Screen | Data and method | Demo | Live | Navigation |
 | --- | --- | --- | --- | --- |
 | Start | `demo_view` | fixture | service demo view | Connect, Investigation |
-| Connect | `preview_import`, `confirm_import`, `refresh`, `analyze_mock` | fixture | yes | Investigation |
+| Connect | `preview_import`, `confirm_import`, `refresh`; Live asks use `analyze_observations` | fixture/mock | actual local metric analysis | Investigation |
 | Project overview | view fields; `refresh` | fixture | yes | Investigation, Data & retention |
 | Investigation (table, 2D lineage, inspector) | view fields; `follow_up` | in memory | yes | `?result=&claim=&evidence=&node=&turn=` |
 | Results & reproduction | view fields | fixture | yes | — |
@@ -118,16 +125,20 @@ npm run build:live && npm run budget   # gzip size limits for the Live bundle
 ```
 
 ```bash
-.venv/bin/python -m pytest tests/unit/test_product_dashboard_bridge.py tests/integration/test_product_dashboard_bridge_http.py tests/integration/test_product_dashboard_live_flow.py
+.venv/bin/python scripts/run_test_profile.py product
 .venv/bin/ruff check src/aletheia_lab/dashboard tests
 ```
 
 `test_product_dashboard_live_flow.py` drives the real service through the bridge with the
 mapping shape the Connect screen sends. It covers analysis of the initial snapshot right after
 confirm, a non-adverse refresh, and an adverse refresh with follow-up, view, the three exports
-and delete, with sockets disabled. The web tests
+and delete on the mock path, with sockets disabled.
+`test_product_metric_analysis.py` separately exercises the actual local metric path,
+including initial/non-adverse/adverse snapshot provenance, exact step-scoped changes,
+follow-up, saved view, JSON/Markdown/PDF export, deletion and oversized-output refusal
+without a partially saved result. It also disables sockets. The web tests
 include a parity check that `LiveProductPort` sends exactly the bridge's parameter names for all
-nine methods.
+ten methods.
 
 The bridge rejects duplicate JSON members and nonfinite numbers before calling
 the service. Accepted connections have a five-second inactivity timeout, so an

@@ -96,7 +96,7 @@ export class DemoProductPort implements ProductPort {
     this.reset();
   }
 
-  /** Demo control only — not one of the nine methods. Puts the session back to the packaged state. */
+  /** Demo control only — not one of the ten methods. Puts the session back to the packaged state. */
   reset(): void {
     const v = this.#fx.view;
     this.#results = new Map([[v.result.id, clone(v)]]);
@@ -212,6 +212,9 @@ export class DemoProductPort implements ProductPort {
   }
 
   /* ------------------------------------------------------------------- 5 */
+  async analyze_observations(_project_id: string, _snapshot_id: string, _question: string): Promise<ProductView> {
+    throw new ProductError("analysis_not_available", "Actual metric analysis requires a connected local project.");
+  }
   async analyze_mock(project_id: string, snapshot_id: string, question: string): Promise<ProductView> {
     const p = this.#live(project_id);
     if (!p.snapshots.includes(snapshot_id)) throw new ProductError(CODES.notFound, "That snapshot does not belong to this project.");

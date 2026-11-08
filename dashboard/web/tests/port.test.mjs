@@ -53,8 +53,8 @@ const okMapping = (over = {}) => ({
 const src = (over) => ({ metric_sources: [{ ...okMapping().metric_sources[0], ...over }] });
 
 /* ---------------------------------------------------------------- boundary */
-test("P1 the port exposes exactly the nine contract methods, all async", () => {
-  const names = ["demo_view", "preview_import", "confirm_import", "refresh", "analyze_mock", "follow_up", "view", "export_report", "delete_project"];
+test("P1 the port exposes exactly the ten contract methods, all async", () => {
+  const names = ["demo_view", "preview_import", "confirm_import", "refresh", "analyze_mock", "analyze_observations", "follow_up", "view", "export_report", "delete_project"];
   for (const m of names) assert.equal(typeof port[m], "function", m);
   const own = Object.getOwnPropertyNames(DemoProductPort.prototype).filter(n => n !== "constructor" && n !== "reset");
   assert.deepEqual(own.sort(), [...names].sort());

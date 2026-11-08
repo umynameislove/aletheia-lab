@@ -39,7 +39,11 @@ const REMEDIATION: Record<string, string> = {
   forbidden: "Open the dashboard from its own address.",
   // what an HTTP status means when a proxy answers instead of the service (service/live.ts)
   session_expired: "Sign in again. Your work on this screen is kept.",
+  session_revoked: "This session was ended. Sign in again.",
+  membership_revoked: "Your access to this workspace has ended. Ask a workspace owner if you still need it.",
   permission_denied: "You do not have access to this. Ask a workspace owner.",
+  csrf_invalid: "Not verified, so nothing was changed. Reload the page, then try again.",
+  access_unconfirmed: "Your access is being checked. If this keeps happening, sign in again.",
   not_found: "Not found, or you do not have access. Go back to Start.",
   revision_conflict: "Someone changed this first. Reload to see their version; your text is kept.",
   payload_too_large: "That is larger than this service accepts. Make it smaller and try again.",

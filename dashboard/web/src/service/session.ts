@@ -154,15 +154,19 @@ export function createSessionGuard(options: {
       return visible && !terminal() && state !== "expired" && !inFlight && options.now() - lastConfirmed >= interval;
     },
 
-    /** Every answer from the service says something: success is a confirmation, 401 and 403 may end the session. */
+    /** Every answer from the service says something: success is a confirmation, 401 and 403 may end the
+        session. `code` is null when the port could not trust the reason (service/live.ts). An untrusted
+        refusal is not guessed into expired or revoked: the content is covered and the session asked. */
     noteResponse(status: number, code: string | null) {
       if (terminal()) return;
       if (status >= 200 && status < 300) {
         if (state === "active") confirmedNow();
       } else if (code === "session_revoked" || code === "membership_revoked") {
         settle({ status: "revoked" });
-      } else if (status === 401) {
+      } else if (code === "session_expired") {
         settle({ status: "expired" });
+      } else if (status === 401 || (status === 403 && code === null)) {
+        void check(true);
       }
     },
 

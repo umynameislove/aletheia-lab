@@ -26,6 +26,7 @@ function portAnswering(answer) {
     confirm_import: async () => answer("confirm_import"),
     refresh: async () => answer("refresh"),
     analyze_mock: async () => answer("analyze_mock"),
+    analyze_observations: async () => answer("analyze_observations"),
     follow_up: async () => answer("follow_up"),
     view: async () => answer("view"),
     export_report: async () => new Uint8Array(),
@@ -87,6 +88,8 @@ test("B6 an answer about another result, project or snapshot is out of scope", a
   await assert.rejects(portAnswering(() => other).view("result-asked-for"), coded("response_out_of_scope"));
   await assert.rejects(portAnswering(() => other).analyze_mock("project-asked", other.snapshot.id, "Q"), coded("response_out_of_scope"));
   await assert.rejects(portAnswering(() => other).analyze_mock(other.project.id, "snapshot-asked", "Q"), coded("response_out_of_scope"));
+  await assert.rejects(portAnswering(() => other).analyze_observations("project-asked", other.snapshot.id, "Q"), coded("response_out_of_scope"));
+  await assert.rejects(portAnswering(() => other).analyze_observations(other.project.id, "snapshot-asked", "Q"), coded("response_out_of_scope"));
   await assert.rejects(portAnswering(() => other).follow_up("parent-asked", "claim", "c", "Q"), coded("response_out_of_scope"));
   await assert.rejects(portAnswering(() => ({ project_id: "other", snapshot_id: "s", status: "unchanged" })).refresh("asked"), coded("response_out_of_scope"));
   await assert.rejects(portAnswering(() => ({ project_id: "other", status: "deleted", deleted_count: 1, retained_shared_count: 0 })).delete_project("asked"), coded("response_out_of_scope"));
@@ -96,6 +99,7 @@ test("B7 the matching answer passes, and sample data can never answer for a stor
   const good = stored();
   assert.equal((await portAnswering(() => good).view(good.result.id)).result.id, good.result.id);
   assert.equal((await portAnswering(() => good).analyze_mock(good.project.id, good.snapshot.id, "Q")).result.id, good.result.id);
+  assert.equal((await portAnswering(() => good).analyze_observations(good.project.id, good.snapshot.id, "Q")).result.id, good.result.id);
   assert.equal((await portAnswering(() => good).follow_up(good.result.id, "claim", "c", "Q")).result.id, good.result.id);
   await assert.rejects(portAnswering(() => copy(DEMO)).view(DEMO.result.id), coded("response_out_of_scope"));
   assert.equal((await portAnswering(() => copy(DEMO)).demo_view()).demo_only, true);
@@ -201,6 +205,50 @@ test("R6 a mutation past its deadline is unknown, not failed", async () => {
   await assert.rejects(port.refresh("p"), coded("outcome_unknown"));
 });
 
+/** A 2xx whose body breaks off part way: the JSON cannot be parsed, or the stream itself fails. */
+function cutOff(body, how) {
+  const text = JSON.stringify(body);
+  const fail = how === "stream" ? () => Promise.reject(new TypeError("network error")) : null;
+  return {
+    ok: true, status: 200,
+    json: fail ?? (async () => JSON.parse(text.slice(0, Math.floor(text.length / 2)))),
+    arrayBuffer: fail ?? (async () => new TextEncoder().encode(text).buffer),
+  };
+}
+
+test("R7 a read whose answer is cut off is unreadable, and nothing is shown from it", async () => {
+  for (const how of ["parse", "stream"]) {
+    let calls = 0;
+    const port = new LiveProductPort({ fetch: async () => { calls += 1; return cutOff(DEMO, how); }, delay: async () => {} });
+    await assert.rejects(port.view("r"), coded("service_failure"));
+    assert.equal(calls, 1, "the service answered, so the bridge is not retried");
+  }
+});
+
+test("R8 a mutation the service accepted but whose answer is cut off is unknown, not failed", async () => {
+  for (const how of ["parse", "stream"]) {
+    let calls = 0;
+    const port = new LiveProductPort({ fetch: async () => { calls += 1; return cutOff({ deleted_count: 3 }, how); } });
+    await assert.rejects(port.delete_project("p"), coded("outcome_unknown"));
+    await assert.rejects(port.confirm_import("p", {}), coded("outcome_unknown"));
+    await assert.rejects(port.follow_up("r", "claim", "c", "Q"), coded("outcome_unknown"));
+    await assert.rejects(port.analyze_observations("p", "s", "Q"), coded("outcome_unknown"));
+    assert.equal(calls, 4, "and none of them is sent again");
+  }
+});
+
+test("R9 a report whose bytes break off is refused, never saved as a whole file", async () => {
+  const port = new LiveProductPort({ fetch: async () => cutOff({}, "stream") });
+  await assert.rejects(port.export_report("r", "pdf"), coded("service_failure"));
+});
+
+test("R10 a cut-off view that still parses is caught by the contract check", async () => {
+  // a proxy that closes the body on a boundary can leave valid JSON with half the fields missing
+  const half = Object.fromEntries(Object.entries(stored()).slice(0, 3));
+  const port = portAnswering(() => half);
+  await assert.rejects(port.view(DEMO.result.id), e => e.name === "ProductError" && ["response_invalid", "schema_unsupported"].includes(e.code));
+});
+
 /* ---- the tracker: double sends, late outcomes and what stays visible ---- */
 import { createTracker } from "../src/service/fence.ts";
 
@@ -278,7 +326,8 @@ test("T5 logout or account switch forgets late work", async () => {
 });
 
 test("S1 a proxy's status still says what to do next, and a service error body wins over it", async () => {
-  for (const [status, code] of [[401, "session_expired"], [403, "permission_denied"], [404, "not_found"], [409, "revision_conflict"], [413, "payload_too_large"], [429, "rate_limited"], [503, "service_busy"]]) {
+  // 401 and 403 alone cannot tell expired from revoked from refused, so they are not guessed (J-01 review v2)
+  for (const [status, code] of [[401, "access_unconfirmed"], [403, "access_unconfirmed"], [404, "not_found"], [409, "revision_conflict"], [413, "payload_too_large"], [429, "rate_limited"], [503, "service_busy"]]) {
     const port = new LiveProductPort({ fetch: async () => ({ ok: false, status, json: async () => { throw new Error("html"); }, arrayBuffer: async () => new ArrayBuffer(0) }), delay: async () => {} });
     await assert.rejects(port.view("r"), coded(code), String(status));
   }

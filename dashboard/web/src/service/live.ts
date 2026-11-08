@@ -1,4 +1,4 @@
-/* LiveProductPort — the nine ProductService methods over the local dashboard bridge
+/* LiveProductPort — the ten ProductService methods over the local dashboard bridge
    (src/aletheia_lab/dashboard/bridge.py). The bridge owns one ProductService(store_root) and
    forwards each call unchanged, so names, arguments, return values and error codes are the
    service's own. Nothing here falls back to the demo: a failure is shown as a ProductError.
@@ -20,15 +20,17 @@ import {
   type ReportFormat,
   type SelectionKind,
 } from "./port.ts";
+import { looksLikeProblem, PROBLEM_STATUS, readProblem } from "./hosted.ts";
 
 export const BRIDGE_HEADER = "X-P6-Bridge";
 
-type Fetch = (input: string, init: { method: string; headers: Record<string, string>; body: string; signal?: AbortSignal }) => Promise<{
+interface FetchResponse {
   ok: boolean;
   status: number;
   json(): Promise<unknown>;
   arrayBuffer(): Promise<ArrayBuffer>;
-}>;
+}
+type Fetch = (input: string, init: { method: string; headers: Record<string, string>; body: string; signal?: AbortSignal }) => Promise<FetchResponse>;
 
 const UNREACHABLE = () => new ProductError("bridge_unavailable", "The local product service is not reachable.");
 const MALFORMED = () => new ProductError("service_failure", "The product service sent an unreadable answer.");
@@ -43,27 +45,35 @@ const MUTATION_DEADLINE_MS = 120_000;
 const READ_ATTEMPTS = 3;
 
 /* A proxy can answer before the service does. The status still says what to do next, so it is not
-   flattened into one generic failure. Only these statuses: their meaning does not depend on the body. */
+   flattened into one generic failure. Only these statuses: their meaning does not depend on the body.
+   401 and 403 are not here: on their own they cannot tell expired from revoked from refused, and a
+   wrong guess either keeps a revoked person's data on screen or wipes a draft for nothing. */
 const BY_STATUS: Record<number, [code: string, message: string]> = {
-  401: ["session_expired", "The session is no longer valid."],
-  403: ["permission_denied", "This was refused."],
   404: ["not_found", "This was not found."],
   409: ["revision_conflict", "This changed before your request reached it."],
   413: ["payload_too_large", "The request was too large."],
   429: ["rate_limited", "The service asked to slow down."],
   503: ["service_busy", "The service is not available right now."],
 };
+const UNCONFIRMED = () => new ProductError("access_unconfirmed", "The service refused this without a reason this app can trust.");
 
-/** Only a well-formed {code, safe_message} becomes the error shown; anything else is generic. */
-function asProductError(body: unknown, status: number): ProductError {
-  if (typeof body === "object" && body !== null) {
+/** The error to show, and whether its code may be acted on. Two shapes are read, each in full:
+    a hosted Problem (service/hosted.ts) and the local bridge's {code, safe_message}. A session code
+    is believed only with the status it belongs to; anything else falls back to the status alone. */
+function asProductError(body: unknown, status: number): { error: ProductError; trusted: boolean } {
+  if (looksLikeProblem(body)) {
+    const problem = readProblem(body, status);
+    if (problem) return { error: problem, trusted: true };
+  } else if (typeof body === "object" && body !== null) {
     const { code, safe_message } = body as { code?: unknown; safe_message?: unknown };
-    if (typeof code === "string" && /^[a-z][a-z0-9_.-]{0,63}$/.test(code) && typeof safe_message === "string" && safe_message.length <= 256) {
-      return new ProductError(code, safe_message);
+    if (typeof code === "string" && /^[a-z][a-z0-9_.-]{0,63}$/.test(code) && typeof safe_message === "string" && safe_message.length <= 256
+      && (PROBLEM_STATUS[code] === undefined || PROBLEM_STATUS[code] === status)) {
+      return { error: new ProductError(code, safe_message), trusted: true };
     }
   }
+  if (status === 401 || status === 403) return { error: UNCONFIRMED(), trusted: false };
   const known = BY_STATUS[status];
-  return known ? new ProductError(known[0], known[1]) : MALFORMED();
+  return { error: known ? new ProductError(known[0], known[1]) : MALFORMED(), trusted: false };
 }
 
 const realDelay = (attempt: number) => new Promise<void>(resolve => setTimeout(resolve, 250 * 2 ** attempt * (0.5 + Math.random())));
@@ -76,6 +86,8 @@ export class LiveProductPort implements ProductPort {
   readonly #readDeadline: number;
   readonly #mutationDeadline: number;
   readonly #pending = new Map<string, Promise<unknown>>();
+  /** the view reads now on the wire: nothing else is ever abandoned on the person's behalf */
+  readonly #views = new Set<AbortController>();
   readonly #onAnswer?: (status: number, code: string | null) => void;
 
   constructor(options: { fetch: Fetch; base?: string; delay?: (attempt: number) => Promise<void>; readDeadlineMs?: number; mutationDeadlineMs?: number; onAnswer?: (status: number, code: string | null) => void }) {
@@ -87,40 +99,58 @@ export class LiveProductPort implements ProductPort {
     this.#onAnswer = options.onAnswer;
   }
 
-  async #attempt(method: string, args: Record<string, unknown>) {
+  /* One request, its deadline running until `body` has read the whole answer: headers can arrive and
+     the body stall (a proxy, a bridge dying mid-write), and that must end the same way as no answer. */
+  async #attempt<T>(method: string, args: Record<string, unknown>, body: (response: FetchResponse) => Promise<T>): Promise<T> {
     const read = READS.has(method);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), read ? this.#readDeadline : this.#mutationDeadline);
-    let response;
+    if (method === "view") this.#views.add(controller);
+    const aborted = new Promise<never>((_, reject) => {
+      controller.signal.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+    });
+    aborted.catch(() => { /* only matters while a race below is waiting on it */ });
     try {
-      response = await this.#fetch(this.#base + method, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", [BRIDGE_HEADER]: "1" },
-        body: JSON.stringify(args),
-        signal: controller.signal,
-      });
-    } catch {
-      if (read) throw controller.signal.aborted ? TIMED_OUT() : UNREACHABLE();
-      throw UNKNOWN_OUTCOME();
+      let response;
+      try {
+        response = await Promise.race([this.#fetch(this.#base + method, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", [BRIDGE_HEADER]: "1" },
+          body: JSON.stringify(args),
+          signal: controller.signal,
+        }), aborted]);
+      } catch {
+        if (read) throw controller.signal.aborted ? TIMED_OUT() : UNREACHABLE();
+        throw UNKNOWN_OUTCOME();
+      }
+      if (!response.ok) {
+        let parsed: unknown = null;
+        try { parsed = await Promise.race([response.json(), aborted]); } catch { /* not JSON, or it stalled: stays generic */ }
+        const { error, trusted } = asProductError(parsed, response.status);
+        this.#onAnswer?.(response.status, trusted ? error.code : null);
+        // a gateway's own 5xx says nothing about whether the service had already committed the change
+        if (!read && !trusted && response.status >= 500 && response.status !== 503) throw UNKNOWN_OUTCOME();
+        throw error;
+      }
+      this.#onAnswer?.(response.status, null);
+      try {
+        return await Promise.race([body(response), aborted]);
+      } catch (e) {
+        if (e instanceof ProductError) throw e;
+        if (controller.signal.aborted && read) throw TIMED_OUT();
+        throw read ? MALFORMED() : UNKNOWN_OUTCOME();
+      }
     } finally {
       clearTimeout(timer);
+      this.#views.delete(controller);
     }
-    if (!response.ok) {
-      let body: unknown = null;
-      try { body = await response.json(); } catch { /* not JSON: stays generic */ }
-      const error = asProductError(body, response.status);
-      this.#onAnswer?.(response.status, error.code);
-      throw error;
-    }
-    this.#onAnswer?.(response.status, null);
-    return response;
   }
 
-  async #send(method: string, args: Record<string, unknown>) {
-    if (!READS.has(method)) return this.#attempt(method, args);
+  async #send<T>(method: string, args: Record<string, unknown>, body: (response: FetchResponse) => Promise<T>): Promise<T> {
+    if (!READS.has(method)) return this.#attempt(method, args, body);
     for (let attempt = 0; ; attempt += 1) {
       try {
-        return await this.#attempt(method, args);
+        return await this.#attempt(method, args, body);
       } catch (e) {
         const again = e instanceof ProductError && e.code === "bridge_unavailable" && attempt + 1 < READ_ATTEMPTS;
         if (!again) throw e;
@@ -141,13 +171,16 @@ export class LiveProductPort implements ProductPort {
     return this.#readJson<T>(method, args);
   }
 
-  async #readJson<T>(method: string, args: Record<string, unknown>): Promise<T> {
-    const response = await this.#send(method, args);
-    try {
-      return (await response.json()) as T;
-    } catch {
-      throw MALFORMED();
-    }
+  /* A body cut off on the way: for a read nothing changed and it can be asked again, but a mutation
+     the service accepted did take effect, and saying "nothing changed" would invite a second one. */
+  #readJson<T>(method: string, args: Record<string, unknown>): Promise<T> {
+    return this.#send(method, args, response => response.json() as Promise<T>);
+  }
+
+  /** The person has moved on from the result being opened: its read stops. Reads only: a mutation is
+      never abandoned, because the service may already have done it and only its answer can say so. */
+  abandonViews(): void {
+    for (const controller of this.#views) controller.abort();
   }
 
   demo_view(): Promise<ProductView> {
@@ -165,6 +198,9 @@ export class LiveProductPort implements ProductPort {
   analyze_mock(project_id: string, snapshot_id: string, question: string): Promise<ProductView> {
     return this.#json("analyze_mock", { project_id, snapshot_id, question });
   }
+  analyze_observations(project_id: string, snapshot_id: string, question: string): Promise<ProductView> {
+    return this.#json("analyze_observations", { project_id, snapshot_id, question });
+  }
   follow_up(result_id: string, selection_kind: SelectionKind, selection_id: string, question: string): Promise<ProductView> {
     return this.#json("follow_up", { result_id, selection_kind, selection_id, question });
   }
@@ -173,8 +209,8 @@ export class LiveProductPort implements ProductPort {
   }
   /** The service's bytes, untouched (JOB Q11). */
   async export_report(result_id: string, format: ReportFormat): Promise<Uint8Array> {
-    const response = await this.#send("export_report", { result_id, format });
-    return new Uint8Array(await response.arrayBuffer());
+    // never hand on part of a file as if it were the whole one
+    return this.#send("export_report", { result_id, format }, async response => new Uint8Array(await response.arrayBuffer()));
   }
   delete_project(project_id: string): Promise<DeleteReceipt> {
     return this.#json("delete_project", { project_id });

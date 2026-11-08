@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { projectView } from "../data/view";
-import { linkIds, useResultHistory, useView } from "../service";
+import { linked, useResultHistory, useView } from "../service";
+import { openedProject } from "../service/opened";
 import { useRoute, useStore } from "../store";
 import { plain } from "../vocab";
 import { Absent, Id, Mark, Term } from "./primitives";
@@ -15,9 +16,10 @@ export function Results() {
   const ev = v.evidence[0];
   const failed = v.result.status === "technical_failure";
   const history = useResultHistory();
-  const { go } = useRoute();
-  const open = (ids: { project?: string; snapshot?: string; result: string }) => { linkIds(ids); go("investigation"); };
-  // every question on this result's line keeps its own immutable result; opening one runs nothing
+  const { hrefFor } = useRoute();
+  // every question on this result's line keeps its own immutable result; opening one runs nothing.
+  // Opening is a link to that result's address: one step in the history, and it can be opened in a
+  // new tab or copied. The address alone reopens it (service/index.tsx), so no click handler is needed.
   const line = v.conversation.turns;
   const others = history.filter(h => h.result_id !== v.result.id && !line.some(t => t.result_id === h.result_id));
 
@@ -40,10 +42,27 @@ export function Results() {
       <div className="page-inner">
         <header className="page-head">
           <h1>Results &amp; reproduction</h1>
-          <p className="lede">The result open now, and the ones you can reach from here. A full list of past results needs a service method that does not exist yet.</p>
+          <p className="lede">The open result, and others you opened in this tab.</p>
         </header>
 
         <LateWorkList />
+
+        {v.demo_only && (
+          // sample data has no stored results to list; say where they come from, and offer the way there
+          <section className="panel" style={{ marginTop: "var(--s5)" }} aria-label="Stored results">
+            <div className="sec-head"><span className="eyebrow">Stored results</span></div>
+            {!linked ? <>
+              <p className="body-copy">The sample has no stored results. The questions asked on it are in the investigation.</p>
+              <div className="actions"><a className="btn btn--sm" href={hrefFor("investigation")}>Open the investigation</a></div>
+            </> : openedProject() ? <>
+              <p className="body-copy">Your project is saved. Ask a question about it, and its results are listed here.</p>
+              <div className="actions"><a className="btn btn--sm" href={hrefFor("start")}>Go to Start</a></div>
+            </> : <>
+              <p className="body-copy">This is sample data. Connect a project, and its results are listed here.</p>
+              <div className="actions"><a className="btn btn--sm" href={hrefFor("connect")}>Connect a project</a></div>
+            </>}
+          </section>
+        )}
 
         {!v.demo_only && (
           <section className="panel" style={{ marginTop: "var(--s5)" }} aria-label="Results you can open">
@@ -52,15 +71,17 @@ export function Results() {
               <div className="np-row action-row" key={t.id}>
                 {t.result_id === v.result.id ? <Mark tone="accent" /> : <Mark hollow />}
                 <span><span className="row-k">{t.question}</span><span className="sub-line">{t.abstained ? "Did not conclude" : "Answered"}</span></span>
-                {t.result_id === v.result.id ? <span className="v">Open now</span> : <button className="btn btn--sm" onClick={() => open({ result: t.result_id })}>Open</button>}
+                {t.result_id === v.result.id ? <span className="v">Open now</span> : <a className="btn btn--sm" href={hrefFor("investigation", { result: t.result_id })}>Open<span className="sr">: {t.question}</span></a>}
               </div>
             ))}
+            {/* the conversation can be deleted while the result stays: say so rather than show a bare heading */}
+            {line.length === 0 && <Absent title="No questions on this result" />}
             {others.length > 0 && <div className="sec-head" style={{ marginTop: "var(--s4)" }}><span className="eyebrow">Also opened in this tab</span></div>}
             {others.map(h => (
               <div className="np-row action-row" key={h.result_id}>
                 <Mark hollow />
                 <span><span className="row-k">{h.question}</span><span className="sub-line">{h.project}</span></span>
-                <button className="btn btn--sm" onClick={() => open({ project: h.project_id, snapshot: h.snapshot_id, result: h.result_id })}>Open</button>
+                <a className="btn btn--sm" href={hrefFor("investigation", { project: h.project_id, snapshot: h.snapshot_id, result: h.result_id })}>Open<span className="sr">: {h.question}</span></a>
               </div>
             ))}
           </section>

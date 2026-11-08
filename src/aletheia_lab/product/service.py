@@ -12,6 +12,7 @@ from aletheia_lab.product.demo import demo_product_view
 from aletheia_lab.product.follow_up import follow_up_product_result
 from aletheia_lab.product.imports import confirm_product_import, preview_product_import
 from aletheia_lab.product.lifecycle import ProductLifecycleStore
+from aletheia_lab.product.metric_analysis import analyze_product_metrics
 from aletheia_lab.product.refresh import refresh_product_project
 from aletheia_lab.product.reports import render_product_report
 from aletheia_lab.product.results import load_product_result
@@ -89,6 +90,14 @@ class ProductService:
             project_id,
             snapshot_id,
             question,
+        ).model_dump(mode="json")
+
+    def analyze_observations(
+        self, project_id: str, snapshot_id: str, question: str
+    ) -> dict[str, object]:
+        """Compute grounded metric observations from the authorized immutable snapshot."""
+        return analyze_product_metrics(
+            self._store_root, project_id, snapshot_id, question
         ).model_dump(mode="json")
 
     def follow_up(

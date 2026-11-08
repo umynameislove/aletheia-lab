@@ -25,6 +25,9 @@ const isNum = (x: unknown): x is number => typeof x === "number" && Number.isFin
 const isBool = (x: unknown): x is boolean => typeof x === "boolean";
 const isStrList = (x: unknown): x is string[] => Array.isArray(x) && x.every(isStr);
 const nullableNum = (x: unknown) => x === null || isNum(x);
+// closed sets the screens turn into words: a value outside them must not be read as the nearest one
+const DIRECTIONS = new Set(["higher_is_better", "lower_is_better"]);
+const ADVERSE = new Set(["adverse", "not_adverse", "not_applicable"]);
 
 function need(ok: boolean, where: string): asserts ok {
   if (!ok) throw MALFORMED(where);
@@ -53,10 +56,10 @@ export function checkProductView(x: unknown): ProductView {
   need(isObj(snapshot) && isStr(snapshot.id) && isStr(snapshot.baseline_id) && isStr(snapshot.sha256), "snapshot");
   need(Array.isArray(snapshot.metric_definitions) && Array.isArray(snapshot.metric_changes), "snapshot metrics");
   for (const d of snapshot.metric_definitions as unknown[]) {
-    need(isObj(d) && isStr(d.metric_name) && isStr(d.direction) && isNum(d.regression_threshold), "metric definition");
+    need(isObj(d) && isStr(d.metric_name) && DIRECTIONS.has(d.direction as string) && isNum(d.regression_threshold), "metric definition");
   }
   for (const c of snapshot.metric_changes as unknown[]) {
-    need(isObj(c) && isStr(c.evidence_id) && isStr(c.metric_name) && isStr(c.kind) && isStr(c.adverse_status) && nullableNum(c.delta), "metric change");
+    need(isObj(c) && isStr(c.evidence_id) && isStr(c.metric_name) && isStr(c.kind) && ADVERSE.has(c.adverse_status as string) && nullableNum(c.delta), "metric change");
     checkObservation(c.before);
     checkObservation(c.after);
   }
@@ -161,7 +164,7 @@ function stored(x: unknown): ProductView {
   return view;
 }
 
-/** The same nine methods, with every answer checked before anything can read it. */
+/** The same ten methods, with every answer checked before anything can read it. */
 export function checkedPort<P extends ProductPort>(inner: P): ProductPort {
   return {
     kind: inner.kind,
@@ -175,6 +178,11 @@ export function checkedPort<P extends ProductPort>(inner: P): ProductPort {
     refresh: async project_id => checkRefresh(await inner.refresh(project_id), project_id),
     analyze_mock: async (project_id, snapshot_id, question) => {
       const view = stored(await inner.analyze_mock(project_id, snapshot_id, question));
+      if (view.project.id !== project_id || view.snapshot.id !== snapshot_id) throw OUT_OF_SCOPE();
+      return view;
+    },
+    analyze_observations: async (project_id, snapshot_id, question) => {
+      const view = stored(await inner.analyze_observations(project_id, snapshot_id, question));
       if (view.project.id !== project_id || view.snapshot.id !== snapshot_id) throw OUT_OF_SCOPE();
       return view;
     },

@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { ArrowRight, FolderInput, LayoutList, RefreshCw } from "lucide-react";
-import { AFTER_DELETE, isProductError, linked, linkIds, port, scoped, useResultSwitch, useView } from "../service";
+import { ArrowRight, FolderInput, LayoutList } from "lucide-react";
+import { AFTER_DELETE, linked, port, useResultSwitch, useView } from "../service";
 import { openedProject, type OpenedProject } from "../service/opened";
-import { FirstQuestion, openProject, RefusalNote, type Refusal } from "./Ask";
+import { FirstQuestion, openProject, RefreshButton, RefreshStatus, RefusalNote, useRefresh } from "./Ask";
 import { LateWorkList } from "./Late";
 import { useRoute, useStore } from "../store";
 import { Absent, Id } from "./primitives";
@@ -11,7 +11,7 @@ import { Absent, Id } from "./primitives";
    lands on a result the person did not ask for. */
 export function Start() {
   const VIEW = useView();
-  const { go } = useRoute();
+  const { hrefFor } = useRoute();
   const { s } = useStore();
   const gone = s.deletedProject;
   const demo = port.kind === "demo";
@@ -23,7 +23,7 @@ export function Start() {
       <div className="page-inner page-inner--narrow">
         <header className="page-head">
           <h1>Check what the evidence supports</h1>
-          <p className="lede">Import a project snapshot, ask about a change, then read each claim next to the source it cites. Aletheia states what was observed and what stays unknown.</p>
+          <p className="lede">Ask about a change in your ML project, then check each claim against its source.</p>
         </header>
 
         <LateWorkList />
@@ -33,10 +33,10 @@ export function Start() {
             <section className="panel">
               <h2 className="panel-title">Start with your project</h2>
               {demo
-                ? <p className="body-copy">This demo build cannot read a real folder. You can walk through connecting with sample data.</p>
-                : <p className="body-copy">Choose one folder on this computer. You review what would be read, and map its metrics, before anything is stored. Your source files are never changed.</p>}
+                ? <p className="body-copy">This demo cannot read real folders. Try the steps with sample data.</p>
+                : <p className="body-copy">Pick a folder. You check what is read before anything is saved, and your files are never changed.</p>}
               <div className="actions">
-                <button className="btn btn--primary" onClick={() => go("connect")}><FolderInput size={15} aria-hidden="true" />Connect a project</button>
+                <a className="btn btn--primary" href={hrefFor("connect")}><FolderInput size={15} aria-hidden="true" />Connect a project</a>
               </div>
             </section>
           )}
@@ -46,9 +46,9 @@ export function Start() {
             {gone ? (
               <Absent title="Deleted in this session">{AFTER_DELETE}</Absent>
             ) : <>
-              <p className="body-copy">A made-up project, so you can see how a claim and its source read together. It is not your data and no model produced it.</p>
+              <p className="body-copy">Made-up data, not yours. No model was used.</p>
               <div className="actions">
-                <button className="btn" onClick={() => go("investigation")}><LayoutList size={15} aria-hidden="true" />Open the sample: {VIEW.demo_only ? VIEW.project.display_name : "result"}</button>
+                <a className="btn btn--wrap" href={hrefFor("investigation")}><LayoutList size={15} aria-hidden="true" />Open the sample: {VIEW.demo_only ? VIEW.project.display_name : "result"}</a>
               </div>
             </>}
           </section>
@@ -61,28 +61,21 @@ export function Start() {
 /* Continue the project kept from before the reload: open its last result, refresh, or ask about
    the kept snapshot. The contract has no project listing, so this is the only project offered. */
 function Continue({ opened }: { opened: OpenedProject }) {
-  const { go } = useRoute();
+  const { go, hrefFor } = useRoute();
   const { showResult } = useResultSwitch();
   const [snap, setSnap] = useState(opened);
-  const [busy, setBusy] = useState(false);
-  const [refusal, setRefusal] = useState<Refusal>(null);
-  const refresh = () => {
-    setBusy(true); setRefusal(null);
-    return scoped("refresh", () => port.refresh(snap.project_id), {
-      done: r => { openProject(r); setSnap({ project_id: r.project_id, snapshot_id: r.snapshot_id }); },
-      fail: e => setRefusal(isProductError(e) ? { code: e.code, message: e.safe_message } : { code: "unavailable", message: "The service did not answer." }),
-      always: () => setBusy(false),
-    });
-  };
+  const refresh = useRefresh(snap.project_id, r => { openProject(r); setSnap({ project_id: r.project_id, snapshot_id: r.snapshot_id }); });
   return (
     <section className="panel">
       <h2 className="panel-title">Continue your project</h2>
       <p className="body-copy">Kept on this computer from your last visit: snapshot <Id className="mono-s" v={snap.snapshot_id} />.</p>
-      <RefusalNote refusal={refusal} />
+      <RefusalNote refusal={refresh.refusal} />
+      <RefreshStatus r={refresh} />
       <div className="actions">
-        {snap.result_id && <button className="btn btn--primary" onClick={() => { linkIds({ project: snap.project_id, snapshot: snap.snapshot_id, result: snap.result_id }); go("investigation"); }}><LayoutList size={15} aria-hidden="true" />Open last result<ArrowRight size={15} aria-hidden="true" /></button>}
-        <button className="btn" onClick={() => void refresh()} disabled={busy} aria-busy={busy}><RefreshCw size={15} aria-hidden="true" />{busy ? "Refreshing…" : "Refresh"}</button>
-        <button className="btn" onClick={() => go("connect")}><FolderInput size={15} aria-hidden="true" />Connect another</button>
+        {/* the result's own address: one step back returns here, and it can be opened in a new tab */}
+        {snap.result_id && <a className="btn btn--primary" href={hrefFor("investigation", { project: snap.project_id, snapshot: snap.snapshot_id, result: snap.result_id })}><LayoutList size={15} aria-hidden="true" />Open last result<ArrowRight size={15} aria-hidden="true" /></a>}
+        <RefreshButton r={refresh} />
+        <a className="btn" href={hrefFor("connect")}><FolderInput size={15} aria-hidden="true" />Connect another</a>
       </div>
       <FirstQuestion bare key={snap.snapshot_id} result={snap} onAnalyzed={view => { showResult(view); go("investigation"); }} />
     </section>

@@ -7,8 +7,10 @@ import type { ConfirmMapping, IssueDTO, MappingCandidates, MetricDefinition, Met
 import { useRoute, useStore } from "../store";
 import type { Tone } from "../vocab";
 import { onWipe } from "../service/wipe";
-import { FirstQuestion, openProject, RefusalNote, type Refusal } from "./Ask";
-import { Absent, Id, Mark, shortId } from "./primitives";
+import { metricNameProblem, parseThreshold } from "../data/metric";
+import { ConfirmDialog } from "./Modal";
+import { confirmAndKeep, FirstQuestion, openProject, RefreshButton, RefreshStatus, RefusalNote, refusalOf, useRefresh, type Refusal } from "./Ask";
+import { Absent, Id, Mark, shortId, TableScroll } from "./primitives";
 
 /* Connect a project — permission, then a scan you asked for, then a report you can act on.
    Every count, candidate and issue below is read from the preview_import fixture shared
@@ -29,8 +31,9 @@ interface Mapping {
 }
 
 const REASON: Record<UnavailableReason, string> = {
-  sensitive_fields_withheld: "Field labels on this source were withheld, so it cannot be mapped. Typing them in is not offered — that would route around the withholding.",
-  unsupported_source: "This source type is not supported for mapping.",
+  // typing the labels in is deliberately not offered: that would route around the withholding
+  sensitive_fields_withheld: "Its field names are withheld, so it cannot be mapped.",
+  unsupported_source: "This source type is not supported.",
   unreadable_source: "This source could not be read.",
 };
 
@@ -55,12 +58,9 @@ function metricFields(C: MappingCandidates, id: string, keep?: Partial<Mapping>)
   };
 }
 
-/* Same rule as the backend: a finite number >= 0. Scientific notation is a valid finite number
-   (1e3 = 1000); negatives, NaN, Infinity and overflow like 1e999 are not. Hex and blanks are not numbers here. */
-const THRESHOLD = /^(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
-const validThreshold = (t: string) => THRESHOLD.test(t.trim()) && Number.isFinite(Number(t.trim()));
+const validThreshold = (t: string) => parseThreshold(t) !== null;
 export const definitionsPayload = (defs: Def[]): MetricDefinition[] =>
-  defs.map(d => ({ metric_name: d.name.trim(), direction: d.direction as MetricDirection, regression_threshold: Number(d.threshold.trim()) }));
+  defs.map(d => ({ metric_name: d.name.trim(), direction: d.direction as MetricDirection, regression_threshold: parseThreshold(d.threshold) ?? NaN }));
 function defaultMapping(C: MappingCandidates): Mapping {
   const t = C.targets.find(c => c.available);
   const m = C.metric_sources.find(c => c.available && c.format === "json" && c.records_path_candidates.length)
@@ -167,6 +167,8 @@ function checks(C: MappingCandidates, m: Mapping): [string, boolean, string, boo
     ["Every metric has a direction and a threshold", m.defs.length > 0 && m.defs.every(d => d.name.trim() && d.direction && d.threshold.trim()), "mapping_invalid"],
     ["Thresholds are finite and ≥ 0", m.defs.length > 0 && m.defs.every(d => validThreshold(d.threshold)), "mapping_invalid"],
     ["Metric names are unique", new Set(m.defs.map(d => d.name.trim())).size === m.defs.length, "mapping_invalid"],
+    // a typed name the service cannot read is refused on confirm with nothing to point at, so it is caught here
+    ["Metric names use characters the service accepts", m.defs.every(d => metricNameProblem(d.name) === null), "mapping_invalid"],
   ];
 }
 
@@ -183,6 +185,7 @@ const CHECK_FIELD: Record<string, string> = {
   "Every metric has a direction and a threshold": "metric-definitions",
   "Thresholds are finite and ≥ 0": "metric-definitions",
   "Metric names are unique": "metric-definitions",
+  "Metric names use characters the service accepts": "metric-definitions",
 };
 /* What each check means, said to the person fixing it. */
 const CHECK_HELP: Record<string, string> = {
@@ -193,8 +196,9 @@ const CHECK_HELP: Record<string, string> = {
   "Every run with metrics in this source is declared": "A run with metrics in this source is not ticked.",
   "Every declared run has metrics in this source": "A ticked run has no metrics in this source.",
   "Every metric has a direction and a threshold": "Say which way is better and how much change counts, for every metric.",
-  "Thresholds are finite and ≥ 0": "A threshold is a number of 0 or more, like 0.05.",
+  "Thresholds are finite and ≥ 0": "A threshold is a number of 0 or more, like 0.05 or 0,05.",
   "Metric names are unique": "The same metric is listed twice.",
+  "Metric names use characters the service accepts": "A metric name has a character the service cannot read yet, such as an accent.",
 };
 const helpFor = (label: string) => CHECK_HELP[label] ?? label;
 
@@ -205,6 +209,19 @@ let draft: { root: string; preview: PreviewImportResult | null; mapping: Mapping
 onWipe(() => { draft = { root: "", preview: null, mapping: null }; });
 
 const STALE_PREVIEW = new Set(["preview_stale", "preview_expired", "preview_already_confirmed"]);
+/* refusals of a scan that are about the folder itself: the path field is marked invalid and names the note */
+const PATH_REFUSAL = new Set(["preview_failed", "record_not_found"]);
+
+/* Focus the field a check is about, then bring it into view: inside a group, the cell marked invalid first. */
+const USABLE = "input:not(:disabled), select:not(:disabled), button:not(:disabled)";
+function goToField(id: string | undefined) {
+  const el = document.getElementById(id ?? "");
+  if (!el) return false;
+  const field = el.matches("input, select") ? el : el.querySelector<HTMLElement>('[aria-invalid="true"]') ?? el.querySelector<HTMLElement>(USABLE);
+  field?.focus({ preventScroll: true });
+  el.scrollIntoView({ block: "center" });
+  return !!field;
+}
 
 const SEV_TONE: Record<IssueDTO["severity"], Tone> = { blocker: "no", error: "no", warning: "partial", info: "" };
 const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
@@ -225,6 +242,8 @@ export function Connect() {
   const [busy, setBusy] = useState(false);
   const [rescanned, setRescanned] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
+  const confirming = useRef(false);
   const scanned = !!preview, confirmed = !!result;
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -234,9 +253,7 @@ export function Connect() {
   const firstStep = useRef(true);
   useEffect(() => { if (firstStep.current) { firstStep.current = false; return; } headingRef.current?.focus(); }, [step]);
 
-  const refuse = (e: unknown) => setRefusal(isProductError(e)
-    ? { code: e.code, message: e.safe_message }
-    : { code: "unavailable", message: "The service did not answer." });
+  const refuse = (e: unknown) => setRefusal(refusalOf(e));
   const reset = () => { setStep(1); setRoot(""); setPreview(null); setResult(null); setM(null); setRefusal(null); setRescanned(false); setShowErrors(false); };
   const reached = (s: Step) => s === 1 || (s === 2 && scanned) || (s === 3 && confirmed);
 
@@ -255,23 +272,33 @@ export function Connect() {
       fail: e => {
         // the service answers a scan of a deleted project's folder with this general code
         if (isProductError(e) && e.code === "record_not_found") {
-          setRefusal({ code: e.code, message: e.safe_message, advice: "This folder may belong to a project that was deleted. A deleted project cannot be imported again into this store." });
+          setRefusal({ ...refusalOf(e), advice: "This folder may belong to a project that was deleted. A deleted project cannot be imported again into this store." });
         } else refuse(e);
       },
       always: () => setBusy(false),
     });
   };
   const confirm = () => {
-    if (!preview || !m) return;
+    // a ref, not the busy state: two presses in one tick both see busy still false, and this one creates a project
+    if (!preview || !m || confirming.current) return;
+    confirming.current = true;
     setBusy(true); setRefusal(null);
-    return scoped("confirm", async () => await port.confirm_import(preview.preview_id, confirmPayload(preview.mapping_candidates, m)), {
+    const manual = !!metric(preview.mapping_candidates, m.metric) && !metric(preview.mapping_candidates, m.metric)?.metric_name_candidates.length;
+    // the project exists once the service says so, whatever screen the person is on by then: its IDs are
+    // kept inside the work itself, so leaving Connect mid-confirm cannot strand it (Start continues it)
+    return scoped("confirm", () => confirmAndKeep(preview.preview_id, confirmPayload(preview.mapping_candidates, m)), {
       done: confirmed => {
         openProject(confirmed);
         setResult(confirmed);
         setStep(3);
       },
-      fail: refuse,
-      always: () => setBusy(false),
+      // every check here passed, so nothing on screen is flagged: say what the service compares that the checks cannot
+      fail: e => setRefusal(isProductError(e) && e.code === "mapping_invalid"
+        ? { ...refusalOf(e), advice: manual
+          ? "The service compared your metrics with the ones in the source and they differ. List every metric in the source, each typed exactly as in the file, same case."
+          : "The service found a difference the checks here cannot see. Scan again, then check the target, metric fields and runs." }
+        : refusalOf(e)),
+      always: () => { confirming.current = false; setBusy(false); },
     });
   };
 
@@ -280,7 +307,7 @@ export function Connect() {
       <div className="page-inner">
         <header className="page-head">
           <h1 ref={headingRef} tabIndex={-1}>Connect a project</h1>
-          <p className="lede">{step === 1 ? "Choose one folder. Nothing is stored until you confirm." : step === 2 ? "Check what would be read, and say what the metrics mean." : "The snapshot is stored. Ask your first question about it."}</p>
+          <p className="lede">{step === 1 ? "Pick a folder. Nothing is saved until you confirm." : step === 2 ? "Tell Aletheia what your files mean." : "Saved. Ask your first question."}</p>
         </header>
 
         <ol className="stepper" aria-label="Import steps">
@@ -301,7 +328,15 @@ export function Connect() {
           onScan={scan} />}
         {step === 2 && preview && m && <Preview preview={preview} m={m} setM={setM} busy={busy} refusal={refusal} rescanned={rescanned} showErrors={showErrors} setShowErrors={setShowErrors}
           onConfirm={confirm} onRescan={scan} canRescan={granted}
-          onCancel={() => { reset(); toast("Import cancelled", "Nothing was created."); }} />}
+          onCancel={() => setDiscarding(true)} />}
+        {/* the scan and every mapping choice go with it, and none of it is kept anywhere: ask first */}
+        {discarding && (
+          <ConfirmDialog title="Discard this import?" action="Discard import" onCancel={() => setDiscarding(false)}
+            onConfirm={() => { setDiscarding(false); reset(); toast("Import cancelled", "Nothing was created."); }}>
+            <b>Your mapping choices will be lost</b>
+            The scan and everything chosen on this step are cleared. Nothing was created, and your folder is not touched.
+          </ConfirmDialog>
+        )}
         {step === 3 && preview && result && <Validation preview={preview} result={result} onAnalyzed={view => {
           reset(); showResult(view); go("investigation");
           toast("Analysis recorded", shortId(view.result.id));
@@ -319,6 +354,7 @@ function Permission({ root, setRoot, granted, busy, refusal, onScan }: {
   root: string; setRoot: (r: string) => void; granted: boolean; busy: boolean; refusal: Refusal; onScan: () => Promise<void>;
 }) {
   const demo = !capabilities.supported_source_types.includes("local_folder");
+  const pathRefused = !demo && !!refusal && PATH_REFUSAL.has(refusal.code);
   return (
     <>
       <div className="pair">
@@ -327,9 +363,10 @@ function Permission({ root, setRoot, granted, busy, refusal, onScan }: {
           {!demo && (
             <label className="fld path-fld">
               <span className="fld-label">Folder on this computer</span>
-              <input className="input mono-in" value={root} spellCheck={false} autoComplete="off" placeholder="/path/to/your-ml-project"
+              <input className="input mono-in" value={root} spellCheck={false} autoComplete="off" placeholder="/path/to/your-ml-project" readOnly={busy}
+                aria-invalid={pathRefused} aria-describedby={pathRefused ? "scan-refusal" : undefined}
                 onChange={e => setRoot(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && granted && !busy) void onScan(); }} />
-              <span className="fld-note">The folder holding your dataset, metrics and config files, as a full path.</span>
+              <span className="fld-note">Full path to the folder with your data, metrics and config.</span>
             </label>
           )}
           {granted ? (
@@ -340,15 +377,16 @@ function Permission({ root, setRoot, granted, busy, refusal, onScan }: {
           ) : (
             <div className="grant-empty">
               <FolderOpen size={22} aria-hidden="true" />
-              <div><b>No folder chosen</b><p>Scanning only reads the folder. You see the result before anything is stored.</p></div>
+              <div><b>No folder chosen</b><p>Scanning only reads it.</p></div>
             </div>
           )}
           <div className="actions">
             {demo && <button className={`btn${granted ? "" : " btn--primary"}`} onClick={() => setRoot(DEMO_ROOT)}><FolderOpen size={14} aria-hidden="true" />{granted ? "Choose a different folder" : "Choose folder"}</button>}
-            <button className={`btn${granted ? " btn--primary" : ""}`} onClick={() => void onScan()} disabled={!granted || busy} aria-busy={busy}><ScanSearch size={14} aria-hidden="true" />{busy ? "Scanning…" : "Scan project"}</button>
+            {/* no folder cannot change while this has focus, so it is disabled; scanning keeps focus here */}
+            <button className={`btn${granted ? " btn--primary" : ""}`} onClick={() => { if (!busy) void onScan(); }} disabled={!granted} aria-disabled={busy || undefined} aria-busy={busy}><ScanSearch size={14} aria-hidden="true" />{busy ? "Scanning…" : "Scan project"}</button>
           </div>
-          <RefusalNote refusal={refusal} />
-          <p className="local-note"><Lock size={13} aria-hidden="true" />The path stays in this tab. It is not put in the address bar or saved.</p>
+          <RefusalNote refusal={refusal} id="scan-refusal" />
+          <p className="local-note"><Lock size={13} aria-hidden="true" />The path is not saved or put in the link.</p>
         </section>
 
         <aside className="panel">
@@ -379,20 +417,23 @@ function Preview({ preview, m, setM, busy, refusal, rescanned, showErrors, setSh
   const failing = res.filter(r => !r[1] && !r[3]);
   const warned = res.filter(r => !r[1] && r[3]);
   const set = (patch: Partial<Mapping>) => setM({ ...m, ...patch });
+  const { hrefFor } = useRoute();
   const runOpts = C.runs.map(r => ({ value: r.run_id, label: r.run_id, available: r.available, reason: r.unavailable_reason }));
   const cfgLabel = (id: string) => C.configs.find(c => c.project_item_id === id)?.label ?? id;
   const ws = preview.warnings;
   const blocked = preview.blockers.length > 0;
   // Confirm stays pressable: pressing it with something missing says what, and goes there
   const submit = () => {
+    if (busy) return;
     if (failing.length > 0 || blocked) {
       setShowErrors(true);
-      // after the errors have rendered: the first field marked invalid, else the group that failed, else the summary
+      // after the errors have rendered: the first field marked invalid (a metric definition cell included),
+      // else the group that failed, else the summary
       window.setTimeout(() => {
-        const summary = document.getElementById("confirm-errors");
         const invalid = document.querySelector<HTMLElement>('main [aria-invalid="true"]');
-        const group = failing.length ? document.getElementById(CHECK_FIELD[failing[0][0]] ?? "") : null;
-        (invalid ?? group?.querySelector<HTMLElement>("input, select, button") ?? summary)?.focus();
+        if (invalid) { invalid.focus(); return; }
+        if (failing.length && goToField(CHECK_FIELD[failing[0][0]])) return;
+        document.getElementById("confirm-errors")?.focus();
       }, 0);
       return;
     }
@@ -422,26 +463,26 @@ function Preview({ preview, m, setM, busy, refusal, rescanned, showErrors, setSh
             ))}
           </div>
           <p className="foot-note">
+            The four counts overlap.{" "}
             {preview.outbound_categories.length
-              ? <>Nothing is sent anywhere now. If sending to a model is ever enabled, these kinds of data could be included: <code className="mono-s">{preview.outbound_categories.join(", ")}</code>.</>
-              : <>Nothing is sent anywhere, and no data here could be included if sending is ever enabled.</>}
-            {" "}These counts overlap, so they do not add up to a total.
+              ? <>Nothing is sent anywhere. If sending is turned on later, it could include: <code className="mono-s">{preview.outbound_categories.join(", ")}</code>.</>
+              : <>Nothing is sent anywhere.</>}
           </p>
         </section>
 
         <section className="panel">
           <div className="sec-head"><span className="eyebrow">Tell Aletheia what the files mean</span><code className="aside mono-s fld-code">project-mapping-configuration/v1</code></div>
-          {rescanned && <div className="notice notice--warn" role="status"><Mark tone="partial" /><div><b>Scanned again</b>Choices the new scan still offers were kept, and the rest are empty. Check them against the source as it is now.</div></div>}
+          <div role="status">{rescanned && <div className="notice notice--warn"><Mark tone="partial" /><div><b>Scanned again</b>Choices the new scan still offers were kept, and the rest are empty. Check them against the source as it is now.</div></div>}</div>
 
           <h2 className="form-h">Target</h2>
           <div className="form-grid">
             <Picker label="Target dataset" code="target.project_item_id" value={m.target}
               options={C.targets.map(c => ({ value: c.project_item_id, label: c.label, available: c.available, reason: c.unavailable_reason }))}
               onChange={v => { const tc = target(C, v); set({ target: v, targetField: tc ? pick(tc.field_names, m.targetField) || pick(tc.field_names, "run_id") : "", targetLabel: tc ? pick(tc.field_names, m.targetLabel) : "" }); }} />
-            <Picker label="Target field" code="target.target_field" value={m.targetLabel} hint="The column holding the label, for example target or churned."
+            <Picker label="Target field" code="target.target_field" value={m.targetLabel} hint="The label column, e.g. target"
               error={errorFor("Target field and identifier field exist on it") && !t?.field_names.includes(m.targetLabel) ? "Choose the label column." : undefined}
               options={(t?.field_names ?? []).map(f => ({ value: f, label: f }))} onChange={v => set({ targetLabel: v })} placeholder="choose a field" />
-            <Picker label="Row identifier field" code="target.identifier_field" value={m.targetField} hint="The column that names each row, for example id."
+            <Picker label="Row identifier field" code="target.identifier_field" value={m.targetField} hint="e.g. id"
               error={errorFor("Target field and identifier field exist on it") && !t?.field_names.includes(m.targetField) ? "Choose the identifier column." : undefined}
               options={(t?.field_names ?? []).map(f => ({ value: f, label: f }))} onChange={v => set({ targetField: v })} />
           </div>
@@ -455,10 +496,10 @@ function Preview({ preview, m, setM, busy, refusal, rescanned, showErrors, setSh
               ? <div className="fld"><span className="fld-label">Where the records are</span><div className="locked"><Mark hollow />not needed for csv</div><code className="fld-code">metric_sources[0].records_path</code></div>
               : <Picker label="Where the records are" code="metric_sources[0].records_path" value={m.recordsPath}
                   options={(ms?.records_path_candidates ?? []).map(p => ({ value: pathKey(p), label: pathLabel(p) }))} onChange={v => set({ recordsPath: v })} />}
-            <Picker label="Metric name field" code="metric_sources[0].metric_name_field" value={m.nameField} hint="The column saying which metric a row is, for example name."
+            <Picker label="Metric name field" code="metric_sources[0].metric_name_field" value={m.nameField} hint="e.g. name"
               error={errorFor("Metric name and value fields exist on it") && !ms?.field_names.includes(m.nameField) ? "Choose the metric name column." : undefined}
               options={(ms?.field_names ?? []).map(f => ({ value: f, label: f }))} onChange={v => set({ nameField: v })} placeholder="choose a field" />
-            <Picker label="Metric value field" code="metric_sources[0].metric_value_field" value={m.valueField} hint="The column holding the number, for example value."
+            <Picker label="Metric value field" code="metric_sources[0].metric_value_field" value={m.valueField} hint="e.g. value"
               error={errorFor("Metric name and value fields exist on it") && !ms?.field_names.includes(m.valueField) ? "Choose the metric value column." : undefined}
               options={(ms?.field_names ?? []).map(f => ({ value: f, label: f }))} onChange={v => set({ valueField: v })} placeholder="choose a field" />
             <Picker label="Run id field" code="metric_sources[0].run_id_field" value={m.runIdField}
@@ -466,9 +507,8 @@ function Preview({ preview, m, setM, busy, refusal, rescanned, showErrors, setSh
             <Picker label="Step field (optional)" code="metric_sources[0].step_field" value={m.stepField}
               options={[{ value: "", label: "none — sends null" }, ...(ms?.field_names ?? []).map(f => ({ value: f, label: f }))]} onChange={v => set({ stepField: v })} />
           </div>
-          {ms && <p className="foot-note"><code className="mono-s">{ms.label}</code> is <code className="mono-s">{ms.format}</code>, read from the source profile — not guessed from its field names.</p>}
 
-          <MetricDefinitions C={C} m={m} set={set} error={errorFor("Every metric has a direction and a threshold", "Thresholds are finite and ≥ 0", "Metric names are unique")} />
+          <MetricDefinitions C={C} m={m} set={set} error={errorFor("Every metric has a direction and a threshold", "Thresholds are finite and ≥ 0", "Metric names are unique", "Metric names use characters the service accepts")} />
 
           <h2 className="form-h">Runs</h2>
           <fieldset className="config-pick" id="tracked-runs" aria-label="Tracked runs">
@@ -486,7 +526,7 @@ function Preview({ preview, m, setM, busy, refusal, rescanned, showErrors, setSh
           </fieldset>
           <div className="form-grid">
             <Picker label="Reference run" code="baseline_run_id" value={m.baseline} options={runOpts} onChange={v => set({ baseline: v })} placeholder="choose a run"
-              hint="The run you treat as the reference, usually your current production model."
+              hint="Usually your production model"
               error={errorFor("Reference run is selected")} />
           </div>
           <p className="fld-note"><Mark hollow />Metric changes are calculated per run across snapshots, not between two runs.</p>
@@ -504,10 +544,10 @@ function Preview({ preview, m, setM, busy, refusal, rescanned, showErrors, setSh
                 );
               }) : <p className="fld-note" key={run_id}><Mark hollow /><code className="mono-s">{run_id}</code> has no config to attach.</p>;
             })}
-            <p className="fld-note">Offered by the service for you to choose — nothing is attached unless you tick it.</p>
+            <p className="fld-note">Nothing is attached unless you tick it.</p>
           </div>
           <details className="meta-toggle">
-            <summary><ChevronRight size={13} aria-hidden="true" />What confirm_import receives</summary>
+            <summary><ChevronRight size={13} aria-hidden="true" />Technical: the request sent on confirm</summary>
             <pre className="payload">{JSON.stringify(confirmPayload(C, m), null, 2)}</pre>
           </details>
         </section>
@@ -516,11 +556,22 @@ function Preview({ preview, m, setM, busy, refusal, rescanned, showErrors, setSh
       <aside className="side">
         <section className="panel">
           <div className="sec-head"><span className="eyebrow">Checks</span><span className="aside">{res.filter(r => r[1]).length} of {res.length} pass</span></div>
-          <ul className="checklist">
-            {res.map(([label, ok, code, warn]) => (
+          {/* what still needs doing is listed; what already passes waits behind one click */}
+          {(() => {
+            const item = ([label, ok, code, warn]: typeof res[number]) => (
               <li key={label}>{ok ? <Mark tone="ok" /> : warn ? <Mark tone="partial" /> : <Mark hollow />}<span>{label}</span><code className="fld-code">{ok ? "pass" : warn ? "checked on confirm" : code}</code></li>
-            ))}
-          </ul>
+            );
+            const open = res.filter(r => !r[1]), passed = res.filter(r => r[1]);
+            return <>
+              {open.length > 0 ? <ul className="checklist">{open.map(item)}</ul> : <p className="body-copy"><Mark tone="ok" /> All checks pass.</p>}
+              {passed.length > 0 && open.length > 0 && (
+                <details className="meta-toggle">
+                  <summary><ChevronRight size={13} aria-hidden="true" />{passed.length} passed</summary>
+                  <ul className="checklist">{passed.map(item)}</ul>
+                </details>
+              )}
+            </>;
+          })()}
         </section>
 
         <section className="panel">
@@ -542,21 +593,21 @@ function Preview({ preview, m, setM, busy, refusal, rescanned, showErrors, setSh
             <div><b>{failing.length ? plural(failing.length, "check") + " failing" : warned.length ? "No blocking check" : "All checks pass"}</b>{warned.length > 0 && !failing.length && <span className="dim">{plural(warned.length, "run check")} left to the service on confirm.</span>}</div>
           </div>
           <div className="actions">
-            <button className="btn btn--primary" disabled={busy} aria-busy={busy} onClick={submit}>{busy ? "Confirming…" : "Confirm import"}<ArrowRight size={14} aria-hidden="true" /></button>
+            <button className="btn btn--primary" aria-disabled={busy || undefined} aria-busy={busy} onClick={submit}>{busy ? "Confirming…" : "Confirm import"}<ArrowRight size={14} aria-hidden="true" /></button>
             <button className="btn btn--ghost" onClick={onCancel}>Cancel</button>
           </div>
           {showErrors && (failing.length > 0 || blocked) && (
             <div className="fld-errors" id="confirm-errors" role="alert" tabIndex={-1}>
               <b>{blocked ? "This scan cannot be imported as it is." : "Before confirming:"}</b>
-              <ul>{failing.map(f => <li key={f[0]}><button className="link-btn" onClick={() => document.getElementById(CHECK_FIELD[f[0]] ?? "")?.scrollIntoView({ block: "center" })}>{helpFor(f[0])}</button></li>)}</ul>
+              <ul>{failing.map(f => <li key={f[0]}><button className="link-btn" onClick={() => goToField(CHECK_FIELD[f[0]])}>{helpFor(f[0])}</button></li>)}</ul>
             </div>
           )}
           <RefusalNote refusal={refusal} />
           {refusal && STALE_PREVIEW.has(refusal.code) && canRescan && (
-            <div className="actions"><button className="btn" disabled={busy} onClick={() => void onRescan()}><RefreshCw size={14} aria-hidden="true" />Scan again and keep my choices</button></div>
+            <div className="actions"><button className="btn" aria-disabled={busy || undefined} aria-busy={busy} onClick={() => { if (!busy) void onRescan(); }}><RefreshCw size={14} aria-hidden="true" />Scan again and keep my choices</button></div>
           )}
           {refusal?.code === "project_already_imported" && (
-            <div className="actions"><a className="btn" href="#/start">Go to Start</a></div>
+            <div className="actions"><a className="btn" href={hrefFor("start")}>Go to Start</a></div>
           )}
         </section>
       </aside>
@@ -620,17 +671,8 @@ function Validation({ preview, result, onAnalyzed }: { preview: PreviewImportRes
   const n = (s: IssueDTO["severity"]) => issues.filter(i => i.severity === s).length;
   // the snapshot to ask about: the confirmed one, or the one a refresh returned. The service keeps
   // evidence only for a snapshot whose refresh recorded a metric change, so asking may need a refresh first.
-  const [snap, setSnap] = useState<Pick<ConfirmResult, "project_id" | "snapshot_id" | "status">>(result);
-  const [busy, setBusy] = useState(false);
-  const [refusal, setRefusal] = useState<Refusal>(null);
-  const refresh = () => {
-    setBusy(true); setRefusal(null);
-    return scoped("refresh", () => port.refresh(result.project_id), {
-      done: r => { openProject(r); setSnap(r); },
-      fail: e => setRefusal(isProductError(e) ? { code: e.code, message: e.safe_message } : { code: "unavailable", message: "The service did not answer." }),
-      always: () => setBusy(false),
-    });
-  };
+  const [snap, setSnap] = useState<Pick<ConfirmResult, "project_id" | "snapshot_id">>(result);
+  const refresh = useRefresh(result.project_id, r => { openProject(r); setSnap(r); });
   return (
     <>
       <div className="denoms" role="list" aria-label="Issues by severity">
@@ -648,22 +690,22 @@ function Validation({ preview, result, onAnalyzed }: { preview: PreviewImportRes
       ) : (
         <div className="notice notice--ok">
           <Mark tone="ok" />
-          <div><b>Snapshot {snap === result ? "stored" : snap.status === "unchanged" ? "unchanged, the source is the same" : "refreshed"}{port.kind === "demo" && " (demo)"}</b>
-            <code className="mono-s"><Id v={snap.snapshot_id} /></code></div>
-          <button className="btn btn--sm push-right" onClick={() => void refresh()} disabled={busy} title="Read the granted folder again">
-            <RefreshCw size={13} aria-hidden="true" />{busy ? "Refreshing…" : "Refresh"}
-          </button>
+          <div><b>Snapshot stored{port.kind === "demo" && " (demo)"}</b>
+            <code className="mono-s"><Id v={result.snapshot_id} /></code></div>
+          <RefreshButton r={refresh} className="btn btn--sm push-right" />
         </div>
       )}
-      <RefusalNote refusal={refusal} />
+      <RefusalNote refusal={refresh.refusal} />
+      <RefreshStatus r={refresh} />
       {!preview.blockers.length && <FirstQuestion key={snap.snapshot_id} result={snap} onAnalyzed={onAnalyzed} />}
 
       <section className="panel" style={{ marginTop: "var(--s5)", padding: 0 }}>
         <div className="sec-head" style={{ padding: "var(--s4) var(--s5) 0" }}><span className="eyebrow">Issues</span><span className="aside">{issues.length}</span></div>
         {issues.length ? (
-          <div className="tbl-wrap">
+          <TableScroll label="Issues found in the scan">
             <table className="tbl">
-              <thead><tr><th>Code</th><th>Severity</th><th>Stage</th><th>Message</th><th>Where</th><th className="num">Count</th></tr></thead>
+              <caption className="sr">Issues found in the scan, one per row</caption>
+              <thead><tr><th scope="col">Code</th><th scope="col">Severity</th><th scope="col">Stage</th><th scope="col">Message</th><th scope="col">Where</th><th scope="col" className="num">Count</th></tr></thead>
               <tbody>
                 {issues.map((i, k) => (
                   <tr key={k}>
@@ -677,7 +719,7 @@ function Validation({ preview, result, onAnalyzed }: { preview: PreviewImportRes
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableScroll>
         ) : <div style={{ padding: "var(--s5)" }}><Absent title="No issues" /></div>}
       </section>
     </>
@@ -699,8 +741,9 @@ function MetricDefinitions({ C, m, set, error }: { C: MappingCandidates; m: Mapp
 
   return <>
     <h2 className="form-h">What each metric means <code className="fld-code">metric_definitions</code></h2>
-    <p className="fld-note">Aletheia does not guess these. A threshold of 0.05 means a change of more than 0.05, in the worse direction, counts as a regression.</p>
-    {error && <p className="fld-error" role="alert"><Mark tone="no" />{error}</p>}
+    <p className="fld-note">Getting worse by more than the threshold counts as a regression. Use metric units, e.g. 0.05.</p>
+    {/* the summary beside Confirm is the alert; this note is named by the cells it is about */}
+    {error && <p className="fld-error" id="defs-err"><Mark tone="no" />{error}</p>}
 
     {!ms ? (
       <Absent title="Choose a metric source first" />
@@ -708,7 +751,7 @@ function MetricDefinitions({ C, m, set, error }: { C: MappingCandidates; m: Mapp
       {manual && (
         <p className="fld-note" style={{ marginBottom: "var(--s3)" }}>
           <Mark hollow />
-          <span>No names offered. Type each exactly as in the source.</span>
+          <span>No names offered. List every metric in the source, each typed exactly as in the file: the service refuses a list that leaves one out or spells one differently.</span>
         </p>
       )}
 
@@ -722,17 +765,26 @@ function MetricDefinitions({ C, m, set, error }: { C: MappingCandidates; m: Mapp
           </div>
           {m.defs.map((d, i) => {
             const dup = d.name.trim() !== "" && names.indexOf(d.name.trim()) !== i;
+            const badName = manual ? metricNameProblem(d.name) : null;
             const badT = d.threshold.trim() !== "" && !validThreshold(d.threshold);
+            // a comma is read as a decimal point; say what was read, so "1,000" is not taken for a thousand unseen
+            const readAs = !badT && d.threshold.includes(",") ? parseThreshold(d.threshold) : null;
+            // a cell left empty is invalid only once the errors are shown; its note is the group's
+            const noName = !!error && !d.name.trim(), noDir = !!error && !d.direction, noT = !!error && !d.threshold.trim();
+            const by = (...ids: (string | false)[]) => ids.filter(Boolean).join(" ") || undefined;
             return (
               <div className="def-row" role="row" key={i}>
                 <span role="cell">
                   {manual
-                    ? <input className="input mono-in" aria-label={`Metric name ${i + 1}`} value={d.name} placeholder="exact metric name" onChange={e => update(i, { name: e.target.value })} />
-                    : <code className="def-name">{d.name}</code>}
-                  {dup && <span className="fld-note"><Mark tone="partial" />Duplicate name</span>}
+                    ? <input className="input mono-in" aria-label={`Metric name ${i + 1}`} value={d.name} placeholder="exact metric name" onChange={e => update(i, { name: e.target.value })}
+                        aria-invalid={dup || noName || !!badName} aria-describedby={by(dup && `def-${i}-name-err`, !!badName && `def-${i}-chars-err`, noName && "defs-err")} />
+                    : <code className="def-name" title={d.name}>{d.name}</code>}
+                  {dup && <span className="fld-note" id={`def-${i}-name-err`}><Mark tone="partial" />Duplicate name</span>}
+                  {badName && <span className="fld-note" id={`def-${i}-chars-err`}><Mark tone="partial" />{badName}</span>}
                 </span>
                 <span role="cell" className="select-wrap">
                   <select className="select" aria-label={`Direction for ${d.name || `metric ${i + 1}`}`} value={d.direction}
+                    aria-invalid={noDir} aria-describedby={by(noDir && "defs-err")}
                     onChange={e => update(i, { direction: e.target.value as MetricDirection })}>
                     <option value="" disabled>choose</option>
                     {DIRECTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -741,8 +793,10 @@ function MetricDefinitions({ C, m, set, error }: { C: MappingCandidates; m: Mapp
                 </span>
                 <span role="cell">
                   <input className="input mono-in" inputMode="decimal" aria-label={`Regression threshold for ${d.name || `metric ${i + 1}`}`}
-                    value={d.threshold} placeholder="e.g. 0.05" onChange={e => update(i, { threshold: e.target.value })} />
-                  {badT && <span className="fld-note"><Mark tone="partial" />A finite number ≥ 0, like 0.05</span>}
+                    value={d.threshold} placeholder="e.g. 0.05" onChange={e => update(i, { threshold: e.target.value })}
+                    aria-invalid={badT || noT} aria-describedby={by(badT && `def-${i}-t-err`, readAs !== null && `def-${i}-t-read`, noT && "defs-err")} />
+                  {badT && <span className="fld-note" id={`def-${i}-t-err`}><Mark tone="partial" />A finite number ≥ 0, like 0.05 or 0,05</span>}
+                  {readAs !== null && <span className="fld-note" id={`def-${i}-t-read`}>Read as {String(readAs)}</span>}
                 </span>
                 <span role="cell">
                   {manual && <button className="icon-btn" aria-label={`Remove metric ${d.name || i + 1}`} onClick={() => set({ defs: m.defs.filter((_, k) => k !== i) })}><X size={14} /></button>}
@@ -758,8 +812,6 @@ function MetricDefinitions({ C, m, set, error }: { C: MappingCandidates; m: Mapp
           <button className="btn btn--sm" onClick={() => set({ defs: [...m.defs, { name: "", direction: "", threshold: "" }] })}><Plus size={13} aria-hidden="true" />Add metric</button>
         </div>
       )}
-
-      <p className="foot-note">Threshold: absolute change in metric units, inclusive.</p>
 
     </>}
   </>;

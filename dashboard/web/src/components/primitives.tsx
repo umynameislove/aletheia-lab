@@ -1,4 +1,4 @@
-import { Component, useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
+import { Component, useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { fieldTerm, gloss, plain, TERM, type Tone } from "../vocab";
 
 /** The grammar in one element: solid = present in visible evidence, hollow = absent. */
@@ -48,6 +48,32 @@ export function Id({ v, className }: { v: string; className?: string }) {
     <span className={className} title={v} onCopy={e => { e.preventDefault(); e.clipboardData.setData("text/plain", v); }}>{s}</span>
   );
 }
+
+/** A table that may be wider than its column. Only while it actually scrolls is it a named, focusable
+    region, so keyboard users can scroll it; otherwise it adds no stop to the tab order. */
+export function TableScroll({ label, className = "", children }: { label: string; className?: string; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [scrolls, setScrolls] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const check = () => setScrolls(el.scrollWidth > el.clientWidth + 1);
+    check();
+    const watch = new ResizeObserver(check);
+    watch.observe(el);
+    // the table can widen with new rows while the wrapper keeps its size
+    if (el.firstElementChild) watch.observe(el.firstElementChild);
+    return () => watch.disconnect();
+  }, []);
+  return (
+    <div ref={ref} className={`tbl-wrap${className ? " " + className : ""}`} {...(scrolls ? { tabIndex: 0, role: "region", "aria-label": label } : {})}>
+      {children}
+    </div>
+  );
+}
+
+/** A plain left click stays in the app; Cmd/Ctrl-click, middle click and "copy link" get the real address. */
+export const plainClick = (e: MouseEvent) => e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
 
 /** True at or below this width. Layout that changes behaviour, such as a drawer, needs it in code too. */
 export function useNarrow(px: number) {

@@ -37,7 +37,7 @@ code { font: var(--t-mono); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ================================================================== frame */
-.app { display: grid; grid-template-columns: var(--rail-w) minmax(0, 1fr); height: 100vh; overflow: hidden; }
+.app { display: grid; grid-template-columns: var(--rail-w) minmax(0, 1fr); height: 100vh; height: 100dvh; overflow: hidden; }
 .shell { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .content { flex: 1; min-height: 0; overflow: hidden; position: relative; }
 
@@ -136,8 +136,8 @@ code { font: var(--t-mono); }
 .icon-btn.menu-btn { display: none; }
 .chip-sep { color: var(--ink-4); margin: 0 2px; }
 .crumbs { display: flex; align-items: center; gap: 6px; min-width: 0; font: var(--t-ui); color: var(--ink-3); }
-.crumbs button { border: 0; background: none; padding: 2px 4px; margin: 0 -4px; border-radius: 4px; color: var(--ink-2); transition: color var(--d-fast) var(--ease), background var(--d-fast) var(--ease); }
-.crumbs button:hover { color: var(--ink); background: var(--bg-hover); }
+.crumbs a { padding: 2px 4px; margin: 0 -4px; border-radius: 4px; color: var(--ink-2); text-decoration: none; transition: color var(--d-fast) var(--ease), background var(--d-fast) var(--ease); }
+.crumbs a:hover { color: var(--ink); background: var(--bg-hover); }
 .crumbs svg { color: var(--ink-4); flex: none; }
 .crumb-sep { color: var(--ink-4); padding: 0 4px; user-select: none; }
 .crumbs .here { color: var(--ink); font-weight: 500; white-space: nowrap; }
@@ -157,7 +157,7 @@ code { font: var(--t-mono); }
   border: 1px solid transparent; border-radius: var(--r-1); background: none; color: var(--ink-3);
   transition: background var(--d-fast) var(--ease), color var(--d-fast) var(--ease), border-color var(--d-fast) var(--ease);
 }
-.icon-btn:hover { background: var(--bg-hover); color: var(--ink); }
+.icon-btn:hover:not([aria-disabled="true"]) { background: var(--bg-hover); color: var(--ink); }
 
 /* ================================================================ buttons */
 .btn {
@@ -168,16 +168,18 @@ code { font: var(--t-mono); }
   transition: background var(--d-fast) var(--ease), border-color var(--d-fast) var(--ease), transform 80ms var(--ease), box-shadow var(--d-fast) var(--ease);
 }
 .btn svg { flex: none; }
-.btn:hover:not(:disabled) { background: var(--bg-hover); }
-.btn:active:not(:disabled) { transform: translateY(1px); }
-.btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+.btn:hover:not(:disabled):not([aria-disabled="true"]) { background: var(--bg-hover); }
+.btn:active:not(:disabled):not([aria-disabled="true"]) { transform: translateY(1px); }
+/* busy or at a limit while it may hold focus: aria-disabled, so focus is never dropped; it looks the same as disabled */
+.btn:disabled, .btn[aria-disabled="true"], .icon-btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; box-shadow: none; }
 .btn--sm { height: 28px; padding: 0 10px; font: var(--t-small); font-weight: 500; }
 .btn--primary { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent); font-weight: 600; box-shadow: none; }
-.btn--primary:disabled { opacity: 1; background: var(--bg-3); border-color: var(--line-2); color: var(--ink-3); }
-.btn--primary:hover:not(:disabled) { background: var(--accent-fill-hover); border-color: var(--accent-fill-hover); }
+.btn--primary:disabled, .btn--primary[aria-disabled="true"] { opacity: 1; background: var(--bg-3); border-color: var(--line-2); color: var(--ink-3); }
+.btn--primary:hover:not(:disabled):not([aria-disabled="true"]) { background: var(--accent-fill-hover); border-color: var(--accent-fill-hover); }
 .btn--ghost { background: none; border-color: transparent; box-shadow: none; color: var(--ink-2); }
-.btn--ghost:hover:not(:disabled) { background: var(--bg-hover); color: var(--ink); }
-.btn.is-on { background: var(--bg-2); border-color: var(--accent-line); color: var(--ink); }
+.btn--ghost:hover:not(:disabled):not([aria-disabled="true"]) { background: var(--bg-hover); color: var(--ink); }
+/* a pressed toggle keeps its name ("Compact, pressed"); the look says it is on */
+.btn.is-on, .btn[aria-pressed="true"] { background: var(--bg-2); border-color: var(--accent-line); color: var(--ink); }
 /* the semantic state shows only in the 1px border; the interior stays charcoal */
 .btn.is-on--ok { border-color: var(--tick); }
 .btn.is-on--warn { border-color: var(--partial-line); }
@@ -306,8 +308,10 @@ kbd {
 }
 .search .input { padding-left: 32px; padding-right: 32px; }
 .input::placeholder, textarea::placeholder { color: var(--ink-3); }
-.input:hover, .select:hover { border-color: var(--line-3); }
-.input:focus, .select:focus, textarea.input:focus { outline: none; border-color: var(--accent); box-shadow: none; }
+.input:hover:not(:disabled), .select:hover:not(:disabled) { border-color: var(--line-3); }
+/* the border turns accent, and the shared 2px ring still shows: an invalid field keeps its red border while focused */
+.input:focus, .select:focus, textarea.input:focus { border-color: var(--accent); box-shadow: none; }
+.input:disabled, .select:disabled { opacity: .45; cursor: not-allowed; }
 .select { width: auto; min-width: 190px; appearance: none; padding-right: 30px; cursor: pointer;
 }
 .select-wrap { position: relative; display: inline-flex; }
@@ -395,12 +399,12 @@ textarea.input { height: auto; padding: 9px 11px; resize: vertical; line-height:
 .composer { border: 1px solid var(--line-2); border-radius: 10px; /* locked */ background: var(--bg-1); box-shadow: var(--edge-hi), 0 12px 32px rgba(0, 0, 0, .18); }
 .composer-in { display: flex; align-items: center; gap: var(--s3); padding: 10px 10px 10px var(--s4); }
 .composer-in input { flex: 1; min-width: 0; border: 0; background: none; height: 32px; font: var(--t-body); color: var(--ink); }
-.composer-in input:disabled { cursor: not-allowed; }
+.composer-in input:disabled { opacity: .45; cursor: not-allowed; }
 .composer-scope { display: block; line-height: 24px; height: 24px; padding: 0 8px; border-radius: var(--r-1); background: var(--bg-3); font-family: var(--font-sans); font-size: 12px; color: var(--ink-2); white-space: nowrap; max-width: 210px; overflow: hidden; text-overflow: ellipsis; }
 .composer-why { display: flex; align-items: center; gap: var(--s2); padding: 8px var(--s4); border-top: 1px solid var(--line); font: var(--t-small); color: var(--ink-3); }
 .composer-why svg { color: var(--ink-3); flex: none; }
 .composer-why details { margin-left: auto; }
-.composer-why summary { cursor: pointer; color: var(--ink-2); list-style: none; display: inline-flex; align-items: center; gap: 4px; }
+.composer-why summary { cursor: pointer; color: var(--ink-2); list-style: none; display: inline-flex; align-items: center; gap: 4px; min-height: 24px; }
 .composer-why summary::-webkit-details-marker { display: none; }
 .composer-why summary:hover { color: var(--ink); }
 .scope-pop { position: absolute; right: 0; bottom: calc(100% + 8px); width: 320px; z-index: 5; padding: var(--s4); border: 1px solid var(--line-2); border-radius: var(--r-2); background: var(--bg-2); box-shadow: var(--shadow-pop); }
@@ -414,6 +418,10 @@ textarea.input { height: auto; padding: 9px 11px; resize: vertical; line-height:
 .ask-row .input { flex: 1; min-width: 0; }
 .composer-err { display: flex; align-items: flex-start; gap: var(--s2); padding: 8px var(--s4); border-top: 1px solid var(--line); font: var(--t-small); color: var(--ink-2); }
 .composer-err .mk { margin-top: 5px; flex: none; }
+/* RefusalNote's one-line form, for a row */
+.refusal-line { display: flex; gap: 8px; align-items: flex-start; margin-top: 3px; font: var(--t-small); color: var(--ink-2); }
+.refusal-line .mk { margin-top: 5px; flex: none; }
+.refusal-line b { color: var(--ink); font-weight: 600; }
 .turn-seg { margin-left: auto; }
 .turn-seg button { min-width: 28px; justify-content: center; }
 
@@ -432,7 +440,7 @@ textarea.input { height: auto; padding: 9px 11px; resize: vertical; line-height:
 }
 .insp:not(.open) { display: none; }
 .insp-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--s2); padding: var(--s2) var(--s3); border-bottom: 1px solid var(--line-2); }
-.insp-body { flex: 1; overflow: auto; padding: var(--s4) var(--s5) var(--s6); }
+.insp-body { flex: 1; overflow: auto; overscroll-behavior: contain; padding: var(--s4) var(--s5) var(--s6); }
 /* narrow screens: a drawer. Closed, it is out of sight, out of the hit area and out of the tab order. */
 .insp--drawer { display: flex; position: fixed; top: 0; right: 0; bottom: 0; z-index: 70; max-height: none; width: min(560px, 100%); border-radius: 0; border-width: 0 0 0 1px; box-shadow: var(--shadow-pop); transform: translateX(100%); visibility: hidden; transition: transform var(--d-med) var(--ease), visibility 0s linear var(--d-med); }
 .insp--drawer:not(.open) { display: flex; }
@@ -492,10 +500,15 @@ textarea.input { height: auto; padding: 9px 11px; resize: vertical; line-height:
 /* ================================================================ lineage */
 .lg { container-type: inline-size; }
 .lg-canvas { overflow-x: auto; padding: var(--s3) 0; }
+/* zoom and pan: wraps on a narrow panel instead of widening it */
+.lg-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
+.lg-level { min-width: 4.5ch; text-align: center; font: var(--t-small); font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.lg-tools .lg-pan { display: flex; gap: 2px; margin-left: auto; }
 /* left to right: four stage columns with an edge label between each pair */
-.lg-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; }
+.lg-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; width: var(--lg-w, auto); padding: 0 4px; }
+/* that padding is inside the zoom, so it grows with a node's focus ring and the ring is never cut off */
 .lg-col { display: grid; gap: 6px; align-content: center; }
-.lg-stage { font: var(--t-label); font-size: 10px; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 2px; }
+.lg-stage { font: var(--t-label); font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 2px; }
 .lg-node {
   display: flex; align-items: center; gap: 7px; text-align: left; padding: 7px 10px;
   border: 1px solid var(--line-2); border-radius: var(--r-2); background: var(--bg-2);
@@ -533,7 +546,7 @@ textarea.input { height: auto; padding: 9px 11px; resize: vertical; line-height:
 .page-inner { padding: var(--s6) var(--s6) var(--s9); max-width: 1200px; margin: 0 auto; }
 .page-inner--narrow { max-width: 760px; }
 .page-head h1 { font: var(--t-display); letter-spacing: -.015em; }
-.page-head h1:focus { outline: none; }
+.page-head h1:focus, #claims-h:focus { outline: none; }
 .page-head .lede { font: var(--t-body); color: var(--ink-2); margin-top: var(--s2); max-width: 64ch; }
 
 .stepper { list-style: none; margin: var(--s6) 0 var(--s5); padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s4); }
@@ -634,6 +647,8 @@ textarea.input { height: auto; padding: 9px 11px; resize: vertical; line-height:
 .np-row .sub-line { font-weight: 400; }
 .action-row > .btn { margin-left: auto; flex: none; }
 .off-why { margin-top: 3px; color: var(--ink-3); font-style: italic; }
+/* a reason under a row of buttons, on its own line */
+.actions > .off-why { flex-basis: 100%; margin-top: 0; }
 .config-pick { display: grid; gap: 6px; margin-top: var(--s4); }
 .config-pick .ack { margin-top: 0; }
 .legend-row { display: flex; gap: var(--s3); align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line); font: var(--t-ui); }
@@ -672,16 +687,11 @@ textarea.input { height: auto; padding: 9px 11px; resize: vertical; line-height:
 
 .proj-empty { margin: var(--s1) var(--s3) var(--s3); padding: var(--s3); border: 1px dashed var(--line-3); border-radius: var(--r-2); font: var(--t-small); color: var(--ink-3); }
 .proj-empty b { color: var(--ink-2); font-weight: 500; }
-.nav-link:disabled { color: var(--ink-4); cursor: not-allowed; }
-.nav-link:disabled:hover { background: none; color: var(--ink-4); }
-.nav-link:disabled svg { color: var(--ink-4); }
 
 /* boot: waiting on the port, or its ProductError */
-.boot { height: 100vh; display: flex; align-items: center; justify-content: center; gap: var(--s3); padding: var(--s5); font: var(--t-ui); color: var(--ink-2); }
+.boot { height: 100vh; height: 100dvh; display: flex; align-items: center; justify-content: center; gap: var(--s3); padding: var(--s5); font: var(--t-ui); color: var(--ink-2); }
 .boot b { display: block; color: var(--ink); font-weight: 600; }
-.boot code { display: block; margin-top: 8px; color: var(--ink-3); }
-.boot p { margin-top: 6px; color: var(--ink-3); max-width: 52ch; }
-.boot .mk { margin-top: 6px; align-self: flex-start; }
+.boot > div { max-width: 60ch; }
 
 /* ================================================================== toast */
 .toasts { position: fixed; right: var(--s5); bottom: var(--s5); z-index: 90; display: grid; gap: var(--s2); }
@@ -692,12 +702,15 @@ textarea.input { height: auto; padding: 9px 11px; resize: vertical; line-height:
   animation: toast-in var(--d-med) var(--ease);
 }
 .toast svg { color: var(--accent); flex: none; margin-top: 1px; }
+.toast .icon-btn { flex: none; margin: -4px -8px -4px auto; }
+.toast .icon-btn svg { color: inherit; margin-top: 0; }
 .toast b { display: block; color: var(--ink); font: var(--t-ui); font-weight: 600; margin-bottom: 2px; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(6px) scale(.98); } to { opacity: 1; transform: none; } }
 
 /* ================================================================== modal */
-.scrim { position: fixed; inset: 0; z-index: 80; background: var(--scrim); backdrop-filter: blur(2px); display: grid; place-items: center; padding: var(--s5); animation: fade var(--d-fast) var(--ease); }
-.modal { width: min(480px, 100%); border-radius: var(--r-3); background: var(--bg-2); border: 1px solid var(--line-3); box-shadow: var(--shadow-pop); animation: pop var(--d-med) var(--ease); }
+.scrim { overscroll-behavior: contain; position: fixed; inset: 0; z-index: 80; background: var(--scrim); backdrop-filter: blur(2px); display: grid; place-items: center; padding: var(--s5); overflow: auto; animation: fade var(--d-fast) var(--ease); }
+/* at 200% zoom or a phone on its side, a long dialog scrolls inside instead of running off the screen */
+.modal { overscroll-behavior: contain; max-height: calc(100dvh - 2 * var(--s5)); overflow: auto; width: min(480px, 100%); border-radius: var(--r-3); background: var(--bg-2); border: 1px solid var(--line-3); box-shadow: var(--shadow-pop); animation: pop var(--d-med) var(--ease); }
 .modal-head { display: flex; align-items: center; gap: var(--s2); padding: var(--s4) var(--s4) var(--s4) var(--s5); border-bottom: 1px solid var(--line-2); }
 .modal-head h2 { font: var(--t-title); flex: 1; }
 .modal-body { padding: var(--s4) var(--s5) var(--s5); }
@@ -729,7 +742,7 @@ textarea.input { height: auto; padding: 9px 11px; resize: vertical; line-height:
   .term-grid { grid-template-columns: 1fr; }
   .tabbar { gap: var(--s4); }
   .app { grid-template-columns: minmax(0, 1fr); }
-  .rail { position: fixed; left: 0; top: 0; bottom: 0; width: 272px; z-index: 60; transform: translateX(-100%); transition: transform var(--d-med) var(--ease); box-shadow: var(--shadow-pop); }
+  .rail { overscroll-behavior: contain; position: fixed; left: 0; top: 0; bottom: 0; width: 272px; z-index: 60; transform: translateX(-100%); transition: transform var(--d-med) var(--ease); box-shadow: var(--shadow-pop); }
   .rail.open { transform: none; }
   .icon-btn.rail-x { display: inline-grid; }
   .rail-scrim { position: fixed; inset: 0; z-index: 55; background: var(--scrim); }
@@ -750,7 +763,7 @@ textarea.input { height: auto; padding: 9px 11px; resize: vertical; line-height:
   .review-bar { flex-wrap: wrap; }
   .meter { max-width: none; flex-basis: 100%; order: 3; }
   .composer-scope { display: none; }
-  .crumbs > button, .crumbs > svg, .crumbs > .crumb-sep { display: none; }
+  .crumbs > a, .crumbs > svg, .crumbs > .crumb-sep { display: none; }
   .composer-why { flex-wrap: wrap; }
   .scope-pop { width: min(320px, calc(100vw - 32px)); }
 }
@@ -774,8 +787,12 @@ textarea.input { height: auto; padding: 9px 11px; resize: vertical; line-height:
 .input, .select { height: 36px; }
 .btn { height: 36px; }
 .btn--sm { height: 30px; }
-.btn[aria-busy="true"] { cursor: progress; }
+/* busy is not invalid: a busy button keeps its own look, dimmed, instead of the disabled grey */
+.btn[aria-busy="true"] { cursor: progress; opacity: .7; }
+.btn--primary[aria-busy="true"] { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent); }
 a.btn { text-decoration: none; }
+/* a label that carries a name of any length wraps at 320 px instead of pushing the page sideways */
+.btn--wrap { white-space: normal; height: auto; min-height: 36px; padding-block: 6px; text-align: left; }
 .link-btn { padding: 0; border: 0; background: none; color: var(--accent); text-align: left; font: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .link-btn:hover { color: var(--accent-strong); }
 .tl-q { display: block; min-height: 24px; }
@@ -824,6 +841,8 @@ a.btn { text-decoration: none; }
 .metric-state { display: inline-flex; align-items: center; gap: 8px; }
 .metric-def { color: var(--ink-3); font: var(--t-small); }
 .metric-strip > .link-btn { padding: 10px var(--s5); background: var(--bg-1); font: var(--t-small); }
+/* these sit flush against a box that clips its overflow, so their focus ring is drawn inside them */
+.metric-strip > .link-btn:focus-visible, .insp-body:focus-visible, .turn-tabs button:focus-visible, .tbl-wrap .link-btn:focus-visible { outline-offset: -2px; }
 .needed { margin-top: var(--s3); padding: var(--s3) var(--s5); border: 1px dashed var(--line-3); border-radius: var(--r-2); }
 .needed ul { margin: 6px 0 0; padding-left: 18px; font: var(--t-ui); color: var(--ink-2); display: grid; gap: 2px; }
 
@@ -864,10 +883,19 @@ a.btn { text-decoration: none; }
 .src-foot .quote-src svg { vertical-align: -2px; margin-right: 6px; }
 .src-actions { display: inline-flex; gap: var(--s1); }
 .tbl--plain { min-width: 0; }
+/* a table cell is not prose: words stay whole, and a table too wide for its column scrolls (TableScroll) */
+.tbl th, .tbl td { overflow-wrap: normal; }
+.tbl th, .tbl .num { white-space: nowrap; }
 .tbl--plain th:first-child, .tbl--plain td:first-child { padding-left: 0; }
 .tbl--plain th:last-child, .tbl--plain td:last-child { padding-right: 0; }
 .tbl--plain td { padding: 8px var(--s3); overflow-wrap: anywhere; }
+/* a metric name is one word to its reader: keep it whole unless it alone is wider than the column */
+.src-metric .tbl--plain td { overflow-wrap: break-word; }
 .tbl--edges td { font: var(--t-small); }
+/* each end is a target: at least 24 px tall (WCAG 2.5.8), however short the line of text; in a
+   narrow column the kind and the id stack, so neither is broken in the middle of a word */
+.tbl--edges .link-btn { display: inline-flex; flex-wrap: wrap; align-items: center; column-gap: 4px; min-height: 24px; text-align: left; }
+.tbl--edges .nowrap { white-space: nowrap; }
 .np-row .v { text-align: right; max-width: 60%; }
 
 /* timeline */
@@ -910,13 +938,25 @@ a.btn { text-decoration: none; }
   .pager { justify-content: center; }
 }
 @media (forced-colors: active) {
+  /* a bar drawn only in fills disappears; the text beside it still says the count */
+  .meter { border: 1px solid CanvasText; }
+  .meter span { forced-color-adjust: none; background: Highlight; }
   .mk { border: 1px solid CanvasText; }
   .relation, .notice, .src-chip[aria-current="true"] { border: 2px solid CanvasText; }
+  /* these say "selected" or "on" with a fill or a shadow, which forced colours remove; keep a system colour */
+  .nav-link[aria-current="page"], .seg button[aria-selected="true"], .turn-tabs button[aria-selected="true"], .btn.is-on, .btn[aria-pressed="true"] { outline: 2px solid Highlight; outline-offset: -2px; }
+  .wl-row.on::before, .rung.on .rung-bar { forced-color-adjust: none; background: Highlight; }
+  .check.checked { forced-color-adjust: none; background: Highlight; border-color: Highlight; color: HighlightText; }
+  /* opacity alone may not read as "unavailable" against system colours */
+  .btn[aria-disabled="true"], .icon-btn[aria-disabled="true"] { color: GrayText; border-color: GrayText; opacity: 1; }
+  /* a border colour change is lost here, so a focused field keeps the ring in a system colour */
+  .input:focus-visible, .select:focus-visible { outline: 2px solid Highlight; outline-offset: 2px; }
+  .lg-node[aria-pressed="true"] { outline: 2px solid Highlight; outline-offset: -2px; }
 }
 
 /* the lineage reads top to bottom when its panel is too narrow for four columns */
 @container (max-width: 560px) {
-  .lg-row { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+  .lg-row { grid-template-columns: minmax(0, 1fr); min-width: 0; width: auto; }
   .lg-link { min-height: 30px; justify-content: flex-start; padding-left: 26px; }
   .lg-link span { max-width: none; }
   .lg-line { left: 18px; right: auto; top: 0; bottom: 0; border-top: 0; border-left: 1.5px solid var(--line-3); }

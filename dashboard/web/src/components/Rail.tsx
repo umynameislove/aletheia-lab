@@ -1,12 +1,13 @@
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import {
   ChevronDown, ChevronRight, ChevronsUpDown, FileCheck2, FlaskConical, FolderInput, Gauge, Home, LayoutList, RotateCcw, ShieldCheck, TriangleAlert, X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { AFTER_DELETE, capabilities, demoPort, port, previewSession, useResultSwitch, useView } from "../service";
+import { AFTER_DELETE, capabilities, port, previewSession, useView } from "../service";
 import { FEATURES, modeWords } from "../service/capabilities";
+import { openedProject } from "../service/opened";
 import { useRoute, useStore, type RouteName } from "../store";
-import { useNarrow } from "./primitives";
+import { plainClick, useNarrow } from "./primitives";
 
 /** Two-letter avatar from the project's own name, never hard-coded. */
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]!.toUpperCase()).join("") || "P";
@@ -27,10 +28,7 @@ const GATED: NavItem[] = [
   { id: "prospective", label: "Prospective quality", icon: FlaskConical, gate: FEATURES.prospective.label },
 ];
 
-/** A plain left click stays in the app; Cmd/Ctrl-click, middle click and "copy link" get the real address. */
-const plainClick = (e: MouseEvent) => e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
-
-export function Rail({ open, onClose, onOpenProject }: { open: boolean; onClose: () => void; onOpenProject: () => void }) {
+export function Rail({ open, onClose, onOpenProject, onResetDemo }: { open: boolean; onClose: () => void; onOpenProject: () => void; onResetDemo: () => void }) {
   const VIEW = useView();
   const { name, go, hrefFor } = useRoute();
   const { s } = useStore();
@@ -89,7 +87,10 @@ export function Rail({ open, onClose, onOpenProject }: { open: boolean; onClose:
         {s.deletedProject ? (
           <p className="proj-empty">No project open. {AFTER_DELETE}</p>
         ) : sample && port.kind === "live" ? (
-          <p className="proj-empty"><b>No project open yet.</b> The other screens show sample data until you connect one.</p>
+          // a project imported but not yet asked about has no result to show, yet it is not "not connected"
+          <p className="proj-empty">{openedProject()
+            ? <><b>Project saved.</b> Ask a question to open it.</>
+            : <><b>No project open yet.</b> The other screens show sample data until you connect one.</>}</p>
         ) : <button className="proj" onClick={onOpenProject} aria-label={`Project: ${VIEW.project.display_name}. Show project details`}>
           <span className="proj-av" aria-hidden="true">{initials(VIEW.project.display_name)}</span>
           <span className="proj-txt">
@@ -108,7 +109,7 @@ export function Rail({ open, onClose, onOpenProject }: { open: boolean; onClose:
         </nav>
 
         <div className="rail-foot">
-          <Account />
+          <Account onResetDemo={onResetDemo} />
         </div>
       </aside>
     </>
@@ -117,35 +118,43 @@ export function Rail({ open, onClose, onOpenProject }: { open: boolean; onClose:
 
 /* The local app has no accounts: this row says so instead of naming a person. A hosted session (K-03)
    replaces it with the signed-in identity from the server. */
-function Account() {
-  const { go } = useRoute();
+function Account({ onResetDemo }: { onResetDemo: () => void }) {
   const { s, dispatch, toast, terms, toggleTerms } = useStore();
-  const { resetResult } = useResultSwitch();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const btn = useRef<HTMLButtonElement>(null);
+  const panel = useId();
   useEffect(() => {
     if (!open) return;
     const away = (e: globalThis.MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
-    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
     document.addEventListener("mousedown", away);
-    document.addEventListener("keydown", esc);
-    return () => { document.removeEventListener("mousedown", away); document.removeEventListener("keydown", esc); };
+    return () => document.removeEventListener("mousedown", away);
   }, [open]);
+  // Esc or a chosen action closes it and hands focus back to the button; a click elsewhere leaves focus where it went
+  const close = () => { setOpen(false); btn.current?.focus(); };
+  // handled here, not on document: one Esc closes this, not also the drawer around it (App listens on window)
+  const onKey = (e: ReactKeyboardEvent) => { if (e.key === "Escape" && open) { e.stopPropagation(); close(); } };
   const mode = modeWords(capabilities.deployment_mode);
 
+  /* A disclosure, not a menu: the panel follows its button, so Tab goes from the button into it */
   return (
-    <div className="acct-wrap" ref={ref}>
+    <div className="acct-wrap" ref={ref} onKeyDown={onKey}>
+      <button ref={btn} className="acct" aria-expanded={open} aria-controls={open ? panel : undefined} onClick={() => setOpen(o => !o)}>
+        <span className="acct-name">{mode}</span>
+        <span className="acct-plan">no account</span>
+        <ChevronDown size={16} className="acct-chev" aria-hidden="true" />
+      </button>
       {open && (
-        <div className="acct-menu" role="menu" aria-label="Settings on this device">
+        <div className="acct-menu" id={panel} role="group" aria-label="Settings on this device">
           <div className="acct-local"><span className="pulse" aria-hidden="true" />No account. Nothing leaves this machine.</div>
-          <button className="demo-btn" role="menuitemcheckbox" aria-checked={terms} onClick={toggleTerms}>
+          <button className="demo-btn" role="switch" aria-checked={terms} onClick={toggleTerms}>
             Show contract terms
             <span className={`switch${terms ? " on" : ""}`} aria-hidden="true"><span className="knob" /></span>
           </button>
           {/* demo controls change in-memory demo state only; a Live store is never reset from here */}
           {port.kind === "demo" && <>
           <button
-            className="demo-btn" role="menuitemcheckbox" aria-checked={s.failed}
+            className="demo-btn" role="switch" aria-checked={s.failed}
             onClick={() => {
               dispatch({ type: "toggleFailed" });
               toast(s.failed ? "Back to the completed run" : "Previewing a failed run");
@@ -155,25 +164,21 @@ function Account() {
             <span className={`switch${s.failed ? " on" : ""}`} aria-hidden="true"><span className="knob" /></span>
           </button>
           <button
-            className="demo-btn" role="menuitem"
-            onClick={() => { demoPort?.reset(); void resetResult(); dispatch({ type: "reset" }); go("start"); setOpen(false); toast("Demo data reset"); }}
+            className="demo-btn"
+            // it clears review marks and questions that exist nowhere else, so the app asks first
+            onClick={() => { close(); onResetDemo(); }}
           >
             <RotateCcw size={14} aria-hidden="true" />Reset demo data
           </button>
-          <button className="demo-btn" role="menuitem" onClick={() => { setOpen(false); previewSession({ status: "expired" }); }}>
+          <button className="demo-btn" onClick={() => { close(); previewSession({ status: "expired" }); }}>
             <TriangleAlert size={14} aria-hidden="true" />Preview: session ended
           </button>
-          <button className="demo-btn" role="menuitem" onClick={() => { setOpen(false); previewSession({ status: "revoked" }); }}>
+          <button className="demo-btn" onClick={() => { close(); previewSession({ status: "revoked" }); }}>
             <TriangleAlert size={14} aria-hidden="true" />Preview: access removed
           </button>
           </>}
         </div>
       )}
-      <button className="acct" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(o => !o)}>
-        <span className="acct-name">{mode}</span>
-        <span className="acct-plan">no account</span>
-        <ChevronDown size={16} className="acct-chev" aria-hidden="true" />
-      </button>
     </div>
   );
 }

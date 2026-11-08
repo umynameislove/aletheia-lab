@@ -20,6 +20,7 @@ export const TERM: Record<string, [plain: string, gloss: string]> = {
   diagnosis: ["Visible to diagnosis", ""],
   mixed: ["Mixed evidence", "evidence points both ways"],
   not_assessed: ["Not assessed", "this was not evaluated, which is not a failure"],
+  local_evidence: ["Local evidence analysis", "computed from stored metric observations; cause unverified"],
   deterministic_mock: ["Scripted answer, no model", "a fixed local answer, not a model result"],
   not_estimated: ["Not counted", "null, not 0"],
   // claim_type — closed enum (K08)

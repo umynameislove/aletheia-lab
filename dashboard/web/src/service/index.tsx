@@ -19,10 +19,11 @@ import { useStore } from "../store";
    offline DemoProductPort over the shared fixtures. A Live failure is shown, never swapped for demo. */
 // the condition is resolved at build time, so a Live bundle carries neither the demo port nor its fixtures
 export const demoPort = import.meta.env.MODE === "live" ? null : new DemoProductPort({ view: viewJson as ProductView, preview: PREVIEW });
-export const port: ProductPort = demoPort ?? checkedPort(new LiveProductPort({
+const livePort = demoPort ? null : new LiveProductPort({
   fetch: (url, init) => fetch(url, init),
   onAnswer: (status, code) => sessionGuard?.noteResponse(status, code),
-}));
+});
+export const port: ProductPort = demoPort ?? checkedPort(livePort!);
 export const capabilities = localCapabilities(port.kind);
 export { ProductError, isProductError };
 
@@ -88,7 +89,7 @@ export type Boot = { status: "loading" } | { status: "ready"; view: ProductView 
 export const linked = port.kind === "live";
 const SCREEN_PARAMS = ["claim", "evidence", "node", "page", "q", "filter", "turn", "panel", "pane"];
 const hashResult = () => new URLSearchParams(location.hash.split("?")[1] ?? "").get("result");
-export function linkIds(ids: { project?: string; snapshot?: string; result?: string | null }) {
+export function linkIds(ids: { project?: string; snapshot?: string; result?: string | null }, opts?: { replace?: boolean }) {
   if (!linked) return;
   const [route, qs] = (location.hash || "#/investigation").split("?");
   const q = new URLSearchParams(qs ?? "");
@@ -100,7 +101,8 @@ export function linkIds(ids: { project?: string; snapshot?: string; result?: str
     if (v === undefined) continue;
     if (v === null) q.delete(k); else q.set(k, v);
   }
-  if (q.toString() !== before) location.hash = `${route}?${q}`;
+  if (q.toString() === before) return;
+  if (opts?.replace) location.replace(`${route}?${q}`); else location.hash = `${route}?${q}`;
 }
 function remember(view: ProductView) {
   if (!linked || view.demo_only) return;
@@ -123,12 +125,14 @@ export function ServiceProvider({ children, fallback }: { children: ReactNode; f
       dispatch({ type: "activateProject", project_id: view.project.id });
       remember(view);
       noteResult(view);
+      // the address is brought in line with what opened, not made a step of its own
       if (linked && !view.demo_only) {
-        linkIds({ project: view.project.id, snapshot: view.snapshot.id, result: view.result.id });
+        linkIds({ project: view.project.id, snapshot: view.snapshot.id, result: view.result.id }, { replace: true });
       }
       setBoot({ status: "ready", view });
     },
     reject: error => setBoot({ status: "error", error: safe(error) }),
+    abandon: () => livePort?.abandonViews(),
   });
   const requests = transitions.current;
 

@@ -1,12 +1,12 @@
-import { useMemo, useState } from "react";
-import { Download, Lock, Trash2 } from "lucide-react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { ChevronRight, Download, Lock, Trash2 } from "lucide-react";
 import { projectView } from "../data/view";
-import { AFTER_DELETE, capabilities, fence, isProductError, port, scoped, useView } from "../service";
-import { remedyFor } from "../service/errors";
+import { AFTER_DELETE, capabilities, fence, port, scoped, useView } from "../service";
 import { forgetProject } from "../service/opened";
 import { downloadReview, reportName, saveReport, type ReportKind } from "../export";
 import { useStore } from "../store";
 import { Modal } from "./Modal";
+import { RefusalNote, refusalOf, type Refusal } from "./Ask";
 import { Absent, Mark } from "./primitives";
 
 type Scope = "conversation" | "project";
@@ -18,10 +18,15 @@ export function Retention() {
   const v = useMemo(() => projectView(VIEW, s), [VIEW, s]);
   const [confirm, setConfirm] = useState<Scope | null>(null);
   const [busy, setBusy] = useState(false);
+  const [refusal, setRefusal] = useState<Refusal>(null);
+  // a second press can arrive before the re-render that marks the button busy; this cannot be undone
+  const deleting = useRef(false);
   const r = s.receipt;
   const demo = port.kind === "demo";
-  const fail = (e: unknown) => toast(isProductError(e) ? `Refused · ${e.code}` : "Action failed",
-    isProductError(e) ? remedyFor(e.code).advice ?? e.safe_message : undefined);
+  // after a delete the row that opened the dialog is gone: focus goes to what the delete produced
+  const receiptRef = useRef<HTMLElement>(null);
+  const toReceipt = useRef(false);
+  useEffect(() => { if (r && toReceipt.current) { toReceipt.current = false; receiptRef.current?.focus(); } }, [r]);
   // the failure preview is a demo scaffold over the screens; files always come from the stored result
   // Live shows the service's demo_view until a project is connected; that view is not stored, so
   // the service has nothing to export or delete for it
@@ -29,8 +34,9 @@ export function Retention() {
   const formatOff = (f: "json" | "markdown" | "pdf") => (capabilities.supported_export_formats.includes(f) ? exportOff : "Not available in this build.");
   const exportOff = sample ?? (s.failed ? "Turn off “Preview a failed run” to export." : null);
 
-  /* Each format says where it stands: fetching, saved under which name, or why not. If the person has
-     moved to another result meanwhile, nothing is saved in the new context. */
+  /* Each format says where it stands: fetching, handed to the browser under which name, or why not. The
+     page cannot see whether the browser kept the file (it may ask, or be refused), so it never says "saved".
+     If the person has moved to another result meanwhile, nothing is saved in the new context. */
   const [exporting, setExporting] = useState<Partial<Record<ReportKind, ExportState>>>({});
   const startExport = (kind: ReportKind) => {
     setExporting(x => ({ ...x, [kind]: { status: "busy" } }));
@@ -39,24 +45,31 @@ export function Retention() {
       done: bytes => {
         saveReport(v, kind, bytes);
         setExporting(x => ({ ...x, [kind]: { status: "saved", name: reportName(v, kind) } }));
-        toast("File saved", reportName(v, kind));
+        toast("Download started", reportName(v, kind));
       },
-      fail: e => setExporting(x => ({ ...x, [kind]: { status: "failed", why: isProductError(e) ? remedyFor(e.code).advice ?? e.safe_message : "The service did not answer." } })),
+      fail: e => setExporting(x => ({ ...x, [kind]: { status: "failed", refusal: refusalOf(e) } })),
     });
   };
 
   const del = async (scope: Scope) => {
-    if (scope !== "project") return; // no service method deletes a conversation alone
-    setBusy(true);
+    if (scope !== "project" || deleting.current) return; // no service method deletes a conversation alone
+    deleting.current = true;
+    setBusy(true); setRefusal(null);
     const ticket = fence.ticket();
     try {
       const receipt = await port.delete_project(VIEW.project.id);
       // the project is gone wherever the person is now, so its state closes either way; the receipt
-      // names its project and cannot close another (service/transitions.ts). Only the toast is scoped.
+      // names its project and cannot close another (service/transitions.ts). Only the toast and the focus move are scoped.
       forgetProject(VIEW.project.id);
       dispatch({ type: "deleteProject", receipt: { ...receipt, scope: "" } });
-      if (fence.current(ticket)) toast("Project deleted");
-    } catch (e) { if (fence.current(ticket)) fail(e); } finally { setBusy(false); setConfirm(null); }
+      if (fence.current(ticket)) { toReceipt.current = true; toast("Project deleted"); }
+      setConfirm(null);
+    } catch (e) {
+      // the dialog stays open and says why, in place; a toast would vanish before the remedy is read.
+      // If the person has moved on, the dialog no longer belongs to what is on screen: it just closes.
+      if (fence.current(ticket)) setRefusal(refusalOf(e));
+      else setConfirm(null);
+    } finally { deleting.current = false; setBusy(false); }
   };
 
   return (
@@ -67,7 +80,7 @@ export function Retention() {
         </header>
 
         {r && (
-          <section className="panel receipt" aria-label="Deletion receipt">
+          <section className="panel receipt" aria-label="Deletion receipt" tabIndex={-1} ref={receiptRef}>
             <div className="sec-head"><span className="eyebrow">Deletion receipt</span>{demo && <span className="aside">demo</span>}</div>
             <dl className="kv">
               <dt>Project</dt><dd>{r.project_id}</dd>
@@ -93,25 +106,25 @@ export function Retention() {
                   off={formatOff("json")} onClick={() => startExport("json")} />
                 <ExportRow name="Markdown" desc="A readable report" state={exporting.markdown}
                   off={formatOff("markdown")} onClick={() => startExport("markdown")} />
-                <ExportRow name="PDF" desc="A report to share. Vietnamese text is not reliable in PDF yet." off={formatOff("pdf")} state={exporting.pdf}
+                <ExportRow name="PDF" desc="A report to share. Vietnamese may not print correctly." off={formatOff("pdf")} state={exporting.pdf}
                   onClick={() => startExport("pdf")} />
-                <ExportRow name="Your review" desc="Your marks and notes from this tab, as a separate file"
-                  onClick={() => { downloadReview(v, s); toast("File saved", "Your review"); }} />
-                
+                <ExportRow name="Your review" desc="Your marks and notes"
+                  onClick={() => { downloadReview(v, s); toast("Download started", "Your review"); }} />
+
               </section>
 
               <section className="panel panel--col">
                 <div className="sec-head"><span className="eyebrow">Delete</span><span className="aside">irreversible</span></div>
                 <DeleteRow title="Delete the conversation" desc="The questions and answers only."
                   done={s.deletedConversation} off="Not available yet." onClick={() => setConfirm("conversation")} />
-                <DeleteRow title="Delete the project" desc="Snapshots, evidence, questions and claims stored by Aletheia. Your source folder is not touched."
+                <DeleteRow title="Delete the project" desc="Everything Aletheia stored for it. Your folder is not touched."
                   done={s.deletedProject} off={sample ?? (busy ? "Deleting…" : null)} onClick={() => setConfirm("project")} />
-                {demo && <p className="local-note push-end"><Lock size={12} aria-hidden="true" />Demo: in-memory state only.</p>}
+                {demo && <p className="local-note push-end"><Lock size={12} aria-hidden="true" />Demo: Reset demo data brings it back.</p>}
               </section>
             </div>
 
-            <section className="panel">
-              <div className="sec-head"><span className="eyebrow">What the file carries</span></div>
+            <details className="more">
+              <summary><ChevronRight size={14} aria-hidden="true" />What is in the files</summary>
               <div className="carry">
                 {([
                   ["Claims and IDs", true], ["Citations", true], ["Counter/missing evidence", true],
@@ -125,31 +138,34 @@ export function Retention() {
                   </div>
                 ))}
               </div>
-            </section>
+            </details>
           </div>
         )}
       </div>
 
-      {confirm && <ConfirmDelete scope={confirm} onCancel={() => setConfirm(null)} onConfirm={() => del(confirm)} />}
+      {confirm && <ConfirmDelete scope={confirm} busy={busy} refusal={refusal} onCancel={() => { setConfirm(null); setRefusal(null); }} onConfirm={() => void del(confirm)} />}
     </div>
   );
 }
 
-type ExportState = { status: "busy" } | { status: "saved"; name: string } | { status: "failed"; why: string };
+type ExportState = { status: "busy" } | { status: "saved"; name: string } | { status: "failed"; refusal: Refusal };
 
 function ExportRow({ name, desc, onClick, off = null, state }: { name: string; desc: string; onClick?: () => void; off?: string | null; state?: ExportState }) {
   const live = !!onClick && off === null;
   const busy = state?.status === "busy";
+  const why = useId();
   return (
     <div className="np-row action-row">
       {live ? <Mark tone="accent" /> : <Mark hollow />}
       <span>
         <span className="row-k">{name}</span><span className="sub-line">{desc}</span>
-        {off ? <span className="sub-line off-why">{off}</span> : null}
-        {state?.status === "saved" && <span className="sub-line" role="status">Saved as {state.name}</span>}
-        {state?.status === "failed" && <span className="sub-line" role="alert"><Mark tone="no" /> Not saved. {state.why}</span>}
+        {off ? <span className="sub-line off-why" id={why}>{off}</span> : null}
+        {/* the status is always there, so the first outcome is read too; a failure is its own alert */}
+        <span className="sub-line" role="status">{state?.status === "saved" && `Sent to your browser as ${state.name}`}</span>
+        {state?.status === "failed" && <RefusalNote refusal={state.refusal} compact />}
       </span>
-      <button className="btn btn--sm" onClick={onClick} disabled={!live || busy} aria-busy={busy}>
+      {/* busy keeps focus (aria-disabled); unavailable cannot change while focused, so it is disabled, with the reason beside it */}
+      <button className="btn btn--sm" onClick={() => { if (!busy) onClick?.(); }} disabled={!live} aria-disabled={busy || undefined} aria-busy={busy} aria-describedby={off ? why : undefined}>
         {!live ? "Unavailable" : busy ? "Preparing…" : <><Download size={13} aria-hidden="true" />{state?.status === "failed" ? "Try again" : "Download"}</>}
       </button>
     </div>
@@ -157,19 +173,22 @@ function ExportRow({ name, desc, onClick, off = null, state }: { name: string; d
 }
 
 function DeleteRow({ title, desc, done, onClick, off = null }: { title: string; desc: string; done: boolean; onClick: () => void; off?: string | null }) {
+  const why = useId();
   return (
     <div className="np-row action-row">
-      <span><span className="row-k">{title}</span><span className="sub-line">{desc}</span>{off && !done && <span className="sub-line off-why">{off}</span>}</span>
-      <button className="btn btn--sm btn--danger" onClick={onClick} disabled={done || !!off}><Trash2 size={13} aria-hidden="true" />{done ? "Deleted" : "Delete"}</button>
+      <span><span className="row-k">{title}</span><span className="sub-line">{desc}</span>{off && !done && <span className="sub-line off-why" id={why}>{off}</span>}</span>
+      <button className="btn btn--sm btn--danger" onClick={onClick} disabled={done || !!off} aria-describedby={off && !done ? why : undefined}><Trash2 size={13} aria-hidden="true" />{done ? "Deleted" : "Delete"}</button>
     </div>
   );
 }
 
-function ConfirmDelete({ scope, onCancel, onConfirm }: { scope: Scope; onCancel: () => void; onConfirm: () => void }) {
+/* While deleting, nothing closes the dialog and the button cannot be pressed again. A refusal is shown
+   here, in the dialog, and it closes only once the service has said the project is gone. */
+function ConfirmDelete({ scope, busy, refusal, onCancel, onConfirm }: { scope: Scope; busy: boolean; refusal: Refusal; onCancel: () => void; onConfirm: () => void }) {
   const [ack, setAck] = useState(false);
   const project = scope === "project";
   return (
-    <Modal title={project ? "Delete the project" : "Delete the conversation"} onClose={onCancel}>
+    <Modal title={project ? "Delete the project" : "Delete the conversation"} onClose={onCancel} busy={busy}>
       <div className="notice notice--stop" style={{ marginTop: 0 }}>
         <Mark tone="no" />
         <div><b>This cannot be undone</b>{project
@@ -180,9 +199,12 @@ function ConfirmDelete({ scope, onCancel, onConfirm }: { scope: Scope; onCancel:
         <input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} />
         <span>I understand what will be deleted.</span>
       </label>
+      <RefusalNote refusal={refusal} />
       <div className="modal-actions">
-        <button className="btn" onClick={onCancel}>Cancel</button>
-        <button className="btn btn--danger" disabled={!ack} onClick={onConfirm}><Trash2 size={13} aria-hidden="true" />{project ? "Delete project" : "Delete conversation"}</button>
+        <button className="btn" aria-disabled={busy || undefined} onClick={() => { if (!busy) onCancel(); }}>Cancel</button>
+        <button className="btn btn--danger" disabled={!ack} aria-disabled={busy || undefined} aria-busy={busy} onClick={() => { if (!busy) onConfirm(); }}>
+          <Trash2 size={13} aria-hidden="true" />{busy ? "Deleting…" : project ? "Delete project" : "Delete conversation"}
+        </button>
       </div>
     </Modal>
   );

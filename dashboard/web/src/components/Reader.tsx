@@ -1,12 +1,12 @@
-import { lazy, Suspense, useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Check, ChevronRight, Copy, FileText, Link2, Lock, X } from "lucide-react";
 import type { Claim, Evidence, GraphNode, ProductView, Turn } from "../types";
 import { reviewOf, useStore } from "../store";
 import { evidenceRequests, hasCounterfactualMarker } from "../data/view";
 import { claimsCiting, readingFor, referenceText, sourcesOf, type Relation } from "../data/relation";
-import { ADVERSE_WORDS, definitionWords, formatNumber, formatSigned, KIND_WORDS } from "../data/format";
+import { ADVERSE_WORDS, definitionWords, formatNumber, formatSigned } from "../data/format";
 import { ABSTAIN_CEILING, LADDER, plain, supportTone } from "../vocab";
-import { Id, Mark, tabKeys, Term } from "./primitives";
+import { Id, Mark, TableScroll, tabKeys, Term } from "./primitives";
 
 const LineagePanel = lazy(() => import("./Lineage").then(m => ({ default: m.LineagePanel })));
 const TimelinePanel = lazy(() => import("./Lineage").then(m => ({ default: m.TimelinePanel })));
@@ -15,11 +15,12 @@ export type Panel = "source" | "lineage" | "timeline";
 
 const FOCUSABLE = 'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), summary, [tabindex]:not([tabindex="-1"])';
 
-const RELATION: Record<Exclude<Relation, "absent">, { label: string; note: string; tone: "accent" | "contra" | "" }> = {
-  cited: { label: "Cited by this claim", note: "The claim names this source as its support.", tone: "accent" },
-  counter: { label: "Evidence against this claim", note: "This source speaks against the claim. It is not support.", tone: "contra" },
-  context: { label: "Context only, not cited by this claim", note: "The question could see this source, but the claim does not rely on it.", tone: "" },
-  unrelated: { label: "No relation to the selected claim", note: "This source is in the result, but the selected claim neither cites it nor saw it.", tone: "" },
+/* The label says what the relation is; a note is added only where the label alone could be misread. */
+const RELATION: Record<Exclude<Relation, "absent">, { label: string; note?: string; tone: "accent" | "contra" | "" }> = {
+  cited: { label: "Cited by this claim", tone: "accent" },
+  counter: { label: "Evidence against this claim", note: "Not support.", tone: "contra" },
+  context: { label: "Context only", note: "The question saw it; the claim does not rely on it.", tone: "" },
+  unrelated: { label: "Not related to this claim", tone: "" },
 };
 
 /* The reader: one claim and the source being checked against it. The relation shown comes only from
@@ -42,6 +43,32 @@ export function Reader({ v, turn, claim, evidenceId, panel, drawer, open, select
     return () => { if (before?.isConnected) before.focus(); };
   }, [drawer, open]);
 
+  // beside the list, closing hides the reader (display: none) with the close button or a tab still focused:
+  // focus goes back to the claim that was open, or to the claims heading. A layout effect runs before the
+  // browser notices the hidden focus and drops it.
+  const lastClaim = useRef<string | null>(null);
+  const wasOpen = useRef(open);
+  useLayoutEffect(() => {
+    if (wasOpen.current && !open && !drawer) {
+      const a = document.activeElement;
+      if (!a || a === document.body || ref.current?.contains(a)) {
+        const row = lastClaim.current ? document.querySelector<HTMLElement>(`[data-claim="${CSS.escape(lastClaim.current)}"]`) : null;
+        (row ?? document.getElementById("claims-h"))?.focus();
+      }
+    }
+    wasOpen.current = open;
+    if (open) lastClaim.current = claim?.id ?? null;
+  }, [open, drawer, claim]);
+
+  // choosing a node or a question inside the reader can replace the panel that held focus (Lineage, Timeline
+  // → Source). Focus that was in the reader stays in it: on the tab now shown, not on the page behind.
+  // Focus moving out (to an element, or to nothing with a click) clears the flag; focus lost with its element does not.
+  const focusInside = useRef(false);
+  useLayoutEffect(() => {
+    const a = document.activeElement;
+    if (open && focusInside.current && ref.current && (!a || a === document.body)) ref.current.querySelector<HTMLElement>(".reader-focus")?.focus();
+  }, [open, panel, claim, evidenceId, selectedNode]);
+
   const onKeyDown = (e: KeyboardEvent<HTMLElement>) => {
     if (!drawer || e.key !== "Tab" || !ref.current) return;
     const items = [...ref.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
@@ -62,6 +89,8 @@ export function Reader({ v, turn, claim, evidenceId, panel, drawer, open, select
         role={drawer ? "dialog" : undefined}
         aria-modal={drawer ? true : undefined}
         onKeyDown={onKeyDown}
+        onFocus={() => { focusInside.current = true; }}
+        onBlur={e => { const to = e.relatedTarget as Node | null; if (to ? !e.currentTarget.contains(to) : e.target.isConnected) focusInside.current = false; }}
         {...(shut ? { inert: "" } : {})}
       >
         <div className="insp-head">
@@ -76,7 +105,8 @@ export function Reader({ v, turn, claim, evidenceId, panel, drawer, open, select
         </div>
         <div className="insp-body" id="reader-panel" role="tabpanel" aria-labelledby={`reader-tab-${panel}`} tabIndex={0}>
           <Suspense fallback={<p className="page-loading" role="status">Loading…</p>}>
-            {panel === "source" && <ClaimAndSource v={v} turn={turn} claim={claim} evidenceId={evidenceId} onEvidence={onEvidence} />}
+            {/* beside the list the selected row already shows the claim; a drawer covers the list, so it repeats it */}
+            {panel === "source" && <ClaimAndSource v={v} turn={turn} claim={claim} evidenceId={evidenceId} onEvidence={onEvidence} claimText={drawer} />}
             {panel === "lineage" && <LineagePanel v={v} selectedClaim={claim?.id ?? null} selectedEvidence={evidenceId} selectedNode={selectedNode} shownIds={shownIds} onNode={onNode} />}
             {panel === "timeline" && <TimelinePanel v={v} />}
           </Suspense>
@@ -87,13 +117,13 @@ export function Reader({ v, turn, claim, evidenceId, panel, drawer, open, select
 }
 
 /** The same content, without the panel around it: the reading layout puts it under the claim. */
-export function ClaimAndSource({ v, turn, claim, evidenceId, onEvidence, inline = false }: {
-  v: ProductView; turn: Turn | undefined; claim: Claim | null; evidenceId: string | null; onEvidence: (id: string | null) => void; inline?: boolean;
+export function ClaimAndSource({ v, turn, claim, evidenceId, onEvidence, inline = false, claimText = true }: {
+  v: ProductView; turn: Turn | undefined; claim: Claim | null; evidenceId: string | null; onEvidence: (id: string | null) => void; inline?: boolean; claimText?: boolean;
 }) {
   const reading = readingFor(v, claim, evidenceId);
   return (
     <>
-      {claim && !inline && <ClaimSection claim={claim} />}
+      {claim && !inline && <ClaimSection claim={claim} text={claimText} />}
       {reading.missingId && (
         <section className="insp-sec">
           <div className="notice notice--warn" role="status">
@@ -115,10 +145,10 @@ export function ClaimAndSource({ v, turn, claim, evidenceId, onEvidence, inline 
   );
 }
 
-function ClaimSection({ claim }: { claim: Claim }) {
+function ClaimSection({ claim, text }: { claim: Claim; text: boolean }) {
   return (
     <section className="insp-sec">
-      <p className="insp-claim">{claim.text}</p>
+      {text && <p className="insp-claim">{claim.text}</p>}
       <div className="insp-terms">
         <Term k={claim.epistemic_state} tone="accent" />
         <Term k={claim.support} field="support" tone={supportTone(claim.support)} hollow={!supportTone(claim.support)} />
@@ -154,7 +184,7 @@ function SourceBody({ v, evidence: ev, relation, hasClaim }: { v: ProductView; e
       {hasClaim && r ? (
         <div className={`relation relation--${relation}`}>
           {r.tone ? <Mark tone={r.tone} /> : <Mark hollow />}
-          <div><b>{r.label}</b><span>{r.note}</span></div>
+          <div><b>{r.label}</b>{r.note && <span>{r.note}</span>}</div>
         </div>
       ) : (
         <div className="relation relation--unrelated"><Mark hollow /><div><b>Source, no claim selected</b><span>{citedBy.length ? `Cited by ${citedBy.length} claim${citedBy.length === 1 ? "" : "s"} in this result.` : "No claim in this result cites it."}</span></div></div>
@@ -167,26 +197,26 @@ function SourceBody({ v, evidence: ev, relation, hasClaim }: { v: ProductView; e
       <blockquote className="src-text">{ev.text}</blockquote>
 
       {metric && (
-        <div className="tbl-wrap src-metric">
+        <TableScroll label="Metric change" className="src-metric">
           <table className="tbl tbl--plain">
             <caption className="sr">The metric change this source records</caption>
             <thead><tr><th scope="col">Metric</th><th scope="col" className="num">Before</th><th scope="col" className="num">After</th><th scope="col" className="num">Change</th></tr></thead>
             <tbody><tr>
-              <td>{metric.metric_name}</td>
+              <td>{wordBreaks(metric.metric_name)}</td>
               <td className="num">{metric.before ? formatNumber(metric.before.value) : <span className="dim">No value</span>}</td>
               <td className="num">{metric.after ? formatNumber(metric.after.value) : <span className="dim">No value</span>}</td>
               <td className="num">{metric.delta === null ? <span className="dim">No value</span> : formatSigned(metric.delta)}</td>
             </tr></tbody>
           </table>
-          <p className="foot-note">{ADVERSE_WORDS[metric.adverse_status]}; it {KIND_WORDS[metric.kind]}. {definitionWords(definition)}.</p>
-        </div>
+          <p className="foot-note">{ADVERSE_WORDS[metric.adverse_status]} · {definitionWords(definition)}</p>
+        </TableScroll>
       )}
 
       <div className="src-foot">
         <span className="quote-src" title="An immutable record, not a file path"><FileText size={13} aria-hidden="true" />{ev.reproduction_ref.record_kind.split("_").join(" ")} · <Id v={ev.reproduction_ref.record_id} /></span>
         <span className="src-actions">
-          <CopyButton label="Copy reference" text={() => referenceText(ev)} icon="copy" />
-          <CopyButton label="Copy link" text={() => location.href} icon="link" />
+          <CopyButton label="Copy reference" copied="Reference copied" text={() => referenceText(ev)} icon="copy" />
+          <CopyButton label="Copy link" copied="Link copied" text={() => location.href} icon="link" />
         </span>
       </div>
       <details className="meta-toggle">
@@ -198,24 +228,67 @@ function SourceBody({ v, evidence: ev, relation, hasClaim }: { v: ProductView; e
           <dt>SHA-256</dt><dd>{ev.source_sha256}</dd>
           <dt>Visibility</dt><dd>{ev.visibility}</dd>
           <dt>Redacted</dt><dd>{String(ev.redacted)}</dd>
+          {/* the numbers above follow the reader's locale; these are the service's own, to copy as they are */}
+          {metric && <><dt>Exact values</dt><dd translate="no">before {metric.before ? String(metric.before.value) : "null"}, after {metric.after ? String(metric.after.value) : "null"}, delta {metric.delta === null ? "null" : String(metric.delta)}</dd></>}
         </dl>
       </details>
     </section>
   );
 }
 
-function CopyButton({ label, text, icon }: { label: string; text: () => string; icon: "copy" | "link" }) {
+/** A snake_case name may wrap after an underscore, never mid-word. <wbr> is not copied with the text. */
+function wordBreaks(name: string) {
+  return name.split(/(?<=_)/).map((part, i) => <span key={i}>{i > 0 && <wbr />}{part}</span>);
+}
+
+/* Where the clipboard API is refused (an embedding frame, a browser policy), the older copy of a
+   selection often still works. Focus goes back where it was, so the reader keeps its place. */
+function copyBySelection(value: string) {
+  const back = document.activeElement as HTMLElement | null;
+  const area = document.createElement("textarea");
+  area.value = value;
+  area.setAttribute("readonly", "");
+  area.style.position = "fixed";
+  area.style.opacity = "0";
+  document.body.appendChild(area);
+  area.select();
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch { /* unsupported: reported as failed */ }
+  area.remove();
+  back?.focus({ preventScroll: true });
+  return ok;
+}
+
+/* The outcome is said once, by a status beside the button: a live region on the button itself also
+   spoke the label coming back two seconds later. The status is emptied then, which says nothing. A
+   second copy within those two seconds empties it first, so the same words are said again. */
+function CopyButton({ label, copied, text, icon }: { label: string; copied: string; text: () => string; icon: "copy" | "link" }) {
   const [state, setState] = useState<"idle" | "done" | "failed">("idle");
+  const [said, setSaid] = useState("");
+  const timer = useRef<number>();
+  const sayTimer = useRef<number>();
+  useEffect(() => () => { window.clearTimeout(timer.current); window.clearTimeout(sayTimer.current); }, []);
   const copy = async () => {
-    try { await navigator.clipboard.writeText(text()); setState("done"); }
-    catch { setState("failed"); }
-    window.setTimeout(() => setState("idle"), 2000);
+    // read synchronously and write first: Safari may refuse a write that comes after an await
+    const value = text();
+    let outcome: "done" | "failed";
+    try { await navigator.clipboard.writeText(value); outcome = "done"; }
+    catch { outcome = copyBySelection(value) ? "done" : "failed"; }
+    setState(outcome);
+    setSaid("");
+    window.clearTimeout(sayTimer.current);
+    sayTimer.current = window.setTimeout(() => setSaid(outcome === "done" ? copied : "Copy failed"), 100);
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => { setState("idle"); setSaid(""); }, 2000);
   };
   const Icon = state === "done" ? Check : icon === "copy" ? Copy : Link2;
   return (
-    <button className="btn btn--sm btn--ghost" onClick={() => void copy()} aria-live="polite">
-      <Icon size={13} aria-hidden="true" />{state === "done" ? "Copied" : state === "failed" ? "Copy failed" : label}
-    </button>
+    <>
+      <button className="btn btn--sm btn--ghost" onClick={() => void copy()}>
+        <Icon size={13} aria-hidden="true" />{state === "done" ? "Copied" : state === "failed" ? "Copy failed" : label}
+      </button>
+      <span className="sr" role="status">{said}</span>
+    </>
   );
 }
 
@@ -244,7 +317,7 @@ function Review({ claim }: { claim: Claim }) {
           />
         </div>
       )}
-      <p className="local-note"><Lock size={13} aria-hidden="true" />Not saved. It stays in this tab until you reload; download it from Data &amp; retention to keep it.</p>
+      <p className="local-note"><Lock size={13} aria-hidden="true" />Only kept in this tab. Download it in Data &amp; retention.</p>
     </section>
   );
 }
@@ -259,7 +332,7 @@ function MoreAboutClaim({ claim, turn, caveat }: { claim: Claim; turn: Turn | un
   return (
     <section className="insp-sec">
       <details className="meta-toggle">
-        <summary><ChevronRight size={13} aria-hidden="true" />How strongly this can be stated, and what is missing</summary>
+        <summary><ChevronRight size={13} aria-hidden="true" />Strength and missing evidence</summary>
         <div className="ceiling" role="list" style={{ marginTop: "var(--s3)" }}>
           {LADDER.map((r, i) => (
             <div key={r.key} role="listitem" className={`rung${i <= reached ? " on" : ""}`} aria-label={`${r.label}: ${i <= reached ? "allowed" : "not reached"}`}>

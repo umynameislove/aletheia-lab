@@ -67,6 +67,7 @@ export function createTracker(fence: Fence) {
   let late: LateWork[] = [];
   let running: RunningWork[] = [];
   let lastId = 0;
+  let generation = 0;
   const inFlight = new Set<string>();
   const listeners = new Set<() => void>();
   const changed = () => listeners.forEach(l => l());
@@ -75,8 +76,9 @@ export function createTracker(fence: Fence) {
     late: () => late,
     running: () => running,
     dismiss(id: number) { late = late.filter(w => w.id !== id); changed(); },
-    /** Logout or account switch: nothing about the old scope stays in memory. */
-    clear() { late = []; changed(); },
+    /** Logout or account switch: nothing about the old scope stays in memory, and work still running
+        from it records nothing when it ends. */
+    clear() { late = []; running = []; inFlight.clear(); generation += 1; changed(); },
     async run<T>(op: string, work: () => Promise<T>, then: {
       done: (value: T) => void;
       fail: (error: unknown) => void;
@@ -87,9 +89,11 @@ export function createTracker(fence: Fence) {
       /** the code of an error, for the late list */
       codeOf?: (error: unknown) => string;
     }): Promise<void> {
-      if (then.key && inFlight.has(then.key)) return;
+      // already on its way: not sent twice, and the caller who set "busy" for this press is released
+      if (then.key && inFlight.has(then.key)) { then.always?.(); return; }
       if (then.key) inFlight.add(then.key);
       const ticket = fence.ticket();
+      const started = generation;
       const id = ++lastId;
       running = [...running, { id, op, label: then.label }];
       changed();
@@ -102,11 +106,11 @@ export function createTracker(fence: Fence) {
         const value = await work();
         stop();
         if (fence.current(ticket)) then.done(value);
-        else { late = [{ id, op, result: then.late?.(value) }, ...late].slice(0, 20); changed(); }
+        else if (started === generation) { late = [{ id, op, result: then.late?.(value) }, ...late].slice(0, 20); changed(); }
       } catch (error) {
         stop();
         if (fence.current(ticket)) then.fail(error);
-        else { late = [{ id, op, error: then.codeOf?.(error) ?? "unavailable" }, ...late].slice(0, 20); changed(); }
+        else if (started === generation) { late = [{ id, op, error: then.codeOf?.(error) ?? "unavailable" }, ...late].slice(0, 20); changed(); }
       } finally {
         then.always?.();
       }

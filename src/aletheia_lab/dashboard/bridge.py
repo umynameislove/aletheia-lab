@@ -58,6 +58,7 @@ METHOD_PARAMETERS: Final[Mapping[str, tuple[str, ...]]] = {
     "confirm_import": ("preview_id", "mapping"),
     "refresh": ("project_id",),
     "analyze_mock": ("project_id", "snapshot_id", "question"),
+    "analyze_observations": ("project_id", "snapshot_id", "question"),
     "follow_up": ("result_id", "selection_kind", "selection_id", "question"),
     "view": ("result_id",),
     "export_report": ("result_id", "format"),
@@ -84,6 +85,9 @@ class ProductServiceLike(Protocol):
     def confirm_import(self, preview_id: str, mapping: dict[str, object]) -> dict[str, object]: ...
     def refresh(self, project_id: str) -> dict[str, object]: ...
     def analyze_mock(
+        self, project_id: str, snapshot_id: str, question: str
+    ) -> dict[str, object]: ...
+    def analyze_observations(
         self, project_id: str, snapshot_id: str, question: str
     ) -> dict[str, object]: ...
     def follow_up(

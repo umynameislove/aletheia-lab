@@ -174,6 +174,22 @@ test("R3 an expired session keeps the work for the same person, and wipes for an
   assert.equal(other.wipes(), 1, "their drafts never reach the next account");
 });
 
+test("R5 a refusal whose reason cannot be trusted covers the content and asks, but decides nothing", async () => {
+  for (const [status, code] of [[401, null], [403, null], [401, "forbidden"]]) {
+    const { guard, wipes, calls } = setup();
+    guard.noteResponse(status, code);
+    assert.equal(guard.state(), "confirming", `${status} ${code}`);
+    await new Promise(r => setTimeout(r, 0));
+    assert.equal(calls.length, 1);
+    assert.equal(guard.state(), "active");
+    assert.equal(wipes(), 0);
+  }
+  const refused = setup();
+  refused.guard.noteResponse(403, "csrf_invalid");
+  assert.equal(refused.guard.state(), "active", "a refused request is not lost access");
+  assert.equal(refused.calls.length, 0);
+});
+
 test("R4 another account signing in on this browser wipes this tab", async () => {
   const { guard, answer, wipes } = setup();
   answer({ status: "ok", context_id: "ctx-b" });

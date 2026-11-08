@@ -16,7 +16,7 @@ export const CRUMB: Record<RouteName, string> = {
 
 export function Topbar({ onMenu, onShortcuts }: { onMenu: () => void; onShortcuts: () => void }) {
   const VIEW = useView();
-  const { name, go } = useRoute();
+  const { name, hrefFor } = useRoute();
   const { theme, toggleTheme, s } = useStore();
   const projectScoped = !s.deletedProject && (name === "project" || name === "investigation" || name === "results");
   const sample = VIEW.demo_only;
@@ -26,10 +26,10 @@ export function Topbar({ onMenu, onShortcuts }: { onMenu: () => void; onShortcut
       <button className="icon-btn menu-btn" onClick={onMenu} aria-label="Open navigation"><Menu size={17} /></button>
       <nav className="crumbs" aria-label="Breadcrumb">
         {projectScoped && <>
-          <button onClick={() => go("project")}>{VIEW.project.display_name}</button>
+          <a href={hrefFor("project")}>{VIEW.project.display_name}</a>
           <span className="crumb-sep" aria-hidden="true">/</span>
         </>}
-        <span className="here" aria-current="page">{name === NOT_FOUND ? "Page not found" : CRUMB[name]}</span>
+        <span className="here" aria-current="page" title={name === NOT_FOUND ? "Page not found" : CRUMB[name]}>{name === NOT_FOUND ? "Page not found" : CRUMB[name]}</span>
       </nav>
 
       <div className="top-right">
