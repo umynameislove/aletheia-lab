@@ -1,0 +1,25 @@
+BÀN GIAO K01–K18 — R3, ngày 13/11/2026
+
+Đã rà đủ18 nhóm và92 đầu việc:68 đạt phạm vi LOCAL,24 chưa đóng (15 đang làm,9 blocked). Chưa đạt release chung.
+Kiểm tra cuối:2.920 unit đạt/13 Windows skip;418 native PostgreSQL đạt/7 opt-in skip. Giữ nguyên lượt đầu7 lỗi do cụm thử chỉ16 connection; sau chỉnh cụm lên100, cùng source/deadline/assertion, lượt tổng đạt.
+
+Ban-giao-Kien-Windows-K01-K18-20261113-R3.zip
+SHA256: be14013ed362d2b5ab0df4244915e514a56d2d8b9e52cf75ab52888801370a3d
+Kích thước: 14372986 byte.
+
+Ban-giao-Bu-Tich-hop-K01-K18-20261113-R3.zip
+SHA256: b126875399a12f5d666ffea4a69495e0d3d00be71106564f4de52c72270b7b60
+Kích thước: 1108172 byte.
+
+Bu nhận cả hai gói, giải nén cạnh nhau. Đọc00–04 trong gói Bu; dùng helper tạo bản ghép trong thư mục mới. API2.499 file và UI137 file được giữ riêng; baseline ghép2.494 file có identity mới. Bu tiếp tục UI/API integration cùng Quân.
+
+Kiên đọc00/01 trong gói Kiên. Kiểm ZIP bằng sidecar ngoài ZIP; chạy smoke→upload200 trước. Nếu lỗi, dừng và giữ mọi attempt; trả thư mục results cùng SHA256. Giữ nguyên5s/200MiB/50×4MiB. Windows R3, IdP, CI, deployment, primary và joint vẫn cần bằng chứng thật.
+
+Đã đặt thư trả lời Quân cùng ZIP/sidecar tại:
+/Users/apple/study/Aletheia-Quan-Experience/02-Phoi-hop/Tra-loi-Quan-K13-K18-R2.1-20261113.txt
+UI327 unit/13 Chrome và budget live/hosted đã đạt local. Lỗi JS404 làm trắng root đã được xác nhận và ghi rõ để Quân/Bu sửa. Đây là bàn giao qua thư mục; không tuyên bố đã gửi chat.
+
+Báo cáo:01-Ca-nhan/Kiem-tong-K01-K18-20261113-R3.txt
+Chi tiết24 mục:01-Ca-nhan/24-muc-con-mo-K01-K18-20261113-R3.txt
+Canonical:01-Ca-nhan/03-Nghiem-thu.csv và09-Dau-viec-chi-tiet.csv. Joint/release/identity/DB40/F26 giữ nguyên các gate chưa chạy.
+ZIP đã niêm phong được giữ nguyên; biên bản kiểm ZIP nằm ngoài archive. Thư mục tham khảo aletheia-lab chỉ được đọc.

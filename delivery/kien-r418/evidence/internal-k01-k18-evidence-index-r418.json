@@ -1,0 +1,944 @@
+{
+  "scope": "Internal working index; no final acceptance for Bao.",
+  "items": [
+    {
+      "task_id": "K-01",
+      "canonical_method": "Đọc diff trước khi lấy main làm nền; giữ nhánh cũ và WIP. Chạy luồng synthetic trước tối ưu, ghi phân biệt public main9RPC với overlay10RPC; giữ commit nghiên cứu chưa merge ngoài nhánh sản phẩm.",
+      "canonical_expected": "Dựng được bản nền, lưu đủ source/build/config; không mất diff người khác, không nhận code chưa merge là capability đã phát hành.",
+      "historical_r415_remaining": "Đã xác minh patch archive R4.14→R4.15 khớp 2.551 tệp. Cần Git SHA ghép và CI exact SHA của nhóm. Connector hiện chỉ đọc repo.",
+      "historical_receipts_location": "Previous Gui-Quan-Bu-R4.15-20261114.zip; original index retained in this packet for provenance.",
+      "current_candidate_source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+      "unit_cases_with_matching_filename": 0,
+      "coverage_note": "Filename grouping is a navigation aid, not complete requirement coverage or K acceptance. Joint gates remain open.",
+      "backend_maintainability_gate": "pass",
+      "k_acceptance_status": "pending_joint_evidence",
+      "current_evidence": [
+        {
+          "path": "r418-change-scope.json",
+          "sha256": "71fcd9ba3d29465d8ba2dd2bf636599159b813d0e043ed0699fa65263ea9770a"
+        },
+        {
+          "path": "r418-refactor-function-results.csv",
+          "sha256": "0b0f69b5c8cc331ae3c1b2b6317e036fe07fca2566d32457adeb2131ba068dad"
+        },
+        {
+          "path": "r418-refactor-module-results.csv",
+          "sha256": "82e322f47b8d25eacf90c2d34ca36880e2f1df8bdf621afe91c82948e6ee344e"
+        },
+        {
+          "path": "r418-sealed-quality-result.json",
+          "sha256": "23dc9c142fc441e4060accaf8029ac1c1faa81e1c78536638defbc65114bda93"
+        },
+        {
+          "path": "r418-working-evidence-status.json",
+          "sha256": "c9e804981130e1776b92032ce8c513e5598049602ca2930bef174e53d588c06f"
+        },
+        {
+          "path": "r418-line-ending-parity.json",
+          "sha256": "0da30f583b08e6efcf17bfffb25ade9cefbe1007038289820255add739a2332d"
+        },
+        {
+          "path": "windows-unit-r418-sealed/junit.xml",
+          "sha256": "fd1f3df9275f812e348edfa8a292433dd99f59c62a2aefdf744ff79cabf1432c"
+        },
+        {
+          "path": "windows-r417-native-regression/junit.xml",
+          "sha256": "de8cd58aca1bf51278f0b32d621a5e9c693a68cd4628381378aeb919d7057939"
+        }
+      ]
+    },
+    {
+      "task_id": "K-02",
+      "canonical_method": "Ưu tiên modular monolith/API+worker cùng codebase. Tái dùng invariant hiện có qua adapter. Không mở HTTPServer loopback ra Internet hoặc chỉ thay bằng ThreadingHTTPServer. Tách I/O bất đồng bộ với CPU/PDF ở worker; không thêm Kafka/Kubernetes/microservices theo mặc định.",
+      "canonical_expected": "Schema/error/version được kiểm ở biên; mọi core operation có implementation+test. Conditional operations có disposition/capability=false và đường thay thế đã kiểm cho cùng nhu cầu; không bỏ core journey hoặc bật stub. P01–P38 là inventory nền, thêm routes auth/callback/onboarding khi contract thực cần.",
+      "historical_r415_remaining": "Ruff, hygiene, Bandit pass. Maintainability còn 135 C901, 53 trong hosted và 4 module quá dài. Giữ frozen budget. Phải tiếp tục tách trách nhiệm có test và chạy CI Git SHA.",
+      "historical_receipts_location": "Previous Gui-Quan-Bu-R4.15-20261114.zip; original index retained in this packet for provenance.",
+      "current_candidate_source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+      "unit_cases_with_matching_filename": 630,
+      "coverage_note": "Filename grouping is a navigation aid, not complete requirement coverage or K acceptance. Joint gates remain open.",
+      "backend_maintainability_gate": "pass",
+      "k_acceptance_status": "pending_joint_evidence",
+      "current_evidence": [
+        {
+          "path": "r418-change-scope.json",
+          "sha256": "71fcd9ba3d29465d8ba2dd2bf636599159b813d0e043ed0699fa65263ea9770a"
+        },
+        {
+          "path": "r418-refactor-function-results.csv",
+          "sha256": "0b0f69b5c8cc331ae3c1b2b6317e036fe07fca2566d32457adeb2131ba068dad"
+        },
+        {
+          "path": "r418-refactor-module-results.csv",
+          "sha256": "82e322f47b8d25eacf90c2d34ca36880e2f1df8bdf621afe91c82948e6ee344e"
+        },
+        {
+          "path": "r418-sealed-quality-result.json",
+          "sha256": "23dc9c142fc441e4060accaf8029ac1c1faa81e1c78536638defbc65114bda93"
+        },
+        {
+          "path": "r418-working-evidence-status.json",
+          "sha256": "c9e804981130e1776b92032ce8c513e5598049602ca2930bef174e53d588c06f"
+        },
+        {
+          "path": "r418-line-ending-parity.json",
+          "sha256": "0da30f583b08e6efcf17bfffb25ade9cefbe1007038289820255add739a2332d"
+        },
+        {
+          "path": "windows-unit-r418-sealed/junit.xml",
+          "sha256": "fd1f3df9275f812e348edfa8a292433dd99f59c62a2aefdf744ff79cabf1432c"
+        },
+        {
+          "path": "windows-r417-native-regression/junit.xml",
+          "sha256": "de8cd58aca1bf51278f0b32d621a5e9c693a68cd4628381378aeb919d7057939"
+        }
+      ]
+    },
+    {
+      "task_id": "K-03",
+      "canonical_method": "Dùng thư viện xác thực được duy trì, kiểm issuer/audience/state/nonce/PKCE theo flow; cookie Secure/HttpOnly/SameSite và chống CSRF theo framework. Rotate session, idle/absolute expiry; không lưu bearer secret dài hạn trong localStorage. Thử IdP staging thuộc đội, không blast IdP công khai.",
+      "canonical_expected": "Callback sai/replay/expired bị từ chối; logout vô hiệu hóa server session; API401 không biến thành dữ liệu demo; có test session fixation, CSRF, refresh race và thông tin đăng nhập không nằm trong log.",
+      "historical_r415_remaining": "R4.15 IdP local có OTP/recovery/revoke pass 118,234s. Còn 32 ca identity staging và hành trình Chrome với IdP thật.",
+      "historical_receipts_location": "Previous Gui-Quan-Bu-R4.15-20261114.zip; original index retained in this packet for provenance.",
+      "current_candidate_source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+      "unit_cases_with_matching_filename": 939,
+      "coverage_note": "Filename grouping is a navigation aid, not complete requirement coverage or K acceptance. Joint gates remain open.",
+      "backend_maintainability_gate": "pass",
+      "k_acceptance_status": "pending_joint_evidence",
+      "current_evidence": [
+        {
+          "path": "r418-change-scope.json",
+          "sha256": "71fcd9ba3d29465d8ba2dd2bf636599159b813d0e043ed0699fa65263ea9770a"
+        },
+        {
+          "path": "r418-refactor-function-results.csv",
+          "sha256": "0b0f69b5c8cc331ae3c1b2b6317e036fe07fca2566d32457adeb2131ba068dad"
+        },
+        {
+          "path": "r418-refactor-module-results.csv",
+          "sha256": "82e322f47b8d25eacf90c2d34ca36880e2f1df8bdf621afe91c82948e6ee344e"
+        },
+        {
+          "path": "r418-sealed-quality-result.json",
+          "sha256": "23dc9c142fc441e4060accaf8029ac1c1faa81e1c78536638defbc65114bda93"
+        },
+        {
+          "path": "r418-working-evidence-status.json",
+          "sha256": "c9e804981130e1776b92032ce8c513e5598049602ca2930bef174e53d588c06f"
+        },
+        {
+          "path": "r418-line-ending-parity.json",
+          "sha256": "0da30f583b08e6efcf17bfffb25ade9cefbe1007038289820255add739a2332d"
+        },
+        {
+          "path": "windows-unit-r418-sealed/junit.xml",
+          "sha256": "fd1f3df9275f812e348edfa8a292433dd99f59c62a2aefdf744ff79cabf1432c"
+        },
+        {
+          "path": "windows-r417-native-regression/junit.xml",
+          "sha256": "de8cd58aca1bf51278f0b32d621a5e9c693a68cd4628381378aeb919d7057939"
+        }
+      ]
+    },
+    {
+      "task_id": "K-04",
+      "canonical_method": "Deny mặc định; kiểm project→snapshot→result→evidence và parent chain. Không tin role/workspace do browser tự khai. Nếu dùng RLS, kiểm cả pooled connection reuse và quyền bypass. Recheck quyền với job publish/download/event; cache không giữ grant cũ.",
+      "canonical_expected": "Ma trận role×action có ca cho phép và từ chối; tráo ID/paging/search/job/event/download không lộ dữ liệu hoặc tên tài nguyên. Revoke được phản ánh trong tối đa5s theo policy dự án; không hứa thu hồi byte người dùng đã tải.",
+      "historical_r415_remaining": "Peer evidence đã phân biệt A10 bị gán nhầm thực chất A11; chưa đóng A10 creator revoke lúc job chạy. Combined Windows R4.12 là417 pass/1 K17 fault fail/18 skip. Same-release staging revoke và joint acceptance còn mở.",
+      "historical_receipts_location": "Previous Gui-Quan-Bu-R4.15-20261114.zip; original index retained in this packet for provenance.",
+      "current_candidate_source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+      "unit_cases_with_matching_filename": 555,
+      "coverage_note": "Filename grouping is a navigation aid, not complete requirement coverage or K acceptance. Joint gates remain open.",
+      "backend_maintainability_gate": "pass",
+      "k_acceptance_status": "pending_joint_evidence",
+      "current_evidence": [
+        {
+          "path": "r418-change-scope.json",
+          "sha256": "71fcd9ba3d29465d8ba2dd2bf636599159b813d0e043ed0699fa65263ea9770a"
+        },
+        {
+          "path": "r418-refactor-function-results.csv",
+          "sha256": "0b0f69b5c8cc331ae3c1b2b6317e036fe07fca2566d32457adeb2131ba068dad"
+        },
+        {
+          "path": "r418-refactor-module-results.csv",
+          "sha256": "82e322f47b8d25eacf90c2d34ca36880e2f1df8bdf621afe91c82948e6ee344e"
+        },
+        {
+          "path": "r418-sealed-quality-result.json",
+          "sha256": "23dc9c142fc441e4060accaf8029ac1c1faa81e1c78536638defbc65114bda93"
+        },
+        {
+          "path": "r418-working-evidence-status.json",
+          "sha256": "c9e804981130e1776b92032ce8c513e5598049602ca2930bef174e53d588c06f"
+        },
+        {
+          "path": "r418-line-ending-parity.json",
+          "sha256": "0da30f583b08e6efcf17bfffb25ade9cefbe1007038289820255add739a2332d"
+        },
+        {
+          "path": "windows-unit-r418-sealed/junit.xml",
+          "sha256": "fd1f3df9275f812e348edfa8a292433dd99f59c62a2aefdf744ff79cabf1432c"
+        },
+        {
+          "path": "windows-r417-native-regression/junit.xml",
+          "sha256": "de8cd58aca1bf51278f0b32d621a5e9c693a68cd4628381378aeb919d7057939"
+        }
+      ]
+    },
+    {
+      "task_id": "K-05",
+      "canonical_method": "Không quét/hash toàn catalog cho mỗi click. Verify đúng object khi dùng, đối chiếu index/version và background scrub có policy. Metadata transaction không giả atomic với object storage: stage→verify→reference, có orphan reconciliation/grace/GC. Query plan đo trên dữ liệu đủ lớn.",
+      "canonical_expected": "DB40 có kết quả và evidence; corruption được phát hiện, reference không trỏ object chưa ready, failed migration giữ bản cũ/rollback path. Hai facade giữ cùng source of truth, không tạo hai store lệch nhau.",
+      "historical_r415_remaining": "R4.15 SQL và byte hashing có hồi quy PostgreSQL, preview ledger và restore logic pass. Lượt native 79/2 giữ nguyên; nhóm export 4/4 khi chạy riêng. Còn DB40 staging và primary.",
+      "historical_receipts_location": "Previous Gui-Quan-Bu-R4.15-20261114.zip; original index retained in this packet for provenance.",
+      "current_candidate_source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+      "unit_cases_with_matching_filename": 68,
+      "coverage_note": "Filename grouping is a navigation aid, not complete requirement coverage or K acceptance. Joint gates remain open.",
+      "backend_maintainability_gate": "pass",
+      "k_acceptance_status": "pending_joint_evidence",
+      "current_evidence": [
+        {
+          "path": "r418-change-scope.json",
+          "sha256": "71fcd9ba3d29465d8ba2dd2bf636599159b813d0e043ed0699fa65263ea9770a"
+        },
+        {
+          "path": "r418-refactor-function-results.csv",
+          "sha256": "0b0f69b5c8cc331ae3c1b2b6317e036fe07fca2566d32457adeb2131ba068dad"
+        },
+        {
+          "path": "r418-refactor-module-results.csv",
+          "sha256": "82e322f47b8d25eacf90c2d34ca36880e2f1df8bdf621afe91c82948e6ee344e"
+        },
+        {
+          "path": "r418-sealed-quality-result.json",
+          "sha256": "23dc9c142fc441e4060accaf8029ac1c1faa81e1c78536638defbc65114bda93"
+        },
+        {
+          "path": "r418-working-evidence-status.json",
+          "sha256": "c9e804981130e1776b92032ce8c513e5598049602ca2930bef174e53d588c06f"
+        },
+        {
+          "path": "r418-line-ending-parity.json",
+          "sha256": "0da30f583b08e6efcf17bfffb25ade9cefbe1007038289820255add739a2332d"
+        },
+        {
+          "path": "windows-unit-r418-sealed/junit.xml",
+          "sha256": "fd1f3df9275f812e348edfa8a292433dd99f59c62a2aefdf744ff79cabf1432c"
+        },
+        {
+          "path": "windows-r417-native-regression/junit.xml",
+          "sha256": "de8cd58aca1bf51278f0b32d621a5e9c693a68cd4628381378aeb919d7057939"
+        }
+      ]
+    },
+    {
+      "task_id": "K-06",
+      "canonical_method": "Scope key theo actor/workspace/operation/key; lưu body hash làm giá trị đối chiếu, không đưa nó vào unique key để tránh conflict. Dùng conditional write/CAS/locks/constraints trong transaction ngắn. Không giữ transaction khi parse file, gọi provider hoặc render PDF.",
+      "canonical_expected": "Lost response rồi retry trả cùng receipt/effect; same key khác body conflict; concurrent refresh/review/delete không ghi đè hoặc mất lịch sử; deadlock/serialization được xử lý bounded.",
+      "historical_r415_remaining": "Đã thêm failure_kind conflict, attempts metadata có quyền hiện hành, V17 và UI giữ câu hỏi/không tự retry; local UI và native tests pass. Consumer cần chốt vị trí metadata tại attempts. Lost ACK/replay và positive-vs-conflict recipes dưới primary staging còn mở.",
+      "historical_receipts_location": "Previous Gui-Quan-Bu-R4.15-20261114.zip; original index retained in this packet for provenance.",
+      "current_candidate_source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+      "unit_cases_with_matching_filename": 92,
+      "coverage_note": "Filename grouping is a navigation aid, not complete requirement coverage or K acceptance. Joint gates remain open.",
+      "backend_maintainability_gate": "pass",
+      "k_acceptance_status": "pending_joint_evidence",
+      "current_evidence": [
+        {
+          "path": "r418-change-scope.json",
+          "sha256": "71fcd9ba3d29465d8ba2dd2bf636599159b813d0e043ed0699fa65263ea9770a"
+        },
+        {
+          "path": "r418-refactor-function-results.csv",
+          "sha256": "0b0f69b5c8cc331ae3c1b2b6317e036fe07fca2566d32457adeb2131ba068dad"
+        },
+        {
+          "path": "r418-refactor-module-results.csv",
+          "sha256": "82e322f47b8d25eacf90c2d34ca36880e2f1df8bdf621afe91c82948e6ee344e"
+        },
+        {
+          "path": "r418-sealed-quality-result.json",
+          "sha256": "23dc9c142fc441e4060accaf8029ac1c1faa81e1c78536638defbc65114bda93"
+        },
+        {
+          "path": "r418-working-evidence-status.json",
+          "sha256": "c9e804981130e1776b92032ce8c513e5598049602ca2930bef174e53d588c06f"
+        },
+        {
+          "path": "r418-line-ending-parity.json",
+          "sha256": "0da30f583b08e6efcf17bfffb25ade9cefbe1007038289820255add739a2332d"
+        },
+        {
+          "path": "windows-unit-r418-sealed/junit.xml",
+          "sha256": "fd1f3df9275f812e348edfa8a292433dd99f59c62a2aefdf744ff79cabf1432c"
+        },
+        {
+          "path": "windows-r417-native-regression/junit.xml",
+          "sha256": "de8cd58aca1bf51278f0b32d621a5e9c693a68cd4628381378aeb919d7057939"
+        }
+      ]
+    },
+    {
+      "task_id": "K-07",
+      "canonical_method": "Kiểm kích thước trước/sau giải nén, file count/depth/path/symlink, duplicate chunks, content type theo nội dung; file nhập là dữ liệu trơ. Connector chỉ bật nếu có allowlist/SSRF defense và credential boundary. Giữ Unicode NFC/NFD và nhiều run.",
+      "canonical_expected": "Retry chunk không nhân dữ liệu; source đổi sau preview bị từ chối an toàn; hết lease/quota/cancel không tạo project nửa vời. Import thất bại không mất snapshot trước hoặc xóa nguồn gốc.",
+      "historical_r415_remaining": "R4.15 Chrome/API/worker cùng ZIP 3 lần pass, 9 job settled, cùng snapshot/result. Còn resume/swap account/workspace và phối hợp staging.",
+      "historical_receipts_location": "Previous Gui-Quan-Bu-R4.15-20261114.zip; original index retained in this packet for provenance.",
+      "current_candidate_source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+      "unit_cases_with_matching_filename": 105,
+      "coverage_note": "Filename grouping is a navigation aid, not complete requirement coverage or K acceptance. Joint gates remain open.",
+      "backend_maintainability_gate": "pass",
+      "k_acceptance_status": "pending_joint_evidence",
+      "current_evidence": [
+        {
+          "path": "r418-change-scope.json",
+          "sha256": "71fcd9ba3d29465d8ba2dd2bf636599159b813d0e043ed0699fa65263ea9770a"
+        },
+        {
+          "path": "r418-refactor-function-results.csv",
+          "sha256": "0b0f69b5c8cc331ae3c1b2b6317e036fe07fca2566d32457adeb2131ba068dad"
+        },
+        {
+          "path": "r418-refactor-module-results.csv",
+          "sha256": "82e322f47b8d25eacf90c2d34ca36880e2f1df8bdf621afe91c82948e6ee344e"
+        },
+        {
+          "path": "r418-sealed-quality-result.json",
+          "sha256": "23dc9c142fc441e4060accaf8029ac1c1faa81e1c78536638defbc65114bda93"
+        },
+        {
+          "path": "r418-working-evidence-status.json",
+          "sha256": "c9e804981130e1776b92032ce8c513e5598049602ca2930bef174e53d588c06f"
+        },
+        {
+          "path": "r418-line-ending-parity.json",
+          "sha256": "0da30f583b08e6efcf17bfffb25ade9cefbe1007038289820255add739a2332d"
+        },
+        {
+          "path": "windows-unit-r418-sealed/junit.xml",
+          "sha256": "fd1f3df9275f812e348edfa8a292433dd99f59c62a2aefdf744ff79cabf1432c"
+        },
+        {
+          "path": "windows-r417-native-regression/junit.xml",
+          "sha256": "de8cd58aca1bf51278f0b32d621a5e9c693a68cd4628381378aeb919d7057939"
+        }
+      ]
+    },
+    {
+      "task_id": "K-08",
+      "canonical_method": "Giữ canonical identities và decimal/precision rules. Snapshot/bundle/comparison/current pointer publish cùng transaction. Mọi result phải pin project/snapshot/parent/analysis version và evidence source hash; query của generation cũ vẫn đọc đúng.",
+      "canonical_expected": "Hơn3runs, baseline/target/class/unit, zero/negative/tiny values và adverse threshold đúng; mutation không sửa result cũ; concurrent publish có outcome xác định. Causal status không được tự nâng từ metric delta.",
+      "historical_r415_remaining": "Cần cùng bản RC kiểm refresh, lịch sử, URL và so sánh ở UI.",
+      "historical_receipts_location": "Previous Gui-Quan-Bu-R4.15-20261114.zip; original index retained in this packet for provenance.",
+      "current_candidate_source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+      "unit_cases_with_matching_filename": 15,
+      "coverage_note": "Filename grouping is a navigation aid, not complete requirement coverage or K acceptance. Joint gates remain open.",
+      "backend_maintainability_gate": "pass",
+      "k_acceptance_status": "pending_joint_evidence",
+      "current_evidence": [
+        {
+          "path": "r418-change-scope.json",
+          "sha256": "71fcd9ba3d29465d8ba2dd2bf636599159b813d0e043ed0699fa65263ea9770a"
+        },
+        {
+          "path": "r418-refactor-function-results.csv",
+          "sha256": "0b0f69b5c8cc331ae3c1b2b6317e036fe07fca2566d32457adeb2131ba068dad"
+        },
+        {
+          "path": "r418-refactor-module-results.csv",
+          "sha256": "82e322f47b8d25eacf90c2d34ca36880e2f1df8bdf621afe91c82948e6ee344e"
+        },
+        {
+          "path": "r418-sealed-quality-result.json",
+          "sha256": "23dc9c142fc441e4060accaf8029ac1c1faa81e1c78536638defbc65114bda93"
+        },
+        {
+          "path": "r418-working-evidence-status.json",
+          "sha256": "c9e804981130e1776b92032ce8c513e5598049602ca2930bef174e53d588c06f"
+        },
+        {
+          "path": "r418-line-ending-parity.json",
+          "sha256": "0da30f583b08e6efcf17bfffb25ade9cefbe1007038289820255add739a2332d"
+        },
+        {
+          "path": "windows-unit-r418-sealed/junit.xml",
+          "sha256": "fd1f3df9275f812e348edfa8a292433dd99f59c62a2aefdf744ff79cabf1432c"
+        },
+        {
+          "path": "windows-r417-native-regression/junit.xml",
+          "sha256": "de8cd58aca1bf51278f0b32d621a5e9c693a68cd4628381378aeb919d7057939"
+        },
+        {
+          "path": "windows-r418-k08-k10-k14-k15/junit.xml",
+          "sha256": "beb7441b65c2fb659c9da953a66b8cfb57bb98c7187894507bcc782ecfce5516"
+        },
+        {
+          "path": "windows-r418-k08-k10-k14-k15/result.json",
+          "sha256": "64c76cb50ea4cef14cb64dc1d624faaeee1485bc6989ca9d6503eb345d2a1767"
+        }
+      ]
+    },
+    {
+      "task_id": "K-09",
+      "canonical_method": "Có thể dùng queue PG hoặc thư viện bền phù hợp; thêm broker khi có nhu cầu đo được. Job và publication có fence, tombstone và quyền hiện hành; submitter revoke theo policy đã chốt. SKIP LOCKED chỉ dùng đúng queue claim. Không hứa exactly-once delivery; bảo đảm một business effect qua idempotency/fence.",
+      "canonical_expected": "Kill sau ACK không mất job; stale worker không commit; cancel_requested khác cancelled; success đã commit có thể thắng cancel và UI nhận đúng outcome. Mọi job đã nhận có terminal hoặc còn trong deadline rõ.",
+      "historical_r415_remaining": "Typed post-ACK conflict/current revision đã qua native tests R4.14; UI unit cùng bytes và controlled Chrome pass. Joint consumer và primary staging acceptance còn mở; không đổi full R4.12 failed receipt thành pass.",
+      "historical_receipts_location": "Previous Gui-Quan-Bu-R4.15-20261114.zip; original index retained in this packet for provenance.",
+      "current_candidate_source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+      "unit_cases_with_matching_filename": 29,
+      "coverage_note": "Filename grouping is a navigation aid, not complete requirement coverage or K acceptance. Joint gates remain open.",
+      "backend_maintainability_gate": "pass",
+      "k_acceptance_status": "pending_joint_evidence",
+      "current_evidence": [
+        {
+          "path": "r418-change-scope.json",
+          "sha256": "71fcd9ba3d29465d8ba2dd2bf636599159b813d0e043ed0699fa65263ea9770a"
+        },
+        {
+          "path": "r418-refactor-function-results.csv",
+          "sha256": "0b0f69b5c8cc331ae3c1b2b6317e036fe07fca2566d32457adeb2131ba068dad"
+        },
+        {
+          "path": "r418-refactor-module-results.csv",
+          "sha256": "82e322f47b8d25eacf90c2d34ca36880e2f1df8bdf621afe91c82948e6ee344e"
+        },
+        {
+          "path": "r418-sealed-quality-result.json",
+          "sha256": "23dc9c142fc441e4060accaf8029ac1c1faa81e1c78536638defbc65114bda93"
+        },
+        {
+          "path": "r418-working-evidence-status.json",
+          "sha256": "c9e804981130e1776b92032ce8c513e5598049602ca2930bef174e53d588c06f"
+        },
+        {
+          "path": "r418-line-ending-parity.json",
+          "sha256": "0da30f583b08e6efcf17bfffb25ade9cefbe1007038289820255add739a2332d"
+        },
+        {
+          "path": "windows-unit-r418-sealed/junit.xml",
+          "sha256": "fd1f3df9275f812e348edfa8a292433dd99f59c62a2aefdf744ff79cabf1432c"
+        },
+        {
+          "path": "windows-r417-native-regression/junit.xml",
+          "sha256": "de8cd58aca1bf51278f0b32d621a5e9c693a68cd4628381378aeb919d7057939"
+        }
+      ]
+    },
+    {
+      "task_id": "K-10",
+      "canonical_method": "Không load toàn ProductView rồi mới cắt trong memory. Thiết kế query theo access path, kiểm N+1/index/pool waits. Cache chỉ khi profiling chỉ ra giá trị; không thêm Redis bắt buộc. Revoke/delete/current pointer làm invalidation đúng.",
+      "canonical_expected": "List/search/evidence/graph đọc đủ dữ liệu theo contract; totals chính xác hoặc nói rõ estimate. Hot/cold/large tenant không lộ chéo hoặc làm scan toàn kho; stale cursor/query conflict có lỗi rõ.",
+      "historical_r415_remaining": "Chrome/API thật R4.14 hiển thị22 nodes/30edges, endpoint bấm được; controlled UI graph pages có receipt riêng. Chưa có graph primary và paging/revoke trên primary API.",
+      "historical_receipts_location": "Previous Gui-Quan-Bu-R4.15-20261114.zip; original index retained in this packet for provenance.",
+      "current_candidate_source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+      "unit_cases_with_matching_filename": 24,
+      "coverage_note": "Filename grouping is a navigation aid, not complete requirement coverage or K acceptance. Joint gates remain open.",
+      "backend_maintainability_gate": "pass",
+      "k_acceptance_status": "pending_joint_evidence",
+      "current_evidence": [
+        {
+          "path": "r418-change-scope.json",
+          "sha256": "71fcd9ba3d29465d8ba2dd2bf636599159b813d0e043ed0699fa65263ea9770a"
+        },
+        {
+          "path": "r418-refactor-function-results.csv",
+          "sha256": "0b0f69b5c8cc331ae3c1b2b6317e036fe07fca2566d32457adeb2131ba068dad"
+        },
+        {
+          "path": "r418-refactor-module-results.csv",
+          "sha256": "82e322f47b8d25eacf90c2d34ca36880e2f1df8bdf621afe91c82948e6ee344e"
+        },
+        {
+          "path": "r418-sealed-quality-result.json",
+          "sha256": "23dc9c142fc441e4060accaf8029ac1c1faa81e1c78536638defbc65114bda93"
+        },
+        {
+          "path": "r418-working-evidence-status.json",
+          "sha256": "c9e804981130e1776b92032ce8c513e5598049602ca2930bef174e53d588c06f"
+        },
+        {
+          "path": "r418-line-ending-parity.json",
+          "sha256": "0da30f583b08e6efcf17bfffb25ade9cefbe1007038289820255add739a2332d"
+        },
+        {
+          "path": "windows-unit-r418-sealed/junit.xml",
+          "sha256": "fd1f3df9275f812e348edfa8a292433dd99f59c62a2aefdf744ff79cabf1432c"
+        },
+        {
+          "path": "windows-r417-native-regression/junit.xml",
+          "sha256": "de8cd58aca1bf51278f0b32d621a5e9c693a68cd4628381378aeb919d7057939"
+        },
+        {
+          "path": "windows-r418-k08-k10-k14-k15/junit.xml",
+          "sha256": "beb7441b65c2fb659c9da953a66b8cfb57bb98c7187894507bcc782ecfce5516"
+        },
+        {
+          "path": "windows-r418-k08-k10-k14-k15/result.json",
+          "sha256": "64c76cb50ea4cef14cb64dc1d624faaeee1485bc6989ca9d6503eb345d2a1767"
+        }
+      ]
+    },
+    {
+      "task_id": "K-11",
+      "canonical_method": "Tái dùng logic/commit nghiên cứu được Bao cho tích hợp; không chép dữ liệu nội bộ hoặc viết đè overlay. Chưa có module thì thống nhất interface và làm local observation từ validated snapshot; không giả diagnosis model. Provider adapter có allowlist/minimized payload/quota/cost/cancel/deadline, chỉ bật khi được cấp quyền.",
+      "canonical_expected": "Claim trích đúng operands và source; citation thuộc chính claim/turn; không suy cause từ metric đổi. Provider timeout/rate-limit/invalid output không thành success; test-double throughput không nhận là real-model throughput.",
+      "historical_r415_remaining": "Có executable proposal S/M/L100/1000/10000claims và full JSON25.258.208B choL. Đây là prototype offline, chưa nối producer/parser/consumer p6-product-view/v3; còn6 quyết định contract và fixture/oracle primary.",
+      "historical_receipts_location": "Previous Gui-Quan-Bu-R4.15-20261114.zip; original index retained in this packet for provenance.",
+      "current_candidate_source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+      "unit_cases_with_matching_filename": 16,
+      "coverage_note": "Filename grouping is a navigation aid, not complete requirement coverage or K acceptance. Joint gates remain open.",
+      "backend_maintainability_gate": "pass",
+      "k_acceptance_status": "pending_joint_evidence",
+      "current_evidence": [
+        {
+          "path": "r418-change-scope.json",
+          "sha256": "71fcd9ba3d29465d8ba2dd2bf636599159b813d0e043ed0699fa65263ea9770a"
+        },
+        {
+          "path": "r418-refactor-function-results.csv",
+          "sha256": "0b0f69b5c8cc331ae3c1b2b6317e036fe07fca2566d32457adeb2131ba068dad"
+        },
+        {
+          "path": "r418-refactor-module-results.csv",
+          "sha256": "82e322f47b8d25eacf90c2d34ca36880e2f1df8bdf621afe91c82948e6ee344e"
+        },
+        {
+          "path": "r418-sealed-quality-result.json",
+          "sha256": "23dc9c142fc441e4060accaf8029ac1c1faa81e1c78536638defbc65114bda93"
+        },
+        {
+          "path": "r418-working-evidence-status.json",
+          "sha256": "c9e804981130e1776b92032ce8c513e5598049602ca2930bef174e53d588c06f"
+        },
+        {
+          "path": "r418-line-ending-parity.json",
+          "sha256": "0da30f583b08e6efcf17bfffb25ade9cefbe1007038289820255add739a2332d"
+        },
+        {
+          "path": "windows-unit-r418-sealed/junit.xml",
+          "sha256": "fd1f3df9275f812e348edfa8a292433dd99f59c62a2aefdf744ff79cabf1432c"
+        },
+        {
+          "path": "windows-r417-native-regression/junit.xml",
+          "sha256": "de8cd58aca1bf51278f0b32d621a5e9c693a68cd4628381378aeb919d7057939"
+        }
+      ]
+    },
+    {
+      "task_id": "K-12",
+      "canonical_method": "Không dựng PDF nặng trong request path; renderer hạn chế tài nguyên/mạng. Unicode/font nhúng phù hợp, CSV formula nếu hỗ trợ định dạng đó phải được xử lý. Proxy hoặc URL ngắn hạn phải phù hợp revoke policy; range/retry không bypass quyền.",
+      "canonical_expected": "Report đúng result/snapshot/claim/citation và precision; PDF tiếng Việt đọc/copy được. Token URL/log không lộ; file hết quyền/hết hạn bị chặn; export lớn không bóp nghẹt reads.",
+      "historical_r415_remaining": "Chrome R4.15 PDF 35.896 byte, 12 trang, khớp SHA descriptor và tiếng Việt. Rerun export 4/4. Còn quyền hiện hành sau independent restore và primary export budgets.",
+      "historical_receipts_location": "Previous Gui-Quan-Bu-R4.15-20261114.zip; original index retained in this packet for provenance.",
+      "current_candidate_source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+      "unit_cases_with_matching_filename": 15,
+      "coverage_note": "Filename grouping is a navigation aid, not complete requirement coverage or K acceptance. Joint gates remain open.",
+      "backend_maintainability_gate": "pass",
+      "k_acceptance_status": "pending_joint_evidence",
+      "current_evidence": [
+        {
+          "path": "r418-change-scope.json",
+          "sha256": "71fcd9ba3d29465d8ba2dd2bf636599159b813d0e043ed0699fa65263ea9770a"
+        },
+        {
+          "path": "r418-refactor-function-results.csv",
+          "sha256": "0b0f69b5c8cc331ae3c1b2b6317e036fe07fca2566d32457adeb2131ba068dad"
+        },
+        {
+          "path": "r418-refactor-module-results.csv",
+          "sha256": "82e322f47b8d25eacf90c2d34ca36880e2f1df8bdf621afe91c82948e6ee344e"
+        },
+        {
+          "path": "r418-sealed-quality-result.json",
+          "sha256": "23dc9c142fc441e4060accaf8029ac1c1faa81e1c78536638defbc65114bda93"
+        },
+        {
+          "path": "r418-working-evidence-status.json",
+          "sha256": "c9e804981130e1776b92032ce8c513e5598049602ca2930bef174e53d588c06f"
+        },
+        {
+          "path": "r418-line-ending-parity.json",
+          "sha256": "0da30f583b08e6efcf17bfffb25ade9cefbe1007038289820255add739a2332d"
+        },
+        {
+          "path": "windows-unit-r418-sealed/junit.xml",
+          "sha256": "fd1f3df9275f812e348edfa8a292433dd99f59c62a2aefdf744ff79cabf1432c"
+        },
+        {
+          "path": "windows-r417-native-regression/junit.xml",
+          "sha256": "de8cd58aca1bf51278f0b32d621a5e9c693a68cd4628381378aeb919d7057939"
+        }
+      ]
+    },
+    {
+      "task_id": "K-13",
+      "canonical_method": "Tombstone chặn writer cũ; xóa metadata/object theo references, không phá shared object. Reconcile staged objects sau grace. Restore không resurrect tenant/project bị xóa mà thiếu tombstone/redaction history; phát hành policy giữ backup rõ.",
+      "canonical_expected": "Delete×refresh/job/export/download race giữ quyền/toàn vẹn; không trả success purge khi mới nhận job. Không xóa thư mục nguồn của người dùng. Sau restore, user không đọc lại project đã xóa trái policy.",
+      "historical_r415_remaining": "Restore logic R4.15 2 object, restore + checkpoint 2,110s, giữ delete/revoke và chặn phiên cũ. Còn off-host, independent restore và ký chéo.",
+      "historical_receipts_location": "Previous Gui-Quan-Bu-R4.15-20261114.zip; original index retained in this packet for provenance.",
+      "current_candidate_source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+      "unit_cases_with_matching_filename": 10,
+      "coverage_note": "Filename grouping is a navigation aid, not complete requirement coverage or K acceptance. Joint gates remain open.",
+      "backend_maintainability_gate": "pass",
+      "k_acceptance_status": "pending_joint_evidence",
+      "current_evidence": [
+        {
+          "path": "r418-change-scope.json",
+          "sha256": "71fcd9ba3d29465d8ba2dd2bf636599159b813d0e043ed0699fa65263ea9770a"
+        },
+        {
+          "path": "r418-refactor-function-results.csv",
+          "sha256": "0b0f69b5c8cc331ae3c1b2b6317e036fe07fca2566d32457adeb2131ba068dad"
+        },
+        {
+          "path": "r418-refactor-module-results.csv",
+          "sha256": "82e322f47b8d25eacf90c2d34ca36880e2f1df8bdf621afe91c82948e6ee344e"
+        },
+        {
+          "path": "r418-sealed-quality-result.json",
+          "sha256": "23dc9c142fc441e4060accaf8029ac1c1faa81e1c78536638defbc65114bda93"
+        },
+        {
+          "path": "r418-working-evidence-status.json",
+          "sha256": "c9e804981130e1776b92032ce8c513e5598049602ca2930bef174e53d588c06f"
+        },
+        {
+          "path": "r418-line-ending-parity.json",
+          "sha256": "0da30f583b08e6efcf17bfffb25ade9cefbe1007038289820255add739a2332d"
+        },
+        {
+          "path": "windows-unit-r418-sealed/junit.xml",
+          "sha256": "fd1f3df9275f812e348edfa8a292433dd99f59c62a2aefdf744ff79cabf1432c"
+        },
+        {
+          "path": "windows-r417-native-regression/junit.xml",
+          "sha256": "de8cd58aca1bf51278f0b32d621a5e9c693a68cd4628381378aeb919d7057939"
+        },
+        {
+          "path": "windows-r418-restore-delivery-complete/junit.xml",
+          "sha256": "c0e8e04c9826031607af15990baf92f72a44d80867b0b8d477741ba0ce125bea"
+        },
+        {
+          "path": "windows-r418-restore-delivery-complete/result.json",
+          "sha256": "a7287e8ac754bd55633581f50210f588c6ec923ab8b313162d4a2d52f36979a0"
+        },
+        {
+          "path": "linux-ext4-r4.18-pitr/physical-pitr.json",
+          "sha256": "38bc2c6d6900fcf0b64bd605ad8e4c2e7a1d618077a01af11fc210f39d0978b3"
+        },
+        {
+          "path": "linux-ext4-r4.18-pitr/result.json",
+          "sha256": "e5b889eea24936df26b7d9cfbf15f2fbbf4ba32dee92c0b9b9396e82291308d2"
+        }
+      ]
+    },
+    {
+      "task_id": "K-14",
+      "canonical_method": "Tính tổng connection qua mọi replica/process/worker; tách CPU khỏi async event loop. Không một DB connection hoặc heavy thread/người dùng. Đo cold/warm RSS, queue age và noisy tenant; đặt limit từ số đo, không tăng workers vô hạn.",
+      "canonical_expected": "Reads/health không bị worker job storm làm chết; overload429/503/Retry-After đúng, jobs đã ACK không mất. Trong normal50k vẫn đạt SLO/success, không dùng reject để làm latency đẹp.",
+      "historical_r415_remaining": "Cần fairness, tải nặng và kiểm tài nguyên theo topology phát hành.",
+      "historical_receipts_location": "Previous Gui-Quan-Bu-R4.15-20261114.zip; original index retained in this packet for provenance.",
+      "current_candidate_source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+      "unit_cases_with_matching_filename": 18,
+      "coverage_note": "Filename grouping is a navigation aid, not complete requirement coverage or K acceptance. Joint gates remain open.",
+      "backend_maintainability_gate": "pass",
+      "k_acceptance_status": "pending_joint_evidence",
+      "current_evidence": [
+        {
+          "path": "r418-change-scope.json",
+          "sha256": "71fcd9ba3d29465d8ba2dd2bf636599159b813d0e043ed0699fa65263ea9770a"
+        },
+        {
+          "path": "r418-refactor-function-results.csv",
+          "sha256": "0b0f69b5c8cc331ae3c1b2b6317e036fe07fca2566d32457adeb2131ba068dad"
+        },
+        {
+          "path": "r418-refactor-module-results.csv",
+          "sha256": "82e322f47b8d25eacf90c2d34ca36880e2f1df8bdf621afe91c82948e6ee344e"
+        },
+        {
+          "path": "r418-sealed-quality-result.json",
+          "sha256": "23dc9c142fc441e4060accaf8029ac1c1faa81e1c78536638defbc65114bda93"
+        },
+        {
+          "path": "r418-working-evidence-status.json",
+          "sha256": "c9e804981130e1776b92032ce8c513e5598049602ca2930bef174e53d588c06f"
+        },
+        {
+          "path": "r418-line-ending-parity.json",
+          "sha256": "0da30f583b08e6efcf17bfffb25ade9cefbe1007038289820255add739a2332d"
+        },
+        {
+          "path": "windows-unit-r418-sealed/junit.xml",
+          "sha256": "fd1f3df9275f812e348edfa8a292433dd99f59c62a2aefdf744ff79cabf1432c"
+        },
+        {
+          "path": "windows-r417-native-regression/junit.xml",
+          "sha256": "de8cd58aca1bf51278f0b32d621a5e9c693a68cd4628381378aeb919d7057939"
+        },
+        {
+          "path": "windows-r418-k08-k10-k14-k15/junit.xml",
+          "sha256": "beb7441b65c2fb659c9da953a66b8cfb57bb98c7187894507bcc782ecfce5516"
+        },
+        {
+          "path": "windows-r418-k08-k10-k14-k15/result.json",
+          "sha256": "64c76cb50ea4cef14cb64dc1d624faaeee1485bc6989ca9d6503eb345d2a1767"
+        },
+        {
+          "path": "windows-r418-k14-export-isolated/result.json",
+          "sha256": "489f7fe6f970be38513d17473d6192140ae58b5528dd678c7241f5c277b97399"
+        },
+        {
+          "path": "windows-r415-k14-export-comparison/result.json",
+          "sha256": "5808debc20d1c4c7ea837aabbc59884fdf15a09beb77bf54b5595eb10428c2b0"
+        },
+        {
+          "path": "linux-r418-k14-export/result.json",
+          "sha256": "761d568df176f16f75308bebd844eea9d6d07474d373a94735cb1a8efe72bf2b"
+        }
+      ]
+    },
+    {
+      "task_id": "K-15",
+      "canonical_method": "Chọn SSE hay polling từ nhu cầu đo được; SSE không bắt buộc mọi nơi. Không connection DB suốt lifetime stream. Resume quá retention trả resync; mỗi tab/account/workspace có scope và cancellation. Revoke ngắt hoặc từ chối trong policy tối đa5s.",
+      "canonical_expected": "Reconnect không tạo duplicate job/event hoặc bão đồng bộ; expired stream không phát dữ liệu cũ; pending jobs không bị đếm là completed. Có số liệu subscriptions/poll RPS/heartbeat/buffer.",
+      "historical_r415_remaining": "Cần reconnect qua proxy, cross-tab và replica trên môi trường cùng bản.",
+      "historical_receipts_location": "Previous Gui-Quan-Bu-R4.15-20261114.zip; original index retained in this packet for provenance.",
+      "current_candidate_source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+      "unit_cases_with_matching_filename": 30,
+      "coverage_note": "Filename grouping is a navigation aid, not complete requirement coverage or K acceptance. Joint gates remain open.",
+      "backend_maintainability_gate": "pass",
+      "k_acceptance_status": "pending_joint_evidence",
+      "current_evidence": [
+        {
+          "path": "r418-change-scope.json",
+          "sha256": "71fcd9ba3d29465d8ba2dd2bf636599159b813d0e043ed0699fa65263ea9770a"
+        },
+        {
+          "path": "r418-refactor-function-results.csv",
+          "sha256": "0b0f69b5c8cc331ae3c1b2b6317e036fe07fca2566d32457adeb2131ba068dad"
+        },
+        {
+          "path": "r418-refactor-module-results.csv",
+          "sha256": "82e322f47b8d25eacf90c2d34ca36880e2f1df8bdf621afe91c82948e6ee344e"
+        },
+        {
+          "path": "r418-sealed-quality-result.json",
+          "sha256": "23dc9c142fc441e4060accaf8029ac1c1faa81e1c78536638defbc65114bda93"
+        },
+        {
+          "path": "r418-working-evidence-status.json",
+          "sha256": "c9e804981130e1776b92032ce8c513e5598049602ca2930bef174e53d588c06f"
+        },
+        {
+          "path": "r418-line-ending-parity.json",
+          "sha256": "0da30f583b08e6efcf17bfffb25ade9cefbe1007038289820255add739a2332d"
+        },
+        {
+          "path": "windows-unit-r418-sealed/junit.xml",
+          "sha256": "fd1f3df9275f812e348edfa8a292433dd99f59c62a2aefdf744ff79cabf1432c"
+        },
+        {
+          "path": "windows-r417-native-regression/junit.xml",
+          "sha256": "de8cd58aca1bf51278f0b32d621a5e9c693a68cd4628381378aeb919d7057939"
+        },
+        {
+          "path": "windows-r418-k08-k10-k14-k15/junit.xml",
+          "sha256": "beb7441b65c2fb659c9da953a66b8cfb57bb98c7187894507bcc782ecfce5516"
+        },
+        {
+          "path": "windows-r418-k08-k10-k14-k15/result.json",
+          "sha256": "64c76cb50ea4cef14cb64dc1d624faaeee1485bc6989ca9d6503eb345d2a1767"
+        }
+      ]
+    },
+    {
+      "task_id": "K-16",
+      "canonical_method": "Theo dõi golden signals + queue/pool/lock/GC/tenant fairness; không log token, raw source, question có dữ liệu riêng hoặc evaluator truth. Kiểm dependencies/license/SBOM/image/non-root/secret injection. Health không chỉ200 khi DB/queue không nhận được việc.",
+      "canonical_expected": "Điều tra một journey hỏng tới đúng version/worker/object được; log injection và error paths không leak; alert saturation/recovery có diễn tập. Monitoring không tự gây cardinality/IO không giới hạn.",
+      "historical_r415_remaining": "Bandit CLI R4.15 pass 0 finding; image 0 CRITICAL, 47 HIGH/11 CVE, SBOM158. Có đối chiếu Debian và điều kiện chạy container. Maintainability blocked 135 C901, 4 module. Cần xác nhận security trên staging/deployment thực tế và CI.",
+      "historical_receipts_location": "Previous Gui-Quan-Bu-R4.15-20261114.zip; original index retained in this packet for provenance.",
+      "current_candidate_source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+      "unit_cases_with_matching_filename": 24,
+      "coverage_note": "Filename grouping is a navigation aid, not complete requirement coverage or K acceptance. Joint gates remain open.",
+      "backend_maintainability_gate": "pass",
+      "k_acceptance_status": "pending_joint_evidence",
+      "current_evidence": [
+        {
+          "path": "r418-change-scope.json",
+          "sha256": "71fcd9ba3d29465d8ba2dd2bf636599159b813d0e043ed0699fa65263ea9770a"
+        },
+        {
+          "path": "r418-refactor-function-results.csv",
+          "sha256": "0b0f69b5c8cc331ae3c1b2b6317e036fe07fca2566d32457adeb2131ba068dad"
+        },
+        {
+          "path": "r418-refactor-module-results.csv",
+          "sha256": "82e322f47b8d25eacf90c2d34ca36880e2f1df8bdf621afe91c82948e6ee344e"
+        },
+        {
+          "path": "r418-sealed-quality-result.json",
+          "sha256": "23dc9c142fc441e4060accaf8029ac1c1faa81e1c78536638defbc65114bda93"
+        },
+        {
+          "path": "r418-working-evidence-status.json",
+          "sha256": "c9e804981130e1776b92032ce8c513e5598049602ca2930bef174e53d588c06f"
+        },
+        {
+          "path": "r418-line-ending-parity.json",
+          "sha256": "0da30f583b08e6efcf17bfffb25ade9cefbe1007038289820255add739a2332d"
+        },
+        {
+          "path": "windows-unit-r418-sealed/junit.xml",
+          "sha256": "fd1f3df9275f812e348edfa8a292433dd99f59c62a2aefdf744ff79cabf1432c"
+        },
+        {
+          "path": "windows-r417-native-regression/junit.xml",
+          "sha256": "de8cd58aca1bf51278f0b32d621a5e9c693a68cd4628381378aeb919d7057939"
+        },
+        {
+          "path": "image-r418-security-summary.json",
+          "sha256": "aea15a91598cd0e7cb76a5379a4021963729ad323b2e3f2cad8103683b80d223"
+        },
+        {
+          "path": "image-r418-smoke.json",
+          "sha256": "2788e0b8b9de99628dcb3a671f1e4d4c4ab9155d2796d727fee92c3b483bea01"
+        }
+      ]
+    },
+    {
+      "task_id": "K-17",
+      "canonical_method": "Baseline trước tối ưu; kiểm generator headroom; cùng release/dataset; 50k unique active và arrivals kiểm riêng. Không chỉ bắn GET hoặc health, không bỏ write/export/auth. Theo dõi job tới terminal, DB locks/pool, orphan/object/cache/recovery; lưu failed/partial runs.",
+      "canonical_expected": "Đủ các bài và SLO trong guide; DB40/F26 không còn not_run nếu claim đã kiểm. Không đạt50k thì gate chưa đạt với bottleneck/correction plan, không đổi định nghĩa tải hoặc nới correctness.",
+      "historical_r415_remaining": "Giữ nguyên từng campaign R4.10/R4.11:hai open5/s đều590/590;10/s1178/1180,20/s2025/2346,closed100924/968 và failed ACK. Typed conflict/repeat ZIP đã sửa riêng, chưa chạy lại campaign R4.14. Prototype v3 không phải primary producer/seed. Staging/IdP/generator, geometry primary,50k/soak/cost và DB40/F26 còn mở.",
+      "historical_receipts_location": "Previous Gui-Quan-Bu-R4.15-20261114.zip; original index retained in this packet for provenance.",
+      "current_candidate_source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+      "unit_cases_with_matching_filename": 62,
+      "coverage_note": "Filename grouping is a navigation aid, not complete requirement coverage or K acceptance. Joint gates remain open.",
+      "backend_maintainability_gate": "pass",
+      "k_acceptance_status": "pending_joint_evidence",
+      "current_evidence": [
+        {
+          "path": "r418-change-scope.json",
+          "sha256": "71fcd9ba3d29465d8ba2dd2bf636599159b813d0e043ed0699fa65263ea9770a"
+        },
+        {
+          "path": "r418-refactor-function-results.csv",
+          "sha256": "0b0f69b5c8cc331ae3c1b2b6317e036fe07fca2566d32457adeb2131ba068dad"
+        },
+        {
+          "path": "r418-refactor-module-results.csv",
+          "sha256": "82e322f47b8d25eacf90c2d34ca36880e2f1df8bdf621afe91c82948e6ee344e"
+        },
+        {
+          "path": "r418-sealed-quality-result.json",
+          "sha256": "23dc9c142fc441e4060accaf8029ac1c1faa81e1c78536638defbc65114bda93"
+        },
+        {
+          "path": "r418-working-evidence-status.json",
+          "sha256": "c9e804981130e1776b92032ce8c513e5598049602ca2930bef174e53d588c06f"
+        },
+        {
+          "path": "r418-line-ending-parity.json",
+          "sha256": "0da30f583b08e6efcf17bfffb25ade9cefbe1007038289820255add739a2332d"
+        },
+        {
+          "path": "windows-unit-r418-sealed/junit.xml",
+          "sha256": "fd1f3df9275f812e348edfa8a292433dd99f59c62a2aefdf744ff79cabf1432c"
+        },
+        {
+          "path": "windows-r417-native-regression/junit.xml",
+          "sha256": "de8cd58aca1bf51278f0b32d621a5e9c693a68cd4628381378aeb919d7057939"
+        },
+        {
+          "path": "linux-r418-open5/observed-summary.json",
+          "sha256": "112a880337749ab113f1354bf51446310017a18892dd00ca92b968a7a2df8d63"
+        },
+        {
+          "path": "linux-r418-open5/observed-strata.csv",
+          "sha256": "68973749f7717777aa9c7e04d6fa7cf4e42ab4093deeba73a553c7c8a07b0eb0"
+        },
+        {
+          "path": "r418-calibration-interpretation.json",
+          "sha256": "1d12c8ca34f2537ffe5c1280095dad4a1797ce8b09655fd91db2bb92865f36ba"
+        }
+      ]
+    },
+    {
+      "task_id": "K-18",
+      "canonical_method": "Không cần K8s: deployment nhỏ minh bạch, health/readiness/graceful stop, expand-contract migration theo compatibility. Không giả reverse migration khi schema phá hủy; dùng forward-fix/backup restore đã kiểm. Quản lý config/secrets, rollback asset/API versions và cleanup.",
+      "canonical_expected": "Máy sạch đi hết journey; upgrade dưới traffic không mất job đã ACK; process-loss retained-storage RPO0/RTO≤60s, còn storage/host loss phải có mục tiêu và bài riêng. Restore kiểm nội dung/quyền tới consumer; Quân tự dựng lại bằng docs.",
+      "historical_r415_remaining": "Wheel/sdist tái lập và clean install 52 pin, 670 tệp runtime, 4 child. Image non-root readonly pass. Restore local pass; cần Git SHA/CI, staging rollout/rollback và độc lập off-host.",
+      "historical_receipts_location": "Previous Gui-Quan-Bu-R4.15-20261114.zip; original index retained in this packet for provenance.",
+      "current_candidate_source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+      "unit_cases_with_matching_filename": 37,
+      "coverage_note": "Filename grouping is a navigation aid, not complete requirement coverage or K acceptance. Joint gates remain open.",
+      "backend_maintainability_gate": "pass",
+      "k_acceptance_status": "pending_joint_evidence",
+      "current_evidence": [
+        {
+          "path": "r418-change-scope.json",
+          "sha256": "71fcd9ba3d29465d8ba2dd2bf636599159b813d0e043ed0699fa65263ea9770a"
+        },
+        {
+          "path": "r418-refactor-function-results.csv",
+          "sha256": "0b0f69b5c8cc331ae3c1b2b6317e036fe07fca2566d32457adeb2131ba068dad"
+        },
+        {
+          "path": "r418-refactor-module-results.csv",
+          "sha256": "82e322f47b8d25eacf90c2d34ca36880e2f1df8bdf621afe91c82948e6ee344e"
+        },
+        {
+          "path": "r418-sealed-quality-result.json",
+          "sha256": "23dc9c142fc441e4060accaf8029ac1c1faa81e1c78536638defbc65114bda93"
+        },
+        {
+          "path": "r418-working-evidence-status.json",
+          "sha256": "c9e804981130e1776b92032ce8c513e5598049602ca2930bef174e53d588c06f"
+        },
+        {
+          "path": "r418-line-ending-parity.json",
+          "sha256": "0da30f583b08e6efcf17bfffb25ade9cefbe1007038289820255add739a2332d"
+        },
+        {
+          "path": "windows-unit-r418-sealed/junit.xml",
+          "sha256": "fd1f3df9275f812e348edfa8a292433dd99f59c62a2aefdf744ff79cabf1432c"
+        },
+        {
+          "path": "windows-r417-native-regression/junit.xml",
+          "sha256": "de8cd58aca1bf51278f0b32d621a5e9c693a68cd4628381378aeb919d7057939"
+        },
+        {
+          "path": "windows-r418-restore-delivery-complete/junit.xml",
+          "sha256": "c0e8e04c9826031607af15990baf92f72a44d80867b0b8d477741ba0ce125bea"
+        },
+        {
+          "path": "windows-r418-restore-delivery-complete/result.json",
+          "sha256": "a7287e8ac754bd55633581f50210f588c6ec923ab8b313162d4a2d52f36979a0"
+        },
+        {
+          "path": "linux-ext4-r4.18-pitr/physical-pitr.json",
+          "sha256": "38bc2c6d6900fcf0b64bd605ad8e4c2e7a1d618077a01af11fc210f39d0978b3"
+        },
+        {
+          "path": "linux-ext4-r4.18-pitr/result.json",
+          "sha256": "e5b889eea24936df26b7d9cfbf15f2fbbf4ba32dee92c0b9b9396e82291308d2"
+        },
+        {
+          "path": "image-r418-security-summary.json",
+          "sha256": "aea15a91598cd0e7cb76a5379a4021963729ad323b2e3f2cad8103683b80d223"
+        },
+        {
+          "path": "image-r418-smoke.json",
+          "sha256": "2788e0b8b9de99628dcb3a671f1e4d4c4ab9155d2796d727fee92c3b483bea01"
+        }
+      ]
+    }
+  ],
+  "latest_candidate": {
+    "revision": "R4.18",
+    "source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+    "runtime_identity": "a046bccd9a0beb135951a0928c7ddd131b327302bcacf10c7ddb979757c9d495",
+    "all_k01_k18_pass": false,
+    "final_bao_report_exported": false
+  }
+}
