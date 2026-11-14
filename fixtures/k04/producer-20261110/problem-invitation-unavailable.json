@@ -1,0 +1,9 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "type": "urn:aletheia:problem:invitation_unavailable",
+  "title": "Request could not be completed",
+  "status": 404,
+  "code": "invitation_unavailable",
+  "detail": "The request could not be completed.",
+  "request_id": "req_synthetic"
+}

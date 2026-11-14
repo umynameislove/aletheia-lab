@@ -1,0 +1,97 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "ws_synthetic",
+  "project_id": "p3-project-7e9ae9eb40a1623d5dc63aecf3caf681590fe52f29a942b96e3bc7aee13dce0b",
+  "record_id": "p3-snapshot-62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747",
+  "record_kind": "snapshot",
+  "data": {
+    "schema_version": "project-snapshot/v1",
+    "snapshot_id": "p3-snapshot-62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747",
+    "project_id": "p3-project-7e9ae9eb40a1623d5dc63aecf3caf681590fe52f29a942b96e3bc7aee13dce0b",
+    "source_bundle_id": "p3-bundle-57f9fdf18c3bc65e13c9457dbbc46e953ded1c2f595b82d2ecc16069792f2f4e",
+    "source_bundle_sha256": "4e71dd0de1756972256471bf134a5b7bb6c796aaa6c22b6bf11b65bbe2c228ae",
+    "project_manifest_sha256": "cb38561168c7af999fef7714755db0e9575d053d64cc32b8e7eff58b2d885fe0",
+    "file_collection_sha256": "ac9165078a11b5982ba6b47cc8db154f24c735d491c9f0734dc99f5c45e46961",
+    "git_state_sha256": "0b79e229a684f162b41117fafb0a41f76f2c002dea4cb0656a3e8aeef93596d6",
+    "mapping_configuration_sha256": "ce56eb811304b319eda9e467f67ed18fe9d04e9e41dcda89ca27c1297bcf4ddb",
+    "mapping_result_sha256": "e6ded329821af24f2912b2007536307eec51d8a2d7f85d608e9aaa9d4d781fa0",
+    "baseline_run_id": "baseline",
+    "collectors": [
+      {
+        "role": "file_catalog",
+        "name": "project-file-catalog",
+        "version": "project-file-catalog/1.0.0",
+        "output_sha256": "ac9165078a11b5982ba6b47cc8db154f24c735d491c9f0734dc99f5c45e46961"
+      },
+      {
+        "role": "git_state",
+        "name": "project-git-state",
+        "version": "project-git-state/1.0.0",
+        "output_sha256": "0b79e229a684f162b41117fafb0a41f76f2c002dea4cb0656a3e8aeef93596d6"
+      },
+      {
+        "role": "import",
+        "name": "secure-local-import",
+        "version": "1.0.0",
+        "output_sha256": "cb38561168c7af999fef7714755db0e9575d053d64cc32b8e7eff58b2d885fe0"
+      }
+    ],
+    "items": [
+      {
+        "project_item_id": "p3-item-fda46dac14bd11dd2235c171ba2f08e39f08914fdec798e83f10f812bb03d9d3",
+        "relative_path": "config.json",
+        "source_type": "config",
+        "source_sha256": "f43c89b365f22147e069e5c3fe1d02681aee1ff1c4ca1a0997914aef71c8a99d",
+        "artifact_sha256": "f43c89b365f22147e069e5c3fe1d02681aee1ff1c4ca1a0997914aef71c8a99d",
+        "observation_sha256": "c92bc36eec73cbb0c0b4ef9078a570147beb0ea3f80039d1631cb58a3359b4d9",
+        "visibility": "diagnosis",
+        "redaction_state": "none"
+      },
+      {
+        "project_item_id": "p3-item-71cfc7cb5316ea40ee59daa47328a5f885e900be8e592b2f087b19b060ac3c12",
+        "relative_path": "dataset.csv",
+        "source_type": "dataset",
+        "source_sha256": "cab4f7f04cf72cf79a43b7a8fc0831c62d6b2c55e8cdeb95670baed400e5c4df",
+        "artifact_sha256": "981519180ae28e38559e9f01d20bba1653b868a58a17880c783ce45dc4a6db04",
+        "observation_sha256": "91c34623001e7fc4702b813379e1217f9bb07321ba5e2bc165aca710c94aec30",
+        "visibility": "diagnosis",
+        "redaction_state": "redacted"
+      },
+      {
+        "project_item_id": "p3-item-1d72d85541599160807456d42cabc42a6e79ac380d63f0668105e651fe6ff4fb",
+        "relative_path": "metrics.csv",
+        "source_type": "metrics",
+        "source_sha256": "8bbf037527a267b2172a7a6b76b95baeed6bf7e6d0e6f1f134ef31480df4b45b",
+        "artifact_sha256": "8bbf037527a267b2172a7a6b76b95baeed6bf7e6d0e6f1f134ef31480df4b45b",
+        "observation_sha256": "0cb411717df9cbaa758ebdb87fed9c6556e3031370af1c06a57634e3e2d98a6c",
+        "visibility": "diagnosis",
+        "redaction_state": "none"
+      }
+    ],
+    "metric_observations": [
+      {
+        "observation_id": "p3-metric-2d65cff31837fe191a8d928496bd8b58412db1163866685f1917cc01390704c3",
+        "source_mapping_id": "metric-bcebc851e9d904ed",
+        "project_item_id": "p3-item-1d72d85541599160807456d42cabc42a6e79ac380d63f0668105e651fe6ff4fb",
+        "run_id": "baseline",
+        "metric_name": "loss",
+        "metric_value": 0.5,
+        "step": null,
+        "source_record_index": 0
+      },
+      {
+        "observation_id": "p3-metric-a494378839a5aa375f3ac081bf6e374aedb78a401a26d403cf0fcd98e7f400b9",
+        "source_mapping_id": "metric-bcebc851e9d904ed",
+        "project_item_id": "p3-item-1d72d85541599160807456d42cabc42a6e79ac380d63f0668105e651fe6ff4fb",
+        "run_id": "candidate",
+        "metric_name": "loss",
+        "metric_value": 0.8,
+        "step": null,
+        "source_record_index": 1
+      }
+    ],
+    "captured_at": "2026-11-10T16:05:28.601720Z",
+    "state_sha256": "62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747",
+    "record_sha256": "e40c57bc09b518fe383ca5ae985613a3bccb05d9a7b1ca9e3a30d2c170d40562"
+  }
+}
