@@ -1,0 +1,162 @@
+{
+  "$defs": {
+    "Limits": {
+      "additionalProperties": false,
+      "properties": {
+        "question_chars": {
+          "exclusiveMinimum": 0,
+          "title": "Question Chars",
+          "type": "integer"
+        },
+        "upload_bundle_bytes": {
+          "exclusiveMinimum": 0,
+          "title": "Upload Bundle Bytes",
+          "type": "integer"
+        },
+        "page_max": {
+          "exclusiveMinimum": 0,
+          "title": "Page Max",
+          "type": "integer"
+        },
+        "job_poll_min_ms": {
+          "exclusiveMinimum": 0,
+          "title": "Job Poll Min Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "question_chars",
+        "upload_bundle_bytes",
+        "page_max",
+        "job_poll_min_ms"
+      ],
+      "title": "Limits",
+      "type": "object"
+    },
+    "Membership": {
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "owner",
+            "admin",
+            "analyst",
+            "reviewer",
+            "viewer"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 0,
+          "title": "Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "role",
+        "revision"
+      ],
+      "title": "Membership",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "product-api/v1-draft",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "workspace_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Workspace Id",
+      "type": "string"
+    },
+    "workspace_name": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Workspace Name",
+      "type": "string"
+    },
+    "membership": {
+      "$ref": "#/$defs/Membership"
+    },
+    "deployment_mode": {
+      "const": "hosted",
+      "title": "Deployment Mode",
+      "type": "string"
+    },
+    "analysis_backends": {
+      "items": {
+        "maxLength": 256,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Analysis Backends",
+      "type": "array"
+    },
+    "supported_source_types": {
+      "items": {
+        "maxLength": 256,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Supported Source Types",
+      "type": "array"
+    },
+    "supported_export_formats": {
+      "items": {
+        "enum": [
+          "json",
+          "markdown",
+          "pdf"
+        ],
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Supported Export Formats",
+      "type": "array"
+    },
+    "allowed_actions": {
+      "items": {
+        "maxLength": 256,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 128,
+      "title": "Allowed Actions",
+      "type": "array"
+    },
+    "features": {
+      "additionalProperties": {
+        "type": "boolean"
+      },
+      "maxProperties": 128,
+      "title": "Features",
+      "type": "object"
+    },
+    "limits": {
+      "$ref": "#/$defs/Limits"
+    }
+  },
+  "required": [
+    "schema_version",
+    "workspace_id",
+    "workspace_name",
+    "membership",
+    "deployment_mode",
+    "analysis_backends",
+    "supported_source_types",
+    "supported_export_formats",
+    "allowed_actions",
+    "features",
+    "limits"
+  ],
+  "title": "Capabilities",
+  "type": "object"
+}
