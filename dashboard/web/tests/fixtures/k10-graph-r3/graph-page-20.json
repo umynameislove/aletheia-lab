@@ -1,0 +1,33 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "a",
+  "project_id": "p3-project-8d30974979d3ed40cd431a04c510ea910843f7a1fae377e2b22193855a452da6",
+  "result_id": "p6-result-eb6391d6506c3d782cbad5a6a3682a4dbb0d420742ff2fb5a4ed66c48debb395",
+  "graph": {
+    "nodes": [
+      {
+        "id": "p6-node-23916d2b6c8a951dfb5d97882d079f39b3b91c278395db22525cdf326d55365e",
+        "kind": "AtomicClaim",
+        "source_id": "p6-claim-d0b957827e4f9e72d89f6394b0fa7d36a5e5dc44282a3128059a798776e3887d",
+        "visibility": "diagnosis"
+      },
+      {
+        "id": "p6-node-6e9530083d11bb490b5100e1463befaeca1f94f7a325cb29f3326f8f3d6ea97d",
+        "kind": "Disposition",
+        "source_id": "p6-result-eb6391d6506c3d782cbad5a6a3682a4dbb0d420742ff2fb5a4ed66c48debb395",
+        "visibility": "diagnosis"
+      }
+    ],
+    "edges": [
+      {
+        "id": "p6-edge-5d527fa745d0ad956ddf7cd488cbd13a1116755d82fad6c20550c176e18208dc",
+        "kind": "ASSIGNED_DISPOSITION",
+        "source": "p6-node-23916d2b6c8a951dfb5d97882d079f39b3b91c278395db22525cdf326d55365e",
+        "target": "p6-node-6e9530083d11bb490b5100e1463befaeca1f94f7a325cb29f3326f8f3d6ea97d",
+        "visibility": "diagnosis"
+      }
+    ]
+  },
+  "truncated": true,
+  "next_cursor": "synthetic-page-21"
+}

@@ -1,0 +1,39 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "a",
+  "project_id": "p3-project-8d30974979d3ed40cd431a04c510ea910843f7a1fae377e2b22193855a452da6",
+  "result_id": "p6-result-eb6391d6506c3d782cbad5a6a3682a4dbb0d420742ff2fb5a4ed66c48debb395",
+  "snapshot_id": "upload-snapshot-d57c64e40c7902b60a37c3d38156d5bd28bda8e3b4187b976961b9ff2c2f1519",
+  "view_schema_version": "p6-product-view/v2",
+  "project": {
+    "id": "p3-project-8d30974979d3ed40cd431a04c510ea910843f7a1fae377e2b22193855a452da6",
+    "display_name": "Uploaded project"
+  },
+  "runtime": {
+    "provider": "local_evidence",
+    "model": "upload-snapshot-metric-observation/v2",
+    "external_call": false
+  },
+  "result": {
+    "id": "p6-result-eb6391d6506c3d782cbad5a6a3682a4dbb0d420742ff2fb5a4ed66c48debb395",
+    "status": "complete",
+    "disposition": "abstain",
+    "causal_status": "unverified",
+    "summary": "Observed 10 validated metric values in 10 mapped series.",
+    "denominators": {
+      "independent_families": null,
+      "contexts": 1,
+      "outputs": 1,
+      "claims": 10
+    },
+    "allowed_wording": "Observed 10 validated metric values in 10 mapped series.",
+    "forbidden_wording": "These metric observations establish a verified cause.",
+    "caveat": "All validated rows are included in per-series counts and ranges; raw operands remain in the pinned snapshot. No causal diagnosis or missing value imputation."
+  },
+  "conversation_id": "p6-conversation-eb6391d6506c3d782cbad5a6a3682a4dbb0d420742ff2fb5a4ed66c48debb395",
+  "turn_count": 1,
+  "claim_count": 10,
+  "evidence_count": 10,
+  "node_count": 22,
+  "edge_count": 30
+}

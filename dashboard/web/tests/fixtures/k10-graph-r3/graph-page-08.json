@@ -1,0 +1,19 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "a",
+  "project_id": "p3-project-8d30974979d3ed40cd431a04c510ea910843f7a1fae377e2b22193855a452da6",
+  "result_id": "p6-result-eb6391d6506c3d782cbad5a6a3682a4dbb0d420742ff2fb5a4ed66c48debb395",
+  "graph": {
+    "nodes": [
+      {
+        "id": "p6-node-ef69b26f081856a04b1ae53feec7a826406d554f65f01abea9cc215e400a7943",
+        "kind": "EvidenceItem",
+        "source_id": "p6-evidence-72b7f973e123475a9055a81ffbc5c84f7a869153a4cdace8d5be130c881363d6",
+        "visibility": "diagnosis"
+      }
+    ],
+    "edges": []
+  },
+  "truncated": true,
+  "next_cursor": "synthetic-page-9"
+}

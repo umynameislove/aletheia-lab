@@ -1,0 +1,46 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "a",
+  "project_id": "p3-project-8d30974979d3ed40cd431a04c510ea910843f7a1fae377e2b22193855a452da6",
+  "result_id": "p6-result-eb6391d6506c3d782cbad5a6a3682a4dbb0d420742ff2fb5a4ed66c48debb395",
+  "graph": {
+    "nodes": [
+      {
+        "id": "p6-node-245a86adce23b5342cad0099fce66d6617ac0b9bfc6c5c3461d99ff0ba82e0d7",
+        "kind": "AtomicClaim",
+        "source_id": "p6-claim-0b96fb7012eb8b087847891c1948177d8c4b09dbbb8ee6b91ad884ec392307dc",
+        "visibility": "diagnosis"
+      },
+      {
+        "id": "p6-node-6e9530083d11bb490b5100e1463befaeca1f94f7a325cb29f3326f8f3d6ea97d",
+        "kind": "Disposition",
+        "source_id": "p6-result-eb6391d6506c3d782cbad5a6a3682a4dbb0d420742ff2fb5a4ed66c48debb395",
+        "visibility": "diagnosis"
+      },
+      {
+        "id": "p6-node-ef32891dd846961be7f01b8c3b81eed791c3f528bc60e8f4700946918f221893",
+        "kind": "EvidenceItem",
+        "source_id": "p6-evidence-363ac0b490759de47a2aff10463b48786a1da3272c152b8c26406f4aff238650",
+        "visibility": "diagnosis"
+      }
+    ],
+    "edges": [
+      {
+        "id": "p6-edge-253cb0d947973a8aa8043f0d50d4c51f7ce170013bb042603a6ab7ae10653aa2",
+        "kind": "CITES",
+        "source": "p6-node-245a86adce23b5342cad0099fce66d6617ac0b9bfc6c5c3461d99ff0ba82e0d7",
+        "target": "p6-node-ef32891dd846961be7f01b8c3b81eed791c3f528bc60e8f4700946918f221893",
+        "visibility": "diagnosis"
+      },
+      {
+        "id": "p6-edge-2708e712f2b2b28fd57af7cafa964cc7c1cf673c44854a706d3ad82180c2eca1",
+        "kind": "ASSIGNED_DISPOSITION",
+        "source": "p6-node-245a86adce23b5342cad0099fce66d6617ac0b9bfc6c5c3461d99ff0ba82e0d7",
+        "target": "p6-node-6e9530083d11bb490b5100e1463befaeca1f94f7a325cb29f3326f8f3d6ea97d",
+        "visibility": "diagnosis"
+      }
+    ]
+  },
+  "truncated": true,
+  "next_cursor": "synthetic-page-14"
+}

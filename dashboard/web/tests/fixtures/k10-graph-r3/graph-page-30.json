@@ -1,0 +1,33 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "a",
+  "project_id": "p3-project-8d30974979d3ed40cd431a04c510ea910843f7a1fae377e2b22193855a452da6",
+  "result_id": "p6-result-eb6391d6506c3d782cbad5a6a3682a4dbb0d420742ff2fb5a4ed66c48debb395",
+  "graph": {
+    "nodes": [
+      {
+        "id": "p6-node-a2879f407187a9fb2a733781a93388d3bc2616bfc0da6cca575f21868f62d967",
+        "kind": "AtomicClaim",
+        "source_id": "p6-claim-b50cff50d71e5c9560d55c23912fcdb5a31bc1963bdf414569cd41bdc7741e95",
+        "visibility": "diagnosis"
+      },
+      {
+        "id": "p6-node-d98fe842667c67b837c4dc516f867a90329ac8c752474de6d05e3c14c4817dcb",
+        "kind": "EvidenceItem",
+        "source_id": "p6-evidence-32fb7b64140686d63d196a82443314dafb8133dd13fe1bf1670494e209e9d858",
+        "visibility": "diagnosis"
+      }
+    ],
+    "edges": [
+      {
+        "id": "p6-edge-e38dbeb5749a1df044a8da38b3bb1a5feba8c49d1e897f0bf471eb48011fda60",
+        "kind": "CITES",
+        "source": "p6-node-a2879f407187a9fb2a733781a93388d3bc2616bfc0da6cca575f21868f62d967",
+        "target": "p6-node-d98fe842667c67b837c4dc516f867a90329ac8c752474de6d05e3c14c4817dcb",
+        "visibility": "diagnosis"
+      }
+    ]
+  },
+  "truncated": true,
+  "next_cursor": "synthetic-page-31"
+}

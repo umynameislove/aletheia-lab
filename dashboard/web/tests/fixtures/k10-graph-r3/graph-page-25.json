@@ -1,0 +1,46 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "a",
+  "project_id": "p3-project-8d30974979d3ed40cd431a04c510ea910843f7a1fae377e2b22193855a452da6",
+  "result_id": "p6-result-eb6391d6506c3d782cbad5a6a3682a4dbb0d420742ff2fb5a4ed66c48debb395",
+  "graph": {
+    "nodes": [
+      {
+        "id": "p6-node-11dec92f870ef70c11cad42370438cb97201c297b4aee302500db3839ee575ad",
+        "kind": "EvidenceItem",
+        "source_id": "p6-evidence-bbafa0228e20651eb0b65fe27d94226660b0e322fd267d8ed8e40af277aef776",
+        "visibility": "diagnosis"
+      },
+      {
+        "id": "p6-node-6e9530083d11bb490b5100e1463befaeca1f94f7a325cb29f3326f8f3d6ea97d",
+        "kind": "Disposition",
+        "source_id": "p6-result-eb6391d6506c3d782cbad5a6a3682a4dbb0d420742ff2fb5a4ed66c48debb395",
+        "visibility": "diagnosis"
+      },
+      {
+        "id": "p6-node-cdaf32028c9518321059fad8dc77f33808f444fc48b0e4361cf75f6ed909106a",
+        "kind": "AtomicClaim",
+        "source_id": "p6-claim-e37a3eab1d3c63f9e04b5d6cdf073b954326785b4fb6941c6488c1e86f01573c",
+        "visibility": "diagnosis"
+      }
+    ],
+    "edges": [
+      {
+        "id": "p6-edge-87cfdfbd096b952a5e3dfc493693e36db7d9fe7cf2d130552666808a4287e45c",
+        "kind": "CITES",
+        "source": "p6-node-cdaf32028c9518321059fad8dc77f33808f444fc48b0e4361cf75f6ed909106a",
+        "target": "p6-node-11dec92f870ef70c11cad42370438cb97201c297b4aee302500db3839ee575ad",
+        "visibility": "diagnosis"
+      },
+      {
+        "id": "p6-edge-899cf4a63f24fe542c026a4aafdddd9a869d52376bf6ad224a72e1988dec6ca2",
+        "kind": "ASSIGNED_DISPOSITION",
+        "source": "p6-node-cdaf32028c9518321059fad8dc77f33808f444fc48b0e4361cf75f6ed909106a",
+        "target": "p6-node-6e9530083d11bb490b5100e1463befaeca1f94f7a325cb29f3326f8f3d6ea97d",
+        "visibility": "diagnosis"
+      }
+    ]
+  },
+  "truncated": true,
+  "next_cursor": "synthetic-page-26"
+}
