@@ -1,0 +1,144 @@
+name: hosted backend
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_postgres:
+        description: "Also run PostgreSQL/HTTPS integration (uses a service container)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  # Current producer/consumer checks must remain runnable without PostgreSQL,
+  # Docker, IdP credentials or a running hosted deployment.
+  contracts:
+    name: dashboard
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install backend test dependencies
+        run: python -m pip install -e ".[dev,hosted]" "httpx==0.28.1" "psycopg[binary]==3.3.8"
+      - name: Validate producer review schemas
+        run: python scripts/check_j01_schema.py fixtures/j01/producer-review-v7
+      - name: Export current producer contracts
+        run: |
+          python scripts/export_j01_review.py "$RUNNER_TEMP/j01-producer-current"
+          python scripts/export_k04_contract.py "$RUNNER_TEMP/k04-producer-current"
+          python scripts/export_k07_contract.py "$RUNNER_TEMP/k07-producer-current"
+          python scripts/export_k02_project_operations.py --output "$RUNNER_TEMP/k02-project-operations-current"
+          python scripts/export_k13_k15_contract.py --output "$RUNNER_TEMP/k13-k15-producer-current"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: dashboard/web/package-lock.json
+      - name: Install locked consumer dependencies
+        run: npm --prefix dashboard/web ci --ignore-scripts
+      - name: Test actual consumer against current producer output
+        working-directory: dashboard/web
+        env:
+          J01_FIXTURES: ${{ runner.temp }}/j01-producer-current
+          K04_FIXTURES: ${{ runner.temp }}/k04-producer-current
+        run: npm test
+      - name: Validate current J01 producer contract
+        if: ${{ !cancelled() }}
+        run: python scripts/check_j01_schema.py "$RUNNER_TEMP/j01-producer-current"
+      - name: Test offline hosted units and producer contracts
+        run: >-
+          python -B -m pytest -o addopts= -q -p no:cacheprovider -m "not integration"
+          tests/unit/test_k02_*.py tests/unit/test_j01_*.py tests/unit/test_k03_*.py
+          tests/unit/test_k04_*.py tests/unit/test_k05_*.py tests/unit/test_k06_*.py
+          tests/unit/test_k07_*.py tests/unit/test_security_ci_contract.py
+          tests/unit/test_k08_*.py tests/unit/test_k09_*.py tests/unit/test_k10_*.py
+          tests/unit/test_k11_*.py tests/unit/test_k12_*.py
+          tests/unit/test_k13_*.py tests/unit/test_k14_*.py tests/unit/test_k15_*.py
+          tests/unit/test_k16_*.py tests/unit/test_k17_*.py tests/unit/test_k18_*.py
+      - name: Export and check unified hosted producer OpenAPI
+        if: ${{ !cancelled() }}
+        run: |
+          python -B scripts/export_hosted_openapi.py --repo . \
+            --inventory docs/k02-original-operation-inventory.csv \
+            --output "$RUNNER_TEMP/hosted-openapi-current"
+          python - "$RUNNER_TEMP/hosted-openapi-current/verification.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          result = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert result["source_stable"] is True, "Producer source changed during export"
+          PY
+      - name: Build dashboard modes and enforce existing live budgets
+        working-directory: dashboard/web
+        run: |
+          npm run build
+          npm run build:live
+          npm run budget
+          npm run build:hosted
+
+  # PR/push retain the PostgreSQL gate. A manual default run qualifies only
+  # contracts and never creates this container; opt in explicitly when allowed.
+  backend:
+    needs: contracts
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_postgres }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-bookworm@sha256:a49f7438ba03589f9b1ca062f2da82e899b48ea1dc50d2449fa09a70be83ebca
+        env:
+          POSTGRES_USER: hosted_test
+          POSTGRES_PASSWORD: synthetic_test_only
+          POSTGRES_DB: hosted_test
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U hosted_test -d hosted_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      K02_TEST_DATABASE_URL: postgresql://hosted_test:synthetic_test_only@127.0.0.1:5432/hosted_test
+      K02_TEST_HTTPS: "1"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install backend test dependencies
+        run: python -m pip install -e ".[dev,hosted]" "httpx==0.28.1" "psycopg[binary]==3.3.8"
+      - name: Test hosted backend and separate worker
+        if: ${{ !cancelled() }}
+        env:
+          # Aliases use only this job's isolated synthetic PostgreSQL service.
+          K03_TEST_DATABASE_URL: ${{ env.K02_TEST_DATABASE_URL }}
+          K04_TEST_DATABASE_URL: ${{ env.K02_TEST_DATABASE_URL }}
+          K05_TEST_DATABASE_URL: ${{ env.K02_TEST_DATABASE_URL }}
+          K06_TEST_DATABASE_URL: ${{ env.K02_TEST_DATABASE_URL }}
+          K07_TEST_DATABASE_URL: ${{ env.K02_TEST_DATABASE_URL }}
+          K08_TEST_DATABASE_URL: ${{ env.K02_TEST_DATABASE_URL }}
+          K09_TEST_DATABASE_URL: ${{ env.K02_TEST_DATABASE_URL }}
+          K10_TEST_DATABASE_URL: ${{ env.K02_TEST_DATABASE_URL }}
+          K11_TEST_DATABASE_URL: ${{ env.K02_TEST_DATABASE_URL }}
+          K12_TEST_DATABASE_URL: ${{ env.K02_TEST_DATABASE_URL }}
+          K13_TEST_DATABASE_URL: ${{ env.K02_TEST_DATABASE_URL }}
+          K14_TEST_DATABASE_URL: ${{ env.K02_TEST_DATABASE_URL }}
+          K15_TEST_DATABASE_URL: ${{ env.K02_TEST_DATABASE_URL }}
+          K16_TEST_DATABASE_URL: ${{ env.K02_TEST_DATABASE_URL }}
+          K17_TEST_DATABASE_URL: ${{ env.K02_TEST_DATABASE_URL }}
+          K18_TEST_DATABASE_URL: ${{ env.K02_TEST_DATABASE_URL }}
+        run: >-
+          python -m pytest -q
+          tests/integration/test_k0[2-9]_*.py tests/integration/test_k1[0-8]_*.py
+      - name: Test PostgreSQL query-probe integration cases
+        env:
+          K05_TEST_DATABASE_URL: ${{ env.K02_TEST_DATABASE_URL }}
+        run: python -B -m pytest -q -m integration tests/unit/test_k05_query_probe.py

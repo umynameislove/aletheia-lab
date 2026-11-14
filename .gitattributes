@@ -3,3 +3,6 @@
 
 # These published records are bound by raw-byte SHA-256 digests.
 reports/p1/**/*.json -text !eol
+
+# Keep the sealed R4.18 runtime file byte-identical in Git archives.
+src/aletheia_lab/hosted/capacity_assertions.py -text !eol
