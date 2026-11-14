@@ -1,0 +1,30 @@
+dashboard/web/src/store.tsx:142: new blank line at EOF.
+docs/j01-local-postgres-identity-progress.md:540: new blank line at EOF.
+scripts/k05_query_probe.py:529: new blank line at EOF.
+src/aletheia_lab/hosted/capacity_preflight.py:92: trailing whitespace.
++    capabilities = await _read_preflight(profile, client, counts, 
+src/aletheia_lab/hosted/capacity_seed.py:796: new blank line at EOF.
+src/aletheia_lab/hosted/capacity_seed_domain.py:91: new blank line at EOF.
+src/aletheia_lab/hosted/job_admission.py:211: new blank line at EOF.
+src/aletheia_lab/hosted/job_output.py:162: new blank line at EOF.
+src/aletheia_lab/hosted/job_publication.py:321: new blank line at EOF.
+src/aletheia_lab/hosted/legacy_import.py:652: new blank line at EOF.
+src/aletheia_lab/hosted/managed_runtime.py:348: new blank line at EOF.
+src/aletheia_lab/hosted/observability.py:655: new blank line at EOF.
+src/aletheia_lab/hosted/persistence_migration.py:784: new blank line at EOF.
+src/aletheia_lab/hosted/postgres_catalog.py:482: new blank line at EOF.
+src/aletheia_lab/hosted/recovery_checkpoint.py:219: new blank line at EOF.
+src/aletheia_lab/hosted/recovery_points.py:315: new blank line at EOF.
+src/aletheia_lab/hosted/runtime_privileges.py:212: new blank line at EOF.
+src/aletheia_lab/hosted/source_bundle.py:220: new blank line at EOF.
+src/aletheia_lab/hosted/upload_job_worker.py:271: new blank line at EOF.
+src/aletheia_lab/hosted/upload_project.py:447: new blank line at EOF.
+src/aletheia_lab/project/import_content.py:276: new blank line at EOF.
+src/aletheia_lab/project/import_filesystem.py:55: new blank line at EOF.
+src/aletheia_lab/project/mapping_observations.py:149: new blank line at EOF.
+src/aletheia_lab/project/regression_changes.py:112: new blank line at EOF.
+tests/integration/test_k04_authorization_postgres.py:347: new blank line at EOF.
+tests/integration/test_k12_exports_postgres.py:213: new blank line at EOF.
+tests/unit/test_k02_canonical_operations.py:123: new blank line at EOF.
+tests/unit/test_k02_project_operations.py:205: new blank line at EOF.
+tests/unit/test_k04_workspace_pages_http.py:44: new blank line at EOF.

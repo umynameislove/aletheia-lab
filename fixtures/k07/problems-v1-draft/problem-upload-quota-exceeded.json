@@ -1,0 +1,9 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "type": "urn:aletheia:problem:upload-quota-exceeded",
+  "title": "Request could not be completed",
+  "status": 413,
+  "code": "upload_quota_exceeded",
+  "detail": "The workspace upload quota is exhausted.",
+  "request_id": "req_synthetic_k07"
+}

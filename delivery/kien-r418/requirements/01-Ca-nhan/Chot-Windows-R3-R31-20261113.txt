@@ -1,0 +1,22 @@
+CHỐT TIẾP NHẬN WINDOWS R3 VÀ BẢN SỬA R3.1 — 13/11/2026
+
+ĐÃ CHỐT, GIỮ NGUYÊN
+ZIP trả về SHA6b3598d4efea5b6db1b04bce6373c79b3e4780da4ae8cbed4041ce64ccb73c0e;73entry,CRCđạt. Source912c4df6.../runtime823fab73... đúnggóiR3. Smoke23/23,upload20013/13 đạt Windows thật. Đủ209715200byte/50phần/ready/fullhash,khôngretryunknown. Đây là lần R3 đã đạt; không kết luận nguyên nhân lỗi Windows bản cũ đã biết.
+Giữ nguyên2ZIPR3,volume/logWindows cũ và runtime667file. Không chỉnh protocol,SQL,driver,deadline5s,200MiB hoặcworker.
+
+ĐÃ HOÀN THÀNH TRONG LƯỢT NÀY
+Sửa5file:3test Windows portability(K09UTF8,K12LFbinary,K14SystemRoot/WINDIR),1toolK16normalizepathPOSIX và testK16 thêmPureWindowsPath/PurePosixPath. Tất cảassertAST nguyên vẹn; không bỏtest hoặc thêmskip. Trước sửa casePureWindowsPath tái hiện fail; sau sửa focused54pass; fullMac2921pass/13Windows skip/5integrationdeselected. Ruffđạt. FullMac là cùngsource5file đã áp vàoAPIcheckout; cóbackupbefore.
+Source mới:f3a1fc9d5f47c861dc11e85047c37d9eef9386a74790f19abc5968560f49ae27
+Runtime:823fab7372763a349c3a81bfe2f7a79eef8b6cb1804f610b7269b865d5945846
+Wheel/sdistR3 nguyênbyte; cácfile thay đổi không nằm trongsdist. Bản sửa không cần rebuild sản phẩm đã đạt.
+
+CHƯA ĐƯỢC CHỐT PASS
+WindowsunitR3.1 chưa chạy. WindowsR3unit trước đó2928pass/5fail được giữ; không biến thànhWindowsPASS từlogMac. FullPG/100k/WSL/cleanwheel/recovery chưa chạy trênmáyWindows lượt trả về. Gói mới hướng dẫn tiếp tục unit→cácphase còn lại, không bắt chạy lại smoke/upload đãđạt nếuruntime/môi trường giữ nguyên.
+K01lineage/same-release baseline,remoteCI,realIdP,DB40/F26 dưới tải,K14resources/fairness,K15fanout/reconnect,K16image/security/collector/alerts,K18rollout/offhostDR/cross-owner còn gate môi trường/conngười. Không cóWindows/IdP/DRtesthạ tầng thật tạiMac này.
+K17 còn2phần chưa implementation đầy đủ: model/seed primary mới cósemantics/schema tươngthíchconsumer, vàrecipe/dedicatedcoveragehiện10/38operation (28not_run). UI/nguồn nghiêncứukhôngđược tự ý đổi hoặcpaddingclaim đểđạt số. Chưa có chốt contract/model đầy đủ từBu/Quân trongR3.2, giữprimary=false; đây là việc còn thực sự mở, không nhận hoàn tất bằng tài liệu.
+
+BÀN GIAO
+Ban-giao-Kien-Windows-K01-K18-20261113-R3.1.zip +sidecar. Đọc03-TIEP-TUC-TU-UNIT.txt rồi01guide. Dùng venvWindows R3 cònnguyên đểchạy sourceR3.1; khôngdi chuyểnvenv. Mỗiattemptoutputmới, lỗi dừnggiữbằngchứng. BảngP13/chi phípolling đãchốt thêm choQuân trong thư riêng; R3.2UI là bằngchứngQuân cungcấp,chưađượcKiênreplay tronglượt này.
+
+KẾT LUẬN
+Hoàn thành phần sửa và kiểm cục bộ5lỗiunit; chốtWindows smoke/uploadR3. Toàn bộK01–K18 chưa PASS và không đổi cácgate chưa đủ bằngchứng thànhpassed. Thưmụcaletheia-lab chỉ đọc; khôngDocker/IdP trênMac; khôngGitwrite; cácarchivecũ giữ nguyên.

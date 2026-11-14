@@ -1,0 +1,27 @@
+{
+  "phase": "calibration",
+  "mode": "open",
+  "rate": 5.0,
+  "warmup_seconds": 30,
+  "measured_seconds": 120,
+  "command": [
+    "/tmp/aletheia-r418-calibration-mnznCaX5/venv/bin/python",
+    "-B",
+    "-m",
+    "pytest",
+    "-q",
+    "-ra",
+    "--tb=short",
+    "-o",
+    "addopts=",
+    "-p",
+    "no:cacheprovider",
+    "--basetemp=/tmp/aletheia-r418-calibration-mnznCaX5/private-work",
+    "--junitxml=/mnt/c/Users/Trung Ki\u00ean/Documents/ChatGPT/\u0110\u1ed3 \u00c1n/Kien-K01-K18-R4-20261113/evidence/linux-r418-open5/junit.xml",
+    "tests/integration/test_k17_capacity_postgres.py::test_actual_tls_100_principal_calibration_with_native_jobs_and_whole_exports"
+  ],
+  "database": "Owned Docker Desktop PG16 via WSL loopback on the same laptop; separate from WSL-native PG used in R4.11.",
+  "started_utc": "2026-11-14T03:36:11.801537+00:00",
+  "source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+  "runtime_identity": "a046bccd9a0beb135951a0928c7ddd131b327302bcacf10c7ddb979757c9d495"
+}

@@ -1,0 +1,27 @@
+{
+  "file": "aletheia-uploaded-project-fa85cff0.pdf",
+  "bytes": 35900,
+  "sha256": "57d9d87c919bb7d662613354853fbb188f1806032da7f0b8933c0c4936c31c7f",
+  "result_id": "p6-result-fa85cff07657d689c5be5cb1c0188888a111dcdce47abc1c655c65905f242ccc",
+  "snapshot_id": "upload-snapshot-73b397f47ce4873aa06575904191f8d9fdbae17ff11c02ed9d49422e19749b64",
+  "job_id": "job_b7b8d54f075c412e8a7237bc915c105c",
+  "browser": {
+    "product": "Chrome/157.0.8103.52",
+    "protocol": "1.3"
+  },
+  "elapsed_seconds": 20.3556603,
+  "uploaded_in_browser": true,
+  "imports": [
+    {
+      "project_id": "p3-project-8d30974979d3ed40cd431a04c510ea910843f7a1fae377e2b22193855a452da6",
+      "snapshot_id": "upload-snapshot-73b397f47ce4873aa06575904191f8d9fdbae17ff11c02ed9d49422e19749b64",
+      "result_id": "p6-result-fa85cff07657d689c5be5cb1c0188888a111dcdce47abc1c655c65905f242ccc",
+      "job_id": "job_b7b8d54f075c412e8a7237bc915c105c"
+    }
+  ],
+  "lineage": {
+    "rendered_nodes": 22,
+    "visible_relation_rows": 30,
+    "edges_have_clickable_endpoints": true
+  }
+}

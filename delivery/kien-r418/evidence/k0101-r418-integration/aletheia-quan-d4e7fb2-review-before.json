@@ -1,0 +1,18 @@
+{
+  "directory": "aletheia-quan-d4e7fb2-review",
+  "head": "d4e7fb214d3bb6a74b2ddf0f012bf69c7c3e8e7c",
+  "status_sha256": "6cb174ac5d4d56856f10f83efd46d756648b0af9614ffb4031940705424d4479",
+  "refs_sha256": "4042b343895068cbc367cf7460aa43073f1763ca50bafdcebe5f866774fb3d4c",
+  "tracked_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "staged_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "wip": {
+    "quan-d4e7fb2-build-live.log": {
+      "bytes": 6214,
+      "sha256": "cd6ca5356a8aa0064edfbfd841ee186f7f533aef4755ea0e8c6d47b5dab5ea09"
+    },
+    "quan-d4e7fb2-npm-test.log": {
+      "bytes": 82836,
+      "sha256": "a999a48e607874444a7b9ee8e82f1d291431780b9c04734cde11194c7a58f325"
+    }
+  }
+}

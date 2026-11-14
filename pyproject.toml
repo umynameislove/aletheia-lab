@@ -26,7 +26,23 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+hosted = [
+  "asgi-csrf==0.11",
+  "authlib==1.9.5",
+  "click==8.4.1",
+  "cryptography==50.0.2",
+  "h11==0.16.0",
+  "httpx2==2.16.0",
+  "itsdangerous==2.2.0",
+  "psycopg[binary]==3.3.8",
+  "psycopg-pool==3.3.3",
+  "pydantic==2.14.2",
+  "reportlab==5.1.0",
+  "uvicorn==0.48.0"
+]
+pdf = ["reportlab==5.1.0"]
 dev = [
+  "jsonschema[format]==4.25.1",
   "openai==2.46.0",
   "bandit>=1.7",
   "coverage>=7.10.6",
@@ -75,9 +91,15 @@ aletheia = "aletheia_lab.cli:app"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"aletheia_lab.product" = ["synthetic_p6_view.json", "fonts/*.ttf", "fonts/OFL.txt", "fonts/provenance.json"]
+"aletheia_lab.project" = ["mapping_identifiers.json"]
+"aletheia_lab.hosted_auth" = ["admission_schema.sql"]
+"aletheia_lab.hosted" = ["workspace_schema.sql", "project_policy_schema.sql", "review_schema.sql", "action_audit_schema.sql", "action_audit_scope_schema.sql", "review_native_schema.sql", "review_retention_schema.sql", "preview_schema.sql", "preview_repeat_schema.sql"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "tests/unit"]
 addopts = "-q"
 markers = [
   "integration: tests that cross process, filesystem, or component boundaries",

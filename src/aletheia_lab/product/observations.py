@@ -13,25 +13,26 @@ from aletheia_lab.product.questions import checked_product_question
 from aletheia_lab.product.results import persist_product_result
 from aletheia_lab.product.view import (
     COUNTERFACTUAL_NOT_AVAILABLE,
+    AnyProductMetricChange,
+    AnyProductView,
     ProductClaim,
     ProductConversation,
     ProductDenominators,
     ProductEvidence,
     ProductMetricChange,
-    ProductMetricDefinition,
+    ProductMetricChangeV2,
     ProductProject,
     ProductReproductionRef,
     ProductResult,
     ProductRuntime,
-    ProductSnapshot,
     ProductTurn,
-    ProductView,
+    parse_product_view,
 )
 from aletheia_lab.project.identity import canonical_project_sha256
-from aletheia_lab.project.mapping import ProjectMappingConfiguration
+from aletheia_lab.project.mapping import AnyMappingConfiguration
 from aletheia_lab.project.persistence import ProjectStore
-from aletheia_lab.project.regression import ProjectSnapshotComparison
-from aletheia_lab.project.snapshots import ProjectSnapshot
+from aletheia_lab.project.regression import AnySnapshotComparison
+from aletheia_lab.project.snapshots import AnyProjectSnapshot
 
 _PENDING_RESULT_ID = "p6-result-" + "0" * 64
 _INTEGRITY_MESSAGE = "Stored project observations failed their integrity check."
@@ -46,10 +47,10 @@ def _load_sources(
     project_id: str,
     snapshot_id: str,
 ) -> tuple[
-    ProjectSnapshot,
-    ProjectSnapshot,
-    ProjectMappingConfiguration,
-    ProjectSnapshotComparison | None,
+    AnyProjectSnapshot,
+    AnyProjectSnapshot,
+    AnyMappingConfiguration,
+    AnySnapshotComparison | None,
 ]:
     # Refresh owns reconciliation of the immutable lifecycle/bundle/snapshot binding.
     from aletheia_lab.product.refresh import _load_immutable_state
@@ -70,8 +71,8 @@ def _load_sources(
             before = store.load(state.previous_snapshot_id)
             comparison = store.load(state.comparison_id)
         if (
-            not isinstance(before, ProjectSnapshot)
-            or not isinstance(comparison, ProjectSnapshotComparison)
+            not isinstance(before, AnyProjectSnapshot)
+            or not isinstance(comparison, AnySnapshotComparison)
             or before.project_id != project_id
             or comparison.project_id != project_id
             or comparison.status != "changed"
@@ -87,7 +88,7 @@ def _load_sources(
 
 
 def _evidence(
-    snapshot: ProjectSnapshot,
+    snapshot: AnyProjectSnapshot,
     *,
     role: str,
     source_id: str,
@@ -120,10 +121,10 @@ def _evidence(
 
 
 def _observation_evidence(
-    before: ProjectSnapshot,
-    snapshot: ProjectSnapshot,
-    comparison: ProjectSnapshotComparison | None,
-) -> tuple[tuple[ProductEvidence, ...], tuple[ProductMetricChange, ...], str]:
+    before: AnyProjectSnapshot,
+    snapshot: AnyProjectSnapshot,
+    comparison: AnySnapshotComparison | None,
+) -> tuple[tuple[ProductEvidence, ...], tuple[AnyProductMetricChange, ...], str]:
     after_evidence = _evidence(
         snapshot,
         role="after_snapshot",
@@ -163,7 +164,7 @@ def _observation_evidence(
         text="The stored comparison records a change without an adverse regression candidate.",
     )
     evidence = [after_evidence, baseline, comparison_evidence]
-    changes = []
+    changes: list[AnyProductMetricChange] = []
     for change in comparison.metric_changes:
         item = _evidence(
             snapshot,
@@ -177,8 +178,9 @@ def _observation_evidence(
             text="The stored comparison contains this metric change; its cause is unverified.",
         )
         evidence.append(item)
+        change_model = ProductMetricChangeV2 if comparison.schema_version.endswith("/v2") else ProductMetricChange
         changes.append(
-            ProductMetricChange.model_validate(
+            change_model.model_validate(
                 _product_metric_change(
                     change,
                     evidence_id=item.id,
@@ -196,7 +198,7 @@ def build_product_observation(
     project_id: str,
     snapshot_id: str,
     question: str,
-) -> ProductView:
+) -> AnyProductView:
     """Build an unpersisted snapshot/comparison view with causal abstention."""
 
     checked_question = checked_product_question(question)
@@ -234,17 +236,18 @@ def build_product_observation(
     runtime = ProductRuntime(
         provider="deterministic_mock", model="p6-deterministic-mock/v1", external_call=False
     )
-    view = ProductView(
+    payload = dict(
+        schema_version="p6-product-view/v2" if configuration.schema_version.endswith("/v2") else "p6-product-view/v1",
         demo_only=False,
         mode="project_audit",
         visibility="diagnosis",
         project=ProductProject(id=project_id, display_name="Imported project"),
-        snapshot=ProductSnapshot(
+        snapshot=dict(
             id=snapshot_id,
             baseline_id=before.snapshot_id,
             sha256=snapshot.state_sha256,
             metric_definitions=tuple(
-                ProductMetricDefinition.model_validate(value.model_dump(mode="python"))
+                value.model_dump(mode="python")
                 for value in configuration.metric_definitions
             ),
             metric_changes=changes,
@@ -305,7 +308,7 @@ def build_product_observation(
             observed_evidence_ids=(after_evidence_id,),
         ),
     )
-    return view
+    return parse_product_view(payload)
 
 
 __all__ = ["analyze_product_observation"]
@@ -313,7 +316,7 @@ __all__ = ["analyze_product_observation"]
 
 def analyze_product_observation(
     store_root: Path, project_id: str, snapshot_id: str, question: str
-) -> ProductView:
+) -> AnyProductView:
     """Persist the existing observation view without changing its public contract."""
     return persist_product_result(
         store_root, build_product_observation(store_root, project_id, snapshot_id, question)

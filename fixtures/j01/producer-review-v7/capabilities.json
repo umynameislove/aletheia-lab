@@ -1,0 +1,25 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "ws_synthetic_001",
+  "workspace_name": "Synthetic Workspace",
+  "membership": {
+    "role": "analyst",
+    "revision": 1
+  },
+  "deployment_mode": "hosted",
+  "analysis_backends": [],
+  "supported_source_types": [],
+  "supported_export_formats": [],
+  "allowed_actions": [],
+  "features": {
+    "events.sse": false,
+    "sources.connector": false,
+    "members.app_invitation": false
+  },
+  "limits": {
+    "question_chars": 2000,
+    "upload_bundle_bytes": 209715200,
+    "page_max": 200,
+    "job_poll_min_ms": 2000
+  }
+}

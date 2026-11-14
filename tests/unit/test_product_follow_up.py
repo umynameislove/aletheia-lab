@@ -131,7 +131,7 @@ def test_foreign_dangling_and_demo_selections_fail_closed() -> None:
         "line\nbreak",
         "control\x7fcharacter",
         "Cafe\u0301?",
-        "x" * 2001,
+        "x" * 4001,
     ],
 )
 def test_follow_up_reuses_strict_question_validation(question: str) -> None:

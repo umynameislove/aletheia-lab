@@ -12,7 +12,7 @@ import "../styles/tokens.css";
 import "../styles/app.css";
 import viewJson from "../data/synthetic_p6_view.json";
 import type { ProductView } from "../types";
-import { Lineage } from "../components/Lineage";
+import { LineagePanel as Lineage } from "../components/Lineage";
 import { shuffled, syntheticGraph } from "../data/syntheticGraph";
 
 const params = new URLSearchParams(location.search);

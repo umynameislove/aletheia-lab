@@ -1,0 +1,56 @@
+# Review template only. Blank required fields intentionally prevent a successful
+# preflight. Do not put a DB URL, password, session credential or IdP secret here.
+# Values and budgets below are initial operator settings, not measured capacity.
+environment = "staging"
+public_origin = ""
+
+[identity]
+issuer = ""
+client_id = ""
+redirect_uri = ""
+# Fill public/confidential according to the actual registered IdP client.
+client_kind = ""
+# For a confidential client, uncomment its secret VARIABLE name, never a value.
+# client_secret_env = "ALETHEIA_HOSTED_OIDC_CLIENT_SECRET"
+
+[storage]
+database_url_env = "ALETHEIA_HOSTED_DATABASE_URL"
+# Trusted application schema and runtime DB role; never infer these from the DSN.
+expected_schema = "aletheia"
+expected_database_role = "aletheia_api"
+# Absolute path on the intended runtime host. No directory is created by preflight.
+object_root = "/var/lib/aletheia"
+postgres_connection_budget = 16
+admin_connection_reserve = 2
+pool_wait_timeout_seconds = 5.0
+
+[api]
+bind_host = "0.0.0.0"
+port = 18766
+processes = 1
+database_pool_size = 8
+concurrency_limit = 64
+backlog = 128
+header_timeout_seconds = 5.0
+backend_timeout_seconds = 5.0
+request_timeout_seconds = 30.0
+startup_timeout_seconds = 15.0
+resource_close_timeout_seconds = 15.0
+maximum_response_bytes = 1048576
+maximum_cookie_bytes = 4096
+maximum_header_bytes = 32768
+maximum_header_count = 100
+maximum_json_bytes = 1048576
+maximum_json_depth = 64
+maximum_body_events = 1024
+body_idle_timeout_seconds = 5.0
+body_total_timeout_seconds = 10.0
+keep_alive_seconds = 5
+graceful_shutdown_seconds = 15
+h11_max_incomplete_event_bytes = 16384
+
+[worker]
+processes = 1
+database_pool_size = 2
+job_slots_per_process = 1
+shutdown_grace_seconds = 30

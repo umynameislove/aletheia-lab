@@ -1,0 +1,26 @@
+{
+  "schema_version": "k17-native-seed-plan/v1",
+  "namespace": "k17_small001",
+  "seed": 17,
+  "workspaces": 2,
+  "projects_per_workspace": 3,
+  "generations": 2,
+  "results_per_generation": 2,
+  "size_cycle": [
+    "S",
+    "M",
+    "L"
+  ],
+  "source_rows": {
+    "S": 32,
+    "M": 128,
+    "L": 512
+  },
+  "metric_series": {
+    "S": 1,
+    "M": 8,
+    "L": 32
+  },
+  "idle_seconds": 900,
+  "absolute_seconds": 28800
+}

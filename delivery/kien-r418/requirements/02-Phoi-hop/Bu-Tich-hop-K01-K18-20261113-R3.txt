@@ -1,0 +1,49 @@
+BÀN GIAO BU — TÍCH HỢP K01–K18 / R3 / 13-11-2026
+
+Bu nhận đầu mối tích hợp xuyên K01–K18. Kiên giữ producer/API và việc Windows,
+Docker, IdP, hạ tầng/operator mà máy Bu không chạy được. Quân cung cấp UI/patch;
+Bu ghép, đối chiếu cùng phiên bản và trả receipt. Không yêu cầu Bu chạy Docker
+trên Mac. Không dùng mock hoặc log của người khác để điền thay gate chưa chạy.
+
+ĐÂY LÀ GÓI NHẬN VIỆC TÍCH HỢP R3; RELEASE CHUNG CHƯA ĐẠT.
+Đọc lần lượt 01 (nguồn/setup), 02 (việc còn lại), 03 (nghiệm thu), 04 (trả kết quả).
+Gói nguồn API đầy đủ2499file nằm trong source/ của gói Kiên:
+  Ban-giao-Kien-Windows-K01-K18-20261113-R3
+Bu cần nhận source/dist/manifest tương ứng từ gói đó, không phải chạy Docker mới
+được đọc/copy nguồn. Gói Bu kèm snapshot UI 137 file, manifest, fixture graph nhỏ,
+phản hồi Quân và bằng chứng lỗi; không mang .venv/node_modules/session/secrets.
+
+ĐÃ CÓ — ĐỪNG GIAO VIẾT LẠI
+- Header/result/claim paging, search, citation/counterevidence reader; PDF create/
+  download; content SHA thật; upload explicit retry/resume;4binding refresh,
+  follow-up/export/logical delete; deletion-status và jobs polling phía client.
+- Backend local: canonical/tenant/current authority, CAS/idempotency, durable jobs,
+  lease/fence/attempt/retry/cancel, retention/restore fences, bounded read models,
+  JSON/Markdown/PDF và latest authority/deletion checkpoint đã có implementation.
+- UI Quân đã replay độc lập327/327unit,13/13Chrome controlled transport; live và
+  hosted build/budget đạt. Live79376B gzip, hosted main71772B, chunk lớn15315B.
+  Không còn giao lại lỗi budget81893/26858 trong audit cũ. Giữ ngưỡng80000/25000.
+- API R3: hai clean build cho wheel/sdist giống byte, sdist dựng đúng wheel,
+  fresh52-pin runtime/exact closure,667file và4child/CLI/PDF đều đạt local.
+
+CÒN THẬT — ƯU TIÊN BU
+1) Chặn blank-root khi lazy JS chunk404/offline; kiểm object-scope authority4s.
+2) Job attempt/history/cancel/retry UX và bounded graph continuation/loading/error.
+3) Một baseline MỚI UI→HTTPS API→PG/worker→real PDF download cùng RC; role/revoke,
+  2tab/renew/reconnect/context/draft/conflict/delete/restore đến đúng consumer.
+4) P01–P38 browser fanout; model/fixture có version; manual accessibility/design;
+  cùng Kiên/operator thực thi campaign và ký gate đúng dữ liệu/phiên bản.
+
+TRẠNG THÁI TEST TẠI LÚC SOẠN
+- API R3 unit:2920passed,13Windows-specific skipped (2933 testcase trong JUnit).
+- Full native R3 lượt đầu:411passed,7failed,7skipped.7lỗi là setup race20client
+  trên fixturePG max_connections16, không được giấu lượt này. Lượt tổng sau
+  trên fixturePG100 đã đạt418PASS/7SKIP,0FAIL/0ERROR;425node/source/deadline giữ nguyên.
+  Receipt:components/api-native-r3-final-result.json. Không là Windows/IdP/primary acceptance.
+- Windows vừa trả thuộc bản CŨ639runtime: smoke rerun23pass; upload20012pass/1fail
+  unknown commit trong5s put_upload_part. Không dùng cho R3/667runtime.
+- Full primary50k, IdP thật, image/OS/rollout, storageDR ngoài máy và27gate chung
+  chưa hoàn tất. Tổng số test/local pass không tự đóng các gate đó.
+
+Không sửa /Users/apple/study/aletheia-lab. Chỉ làm trong integration copy mới.
+Không tự commit/push/publish hoặc thuê hạ tầng/provider từ tài liệu này.

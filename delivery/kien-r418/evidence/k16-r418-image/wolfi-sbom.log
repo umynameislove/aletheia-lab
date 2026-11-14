@@ -1,0 +1,4 @@
+2026-11-14T07:33:46Z	INFO	"--format cyclonedx" disables security scanning. Specify "--scanners vuln" explicitly if you want to include vulnerabilities in the "cyclonedx" report.
+2026-11-14T07:35:09Z	INFO	[python] Licenses acquired from one or more METADATA files may be subject to additional terms. Use `--debug` flag to see all affected packages.
+2026-11-14T07:35:09Z	INFO	Detected OS	family="wolfi" version="20230201"
+2026-11-14T07:35:09Z	INFO	Number of language-specific files	num=1

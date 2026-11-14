@@ -1,0 +1,18 @@
+{
+  "directory": "aletheia-kien-code",
+  "head": "6d1ba1469b5231971095b63d4f8069f542cc7993",
+  "status_sha256": "13a1000bed78af1c2b4bef785c586000c13e2f699c12fa10d49550a7c3f9794f",
+  "refs_sha256": "4042b343895068cbc367cf7460aa43073f1763ca50bafdcebe5f866774fb3d4c",
+  "tracked_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "staged_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "wip": {
+    "docs/k01-ban-giao-quan.md": {
+      "bytes": 7461,
+      "sha256": "884caf3b05fb062a065b805df9dc8a9db7c2cd799f4986f02658c7e7b1c07b63"
+    },
+    "docs/k01-baseline-inventory.md": {
+      "bytes": 36052,
+      "sha256": "bbe365cde833f3fa3c8f71bf919daf400fabcaa0cebb6463f37c5540325f1e0f"
+    }
+  }
+}

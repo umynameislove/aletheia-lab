@@ -1,0 +1,9 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "type": "urn:aletheia:problem:session-revoked",
+  "title": "Session revoked",
+  "status": 401,
+  "code": "session_revoked",
+  "detail": "Sign in again to continue.",
+  "request_id": "req_synthetic_003"
+}

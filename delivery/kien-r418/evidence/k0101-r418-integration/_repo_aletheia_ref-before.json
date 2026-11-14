@@ -1,0 +1,9 @@
+{
+  "directory": "_repo_aletheia_ref",
+  "head": "2414944878c3aabebc26b472af0995833a5e14d3",
+  "status_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "refs_sha256": "7179e393d216957b1b7ebf68e00d79e37bd1315fd1ece351e6779acf413ccf3f",
+  "tracked_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "staged_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "wip": {}
+}

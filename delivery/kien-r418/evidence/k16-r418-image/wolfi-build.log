@@ -1,0 +1,111 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile:
+#1 transferring dockerfile: 1.54kB 0.0s done
+#1 DONE 0.2s
+
+#2 [internal] load metadata for cgr.dev/chainguard/wolfi-base@sha256:1f6b749929164c3d9e7cad0289254f39b2ba51e1dddaeb0fa57532ea03f2db31
+#2 DONE 1.7s
+
+#3 [internal] load .dockerignore
+#3 transferring context:
+#3 transferring context: 2B done
+#3 DONE 0.2s
+
+#4 [internal] load build context
+#4 DONE 0.0s
+
+#5 [runtime 1/2] FROM cgr.dev/chainguard/wolfi-base@sha256:1f6b749929164c3d9e7cad0289254f39b2ba51e1dddaeb0fa57532ea03f2db31
+#5 resolve cgr.dev/chainguard/wolfi-base@sha256:1f6b749929164c3d9e7cad0289254f39b2ba51e1dddaeb0fa57532ea03f2db31 0.1s done
+#5 ...
+
+#4 [internal] load build context
+#4 transferring context: 2.79MB 0.1s done
+#4 DONE 0.3s
+
+#5 [runtime 1/2] FROM cgr.dev/chainguard/wolfi-base@sha256:1f6b749929164c3d9e7cad0289254f39b2ba51e1dddaeb0fa57532ea03f2db31
+#5 DONE 1.0s
+
+#6 [runtime 2/2] RUN apk add --no-cache python-3.12=3.12.16_git20261030-r0 sqlite-libs=3.54.1-r0 libstdc++=16.2.0-r3  && addgroup -g 10001 aletheia  && adduser -D -H -u 10001 -G aletheia aletheia  && mkdir -p /var/lib/aletheia  && chown 10001:10001 /var/lib/aletheia
+#6 0.610 fetch https://apk.cgr.dev/chainguard/x86_64/APKINDEX.tar.gz
+#6 20.62 (1/15) Installing libstdc++ (16.2.0-r3)
+#6 27.00 (2/15) Installing py3-pip-wheel (26.2.2-r2)
+#6 29.45 (3/15) Installing libbz2-1 (1.0.8-r31)
+#6 30.43 (4/15) Installing libexpat1 (2.10.0-r1)
+#6 31.94 (5/15) Installing libffi (3.8.0-r2)
+#6 32.88 (6/15) Installing gdbm (1.26-r9)
+#6 34.05 (7/15) Installing xz (5.8.4-r1)
+#6 35.85 (8/15) Installing mpdecimal (4.0.1-r6)
+#6 37.07 (9/15) Installing ncurses-terminfo-base (6.6.20261107-r0)
+#6 37.92 (10/15) Installing ncurses (6.6.20261107-r0)
+#6 39.01 (11/15) Installing readline (8.3-r3)
+#6 40.05 (12/15) Installing sqlite-libs (3.54.1-r0)
+#6 41.78 (13/15) Installing libuuid (2.42.4-r2)
+#6 43.28 (14/15) Installing python-3.12-base (3.12.16_git20261030-r0)
+#6 50.27 (15/15) Installing python-3.12 (3.12.16_git20261030-r0)
+#6 51.85 Executing busybox-1.38.0-r3.trigger
+#6 51.88 OK: 59 MiB in 34 packages
+#6 DONE 52.2s
+
+#7 [build 1/3] RUN apk add --no-cache py3.12-pip=26.2.2-r2
+#7 0.494 fetch https://apk.cgr.dev/chainguard/x86_64/APKINDEX.tar.gz
+#7 13.84 (1/3) Installing py3.12-setuptools (84.2.1-r0)
+#7 15.03 (2/3) Installing py3.12-pip-base (26.2.2-r2)
+#7 16.61 (3/3) Installing py3.12-pip (26.2.2-r2)
+#7 17.34 Executing busybox-1.38.0-r3.trigger
+#7 17.36 OK: 82 MiB in 37 packages
+#7 DONE 17.6s
+
+#8 [build 2/3] COPY requirements.lock aletheia_lab-0.1.0-py3-none-any.whl /build/
+#8 DONE 0.1s
+
+#9 [build 3/3] RUN cd /build  && echo '1a1331f4e170e87a45db325be4291f79c3ad320411410deeb564d1b980b7e880  aletheia_lab-0.1.0-py3-none-any.whl' | sha256sum -c -  && python3.12 -m venv --without-pip /opt/venv  && python3.12 -m pip --python /opt/venv/bin/python install --only-binary=:all: --require-hashes -r requirements.lock  && python3.12 -m pip --python /opt/venv/bin/python install --no-deps aletheia_lab-0.1.0-py3-none-any.whl  && python3.12 -m pip --python /opt/venv/bin/python check
+#9 0.437 aletheia_lab-0.1.0-py3-none-any.whl: OK
+#9 1.489 Collecting annotated-doc==0.0.6 (from -r requirements.lock (line 2))
+#9 2.106   Downloading annotated_doc-0.0.6-py3-none-any.whl (5.3 kB)
+#9 2.199 Collecting annotated-types==0.8.0 (from -r requirements.lock (line 4))
+#9 2.353   Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+#9 3.159 Collecting anyio==4.16.0 (from -r requirements.lock (line 6))
+#9 3.439   Downloading anyio-4.16.0-py3-none-any.whl (134 kB)
+#9 4.887 Collecting asgi-csrf==0.11 (from -r requirements.lock (line 8))
+#9 5.009   Downloading asgi_csrf-0.11-py3-none-any.whl (11 kB)
+#9 5.191 Collecting authlib==1.9.5 (from -r requirements.lock (line 10))
+#9 5.292   Downloading authlib-1.9.5-py2.py3-none-any.whl (267 kB)
+#9 8.131 Collecting certifi==2026.10.23 (from -r requirements.lock (line 12))
+#9 8.225   Downloading certifi-2026.10.23-py3-none-any.whl (135 kB)
+#9 9.935 Collecting cffi==2.1.1 (from -r requirements.lock (line 14))
+#9 10.03   Downloading cffi-2.1.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (221 kB)
+#9 12.56 Collecting charset-normalizer==3.5.2 (from -r requirements.lock (line 114))
+#9 12.65   Downloading charset_normalizer-3.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (257 kB)
+#9 14.59 Collecting click==8.4.1 (from -r requirements.lock (line 286))
+#9 14.68   Downloading click-8.4.1-py3-none-any.whl (116 kB)
+#9 15.28 Collecting cloudpickle==3.1.2 (from -r requirements.lock (line 288))
+#9 15.38   Downloading cloudpickle-3.1.2-py3-none-any.whl (22 kB)
+#9 16.65 Collecting cryptography==50.0.2 (from -r requirements.lock (line 290))
+#9 16.75   Downloading cryptography-50.0.2-cp311-abi3-manylinux_2_34_x86_64.whl (4.8 MB)
+#9 55.15      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.8/4.8 MB 135.9 kB/s  0:00:38
+#9 55.21 Collecting h11==0.16.0 (from -r requirements.lock (line 349))
+#9 55.31   Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+#9 55.48 Collecting httpcore2==2.16.0 (from -r requirements.lock (line 351))
+#9 55.57   Downloading httpcore2-2.16.0-py3-none-any.whl (85 kB)
+#9 55.89 Collecting httpx2==2.16.0 (from -r requirements.lock (line 353))
+#9 55.98   Downloading httpx2-2.16.0-py3-none-any.whl (97 kB)
+#9 56.33 Collecting idna==3.20 (from -r requirements.lock (line 355))
+#9 56.42   Downloading idna-3.20-py3-none-any.whl (69 kB)
+#9 56.86 Collecting itsdangerous==2.2.0 (from -r requirements.lock (line 357))
+#9 56.95   Downloading itsdangerous-2.2.0-py3-none-any.whl (16 kB)
+#9 57.09 Collecting joblib==1.6.0 (from -r requirements.lock (line 359))
+#9 57.19   Downloading joblib-1.6.0-py3-none-any.whl (306 kB)
+#9 58.17 Collecting joserfc==1.8.0 (from -r requirements.lock (line 361))
+#9 58.27   Downloading joserfc-1.8.0-py3-none-any.whl (73 kB)
+#9 58.78 Collecting markdown-it-py==4.3.0 (from -r requirements.lock (line 363))
+#9 58.87   Downloading markdown_it_py-4.3.0-py3-none-any.whl (96 kB)
+#9 59.44 Collecting mdurl==0.1.2 (from -r requirements.lock (line 365))
+#9 59.53   Downloading mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+#9 59.71 Collecting narwhals==2.28.0 (from -r requirements.lock (line 367))
+#9 59.81   Downloading narwhals-2.28.0-py3-none-any.whl (490 kB)
+#9 63.26 Collecting numpy==2.5.4 (from -r requirements.lock (line 369))
+#9 63.36   Downloading numpy-2.5.4-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.7 MB)
+#9 477.4      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.7/16.7 MB 39.4 kB/s  0:06:54
+#9 479.7 Collecting pandas==3.1.1 (from -r requirements.lock (line 435))

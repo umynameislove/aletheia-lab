@@ -1,0 +1,21 @@
+CHỐT CHO QUÂN — POLLING VÀ SERVER CŨ, 13/11/2026
+
+1. GIẢM REQUEST THỪA VÀ ĐƯA LƯU LƯỢNG THỰC VÀO BÀI TẢI
+Làm cả hai. Dừng watch job terminal khi màn hình chỉ còn hiển thị result; chỉ poll job pending mà màn hình cần. Nếu một panel vẫn hiển thị dữ liệu job riêng thì vẫn phải kiểm quyền đúng scope đó. Mỗi session generation/workspace/object chỉ có một request cùng loại đang chạy; tránh bootstrap và pollJob đọc trùng cùng job. Không nhận lease từ tab/scope khác.
+Giữ kiểm session/context hiện tại: HeaderDTO chưa có chứng nhận actor/session context để tự thay /session. Session/capabilities cũng không thay được quyền đọc result. Không tự bỏ các check đang cần chỉ để giảm số request.
+Giữ lease tối đa4 giây từ request start và mục tiêu revoke≤5 giây; không tăng khoảng poll trong khi vẫn để nội dung riêng tư hiện. Hidden/offline dừng các lần đọc nền không cần, che nội dung; khi quay lại phải kiểm quyền mới trước khi mở. Giữ job đã ACK, không cancel/tạo lại job vì ngừng polling.
+Đưa cả session/caps/header/job updates, số tab, bytes/SQL, jitter/reconnect/429/503 vào workload thực sau sửa. Giữ số trước sửa làm baseline. Minh họa50.000 tab×3–4request/3giây≈50.000–66.667RPS, chưa tính thao tác/job polling khác; đây không phải số đo và50.000tab không tự là50.000principal. Kiên đo capacity, không tự nhận đạt50k từ test UI.
+
+2. SERVER CŨ THIẾU HEADER: CHE RESULT, KHÔNG ĐỌC FULL THEO TIMER
+Chốt mặc định hosted: dùng GET /v1/workspaces/{ws}/results/{result}/header khi catalog.paged_read được quảng bá. Bỏ fallback tự động loadResult/loadOutput toàn bộ mỗi kỳ lease. Không thêm endpoint mới để chặn tiến độ của Quân.
+Nếu không có binding nhẹ phù hợp, che ngay nội dung result và các panel phụ thuộc; hiện thông báo máy chủ chưa hỗ trợ xác nhận quyền kết quả, có nút Kiểm tra lại/đổi workspace. Nút kiểm tra lại refresh capability và thử route được hỗ trợ; không lặp tải full tự động. Không cần đăng xuất toàn ứng dụng chỉ vì server thiếu tính năng.
+Header200 phải đúng workspace/project/snapshot/result và browser session/epoch hiện tại; response đến quá lease không mở màn. Nếu đã quảng bá route mà nhận401/403/404 thì xử lý deny/clear đúng scope, không downgrade sang full/output để vượt lỗi.
+
+3. ĐIỀU KIỆN QUÂN CHỐT PHẦN UI
+- Màn result không còn GET terminal job thừa và không có request trùng đang chạy.
+- Legacy capability=false không tải full/output theo timer, nội dung result được che và có đường phục hồi rõ.
+- Header deny/timeout/offline/late response hoặc đổi context không giữ/mở lại nội dung cũ; lease không kéo dài.
+- Hidden→visible, job pending→terminal, account/workspace switch và reconnect được kiểm; không duplicate mutation.
+- Giữ nguyên assertion/ngưỡng; gửi patch, manifest, log unit/Chrome/build/budget và network waterfall trước/sau. Chưa chạy thì ghi chưa chạy; không đóng capacity/release gate bằng kết quả UI.
+
+Đã đối chiếu mã hiện tại theo cơ chế4s và hợp đồng K15; đây là quyết định triển khai, chưa phải kết quả test bản sửa. Thư mục aletheia-lab chỉ đọc. Các ZIP R3 đã niêm phong giữ nguyên.

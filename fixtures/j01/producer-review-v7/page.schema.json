@@ -1,0 +1,101 @@
+{
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "else": {
+        "properties": {
+          "total": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        }
+      },
+      "if": {
+        "properties": {
+          "total_kind": {
+            "const": "unknown"
+          }
+        },
+        "required": [
+          "total_kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "total": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "product-api/v1-draft",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "workspace_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Workspace Id",
+      "type": "string"
+    },
+    "items": {
+      "items": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "type": "object"
+      },
+      "maxItems": 200,
+      "title": "Items",
+      "type": "array"
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "maxLength": 4096,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Next Cursor"
+    },
+    "total": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Total"
+    },
+    "total_kind": {
+      "enum": [
+        "exact",
+        "estimated",
+        "unknown"
+      ],
+      "title": "Total Kind",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "workspace_id",
+    "items",
+    "next_cursor",
+    "total",
+    "total_kind"
+  ],
+  "title": "Page[dict[str, str]]",
+  "type": "object"
+}

@@ -18,8 +18,13 @@ export const TERM: Record<string, [plain: string, gloss: string]> = {
   observation: ["Observation", "state what was seen"],
   project_audit: ["Project audit", "no hidden answer key"],
   diagnosis: ["Visible to diagnosis", ""],
-  local_evidence: ["Local evidence analysis", "computed from stored metric observations; cause unverified"],
-  deterministic_mock: ["Demo answer, no model", "not a model result"],
+  mixed: ["Mixed evidence", "evidence points both ways"],
+  not_assessed: ["Not assessed", "this was not evaluated, which is not a failure"],
+  local_evidence: ["Local evidence analysis", "computed here from stored evidence, no model; cause unverified"],
+  // runtime.model of local_evidence: which pinned analysis version answered (K08–K12 integration)
+  "upload-snapshot-observation/v1": ["Snapshot record", "records that the upload was stored; no metric analysis"],
+  "upload-snapshot-metric-observation/v2": ["Metric observation summary", "every mapped row counted per run, metric, class and unit; no sampling, no cause"],
+  deterministic_mock: ["Scripted answer, no model", "a fixed local answer, not a model result"],
   not_estimated: ["Not counted", "null, not 0"],
   // claim_type — closed enum (K08)
   evidence_statement: ["States what was seen", ""],

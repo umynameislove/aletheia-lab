@@ -1,0 +1,54 @@
+{
+  "baseline_run_id": "lần-0",
+  "metric_definitions": [
+    {
+      "direction": "higher_is_better",
+      "metric_name": "f1",
+      "regression_threshold": 0.1,
+      "unit": "%"
+    }
+  ],
+  "metric_sources": [
+    {
+      "class_field": "class",
+      "format": "csv",
+      "mapping_id": "metric-5e2b67ec2c196212",
+      "metric_name_field": "name",
+      "metric_value_field": "value",
+      "project_item_id": "p3-item-5e2b67ec2c196212ac9d80bf414ea52e6fe76fbbf9f01ef8f1e710694195b39a",
+      "records_path": [],
+      "run_id_field": "run",
+      "step_field": "step",
+      "unit_field": "unit"
+    }
+  ],
+  "runs": [
+    {
+      "config_item_ids": [],
+      "run_id": "lần-0"
+    },
+    {
+      "config_item_ids": [],
+      "run_id": "lần-1"
+    },
+    {
+      "config_item_ids": [],
+      "run_id": "lần-2"
+    },
+    {
+      "config_item_ids": [],
+      "run_id": "lần-3"
+    },
+    {
+      "config_item_ids": [],
+      "run_id": "lần-4"
+    }
+  ],
+  "schema_version": "project-mapping-request/v2",
+  "target": {
+    "identifier_field": "id",
+    "mapping_id": "target-9b9a43b8d2d54620",
+    "project_item_id": "p3-item-9b9a43b8d2d54620b652f1741a47a8e1cac7db89fea733d66dc8074eb35216fe",
+    "target_field": "target"
+  }
+}

@@ -10,6 +10,7 @@ import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseThreshold } from "../src/data/metric.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const LOCKED = {
@@ -63,9 +64,11 @@ test("D1 Connect reads preview_import through the port and holds no hand-written
   const preview = readFileSync(join(ROOT, "src/data/preview.ts"), "utf8");
   assert.ok(preview.includes(`from "./${LOCKED[VERSION].file}"`), `preview.ts does not import ${LOCKED[VERSION].file}`);
   const src = readFileSync(join(ROOT, "src/components/Connect.tsx"), "utf8");
-  assert.ok(!/from "\.\.\/data\//.test(src), "Connect must not import fixtures directly — only through the port");
+  // data/metric.ts holds input rules, not data; every other data module is a fixture and must come through the port
+  assert.ok(!/from "\.\.\/data\/(?!metric")/.test(src), "Connect must not import fixtures directly — only through the port");
   assert.match(src, /await port\.preview_import\(/, "Scan must call port.preview_import");
-  assert.match(src, /await port\.confirm_import\(preview\.preview_id, confirmPayload\(/, "Confirm must call port.confirm_import with the built payload");
+  assert.match(src, /confirmAndKeep\(preview\.preview_id, confirmPayload\(/, "Confirm must send the built payload");
+  assert.match(readFileSync(join(ROOT, "src/components/Ask.tsx"), "utf8"), /keptOnArrival\(port\.confirm_import\(preview_id, mapping\)\) : port\.confirm_import\(preview_id, mapping\)/, "…through port.confirm_import");
   // every place a preview value is shown is pinned to the port's answer, so one hand-typed number fails
   const pins = [
     [/\["Included", preview\.included_count,/, "Included tile"],
@@ -81,7 +84,7 @@ test("D1 Connect reads preview_import through the port and holds no hand-written
     [/C\.runs\.map\(/, "run pickers"],
     [/m\?\.metric_name_candidates \?\? \[\]\)\.map\(name =>/, "metric definition rows"],
     [/const offered = ms\?\.metric_name_candidates \?\? \[\];/, "manual-entry decision"],
-    [/metric_definitions: definitionsPayload\(m\.defs\)/, "payload carries metric_definitions"],
+    [/metric_definitions: definitionsPayload\(m\.defs, m\.metadata\)/, "payload carries declared metric definitions and versioned units"],
     // the exact confirm_import mapping agreed on 2026-10-05: IDs and format verbatim from the candidates
     [/target: \{ mapping_id: t\?\.mapping_id \?\? "", project_item_id: m\.target, target_field: m\.targetLabel, identifier_field: m\.targetField \}/, "target mapping"],
     [/mapping_id: ms\?\.mapping_id \?\? "", project_item_id: m\.metric, format: ms\?\.format/, "metric source mapping_id + format"],
@@ -104,10 +107,9 @@ test("D2 metric definitions have no defaults and mirror every mapping_invalid ru
     [/"Thresholds are finite and ≥ 0"/, "negative or non-finite threshold"],
     [/"Metric names are unique"/, "duplicate metric names"],
   ]) assert.match(src, re, what);
-  const re = /const THRESHOLD = (\/.*\/);/.exec(src);
-  assert.ok(re, "threshold pattern not found");
-  const THRESHOLD = eval(re[1]);
-  const ok = t => THRESHOLD.test(t.trim()) && Number.isFinite(Number(t.trim()));
+  // the rule itself runs here, not a copy of its text (src/data/metric.ts)
+  assert.match(src, /const validThreshold = \(t: string\) => parseThreshold\(t\) !== null;/);
+  const ok = t => parseThreshold(t) !== null;
   // mirrors the backend exactly: finite and >= 0 — scientific notation is finite (Kiên, K04d)
   for (const t of ["0", "0.05", "0.08", ".5", "10", "0.", "1e3", "1E3", "2.5e-4", " 0.2 "]) assert.ok(ok(t), `should accept ${JSON.stringify(t)}`);
   for (const t of ["-0.1", "-1e3", "Infinity", "-Infinity", "NaN", "1e999", "", "abc", "0x10", "1e"]) assert.ok(!ok(t), `should reject ${JSON.stringify(t)}`);

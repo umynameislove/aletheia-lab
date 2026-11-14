@@ -1,0 +1,126 @@
+﻿TRẢ LỜI QUÂN — PHẢN HỒI K13–K18 R2.1 / 13-11-2026
+
+Đã kiểm Phan-hoi-K13-K18-R2.1.zip SHA-256
+5d6edf57bea85ff2bc09b976bef2a52163e169ff0942bce153cd6152d4baf645.
+27 checksum payload khớp; 137 file dashboard/web khớp source manifest của Quân.
+Không chạy script từ ZIP, không sửa thư mục aletheia-lab. Đã dựng/kiểm bản sao
+riêng cùng backend Python đúng layout, giữ nguyên test/assert/ngưỡng.
+
+1. SOURCE VÀ PHẠM VI
+Ghi nhận base d4e7fb214d3bb6a74b2ddf0f012bf69c7c3e8e7c và patch 108 file;
+client identity 3b7fac94bcc0e7aac0558f25ea0a0373be323fa19bbad73a12c9c0a646d368d4.
+Không so trực tiếp identity này với snapshot 161 file vì khác inventory/cách mã
+hóa. Các file cùng phạm vi đã so byte. Source/runtime API R2.1 vẫn là baseline
+1bd0376a.../09ffc3bb..., 2498/667 file; sửa upload mới sẽ có RC mới, không gắn log
+R2.1 sang RC mới như đã nghiệm thu chung. Không có yêu cầu commit/push trong thư này.
+
+2. BUDGET — CHẤP NHẬN KẾT QUẢ SỬA TRONG PHẠM VI ĐÃ KIỂM
+Kiểm độc lập: 327/327 unit đạt, 13/13 Chrome controlled transport đạt. Hai test P1
+đã đạt khi có backend src và scripts/export_mapping_identifiers.py đúng layout;
+không cần bỏ test hay sửa assertion. Chỉ đổi PYTHONPATH ngoài không đủ vì test tự
+đặt lại đường dẫn tương đối.
+Build live + hosted và budget đều đạt, toàn bộ hash/index HTML/byte gzip khớp log
+Quân: live 79.376 byte, hosted main 71.772 byte; chunk hosted lớn nhất 15.315 byte.
+Không có nới ngưỡng 80.000/25.000. Demo budget fail cũ vẫn ghi riêng, chưa coi đạt.
+Patch chuyển validator sang client.checkView giữ đúng checkProductView và đủ các
+caller/scope checks. Đây là xác nhận build/contract local, chưa phải API thật/IdP.
+
+3. CÂU HỎI WATCHDOG QUYỀN — CHỐT ROUTE HIỆN HỮU
+Khi đang hiển thị một result, dùng binding loadResultHeader hiện có:
+  GET /v1/workspaces/{workspace_id}/results/{result_id}/header
+Áp dụng khi caps.features['catalog.paged_read'] === true. Response phải khớp
+workspace_id/project_id/result_id/snapshot_id đang hiển thị, không lấy pointer
+project hiện tại thay cho result cũ. Backend kiểm session, workspace, project,
+record và quyền source hiện tại; còn kiểm lại trước khi gửi response. Route này
+đọc projection/header hữu hạn, không dựng toàn canonical view.
+GET là lựa chọn đơn giản với client reader hiện có. HEAD cùng route hỗ trợ nhưng
+không có JSON body, cần nhánh client riêng; không đưa vào JSON reader hiện tại.
+
+Lease tối đa 4 giây tính từ REQUEST START bằng monotonic clock, không từ lúc nhận
+response. Chỉ trả kết quả check=ok khi tất cả scope đang cần đều đã xác nhận còn
+quyền. Response đến trễ/quá lease/khác epoch hoặc scope phải bỏ; lỗi, timeout,
+offline hay không có binding phù hợp thì che nội dung và chờ xác nhận lại.
+/session, capabilities và job đang theo dõi không gia hạn quyền cho result khác.
+Sau terminal phải chuyển sang watch result đang xem; nếu vừa chờ job vừa hiện
+result cũ thì cả hai scope vẫn phải đúng. Đổi account/workspace/logout/renew phải
+fence response cũ, bỏ cursor/cache riêng tư và dùng CSRF/session hiện tại.
+
+Màn retention/export hiện hiển thị chính result/question: kiểm read scope bằng
+header của result đó. Header 200 KHÔNG cấp quyền export. POST exports và mỗi lần
+GET/Range download vẫn dùng kiểm export riêng của server, creator/expiry/current
+grant; xử lý deny bằng trạng thái đúng, không báo tải xong nếu response bị cắt.
+Không dùng HEAD /exports/{export_id}/download làm heartbeat 4 giây: hiện nó vẫn
+đọc và hash toàn file. Nội dung file đã người dùng tải xuống không phải cache UI
+có thể thu hồi bằng watchdog. Fallback server cũ không có paged_read phải che khi
+hết lease và xác nhận bằng read được server đó hỗ trợ; project/session probe đơn
+thuần không thay cho quyền source/result.
+
+4. WORDING RETENTION
+Đồng ý purging="Removing this project's records" và purged="This project's
+records are removed" trong phạm vi project, kèm câu source/backup/time_basis đã có.
+Riêng retained, đổi đề xuất thành:
+  "Retained; eligible for removal after the retention period."
+Hết retention là đủ điều kiện được dọn, không phải bảo đảm scheduler đã dọn xong
+ngay lúc đó; lease/job/shared-reference/backup còn theo policy. Giữ status từ DTO,
+không suy từ pending_objects=0 hay revision bằng nhau. Ca API thật delete/restore
+vẫn phải kiểm riêng; Chrome transport giả lập không đóng gate này.
+
+5. MODEL/GRAPH
+Thống nhất hướng giữ model hiện tại đúng nghĩa và thêm model/contract có version
+cho dữ liệu lớn. Chưa có implementation/model lớn được công bố; primary guard
+vẫn false, không tăng limit v2 hoặc padding claim để qua guide 10k.
+Bu sẽ nhận đầu việc chốt spec/phiên bản và tích hợp; phía Kiên giữ việc producer
+implementation, fixture và kiểm backend theo spec. Cần định nghĩa rõ nguồn của
+claim/evidence/counterevidence, graph, byte/row/count và publication/job thật trước
+khi khóa primary dataset/campaign.
+Graph reader có thể làm ngay theo API hiện có, không cần chờ model mới:
+  GET /v1/workspaces/{workspace}/results/{result}/graph?limit=50[&cursor=...]
+Dùng cap catalog.paged_read, limit theo caps, cursor opaque; validate scope mỗi
+trang, dedup node/edge theo ID. Edge page có thể lặp endpoint node. Dừng khi
+next_cursor=null; truncated mô tả từng trang, không bảo đảm trang cuối là false.
+Đính kèm fixture nhỏ native v2 + header/schema và các GraphView chia trang đã
+validate, không phải fixture 10k hay live token. Hiện LargeResult chỉ hiển thị số
+đếm '(not drawn)', nên graph continuation/loading/error vẫn là phần tích hợp cần
+làm, không coi là đã có qua claim paging.
+
+6. WORKLOAD
+Nhờ Quân gửi bảng P01–P38 cho Bu: role, task, tỷ trọng, think-time, tab/reconnect,
+HTTP/status fanout, positive/deny, cỡ dữ liệu; ghi rõ quan sát hay giả định.
+Kiên đo HTTP/DB/job và thực thi campaign trên môi trường được phép. Chưa có profile
+và model/dataset đủ thì G14/G15/G18 cùng K17 liên quan vẫn mở. Không tự thuê hạ tầng
+hoặc dùng provider/IdP trả phí từ thư này.
+
+7. BUG MỚI ĐÃ TÁI HIỆN — LAZY CHUNK 404
+Kiểm thực Chrome157: /assets/WorkspaceManager-BvXQJ1eq.js bị404 làm React root còn
+0 child, 0 heading, 0 button; không có phục hồi trong app. Restore chunk rồi browser
+reload mới mở lại Workspace access. Đây là product failure được xác nhận, không
+được cộng thành ca Chrome PASS. JSON và ảnh ở 02-Bang-chung-UI.
+Cần Quân sửa trên branch/copy của mình rồi gửi patch cho Bu: error boundary với
+thông báo cố định an toàn và nút reload/recovery cho lazy HostedApp/WorkspaceManager/
+HostedConnect/LargeResult. Ở các màn đã đăng nhập, giữ SessionGate ở ngoài boundary
+để quyền vẫn được cover khi lỗi. Suspense chỉ xử lý đang tải, không xử lý import
+reject. Kiểm JS404/offline/reload cùng controlled transport, rồi chạy lại unit,
+build live/hosted và budget, không nới ngưỡng.
+
+Ngoài ra Bu/Quân còn attempt-history/cancel UX cho K09:
+  GET /v1/workspaces/{ws}/jobs/{id}/attempts       (không query, tối đa3attempt)
+  POST /v1/workspaces/{ws}/jobs/{id}/cancel       (JSON {}, CSRF hiện tại)
+  POST /v1/workspaces/{ws}/jobs/{id}/retry        (JSON {}, CSRF + idempotency key)
+Tôn trọng jobs.execution_v1/jobs.cancel/jobs.retry và GET job hiện tại. Retry tạo
+job mới, giữ liên kết parent; cancel_requested chưa phải cancelled. retryable=null
+là chưa biết, không tự cho retry. Schema/operation hiện có trong gói API.
+Không giao lại header/claim paging/citation/PDF/content SHA hoặc upload explicit
+retry: các phần đó đã có. Chỉ cần nghiệm thu đúng API thật và phần còn thiếu.
+
+8. MÔI TRƯỜNG VÀ BÀN GIAO CHÉO
+Theo phân công mới của chủ dự án: Bu nhận tích hợp, Kiên nhận Windows/Docker và
+các bài máy Bu không chạy được, rồi gửi log/receipt về kiểm. Quân không cần chạy
+Docker trên Mac. Kiên đang chuẩn bị gói mới với cùng guard/timeout/size, tách rõ
+phase chưa chạy. Kết quả Windows vừa về thuộc bản cũ639runtime: smoke23pass,
+upload20012pass/1unknowncommit; không là nghiệm thu API667runtime hiện tại.
+K01 baseline UI->HTTP->store->download, revoke/2tab/reconnect thực, PDF renderer
+thật qua UI, manual AA, Docker/IdP/restore và27gate chung vẫn phải có receipt riêng.
+Giữ gates-phia-quan.csv mở đúng phạm vi. Budget đã đạt local không tự đóng G26.
+
+Đã đưa các phần còn thiếu vào rà soát tổng K01–K18 và gói bàn giao Bu/Kiên. Thư này
+trả lời trực tiếp phản hồi Quân, không ghi Quân đã thực hiện những bài chưa chạy.

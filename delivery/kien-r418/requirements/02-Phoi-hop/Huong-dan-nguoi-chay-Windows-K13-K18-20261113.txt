@@ -1,0 +1,187 @@
+﻿K13–K18 — HƯỚNG DẪN NGƯỜI CHẠY WINDOWS / LINUX
+Ngày13/11/2026. Gói mới độc lập; giữ nguyên source/ZIP/kết quả K08–K12 cũ.
+
+A. PHẠM VI VÀ QUY TẮC
+
+Gói gồm source2488file, runtime667file, wheel/sdist, test runner và bằng chứng
+local. Source identity c5410f5021643d565bbb5365989459a49a2eeb62ca72fa6e81ca48aa49b683c6;
+runtime identity d5209e5f4f64bf51165229df465b403a98ca0003ff722d1dc32d0016f0c2af31.
+Hai SHA này dùng canonicalJSON path->fileSHA; runtime tree61e0308... trong receipt
+K17 là cách mã hóa khác của cùng byte. Không coi chúng là Git commit SHA.
+
+Code local đã qua unit/native/wheel; chưa có Docker image/IdP/50k/joint acceptance.
+14/31tiêu chí đạt local;13partial và4open, chi tiết ở báo cáo đi kèm. Không ghi
+PASS toàn bộ chỉ vì pytest exit0: calibration functional có thể PASS nhưng tỷ lệ
+business success FAIL. Runner phasecalibration kiểm riêng điều này.
+
+Dùng DB THỬ RIÊNG có quyền tạo schema/role/database, không dùng DB công việc.
+Giữ nguyên assert,deadline,payload,worker slot và workload. Mỗi lượt một output
+mới; giữ log failed/rerun/skip. Không chạy song song L/soak/Node/build khi đo.
+Không dùng các lệnh prune, down-v hay xóa volume/source người dùng.
+
+B. CHUẨN BỊ
+
+- Python3.12, Docker Desktop Linux containers nếu dùng DB Docker trên Windows.
+- Tối thiểu10GiB disk trống ban đầu; runner chặn dưới4GiB trước mỗi phase nhưng
+  KHÔNG giám sát toàn bộ disk/DB trong lúc chạy. Theo dõi disk trên cả host/VM/DB.
+- Bộ test có phần POSIX: Windows native không thay cho Linux/WSL. K18 process,
+  calibration/renewal và physicalPITR cần lượt Linux/WSL tương ứng.
+- PG16 pg_dump/pg_restore cho logical restore. PhysicalPITR cần ĐỦ server+client
+  binaries: postgres,initdb,pg_ctl,pg_basebackup và pg_dump/pg_restore; client-only
+  package không đủ. Linux bin thường /usr/lib/postgresql/16/bin; dùng đường dẫn
+  thực đã kiểm --version. Không trỏ test vào PG server có sẵn của người khác.
+- Test không cần IdP/provider thật. Đừng đưa secret production vào gói hoặc chat.
+
+C. GIẢI NÉN VÀ CÀI TEST ENV — POWERSHELL
+
+1. Tính Get-FileHash -Algorithm SHA256 cho ZIP nhận được; đối chiếu giá trị tin cậy
+   gửi BÊN NGOÀI ZIP. Giải nén vào thư mục mới, ví dụ C:\Aletheia\K13-K18-RC.
+2. Mở PowerShell tại ROOT gói (có source,dist,tools), kiểm Python:
+   py -3.12 --version
+   py -3.12 tools/run_checks.py verify
+   Dừng nếu hai identity/count không khớp phầnA.
+3. Tạo venv riêng, không dùng editable install/source cũ:
+   py -3.12 -m venv .venv-test
+   $testPython = (Resolve-Path .\.venv-test\Scripts\python.exe).Path
+   $testWheel = (Get-ChildItem .\dist\*.whl).FullName
+   & $testPython -m pip install -c .\test-constraints.txt "${testWheel}[dev,hosted]"
+   if ($LASTEXITCODE -ne 0) { throw 'Install failed; retain full log' }
+   & $testPython -m pip check
+   if ($LASTEXITCODE -ne 0) { throw 'pip check failed' }
+   New-Item -ItemType Directory -Force results | Out-Null
+   & $testPython -m pip freeze > results\pip-freeze.txt
+   & $testPython --version > results\python-version.txt
+   docker version > results\docker-version.txt
+   docker compose version > results\compose-version.txt
+
+Constraints là119package đã quan sát cộng wheel được vá, tổng120version; không
+phải image SBOM/hashes. Production image dùng52runtime+3build pins có hash trong
+source/deploy/hosted. Nếu resolver lỗi, giữ nguyên log; không tự bỏ constraint.
+Các secret dạng text/config/DSN dùng UTF-8 không BOM, không dùng UTF-16 mặc định
+của PowerShell5. PEM/key giữ nguyên byte; HMAC backup key là binary riêng.
+
+D. UNIT — KHÔNG CẦN DOCKER/DB
+
+   & $testPython tools/run_checks.py unit --output results/unit-01
+   if ($LASTEXITCODE -ne 0) { throw 'Unit failed; stop and send output' }
+
+Lượt local hiện tại:2900passed,13Windows-specific skipped,5integration deselected.
+Windows native có thể đổi số skip; phải gửi đầy đủ JUnit và reason. Năm case
+integration bị tách khỏi unit sẽ vào phasepostgres.
+
+E. DB DOCKER THỬ RIÊNG — WINDOWS, CHỈ NGƯỜI CHẠY THỰC HIỆN
+
+Không sửa container/volume K08–K12 đang giữ. Nếu tên dưới đã có, dùng tên mới và
+sửa đồng bộ các lệnh; không rm một container không rõ nguồn.
+
+   docker ps -a --filter name=aletheia-k13-k18-rc-test
+   docker volume ls --filter name=aletheia-k13-k18-rc-test-data
+
+Chỉ tiếp tục sau khi xác nhận hai tên mới chưa tồn tại:
+   docker volume create aletheia-k13-k18-rc-test-data
+   docker run -d --name aletheia-k13-k18-rc-test -p 127.0.0.1:55435:5432 --mount source=aletheia-k13-k18-rc-test-data,target=/var/lib/postgresql/data -e POSTGRES_USER=hosted_test -e POSTGRES_PASSWORD=synthetic_test_only -e POSTGRES_DB=hosted_test postgres:16-bookworm@sha256:a49f7438ba03589f9b1ca062f2da82e899b48ea1dc50d2449fa09a70be83ebca
+   if ($LASTEXITCODE -ne 0) { throw 'DB container failed' }
+   docker exec aletheia-k13-k18-rc-test pg_isready -U hosted_test -d hosted_test
+
+Đợi ready rồi tạo file URL THỬ ngoài source và results, UTF-8 khôngBOM:
+   $testPrivate = Join-Path $env:USERPROFILE 'Aletheia-private'
+   New-Item -ItemType Directory -Force $testPrivate | Out-Null
+   $testDbFile = Join-Path $testPrivate 'k13-k18-test-url.txt'
+   [IO.File]::WriteAllText($testDbFile, 'postgresql://hosted_test:synthetic_test_only@127.0.0.1:55435/hosted_test', (New-Object Text.UTF8Encoding($false)))
+
+Đây là password fixture công khai cho DB disposable/loopback, không tái dùng ở
+staging/production. Với DB khác, lấy URL qua kênh private; đừng dán secret thật vào
+command history/chat. Giữ ACL private cho file URL.
+
+F. POSTGRES + HTTPS + WORKER
+
+Cài PG16 tools đúng kiến trúc để chạy logical restore, ví dụ:
+   $testPgBin = 'C:\Program Files\PostgreSQL\16\bin'
+   & "$testPgBin\pg_dump.exe" --version
+   & "$testPgBin\pg_restore.exe" --version
+
+Từ root gói:
+   & $testPython tools/run_checks.py postgres --database-file $testDbFile --pg-bin $testPgBin --output results/postgres-01
+   if ($LASTEXITCODE -ne 0) { throw 'Postgres failed; retain output' }
+
+Lượt Mac local407passed,7skip;7skip gồm2Docker-recovery,2L-parser,1L-pipeline,
+1TLS-health opt-in,1PITR opt-in. POSIX/Windows có thể thêm skip. Các phase dưới
+đóng các opt-in có thể chạy mà không cần Docker-recovery hoặc IdP.
+
+G. TEST L THẬT — GIỮ SIZE/DEADLINE, CHẠY LẦN LƯỢT
+
+   & $testPython tools/run_checks.py metric100k --output results/metric100k-01
+   if ($LASTEXITCODE -ne 0) { throw 'Metric100k failed' }
+   & $testPython tools/run_checks.py large100k --database-file $testDbFile --output results/large100k-01
+   if ($LASTEXITCODE -ne 0) { throw 'Large100k failed' }
+
+metric100k chạy2workerparser100000row (v1/v2). large100k là real PG/worker confirm,
+analysis,no-op+adverse refresh,pinned history và3format JSON/Markdown/PDF đủ hash.
+Có thể mất khoảng10phút hoặc hơn tùy máy; chờ tiến trình, không tăng timeout để
+qua bài. Nếu máy hết disk/RAM, dừng an toàn, giữ log, báo tài nguyên và namespace.
+Không gọi synthetic100VU là full50k hoặc gán100krow thành100kngười dùng.
+
+H. LINUX/WSL: CALIBRATION, RENEW, TLS HEALTH VÀ PITR
+
+Chạy cùng gói trong WSL/Linux, cùng source SHA và Python3.12. Tạo venv Linux riêng
+(ví dụ .venv-linux/bin/python); không dùng .venv/Scripts của Windows. Cài wheel
+[dev,hosted] với test-constraints như phầnC; kiểm pip check. URL private phải tới
+đúng DB test nhìn thấy từ môi trường Linux; kiểm kết nối trước, đừng đo trên NAT
+lỗi rồi coi đó là server capacity. Thay PATH/CA/bin theo máy thực, không tắt TLS.
+
+Ví dụ biến shell, dùng tên riêng:
+   test_python=.venv-linux/bin/python
+   test_db_file=/private/operator/k13-k18-test-url.txt
+   test_pg_bin=/usr/lib/postgresql/16/bin
+
+   "$test_python" tools/run_checks.py calibration --database-file "$test_db_file" --output results/calibration-01
+   "$test_python" tools/run_checks.py renewal --database-file "$test_db_file" --output results/renewal-01
+   "$test_python" tools/run_checks.py health --output results/health-01
+   "$test_python" tools/run_checks.py pitr --pg-bin "$test_pg_bin" --output results/pitr-01
+
+Kiểm exit code sau TỪNG lệnh; dừng nếu khác0. Đừng copy nguyên chuỗi rồi bỏ qua lỗi.
+Calibration: giữ500planned/offered/terminal, report positive/deny/failed/pending,
+21jobs/50exports là quan sát local mới, không phải count bắt buộc trên mọi lịch
+scheduling. Runner trả nonzero nếu rejected/timeout/drop/unknown/pending hoặc
+positive success không đạt99.9%, dù pytest functional0. Gửi cảcalibration100-result,
+profile,seedmanifest,safeAPI/workerlogs. 25giây không đủ cửa sổactive30giây hay
+30phútsteady primary và không cón>=10k/stratum để chốt p99.
+Renewal: policyfixture ngắn1srotation/60sidle/120shard, thời gian thật, kiểm old401/
+new200/context không đổi; không rewrite DB clock hay lách absolute expiry/IdP.
+Health: thật TLS/SNI/Host/CA, ready503/live200 và wrongCA/hostname bị từ chối.
+PITR: POSIX user không phải root, ĐỦ PG16server+client binaries. Fixture tự tạo2
+cluster private50814/50815, chỉ dừng PID/datadir do nó sở hữu, không dùng DB test
+bên ngoài. Port đang bận thì fail; không tắt PG của người khác. Giữ>=4GiB free.
+Backup logical không phải PITR; đọc source/docs/k18-native-pitr-fixture.md.
+
+I. INSTALLED WHEEL / IMAGE / IDP
+
+Wheel dùngvenv MỚI không editable, không PYTHONPATH trỏ source. Có thể tạo
+.venv-wheel, cài đúng wheel[dev,hosted] với test-constraints; unset PYTHONPATH chỉ
+trong terminal test rồi chạy:
+   .venv-wheel\Scripts\python.exe -I installed_wheel_check.py --kit . --output results/wheel-01
+
+Outputphải667runtime khớp byte,4child thật, PDFUnicode/font/ID/hash đúng. Shared
+venv/sitecustomize từ project khác không được dùng. Không sửa checker để qua.
+
+Image/staging: theo source/deploy/hosted/README.txt, SOURCE_DATE_EPOCH1794540675,
+ALETHEIA_RELEASE_ID=sourceidentity ở phầnA. Source API/worker only; frontend public
+origin từ Quân phải cùng RC. Image cần build+scan+UID/secret/volume/TLS/readiness/
+drain canary thật; Mac chưa chạy Docker. App image không chứa PG tool/operator.
+Real IdP/login/MFA/logout và collector/operator/cross-owner replay là lượt riêng,
+không nằm trong test synthetic. Native timing không chứng minh mất host/powerloss.
+
+J. THU KẾT QUẢ VÀ DỪNG
+
+- Giữ toàn bộ results gồm failed+reredo, từngattempt/exitcode/log/JUnit/JSON,
+  pipfreeze/Python/Docker/OS/CPU/RAM/disk, source/runtime/image/client identities.
+- Điền02-Mau-bao-cao.txt. Không sửa assert/timeouts/source để đổi pass; nếu đã sửa
+  vì lỗi platform thật, gửi patch+before/after và giữ original failure.
+- Không gửi private URL/key/cookie/CSRF/actors.jsonl hoặc cảpytest temporary tree.
+  Chỉ đóng gói results/safe receipts, patch và báo cáo đã kiểm secret.
+- Dừng đúng container mới, giữ volume:
+   docker stop aletheia-k13-k18-rc-test
+- Compress results thành ZIP mới; tính SHA256 SAU khi đóng ZIP và gửi hash BÊN
+  NGOÀI ZIP. Không nhét ZIP hash vào chính ZIP rồi tự tạo vòng lặp hash.
+- Chưa có run/signoff thì giữ gate mở. Hết các test ở đây vẫn chưa chốt50k, data
+  primary, DB40/F26 dưới tải,2h/8hsoak, browser/Quân, IdP hoặc27gate release.

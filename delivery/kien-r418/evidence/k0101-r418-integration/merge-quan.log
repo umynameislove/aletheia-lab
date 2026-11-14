@@ -1,0 +1,12 @@
+Auto-merging dashboard/web/src/components/Connect.tsx
+CONFLICT (content): Merge conflict in dashboard/web/src/components/Connect.tsx
+Auto-merging dashboard/web/src/service/errors.ts
+CONFLICT (content): Merge conflict in dashboard/web/src/service/errors.ts
+Auto-merging dashboard/web/src/service/hosted.ts
+CONFLICT (add/add): Merge conflict in dashboard/web/src/service/hosted.ts
+Auto-merging dashboard/web/src/service/index.tsx
+CONFLICT (content): Merge conflict in dashboard/web/src/service/index.tsx
+Auto-merging dashboard/web/tests/hosted.test.mjs
+CONFLICT (add/add): Merge conflict in dashboard/web/tests/hosted.test.mjs
+Auto-merging src/aletheia_lab/product/view.py
+Automatic merge failed; fix conflicts and then commit the result.

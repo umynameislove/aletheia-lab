@@ -1,0 +1,16 @@
+{
+  "method": "Resolve all UI merge conflicts to verified 180-file peer tree",
+  "ui_identity": "5515bc0e3d7e9cfd3be1c302dd3228bfbbf970bb6e7971675707538f21510bb7",
+  "removed_ui_paths": [
+    "dashboard/web/tests/fixtures/j01-review-v2/capabilities.json",
+    "dashboard/web/tests/fixtures/j01-review-v2/capabilities.schema.json",
+    "dashboard/web/tests/fixtures/j01-review-v2/problem-csrf-invalid.json",
+    "dashboard/web/tests/fixtures/j01-review-v2/problem-membership-revoked.json",
+    "dashboard/web/tests/fixtures/j01-review-v2/problem-permission-denied.json",
+    "dashboard/web/tests/fixtures/j01-review-v2/problem-session-expired.json",
+    "dashboard/web/tests/fixtures/j01-review-v2/problem-session-revoked.json",
+    "dashboard/web/tests/fixtures/j01-review-v2/problem.schema.json",
+    "dashboard/web/tests/fixtures/j01-review-v2/session.json",
+    "dashboard/web/tests/fixtures/j01-review-v2/session.schema.json"
+  ]
+}

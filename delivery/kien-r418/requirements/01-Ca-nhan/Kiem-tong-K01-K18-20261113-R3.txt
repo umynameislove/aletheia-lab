@@ -1,0 +1,88 @@
+KIỂM TỔNG K01–K18 VÀ BÀN GIAO — R3,13/11/2026
+
+R3 13/11/2026 LOCAL: 2920 unit đạt/13 Windows skip; 418 native PostgreSQL đạt/7 opt-in skip, cùng source2499/runtime667. Hai build giống byte, cài sạch exact52 dependency,667file/4child/PDF Unicode đạt. Windows trả về là OLD639runtime: smoke23PASS, upload20012PASS1FAIL tại part COMMIT5s; không phải kết quả Windows R3. UI Quân R2.1:327unit/13Chrome controlled đạt; live79376/80000B,hosted71772/80000B,maxchunk15315/25000B đạt. Chưa phải nghiệm thu realAPI/IdP/CI/deployment/50k/joint. 
+
+92 đầu việc: {'in_progress': 15, 'passed': 68, 'blocked': 9}. Chữ passed trong tracker là phạm vi cá nhân LOCAL đã ghi, không là pass release. K13–K18 vẫn14local/13partial/4mở; không đổi định nghĩa tiêu chí.
+
+Hai đầu mối theo yêu cầu: Bu tích hợp UI/API, phối hợp Quân; Kiên chạy Windows/Docker/IdP/operator và gửi bằng chứng về kiểm. Các gate con người/tài nguyên vẫn cần thực hiện thật.
+
+K-01 — Nền mã, baseline và ranh giới local–hosted
+Trạng thái tracker: in_progress (scope LOCAL).
+Còn lại: Bu ghép đúng các component và chạy một journey UI→HTTPS→PG/worker→download cùng RC. Kiên cung cấp Git/base/nhánh gốc để chứng nhận giữ WIP; API copy hiện không có .git. Inventory38operation và ranh giới nghiên cứu đã kiểm local.
+
+K-02 — Hosted API tối giản và hợp đồng phiên bản
+Trạng thái tracker: blocked (scope LOCAL).
+Còn lại: Kiên chạy remote CI trên RC có lineage xác định; Bu kiểm actual same-release API/browser/contract và các gate J. Các binding/schema/header/claim paging/citation/PDF đã có; không giao lại như code còn thiếu.
+
+K-03 — Đăng nhập, session và vòng đời tài khoản
+Trạng thái tracker: blocked (scope LOCAL).
+Còn lại: Kiên chạy IdP/staging được phép, MFA/lost-factor/account recovery/renewal/outage; Bu kiểm cookie/return-to/logout/account switch/multitab/BFCache trên API thật. Seeded-session và controlled transport không thay IdP.
+
+K-04 — Workspace, phân quyền và cách ly dữ liệu
+Trạng thái tracker: blocked (scope LOCAL).
+Còn lại: Bu kiểm role/cache/current-object revoke≤5s và cross-tab trên API thật; bổ sung GET result header cho đúng displayed result/project/snapshot, lease tính từ request start. Session/capabilities/job không chứng nhận quyền đọc result khác.
+
+K-05 — PostgreSQL, object store và integrity có giới hạn
+Trạng thái tracker: blocked (scope LOCAL).
+Còn lại: Kiên chạy DB40 còn28 not_run, full fault/load/primary và storage/restore độc lập; Bu kiểm quyền/nội dung sau migrate/restore. Catalog2Mmetadata dùng54physicaltemplateobjects không phải2Mpayload khác nhau.
+
+K-06 — Transactions, revision và idempotency
+Trạng thái tracker: blocked (scope LOCAL).
+Còn lại: Kiên chạy R3 trên Windows và giữ mọi unknown/failure; Bu kiểm draft/CAS/conflict/reconcile cùng intent/idempotency key. Lỗi content identity dựa metadata cũ đã được Quân sửa bằng SHA byte. Unknown không được coi rollback hoặc tự retry.
+
+K-07 — Upload, preview và nguồn nhập an toàn
+Trạng thái tracker: blocked (scope LOCAL).
+Còn lại: Kiên chạy smoke→strict200MiB R3→fullsuite, giữ 5s/50×4MiB và diagnostics v2 nếu lỗi. R3 đã tránh bind lại part committed sau current-auth/hash/state checks; native200MiB đạt, nguyên nhân Windows cũ vẫn chưa xác định. Bu chạy recovery trên API thật; explicit GET status rồi gửi phần thiếu đã có code. Hosted budget cũ đã đóng local. Raw snapshot>1MiB vẫn413; aggregate bounded và connector disabled là disposition hiện tại.
+
+K-08 — Pipeline snapshot–comparison–result bất biến
+Trạng thái tracker: passed (scope LOCAL).
+Còn lại: Kiên chạy full PostgreSQL/large100k trên Windows/Docker R3; Bu kiểm confirm/no-op/adverse/history cùng result và đủ byte export trên API thật. Native100k trước giữ nguyên identity lịch sử, không tự nhận thành Windows/R3/50k proof.
+
+K-09 — Durable jobs, retry, cancel và fencing
+Trạng thái tracker: passed (scope LOCAL).
+Còn lại: Bu bổ sung GET jobs/{id}/attempts không query, tối đa3; POST cancel/retry JSON{}+CSRF, retry idempotency key/capability/retryable. cancel_requested chưa terminal; retry tạo job mới parent-linked. Kiên chạy worker/cancel/reaping và recovery Windows/container.
+
+K-10 — Read API, pagination, search, graph và cache
+Trạng thái tracker: passed (scope LOCAL).
+Còn lại: Bu bổ sung graph continuation GET results/{id}/graph?limit=50&cursor=opaque; kiểm scope/capability, dedup node/edge ID, giữ endpoint nodes lặp và hết cursor không đồng nghĩa graph không truncated. Header/claim/search/citation paging đã có. Kiên kiểm primary/performance dataset đúng semantics.
+
+K-11 — Phân tích thật, evidence và provider boundary
+Trạng thái tracker: passed (scope LOCAL).
+Còn lại: Bu giữ mode/uncertainty/source binding và version validation. Cần quyết định rồi triển khai model primary phiên bản mới nếu cần100/1000/10000claim và10knode; không nới v2(64series) hoặc padding. Provider thật đang conditional disabled, chỉ bật khi có endpoint/privacy/cost authorization.
+
+K-12 — Export, download và PDF tiếng Việt
+Trạng thái tracker: passed (scope LOCAL).
+Còn lại: Bu kiểm UI→API→worker→JSON/MD/PDF download cùng result/hash/quyền/Range trên RC mới; Kiên chạy cleanwheel WSL/Linux và PDF visual/Windows. PDF create/download/contentSHA đã có code; không giao bổ sung trùng.
+
+K-13 — Delete, retention và không tái sinh dữ liệu
+Trạng thái tracker: passed (scope LOCAL).
+Còn lại: Bu/Quân chỉnh câu retained thành thời điểm đủ điều kiện xóa sau retention, giữ project/source/backup/time_basis qualifiers; kiểm deletion/restore consumer thực. Kiên vận hành scheduler/log rotation/backup expiry/off-host tombstone policy và container races. 5/5 tiêu chí backend local đạt, chưa là deployed erasure deadline.
+
+K-14 — Concurrency, tài nguyên và backpressure
+Trạng thái tracker: in_progress (scope LOCAL).
+Còn lại: Kiên đo process/pool/RSS/FD/NIC/ingress/admin headroom và mixed physical S/M/L cold/warm/burst/fairness trên topology đã khai báo; chạy Windows cancellation. Bu nối actual browser workload. Calibration100principal/25s không chứng minh50k.
+
+K-15 — Job updates, polling/SSE và reconnect
+Trạng thái tracker: in_progress (scope LOCAL).
+Còn lại: Bu/Quân bổ sung per-object result-header authority probe, kiểm request-start4s lease/delayed discard/logout/switch/cross-tab/offline/revoke≤5s và reconnect trên API thật; giữ SessionGate ngoài error boundary nội bộ. Kiên kiểm proxy/TLS/multi-replica reconnect/fanout.
+
+K-16 — Quan sát, bảo mật và vận hành hằng ngày
+Trạng thái tracker: in_progress (scope LOCAL).
+Còn lại: Bu/Quân sửa error boundary bọc lazy HostedApp/HostedConnect/WorkspaceManager/LargeResult, message+reload an toàn khi JS404/offline; ca404 thật đã làm root trắng. Chạy lại unit/Chrome và cả hai budget giữ nguyên. Kiên kiểm actual image/SBOM/UID/secret/edge/collector/alert/on-call và abuse dưới tải.
+
+K-17 — Capacity, database và failure dưới tải
+Trạng thái tracker: in_progress (scope LOCAL).
+Còn lại: Bu/Quân chốt model phiên bản mới, nối P01–P38/browser và generator; Kiên triển khai model sau chốt, cung cấp dataset physical đúng geometry và máy đủ tài nguyên. Còn normal3closed+3open,5k/10k/25k/50k,stress/spike/2h(+8h khi cần),DB40/F26 cùng tải,cost/headroom. Không gộp debug100principal thành primary.
+
+K-18 — Deploy, migration, backup/restore và bàn giao
+Trạng thái tracker: in_progress (scope LOCAL).
+Còn lại: Kiên chạy independent Windows/Linux/image/TLS/UID/secret/import/upgrade/drain/rollback, authorized IdP canary, secondary-container recovery và off-host DR/RPO/RTO. Bu dựng UI+API và restore tới consumer trên RC composition mới. Hai bên trả evidence và ký27gate; local rebuild/process/PITR fixture không thay host-loss/deployment acceptance.
+
+Các ma trận chưa được tự nâng trạng thái: DB40=12local/28not_run;F26=4local/22not_run;32identitycases chưa chạy;8jointgroups chưa ký;27releasegates=19in_progress/8not_run/0passed. Native test riêng không thay các chiến dịch tích hợp dưới tải.
+
+Gói nhận việc:
+- Ban-giao-Bu-Tich-hop-K01-K18-20261113-R3.zip: việc tích hợp, component/contract và mẫu nghiệm thu/return.
+- Ban-giao-Kien-Windows-K01-K18-20261113-R3.zip: full source/wheel, strictsmoke→upload200→unit/fullPG/L/wheel/recovery và report template.
+- 02-Phoi-hop/Tra-loi-Quan-K13-K18-R2.1-20261113.txt: đã đặt cùng ZIP bằng chứng tại thư mục phối hợp của Quân; không tuyên bố đã gửi chat.
+
+Lượt native đầu:411PASS/7FAIL/7SKIP vì cluster thử chỉ16connection, thấp hơn20clients mà test yêu cầu. Giữ nguyên log; chỉ cụm thử được restartmax100, durability on; lượt tổng sau là 418PASS/7SKIP. Không sửa assertion/deadline/dung lượng/worker budget để lấy PASS. Đây không giải thích nguyên nhân timeout Windows cũ.

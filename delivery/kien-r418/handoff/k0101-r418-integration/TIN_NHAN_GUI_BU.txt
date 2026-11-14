@@ -1,0 +1,17 @@
+Bu/Quân ơi, Kiên đã chốt đối chiếu Git/WIP K01.01 ở máy Kiên và tạo bản ghép có đầy đủ lịch sử:
+
+Nhánh local đề xuất: codex/k0101-r418-integration
+SHA cuối: cf9738b1accef69e6f1402fb241bad17fcc3a477
+Main đối chiếu: 2bbcdc2a7637c840babd8b71910306c64072bc4b
+Cha UI được giữ: d4e7fb214d3bb6a74b2ddf0f012bf69c7c3e8e7c
+Cha API được giữ: 2bdf855c2babd8b171e993a71b94104ceb0eaac5
+
+Cây ghép có 2.557 tệp, giữ nguyên 676 runtime backend R4.18 (a046bccd…) và đúng 180 tệp UI phản hồi của Bu (5515bc0e…). Đã khôi phục offline từ bundle và so toàn bộ byte. Mã/test K16 đã pass không sửa. Hai commit tích hợp mới do Codex tạo tại máy Kiên, chưa push và chưa coi là Bu đã review.
+
+Trong gói Gui-Bu-K01.01-R418-20261114.zip có báo cáo, inventory, source ZIP, bundle Git và SHA-256. Kiểm hash trước khi dùng. Để xem ở thư mục mới, đặt tại thư mục chứa bundle và chạy:
+
+git -c core.autocrlf=false -c core.eol=lf clone --branch codex/k0101-r418-integration K01.01-R418-integration.bundle aletheia-k0101-review
+
+Bu giúp xác nhận nhánh nhóm sẽ nhận bản này và ai review backend; review diff rồi push nhánh đã chốt, gửi lại SHA sau ghép cùng link/kết quả CI. CI phải chạy đúng cả backend và UI ở cùng cây. hosted.yml đã có bước cài Python/backend trước npm test; vẫn cần log chạy thật, không chỉ nhìn file workflow.
+
+Lưu ý: còn 29 cảnh báo whitespace có sẵn trong nguồn đã test; Kiên giữ nguyên byte để tránh làm lại phần đã pass. Kết quả test local cũ vẫn được ghi đúng phạm vi; chưa phải CI mới của SHA trên. Nếu Bu có thay đổi thêm, gửi SHA và diff để đối chiếu lại, không chép đè WIP hiện tại.

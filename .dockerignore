@@ -1,0 +1,14 @@
+**
+!pyproject.toml
+!README.md
+!LICENSE
+!MANIFEST.in
+!src/
+!src/**
+!deploy/
+!deploy/hosted/
+!deploy/hosted/Dockerfile
+!deploy/hosted/requirements.lock
+!deploy/hosted/build-requirements.lock
+**/__pycache__/
+**/*.pyc

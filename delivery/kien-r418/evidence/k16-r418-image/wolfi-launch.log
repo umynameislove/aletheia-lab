@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/probe.py", line 181, in <module>
+    main()
+  File "/probe.py", line 98, in main
+    admin = stack.enter_context(psycopg.connect(target, autocommit=True, connect_timeout=5))
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/psycopg/connection.py", line 134, in connect
+    raise new_ex.with_traceback(None)
+psycopg.OperationalError: connection is bad: connection to server at "fdc4:f303:9324::254", port 59080 failed: Network is unreachable
+	Is the server running on that host and accepting TCP/IP connections?
+Multiple connection attempts failed. All failures were:
+- host: 'host.docker.internal', port: '59080', hostaddr: '192.168.65.254': connection failed: connection to server at "192.168.65.254", port 59080 failed: FATAL:  the database system is starting up
+- host: 'host.docker.internal', port: '59080', hostaddr: 'fdc4:f303:9324::254': connection is bad: connection to server at "fdc4:f303:9324::254", port 59080 failed: Network is unreachable
+	Is the server running on that host and accepting TCP/IP connections?

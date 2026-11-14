@@ -1,0 +1,33 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "a",
+  "project_id": "p3-project-8d30974979d3ed40cd431a04c510ea910843f7a1fae377e2b22193855a452da6",
+  "result_id": "p6-result-eb6391d6506c3d782cbad5a6a3682a4dbb0d420742ff2fb5a4ed66c48debb395",
+  "graph": {
+    "nodes": [
+      {
+        "id": "p6-node-329c60ccb06a7b91cf760dd34bbb4605d5a3a75bbeb28526cb0eb90c4203cdf9",
+        "kind": "Snapshot",
+        "source_id": "upload-snapshot-d57c64e40c7902b60a37c3d38156d5bd28bda8e3b4187b976961b9ff2c2f1519",
+        "visibility": "diagnosis"
+      },
+      {
+        "id": "p6-node-d98fe842667c67b837c4dc516f867a90329ac8c752474de6d05e3c14c4817dcb",
+        "kind": "EvidenceItem",
+        "source_id": "p6-evidence-32fb7b64140686d63d196a82443314dafb8133dd13fe1bf1670494e209e9d858",
+        "visibility": "diagnosis"
+      }
+    ],
+    "edges": [
+      {
+        "id": "p6-edge-9d22612497088dd360512f22623a406337b879d2e1083a6d34cba8bf87df8671",
+        "kind": "OBSERVED_IN",
+        "source": "p6-node-d98fe842667c67b837c4dc516f867a90329ac8c752474de6d05e3c14c4817dcb",
+        "target": "p6-node-329c60ccb06a7b91cf760dd34bbb4605d5a3a75bbeb28526cb0eb90c4203cdf9",
+        "visibility": "diagnosis"
+      }
+    ]
+  },
+  "truncated": true,
+  "next_cursor": "synthetic-page-28"
+}

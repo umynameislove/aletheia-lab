@@ -1,0 +1,252 @@
+{
+  "additionalProperties": true,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "code": {
+            "const": "session_expired"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": 401
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "code": {
+            "const": "session_revoked"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": 401
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "code": {
+            "const": "membership_revoked"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": 403
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "code": {
+            "const": "permission_denied"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": 403
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "code": {
+            "const": "csrf_invalid"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": 403
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "code": {
+            "const": "idempotency_conflict"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": 409
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "code": {
+            "const": "cursor_invalid"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": 400
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "code": {
+            "const": "cursor_expired"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": 410
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "code": {
+            "const": "revision_conflict"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": 412
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "code": {
+            "const": "precondition_required"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": 428
+          }
+        }
+      }
+    }
+  ],
+  "description": "Draft safe error shape; the server must still map and redact errors.",
+  "properties": {
+    "schema_version": {
+      "const": "product-api/v1-draft",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "type": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Type",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "status": {
+      "maximum": 599,
+      "minimum": 400,
+      "title": "Status",
+      "type": "integer"
+    },
+    "code": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Code",
+      "type": "string"
+    },
+    "detail": {
+      "maxLength": 1000,
+      "minLength": 1,
+      "title": "Detail",
+      "type": "string"
+    },
+    "request_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Request Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "type",
+    "title",
+    "status",
+    "code",
+    "detail",
+    "request_id"
+  ],
+  "title": "Problem",
+  "type": "object"
+}

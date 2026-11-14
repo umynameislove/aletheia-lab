@@ -1,0 +1,13 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "ws_synthetic",
+  "items": [
+    {
+      "user_id": "user_invited",
+      "display_name": "Invited synthetic user"
+    }
+  ],
+  "next_cursor": null,
+  "total": null,
+  "total_kind": "unknown"
+}

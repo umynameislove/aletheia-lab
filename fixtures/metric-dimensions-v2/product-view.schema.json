@@ -1,0 +1,844 @@
+{
+  "$defs": {
+    "ProductClaim": {
+      "additionalProperties": false,
+      "properties": {
+        "citation_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Citation Ids",
+          "type": "array"
+        },
+        "claim_type": {
+          "enum": [
+            "evidence_statement",
+            "cause_assertion",
+            "uncertainty_statement",
+            "recommended_action",
+            "other"
+          ],
+          "title": "Claim Type",
+          "type": "string"
+        },
+        "counterevidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Counterevidence Ids",
+          "type": "array"
+        },
+        "epistemic_state": {
+          "enum": [
+            "observed",
+            "hypothesis",
+            "abstained"
+          ],
+          "title": "Epistemic State",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "max_strength": {
+          "enum": [
+            "observation",
+            "bounded_hypothesis",
+            "abstain"
+          ],
+          "title": "Max Strength",
+          "type": "string"
+        },
+        "missing_evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing Evidence",
+          "type": "array"
+        },
+        "support": {
+          "enum": [
+            "fully_supported",
+            "partially_supported",
+            "unsupported",
+            "not_estimated",
+            "technical_failure",
+            "redacted"
+          ],
+          "title": "Support",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "turn_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Turn Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "turn_id",
+        "text",
+        "claim_type",
+        "epistemic_state",
+        "support",
+        "citation_ids",
+        "counterevidence_ids",
+        "missing_evidence",
+        "max_strength"
+      ],
+      "title": "ProductClaim",
+      "type": "object"
+    },
+    "ProductConversation": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "turns": {
+          "items": {
+            "$ref": "#/$defs/ProductTurn"
+          },
+          "title": "Turns",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "turns"
+      ],
+      "title": "ProductConversation",
+      "type": "object"
+    },
+    "ProductDenominators": {
+      "additionalProperties": false,
+      "properties": {
+        "claims": {
+          "minimum": 0,
+          "title": "Claims",
+          "type": "integer"
+        },
+        "contexts": {
+          "minimum": 0,
+          "title": "Contexts",
+          "type": "integer"
+        },
+        "independent_families": {
+          "title": "Independent Families",
+          "type": "null"
+        },
+        "outputs": {
+          "minimum": 0,
+          "title": "Outputs",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "independent_families",
+        "contexts",
+        "outputs",
+        "claims"
+      ],
+      "title": "ProductDenominators",
+      "type": "object"
+    },
+    "ProductEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Kind",
+          "type": "string"
+        },
+        "redacted": {
+          "const": false,
+          "title": "Redacted",
+          "type": "boolean"
+        },
+        "reproduction_ref": {
+          "$ref": "#/$defs/ProductReproductionRef"
+        },
+        "source_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Sha256",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "visibility": {
+          "const": "diagnosis",
+          "title": "Visibility",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "title",
+        "text",
+        "reproduction_ref",
+        "source_sha256",
+        "visibility",
+        "redacted"
+      ],
+      "title": "ProductEvidence",
+      "type": "object"
+    },
+    "ProductGraph": {
+      "additionalProperties": false,
+      "properties": {
+        "edges": {
+          "items": {
+            "$ref": "#/$defs/ProductGraphEdge"
+          },
+          "title": "Edges",
+          "type": "array"
+        },
+        "nodes": {
+          "items": {
+            "$ref": "#/$defs/ProductGraphNode"
+          },
+          "title": "Nodes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "nodes",
+        "edges"
+      ],
+      "title": "ProductGraph",
+      "type": "object"
+    },
+    "ProductGraphEdge": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "pattern": "^[A-Z][A-Z0-9_]{0,63}$",
+          "title": "Kind",
+          "type": "string"
+        },
+        "source": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Source",
+          "type": "string"
+        },
+        "target": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Target",
+          "type": "string"
+        },
+        "visibility": {
+          "const": "diagnosis",
+          "title": "Visibility",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "source",
+        "target",
+        "visibility"
+      ],
+      "title": "ProductGraphEdge",
+      "type": "object"
+    },
+    "ProductGraphNode": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Kind",
+          "type": "string"
+        },
+        "source_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Source Id",
+          "type": "string"
+        },
+        "visibility": {
+          "const": "diagnosis",
+          "title": "Visibility",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "source_id",
+        "visibility"
+      ],
+      "title": "ProductGraphNode",
+      "type": "object"
+    },
+    "ProductMetricChangeV2": {
+      "additionalProperties": false,
+      "properties": {
+        "adverse_status": {
+          "enum": [
+            "adverse",
+            "not_adverse",
+            "not_applicable"
+          ],
+          "title": "Adverse Status",
+          "type": "string"
+        },
+        "after": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProductMetricObservationV2"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "before": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProductMetricObservationV2"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "delta": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Delta"
+        },
+        "evidence_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Evidence Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "added",
+            "removed",
+            "increased",
+            "decreased"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "metric_name": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Metric Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "metric_name",
+        "kind",
+        "before",
+        "after",
+        "delta",
+        "adverse_status"
+      ],
+      "title": "ProductMetricChangeV2",
+      "type": "object"
+    },
+    "ProductMetricDefinitionV2": {
+      "additionalProperties": false,
+      "properties": {
+        "direction": {
+          "enum": [
+            "higher_is_better",
+            "lower_is_better"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "metric_name": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Metric Name",
+          "type": "string"
+        },
+        "regression_threshold": {
+          "minimum": 0,
+          "title": "Regression Threshold",
+          "type": "number"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "metric_name",
+        "direction",
+        "regression_threshold",
+        "unit"
+      ],
+      "title": "ProductMetricDefinitionV2",
+      "type": "object"
+    },
+    "ProductMetricObservationV2": {
+      "additionalProperties": false,
+      "properties": {
+        "class_label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Class Label"
+        },
+        "run_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Run Id",
+          "type": "string"
+        },
+        "snapshot_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Snapshot Id",
+          "type": "string"
+        },
+        "step": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Step"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Unit"
+        },
+        "unit_origin": {
+          "enum": [
+            "source",
+            "declared",
+            "unknown"
+          ],
+          "title": "Unit Origin",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "snapshot_id",
+        "run_id",
+        "value",
+        "class_label",
+        "unit",
+        "unit_origin"
+      ],
+      "title": "ProductMetricObservationV2",
+      "type": "object"
+    },
+    "ProductProject": {
+      "additionalProperties": false,
+      "properties": {
+        "display_name": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Display Name",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "display_name"
+      ],
+      "title": "ProductProject",
+      "type": "object"
+    },
+    "ProductReproductionRef": {
+      "additionalProperties": false,
+      "properties": {
+        "record_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Record Id",
+          "type": "string"
+        },
+        "record_kind": {
+          "enum": [
+            "snapshot",
+            "snapshot_comparison",
+            "regression_event"
+          ],
+          "title": "Record Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record_id",
+        "record_kind"
+      ],
+      "title": "ProductReproductionRef",
+      "type": "object"
+    },
+    "ProductResult": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed_wording": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Allowed Wording",
+          "type": "string"
+        },
+        "causal_status": {
+          "const": "unverified",
+          "title": "Causal Status",
+          "type": "string"
+        },
+        "caveat": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Caveat",
+          "type": "string"
+        },
+        "denominators": {
+          "$ref": "#/$defs/ProductDenominators"
+        },
+        "disposition": {
+          "anyOf": [
+            {
+              "enum": [
+                "supported",
+                "mixed",
+                "abstain",
+                "not_estimated",
+                "redacted"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Disposition"
+        },
+        "forbidden_wording": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Forbidden Wording",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "complete",
+            "technical_failure"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "summary": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Summary",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "status",
+        "disposition",
+        "causal_status",
+        "summary",
+        "denominators",
+        "allowed_wording",
+        "forbidden_wording",
+        "caveat"
+      ],
+      "title": "ProductResult",
+      "type": "object"
+    },
+    "ProductRuntime": {
+      "additionalProperties": false,
+      "properties": {
+        "external_call": {
+          "const": false,
+          "title": "External Call",
+          "type": "boolean"
+        },
+        "model": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Model",
+          "type": "string"
+        },
+        "provider": {
+          "enum": [
+            "deterministic_mock",
+            "local_evidence"
+          ],
+          "title": "Provider",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "model",
+        "external_call"
+      ],
+      "title": "ProductRuntime",
+      "type": "object"
+    },
+    "ProductSnapshotV2": {
+      "additionalProperties": false,
+      "properties": {
+        "baseline_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Baseline Id",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "metric_changes": {
+          "items": {
+            "$ref": "#/$defs/ProductMetricChangeV2"
+          },
+          "title": "Metric Changes",
+          "type": "array"
+        },
+        "metric_definitions": {
+          "items": {
+            "$ref": "#/$defs/ProductMetricDefinitionV2"
+          },
+          "title": "Metric Definitions",
+          "type": "array"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "baseline_id",
+        "sha256",
+        "metric_definitions",
+        "metric_changes"
+      ],
+      "title": "ProductSnapshotV2",
+      "type": "object"
+    },
+    "ProductTurn": {
+      "additionalProperties": false,
+      "properties": {
+        "abstained": {
+          "title": "Abstained",
+          "type": "boolean"
+        },
+        "answer": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Answer",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "missing_evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing Evidence",
+          "type": "array"
+        },
+        "question": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        },
+        "result_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Result Id",
+          "type": "string"
+        },
+        "runtime": {
+          "$ref": "#/$defs/ProductRuntime"
+        },
+        "snapshot_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Snapshot Id",
+          "type": "string"
+        },
+        "visible_evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Visible Evidence Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "snapshot_id",
+        "result_id",
+        "runtime",
+        "question",
+        "answer",
+        "abstained",
+        "visible_evidence_ids",
+        "missing_evidence"
+      ],
+      "title": "ProductTurn",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A product projection retaining explicit metric class and unit semantics.",
+  "properties": {
+    "claims": {
+      "items": {
+        "$ref": "#/$defs/ProductClaim"
+      },
+      "title": "Claims",
+      "type": "array"
+    },
+    "conversation": {
+      "$ref": "#/$defs/ProductConversation"
+    },
+    "demo_only": {
+      "title": "Demo Only",
+      "type": "boolean"
+    },
+    "evidence": {
+      "items": {
+        "$ref": "#/$defs/ProductEvidence"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "graph": {
+      "$ref": "#/$defs/ProductGraph"
+    },
+    "mode": {
+      "const": "project_audit",
+      "title": "Mode",
+      "type": "string"
+    },
+    "project": {
+      "$ref": "#/$defs/ProductProject"
+    },
+    "result": {
+      "$ref": "#/$defs/ProductResult"
+    },
+    "runtime": {
+      "$ref": "#/$defs/ProductRuntime"
+    },
+    "schema_version": {
+      "const": "p6-product-view/v2",
+      "default": "p6-product-view/v2",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "snapshot": {
+      "$ref": "#/$defs/ProductSnapshotV2"
+    },
+    "visibility": {
+      "const": "diagnosis",
+      "title": "Visibility",
+      "type": "string"
+    }
+  },
+  "required": [
+    "demo_only",
+    "mode",
+    "visibility",
+    "project",
+    "snapshot",
+    "runtime",
+    "result",
+    "conversation",
+    "claims",
+    "evidence",
+    "graph"
+  ],
+  "title": "ProductViewV2",
+  "type": "object"
+}

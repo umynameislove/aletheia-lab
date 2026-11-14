@@ -1,0 +1,101 @@
+24 MỤC CÒN MỞ K01–K18 — R3,13/11/2026
+
+Bản đọc từ canonical09-Dau-viec-chi-tiet.csv sau rà soát; không là tracker thứ hai.68 mục còn lại đạt scope cá nhân local; release chung chưa đạt.
+Bu nhận tích hợp cùng Quân; Kiên nhận producer/Windows/Docker/IdP/operator và trả evidence.
+
+01. K-01.01 — Đối chiếu ba nhánh và giữ WIP [in_progress]
+Điều kiện nhận: Không mất file hoặc commit; liệt kê rõ phần mới, phần đã merge và phần còn riêng.
+Còn thiếu và đầu mối: Kiên cung cấp nhánh/base/original manifest; Bu đối chiếu upstream thật và giữ diff trước khi tích hợp. Cached origin/main chỉ là ref đã có trên máy, không khẳng định remote mới nhất.
+
+02. K-01.02 — Dựng baseline thực tế [in_progress]
+Điều kiện nhận: Luồng UI → HTTP → service → store → download chạy được; nếu lỗi, có cách tái hiện rõ ràng.
+Còn thiếu và đầu mối: Bu chạy một baseline nhỏ cùng component/RC: UI→HTTP→PG/worker→download đủ byte/hash/quyền; lưu source/image/schema/config và nguyên kết quả trước tối ưu.
+
+03. K-02.05 — Kiểm thử consumer của contract [blocked]
+Điều kiện nhận: Quân dùng fixture từ serializer thực tế; schema drift làm kiểm tra thất bại trước khi ghép release.
+Còn thiếu và đầu mối: Kiên chạy remote CI trên RC có lineage xác định; Bu kiểm actual same-release API/browser/contract và các gate J. Các binding/schema/header/claim paging/citation/PDF đã có; không giao lại như code còn thiếu.
+
+04. K-03.02 — Khởi tạo và khôi phục tài khoản [blocked]
+Điều kiện nhận: Người chưa được provision hoặc đã bị disabled biết trạng thái; khôi phục không bỏ qua MFA hay chính sách identity.
+Còn thiếu và đầu mối: Kiên chạy IdP/staging được phép, MFA/lost-factor/account recovery/renewal/outage; Bu kiểm cookie/return-to/logout/account switch/multitab/BFCache trên API thật. Seeded-session và controlled transport không thay IdP.
+
+05. K-03.03 — Vòng đời session [blocked]
+Điều kiện nhận: Session đã logout/revoke không dùng được; cookie flag và TLS đúng, secret không vào storage phía client.
+Còn thiếu và đầu mối: Kiên chạy IdP/staging được phép, MFA/lost-factor/account recovery/renewal/outage; Bu kiểm cookie/return-to/logout/account switch/multitab/BFCache trên API thật. Seeded-session và controlled transport không thay IdP.
+
+06. K-03.05 — Đổi tài khoản và dùng nhiều tab [blocked]
+Điều kiện nhận: Membership/session hết hiệu lực được phản ánh trong ≤5 giây theo chính sách dự án; không lẫn dữ liệu giữa hai tài khoản.
+Còn thiếu và đầu mối: Kiên chạy IdP/staging được phép, MFA/lost-factor/account recovery/renewal/outage; Bu kiểm cookie/return-to/logout/account switch/multitab/BFCache trên API thật. Seeded-session và controlled transport không thay IdP.
+
+07. K-03.06 — Abuse và auth outage [blocked]
+Điều kiện nhận: Không redirect/retry vô hạn; không phát sinh phí hoặc traffic vào IdP bên ngoài khi chưa được phép.
+Còn thiếu và đầu mối: Kiên chạy IdP/staging được phép, MFA/lost-factor/account recovery/renewal/outage; Bu kiểm cookie/return-to/logout/account switch/multitab/BFCache trên API thật. Seeded-session và controlled transport không thay IdP.
+
+08. K-14.01 — Ngân sách process và pool [in_progress]
+Điều kiện nhận: Không dùng 50k DB connection hoặc thread/task không giới hạn; còn tài nguyên dự phòng cho admin/health.
+Còn thiếu và đầu mối: Measure complete per-operation mean demand, process/replica memory/FD/NIC/ingress envelope and admin health headroom on the declared deployment; template2CPU/2GiB is provisional.; Kiên đo process/pool/RSS/FD/NIC/ingress/admin headroom và mixed physical S/M/L cold/warm/burst/fairness trên topology đã khai báo; chạy Windows cancellation. Bu nối actual browser workload. Calibration100principal/25s không chứng minh50k.
+
+09. K-14.05 — Fairness và burst [in_progress]
+Điều kiện nhận: Tenant nền được phục vụ theo policy; không priority inversion hoặc khuếch đại retry.
+Còn thiếu và đầu mối: Mixed physical S/M/L cold/warm/hot-row/reconnect/double-click bursts and background-tenant latency/fairness must be measured on the declared deployment.; Polling cost or queue-claim ordering is not the complete deployment fairness envelope.; Kiên đo process/pool/RSS/FD/NIC/ingress/admin headroom và mixed physical S/M/L cold/warm/burst/fairness trên topology đã khai báo; chạy Windows cancellation. Bu nối actual browser workload. Calibration100principal/25s không chứng minh50k.
+
+10. K-15.03 — Quyền và scope của stream [in_progress]
+Điều kiện nhận: Revoke theo chính sách ≤5 giây; buffer/error không phát dữ liệu riêng tư sau khi mất quyền.
+Còn thiếu và đầu mối: Current consumer request-start/binding implementation is present. Quân must produce real matching-API browser evidence for per-object authority,delayed-response discard,logout/account/workspace/cross-tab/offline and user-visible revoke<=5s.; Bu/Quân bổ sung per-object result-header authority probe, kiểm request-start4s lease/delayed discard/logout/switch/cross-tab/offline/revoke≤5s và reconnect trên API thật; giữ SessionGate ngoài error boundary nội bộ. Kiên kiểm proxy/TLS/multi-replica reconnect/fanout.; Xem thư trả lời Quân R2.1 13/11; các request cũ được giải đáp, việc triển khai/replay theo thư mới.
+
+11. K-15.04 — Ngân sách reconnect [in_progress]
+Điều kiện nhận: Không rò connection hoặc tạo bão reconnect đồng bộ; trạng thái consumer nhất quán với job ledger.
+Còn thiếu và đầu mối: Real tab hide/show, proxy idle timeout, TLS/network loss, account switching and multi-replica reconnect storm remain unrun joint/deployment tests.; Bu/Quân bổ sung per-object result-header authority probe, kiểm request-start4s lease/delayed discard/logout/switch/cross-tab/offline/revoke≤5s và reconnect trên API thật; giữ SessionGate ngoài error boundary nội bộ. Kiên kiểm proxy/TLS/multi-replica reconnect/fanout.; Xem thư trả lời Quân R2.1 13/11; các request cũ được giải đáp, việc triển khai/replay theo thư mới.
+
+12. K-16.03 — Threat model và biện pháp kiểm soát [in_progress]
+Điều kiện nhận: Có bằng chứng từ chối đúng dự kiến; không còn lỗ hổng nghiêm trọng đã biết trên đường triển khai.
+Còn thiếu và đầu mối: Actual IdP, deployed edge TLS/security headers, secret/collector permissions and declared-load abuse/fairness still require validation; no production penetration-test claim.; Bu/Quân sửa error boundary bọc lazy HostedApp/HostedConnect/WorkspaceManager/LargeResult, message+reload an toàn khi JS404/offline; ca404 thật đã làm root trắng. Chạy lại unit/Chrome và cả hai budget giữ nguyên. Kiên kiểm actual image/SBOM/UID/secret/edge/collector/alert/on-call và abuse dưới tải.; Xem thư trả lời Quân R2.1 13/11; các request cũ được giải đáp, việc triển khai/replay theo thư mới.
+
+13. K-16.04 — Hardening dependency và image [in_progress]
+Điều kiện nhận: Không lệch credential/image; có inventory image/config, không coi kết quả scanner đơn lẻ là pentest đầy đủ.
+Còn thiếu và đầu mối: Actual built/run/scanned image,OS-package SBOM/digest,UID/import/secret/volume behavior remain unrun.; Different platform/architecture notice sets require separate exact review; document identification is not binary/legal compatibility approval.; Bu/Quân sửa error boundary bọc lazy HostedApp/HostedConnect/WorkspaceManager/LargeResult, message+reload an toàn khi JS404/offline; ca404 thật đã làm root trắng. Chạy lại unit/Chrome và cả hai budget giữ nguyên. Kiên kiểm actual image/SBOM/UID/secret/edge/collector/alert/on-call và abuse dưới tải.; Xem thư trả lời Quân R2.1 13/11; các request cũ được giải đáp, việc triển khai/replay theo thư mới.
+
+14. K-16.05 — Alert và runbook [in_progress]
+Điều kiện nhận: Alert dẫn tới hành động rõ ràng, không bùng cardinality; người còn lại dùng được runbook.
+Còn thiếu và đầu mối: Deployed collection/routing/paging,actual on-call ownership and independent human/operator acceptance remain unverified.; Bu/Quân sửa error boundary bọc lazy HostedApp/HostedConnect/WorkspaceManager/LargeResult, message+reload an toàn khi JS404/offline; ca404 thật đã làm root trắng. Chạy lại unit/Chrome và cả hai budget giữ nguyên. Kiên kiểm actual image/SBOM/UID/secret/edge/collector/alert/on-call và abuse dưới tải.; Xem thư trả lời Quân R2.1 13/11; các request cũ được giải đáp, việc triển khai/replay theo thư mới.
+
+15. K-17.01 — Adapter cho seed và import [in_progress]
+Điều kiện nhận: Không coi việc sinh JSONL là benchmark DB; có manifest cho dữ liệu đa dạng và phân bố hot/cold.
+Còn thiếu và đầu mối: Versioned primary model semantics decision AND implementation needed;64series2/16/64claims cannot satisfy100/1000/10000claims+10knodes. Provision and actually import50kprincipals/200ksnapshots/2Mresults and qualifying physical S/M/L diversity on an authorized sufficiently provisioned test system.; Bu/Quân chốt model phiên bản mới, nối P01–P38/browser và generator; Kiên triển khai model sau chốt, cung cấp dataset physical đúng geometry và máy đủ tài nguyên. Còn normal3closed+3open,5k/10k/25k/50k,stress/spike/2h(+8h khi cần),DB40/F26 cùng tải,cost/headroom. Không gộp debug100principal thành primary.
+
+16. K-17.02 — Harness từ hành vi tới tải [in_progress]
+Điều kiện nhận: Dựng lại được các count engaged/starting/completing/waiting/idle của 50k người dùng, cùng count scheduled/drop/reject.
+Còn thiếu và đầu mối: Run the complete declared38operation primary campaign with qualifying physical dataset,50kengagement semantics and matching release/profile/dataset. The25second100-principal run does not cover a full30second steady active window, long soak, realIdP or primary p99 sample size.; Dedicated3renewal proof uses actual1srotation/60sidle/120shard policy; the25second100-principal run needed no renewal. Do not claim it exercised100concurrent long-running renewals or eight-hour login recovery.; Bu/Quân chốt model phiên bản mới, nối P01–P38/browser và generator; Kiên triển khai model sau chốt, cung cấp dataset physical đúng geometry và máy đủ tài nguyên. Còn normal3closed+3open,5k/10k/25k/50k,stress/spike/2h(+8h khi cần),DB40/F26 cùng tải,cost/headroom. Không gộp debug100principal thành primary.
+
+17. K-17.03 — Đánh giá generator và tài nguyên [in_progress]
+Điều kiện nhận: Generator không trở thành nút thắt rồi bị quy lỗi cho server; target/staging đã được phép sử dụng.
+Còn thiếu và đầu mối: Separate-host NIC/CPU-idle/RAM/FD/clock-skew and complete same-window SUT headroom remain missing; same-host loopback and25seconds do not prove a full30second steady window or scalable generator capacity.; RSS includes pytest/seed/preflight and is not an incremental per-VU cost. All operation/size sample counts remain below10000, so no primary p99 precision claim.; Bu/Quân chốt model phiên bản mới, nối P01–P38/browser và generator; Kiên triển khai model sau chốt, cung cấp dataset physical đúng geometry và máy đủ tài nguyên. Còn normal3closed+3open,5k/10k/25k/50k,stress/spike/2h(+8h khi cần),DB40/F26 cùng tải,cost/headroom. Không gộp debug100principal thành primary.
+
+18. K-17.04 — Normal, stress, spike và soak [blocked]
+Điều kiện nhận: SLO và job completion theo hướng dẫn; failed/partial/timeout không bị bỏ khỏi mẫu số.
+Còn thiếu và đầu mối: Same pinned RC/profile/dataset:3closed and3open normal runs, required5k/10k/25k stages, stress breakpoint/recovery,2hour primary soak and justified8hour extension with real renewal.; Bu/Quân chốt model phiên bản mới, nối P01–P38/browser và generator; Kiên triển khai model sau chốt, cung cấp dataset physical đúng geometry và máy đủ tài nguyên. Còn normal3closed+3open,5k/10k/25k/50k,stress/spike/2h(+8h khi cần),DB40/F26 cùng tải,cost/headroom. Không gộp debug100principal thành primary.
+
+19. K-17.05 — Liên kết DB, fault và tải [blocked]
+Điều kiện nhận: Không mất việc đã ACK, không stale commit hoặc phục vụ dữ liệu hỏng; báo riêng tier process và storage.
+Còn thiếu và đầu mối: Map and execute DB40/F26 before/aftercommit/ACK/lease/role faults under the actual declared workload with same-window pool/lock/query/queue/object/browser telemetry and effect reconciliation; report process/storage tiers separately.; Bu/Quân chốt model phiên bản mới, nối P01–P38/browser và generator; Kiên triển khai model sau chốt, cung cấp dataset physical đúng geometry và máy đủ tài nguyên. Còn normal3closed+3open,5k/10k/25k/50k,stress/spike/2h(+8h khi cần),DB40/F26 cùng tải,cost/headroom. Không gộp debug100principal thành primary.
+
+20. K-17.06 — Báo cáo capacity và chi phí [blocked]
+Điều kiện nhận: Nếu chưa đạt 50k, giữ gate ở trạng thái mở; không ngoại suy từ 10k lên 50k hoặc coi test double là capacity của provider.
+Còn thiếu và đầu mối: Establish a passing measured envelope first, then record actual infra/DB/object/bandwidth/generator/IdP/provider costs per correctly completed journey. No extrapolation10k->50k or test-double provider capacity.; Bu/Quân chốt model phiên bản mới, nối P01–P38/browser và generator; Kiên triển khai model sau chốt, cung cấp dataset physical đúng geometry và máy đủ tài nguyên. Còn normal3closed+3open,5k/10k/25k/50k,stress/spike/2h(+8h khi cần),DB40/F26 cùng tải,cost/headroom. Không gộp debug100principal thành primary.
+
+21. K-18.01 — Release có thể tái dựng [in_progress]
+Điều kiện nhận: Người còn lại dựng lại được mà không cần path hoặc secret cục bộ từ máy Kiên.
+Còn thiếu và đầu mối: Another operator must build/run on a clean Windows/Linux machine, verify installed wheel/SQL/font/import closure, actual image digest/UID/secret/TLS/volume behavior and real IdP canary without Kien-local secrets/paths.; Kiên chạy independent Windows/Linux/image/TLS/UID/secret/import/upgrade/drain/rollback, authorized IdP canary, secondary-container recovery và off-host DR/RPO/RTO. Bu dựng UI+API và restore tới consumer trên RC composition mới. Hai bên trả evidence và ký27gate; local rebuild/process/PITR fixture không thay host-loss/deployment acceptance.
+
+22. K-18.03 — Readiness, drain và rollout [in_progress]
+Điều kiện nhận: Không nhận việc trước ready hoặc bỏ job đã nhận; worker cũ bị fencing.
+Còn thiếu và đầu mối: Actual pinned-image upgrade/rollback, multi-replica ingress/drain/health and deployment rollout remain unrun; same-RC native API replacement is not rolling-image qualification.; Kiên chạy independent Windows/Linux/image/TLS/UID/secret/import/upgrade/drain/rollback, authorized IdP canary, secondary-container recovery và off-host DR/RPO/RTO. Bu dựng UI+API và restore tới consumer trên RC composition mới. Hai bên trả evidence và ký27gate; local rebuild/process/PITR fixture không thay host-loss/deployment acceptance.
+
+23. K-18.04 — Backup, PITR và object [in_progress]
+Điều kiện nhận: Mục tiêu storage DR là RPO ≤5 phút/RTO ≤30 phút, có bằng chứng; thông báo backup thành công chưa đủ.
+Còn thiếu và đầu mối: Qualify storageDR RPO<=5min/RTO<=30min using actual dataset and encrypted independent off-host backup/WAL/object/checkpoint storage and failed-host conditions; cached same-host tiny fixture is not that acceptance.; Kiên chạy independent Windows/Linux/image/TLS/UID/secret/import/upgrade/drain/rollback, authorized IdP canary, secondary-container recovery và off-host DR/RPO/RTO. Bu dựng UI+API và restore tới consumer trên RC composition mới. Hai bên trả evidence và ký27gate; local rebuild/process/PITR fixture không thay host-loss/deployment acceptance.
+
+24. K-18.06 — Bàn giao chéo giữa hai người [blocked]
+Điều kiện nhận: Release dùng cùng SHA/schema; hoàn thành 90% đầu việc không bù cho lỗi dữ liệu/quyền hoặc gate 50k chưa đạt.
+Còn thiếu và đầu mối: Kien rebuilds UI and Quan independently rebuilds API/restores with matching source/runtime/image/schema identities; execute and sign all applicable27gates and retain both owners evidence.; Kiên chạy independent Windows/Linux/image/TLS/UID/secret/import/upgrade/drain/rollback, authorized IdP canary, secondary-container recovery và off-host DR/RPO/RTO. Bu dựng UI+API và restore tới consumer trên RC composition mới. Hai bên trả evidence và ký27gate; local rebuild/process/PITR fixture không thay host-loss/deployment acceptance.
+

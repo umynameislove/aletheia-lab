@@ -1,0 +1,97 @@
+KIÊN NHẬN BẢN SỬA PHỤC HỒI CỦA QUÂN — 11/11/2026
+
+Đây là nội dung để chuyển lại cho Quân, chưa gửi qua chat/email.
+
+1. ĐÃ NHẬN GÓI B VÀ KIỂM TRÊN BẢN GHÉP MỚI
+
+gui-kien-11-11-b.zip khớp SHA-256:
+9330fb70a31d216c012217712c690cee31e2200eebdabfe8dae73718b28a03a9
+CRC sạch; đủ 17 checksum (18 file thường gồm SHA256SUMS.txt, thêm 1 entry thư mục).
+Full patch phù hợp 102 path thay đổi trên base đã nêu; không áp patch vào
+checkout Quân, không commit/push hay thực thi đề xuất Git từ thư.
+
+133 file web mới có identity SHA-256:
+448bcd9cd2766e42c44d85a0180665bef4c39e86bb68dfc2a1ce5c6f621d15b2
+Kiên đã copy nhất quán sang thư mục riêng, ghép backend hiện hành có sửa
+renewal hint rồi export lại producer J01/K04 và chạy:
+- 303/303 consumer đạt, không skip; hai test P1 đạt với backend cùng bản.
+- 25/25 binding cases đạt; chúng đã nằm trong 303, không cộng lặp.
+- TypeScript/build demo, live và hosted đều đạt.
+- Budget live 79,2/80 kB đạt; hosted 81,6/80 kB còn vượt; demo 86,6/80 kB
+  nếu đo cùng script. CI hiện gate live, không tự đổi gate/budget ở đây.
+
+Đã xác nhận các sửa A/B/C ở lịch đã test: descriptor sai project giữ key và
+không download; mutation 5xx hoặc response lỗi không đáng tin giữ unknown;
+accepted job/CAS được giữ qua lỗi GET; follow-up chỉ cập nhật revision sau
+child validation. Bốn mã lỗi extension và class re-export cũng đúng.
+
+Đây là LOCAL với transport kiểm soát, chưa phải HTTP→DB/browser/IdP/joint
+run trên release thật. Không sửa hoặc chạy npm/build/test suite ở checkout
+/Users/apple/study/aletheia-lab; tất cả lệnh nhận consumer chạy ở copy riêng.
+
+2. CÒN MỘT LỖI P2: IDENTITY FILE REPLACEMENT DỰA VÀO METADATA
+
+Vị trí hiện tại: dashboard/web/src/service/hosted-port.ts:225–227.
+Fingerprint chỉ có size/type/name/lastModified. Khi khớp, held.source được
+trả về trước khi đọc/hash file; held.resume cũng được giữ cho fingerprint đó.
+Hai file khác nội dung có thể trùng đủ bốn thuộc tính, nên chưa thể coi là
+cùng ZIP của một intent. Kiên đã tái hiện bằng hai ZIP hợp lệ cùng 400 byte,
+metrics khác 0.55 và 0.65, rồi tạo File cùng tên/type/lastModified:
+
+A. Sau upload A và refresh được nhận, GET output trả 503. Chọn B trùng
+metadata nhưng khác bytes: port trả source A, không gửi bytes B, đọc job A
+và báo thành công. Số ghi nhận: 1 upload, 1 POST refresh, 2 GET output.
+
+B. A upload multipart bị mất response PUT. Chọn B trùng metadata: vẫn dùng
+upload_id A; manifest hash khác nên GET status trả response_invalid lặp lại,
+không có create/upload B mới.
+
+C1 hiện chọn lại cùng một đối tượng File nên không bắt được hai trường hợp
+này. Đây là lỗi có repro, không phải cảnh báo giả định; backend không thể
+phát hiện file B chưa từng được gửi lên.
+
+3. HƯỚNG SỬA VÀ REGRESSION QUÂN NHẬN TIẾP
+
+Đưa SHA-256 nội dung vào identity trước khi tái sử dụng source hoặc resume.
+Dùng cơ chế hash/manifest có giới hạn hiện hành; kiểm capability/size và
+AbortSignal/context fence quanh thao tác await. File khác bytes phải thành
+intent mới rõ ràng hoặc bị từ chối an toàn, không âm thầm nhận source/job A.
+Giữ hành vi retry của cùng nội dung, kể cả người dùng chọn lại thành một
+đối tượng File mới. Không dùng riêng object identity làm thay thế.
+
+Chỉ bỏ fast-return held.source chưa đủ: nhánh upload dở vẫn có thể giữ
+resume.upload_id của A cho file B trùng metadata. Kiểm cả source cache và
+multipart resume khi sửa cùng root cause.
+
+Thêm ba ca:
+- Cùng bytes trong một File mới: giữ đúng upload/job/key/CAS qua lỗi GET.
+- Khác bytes, cùng metadata sau upload xong: không dùng source/job cũ cho B.
+- Khác bytes, cùng metadata khi upload dở: không bị kẹt upload_id A; không
+  lặp response_invalid vô hạn mà không có đường phục hồi.
+
+Fixture a.zip/b.zip và receipt/script tái hiện được để trong gói phản hồi.
+Script chỉ dùng actual client/port với fetch kiểm soát, không chạy server.
+Không cần sửa backend Kiên cho root cause này.
+
+4. BUDGET VÀ TÍNH ĐÚNG CỦA BẰNG CHỨNG
+
+Việc chuyển HostedRequestDiscarded đã tách client khỏi main đúng hướng;
+hosted main còn 81,6 kB nên chưa ghi đạt ngưỡng 80. Giữ gate live 80 kB.
+Ghi phần vượt hosted và số đo thực để quyết định budget hosted riêng;
+lượt nhận này chưa thay ngưỡng hoặc chốt latency/startup performance.
+
+Một lệch hồ sơ nhỏ: unit-lan-dau-polling-cham.txt trong ZIP thực chứa 297
+test với lỗi E3 cùng hai P1, không có lỗi polling như mô tả. Nếu còn dùng
+nhận định polling timeout, bổ sung đúng log; không dùng file đó làm proof.
+Việc này không thay kết quả 303/303 mới Kiên đã trực tiếp kiểm ở bản ghép.
+
+5. TRẠNG THÁI NHẬN
+
+Đã nhận LOCAL contract/consumer bản b; chưa đóng toàn bộ phục hồi Refresh
+do lỗi identity ở mục 2. Gửi lại bản sửa và regression sau khi xử lý; giữ
+payload/version/CAS/idempotency đã thống nhất.
+
+K02–K07 vẫn 27/32 child passed LOCAL, 5 blocked và 6 parent chưa đóng
+nghiệm thu joint/release. Windows/Docker owner đang chạy, IdP/operator,
+remote CI và browser/joint evidence còn riêng. Gói Windows và delta Kiên
+đã giao giữ nguyên; không đổi source giữa lượt test đang chạy.

@@ -1,0 +1,11 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "ws_synthetic",
+  "source_id": "src_synthetic",
+  "user_id": "user_synthetic",
+  "actions": [
+    "read",
+    "write"
+  ],
+  "revision": 1
+}

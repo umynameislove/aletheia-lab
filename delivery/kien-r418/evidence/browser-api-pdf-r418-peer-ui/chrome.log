@@ -1,0 +1,3 @@
+Error: timed out waiting for: document.body.innerText.includes('Sent to your browser as')
+    at Object.until (file:///C:/Users/Trung%20Ki%C3%AAn/Documents/ChatGPT/%C4%90%E1%BB%93%20%C3%81n/Kien-K01-K18-R4-20261113/.private/browser-79daad188a4746c0825158fa8cac2a52/cdp.mjs:110:13)
+    at async file:///C:/Users/Trung%20Ki%C3%AAn/Documents/ChatGPT/%C4%90%E1%BB%93%20%C3%81n/Kien-K01-K18-R4-20261113/tools/browser_pdf.mjs:89:3

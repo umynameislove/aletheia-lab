@@ -1,0 +1,31 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "a",
+  "project_id": "p3-project-8d30974979d3ed40cd431a04c510ea910843f7a1fae377e2b22193855a452da6",
+  "result_id": "p6-result-eb6391d6506c3d782cbad5a6a3682a4dbb0d420742ff2fb5a4ed66c48debb395",
+  "graph": {
+    "nodes": [
+      {
+        "id": "p6-node-ba1731019bd1829579e20b6ee6cb1d534a0180b328c505ec071ab132a1393b48",
+        "kind": "AtomicClaim",
+        "source_id": "p6-claim-d2a82042adb09e1a73461ae83b818e6feb9f7d4a7016a4a172ff1693703145df",
+        "visibility": "diagnosis"
+      },
+      {
+        "id": "p6-node-cdaf32028c9518321059fad8dc77f33808f444fc48b0e4361cf75f6ed909106a",
+        "kind": "AtomicClaim",
+        "source_id": "p6-claim-e37a3eab1d3c63f9e04b5d6cdf073b954326785b4fb6941c6488c1e86f01573c",
+        "visibility": "diagnosis"
+      },
+      {
+        "id": "p6-node-d2028e18f8f7914df7a0923111255e822501ca493debb450ab8887f062df85e5",
+        "kind": "EvidenceItem",
+        "source_id": "p6-evidence-7dc8f00bdb1cc1029660ead9f86bc4644a7a81ddea0ee143338b6b33a1f05044",
+        "visibility": "diagnosis"
+      }
+    ],
+    "edges": []
+  },
+  "truncated": true,
+  "next_cursor": "synthetic-page-7"
+}

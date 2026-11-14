@@ -1,0 +1,77 @@
+{
+  "format": "k18-native-physical-pitr/v1",
+  "completed": true,
+  "scope": "PG16 native basebackup + archived WAL LSN recovery + object closure + latest authenticated authority/deletions. No power-loss, real IdP, Docker or production capacity claim.",
+  "source_postgresql_major": 16,
+  "restore_target_lsn": "0/3013A20",
+  "latest_checkpoint_sha256": "2476a54516759316356e0294227eb634a9c2cb6f7d7cda72d69859c4497a84b2",
+  "object_count": 20,
+  "post_base_tombstone_in_object_closure": true,
+  "acknowledged_effects_checked": 2,
+  "acknowledged_effects_lost": 0,
+  "rpo_seconds": 0,
+  "rpo_scope": "No loss of the two acknowledged delete/job commits before the explicitly selected local LSN. Not a continuous production RPO claim.",
+  "restore_through_authenticated_checkpoint_and_actual_consumer_seconds": 1.802609877000009,
+  "later_witness_absent": true,
+  "old_sessions_denied": true,
+  "latest_membership_revocation_preserved": true,
+  "shared_project_and_raw_source_preserved": true,
+  "synthetic_fresh_fixture_sessions": true,
+  "runtime_grants_issued": false,
+  "object_sha256_inventory": {
+    "dddf2495e4af84656ac53fdbe469a7cfe8585466fa1c1033098d1eb870f8fedf": "dddf2495e4af84656ac53fdbe469a7cfe8585466fa1c1033098d1eb870f8fedf",
+    "f43c89b365f22147e069e5c3fe1d02681aee1ff1c4ca1a0997914aef71c8a99d": "f43c89b365f22147e069e5c3fe1d02681aee1ff1c4ca1a0997914aef71c8a99d",
+    "eb716e9a0c490a4e9cacf877cb4ec6b8bb0008c60b8658380f8e8ddde305ba21": "eb716e9a0c490a4e9cacf877cb4ec6b8bb0008c60b8658380f8e8ddde305ba21",
+    "7ffd09559505201a7a07123e49359079b022a23daba6c91b21a1f484c032a9bd": "7ffd09559505201a7a07123e49359079b022a23daba6c91b21a1f484c032a9bd",
+    "756b694730838e5ea6877ccbad253dd0cfba0cd06ec81465c82e9a8ad52c3c40": "756b694730838e5ea6877ccbad253dd0cfba0cd06ec81465c82e9a8ad52c3c40",
+    "ac47821d223616833607b7de96c7e9f283c0d4d925166f03724e6dd63e02482a": "ac47821d223616833607b7de96c7e9f283c0d4d925166f03724e6dd63e02482a",
+    "a4e754321615de64f8a54a8496a38511cbb8a3ef78a26acf899f96705442b544": "a4e754321615de64f8a54a8496a38511cbb8a3ef78a26acf899f96705442b544",
+    "fdc85afd52c4d856c6226c5e439bd3096fda1dfb7b8316d118ba091744adc156": "fdc85afd52c4d856c6226c5e439bd3096fda1dfb7b8316d118ba091744adc156",
+    "684732630b1562319fe3226e245834fb91647403d81f0f17dd5e4531445c6c50": "684732630b1562319fe3226e245834fb91647403d81f0f17dd5e4531445c6c50",
+    "687266b39e6f1492012c107a34e3eef2cc41a24527ad562ff89ef635f2a83f4e": "687266b39e6f1492012c107a34e3eef2cc41a24527ad562ff89ef635f2a83f4e",
+    "8bbf037527a267b2172a7a6b76b95baeed6bf7e6d0e6f1f134ef31480df4b45b": "8bbf037527a267b2172a7a6b76b95baeed6bf7e6d0e6f1f134ef31480df4b45b",
+    "50ef138aab42215d6c36c3edd082db65dea8cf0023052971355da578f9f6a228": "50ef138aab42215d6c36c3edd082db65dea8cf0023052971355da578f9f6a228",
+    "70230f8a2b52fcefb5724ca2c0d92226814071e4ba153abef93ce7cedec952b7": "70230f8a2b52fcefb5724ca2c0d92226814071e4ba153abef93ce7cedec952b7",
+    "9e798f864f4d71023a11a1e0b457d8c567fa7e00fe8a0317cf6ce44967869256": "9e798f864f4d71023a11a1e0b457d8c567fa7e00fe8a0317cf6ce44967869256",
+    "c8172e103ed329969a8136eda981a61bb0797f07c6896664c86f6f3844a5f2bd": "c8172e103ed329969a8136eda981a61bb0797f07c6896664c86f6f3844a5f2bd",
+    "981519180ae28e38559e9f01d20bba1653b868a58a17880c783ce45dc4a6db04": "981519180ae28e38559e9f01d20bba1653b868a58a17880c783ce45dc4a6db04",
+    "1636600efb7d8f0f58308b2b283cd3b8ad925e0efb78fd63256dce6d7c5d542a": "1636600efb7d8f0f58308b2b283cd3b8ad925e0efb78fd63256dce6d7c5d542a",
+    "a82d2f2bc1b90ea8c01a6ca35290b3ca4143ff78403a7404ac38b2325b276a4c": "a82d2f2bc1b90ea8c01a6ca35290b3ca4143ff78403a7404ac38b2325b276a4c",
+    "bcdc43d183f56c2ec8c1952fd055f7f508f04e0c4bfae6acc4f97e960ad77ac7": "bcdc43d183f56c2ec8c1952fd055f7f508f04e0c4bfae6acc4f97e960ad77ac7",
+    "b4061a91e2804f67d1e79eb91075d902eff9356bdd31b99feadc1f93e1e018c4": "b4061a91e2804f67d1e79eb91075d902eff9356bdd31b99feadc1f93e1e018c4"
+  },
+  "commands": [
+    {
+      "binary": "initdb",
+      "returncode": 0,
+      "elapsed_seconds": 8.43940940799996
+    },
+    {
+      "binary": "pg_ctl",
+      "returncode": 0,
+      "elapsed_seconds": 0.4163054470000134
+    },
+    {
+      "binary": "pg_basebackup",
+      "returncode": 0,
+      "elapsed_seconds": 1.9717654700000367
+    },
+    {
+      "binary": "pg_ctl",
+      "returncode": 0,
+      "elapsed_seconds": 1.0682324379999955
+    },
+    {
+      "binary": "pg_ctl",
+      "returncode": 0,
+      "elapsed_seconds": 0.11478179800008093
+    },
+    {
+      "binary": "pg_ctl",
+      "returncode": 0,
+      "elapsed_seconds": 0.31581969800004117
+    }
+  ],
+  "peak_owned_cluster_bytes": 280482774,
+  "native_clusters_stopped": true
+}

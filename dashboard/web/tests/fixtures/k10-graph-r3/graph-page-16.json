@@ -1,0 +1,46 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "a",
+  "project_id": "p3-project-8d30974979d3ed40cd431a04c510ea910843f7a1fae377e2b22193855a452da6",
+  "result_id": "p6-result-eb6391d6506c3d782cbad5a6a3682a4dbb0d420742ff2fb5a4ed66c48debb395",
+  "graph": {
+    "nodes": [
+      {
+        "id": "p6-node-23916d2b6c8a951dfb5d97882d079f39b3b91c278395db22525cdf326d55365e",
+        "kind": "AtomicClaim",
+        "source_id": "p6-claim-d0b957827e4f9e72d89f6394b0fa7d36a5e5dc44282a3128059a798776e3887d",
+        "visibility": "diagnosis"
+      },
+      {
+        "id": "p6-node-329c60ccb06a7b91cf760dd34bbb4605d5a3a75bbeb28526cb0eb90c4203cdf9",
+        "kind": "Snapshot",
+        "source_id": "upload-snapshot-d57c64e40c7902b60a37c3d38156d5bd28bda8e3b4187b976961b9ff2c2f1519",
+        "visibility": "diagnosis"
+      },
+      {
+        "id": "p6-node-4f3507f28431ad08f6993ebed0813f0647079a938d923624f6b74d21fdccb9ba",
+        "kind": "EvidenceItem",
+        "source_id": "p6-evidence-baf21f7ef2347bdd97c0c8675cbeca647c5b4dc85bfa9d30da31f747fca098d0",
+        "visibility": "diagnosis"
+      }
+    ],
+    "edges": [
+      {
+        "id": "p6-edge-3cfab45a0f48fcbab54df98ec097e4fb6d2527e1819453c0a0c8b4b920dcdc7f",
+        "kind": "CITES",
+        "source": "p6-node-23916d2b6c8a951dfb5d97882d079f39b3b91c278395db22525cdf326d55365e",
+        "target": "p6-node-4f3507f28431ad08f6993ebed0813f0647079a938d923624f6b74d21fdccb9ba",
+        "visibility": "diagnosis"
+      },
+      {
+        "id": "p6-edge-3e5380196e3cf030668eb94046d61100410b828e94f2d7f6adaee5a9da9741aa",
+        "kind": "OBSERVED_IN",
+        "source": "p6-node-4f3507f28431ad08f6993ebed0813f0647079a938d923624f6b74d21fdccb9ba",
+        "target": "p6-node-329c60ccb06a7b91cf760dd34bbb4605d5a3a75bbeb28526cb0eb90c4203cdf9",
+        "visibility": "diagnosis"
+      }
+    ]
+  },
+  "truncated": true,
+  "next_cursor": "synthetic-page-17"
+}

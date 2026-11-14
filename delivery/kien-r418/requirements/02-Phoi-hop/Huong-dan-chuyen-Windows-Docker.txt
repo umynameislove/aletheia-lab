@@ -1,0 +1,200 @@
+CHUYỂN ALETHEIA SANG WINDOWS ĐỂ CHẠY DOCKER — 11/11/2026
+
+Mục tiêu trước: Windows chạy Python/pytest; Docker chạy PostgreSQL 16 riêng
+cho test K02–K07. Repo hiện chưa có Dockerfile/Compose bật toàn bộ app/IdP.
+Chạy được các bước dưới chưa đồng nghĩa đã nghiệm thu đăng nhập thật hay UI.
+
+1. CHUYỂN FILE NÀO
+
+Chép Chuyen-Windows-Docker-20261111.zip bằng USB/ổ ngoài hoặc dịch vụ chuyển
+file của bạn. Gói có source backend Kiên hiện hành + snapshot frontend Quân
+đã kiểm cùng nhau; không cần ghép hai ZIP bàn giao cũ bằng tay.
+
+Source là bản chụp đã kiểm LOCAL 297 consumer/19 binding cases, không phải
+bản đã sửa ba lỗi phục hồi mới phát hiện. Đọc Gui-Quan-tra-loi-4-binding.txt
+trong gói trước joint run. Không có .git/.venv/node_modules, build, dữ liệu DB
+thử hay config/secret thật. .env.example chỉ là mẫu, không dùng làm DSN PG test.
+
+Giải nén bằng 7-Zip hoặc công cụ tương đương vào đường dẫn ngắn, ví dụ C:\work.
+Kết quả cần có C:\work\Aletheia-Windows-Docker\source\pyproject.toml.
+Đường dẫn ngắn giúp tránh giới hạn đường dẫn của công cụ Windows khi test.
+
+2. CHUẨN BỊ MÁY WINDOWS
+
+Windows 11 64-bit bản còn được Docker hỗ trợ, bật Virtualization trong BIOS.
+Docker nêu tối thiểu RAM 8 GB; tôi khuyên RAM 16 GB trở lên và SSD trống
+40–60 GB nếu chạy cả dependency, image và bài dữ liệu lớn. Đây là dự trù,
+không phải số dung lượng đã đo trên máy Windows của bạn.
+
+Mở PowerShell Run as Administrator để cài WSL, nếu máy chưa có:
+  wsl --install
+
+Khởi động lại khi được yêu cầu, rồi:
+  wsl --update
+  wsl --version
+
+Cài Docker Desktop đúng kiến trúc máy:
+  https://docs.docker.com/desktop/setup/install/windows-install/
+
+Mở Docker Desktop, chọn Use WSL 2 based engine; dùng Linux containers.
+Chưa cần cài Ubuntu tooling vì lộ trình chính này chạy Python trên Windows.
+Trong PowerShell thường, kiểm:
+  docker version
+  docker info --format '{{.OSType}}'
+
+Phải thấy cả Client/Server và OSType là linux trước khi làm tiếp.
+
+3. KIỂM FILE ĐÃ CHUYỂN
+
+Mở PowerShell thường; đổi C:\work nếu bạn giải nén ở ổ khác:
+  Set-Location C:\work\Aletheia-Windows-Docker
+  $ErrorActionPreference = 'Stop'
+  Get-Content -Encoding UTF8 .\SHA256SUMS.txt | ForEach-Object {
+    $aletheiaExpected, $aletheiaRelative = $_ -split '  ', 2
+    $aletheiaActual = (Get-FileHash -LiteralPath $aletheiaRelative -Algorithm SHA256).Hash
+    if ($aletheiaActual -ine $aletheiaExpected) { throw "Checksum sai: $aletheiaRelative" }
+  }
+  Set-Location .\source
+  New-Item -ItemType Directory -Force ..\logs | Out-Null
+
+4. TẠO LẠI PYTHON ENVIRONMENT
+
+Dùng Python 3.12 như CI. Nếu đã có Python 3.12 và lệnh py, chỉ cần:
+  py -3.12 -m venv .venv
+
+Nếu chưa có Python 3.12, dùng uv theo tài liệu chính thức:
+  winget install --id=astral-sh.uv -e
+
+Mở lại PowerShell sau khi cài uv, cd lại thư mục source rồi:
+  uv python install 3.12
+  uv venv --seed --python 3.12 .venv
+
+Hai cách trên là lựa chọn thay thế; không cần chạy cả hai. Tiếp tục:
+  $aletheiaPython = (Resolve-Path .\.venv\Scripts\python.exe).Path
+  & $aletheiaPython --version
+  & $aletheiaPython -m pip install -e '.[dev,hosted]' 'httpx==0.28.1'
+  if ($LASTEXITCODE -ne 0) { throw 'Cài dependency thất bại; chưa chạy test.' }
+  $env:PYTHON = $aletheiaPython
+  $env:PYTHONUTF8 = '1'
+  $env:PYTHONDONTWRITEBYTECODE = '1'
+  $aletheiaRepo = (Get-Location).Path
+  $env:PYTHONPATH = "$aletheiaRepo\src;$aletheiaRepo\tests\unit;$aletheiaRepo\tests\integration;$aletheiaRepo\scripts"
+  & $aletheiaPython -m pip freeze | Out-File -Encoding utf8 ..\logs\python-packages.txt
+
+Không cần activate venv hay đổi ExecutionPolicy; các lệnh gọi python.exe
+trực tiếp. Các package hosted đã pin trong pyproject.toml; giữ lỗi cài đặt
+để xử lý, không bỏ dependency hoặc sửa test cho qua.
+
+5. TẠO POSTGRESQL DOCKER RIÊNG CHO TEST
+
+Mật khẩu bên dưới là giá trị tổng hợp chỉ dành cho DB test mới. Container
+này có quyền admin để fixture tạo schema/role; không thay bằng DB có dữ liệu.
+Chạy lệnh docker run dưới đây trên MỘT DÒNG:
+
+  docker run -d --name aletheia-kien-pg-test -p 127.0.0.1:55432:5432 --mount type=volume,source=aletheia_kien_pg_test_data,target=/var/lib/postgresql/data -e POSTGRES_USER=hosted_test -e POSTGRES_PASSWORD=synthetic_test_only -e POSTGRES_DB=hosted_test --health-cmd "pg_isready -U hosted_test -d hosted_test" --health-interval 2s --health-timeout 5s --health-retries 30 postgres:16
+  if ($LASTEXITCODE -ne 0) { throw 'Chưa tạo được PostgreSQL test.' }
+
+Đợi PostgreSQL khởi động, chạy lại lệnh sau tới khi có accepting connections:
+  docker exec aletheia-kien-pg-test pg_isready -U hosted_test -d hosted_test
+
+Nếu tên container đã có từ lần trước, dùng docker start aletheia-kien-pg-test;
+không tạo lại hoặc xóa dữ liệu trước khi biết nó là container test của bạn.
+
+Đặt đủ DSN K02–K07 trong chính cửa sổ PowerShell sẽ chạy pytest:
+  $aletheiaTestDsn = 'postgresql://hosted_test:synthetic_test_only@127.0.0.1:55432/hosted_test'
+  foreach ($aletheiaTaskCode in 'K02','K03','K04','K05','K06','K07') {
+    Set-Item "Env:${aletheiaTaskCode}_TEST_DATABASE_URL" $aletheiaTestDsn
+  }
+  $env:K02_TEST_HTTPS = '1'
+
+6. CHẠY SMOKE NHỎ TRƯỚC
+
+Vẫn ở thư mục source, chạy một dòng:
+  & $aletheiaPython -B -m pytest -p no:cacheprovider -o addopts= -q -ra --junitxml=../logs/postgres-smoke.xml tests/integration/test_k05_migrations_postgres.py tests/integration/test_k02_split_postgres.py 2>&1 | Tee-Object -FilePath ..\logs\postgres-smoke.txt
+  if ($LASTEXITCODE -ne 0) { throw 'Smoke chưa đạt; đọc logs trước khi chạy rộng.' }
+
+Smoke kiểm migration và API→worker với DB thật. Fixture tự tạo/dọn schema
+của mình; không cần chạy migration thủ công vào public schema.
+
+7. CHẠY RỘNG K02–K07 VỚI POSTGRESQL
+
+  $aletheiaCases = @(Get-ChildItem .\tests\integration -File | Where-Object { $_.Name -match '^test_k0[2-7]_.*\.py$' } | Sort-Object Name | ForEach-Object { $_.FullName })
+  if ($aletheiaCases.Count -eq 0) { throw 'Không tìm thấy test; kiểm lại thư mục source.' }
+  & $aletheiaPython -B -m pytest -p no:cacheprovider -o addopts= -q -ra --junitxml=../logs/k02-k07-postgres.xml @aletheiaCases 2>&1 | Tee-Object -FilePath ..\logs\k02-k07-postgres.txt
+  $aletheiaTestExit = $LASTEXITCODE
+  "pytest_exit=$aletheiaTestExit" | Out-File -Encoding utf8 ..\logs\pytest-exit.txt
+
+Thêm ba bài query-probe nằm trong unit/ nhưng được đánh dấu integration:
+  & $aletheiaPython -B -m pytest -p no:cacheprovider -o addopts= -q -ra -m integration --junitxml=../logs/query-probe.xml tests/unit/test_k05_query_probe.py
+
+Kiểm riêng hai module worker Windows native:
+  & $aletheiaPython -B -m pytest -p no:cacheprovider -o addopts= -q -ra --junitxml=../logs/windows-worker.xml tests/unit/test_j01_windows_worker.py tests/unit/test_k02_windows_worker_cleanup.py
+
+Giữ nguyên lý do SKIPPED trong log. Các bài quy mô lớn/soak/crash opt-in cần
+tham số và fixture riêng; lệnh rộng trên không tự bật hết chúng. Hai bài API
+POSIX SIGTERM và witness signal worker sẽ skip trên Windows native. Nếu
+chạy chúng trong WSL thì kết quả thuộc Linux/WSL, không phải Windows native.
+Không tự đặt K06_RECOVERY_ALLOW cho container smoke: bài restart/KILL chỉ
+nhận container riêng có đúng tên, labels, image, volume và evidence guard.
+
+8. FRONTEND KIÊN–QUÂN (SAU KHI PYTHON ĐÃ CÀI)
+
+Cài Node 24.x Windows từ https://nodejs.org/en/download (chọn nhánh 24),
+mở lại PowerShell nếu cần, đặt lại $aletheiaPython/$env:PYTHON theo bước 4.
+Từ source, export producer mới vào thư mục chưa tồn tại:
+  $aletheiaQaRoot = Join-Path (Resolve-Path ..).Path ('qa-' + [guid]::NewGuid().ToString('N'))
+  New-Item -ItemType Directory $aletheiaQaRoot | Out-Null
+  & $aletheiaPython -B scripts/export_j01_review.py "$aletheiaQaRoot\j01"
+  & $aletheiaPython -B scripts/export_k04_contract.py "$aletheiaQaRoot\k04"
+  $env:J01_FIXTURES = "$aletheiaQaRoot\j01"
+  $env:K04_FIXTURES = "$aletheiaQaRoot\k04"
+  npm.cmd --prefix dashboard/web ci --ignore-scripts
+  npm.cmd --prefix dashboard/web test
+  npm.cmd --prefix dashboard/web run build:live
+  npm.cmd --prefix dashboard/web run budget
+  npm.cmd --prefix dashboard/web run build:hosted
+
+Kiểm exit code sau mỗi lệnh; npm test hiện có 297 bài trong snapshot. Không
+hạ/nới test P1: chúng cần src và scripts backend cùng bản đã có trong gói.
+Live budget vẫn 80 kB. Hosted trước đó 89,4 kB chưa đạt ngưỡng đó; ba lỗi
+phục hồi trong file trả lời Quân vẫn chờ Quân sửa. Muốn chạy Chrome controlled
+E2E cần cài Chrome và xem dashboard/web/tests/hosted-browser.mjs.
+
+9. IDP VÀ MỞ APP THẬT LÀ BƯỚC SAU
+
+PostgreSQL chạy không tự cung cấp trang đăng nhập. App thật còn cần TOML
+runtime/auth-policy, issuer/client/redirect IdP, TLS HTTPS, provision account
+và API/worker cùng bản. Mẫu ở configs/hosted/staging.example.toml và
+configs/hosted/k03-auth.example.toml; checklist docs/k03-hosted-browser-preflight.md.
+Các mẫu còn ô trống, không phải cấu hình có thể chạy ngay.
+
+Repo có harness local Keycloak/Mailpit/recovery/outage ở tests/unit/
+test_k03_recovery_environment.py, test_k03_keycloak_recovery.py,
+test_k03_oidc_outage_live.py. pytest mặc định của chúng chỉ kiểm offline;
+chạy IdP thật là opt-in riêng, không được tính passed từ bước 7.
+Một số harness còn ghim image ID của lần kiểm cũ; chuyển kiến trúc máy/tag
+mới có thể bị guard từ chối. Cần đối chiếu identity image trước, không bỏ
+guard để chạy bằng được. Đây không phải Docker Compose đã sẵn sàng cho app.
+
+10. DỪNG VÀ DỌN SAU KHI ĐÃ GIỮ LOG
+
+Tạm dừng, giữ DB test để chạy tiếp:
+  docker stop aletheia-kien-pg-test
+
+Khi đã kết thúc và chỉ muốn xóa DB test do các bước này tạo:
+  docker rm aletheia-kien-pg-test
+  docker volume rm aletheia_kien_pg_test_data
+
+Xóa volume giải phóng dữ liệu bên trong Docker; file đĩa ảo WSL/Docker trên
+Windows có thể chưa co lại ngay. Không dùng system prune hay xóa volume khác.
+Gửi lại thư mục logs và kết quả thực tế; không gửi .venv, node_modules hay
+cấu hình/secret thật. Chưa có kết quả nào trong hướng dẫn này là test Windows
+đã chạy: lượt chuẩn bị chỉ đóng gói và kiểm checksum trên Mac.
+
+Tài liệu chính thức đã đối chiếu ngày 11/11/2026:
+https://docs.docker.com/desktop/setup/install/windows-install/
+https://docs.docker.com/desktop/features/wsl/
+https://learn.microsoft.com/en-us/windows/wsl/install
+https://docs.astral.sh/uv/getting-started/installation/
+https://docs.astral.sh/uv/guides/install-python/
+https://nodejs.org/en/download

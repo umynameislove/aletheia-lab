@@ -1,0 +1,12 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "ws_synthetic_001",
+  "items": [
+    {
+      "id": "result_synthetic_001"
+    }
+  ],
+  "next_cursor": null,
+  "total": null,
+  "total_kind": "unknown"
+}

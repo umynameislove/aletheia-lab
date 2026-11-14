@@ -1,0 +1,8 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "ws_synthetic_001",
+  "job_id": "job_synthetic_001",
+  "status": "queued",
+  "request_id": "req_synthetic_001",
+  "status_url": "/v1/workspaces/ws_synthetic_001/jobs/job_synthetic_001"
+}

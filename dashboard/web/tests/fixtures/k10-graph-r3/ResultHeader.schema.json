@@ -1,0 +1,274 @@
+{
+  "$defs": {
+    "ProductDenominators": {
+      "additionalProperties": false,
+      "properties": {
+        "independent_families": {
+          "title": "Independent Families",
+          "type": "null"
+        },
+        "contexts": {
+          "minimum": 0,
+          "title": "Contexts",
+          "type": "integer"
+        },
+        "outputs": {
+          "minimum": 0,
+          "title": "Outputs",
+          "type": "integer"
+        },
+        "claims": {
+          "minimum": 0,
+          "title": "Claims",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "independent_families",
+        "contexts",
+        "outputs",
+        "claims"
+      ],
+      "title": "ProductDenominators",
+      "type": "object"
+    },
+    "ProductProject": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "display_name": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Display Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "display_name"
+      ],
+      "title": "ProductProject",
+      "type": "object"
+    },
+    "ProductResult": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "complete",
+            "technical_failure"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "disposition": {
+          "anyOf": [
+            {
+              "enum": [
+                "supported",
+                "mixed",
+                "abstain",
+                "not_estimated",
+                "redacted"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Disposition"
+        },
+        "causal_status": {
+          "const": "unverified",
+          "title": "Causal Status",
+          "type": "string"
+        },
+        "summary": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Summary",
+          "type": "string"
+        },
+        "denominators": {
+          "$ref": "#/$defs/ProductDenominators"
+        },
+        "allowed_wording": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Allowed Wording",
+          "type": "string"
+        },
+        "forbidden_wording": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Forbidden Wording",
+          "type": "string"
+        },
+        "caveat": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Caveat",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "status",
+        "disposition",
+        "causal_status",
+        "summary",
+        "denominators",
+        "allowed_wording",
+        "forbidden_wording",
+        "caveat"
+      ],
+      "title": "ProductResult",
+      "type": "object"
+    },
+    "ProductRuntime": {
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "enum": [
+            "deterministic_mock",
+            "local_evidence"
+          ],
+          "title": "Provider",
+          "type": "string"
+        },
+        "model": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Model",
+          "type": "string"
+        },
+        "external_call": {
+          "const": false,
+          "title": "External Call",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "provider",
+        "model",
+        "external_call"
+      ],
+      "title": "ProductRuntime",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "product-api/v1-draft",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "workspace_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Workspace Id",
+      "type": "string"
+    },
+    "project_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Project Id",
+      "type": "string"
+    },
+    "result_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Result Id",
+      "type": "string"
+    },
+    "snapshot_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Snapshot Id",
+      "type": "string"
+    },
+    "view_schema_version": {
+      "enum": [
+        "p6-product-view/v1",
+        "p6-product-view/v2"
+      ],
+      "title": "View Schema Version",
+      "type": "string"
+    },
+    "project": {
+      "$ref": "#/$defs/ProductProject"
+    },
+    "runtime": {
+      "$ref": "#/$defs/ProductRuntime"
+    },
+    "result": {
+      "$ref": "#/$defs/ProductResult"
+    },
+    "conversation_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Conversation Id",
+      "type": "string"
+    },
+    "turn_count": {
+      "minimum": 0,
+      "title": "Turn Count",
+      "type": "integer"
+    },
+    "claim_count": {
+      "minimum": 0,
+      "title": "Claim Count",
+      "type": "integer"
+    },
+    "evidence_count": {
+      "minimum": 0,
+      "title": "Evidence Count",
+      "type": "integer"
+    },
+    "node_count": {
+      "minimum": 0,
+      "title": "Node Count",
+      "type": "integer"
+    },
+    "edge_count": {
+      "minimum": 0,
+      "title": "Edge Count",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "schema_version",
+    "workspace_id",
+    "project_id",
+    "result_id",
+    "snapshot_id",
+    "view_schema_version",
+    "project",
+    "runtime",
+    "result",
+    "conversation_id",
+    "turn_count",
+    "claim_count",
+    "evidence_count",
+    "node_count",
+    "edge_count"
+  ],
+  "title": "ResultHeader",
+  "type": "object"
+}

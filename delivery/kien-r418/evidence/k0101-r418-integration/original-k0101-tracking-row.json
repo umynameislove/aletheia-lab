@@ -1,0 +1,16 @@
+{
+  "task_id": "K-01.01",
+  "parent": "K-01",
+  "title": "Đối chiếu ba nhánh và giữ WIP",
+  "owner": "Kiên",
+  "input": "main mới nhất; hai nhánh cũ; audit hiện tại; overlay nghiên cứu của Bao",
+  "depends_on": "Không; cần quyền đọc repo và môi trường local dùng dữ liệu tổng hợp",
+  "output": "Bảng commit/diff cần giữ và base SHA của hai nhánh mới.",
+  "method": "Đọc main và các diff liên quan; sao lưu công việc trước khi tích hợp.",
+  "expected": "Không mất file hoặc commit; liệt kê rõ phần mới, phần đã merge và phần còn riêng.",
+  "status": "in_progress",
+  "evidence": "Bang-chung/20261113-windows-return-review/k01-k18-independent-audit.json; Bang-chung/20261113-windows-return-review/source-freeze-r3.json; Bang-chung/20261113-windows-r3-return/sealed-review.json; 01-Ca-nhan/Chot-Windows-R3-R31-20261113.txt",
+  "consumer_check": "",
+  "observed": "13/11 Windows R3 source912c4df6/runtime823fab73 VERIFIED:smoke23PASS,upload20013PASS,full200MiB/50parts/readbackhash/noUnknownretry. Unit2928PASS5FAIL; stopped, fullPG/L/WSL/wheel/recoveryNOTRUN. R3.1 fixes5test/toolfiles;667runtime and assertions unchanged; local2921PASS13WindowsSKIP. WindowsR3.1unitNOTRUN. [PRIOR SCOPE] R3 LOCAL: đã ghi hash/byte của160WIP paths, cached Git refs/base/divergence của thư mục tham khảo và source2499/runtime667 hiện tại. Không fetch/reset/init hoặc sửa checkout tham khảo; chưa chứng nhận lịch sử WIP từ nhánh Kiên không có .git.",
+  "open_issues": "Kiên cung cấp nhánh/base/original manifest; Bu đối chiếu upstream thật và giữ diff trước khi tích hợp. Cached origin/main chỉ là ref đã có trên máy, không khẳng định remote mới nhất."
+}

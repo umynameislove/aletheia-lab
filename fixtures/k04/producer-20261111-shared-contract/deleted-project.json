@@ -1,0 +1,9 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "ws_synthetic",
+  "project_id": "p3-project-7e9ae9eb40a1623d5dc63aecf3caf681590fe52f29a942b96e3bc7aee13dce0b",
+  "revision": 2,
+  "tombstone_id": "p6-deletion-1a4055605a1105867f4117ce51bd432c504a241e03be98ccbf974e731c5e988c",
+  "status": "tombstoned",
+  "retention": "retained"
+}

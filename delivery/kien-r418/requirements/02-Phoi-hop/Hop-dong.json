@@ -1,0 +1,654 @@
+{
+  "document_kind": "design_proposal_not_deployed_openapi",
+  "version": "aletheia-product-release/2026-11-05",
+  "baseline_main_sha": "6d1ba1469b5231971095b63d4f8069f542cc7993",
+  "owner": "Kien schema; Quan consumer; joint integration",
+  "research_branch": "Bao separate; no merge of private research artifacts",
+  "existing_local_rpc": {
+    "demo_view": [],
+    "preview_import": [
+      "root"
+    ],
+    "confirm_import": [
+      "preview_id",
+      "mapping"
+    ],
+    "refresh": [
+      "project_id"
+    ],
+    "analyze_mock": [
+      "project_id",
+      "snapshot_id",
+      "question"
+    ],
+    "follow_up": [
+      "result_id",
+      "selection_kind",
+      "selection_id",
+      "question"
+    ],
+    "view": [
+      "result_id"
+    ],
+    "export_report": [
+      "result_id",
+      "format"
+    ],
+    "delete_project": [
+      "project_id"
+    ]
+  },
+  "proposed_hosted_operations": [
+    {
+      "id": "P01",
+      "method": "GET",
+      "path": "/v1/session",
+      "authorization": "current principal",
+      "response": "Session",
+      "latency_class": "read",
+      "invariant": "Auth expired is 401; never send secret/token to UI logs",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P02",
+      "method": "POST",
+      "path": "/v1/session/logout",
+      "authorization": "current principal",
+      "response": "LogoutReceipt",
+      "latency_class": "mutation",
+      "invariant": "Revoke session/stream; invalidate client scope",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P03",
+      "method": "GET",
+      "path": "/v1/workspaces",
+      "authorization": "membership",
+      "response": "Page<WorkspaceSummary>",
+      "latency_class": "read",
+      "invariant": "Cursor and scoped total; no cross-workspace names",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P04",
+      "method": "GET",
+      "path": "/v1/workspaces/{workspace_id}/capabilities",
+      "authorization": "member",
+      "response": "Capabilities",
+      "latency_class": "read",
+      "invariant": "True supported modes, formats, limits and allowed actions",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P05",
+      "method": "GET",
+      "path": "/v1/workspaces/{workspace_id}/projects",
+      "authorization": "member",
+      "response": "Page<ProjectSummary>",
+      "latency_class": "read",
+      "invariant": "Filter/sort/cursor bound to actor and scope",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P06",
+      "method": "POST",
+      "path": "/v1/workspaces/{workspace_id}/uploads",
+      "authorization": "source:write;owner/admin/analyst with workspace+source grant",
+      "response": "UploadSession",
+      "latency_class": "mutation",
+      "invariant": "Bounded resumable transfer; not a server filesystem root",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P07",
+      "method": "POST",
+      "path": "/v1/workspaces/{workspace_id}/imports/preview",
+      "authorization": "source:write;owner/admin/analyst with workspace+source grant",
+      "response": "JobReceipt",
+      "latency_class": "job_ack",
+      "invariant": "Upload or scoped connector ref; 202 only after durable job",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P08",
+      "method": "GET",
+      "path": "/v1/workspaces/{workspace_id}/imports/{preview_id}",
+      "authorization": "source:preview:read;preview creator or explicitly authorized owner/admin/analyst",
+      "response": "PreviewImport",
+      "latency_class": "read",
+      "invariant": "Expiry/source version/withheld fields; no unsafe defaults",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P09",
+      "method": "POST",
+      "path": "/v1/workspaces/{workspace_id}/imports/{preview_id}/confirm",
+      "authorization": "source:confirm;preview creator with current source/project permission",
+      "response": "JobReceipt",
+      "latency_class": "job_ack",
+      "invariant": "Idempotency + explicit mapping; output project/snapshot",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P10",
+      "method": "POST",
+      "path": "/v1/workspaces/{workspace_id}/projects/{project_id}/refresh",
+      "authorization": "project:refresh;owner/admin/analyst with project grant",
+      "response": "JobReceipt",
+      "latency_class": "job_ack",
+      "invariant": "Revision/fence, unchanged vs new snapshot, immutable past",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P11",
+      "method": "GET",
+      "path": "/v1/workspaces/{workspace_id}/projects/{project_id}",
+      "authorization": "member",
+      "response": "ProjectSummary",
+      "latency_class": "read",
+      "invariant": "Current revision and active/deleting state, not all evidence",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P12",
+      "method": "GET",
+      "path": "/v1/workspaces/{workspace_id}/projects/{project_id}/snapshots",
+      "authorization": "member",
+      "response": "Page<SnapshotSummary>",
+      "latency_class": "read",
+      "invariant": "Stable immutable snapshot IDs",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P13",
+      "method": "POST",
+      "path": "/v1/workspaces/{workspace_id}/projects/{project_id}/analyses",
+      "authorization": "analysis:create;owner/admin/analyst with project grant",
+      "response": "JobReceipt",
+      "latency_class": "job_ack",
+      "invariant": "Snapshot + backend capability; no direct browser provider",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P14",
+      "method": "GET",
+      "path": "/v1/workspaces/{workspace_id}/results",
+      "authorization": "member",
+      "response": "Page<ResultSummary>",
+      "latency_class": "read",
+      "invariant": "Project/snapshot/filter scope before pagination",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P15",
+      "method": "GET",
+      "path": "/v1/workspaces/{workspace_id}/results/{result_id}",
+      "authorization": "member",
+      "response": "ResultSummary",
+      "latency_class": "read",
+      "invariant": "Project/snapshot/analysis version/capability explicit",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P16",
+      "method": "GET",
+      "path": "/v1/workspaces/{workspace_id}/results/{result_id}/claims",
+      "authorization": "member",
+      "response": "Page<Claim>",
+      "latency_class": "read",
+      "invariant": "Exact citation refs, bounded page; unknown not false",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P17",
+      "method": "GET",
+      "path": "/v1/workspaces/{workspace_id}/results/{result_id}/evidence/{evidence_id}",
+      "authorization": "member",
+      "response": "Evidence",
+      "latency_class": "read",
+      "invariant": "Citation belongs to result; redaction + source version",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P18",
+      "method": "GET",
+      "path": "/v1/workspaces/{workspace_id}/results/{result_id}/graph",
+      "authorization": "member",
+      "response": "Subgraph",
+      "latency_class": "read",
+      "invariant": "Scope/node/cursor limits; report truncated or next cursor",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P19",
+      "method": "POST",
+      "path": "/v1/workspaces/{workspace_id}/results/{result_id}/follow-ups",
+      "authorization": "analysis:followup;owner/admin/analyst with exact result/project grant",
+      "response": "JobReceipt",
+      "latency_class": "job_ack",
+      "invariant": "Parent+selection same scope; idempotency",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P20",
+      "method": "GET",
+      "path": "/v1/workspaces/{workspace_id}/jobs/{job_id}",
+      "authorization": "member owner or allowed role",
+      "response": "Job",
+      "latency_class": "read",
+      "invariant": "Deadline/retry policy, exact terminal/output",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P21",
+      "method": "POST",
+      "path": "/v1/workspaces/{workspace_id}/jobs/{job_id}/cancel",
+      "authorization": "job owner or authorized role",
+      "response": "Job",
+      "latency_class": "mutation",
+      "invariant": "May return cancel_requested; not fake cancelled",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P22",
+      "method": "GET",
+      "path": "/v1/workspaces/{workspace_id}/events",
+      "authorization": "member",
+      "response": "ScopedEventStream",
+      "latency_class": "connection",
+      "invariant": "If SSE chosen: revocation, resume cursor, heartbeat, quotas",
+      "requirement_mode": "conditional_implementation_choice",
+      "capability": "events.sse",
+      "choice_rule": "SSE or bounded status-polling; equivalent job/reconnect/revoke consumer journey must pass"
+    },
+    {
+      "id": "P23",
+      "method": "POST",
+      "path": "/v1/workspaces/{workspace_id}/results/{result_id}/exports",
+      "authorization": "member with export permission",
+      "response": "JobReceipt",
+      "latency_class": "job_ack",
+      "invariant": "Format/version; durable and authorized output",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P24",
+      "method": "GET",
+      "path": "/v1/workspaces/{workspace_id}/exports/{export_id}/download",
+      "authorization": "member with export permission",
+      "response": "Download",
+      "latency_class": "download",
+      "invariant": "Revalidate scope; content-disposition safe; TTL and revocation",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P25",
+      "method": "DELETE",
+      "path": "/v1/workspaces/{workspace_id}/projects/{project_id}",
+      "authorization": "owner or explicit delete role",
+      "response": "JobReceipt",
+      "latency_class": "job_ack",
+      "invariant": "Tombstone + durable deletion, idempotent receipt, no source deletion",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P26",
+      "method": "PUT",
+      "path": "/v1/workspaces/{workspace_id}/results/{result_id}/annotations/{annotation_id}",
+      "authorization": "annotation:write;owner/admin/analyst/reviewer with result grant and own-record/CAS policy",
+      "response": "Annotation",
+      "latency_class": "mutation",
+      "invariant": "If persisted review shipped: revision conflict, scope, no research label",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P27",
+      "method": "GET",
+      "path": "/v1/workspaces/{workspace_id}/members",
+      "authorization": "membership management permission",
+      "response": "Page<Member>",
+      "latency_class": "read",
+      "invariant": "Least privilege; only fields needed for settings",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P28",
+      "method": "PATCH",
+      "path": "/v1/workspaces/{workspace_id}/members/{member_id}",
+      "authorization": "owner/admin",
+      "response": "Membership",
+      "latency_class": "mutation",
+      "invariant": "Role revision/revoke, avoid removing last owner accidentally",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P29",
+      "method": "PUT",
+      "path": "/v1/workspaces/{workspace_id}/uploads/{upload_id}/parts/{part_number}",
+      "authorization": "upload:write;upload creator with current source grant",
+      "response": "UploadPartReceipt",
+      "latency_class": "upload",
+      "invariant": "Bytes/count/checksum caps, resumable parts, no cross-actor overwrite",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P30",
+      "method": "POST",
+      "path": "/v1/workspaces/{workspace_id}/uploads/{upload_id}/complete",
+      "authorization": "upload:complete;upload creator with current source grant",
+      "response": "UploadReceipt",
+      "latency_class": "mutation",
+      "invariant": "Verify full length/hash and immutable binding before preview",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P31",
+      "method": "DELETE",
+      "path": "/v1/workspaces/{workspace_id}/uploads/{upload_id}",
+      "authorization": "upload:cancel;upload creator with source grant or explicitly authorized workspace admin/owner",
+      "response": "UploadCancelReceipt",
+      "latency_class": "mutation",
+      "invariant": "Idempotent cancel/cleanup, no removal of referenced evidence",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P32",
+      "method": "POST",
+      "path": "/v1/workspaces/{workspace_id}/connectors/pair",
+      "authorization": "source:connect;owner/admin/analyst with source consent and enabled capability",
+      "response": "PairingSession",
+      "latency_class": "mutation",
+      "invariant": "If connector enabled: expiry/scope, explicit user device grant, no raw root in public URL",
+      "requirement_mode": "conditional_implementation_choice",
+      "capability": "sources.connector",
+      "choice_rule": "Connector optional; hosted upload and local-grant journeys remain mandatory"
+    },
+    {
+      "id": "P33",
+      "method": "POST",
+      "path": "/v1/workspaces/{workspace_id}/connectors/{connector_id}/revoke",
+      "authorization": "connector owner or admin",
+      "response": "RevocationReceipt",
+      "latency_class": "mutation",
+      "invariant": "Stops new collection; revoke credentials and stream, preserve immutable accepted snapshot",
+      "requirement_mode": "conditional_implementation_choice",
+      "capability": "sources.connector",
+      "choice_rule": "Revoke for enabled connector; capability=false gives safe unsupported, no fake connector"
+    },
+    {
+      "id": "P34",
+      "method": "GET",
+      "path": "/v1/workspaces/{workspace_id}/connectors",
+      "authorization": "authorized source manager",
+      "response": "Page<ConnectorSummary>",
+      "latency_class": "read",
+      "invariant": "Only safe labels/status/scopes, no credentials or absolute source path",
+      "requirement_mode": "conditional_implementation_choice",
+      "capability": "sources.connector",
+      "choice_rule": "List only enabled/authorized connector sources; no credential disclosure"
+    },
+    {
+      "id": "P35",
+      "method": "PATCH",
+      "path": "/v1/workspaces/{workspace_id}/projects/{project_id}",
+      "authorization": "project:update;owner/admin/analyst with project grant and expected revision",
+      "response": "ProjectSummary",
+      "latency_class": "mutation",
+      "invariant": "Display metadata revision conflict; never mutate immutable snapshot",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P36",
+      "method": "POST",
+      "path": "/v1/workspaces/{workspace_id}/invitations",
+      "authorization": "owner/admin",
+      "response": "InvitationReceipt",
+      "latency_class": "mutation",
+      "invariant": "If membership is app-managed: expiry/revoke, scoped role, no arbitrary role escalation",
+      "requirement_mode": "conditional_implementation_choice",
+      "capability": "members.app_invitation",
+      "choice_rule": "App-managed invite or tested IdP-managed provisioning/invite; member onboarding/revoke remain mandatory"
+    },
+    {
+      "id": "P37",
+      "method": "GET",
+      "path": "/v1/workspaces/{workspace_id}/settings",
+      "authorization": "member with settings permission",
+      "response": "WorkspaceSettings",
+      "latency_class": "read",
+      "invariant": "Retention/limits/source policy and provenance, no secret values",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    },
+    {
+      "id": "P38",
+      "method": "PATCH",
+      "path": "/v1/workspaces/{workspace_id}/settings",
+      "authorization": "owner/admin",
+      "response": "WorkspaceSettings",
+      "latency_class": "mutation",
+      "invariant": "Versioned policy bounded by platform limits; no client-selected unlimited quota",
+      "requirement_mode": "core",
+      "capability": "core",
+      "choice_rule": "Implement and execute producer/consumer checks; unavailable core remains open."
+    }
+  ],
+  "authorization": {
+    "actor": "derived from authenticated server session, never supplied role in request",
+    "workspace": "membership and object scope checked server-side on every path",
+    "local": "loopback and scoped source principal, no hosted claim"
+  },
+  "pagination": {
+    "default_limit": 50,
+    "maximum_limit": 200,
+    "cursor": "opaque, scope/snapshot/query bound",
+    "totals": "exact or explicitly estimated, never invented"
+  },
+  "control_limits_proposed": {
+    "maximum_json_bytes": 1048576,
+    "maximum_question_unicode_characters": 4000,
+    "upload_bundle_bytes": 209715200,
+    "upload_expanded_limit": "must be configured and tested before enabling archive types",
+    "all_limits": "versioned capability, not industry standard"
+  },
+  "idempotency": {
+    "unique_key": [
+      "actor_id",
+      "workspace_id",
+      "operation",
+      "idempotency_key"
+    ],
+    "request_hash": "stored compared value, NOT a component of unique_key",
+    "same_key_same_body": "return same durable operation/receipt",
+    "same_key_different_body": "409 conflict without another side effect",
+    "retention": "bind retention and expiry to action recovery window before implementation"
+  },
+  "job": {
+    "states": [
+      "queued",
+      "running",
+      "cancel_requested",
+      "succeeded",
+      "failed",
+      "cancelled",
+      "expired"
+    ],
+    "transitions": {
+      "queued": [
+        "running",
+        "cancelled",
+        "expired"
+      ],
+      "running": [
+        "cancel_requested",
+        "succeeded",
+        "failed",
+        "expired"
+      ],
+      "cancel_requested": [
+        "cancelled",
+        "succeeded",
+        "failed",
+        "expired"
+      ]
+    },
+    "cancel_race": "succeeded may win if commit already happened before cancellation fence; API/UI must show the actual outcome, never pretend undo",
+    "terminal_states": [
+      "succeeded",
+      "failed",
+      "cancelled",
+      "expired"
+    ],
+    "lease": "claim owner + epoch + expiry + fenced commit",
+    "retry": "bounded attempt under policy; logical terminal retry creates related operation, no paid external retry without permission",
+    "progress": "optional measured work counters; null means unknown",
+    "ack": "202 only after durable input+job commit; not completion"
+  },
+  "example_job_receipt_synthetic": {
+    "schema_version": "product-api/v2-proposal",
+    "job_id": "job_synthetic_001",
+    "status": "queued",
+    "workspace_id": "ws_synthetic_a",
+    "status_url": "/v1/workspaces/ws_synthetic_a/jobs/job_synthetic_001",
+    "request_id": "req_synthetic_001"
+  },
+  "example_problem_synthetic": {
+    "type": "urn:aletheia:problem:revision-conflict",
+    "title": "Project changed",
+    "status": 409,
+    "code": "revision_conflict",
+    "detail": "Reload the project state before applying this change.",
+    "request_id": "req_synthetic_002"
+  },
+  "capabilities_required": [
+    "deployment_mode",
+    "schema_version",
+    "analysis_backends",
+    "supported_source_types",
+    "supported_export_formats",
+    "allowed_actions",
+    "limits"
+  ],
+  "analysis_backends": {
+    "mock": "synthetic, visible label",
+    "local_evidence": "only after module/version truly integrated",
+    "provider": "only when explicitly configured and authorized"
+  },
+  "data_boundary": [
+    "no credential/private source paths/evaluator-only labels in client response",
+    "claim evidence belongs to exact result snapshot",
+    "raw numerical values preserved",
+    "unknown/unsupported/error/empty/abstain remain distinct"
+  ],
+  "execution_state": "proposed_not_implemented_or_load_verified",
+  "primary_capacity_target": {
+    "active_principals": 50000,
+    "active_window_seconds": 30,
+    "not_measured": true,
+    "calibration_principals": [
+      5000,
+      10000,
+      25000
+    ],
+    "reference_actions_per_second": 5000,
+    "reference_http_per_second": 15000,
+    "reference_heavy_jobs_per_second": 20,
+    "behavior_source": "unvalidated initial profile; replace fanout with observed waterfall before main; keep reference results",
+    "engaged_definition": "Unique authenticated principal with a meaningful business action scheduled in the rolling window, or a legitimately admitted job waiting within its declared deadline and age bound. Lock the cohort and cadence before the run.",
+    "separate_counters": [
+      "intended_engaged",
+      "actually_started",
+      "unique_completing",
+      "valid_waiting",
+      "idle",
+      "scheduled",
+      "sent",
+      "admitted",
+      "completed",
+      "dropped",
+      "rejected",
+      "timeout",
+      "pending_at_drain"
+    ],
+    "denominator_rule": "Failures, timeouts and dropped work remain in the offered cohort and eligible scheduled-action denominator. Never define the population by successful completers; polling/health/auth-refresh alone is not meaningful completion."
+  },
+  "roles": [
+    "owner",
+    "admin",
+    "analyst",
+    "reviewer",
+    "viewer"
+  ],
+  "permission_policy": "See Phoi-hop-va-nghiem-thu.md role matrix; per-object membership/grants and server authority remain mandatory.",
+  "session_policy": {
+    "actor": "server session, never arbitrary client role",
+    "revoke_propagation_target_seconds": 5,
+    "tokens": "no long-lived secret in browser localStorage",
+    "multi_tab": "invalidate state on logout/account/workspace change; context fence after awaits"
+  },
+  "response_boundary": "Validate version/type/shape/scope at API and browser; unknown or invalid schema fails safely, no fallback to demo.",
+  "inventory_boundary": "P01-P38 retained foundation; add auth start/callback, onboarding/provisioning or other core-journey routes to the actual OpenAPI when needed. Conditional alternative never removes the underlying core journey."
+}

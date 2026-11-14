@@ -1,0 +1,78 @@
+{
+  "source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+  "runtime_identity": "a046bccd9a0beb135951a0928c7ddd131b327302bcacf10c7ddb979757c9d495",
+  "image_id": "sha256:0f1ffb0bef45044451af1cd1b905e91587f87f284135eeac2bb4db894c26b81a",
+  "original_image_id": "sha256:993fef459d85a4e6fa3a10e966e768749d3d6409dbc7e899be9df96cf7643cb0",
+  "tag": "aletheia-hosted:r418-k16-wolfi-offline",
+  "architecture": "amd64",
+  "image_bytes": 232440760,
+  "database": {
+    "Version": 2,
+    "NextUpdate": "2026-11-15T01:05:40.480840063Z",
+    "UpdatedAt": "2026-11-14T01:05:40.480840314Z",
+    "DownloadedAt": "2026-11-14T07:23:58.589250821Z"
+  },
+  "scanner": "aquasec/trivy@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb",
+  "scan_sha256": "21a0a1b402c380fae607dccca2c319c374ebb5944622e7e000e9a36069a08863",
+  "sbom_sha256": "a7cf6c5af89dbd64034e5afc9cd5bb37cc8741bb85c61376c706d0c617a33f85",
+  "sbom_components": 88,
+  "os_packages_scanned": 34,
+  "original_high_cves_still_reported": [],
+  "severity_counts": {},
+  "severe_records": [],
+  "runtime_probe": {
+    "status": "pass",
+    "source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+    "runtime_identity": "a046bccd9a0beb135951a0928c7ddd131b327302bcacf10c7ddb979757c9d495",
+    "runtime_files": 676,
+    "pinned_dependencies": 52,
+    "python": "3.12.16",
+    "architecture": "x86_64",
+    "sqlite": "3.54.1",
+    "openssl": "OpenSSL 4.0.3 29 Sep 2026",
+    "zlib": "1.3.2.1-motley",
+    "uid": 10001,
+    "gid": 10001,
+    "read_only": true,
+    "caps_zero": true,
+    "no_new_privileges": true,
+    "seccomp_filter": true,
+    "programs": {
+      "mount": null,
+      "nsenter": "/usr/bin/busybox",
+      "systemd-homed": null,
+      "homectl": null,
+      "perl": null
+    },
+    "missing_secrets_api_worker_fail_closed": true,
+    "synthetic_role_secret_mapping": true,
+    "native_imports": [
+      "cryptography",
+      "pandas",
+      "psycopg_binary",
+      "pyarrow",
+      "scikit-learn"
+    ],
+    "children": 4,
+    "output_byte_parity": true,
+    "outputs": {
+      "json": {
+        "bytes": 31934,
+        "sha256": "8abfaafffbfb9c69530235d26d6dbb150c9988c9ae2fa26faa5c3e699905c081",
+        "seconds": 0.6705956099999639
+      },
+      "markdown": {
+        "bytes": 32504,
+        "sha256": "3c6e985af9bb76e9e254940e4b0d7cf78bc25065a216f68afec4ea4947dcf5b4",
+        "seconds": 0.6191127379997852
+      },
+      "pdf": {
+        "bytes": 36059,
+        "sha256": "65ef380d379250972fd53e5ce37b4a174223c26d38657aaf0eb43575ce4f4793",
+        "seconds": 1.021128471999873
+      }
+    }
+  },
+  "completed_utc": "2026-11-14T07:35:10.3097850+00:00",
+  "image_vulnerability_gate_pass": true
+}

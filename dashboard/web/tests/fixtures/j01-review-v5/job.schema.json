@@ -1,0 +1,59 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "product-api/v1-draft",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "workspace_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Workspace Id",
+      "type": "string"
+    },
+    "job_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Job Id",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "queued",
+        "running",
+        "cancel_requested",
+        "succeeded",
+        "failed",
+        "cancelled",
+        "expired"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "progress": {
+      "anyOf": [
+        {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Progress"
+    }
+  },
+  "required": [
+    "schema_version",
+    "workspace_id",
+    "job_id",
+    "status",
+    "progress"
+  ],
+  "title": "Job",
+  "type": "object"
+}

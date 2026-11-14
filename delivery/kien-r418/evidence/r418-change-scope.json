@@ -1,0 +1,84 @@
+{
+  "source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+  "runtime_identity": "a046bccd9a0beb135951a0928c7ddd131b327302bcacf10c7ddb979757c9d495",
+  "baseline_source_identity": "cd3f65970f4655ea6ccef92ca7706e97a0c05749312f975010db27dad1692913",
+  "changed": [
+    "src/aletheia_lab/hosted/authorization.py",
+    "src/aletheia_lab/hosted/canonical_results.py",
+    "src/aletheia_lab/hosted/capacity.py",
+    "src/aletheia_lab/hosted/capacity_observations.py",
+    "src/aletheia_lab/hosted/capacity_preflight.py",
+    "src/aletheia_lab/hosted/capacity_profiles.py",
+    "src/aletheia_lab/hosted/capacity_seed.py",
+    "src/aletheia_lab/hosted/capacity_seed_domain.py",
+    "src/aletheia_lab/hosted/capacity_sessions.py",
+    "src/aletheia_lab/hosted/catalog_http.py",
+    "src/aletheia_lab/hosted/imports_http.py",
+    "src/aletheia_lab/hosted/job_http.py",
+    "src/aletheia_lab/hosted/legacy_import.py",
+    "src/aletheia_lab/hosted/managed_runtime.py",
+    "src/aletheia_lab/hosted/managed_worker.py",
+    "src/aletheia_lab/hosted/observability.py",
+    "src/aletheia_lab/hosted/postgres_catalog.py",
+    "src/aletheia_lab/hosted/postgres_jobs.py",
+    "src/aletheia_lab/hosted/postgres_objects.py",
+    "src/aletheia_lab/hosted/recovery_checkpoint.py",
+    "src/aletheia_lab/hosted/recovery_points.py",
+    "src/aletheia_lab/hosted/result_views.py",
+    "src/aletheia_lab/hosted/retention.py",
+    "src/aletheia_lab/hosted/runtime_privileges.py",
+    "src/aletheia_lab/hosted/source_bundle.py",
+    "src/aletheia_lab/hosted/transactions.py",
+    "src/aletheia_lab/hosted/upload_job_worker.py",
+    "src/aletheia_lab/hosted/upload_project.py",
+    "src/aletheia_lab/hosted/upload_publication.py",
+    "src/aletheia_lab/hosted/upload_runtime.py",
+    "src/aletheia_lab/hosted/upload_staging_http.py",
+    "src/aletheia_lab/hosted/worker_supervisor.py",
+    "src/aletheia_lab/hosted/workspace_http.py",
+    "src/aletheia_lab/hosted/workspace_management.py",
+    "src/aletheia_lab/project/import_content.py",
+    "src/aletheia_lab/project/importer.py",
+    "src/aletheia_lab/project/mapping.py",
+    "src/aletheia_lab/project/regression.py",
+    "tests/unit/test_k02_managed_worker.py",
+    "tests/unit/test_maintainability_contract.py"
+  ],
+  "added": [
+    "src/aletheia_lab/hosted/job_admission.py",
+    "src/aletheia_lab/hosted/job_output.py",
+    "src/aletheia_lab/hosted/job_publication.py",
+    "src/aletheia_lab/project/import_filesystem.py",
+    "src/aletheia_lab/project/mapping_observations.py",
+    "src/aletheia_lab/project/regression_changes.py"
+  ],
+  "removed": [],
+  "runtime_changed": 38,
+  "preserved_ui_files": 180,
+  "preserved_migration_sql_files": 15,
+  "preserved_guard_config_and_workflows": [
+    "configs/maintainability_budget.json",
+    "scripts/check_maintainability.py",
+    "pyproject.toml",
+    ".github/workflows/ci.yml",
+    ".github/workflows/dependency-audit.yml",
+    ".github/workflows/hosted.yml"
+  ],
+  "test_changes": [
+    {
+      "path": "tests/unit/test_maintainability_contract.py",
+      "reason": "Accept module lengths below frozen maximum, with the existing 800-line lower bound and every configured maximum retained."
+    },
+    {
+      "path": "tests/unit/test_k02_managed_worker.py",
+      "reason": "Execute the real module entrypoint up to main in a child process, asserting readiness is defined before startup. Reproduced failure before moving the helper."
+    }
+  ],
+  "r416_intermediate": {
+    "source_identity": "a34d25d154b10880e8f4f1f79f64f3f1f0bdfa6df5d0d7f97fdc21757876f1d0",
+    "unit": "2968 passed / 5 deselected",
+    "rejected_reason": "Worker CLI helper was defined below the main entrypoint guard. Corrected in R4.17."
+  },
+  "all_k01_k18_pass": false,
+  "final_bao_report_exported": false
+}

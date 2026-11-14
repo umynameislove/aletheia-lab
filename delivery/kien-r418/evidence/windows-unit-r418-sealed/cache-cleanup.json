@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "strict_source_verification_after": true,
+  "isolated_parent_cache_prefix": true,
+  "initial_source_caches_verified_absent": true,
+  "removed_regular_pyc_files": 346,
+  "removed_empty_cache_directories": 6,
+  "scope": "Only caches created in this owned phase; no hostile-host guarantee."
+}

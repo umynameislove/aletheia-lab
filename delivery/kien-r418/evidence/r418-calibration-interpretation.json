@@ -1,0 +1,109 @@
+{
+  "source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+  "runtime_identity": "a046bccd9a0beb135951a0928c7ddd131b327302bcacf10c7ddb979757c9d495",
+  "harness_runtime_tree_hash": "c61fcd7a34b58d0f5da7a41a6bf5e8c4e3a891296028fd85f37fe89ea58a56f7",
+  "tree_hash_note": "Harness uses its own tree algorithm. Manifest-verified copy and attempt.json bind this execution to sealed R4.18; hashes from different algorithms are not equated.",
+  "measured_positive": {
+    "offered": 590,
+    "correct_by_deadline": 590,
+    "success_fraction": 1.0,
+    "observed_subset_success_target_met": true
+  },
+  "whole_run_clean": false,
+  "total_counts": {
+    "planned": 750,
+    "offered": 750,
+    "warmup_offered": 150,
+    "started": 750,
+    "sent": 750,
+    "admitted": 731,
+    "terminal": 750,
+    "completed": 729,
+    "denied": 17,
+    "exports_verified": 71,
+    "jobs_admitted": 32,
+    "jobs_terminal": 30,
+    "job_succeeded": 30,
+    "timeout": 3,
+    "unknown_mutations": 1,
+    "rejected": 1,
+    "measured_offered": 600,
+    "pending": 0
+  },
+  "http": {
+    "requests": 1079,
+    "status_200": 956,
+    "response_body_bytes": 4927252,
+    "response_completed": 1078,
+    "response_duration_microseconds": 197841005,
+    "request_body_bytes": 9126,
+    "status_404": 17,
+    "status_201": 71,
+    "status_202": 32,
+    "job_poll_snapshot": 33,
+    "job_poll_resync": 31,
+    "status_503": 1,
+    "status_400": 1,
+    "catalog_page_restarts": 1
+  },
+  "worker_settled_log_records": 32,
+  "harness_terminal_confirmations": 30,
+  "distinction": "Settled telemetry has no terminal result body/hash witness. Two jobs remain unconfirmed by the harness after warmup deadline failure; settled does not turn those actions into deadline successes.",
+  "failures_outside_measured_positive_window": true,
+  "postrun_reconciliation": {
+    "schema_version": "k17-mutation-reconciliation/v1",
+    "profile_sha256": "a1702cd72d8e488e12111e95a788a1867b724b04cb8ff0ff250deb0fe35af4f6",
+    "original_unresolved_mutations": 1,
+    "witnesses_observed": 1,
+    "unobserved_or_unsupported": 0,
+    "observations": [
+      {
+        "action_sequence": 44,
+        "operation_id": "P23",
+        "workspace_id": "ws_k17_calibration1_0003",
+        "request_key_sha256": "f4aac9a13dae277a0f45235fb30ca3b30e69bff229ab787e1186646a678b1767",
+        "status": "no_effect_visible_at_observation",
+        "effects": []
+      }
+    ],
+    "original_slo_outcomes_unchanged": true,
+    "scope": "Read-only point-in-time metadata. Absence is a final no-effect conclusion only with independently verified API/worker quiescence. Visible bytes still need full hash verification. Original timeout/503/rejection remains failed in its original deadline denominator.",
+    "quiescence": {
+      "actual_child_processes_exited": true,
+      "process_exit_codes": [
+        -15,
+        0
+      ],
+      "parent_controls_every_SUT_api_worker_in_this_fixture": true
+    },
+    "exports_full_hash_verified": 0,
+    "no_effect_after_quiescence": 1,
+    "remaining_unobserved_or_unsupported": 0
+  },
+  "latency_target_exceedances": [
+    {
+      "journey": "analysis_terminal",
+      "size": "S",
+      "n": 9,
+      "p95_upper_seconds": 3.0477183233406926,
+      "target_seconds": 2.0
+    },
+    {
+      "journey": "followup_terminal",
+      "size": "S",
+      "n": 3,
+      "p95_upper_seconds": 3.0477183233406926,
+      "target_seconds": 2.0
+    },
+    {
+      "journey": "result_header",
+      "size": "M",
+      "n": 96,
+      "p95_upper_seconds": 0.23737631379976956,
+      "target_seconds": 0.2
+    }
+  ],
+  "all_strata_under_primary_precision_minimum": true,
+  "measured_subset_receipt_is_not_entire_campaign_acceptance": true,
+  "full_release_or_primary50k_pass": false
+}

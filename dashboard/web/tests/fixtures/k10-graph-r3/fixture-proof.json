@@ -1,0 +1,11 @@
+{
+  "runtime_model": "upload-snapshot-metric-observation/v2",
+  "view_schema_version": "p6-product-view/v2",
+  "pages": 33,
+  "nodes": 22,
+  "edges": 30,
+  "claims": 10,
+  "all_page_schemas_validated": true,
+  "union_matches_header": true,
+  "live_API_or_primary_capacity_proof": false
+}

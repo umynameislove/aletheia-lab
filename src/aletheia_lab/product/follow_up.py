@@ -12,12 +12,13 @@ from aletheia_lab.product.projection import build_product_graph
 from aletheia_lab.product.questions import checked_product_question
 from aletheia_lab.product.results import load_product_result, persist_product_result
 from aletheia_lab.product.view import (
+    AnyProductView,
     ProductClaim,
     ProductConversation,
     ProductDenominators,
     ProductResult,
     ProductTurn,
-    ProductView,
+    parse_product_view,
 )
 from aletheia_lab.project.identity import canonical_project_sha256
 
@@ -46,7 +47,7 @@ class ProductFollowUpSelection:
 
 
 def resolve_product_follow_up_selection(
-    parent: ProductView,
+    parent: AnyProductView,
     *,
     selection_kind: str,
     selection_id: str,
@@ -66,7 +67,7 @@ def resolve_product_follow_up_selection(
 
 
 def _claim_selection(
-    parent: ProductView,
+    parent: AnyProductView,
     selection_id: str,
     question: str,
 ) -> ProductFollowUpSelection:
@@ -86,7 +87,7 @@ def _claim_selection(
 
 
 def _node_selection(
-    parent: ProductView,
+    parent: AnyProductView,
     selection_id: str,
     question: str,
 ) -> ProductFollowUpSelection:
@@ -121,9 +122,9 @@ def _node_selection(
 
 
 def build_product_follow_up_view(
-    parent: ProductView,
+    parent: AnyProductView,
     selection: ProductFollowUpSelection,
-) -> ProductView:
+) -> AnyProductView:
     """Build one deterministic child view without mutating or widening its parent."""
 
     checked_parent = _checked_parent(parent)
@@ -182,23 +183,17 @@ def build_product_follow_up_view(
         result_scope_id=None if technical_failure else turn_id,
         observed_evidence_ids=observed_evidence_ids,
     )
-    return ProductView(
-        schema_version=checked_parent.schema_version,
-        demo_only=False,
-        mode=checked_parent.mode,
-        visibility=checked_parent.visibility,
-        project=checked_parent.project,
-        snapshot=checked_parent.snapshot,
-        runtime=checked_parent.runtime,
-        result=result,
-        conversation=ProductConversation(
+    return parse_product_view({
+        **checked_parent.model_dump(mode="python"),
+        "demo_only": False,
+        "result": result,
+        "conversation": ProductConversation(
             id=checked_parent.conversation.id,
             turns=(*checked_parent.conversation.turns, turn),
         ),
-        claims=claims,
-        evidence=checked_parent.evidence,
-        graph=graph,
-    )
+        "claims": claims,
+        "graph": graph,
+    })
 
 
 def follow_up_product_result(
@@ -207,7 +202,7 @@ def follow_up_product_result(
     selection_kind: str,
     selection_id: str,
     question: str,
-) -> ProductView:
+) -> AnyProductView:
     """Persist one scoped immutable child of an integrity-checked result."""
 
     parent = load_product_result(store_root, result_id)
@@ -225,9 +220,9 @@ def follow_up_product_result(
     )
 
 
-def _checked_parent(parent: ProductView) -> ProductView:
+def _checked_parent(parent: AnyProductView) -> AnyProductView:
     try:
-        checked = ProductView.model_validate(parent.model_dump(mode="python"))
+        checked = parse_product_view(parent.model_dump(mode="python"))
     except (AttributeError, TypeError, ValueError):
         raise ProductError("result_invalid", _RESULT_INVALID_MESSAGE) from None
     if checked.demo_only:
@@ -262,7 +257,7 @@ def _follow_up_claim(
     )
 
 
-def _complete_result(parent: ProductView, claim_count: int) -> ProductResult:
+def _complete_result(parent: AnyProductView, claim_count: int) -> ProductResult:
     return ProductResult(
         id=_PENDING_RESULT_ID,
         status="complete",
@@ -281,7 +276,7 @@ def _complete_result(parent: ProductView, claim_count: int) -> ProductResult:
     )
 
 
-def _technical_failure_result(parent: ProductView) -> ProductResult:
+def _technical_failure_result(parent: AnyProductView) -> ProductResult:
     return ProductResult(
         id=_PENDING_RESULT_ID,
         status="technical_failure",

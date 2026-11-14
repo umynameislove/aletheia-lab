@@ -28,8 +28,9 @@ from aletheia_lab.project.regression import (
     ProjectEvidenceBundle,
     ProjectRegressionEvent,
     ProjectSnapshotComparison,
+    ProjectSnapshotComparisonV2,
 )
-from aletheia_lab.project.snapshots import ProjectSnapshot
+from aletheia_lab.project.snapshots import ProjectSnapshot, ProjectSnapshotV2
 
 P3_CLOSEOUT_SCHEMA_VERSION: Final[Literal["p3-closeout/v1"]] = "p3-closeout/v1"
 _CLOSEOUT_ID_PATTERN: Final[str] = r"^p3-closeout-[0-9a-f]{64}$"
@@ -268,9 +269,9 @@ def build_project_closeout(
     if not (
         isinstance(before_bundle, ProjectBundle)
         and isinstance(after_bundle, ProjectBundle)
-        and isinstance(before, ProjectSnapshot)
-        and isinstance(after, ProjectSnapshot)
-        and isinstance(comparison, ProjectSnapshotComparison)
+        and isinstance(before, ProjectSnapshot | ProjectSnapshotV2)
+        and isinstance(after, ProjectSnapshot | ProjectSnapshotV2)
+        and isinstance(comparison, ProjectSnapshotComparison | ProjectSnapshotComparisonV2)
         and isinstance(event, ProjectRegressionEvent)
         and isinstance(evidence, ProjectEvidenceBundle)
         and isinstance(graph, ProjectLineageGraph)

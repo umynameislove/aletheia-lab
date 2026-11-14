@@ -1,0 +1,78 @@
+{
+  "schema_version": "k16-reviewed-license-notices/v1",
+  "scope": "Reviewed installed distribution notice identification only; exact version and complete discovered license-file set must match. No legal compatibility, binary composition completeness or redistribution approval is asserted. Different wheel/platform/version/text requires new review.",
+  "reviews": [
+    {
+      "name": "itsdangerous",
+      "version": "2.2.0",
+      "license_expression": "BSD-3-Clause",
+      "license_ref": null,
+      "license_files_sha256": {
+        "itsdangerous-2.2.0.dist-info/LICENSE.txt": "63af09891b6be8ad1a4252ed43af0f4efba7fc948e228367bed7f3c5ae0b09d7"
+      },
+      "primary_sources": [
+        "https://raw.githubusercontent.com/pallets/itsdangerous/2.2.0/LICENSE.txt",
+        "https://itsdangerous.palletsprojects.com/en/stable/license/"
+      ],
+      "comment": "Tagged upstream BSD-3-Clause notice. Exact installed notice reviewed.",
+      "platform": null,
+      "machine": null
+    },
+    {
+      "name": "reportlab",
+      "version": "5.1.0",
+      "license_expression": "BSD-3-Clause AND LicenseRef-reportlab-5.1.0-installed-notices",
+      "license_ref": "LicenseRef-reportlab-5.1.0-installed-notices",
+      "license_files_sha256": {
+        "reportlab-5.1.0.dist-info/licenses/LICENSE": "ef831761646313921375fc2cb888e8eeaf7da213d0b92852c10c42f3a0b4d138",
+        "reportlab/fonts/DarkGarden-copying-gpl.txt": "1b2a567f289f66a143c56353e7b3d4fa5862514a5e3c5cfdf8b02ee5e5aaa953",
+        "reportlab/fonts/DarkGarden-copying.txt": "3cd1020510efa7f6b3166a5a2740f92bd664a695ea179e0bda442e74cd0ef3a4",
+        "reportlab/fonts/bitstream-vera-license.txt": "3361d054759a2fc686a2c058be82deaf9c2e6fe549be9004d7935a6c1736315d",
+        "reportlab/license.txt": "a02a6aeb5dde4c4194494bc0b10d5ed62a32628ccd2882c363fdb9a7874ab2b8"
+      },
+      "primary_sources": [
+        "https://pypi.org/project/reportlab/5.1.0/",
+        "https://hg.reportlab.com/hg-public/reportlab/"
+      ],
+      "comment": "Core three-clause BSD notice plus Bitstream Vera and DarkGarden font/GPL notices. Preserve all exact installed notices; no blanket BSD-only binary classification.",
+      "platform": null,
+      "machine": null
+    },
+    {
+      "name": "scipy",
+      "version": "1.18.1",
+      "license_expression": "BSD-3-Clause AND LicenseRef-scipy-1.18.1-installed-notices",
+      "license_ref": "LicenseRef-scipy-1.18.1-installed-notices",
+      "license_files_sha256": {
+        "scipy-1.18.1.dist-info/LICENSE.txt": "09a1b9e19573045b0784a181cc4bef677039d4f2111631c747bf72b7f19017d4",
+        "scipy/_lib/_uarray/LICENSE": "c80c39b5fce06ba4897e14e0b0a88b54458334d951eb1361402ffad2cfb863b4",
+        "scipy/fft/_duccfft/LICENSE.md": "c254b2b5fd30ae3c89d36ba061730563b9760fca04f1b746a1b2c3157da2c789",
+        "scipy/integrate/LICENSE_DOP": "ed9bf58c6d74d3fad9d92d1d67d9bff8141d8ab60de784516b0711364fd43357",
+        "scipy/spatial/qhull_src/COPYING_QHULL.txt": "106d55c931fd6a84822e5345d900273d059f1c27310d02567ccb313c5d18c55d"
+      },
+      "primary_sources": [
+        "https://raw.githubusercontent.com/scipy/scipy/v1.18.1/LICENSE.txt",
+        "https://github.com/scipy/scipy/tree/v1.18.1"
+      ],
+      "comment": "Core BSD-3-Clause plus complete wheel native-runtime/conditional build notices and bundled uarray/ducc/DOP/Qhull notices. The exact custom reference preserves all texts without assuming every conditional component is bundled.",
+      "platform": "darwin",
+      "machine": "arm64"
+    },
+    {
+      "name": "xlrd",
+      "version": "2.0.2",
+      "license_expression": "BSD-3-Clause AND LicenseRef-xlrd-2.0.2-installed-notices",
+      "license_ref": "LicenseRef-xlrd-2.0.2-installed-notices",
+      "license_files_sha256": {
+        "xlrd-2.0.2.dist-info/LICENSE": "b5a5dbce60265e305a815a6cb83ed07f24519d8ba644f2a307994488bced8815"
+      },
+      "primary_sources": [
+        "https://raw.githubusercontent.com/python-excel/xlrd/2.0.2/LICENSE",
+        "https://xlrd.readthedocs.io/en/latest/licenses.html"
+      ],
+      "comment": "Bulk work uses three-clause BSD. Earlier work has distinct advertising and retained-acknowledgement clauses; it is not silently classified as standard BSD-4-Clause.",
+      "platform": null,
+      "machine": null
+    }
+  ]
+}

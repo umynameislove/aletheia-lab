@@ -1,0 +1,66 @@
+GỬI QUÂN — NHẬN BẢN C VÀ CẬP NHẬT PHẦN KIÊN
+Đối chiếu thư mục và chat đang chạy lúc 00:42 ngày 12/11/2026 (giờ Việt Nam).
+Nội dung để chuyển lại cho Quân.
+
+Chào Quân,
+
+Mình đã đọc thư sửa identity ZIP và gói gui-kien-12-11-c.zip, đồng thời đối chiếu bằng chứng nhận bản b và phần K08–K12 đang làm bên Kiên.
+
+1. ĐÃ NHẬN ĐÚNG GÓI C; HƯỚNG SỬA PHÙ HỢP
+
+SHA-256 toàn ZIP khớp:
+1da19a627778355adf6cb12c9bf803e313d3cdcace2f257b923a9aad859d76dd
+19/19 file có checksum đạt; nếu tính cả SHA256SUMS.txt thì gói có 20 file thường.
+Patch tăng thêm đúng 2 file; full patch có 102 đường dẫn. Nội dung port/client dựng từ full patch khớp SHA trong sha-source-sau-sua.txt.
+
+Qua đọc patch, chuyển identity từ metadata sang SHA-256 nội dung đã xử lý đúng gốc lỗi Kiên báo: cùng bytes giữ intent/source/resume; khác bytes có key mới và bỏ source/resume cũ. Có kiểm size/capability, crypto.subtle, context fence quanh await và AbortSignal. Như vậy cả nhánh đã có source lẫn multipart dở đều được xử lý. Việc client vẫn tự băm manifest là ranh giới kiểm riêng; hiện chưa có số đo để chốt ảnh hưởng thời gian/bộ nhớ khi băm hai lần.
+
+Đây là xác nhận tính toàn vẹn gói và đọc tĩnh patch, chưa phải kết quả Kiên chạy lại bản c.
+
+2. KẾT QUẢ TEST: TÁCH ĐÚNG BẢN VÀ NGƯỜI KIỂM
+
+Trong log Quân gửi ở bản c:
+- Binding mới đạt 28/28; chạy trên bản b đạt 25/28, hỏng đúng C1/C3/C4.
+- Bốn lượt npm test đều 304/306. Hai P1 hỏng do thiếu backend tương ứng; chưa gọi cả bộ này là đạt.
+- E2E demo 31/31, hosted 10/10; tsc và các build được ghi nhận trong gói. E2E hosted vẫn dùng transport kiểm soát, chưa phải UI→API→DB thật.
+
+Phía Kiên đã trực tiếp có receipt 303/303 consumer, gồm 25 binding, trên BẢN B ghép với backend cùng bản. Hai P1 đã đạt ở lượt đó, nên không cần Quân tự chạy Python của Kiên để giải quyết lệch source. Số 303/303 này không chứng minh bản c đã qua kiểm.
+
+Hiện chưa có log Kiên chạy repro sau sửa và chưa có qualification consumer/backend cho bản c. Hai lượt đó vẫn cần hoàn tất trước khi đóng P2. Khi chạy lại script gốc, assertion mong thấy lỗi cũ phải không còn đúng; cần đồng thời kiểm hành vi đúng bằng regression, không chỉ lấy việc script kết thúc lỗi làm bằng chứng đã sửa.
+
+Các tiêu chí cần giữ là: File mới cùng bytes vẫn dùng đúng key/job/CAS; bytes B trùng metadata A phải được gửi thật với source/key mới; multipart B không GET/resume upload A; context đổi hoặc signal hủy không được gửi request tiếp. C3/C4 trong gói đã có các kiểm tương ứng theo log Quân cung cấp.
+
+3. BUDGET VÀ ĐÍNH CHÍNH LOG
+
+Giữ gate live 80 kB như đã thống nhất. Số trong bản c là live 79,2/80 đạt; hosted 81,7/80 còn vượt; demo 86,6 kB nếu đo cùng script. Budget riêng cho hosted còn chờ owner chốt, chưa nâng ngưỡng và chưa ghi hosted đạt.
+
+Mình ghi nhận đính chính unit-lan-dau-polling-cham.txt: đó là lượt 297 test hỏng E3 và hai P1, không phải log polling timeout. Rút file đó khỏi bằng chứng polling; không suy ra nguyên nhân flaky khi log gốc đã mất. Bốn lượt mới không hỏng polling là kết quả riêng của các lượt đó.
+
+4. PHẦN KIÊN ĐANG LÀM K08–K12
+
+Chat “Tóm tắt phần đang làm dở” vẫn đang thực hiện K08–K12, chưa chốt toàn bộ hoặc bàn giao một release mới. Tại mốc đối chiếu:
+
+- K08/K11: đã có 8/8 ca generation trên PostgreSQL; luồng 1.000 dòng đi qua worker/queue/PG/catalog thật đã đạt. Luồng 100.000 dòng chưa đạt: lượt đã lưu lỗi timeout/TransactionUnavailable ở confirm. Chat đang xử lý việc xác thực và hash snapshot lớn làm nghẽn vòng xử lý, ảnh hưởng heartbeat, rồi sẽ kiểm lại. Chưa báo hoàn tất 100.000 dòng hay capacity 50k người dùng.
+- K09: có receipt local_qualified, 16/16 PostgreSQL (15 profile hiện hành, 1 tương thích) và 237 unit/caller. Đã kiểm lease/heartbeat, mất worker, retry có giới hạn, cancel và giữ phiên bản phân tích khi replay. Job/JobReceipt cũ giữ nguyên; profile mới nhận qua jobs.execution_v1. Phía UI cần giữ ID/key cũ khi reconnect hoặc mất response; cancel_requested chưa phải cancelled; progress chưa đo được vẫn null.
+- K10: đã có kiểm cục bộ phân trang/projection đạt; phần nhận UI dùng catalog.paged_read, cursor/query riêng, evidence relation và ghép graph theo ID. Đây là phần phối hợp tiếp với Quân; endpoint ResultView cũ vẫn giữ contract. Khi cursor_invalid/cursor_expired phải bắt đầu lại chuỗi trang, không nối với kết quả cũ. Đợt K08–K12 vẫn đang kiểm và chưa có nghiệm thu chung.
+- K12: đã có các lượt kiểm PostgreSQL, renderer và tải báo cáo đạt; bổ sung PDF tiếng Việt có font nhúng, tiếp tục dùng ExportDescriptor và download xác thực. UI chỉ hiện format capability đang cho phép. Kiểm PDF/backend cục bộ không thay thế việc Quân nhận trên browser cùng bản.
+
+Các thay đổi này được triển khai bên API; thư mục /Users/apple/study/aletheia-lab của Quân được giữ chỉ đọc. Phần tiếp nhận capability mới cần đi cùng snapshot/fixture được chốt cho đợt bàn giao tiếp theo.
+
+5. TRẠNG THÁI NGHIỆM THU CHUNG
+
+Số đã chốt gần nhất cho K02–K07 vẫn là 27/32 child đạt LOCAL, 5 blocked: K-02.05, K-03.02, K-03.03, K-03.05, K-03.06. Đây là các gate CI/joint, policy/operator và browser/IdP/session/nhiều tab; không đồng nghĩa còn năm lỗi backend độc lập. Sáu parent chưa đóng joint/release. Log Windows/Docker và các receipt cùng môi trường vẫn phải đối chiếu riêng.
+
+Với bản c, mình đã nhận đủ gói và xác nhận hướng sửa qua đọc patch; phần nhận bằng thực thi độc lập của Kiên còn mở. Thư này không nâng kết quả của bản b thành kết quả bản c và không chốt UI→API→DB thật, CI remote, merge/release hoặc joint sign-off.
+
+Căn cứ chính trong thư mục:
+- /Users/apple/study/Aletheia-Quan-Experience/02-Phoi-hop/Gui-Kien-12-11-sua-identity-zip.txt
+- /Users/apple/study/Aletheia-Quan-Experience/02-Phoi-hop/gui-kien-12-11-c.zip
+- /Users/apple/study/Aletheia-Kien-API/Bang-chung/20261111-quan-recovery-receiving/qualification.json
+- /Users/apple/study/Aletheia-Kien-API/Bang-chung/20261111-k08-k12/k09/result.json
+- /Users/apple/study/Aletheia-Kien-API/Bang-chung/20261111-k08-k12/large-1000-receipt.json
+- /Users/apple/study/Aletheia-Kien-API/Bang-chung/20261111-k08-k12/large-100k.log
+- /Users/apple/study/aletheia-lab-feat-product-api/docs/k10-bounded-reads.md
+- /Users/apple/study/aletheia-lab-feat-product-api/docs/k12-exports.md
+- /Users/apple/study/Aletheia-Kien-API/01-Ca-nhan/04-Hien-trang-va-nguon.md
+- Chat “Tóm tắt phần đang làm dở”, đang chạy tại thời điểm đối chiếu.

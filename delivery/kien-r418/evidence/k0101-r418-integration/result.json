@@ -1,0 +1,71 @@
+{
+  "recorded_utc": "2026-11-14T08:19:03.740877+00:00",
+  "scope": "K01.01 local Git/history/WIP preservation only",
+  "local_status": "pass",
+  "remote_integration_ci_status": "not_run",
+  "human_backend_review_status": "awaiting_Quan",
+  "branch": "codex/k0101-r418-integration",
+  "commit": "cf9738b1accef69e6f1402fb241bad17fcc3a477",
+  "refs": {
+    "main": "2bbcdc2a7637c840babd8b71910306c64072bc4b",
+    "quan": "d4e7fb214d3bb6a74b2ddf0f012bf69c7c3e8e7c",
+    "kien-api": "2bdf855c2babd8b171e993a71b94104ceb0eaac5",
+    "kien-old": "1700adc24d3c7c4abbdf1d33b815fcc3be6c6a90",
+    "quan-old": "9c85392e89949b3d165efd7e5327cc4d59beec8e"
+  },
+  "divergence_main_vs_ref": {
+    "main": [
+      0,
+      0
+    ],
+    "quan": [
+      2,
+      3
+    ],
+    "kien-api": [
+      0,
+      1
+    ],
+    "kien-old": [
+      9,
+      0
+    ],
+    "quan-old": [
+      73,
+      1
+    ]
+  },
+  "source_identity": "5562a20b532ece14c237dad905ba24b0e71ec5beecbb0cbb6eaabc0089cf030a",
+  "source_files": 2557,
+  "runtime_identity": "a046bccd9a0beb135951a0928c7ddd131b327302bcacf10c7ddb979757c9d495",
+  "runtime_files": 676,
+  "offline_clone_checkout_files_exact": true,
+  "offline_clone_worktree_clean": true,
+  "ui_identity": "5515bc0e3d7e9cfd3be1c302dd3228bfbbf970bb6e7971675707538f21510bb7",
+  "ui_files": 180,
+  "git_archive_all_files_exact": true,
+  "clean_worktree": true,
+  "original_repositories_preserved": 5,
+  "original_wip_paths_preserved": 183,
+  "original_refs_preserved": true,
+  "merge_conflicts_resolved": 5,
+  "obsolete_ui_fixtures_removed_but_retained_in_history": 10,
+  "sealed_runtime_unchanged": true,
+  "ui_matches_verified_peer": true,
+  "full_test_suites_rerun": false,
+  "reason": "Exact byte binding to existing sealed backend and peer UI receipts; no runtime edits.",
+  "whitespace_check": "29 pre-existing formatting findings retained from selected source files; not counted as a passed check",
+  "original_releases_and_k16_untouched": true,
+  "all_k01_k18_pass": false,
+  "final_bao_report_exported": false,
+  "artifacts": {
+    "Source-K01.01-R418-cf9738b.zip": {
+      "bytes": 7342310,
+      "sha256": "dda9a5a8a9fe2bb69a2e8373e1e626e508e53feba4ec0de577917577e7e6dca3"
+    },
+    "K01.01-R418-integration.bundle": {
+      "bytes": 7688699,
+      "sha256": "b64f639933ea98a94053b5d47a2650a5779dc9c7f2c6e1319b26de7c2e47d95d"
+    }
+  }
+}

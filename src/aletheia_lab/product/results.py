@@ -14,7 +14,7 @@ from aletheia_lab.product.lifecycle import (
     ProductLifecycleStore,
     build_product_lifecycle_record,
 )
-from aletheia_lab.product.view import ProductView
+from aletheia_lab.product.view import AnyProductView, parse_product_view, parse_product_view_json
 
 PRODUCT_RESULT_ENVELOPE_SCHEMA_VERSION: Final[Literal["p6-result-envelope/v1"]] = (
     "p6-result-envelope/v1"
@@ -44,13 +44,13 @@ class ProductResultEnvelope(BaseModel):
 
 def persist_product_result(
     store_root: Path,
-    view: ProductView,
+    view: AnyProductView,
     *,
     parent_result_id: str | None = None,
-) -> ProductView:
+) -> AnyProductView:
     """Persist one validated non-demo ProductView or accept an identical replay."""
 
-    checked = ProductView.model_validate(view.model_dump(mode="python"))
+    checked = parse_product_view(view.model_dump(mode="python"))
     if checked.demo_only:
         raise ProductError("result_invalid", _RESULT_INVALID_MESSAGE)
     if parent_result_id is not None:
@@ -70,7 +70,7 @@ def persist_product_result(
     return persisted
 
 
-def _validate_derived_result(parent: ProductView, child: ProductView) -> None:
+def _validate_derived_result(parent: AnyProductView, child: AnyProductView) -> None:
     if (
         child.project != parent.project
         or child.snapshot != parent.snapshot
@@ -105,7 +105,7 @@ def _validate_derived_result(parent: ProductView, child: ProductView) -> None:
         )
 
 
-def load_product_result(store_root: Path, result_id: str) -> ProductView:
+def load_product_result(store_root: Path, result_id: str) -> AnyProductView:
     """Load and fully revalidate one immutable ProductView result."""
 
     with ProductLifecycleStore(store_root) as lifecycle:
@@ -116,9 +116,9 @@ def load_product_result(store_root: Path, result_id: str) -> ProductView:
         raise ProductError("result_integrity_error", _RESULT_INTEGRITY_MESSAGE) from None
 
 
-def _view_from_record(record: ProductLifecycleRecord) -> ProductView:
+def _view_from_record(record: ProductLifecycleRecord) -> AnyProductView:
     envelope = ProductResultEnvelope.model_validate(record.payload())
-    view = ProductView.model_validate_json(
+    view = parse_product_view_json(
         json.dumps(envelope.view, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
     )
     if (
