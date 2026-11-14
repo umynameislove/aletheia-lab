@@ -182,7 +182,7 @@ def private_database(monkeypatch):
     monkeypatch.setenv('K17_TEST_DATABASE_URL', os.environ['K14_TEST_DATABASE_URL'])
 
 
-def _run_envelope(tmp_path, *, replicas=1, steady_seconds=0):
+def _run_envelope(tmp_path, *, replicas=1, steady_seconds=0, verify_queue_pressure=False):
     async def scenario():
         database = os.environ['K14_TEST_DATABASE_URL']
         root = Path(__file__).resolve().parents[2]
@@ -288,6 +288,9 @@ def _run_envelope(tmp_path, *, replicas=1, steady_seconds=0):
                     'admin_sql', 'admission', 'reconnect')}
                 if steady_seconds:
                     latencies['hot_large_result'] = []
+                if verify_queue_pressure:
+                    latencies.update(queue_overflow=[], full_queue_replay=[], post_drain_retry=[])
+                pressure = []
                 process_samples, db_samples, replica_db_samples, concurrent_samples, waves = [], [], [], [], []
                 base_url = f'https://127.0.0.1:{port}'
                 client_options = dict(base_url=base_url, verify=tls, trust_env=False, timeout=10,
@@ -393,6 +396,28 @@ def _run_envelope(tmp_path, *, replicas=1, steady_seconds=0):
                             assert doubled[0] == doubled[1] == doubled[2]
                             receipts.append(doubled[0])
                             admitted_ids.append(doubled[0]['job_id'])
+                        if verify_queue_pressure:
+                            overflow_actor = chosen[0]
+                            route = f"/v1/workspaces/{overflow_actor.values['workspace_id']}/jobs"
+                            payload = {'operation': 'preview', 'source_id': overflow_actor.values['source_id']}
+                            accepted_headers = {**headers(overflow_actor), 'idempotency-key': f'k14-mixed-burst-{wave}-0'}
+                            overflow_headers = {**headers(overflow_actor), 'idempotency-key': f'k14-queue-overflow-{wave}'}
+                            rejected = await client.post(route, headers=overflow_headers, json=payload)
+                            assert rejected.status_code == 503 and rejected.json()['code'] == 'service_unavailable'
+                            retry_after = int(rejected.headers['retry-after'])
+                            assert 1 <= retry_after <= 5
+                            assert rejected.headers['cache-control'] == 'no-store'
+                            rejected_at = time.monotonic()
+                            replayed = await client.post(route, headers=accepted_headers, json=payload)
+                            assert replayed.status_code == 202 and replayed.json() == receipts[0]
+                            async with pool.connection() as conn:
+                                queued = await (await conn.execute(
+                                    "SELECT workspace_id,count(*) FROM j01_jobs WHERE state='queued' GROUP BY workspace_id")).fetchall()
+                            assert dict(queued) == {plan.workspace(0): 8, plan.workspace(1): 2}
+                            health = await request(client, 'health', 'GET', '/health/ready')
+                            assert health.status_code == 200
+                            latencies['queue_overflow'].append(rejected.elapsed.total_seconds())
+                            latencies['full_queue_replay'].append(replayed.elapsed.total_seconds())
                         baseline = []
                         for actor, receipt in zip(chosen, receipts, strict=True):
                             response = await client.get(receipt['status_url'] + '/updates', headers=headers(actor))
@@ -441,6 +466,36 @@ def _run_envelope(tmp_path, *, replicas=1, steady_seconds=0):
                                       'quiet_tenant_in_first_two_claims': True,
                                       'quiet_completion_before_last_noisy_claim': True,
                                       'quiet_first_finish_from_first_claim_ms': (quiet_finished - attempts[0][1]).total_seconds() * 1000})
+                        if verify_queue_pressure:
+                            await asyncio.sleep(max(0, retry_after - (time.monotonic() - rejected_at)))
+                            retried = await client.post(route, headers=overflow_headers, json=payload)
+                            assert retried.status_code == 202
+                            receipt = retried.json()
+                            repeated = await client.post(route, headers=overflow_headers, json=payload)
+                            assert repeated.status_code == 202 and repeated.json() == receipt
+                            admitted_ids.append(receipt['job_id'])
+                            async with asyncio.timeout(20):
+                                while True:
+                                    response = await client.get(receipt['status_url'], headers=headers(overflow_actor))
+                                    assert response.status_code == 200
+                                    state = response.json()['status']
+                                    assert state in ('queued', 'running', 'succeeded'), state
+                                    if state == 'succeeded':
+                                        break
+                                    await asyncio.sleep(.25)
+                            response = await client.get(receipt['status_url'] + '/output', headers=headers(overflow_actor))
+                            assert response.status_code == 200
+                            assert response.json()['result']['source_sha256'] == overflow_actor.values['source_sha256']
+                            async with pool.connection() as conn:
+                                retry_attempts = await (await conn.execute(
+                                    'SELECT epoch,outcome FROM k09_job_attempts WHERE job_id=%s',
+                                    (receipt['job_id'],))).fetchall()
+                            assert retry_attempts == [(1, 'succeeded')]
+                            latencies['post_drain_retry'].append(retried.elapsed.total_seconds())
+                            pressure.append(dict(wave=wave, noisy_queued=8, quiet_queued=2,
+                                rejected=503, retry_after_seconds=retry_after, replay_while_full=202,
+                                post_drain_same_key=202, duplicate_post_drain_same_key=202,
+                                retry_jobs=1, retry_worker_attempts=len(retry_attempts), source_sha_verified=True))
                         for worker in workers:
                             worker.terminate()
                         for worker in workers:
@@ -462,8 +517,9 @@ def _run_envelope(tmp_path, *, replicas=1, steady_seconds=0):
                     async with pool.connection() as conn:
                         counts = await (await conn.execute("SELECT count(*),count(*) FILTER(WHERE state='succeeded') FROM j01_jobs")).fetchone()
                         audits = await (await conn.execute("SELECT action,count(*) FROM k06_action_audit WHERE action IN ('job.admit','job.complete','job.publish') GROUP BY action")).fetchall()
-                    assert counts == (20, 20) and len(set(admitted_ids)) == 20
-                    assert dict(audits) == {'job.admit': 20, 'job.complete': 20}
+                    expected_jobs = 20 + len(pressure)
+                    assert counts == (expected_jobs, expected_jobs) and len(set(admitted_ids)) == expected_jobs
+                    assert dict(audits) == {'job.admit': expected_jobs, 'job.complete': expected_jobs}
                     assert db_samples and max(v['api'] for v in db_samples) <= 4 * replicas
                     assert max(v['worker'] for v in db_samples) <= 2 * replicas
                     assert all(values['processes'] <= 3 for sample in process_samples for label, values in sample.items() if label.startswith('worker'))
@@ -512,7 +568,8 @@ def _run_envelope(tmp_path, *, replicas=1, steady_seconds=0):
                 assert _identity(root) == source_before
                 report.update(runtime_tree_sha256=source_before, source_stable=True,
                     physical_strata=manifest['strata'], physical=manifest['physical'], seed_primary_dataset_qualified=False,
-                    exercised_principals=6, waves=waves, jobs_succeeded=20, actual_http_admissions=60,
+                    exercised_principals=6, waves=waves, jobs_succeeded=expected_jobs,
+                    actual_http_admissions=60 + 3 * len(pressure), queue_pressure=pressure,
                     same_key_duplicate_jobs=0, reconnect_job_observations=6, fresh_tls_client_transports=2,
                     reconnect_fraction_of_jobs=.3,
                     ingress_transport=transport,
@@ -578,3 +635,8 @@ def test_real_process_mixed_bursts_keep_quiet_tenant_health_and_reconnect_bounde
 @pytest.mark.skipif(os.environ.get('K14_RUN_FLEET') != '1', reason='Explicit bounded local fleet measurement required')
 def test_two_api_two_worker_replicas_with_ingress_health_admin_and_mixed_tenant_load(tmp_path):
     _run_envelope(tmp_path, replicas=2, steady_seconds=30)
+
+
+@pytest.mark.skipif(os.environ.get('K14_RUN_FLEET') != '1', reason='Explicit bounded local fleet measurement required')
+def test_queue_pressure_preserves_quiet_tenant_and_same_key_retry_through_ingress(tmp_path):
+    _run_envelope(tmp_path, replicas=2, steady_seconds=30, verify_queue_pressure=True)
