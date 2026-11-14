@@ -1,0 +1,256 @@
+{
+  "schema_version": "hosted-upload-snapshot/v2",
+  "snapshot_id": "upload-snapshot-d57c64e40c7902b60a37c3d38156d5bd28bda8e3b4187b976961b9ff2c2f1519",
+  "workspace_id": "a",
+  "source_id": "source_v2",
+  "source_sha256": "bc8328265b884be112c6f782d928969f77368f97f41d0dac53b8fa203dac3981",
+  "git_provenance": "not_supplied",
+  "mapping": {
+    "schema_version": "project-mapping-configuration/v2",
+    "project_id": "p3-project-8d30974979d3ed40cd431a04c510ea910843f7a1fae377e2b22193855a452da6",
+    "project_bundle_id": "p3-bundle-f92dec1c5fb7f8ecf1e6bc815091a80346a97c1359ba74a5485b2dcb1841d98a",
+    "file_collection_sha256": "9b94682cb705fca86e3ab28ebcf659b8909844b689e14d2b13b2a1ee54aca727",
+    "target": {
+      "mapping_id": "target-99d1dd9255481559",
+      "project_item_id": "p3-item-99d1dd9255481559fc73dd9ac23dd869895ce3340dd0c16894c7c59200699832",
+      "target_field": "target",
+      "identifier_field": "id"
+    },
+    "metric_sources": [
+      {
+        "mapping_id": "metric-69cd683c3b37e297",
+        "project_item_id": "p3-item-69cd683c3b37e297b9774546fa25c3178184dadcd652f3b65b79bb7ade025c8d",
+        "format": "csv",
+        "records_path": [],
+        "metric_name_field": "name",
+        "metric_value_field": "value",
+        "run_id_field": "run",
+        "step_field": null,
+        "class_field": "class",
+        "unit_field": "unit"
+      }
+    ],
+    "runs": [
+      {
+        "run_id": "lần-0",
+        "config_item_ids": []
+      },
+      {
+        "run_id": "lần-1",
+        "config_item_ids": []
+      },
+      {
+        "run_id": "lần-2",
+        "config_item_ids": []
+      },
+      {
+        "run_id": "lần-3",
+        "config_item_ids": []
+      },
+      {
+        "run_id": "lần-4",
+        "config_item_ids": []
+      }
+    ],
+    "baseline_run_id": "lần-0",
+    "metric_definitions": [
+      {
+        "metric_name": "độ_chính_xác",
+        "direction": "higher_is_better",
+        "regression_threshold": 0.08,
+        "unit": "%"
+      }
+    ],
+    "mapping_sha256": "351bb58369ca9728b55e1cd0343f0e77849fa91a4148870340877c2aa012dc0c"
+  },
+  "mapping_result": {
+    "schema_version": "project-mapping-result/v2",
+    "status": "valid",
+    "project_id": "p3-project-8d30974979d3ed40cd431a04c510ea910843f7a1fae377e2b22193855a452da6",
+    "project_bundle_id": "p3-bundle-f92dec1c5fb7f8ecf1e6bc815091a80346a97c1359ba74a5485b2dcb1841d98a",
+    "mapping_sha256": "351bb58369ca9728b55e1cd0343f0e77849fa91a4148870340877c2aa012dc0c",
+    "decisions": [
+      {
+        "candidate_id": "configuration",
+        "status": "accepted",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "target:target-99d1dd9255481559",
+        "status": "accepted",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "metric:metric-69cd683c3b37e297",
+        "status": "accepted",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "run:lần-0",
+        "status": "accepted",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "run:lần-1",
+        "status": "accepted",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "run:lần-2",
+        "status": "accepted",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "run:lần-3",
+        "status": "accepted",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "run:lần-4",
+        "status": "accepted",
+        "issue_codes": []
+      },
+      {
+        "candidate_id": "baseline",
+        "status": "accepted",
+        "issue_codes": []
+      }
+    ],
+    "issues": [],
+    "metric_observations": [
+      {
+        "observation_id": "p3-metric-46bb9578f8b6f1ecc8360648cc6a89e6efa2c64b16959699adc1b299543faf27",
+        "source_mapping_id": "metric-69cd683c3b37e297",
+        "project_item_id": "p3-item-69cd683c3b37e297b9774546fa25c3178184dadcd652f3b65b79bb7ade025c8d",
+        "run_id": "lần-0",
+        "metric_name": "độ_chính_xác",
+        "metric_value": 0.5,
+        "step": null,
+        "source_record_index": 0,
+        "class_label": "lớp A",
+        "unit": "%",
+        "unit_origin": "source"
+      },
+      {
+        "observation_id": "p3-metric-75d3e1dad2c5697f2f8e8aa7382dc8d81683d730a72ca8c6b0384d8e47bc425c",
+        "source_mapping_id": "metric-69cd683c3b37e297",
+        "project_item_id": "p3-item-69cd683c3b37e297b9774546fa25c3178184dadcd652f3b65b79bb7ade025c8d",
+        "run_id": "lần-0",
+        "metric_name": "độ_chính_xác",
+        "metric_value": 0.6,
+        "step": null,
+        "source_record_index": 1,
+        "class_label": "lớp B",
+        "unit": "%",
+        "unit_origin": "source"
+      },
+      {
+        "observation_id": "p3-metric-5b45e2b03bf74a1f369f67ddaef6929d08e9e1d02358b6193ab7909612c2de5d",
+        "source_mapping_id": "metric-69cd683c3b37e297",
+        "project_item_id": "p3-item-69cd683c3b37e297b9774546fa25c3178184dadcd652f3b65b79bb7ade025c8d",
+        "run_id": "lần-1",
+        "metric_name": "độ_chính_xác",
+        "metric_value": 0.5,
+        "step": null,
+        "source_record_index": 2,
+        "class_label": "lớp A",
+        "unit": "%",
+        "unit_origin": "source"
+      },
+      {
+        "observation_id": "p3-metric-4d09c03dcd8a1c57cf4ca1fe57737d769a1b2b73b8c7147cbda57c7eda2a940e",
+        "source_mapping_id": "metric-69cd683c3b37e297",
+        "project_item_id": "p3-item-69cd683c3b37e297b9774546fa25c3178184dadcd652f3b65b79bb7ade025c8d",
+        "run_id": "lần-1",
+        "metric_name": "độ_chính_xác",
+        "metric_value": 0.6,
+        "step": null,
+        "source_record_index": 3,
+        "class_label": "lớp B",
+        "unit": "%",
+        "unit_origin": "source"
+      },
+      {
+        "observation_id": "p3-metric-f6bf99b3332fa34a41fb01dcb51116c7d941a70428fbe78d779e7db1e682d476",
+        "source_mapping_id": "metric-69cd683c3b37e297",
+        "project_item_id": "p3-item-69cd683c3b37e297b9774546fa25c3178184dadcd652f3b65b79bb7ade025c8d",
+        "run_id": "lần-2",
+        "metric_name": "độ_chính_xác",
+        "metric_value": 0.5,
+        "step": null,
+        "source_record_index": 4,
+        "class_label": "lớp A",
+        "unit": "%",
+        "unit_origin": "source"
+      },
+      {
+        "observation_id": "p3-metric-5da51c8fd840f4e96a4e040b7443d63361256e7a0b812ea2cdef30f043b9afc7",
+        "source_mapping_id": "metric-69cd683c3b37e297",
+        "project_item_id": "p3-item-69cd683c3b37e297b9774546fa25c3178184dadcd652f3b65b79bb7ade025c8d",
+        "run_id": "lần-2",
+        "metric_name": "độ_chính_xác",
+        "metric_value": 0.6,
+        "step": null,
+        "source_record_index": 5,
+        "class_label": "lớp B",
+        "unit": "%",
+        "unit_origin": "source"
+      },
+      {
+        "observation_id": "p3-metric-da7cfa7a538fdcdadb5716872fc6bbdd47b26647cc0543fcd7662b79a67980ec",
+        "source_mapping_id": "metric-69cd683c3b37e297",
+        "project_item_id": "p3-item-69cd683c3b37e297b9774546fa25c3178184dadcd652f3b65b79bb7ade025c8d",
+        "run_id": "lần-3",
+        "metric_name": "độ_chính_xác",
+        "metric_value": 0.5,
+        "step": null,
+        "source_record_index": 6,
+        "class_label": "lớp A",
+        "unit": "%",
+        "unit_origin": "source"
+      },
+      {
+        "observation_id": "p3-metric-741b1b386adbe02142a89064ee0fc3e93361ae9c88cbb6c0ae204102e24cbac7",
+        "source_mapping_id": "metric-69cd683c3b37e297",
+        "project_item_id": "p3-item-69cd683c3b37e297b9774546fa25c3178184dadcd652f3b65b79bb7ade025c8d",
+        "run_id": "lần-3",
+        "metric_name": "độ_chính_xác",
+        "metric_value": 0.6,
+        "step": null,
+        "source_record_index": 7,
+        "class_label": "lớp B",
+        "unit": "%",
+        "unit_origin": "source"
+      },
+      {
+        "observation_id": "p3-metric-d9a451a5acf02ea5ecc7b4922eae06f9ab2653b6e025d8352c4f5f179c8b6f39",
+        "source_mapping_id": "metric-69cd683c3b37e297",
+        "project_item_id": "p3-item-69cd683c3b37e297b9774546fa25c3178184dadcd652f3b65b79bb7ade025c8d",
+        "run_id": "lần-4",
+        "metric_name": "độ_chính_xác",
+        "metric_value": 0.5,
+        "step": null,
+        "source_record_index": 8,
+        "class_label": "lớp A",
+        "unit": "%",
+        "unit_origin": "source"
+      },
+      {
+        "observation_id": "p3-metric-9d58b8e6ce1c3b305ecc1a7b092aeb86ab8ea8328e026397bf00e6a5224a2f7a",
+        "source_mapping_id": "metric-69cd683c3b37e297",
+        "project_item_id": "p3-item-69cd683c3b37e297b9774546fa25c3178184dadcd652f3b65b79bb7ade025c8d",
+        "run_id": "lần-4",
+        "metric_name": "độ_chính_xác",
+        "metric_value": 0.6,
+        "step": null,
+        "source_record_index": 9,
+        "class_label": "lớp B",
+        "unit": "%",
+        "unit_origin": "source"
+      }
+    ],
+    "result_sha256": "69941e29a65441d16a0597fbb12f761653ca070f8f99621856ae6d414789c7f3"
+  },
+  "captured_at": "2026-11-11T00:00:00Z",
+  "record_sha256": "1b358e2f0ce089383052c2419df100b2baf925e8c88e0343ace3d8ff2a90296e"
+}

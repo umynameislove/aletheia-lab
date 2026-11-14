@@ -1,0 +1,7 @@
+{
+  "changes": 1,
+  "observations_per_snapshot": 10,
+  "schema": "p6-product-view/v2",
+  "scope": "Actual disposable local Git import, mapping, refresh, analysis and report; five Unicode runs and two classes. Snapshot IDs are tied to this capture's granted root; this is not a hosted/browser/joint sign-off.",
+  "unit_conversion": false
+}

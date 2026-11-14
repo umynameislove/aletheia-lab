@@ -1,0 +1,100 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "preview_id": "prev_22222222222222222222222222222222",
+  "workspace_id": "a",
+  "source_id": "source_v2",
+  "source_sha256": "bc8328265b884be112c6f782d928969f77368f97f41d0dac53b8fa203dac3981",
+  "source_state_sha256": "ec41a5d59c557fa7abe2585fe66cfd177a0152b4ec685e7f9c68b8cdd9cc534f",
+  "mapping_candidates": {
+    "targets": [
+      {
+        "project_item_id": "p3-item-99d1dd9255481559fc73dd9ac23dd869895ce3340dd0c16894c7c59200699832",
+        "label": "dataset.csv",
+        "mapping_id": "target-99d1dd9255481559",
+        "available": true,
+        "unavailable_reason": null,
+        "relative_path": "dataset.csv",
+        "field_names": [
+          "id",
+          "target"
+        ]
+      }
+    ],
+    "metric_sources": [
+      {
+        "project_item_id": "p3-item-69cd683c3b37e297b9774546fa25c3178184dadcd652f3b65b79bb7ade025c8d",
+        "label": "metrics.csv",
+        "mapping_id": "metric-69cd683c3b37e297",
+        "available": true,
+        "unavailable_reason": null,
+        "relative_path": "metrics.csv",
+        "format": "csv",
+        "records_path_candidates": [],
+        "field_names": [
+          "run",
+          "name",
+          "value",
+          "class",
+          "unit"
+        ],
+        "run_id_field_candidates": [
+          "run"
+        ],
+        "metric_name_candidates": [
+          "độ_chính_xác"
+        ]
+      }
+    ],
+    "configs": [],
+    "runs": [
+      {
+        "run_id": "lần-0",
+        "available": true,
+        "unavailable_reason": null,
+        "source_metric_item_ids": [
+          "p3-item-69cd683c3b37e297b9774546fa25c3178184dadcd652f3b65b79bb7ade025c8d"
+        ],
+        "available_config_item_ids": []
+      },
+      {
+        "run_id": "lần-1",
+        "available": true,
+        "unavailable_reason": null,
+        "source_metric_item_ids": [
+          "p3-item-69cd683c3b37e297b9774546fa25c3178184dadcd652f3b65b79bb7ade025c8d"
+        ],
+        "available_config_item_ids": []
+      },
+      {
+        "run_id": "lần-2",
+        "available": true,
+        "unavailable_reason": null,
+        "source_metric_item_ids": [
+          "p3-item-69cd683c3b37e297b9774546fa25c3178184dadcd652f3b65b79bb7ade025c8d"
+        ],
+        "available_config_item_ids": []
+      },
+      {
+        "run_id": "lần-3",
+        "available": true,
+        "unavailable_reason": null,
+        "source_metric_item_ids": [
+          "p3-item-69cd683c3b37e297b9774546fa25c3178184dadcd652f3b65b79bb7ade025c8d"
+        ],
+        "available_config_item_ids": []
+      },
+      {
+        "run_id": "lần-4",
+        "available": true,
+        "unavailable_reason": null,
+        "source_metric_item_ids": [
+          "p3-item-69cd683c3b37e297b9774546fa25c3178184dadcd652f3b65b79bb7ade025c8d"
+        ],
+        "available_config_item_ids": []
+      }
+    ]
+  },
+  "excluded_metrics": [],
+  "excluded_metrics_total": 0,
+  "expires_at": "2030-01-01T00:00:00Z"
+}

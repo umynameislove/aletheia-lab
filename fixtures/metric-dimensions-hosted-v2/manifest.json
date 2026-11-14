@@ -1,0 +1,14 @@
+{
+  "format": "metric-dimensions-hosted-v2/producer-fixture",
+  "sha256": {
+    "README.md": "b208776a6184fad74f6be0b1672cc9be009e55bcc160e4f8f871c3e98f75972a",
+    "analyze-output.json": "0220ab2d3762d7d4e3a60f54f7958711e87b6a3f37722483eee36968ca91bb2f",
+    "confirm.json": "6e3142ae14368eac19cbc8203bcdf0fcabebb91ffbfcbd980dfee7c393987d4b",
+    "native-result.json": "7c7c712a641b8bb5106dbe0262f631ec7be0a459174d007086bced5b56fb6dec",
+    "preview.json": "e50d7dd3f6d9e3325f6215f18522e2ad669c713bffab14f66c33997fbfc498b4",
+    "result-view.json": "98d3a94ade28673c19a4d5ceb9a93ef6a3d86161545fc85a8e5cc8c0908243a6",
+    "snapshot.json": "e3fee4beddb8fc56124a14c30376cbce8360009546e40f57838ab41885e2c8cf",
+    "source.zip": "bc8328265b884be112c6f782d928969f77368f97f41d0dac53b8fa203dac3981",
+    "view.json": "b7624a8d04836605a2e4ebdbb6daede5d07ecf4f045bcd57f4a97d5b10f48fea"
+  }
+}
