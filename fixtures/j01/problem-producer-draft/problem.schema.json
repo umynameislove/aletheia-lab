@@ -1,0 +1,60 @@
+{
+  "additionalProperties": false,
+  "description": "Draft safe error shape; the server must still map and redact errors.",
+  "properties": {
+    "schema_version": {
+      "const": "product-api/v1-draft",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "type": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Type",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "status": {
+      "maximum": 599,
+      "minimum": 400,
+      "title": "Status",
+      "type": "integer"
+    },
+    "code": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Code",
+      "type": "string"
+    },
+    "detail": {
+      "maxLength": 1000,
+      "minLength": 1,
+      "title": "Detail",
+      "type": "string"
+    },
+    "request_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Request Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "type",
+    "title",
+    "status",
+    "code",
+    "detail",
+    "request_id"
+  ],
+  "title": "Problem",
+  "type": "object"
+}

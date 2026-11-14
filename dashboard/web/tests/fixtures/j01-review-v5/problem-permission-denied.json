@@ -1,0 +1,9 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "type": "urn:aletheia:problem:permission-denied",
+  "title": "Action not permitted",
+  "status": 403,
+  "code": "permission_denied",
+  "detail": "You cannot perform this action in the current scope.",
+  "request_id": "req_synthetic_002"
+}
