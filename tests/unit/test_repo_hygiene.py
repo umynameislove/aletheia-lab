@@ -105,5 +105,14 @@ def test_filesystem_scan_rejects_internal_job_references_in_public_code(
     errors, warnings, via_git = check(tmp_path, use_git=False)
 
     assert via_git is False
-    assert errors == ["[SELF-GRADE/AI] src/module.py  -> matched '\\bjob[_ -]?\\d+(?:\\.md)?\\b'"]
+    assert errors == ["[SELF-GRADE/AI] src/module.py  -> matched '\\bjob[_ -]?\\d+\\.md\\b'"]
     assert warnings == []
+
+
+
+def test_filesystem_scan_accepts_synthetic_job_identifiers(tmp_path: Path) -> None:
+    source = tmp_path / "module.py"
+    source.write_text('job_id = "job_001"\nkey = "refresh-interrupted-job-001"\n', encoding="utf-8")
+    (tmp_path / "protocol.md").write_text("Read `job_001` from the receipt.\n", encoding="utf-8")
+    errors, warnings, _ = check(tmp_path, use_git=False)
+    assert errors == [] and warnings == []
