@@ -25,8 +25,14 @@ from aletheia_lab.project.regression import (
     ProjectEvidenceBundle,
     ProjectRegressionEvent,
     ProjectSnapshotComparison,
+    ProjectSnapshotComparisonV2,
+    parse_snapshot_comparison,
 )
-from aletheia_lab.project.snapshots import ProjectSnapshot
+from aletheia_lab.project.snapshots import (
+    ProjectSnapshot,
+    ProjectSnapshotV2,
+    parse_project_snapshot,
+)
 
 PROJECT_STORE_SCHEMA_VERSION: Final[int] = 2
 PROJECT_STORE_FORMAT: Final[Literal["project-store/v1"]] = "project-store/v1"
@@ -34,7 +40,9 @@ PROJECT_STORE_FORMAT: Final[Literal["project-store/v1"]] = "project-store/v1"
 StoredProjectModel: TypeAlias = (
     ProjectBundle
     | ProjectSnapshot
+    | ProjectSnapshotV2
     | ProjectSnapshotComparison
+    | ProjectSnapshotComparisonV2
     | ProjectRegressionEvent
     | ProjectEvidenceBundle
     | ProjectLineageGraph
@@ -180,9 +188,9 @@ def _apply_store_migration(
 def _model_identity(model: StoredProjectModel) -> tuple[RecordType, str, str, str]:
     if isinstance(model, ProjectBundle):
         return "project_bundle", model.project_bundle_id, model.project_id, model.schema_version
-    if isinstance(model, ProjectSnapshot):
+    if isinstance(model, ProjectSnapshot | ProjectSnapshotV2):
         return "snapshot", model.snapshot_id, model.project_id, model.schema_version
-    if isinstance(model, ProjectSnapshotComparison):
+    if isinstance(model, ProjectSnapshotComparison | ProjectSnapshotComparisonV2):
         return "snapshot_comparison", model.comparison_id, model.project_id, model.schema_version
     if isinstance(model, ProjectRegressionEvent):
         return "regression_event", model.event_id, model.project_id, model.schema_version
@@ -201,6 +209,16 @@ _MODEL_BY_TYPE: Final[dict[RecordType, type[BaseModel]]] = {
     "evidence_bundle": ProjectEvidenceBundle,
     "lineage_graph": ProjectLineageGraph,
 }
+
+
+def parse_stored_project_model(record_type: str, payload: str | bytes) -> StoredProjectModel:
+    if record_type == "snapshot":
+        return parse_project_snapshot(payload)
+    if record_type == "snapshot_comparison":
+        return parse_snapshot_comparison(payload)
+    if record_type not in _MODEL_BY_TYPE:
+        raise ProjectStoreError("stored record type is unsupported")
+    return cast(StoredProjectModel, _MODEL_BY_TYPE[record_type].model_validate_json(payload))
 
 
 class ProjectStore:
@@ -226,7 +244,7 @@ class ProjectStore:
             self._connection.execute("PRAGMA journal_mode = WAL")
             self._connection.execute("PRAGMA synchronous = FULL")
             self._migrate()
-            self.verify_integrity()
+            # Object and lineage checks belong to load(); verify_integrity() is the full scrub.
         except BaseException:
             self._connection.close()
             raise
@@ -283,10 +301,11 @@ class ProjectStore:
             if graph_ids:
                 with self.transaction():
                     for graph_id in graph_ids:
-                        graph = self.load(graph_id)
+                        graph = self._load_record(graph_id)
                         if not isinstance(graph, ProjectLineageGraph):
                             raise ProjectStoreError("lineage record did not load as a graph")
                         self._index_lineage(graph)
+                        self._verify_lineage(graph)
 
     def _object_path(self, digest: str) -> Path:
         if len(digest) != 64 or any(value not in "0123456789abcdef" for value in digest):
@@ -432,12 +451,18 @@ class ProjectStore:
             for model in checked_models:
                 if isinstance(model, ProjectLineageGraph):
                     self._index_lineage(model)
+                    self._verify_lineage(model)
             if transaction_write is not None:
                 transaction_write(self._connection)
-        self.verify_integrity()
         return tuple(records)
 
     def load(self, record_id: str) -> StoredProjectModel:
+        model = self._load_record(record_id)
+        if isinstance(model, ProjectLineageGraph):
+            self._verify_lineage(model)
+        return model
+
+    def _load_record(self, record_id: str) -> StoredProjectModel:
         row = self._connection.execute(
             "SELECT project_id, record_type, schema_version, canonical_sha256, object_sha256 "
             "FROM records WHERE record_id = ?",
@@ -449,11 +474,11 @@ class ProjectStore:
         if record_type not in _MODEL_BY_TYPE:
             raise ProjectStoreError("stored record type is unsupported")
         payload = self.read_object(str(row[4]))
-        model = _MODEL_BY_TYPE[record_type].model_validate_json(payload)
+        model = parse_stored_project_model(record_type, payload)
         if canonical_project_sha256(model.model_dump(mode="json")) != str(row[3]):
             raise ProjectStoreError("stored record canonical hash mismatch")
         loaded_type, loaded_id, loaded_project_id, loaded_schema = _model_identity(
-            model  # type: ignore[arg-type]
+            model
         )
         if (loaded_type, loaded_id, loaded_project_id, loaded_schema) != (
             record_type,
@@ -462,7 +487,7 @@ class ProjectStore:
             str(row[2]),
         ):
             raise ProjectStoreError("stored record identity differs from index")
-        return model  # type: ignore[return-value]
+        return model
 
     def read_object(self, digest: str) -> bytes:
         row = self._connection.execute(
@@ -477,7 +502,10 @@ class ProjectStore:
             candidate.resolve().relative_to(self.root)
         except ValueError as exc:
             raise ProjectStoreError("indexed object path escapes project store") from exc
-        payload = candidate.read_bytes()
+        try:
+            payload = candidate.read_bytes()
+        except OSError:
+            raise ProjectStoreError("stored object is unavailable") from None
         if len(payload) != int(row[0]) or content_sha256(payload) != digest:
             raise ProjectStoreError("stored object bytes fail integrity verification")
         return payload
@@ -674,46 +702,46 @@ class ProjectStore:
             for row in self._connection.execute("SELECT record_id FROM records ORDER BY record_id")
         ]
         for record_id in record_ids:
-            model = self.load(record_id)
-            if not isinstance(model, ProjectLineageGraph):
-                continue
-            expected_nodes = [
-                (
-                    node.node_id,
-                    node.project_id,
-                    node.kind,
-                    node.source_id,
-                    node.source_sha256,
-                    node.visibility,
-                )
-                for node in model.nodes
-            ]
-            actual_nodes = [
-                tuple(map(str, row))
-                for row in self._connection.execute(
-                    "SELECT node_id, project_id, kind, source_id, source_sha256, visibility "
-                    "FROM lineage_nodes WHERE graph_id = ? ORDER BY node_id",
-                    (model.graph_id,),
-                )
-            ]
-            expected_edges = [
-                (
-                    edge.edge_id,
-                    edge.project_id,
-                    edge.source_node_id,
-                    edge.target_node_id,
-                    edge.relationship,
-                    edge.visibility,
-                )
-                for edge in model.edges
-            ]
-            actual_edges = [
-                tuple(map(str, row))
-                for row in self._connection.execute(
-                    "SELECT edge_id, project_id, source_node_id, target_node_id, relationship, "
-                    "visibility FROM lineage_edges WHERE graph_id = ? ORDER BY edge_id",
-                    (model.graph_id,),
-                )
-            ]
-            if actual_nodes != expected_nodes or actual_edges != expected_edges:
-                raise ProjectStoreError("lineage index differs from immutable graph")
+            self.load(record_id)
+
+    def _verify_lineage(self, model: ProjectLineageGraph) -> None:
+        expected_nodes = [
+            (
+                node.node_id,
+                node.project_id,
+                node.kind,
+                node.source_id,
+                node.source_sha256,
+                node.visibility,
+            )
+            for node in model.nodes
+        ]
+        actual_nodes = [
+            tuple(map(str, row))
+            for row in self._connection.execute(
+                "SELECT node_id, project_id, kind, source_id, source_sha256, visibility "
+                "FROM lineage_nodes WHERE graph_id = ? ORDER BY node_id",
+                (model.graph_id,),
+            )
+        ]
+        expected_edges = [
+            (
+                edge.edge_id,
+                edge.project_id,
+                edge.source_node_id,
+                edge.target_node_id,
+                edge.relationship,
+                edge.visibility,
+            )
+            for edge in model.edges
+        ]
+        actual_edges = [
+            tuple(map(str, row))
+            for row in self._connection.execute(
+                "SELECT edge_id, project_id, source_node_id, target_node_id, relationship, "
+                "visibility FROM lineage_edges WHERE graph_id = ? ORDER BY edge_id",
+                (model.graph_id,),
+            )
+        ]
+        if actual_nodes != expected_nodes or actual_edges != expected_edges:
+            raise ProjectStoreError("lineage index differs from immutable graph")
