@@ -1,0 +1,9 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "type": "urn:aletheia:problem:csrf-invalid",
+  "title": "Request could not be verified",
+  "status": 403,
+  "code": "csrf_invalid",
+  "detail": "Reload the session before trying again.",
+  "request_id": "req_synthetic_005"
+}
