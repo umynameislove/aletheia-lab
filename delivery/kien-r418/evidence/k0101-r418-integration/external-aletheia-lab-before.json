@@ -1,0 +1,9 @@
+{
+  "directory": "external/aletheia-lab",
+  "head": "2414944878c3aabebc26b472af0995833a5e14d3",
+  "status_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "refs_sha256": "6d0ccdbcd703cf66215d3351d6cf54e06a50fc0cad17787d6b5912354a1d6081",
+  "tracked_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "staged_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "wip": {}
+}
