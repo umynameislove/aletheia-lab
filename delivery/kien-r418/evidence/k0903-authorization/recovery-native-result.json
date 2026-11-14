@@ -1,0 +1,14 @@
+{
+  "started_utc": "2026-11-14T16:08:06.3787466Z",
+  "finished_utc": "2026-11-14T16:09:17.1455656Z",
+  "elapsed_seconds": 70.7541968,
+  "exit_code": 0,
+  "postgres_version": "16.15",
+  "docker_server_version": "28.0.4",
+  "postgres_image": "sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94",
+  "container": "aletheia-k0903-test-pg",
+  "loopback_port": 58478,
+  "connection_timeout_seconds": 5,
+  "scope": "K09.03 only, new authorization cases plus directly related state-machine regressions",
+  "prior_attempt": "Interrupted when Docker stopped, no complete result produced"
+}

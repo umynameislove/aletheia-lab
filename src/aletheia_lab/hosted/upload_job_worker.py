@@ -10,6 +10,7 @@ from pydantic import SecretStr
 
 from aletheia_lab.hosted.content_hashing import content_hasher
 
+from .authorization import AuthorizationDenied
 from .import_errors import MappingInvalid
 from .import_failures import ImportFailures
 from .observability import timed_job
@@ -44,7 +45,7 @@ async def run_one_upload_job(jobs: PostgresJobs, operations: UploadOperations, *
         if getattr(jobs, "execution", False):
             return await jobs.fail(claim=claim, lease_digest=lease, retryable=True)
         raise
-    except WorkerRejected as error:
+    except (AuthorizationDenied, WorkerRejected) as error:
         return await _worker_failure(jobs, claim, lease, error)
     except Exception:
         # Cancellation propagates; expired leases remain available for recovery.
@@ -252,8 +253,10 @@ async def _mapping_failure(jobs: PostgresJobs, claim: JobClaim, lease: SecretStr
     return await jobs.fail(claim=claim, lease_digest=lease)
 
 async def _worker_failure(jobs: PostgresJobs, claim: JobClaim, lease: SecretStr,
-                          error: WorkerRejected) -> bool:
+                          error: AuthorizationDenied | WorkerRejected) -> bool:
     if getattr(jobs, "execution", False):
+        if isinstance(error, AuthorizationDenied):
+            return await jobs.fail(claim=claim, lease_digest=lease, failure_kind="authorization")
         return await jobs.fail(claim=claim, lease_digest=lease,
                                retryable=str(error) in ("worker_busy", "worker_timeout"))
     return await jobs.fail(claim=claim, lease_digest=lease)
