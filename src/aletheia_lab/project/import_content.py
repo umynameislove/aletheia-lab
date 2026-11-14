@@ -17,7 +17,7 @@ import pyarrow as pa  # type: ignore[import-untyped]
 import pyarrow.parquet as pq  # type: ignore[import-untyped]
 import yaml
 
-from aletheia_lab.project.identity import canonical_project_json
+from aletheia_lab.project.identity import canonical_project_json, normalize_text
 from aletheia_lab.project.import_policy import ProjectImportPolicy, ProjectIssueCode
 
 _CONTROL_CHARACTER = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
@@ -256,3 +256,22 @@ __all__ = [
     "secret_occurrences",
     "source_modified_at",
 ]
+
+
+def _canonical_ingested_at(value: str) -> str:
+    normalize_text(value, label="ingested_at", max_length=32)
+    if (
+        re.fullmatch(
+            r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z",
+            value,
+        )
+        is None
+    ):
+        raise ValueError("ingested_at must be a canonical UTC timestamp ending in Z")
+    try:
+        datetime.fromisoformat(value[:-1] + "+00:00")
+    except ValueError as exc:
+        raise ValueError("ingested_at must be a valid UTC timestamp") from exc
+    return value
+
+
