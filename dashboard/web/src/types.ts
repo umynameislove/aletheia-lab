@@ -157,6 +157,8 @@ export interface MetricDefinition {
   metric_name: string;
   direction: MetricDirection;
   regression_threshold: number;
+  /** Present only in v2; null explicitly means unknown. */
+  unit?: string | null;
 }
 
 export interface PreviewImportResult {
@@ -187,6 +189,10 @@ export interface MetricObservation {
   step: number | null;
   /** Finite JSON number, normalised by the service with Decimal from a string. */
   value: number;
+  /** Required in v2 and absent in v1; checked by the versioned reader. */
+  class_label?: string | null;
+  unit?: string | null;
+  unit_origin?: "source" | "declared" | "unknown";
 }
 
 export interface MetricChange {
@@ -222,12 +228,15 @@ export interface MetricSourceMapping {
   metric_value_field: string;
   run_id_field: string;
   step_field: string | null;
+  class_field?: string | null;
+  unit_field?: string | null;
 }
 export interface RunMapping {
   run_id: string;
   config_item_ids: string[];
 }
 export interface ConfirmMapping {
+  schema_version?: "project-mapping-request/v2";
   target: TargetMapping;
   metric_sources: MetricSourceMapping[];
   runs: RunMapping[];
