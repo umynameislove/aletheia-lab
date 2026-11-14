@@ -18,7 +18,7 @@ import re
 import unicodedata
 from decimal import Decimal
 from pathlib import PurePosixPath, PureWindowsPath
-from typing import Final, Literal, NoReturn
+from typing import Final, Literal, NoReturn, Protocol
 
 PROJECT_CANONICAL_SCHEMA_VERSION: Final[Literal["p3-project-canonical/v1"]] = (
     "p3-project-canonical/v1"
@@ -165,12 +165,25 @@ def canonical_project_sha256(payload: object) -> str:
     return hashlib.sha256(canonical_project_json(payload).encode("utf-8")).hexdigest()
 
 
+class ContentHasher(Protocol):
+    def update(self, content: bytes | bytearray | memoryview, /) -> None: ...
+    def digest(self) -> bytes: ...
+    def hexdigest(self) -> str: ...
+    def copy(self) -> ContentHasher: ...
+
+
+def content_hasher(content: bytes | bytearray | memoryview = b"", *, usedforsecurity: bool = True) -> ContentHasher:
+    """Create exact-byte SHA-256 state; callers retain their encoding and domain."""
+
+    return hashlib.sha256(content, usedforsecurity=usedforsecurity)
+
+
 def content_sha256(content: bytes) -> str:
     """Return the SHA-256 digest of exact source or artifact bytes."""
 
     if not isinstance(content, bytes):
         raise TypeError("project content hashing requires bytes")
-    return hashlib.sha256(content).hexdigest()
+    return content_hasher(content).hexdigest()
 
 
 def granted_root_fingerprint(canonical_root_identity: str) -> str:
