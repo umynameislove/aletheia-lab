@@ -12,6 +12,7 @@ import yaml
 
 _ROOT = Path(__file__).resolve().parent.parent.parent
 _CI_PATH = _ROOT / ".github" / "workflows" / "ci.yml"
+_HOSTED_PATH = _ROOT / ".github" / "workflows" / "hosted.yml"
 _AUDIT_PATH = _ROOT / ".github" / "workflows" / "dependency-audit.yml"
 _PYPROJECT_PATH = _ROOT / "pyproject.toml"
 _PRODUCTION_ROOT = _ROOT / "src" / "aletheia_lab"
@@ -275,18 +276,20 @@ def test_dependency_audit_permissions_are_read_only(audit_workflow: dict) -> Non
 
 
 def test_workflows_use_current_first_party_action_runtimes() -> None:
-    for path in (_CI_PATH, _AUDIT_PATH):
+    for path in (_CI_PATH, _AUDIT_PATH, _HOSTED_PATH):
         workflow = _workflow(path)
         uses = [str(step["uses"]) for _, _, step in _steps(workflow) if step.get("uses")]
         expected = {"actions/checkout@v5", "actions/setup-python@v6"}
-        if path == _CI_PATH:
+        if path == _HOSTED_PATH:
             expected.add("actions/setup-node@v6")
         assert set(uses) == expected
 
 
-def test_dashboard_job_checks_locked_dependencies_tests_and_both_builds(ci_workflow: dict) -> None:  # type: ignore[type-arg]
-    job = ci_workflow["jobs"]["dashboard"]
-    assert job["defaults"]["run"]["working-directory"] == "dashboard/web"
+def test_dashboard_job_checks_locked_dependencies_current_producers_and_all_builds(ci_workflow: dict) -> None:  # type: ignore[type-arg]
+    workflow = _workflow(_HOSTED_PATH)
+    job = workflow["jobs"]["contracts"]
+    assert job["name"] == "dashboard", "Keep the existing dashboard check-run label when moving the job."
+    assert "dashboard" not in ci_workflow["jobs"], "Do not run the historical consumer job in parallel with current producers."
     setup = [step for step in job["steps"] if step.get("uses") == "actions/setup-node@v6"]
     assert len(setup) == 1
     assert setup[0]["with"] == {
@@ -296,14 +299,55 @@ def test_dashboard_job_checks_locked_dependencies_tests_and_both_builds(ci_workf
     }
     commands = []
     for step in job["steps"]:
-        _assert_blocking_job(ci_workflow, "dashboard", step)
-        commands.extend(_commands(str(step.get("run", ""))))
+        _assert_blocking_job(workflow, "contracts", step)
+        if step.get("working-directory") == "dashboard/web" or "npm --prefix" in str(step.get("run", "")):
+            commands.extend(_commands(str(step.get("run", ""))))
     assert commands == [
-        ["npm", "ci", "--ignore-scripts"],
+        ["npm", "--prefix", "dashboard/web", "ci", "--ignore-scripts"],
         ["npm", "test"],
         ["npm", "run", "build"],
         ["npm", "run", "build:live"],
+        ["npm", "run", "budget"],
+        ["npm", "run", "build:hosted"],
     ]
+    consumer = next(step for step in job["steps"] if step.get("run") == "npm test")
+    assert consumer["env"] == {
+        "J01_FIXTURES": "${{ runner.temp }}/j01-producer-current",
+        "K04_FIXTURES": "${{ runner.temp }}/k04-producer-current",
+    }
+    runs = "\n".join(str(step.get("run", "")) for step in job["steps"])
+    for exporter in ("export_j01_review.py", "export_k04_contract.py", "export_k07_contract.py", "export_k02_project_operations.py", "export_k13_k15_contract.py", "export_hosted_openapi.py"):
+        assert exporter in runs
+    for task in range(2, 19):
+        assert f'test_k{task:02}_*.py' in runs
+    assert '-m "not integration"' in runs
+
+
+def test_manual_contract_job_is_independent_of_runtime_services() -> None:
+    workflow = _workflow(_HOSTED_PATH)
+    contracts = workflow["jobs"]["contracts"]
+    assert not contracts.get("services") and not contracts.get("needs")
+    assert not any(name.endswith("DATABASE_URL") for name in contracts.get("env", {}))
+    assert workflow["on"]["workflow_dispatch"]["inputs"]["run_postgres"]["default"] is False
+    backend = workflow["jobs"]["backend"]
+    assert backend["needs"] == "contracts"
+    assert backend["if"] == "${{ github.event_name != 'workflow_dispatch' || inputs.run_postgres }}"
+    assert backend["services"]["postgres"]["image"] == "postgres:16-bookworm@sha256:a49f7438ba03589f9b1ca062f2da82e899b48ea1dc50d2449fa09a70be83ebca"
+    integration = next(step for step in backend["steps"]
+        if "tests/integration/" in str(step.get("run", "")))
+    _assert_blocking_job(workflow, "backend", integration)
+    for task in range(3, 19):
+        assert integration["env"][f"K{task:02}_TEST_DATABASE_URL"] == "${{ env.K02_TEST_DATABASE_URL }}"
+    command = _commands(integration["run"])[0]
+    paths = {path.relative_to(_ROOT).as_posix() for pattern in command if pattern.startswith("tests/integration/")
+        for path in _ROOT.glob(pattern)}
+    required = {path.relative_to(_ROOT).as_posix() for task in range(2, 19)
+        for path in (_ROOT / 'tests/integration').glob(f'test_k{task:02}_*.py')}
+    assert paths == required and paths, "Hosted PostgreSQL CI must cover every current K02–K18 integration module."
+    assert any('-m integration tests/unit/test_k05_query_probe.py' in str(step.get("run", "")) for step in backend["steps"])
+    for step in contracts["steps"]:
+        assert "docker" not in str(step.get("run", "")).lower()
+        assert "tests/integration/" not in str(step.get("run", ""))
 
 
 def test_public_property_tests_contain_no_internal_tracking_language() -> None:
