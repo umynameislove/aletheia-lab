@@ -13,24 +13,30 @@ from aletheia_lab.product.boundary import ProductError
 from aletheia_lab.product.projection import build_product_graph
 from aletheia_lab.product.results import persist_product_result
 from aletheia_lab.product.view import (
+    AnyProductMetricChange,
+    AnyProductView,
     ProductClaim,
     ProductConversation,
     ProductDenominators,
     ProductEvidence,
-    ProductMetricChange,
+    ProductMetricObservationV2,
     ProductRuntime,
     ProductTurn,
-    ProductView,
+    parse_product_view,
 )
 from aletheia_lab.project.identity import canonical_project_sha256
 
 
-def metric_observation_text(change: ProductMetricChange) -> str:
+def metric_observation_text(change: AnyProductMetricChange) -> str:
     """Render exact validated operands; added/removed observations have no delta."""
     operand = change.after if change.after is not None else change.before
     if operand is None:
         raise ProductError("store_integrity_error", "Metric operands are unavailable.")
     scope = f"Run {operand.run_id}, metric {change.metric_name}, step {operand.step}"
+    if isinstance(operand, ProductMetricObservationV2):
+        class_scope = "not mapped" if operand.class_label is None else repr(operand.class_label)
+        unit_scope = "unknown" if operand.unit is None else repr(operand.unit)
+        scope += f", class {class_scope}, unit {unit_scope} ({operand.unit_origin})"
     if change.before is None:
         return f"{scope}: added value {operand.value}; no comparable previous value."
     if change.after is None:
@@ -46,7 +52,7 @@ def analyze_product_metrics(
     project_id: str,
     snapshot_id: str,
     question: str,
-) -> ProductView:
+) -> AnyProductView:
     base = build_product_analysis(store_root, project_id, snapshot_id, question)
     runtime = ProductRuntime(
         provider="local_evidence", model="snapshot-metric-analysis/v1", external_call=False
@@ -150,7 +156,7 @@ def analyze_product_metrics(
         result_scope_id=turn_id,
         observed_evidence_ids=observed_evidence_ids,
     )
-    checked = ProductView.model_validate(
+    checked = parse_product_view(
         {
             **base.model_dump(mode="python"),
             "runtime": runtime,
