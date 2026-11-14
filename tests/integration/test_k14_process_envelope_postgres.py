@@ -21,7 +21,7 @@ from uuid import uuid4
 import httpx
 import psycopg
 import pytest
-from k14_process_probe import local_postgres_root
+from k14_process_probe import linux_processes, local_postgres_root
 from psycopg import sql
 from pydantic import SecretStr
 from test_k02_https_edge import _certificate
@@ -76,6 +76,9 @@ def _monitored_child():
 
 def _process_tree(roots):
     """Bounded snapshots contain PID/counters only, never command arguments."""
+    if sys.platform == 'linux':
+        rows = linux_processes()
+        return _tree_totals(roots, rows), rows
     result = subprocess.run(['ps', '-axo', 'pid=,ppid=,rss=,time='],
                             check=True, capture_output=True, text=True, timeout=5)
     rows = {}
@@ -84,6 +87,10 @@ def _process_tree(roots):
         parts = cpu.replace('-', ':').split(':')
         seconds = sum(float(value) * 60 ** index for index, value in enumerate(reversed(parts)))
         rows[int(pid)] = {'parent': int(parent), 'rss_bytes': int(rss) * 1024, 'cpu_seconds': seconds}
+    return _tree_totals(roots, rows), rows
+
+
+def _tree_totals(roots, rows):
     observed = {}
     for role, root in roots.items():
         descendants = {root}
@@ -95,7 +102,7 @@ def _process_tree(roots):
         values = [rows[pid] for pid in descendants if pid in rows]
         observed[role] = {'processes': len(values), 'rss_bytes_sum': sum(v['rss_bytes'] for v in values),
                           'live_cpu_seconds_sum': sum(v['cpu_seconds'] for v in values)}
-    return observed, rows
+    return observed
 
 
 def _summary(values):
