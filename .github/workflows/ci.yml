@@ -44,6 +44,36 @@ jobs:
   # ---------------------------------------------------------------------------
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-bookworm@sha256:a49f7438ba03589f9b1ca062f2da82e899b48ea1dc50d2449fa09a70be83ebca
+        env:
+          POSTGRES_USER: hosted_test
+          POSTGRES_PASSWORD: synthetic_test_only
+          POSTGRES_DB: hosted_test
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U hosted_test -d hosted_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      K02_TEST_HTTPS: "1"
+      K02_TEST_DATABASE_URL: postgresql://hosted_test:synthetic_test_only@127.0.0.1:5432/hosted_test
+      K03_TEST_DATABASE_URL: postgresql://hosted_test:synthetic_test_only@127.0.0.1:5432/hosted_test
+      K04_TEST_DATABASE_URL: postgresql://hosted_test:synthetic_test_only@127.0.0.1:5432/hosted_test
+      K05_TEST_DATABASE_URL: postgresql://hosted_test:synthetic_test_only@127.0.0.1:5432/hosted_test
+      K06_TEST_DATABASE_URL: postgresql://hosted_test:synthetic_test_only@127.0.0.1:5432/hosted_test
+      K07_TEST_DATABASE_URL: postgresql://hosted_test:synthetic_test_only@127.0.0.1:5432/hosted_test
+      K08_TEST_DATABASE_URL: postgresql://hosted_test:synthetic_test_only@127.0.0.1:5432/hosted_test
+      K09_TEST_DATABASE_URL: postgresql://hosted_test:synthetic_test_only@127.0.0.1:5432/hosted_test
+      K10_TEST_DATABASE_URL: postgresql://hosted_test:synthetic_test_only@127.0.0.1:5432/hosted_test
+      K11_TEST_DATABASE_URL: postgresql://hosted_test:synthetic_test_only@127.0.0.1:5432/hosted_test
+      K12_TEST_DATABASE_URL: postgresql://hosted_test:synthetic_test_only@127.0.0.1:5432/hosted_test
+      K13_TEST_DATABASE_URL: postgresql://hosted_test:synthetic_test_only@127.0.0.1:5432/hosted_test
+      K14_TEST_DATABASE_URL: postgresql://hosted_test:synthetic_test_only@127.0.0.1:5432/hosted_test
+      K15_TEST_DATABASE_URL: postgresql://hosted_test:synthetic_test_only@127.0.0.1:5432/hosted_test
+      K16_TEST_DATABASE_URL: postgresql://hosted_test:synthetic_test_only@127.0.0.1:5432/hosted_test
+      K17_TEST_DATABASE_URL: postgresql://hosted_test:synthetic_test_only@127.0.0.1:5432/hosted_test
+      K18_TEST_DATABASE_URL: postgresql://hosted_test:synthetic_test_only@127.0.0.1:5432/hosted_test
     strategy:
       fail-fast: false
       matrix:
