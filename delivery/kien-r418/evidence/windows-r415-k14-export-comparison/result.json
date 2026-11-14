@@ -1,0 +1,14 @@
+{
+  "source_identity": "cd3f65970f4655ea6ccef92ca7706e97a0c05749312f975010db27dad1692913",
+  "runtime_identity": "9c3128f65737f59be4ccc4e5fcf601cc44a5a5dc948cb68d3cb4963ca96d56ed",
+  "executed": 1,
+  "failed": 1,
+  "skipped": 0,
+  "passed": 0,
+  "exit_code": 1,
+  "qualified": false,
+  "source_stable": true,
+  "elapsed_seconds": 41.297000000000025,
+  "finished_utc": "2026-11-14T05:40:11.448682+00:00",
+  "full_release_or_primary50k_pass": false
+}
