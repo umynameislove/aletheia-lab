@@ -1,0 +1,205 @@
+KIÊN GỬI QUÂN — HỢP ĐỒNG TÍCH HỢP K08–K12 — 12/11/2026
+
+K08–K12 đã hoàn tất và xác minh LOCAL ngày12/11/2026 trên cùng639 runtime files.
+2.744 unit passed/13 Windows skip/4 PG deselect;368 native PostgreSQL passed/
+5 opt-in skip. Bài100.000 dòng actual worker+PG, no-op/adverse refresh/history,
+JSON/Markdown/PDF qua authenticated download và installed-wheel report đều đạt.
+Phạm vi Windows/realIdP/remoteCI/browser-joint/paidprovider còn nhận riêng.
+
+Gói: Ban-giao-K08-K12-20261112/, đọc DOC-TRUOC-BAN-GIAO.txt.
+Final wheel v3 SHA-256:
+f9cc6d78c022a58a6bb0c35e85da17a35b12f2ec95a9405f13b08ce56ab12052
+Current runtime identity:
+3239d9ff80423dbed7adde2f9eb1a02cdb095919933316dde62ac314a77d066a
+5 việc Quân nhận: jobs/attempts; header/pages/search/graph/cursor; comparison
+reader/unknown/decimal; PDF theo capability; hosted budget81695→<=80000B.
+Ba lỗi phục hồi +P2contentSHA đã đóngLOCAL trên snapshot5255bed6… ở dưới.
+Thư này để owner chuyển, chưa tự gửi chat/email hoặc ký nghiệm thu chung.
+
+1. NHẬN TIẾP BẢN QUÂN, KHÔNG LÀM LẠI BỐN BINDING
+
+Giữ refresh/follow-up/export/delete đang có và cơ chế giữ key/CAS/job khi kết
+quả chưa xác định. Đọc lại Quân ở thời điểm soạn thư thấy lỗi P2 nhận diện ZIP
+đã có sửa trong source: uploadReplacement tính SHA-256 bytes trước khi dùng
+lại source/resume, có kiểm kích thước/context/abort. Lượt nhận mới trong bản
+copy riêng đã qua 306/306 consumer (lệnh thường và serial), 28/28 binding.
+Repro bằng hai ZIP hợp lệ 400B khác nội dung nhưng cùng toàn bộ metadata đã
+qua cả completed-source và partial-upload; cùng bytes đổi tên vẫn resume đúng.
+Đóng P2 nhận diện nội dung cho đúng snapshot này. Giữ log polling deadline
+100ms thất bại ở lượt parallel đầu, cùng lượt isolated và rerun xanh; không
+sửa test để ép qua. Không gọi đây là nghiệm thu browser/native/backend mới.
+
+Snapshot READ-ONLY: 133 file web, identity
+5255bed607a9fcb0d7def29e94293e787242db5db57cecd30495b58d23603414.
+So với bản nhận b identity 448bcd9c… chỉ đổi hosted-port.ts và
+tests/hosted-bindings.test.mjs. Không chạy npm/build/test trong checkout Quân,
+không ghi source/cache ở đó. Chứng cứ đọc nằm tại:
+Bang-chung/20261111-k08-k12/k12/quan-current-readonly.json.
+Lượt nhận mới nhất:
+Bang-chung/20261111-k08-k12/quan-final-producer-receiving/result.json.
+306/306 dùng J01_FIXTURES trỏ vào producer vừa xuất, Python API chỉ định rõ.
+53 file K04 xuất mới khớp từng byte bộ producer-20261112-k08-k12; kiểm thêm
+client thật nhận result/descriptor và bytes JSON/Markdown đúng hash. Lượt
+nhận trước được giữ riêng. Không nhận thay job/page/PDF UI mới ở dưới đây.
+
+2. CAPABILITIES VÀ JOB
+
+Các cờ mới phải đọc từ server, vẫn đi cùng allowed_actions/quyền hiện hành:
+  jobs.execution_v1
+  catalog.paged_read
+  analysis.metric_observations_v2
+  comparisons.upload_v1
+PDF chỉ bật khi supported_export_formats thực sự chứa pdf.
+Reader capabilities hiện có nhận pdf; binding tạo/tải export của bản Quân này
+vẫn chỉ nhận json/markdown, nên cần mở thêm PDF theo chính capability đó.
+
+Đặt B = /v1/workspaces/{workspace_id}. Thêm GET B/jobs/{job_id}/attempts:
+JobAttemptPage có scope, retry_of_job_id nullable và tối đa 3 items; không có
+cursor. Mỗi item có epoch, start/heartbeat/lease/finish timestamp nullable,
+outcome và failure_kind nullable. Xem producer hosted_contract/job_attempts.py.
+
+queued/running/cancel_requested còn đang chờ. Cancel requested không đồng
+nghĩa child đã dừng; đợi terminal thực. succeeded/failed/cancelled/expired là
+terminal; chỉ succeeded mới đọc output. Dữ liệu legacy null là chưa biết,
+không tự đổi thành 0. Retry theo retryable và quyền/cờ hiện tại, không tự đổi
+mọi failure thành retry. Giữ job/key/body/CAS khi mutation outcome_unknown
+hoặc GET output/result lỗi; không POST lại một job đã được nhận chỉ vì đọc lỗi.
+
+3. HEADER VÀ PAGE, KHÔNG TẢI CẢ RESULT CHO MỖI CLICK
+
+Khi catalog.paged_read=true, dùng:
+  GET B/results/{result_id}/header
+  GET B/results/{result_id}/claims?limit=50&cursor=...&search=...
+  GET B/results/{result_id}/evidence?limit=50&cursor=...&search=...
+  GET B/results/{result_id}/evidence/{evidence_id}?claim_id=...
+  GET B/results/{result_id}/graph?limit=50&cursor=...
+
+Header có project/result/snapshot đã pin, view_schema_version, runtime/result,
+conversation_id và count chính xác của turn/claim/evidence/node/edge. Không
+coi header là ProductView đầy đủ. ClaimPage/EvidencePage giữ scope và page
+envelope. Limit request 1–100, mặc định 50; search tối đa 128 ký tự, không là
+truy vấn SQL hay semantic diagnosis. GET result đầy đủ vẫn có cho tương thích.
+
+next_cursor=null mới là hết page. total_kind=unknown không phải total=0.
+Graph truncated mô tả phần của page, có thể vẫn true ở page cuối; gộp/dedup ID
+và giữ context endpoint của edge, không gọi graph đầu tiên là graph đầy đủ.
+Cursor opaque, ràng buộc actor/session/workspace/query/authority/projection và
+catalog revision. 400 cursor_invalid hoặc 410 cursor_expired: bỏ continuation,
+thông báo dữ liệu/trang cần tải lại, bắt đầu page một cùng query. Không trộn
+page của hai revision hay dùng cursor qua đổi tài khoản/workspace; điều này
+không cho phép retry mutation bằng key mới. Revoke vẫn xóa trạng thái riêng tư.
+
+4. ANALYSIS VÀ COMPARISON KHÔNG TỰ NÂNG THÀNH CAUSE
+
+Public backend vẫn local_evidence. Không thêm provider, key, endpoint hoặc
+analysis_model nội bộ vào request công khai. Server pin version cho job mới;
+result cũ upload-snapshot-observation/v1 không bị đổi. Version mới là
+upload-snapshot-metric-observation/v2, external_call=false, causal unverified.
+Đây là phân tích operand đã validation, không phải LLM diagnosis.
+
+Phân tích mới đếm TOÀN BỘ row theo (run, metric, class, unit, unit_origin),
+ghi min/max và endpoint step đã map; raw operand vẫn ở snapshot bất biến,
+có hash/source reference. Đây là aggregate được nói rõ, không là row sample.
+Giới hạn 64 series; quá giới hạn phải fail tường minh, không cắt bớt rồi báo
+success. Class chưa map giữ class_label=null, không tự suy nhãn; unit chưa
+biết giữ null/unit_origin=unknown, không tự đoán hoặc đổi đơn vị.
+
+Refresh có thay đổi còn lưu canonical record schema
+hosted-upload-generation-comparison/v1. Đọc list:
+  B/projects/{project_id}/records?kind=snapshot_comparison
+rồi mở record_id được trả. RefreshResult công khai vẫn 5 trường cũ, không
+có comparison_id mới; no-op giữ snapshot và không tạo comparison.
+
+Comparison gồm hai snapshot/source/record hash đã pin và tối đa 64 series.
+Các count paired/unchanged/increased/decreased/added/removed phải reconcile;
+delta min/max là DECIMAL STRING, không làm tròn thành số hiển thị rồi đánh
+threshold. Thiếu policy là assessment=not_assessed và direction/threshold/
+adverse null, không phải 0 hay “an toàn”. Unit/schema/policy lệch phải từ chối,
+không giấu dưới removed/added. Causal status vẫn unverified. Result/history/
+export cũ không đổi theo snapshot mới nhất.
+
+5. PDF, DOWNLOAD VÀ KHÔI PHỤC
+
+POST B/results/{result_id}/exports vẫn trả 201 ExportDescriptor, không phải
+JobReceipt. Body chỉ {"format":"json"}, markdown hoặc pdf đúng capabilities.
+PDF dùng ex_pdf_{result_id}_{nonce}, MIME application/pdf, tên ASCII .pdf.
+Kiểm workspace/project/result, byte_size, SHA-256 và expires_at như các định
+dạng trước. PDF/font/schema chưa sẵn sàng thì server không advertise PDF.
+
+PDF nhúng Noto Sans Mono/OFL, renderer ReportLab được pin và chạy child riêng;
+Việt NFC/NFD đọc/copy được theo NFC, JSON/Markdown giữ nội dung/precision đã
+lưu. Text project là dữ liệu trơ, không fetch HTML/image/URL. Glyph ngoài font
+trả 400 invalid_request, còn JSON/Markdown; không thay bằng escape ASCII.
+
+Download GET/HEAD/single Range vẫn phải xác thực với quyền/expiry hiện hành;
+không có bearer URL hoặc token query mới. TTL 15 phút, replay không gia hạn.
+Quyền được kiểm trước range/size và từng chunk 64KiB. Có no-store/nosniff,
+MIME/filename/length/ETag rõ. Bị ngắt thì file chưa hoàn tất, không báo đã lưu.
+Range chỉ là phần bytes: muốn hoàn tất phải ghép đủ byte và kiểm SHA toàn file.
+Mỗi API process chỉ giữ 4 download; cái thứ năm nhận 503 service_unavailable,
+metadata read vẫn độc lập. Retry đọc dùng lại handle còn quyền/hạn, không tự
+tạo export mới do lần tải lỗi; key cũ vẫn dùng để hòa giải mutation chưa rõ.
+
+6. CHUẨN BỊ DATABASE VÀ LƯỢT NHẬN TIẾP
+
+Migration thêm v11 PDF constraints, v12 execution/attempt ledger, v13 read
+projections, v14 request analysis-version pin. Giữ nguyên DDL/checksum v1–v10.
+Read-index ledger/định nghĩa index phải được kiểm nghiêm ngặt; partial/drift
+bị từ chối. Chỉ operator chạy migrate/read-indexes, không startup DDL.
+Tool k05_storage_admin migrate xử lý canonical + project-policy; verify kiểm
+lại. Result lịch sử cần backfill projection bounded bằng rebuild-views theo
+workspace/object-root/cursor; GET không âm thầm migrate hay backfill.
+
+Tài liệu tích hợp chi tiết ở docs/k08-k12-integration.md và giới hạn report ở
+docs/k12-exports.md trong source API. Quân cần consumer cùng backend/scripts
+và producer fixtures mới, giữ fixture lịch sử. Kiểm thêm job pending/terminal/
+attempt/retry, header/page/cursor phục hồi, comparison unknown/decimal/64series,
+PDF Việt và range/hash/revoke/busy-download. Chưa ký thay lượt browser/joint.
+
+Số cuối và source/artifact identity được ghi ở DOC-TRUOC-BAN-GIAO.txt,
+SHA256SUMS.txt và04-Bang-chung trong gói. Canonical tracker đã chốt5parent/
+25child K08–K12 passedLOCAL; joint/browser/release giữ trạng thái riêng.
+
+7. TIẾP NHẬN WINDOWS VÀ BẢN SỬA 200 MiB (FREEZE5)
+
+Gói phản hồi Ban-giao-Windows-Docker-20261112.zip có SHA-256:
+661d7836542905f15bd3d38b2f781945b1b12473c16ace47ddfc9ae7e883861c.
+Giữ riêng lượt tổng 316 passed/1 failed/7 skipped và lượt chạy lẻ 200 MiB
+1 passed; lượt lẻ không thay thế lỗi của lượt tổng. Hai patch chọn worker theo
+nền tảng trong test đã được review riêng, không đổi assert/timeout/dung lượng.
+
+50 phần/209.715.200B đã được nhận bền; bước INSERT lại toàn bundle chạm
+deadline 60s, sau đó driver 3.3.8 che CancelledError bằng TypeError. Probe
+native tái hiện đúng cơ chế hủy khi đang flush, không nhận là đã tái hiện tải
+Windows. Bản sửa gom phần đã kiểm ngay trong PostgreSQL, kiểm lại count/size/
+SHA-256 trước publish; giữ auth/lock/idempotency/audit/ready/cleanup cùng txn.
+Không tăng deadline, giảm 200 MiB/50 phần, đổi pin driver hay thêm DDL.
+
+Native kiểm lại đủ S/M/L; 200 MiB giữ đúng bytes/hash, INSERT cuối chỉ bind
+770B, không gửi lại toàn bundle. Own expired deadline trả lỗi availability
+hoặc commit-unknown đúng thời điểm; explicit cancel giữ cancellation; lỗi
+TypeError thật trước deadline không bị đổi nghĩa. Cần chạy lại cả lượt tổng
+và lượt lẻ trên chính Windows với source mới trước khi chốt ổn định Windows.
+
+Chứng cứ và giới hạn: Bang-chung/20261112-windows-receiving/200m/result-final.json,
+driver-flush-cancel.json, source-comparison.json và independent-cleanup.json.
+Lượt test native đầu có lỗi ở bộ chèn fault disk-full do matcher cũ chỉ nhận
+INSERT đầu câu; đã giữ log, sửa matcher để nhận INSERT sau CTE, giữ nguyên
+lỗi PostgreSQL thật và assert rollback/retry; case cuối đã qua.
+
+Gói packaging-final/dist-final trước freeze4 chỉ còn là bằng chứng lịch sử.
+Bản cuối là packaging-final-v3/dist-final-v3; qualification đã qua, SHA ở đầu thư. V2 được giữ lịch sử: review phát hiện góc hẹp khi
+deadline và caller cancel cùng xảy ra. Freeze5 ưu tiên caller cancellation,
+giữ commit-unknown note và đúng một outcome; thêm hai regression body/commit.
+Không nhận gói cũ là đã có đầy đủ bản sửa Windows và cancel-priority này.
+
+8. PHẠM VI CÒN MỞ
+
+Hosted budget mới:81.695B gzip/80.000B, live79,2kB/80kB đạt. Giữ ngưỡng.
+Windows316/1/7 là lịch sử; cần current broad+200MiB isolated rồi full để chốt
+Windows ổn định. RealIdP/operator/remoteCI và joint UI vẫn nhận riêng. K10
+catalog2m dùng metadata/shared54objects/selectedprojection, không2m payloads
+độc lập hoặc50kusers. Bốn file runtime đổi sau probe2m được đối chiếu riêng;
+read/index/query paths và hook giữ nguyên, current native tests đã qua.
+100k báo cáo là aggregate đủ mọi row, raw operands giữ canonical; rawsnapshot
+GET lớn bị413, không quảng cáo rawmetricrow HTTPpaging.

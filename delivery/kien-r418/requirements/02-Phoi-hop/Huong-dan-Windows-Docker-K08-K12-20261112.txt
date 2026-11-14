@@ -1,0 +1,210 @@
+CHẠY BẢN K08–K12 TRÊN WINDOWS + POSTGRESQL DOCKER — 12/11/2026
+
+DÙNG GÓI NÀY
+
+Đây là gói kiểm thử độc lập, bổ sung cho Ban-giao-K08-K12-20261112.zip.
+Có đủ 2.396 file nguồn đúng bản chốt, 639 runtime khớp wheel v3, selector và
+công cụ lưu log. Giải nén vào thư mục mới; không cần ghép các delta trước.
+ZIP bàn giao 8,9 MB trước vẫn nguyên vẹn.
+
+Python/pytest chạy trực tiếp trên Windows. Docker chỉ chạy PostgreSQL 16 Linux.
+Điều này kiểm được cả worker Windows thật và API dùng DB Docker. WSL/Linux
+không thay thế kết quả Windows native; runner sẽ kiểm đúng nền tảng.
+
+Các file dashboard trong source thuộc snapshot API dùng để giữ nguyên input
+cho tests. Chúng không phải nguồn Quân 306 consumer hiện tại. Đợt này chạy
+backend; giao diện mới và hosted budget do Quân nhận riêng. Không chạy npm
+với source dashboard trong gói này để nghiệm thu bản Quân mới.
+
+1. GIẢI NÉN, MỞ POWERSHELL
+
+Docker Desktop, Python 3.12 x64 đã có từ lượt trước. Mở Docker Desktop, đợi
+engine hoạt động rồi mở PowerShell thường. Giải nén gói mới vào C:\work.
+Nếu không có lệnh py, thay py -3.12 bằng đường dẫn python.exe 3.12 đã dùng
+trong lượt Windows trước. Cần thấy:
+C:\work\Windows-Docker-K08-K12-20261112\run_windows_tests.py
+
+  Set-Location C:\work\Windows-Docker-K08-K12-20261112
+  $ErrorActionPreference = 'Stop'
+  py -3.12 -B .\run_windows_tests.py verify
+  if ($LASTEXITCODE -ne 0) { throw 'Checksum chưa đạt; dừng tại đây.' }
+
+Phải thấy 2.396 maintained_source_files và 639 runtime_files. Nếu đường dẫn
+khác, chỉ đổi Set-Location. Chạy trong cùng cửa sổ PowerShell tới hết hướng dẫn.
+
+2. TẠO VENV MỚI VÀ CÀI ĐÚNG WHEEL
+
+  py -3.12 -m venv .venv
+  if ($LASTEXITCODE -ne 0) { throw 'Chưa tạo được venv.' }
+  $aletheiaPython = (Resolve-Path .\.venv\Scripts\python.exe).Path
+  & $aletheiaPython -m pip install '.\runtime\aletheia_lab-0.1.0-py3-none-any.whl[dev,hosted]' 'httpx==0.28.1'
+  if ($LASTEXITCODE -ne 0) { throw 'Cài dependency thất bại; giữ lỗi và dừng.' }
+  & $aletheiaPython -m pip check
+  if ($LASTEXITCODE -ne 0) { throw 'Dependency conflict; chưa chạy test.' }
+  New-Item -ItemType Directory -Force .\results | Out-Null
+  & $aletheiaPython -m pip freeze | Out-File -Encoding utf8 .\results\python-packages.txt
+
+Không cần activate venv hoặc đổi ExecutionPolicy. Test pytest dùng nguồn
+source/ đã kiểm hash; bước wheel dùng -I và chỉ nhận package đã cài trong venv.
+Wheel đúng SHA:
+f9cc6d78c022a58a6bb0c35e85da17a35b12f2ec95a9405f13b08ce56ab12052
+
+3. TẠO POSTGRESQL TEST RIÊNG, GIỮ NGUYÊN CONTAINER/VOLUME CŨ
+
+  docker version
+  docker info --format '{{.OSType}}'
+
+Phải thấy Docker Server và linux. Lần đầu chạy lệnh docker run sau trên MỘT
+DÒNG. Tên mới, cổng 55433 và volume riêng, không dùng lại DB của lượt cũ:
+
+  docker run -d --name aletheia-kien-pg-k08-k12 --label aletheia.purpose=k08-k12-windows-test -p 127.0.0.1:55433:5432 --mount type=volume,source=aletheia_kien_k08_k12_test_data,target=/var/lib/postgresql/data -e POSTGRES_USER=hosted_test -e POSTGRES_PASSWORD=synthetic_test_only -e POSTGRES_DB=hosted_test --health-cmd "pg_isready -U hosted_test -d hosted_test" --health-interval 2s --health-timeout 5s --health-retries 30 postgres:16
+  if ($LASTEXITCODE -ne 0) { throw 'Chưa tạo được container test mới.' }
+
+Nếu đã tạo đúng container này trong lượt mới, dùng:
+  docker start aletheia-kien-pg-k08-k12
+
+Chạy lại lệnh dưới tới khi thấy accepting connections:
+  docker exec aletheia-kien-pg-k08-k12 pg_isready -U hosted_test -d hosted_test
+
+Mật khẩu ở trên là giá trị tổng hợp chỉ cho container test này. Runner dùng
+đúng loopback:55433/hosted_test và tự đặt DSN K02–K12, K02_TEST_HTTPS=1.
+Fixture tự migration trong schema UUID rồi tự dọn. KHÔNG chạy migrate thủ
+công vào public hoặc vào database app đang dùng. Các env Docker recovery,
+large opt-in và provider được tách theo phase, không tự bật ngoài phase đó.
+
+4. SMOKE WORKER WINDOWS + DATABASE
+
+  & $aletheiaPython -B .\run_windows_tests.py smoke
+  if ($LASTEXITCODE -ne 0) { throw 'Smoke chưa đạt; dừng và gửi results.' }
+
+Dự kiến 23 passed: 13 bài Windows worker + 10 migration/API→worker PostgreSQL.
+Phải không failed/error/skip ở phase này. Nếu worker Windows bị skip, kiểm
+lại đang dùng python.exe Windows thay vì Python trong WSL/container.
+
+5. KIỂM RIÊNG LỖI 200 MiB VÀ CANCELLATION ĐÃ SỬA
+
+  & $aletheiaPython -B .\run_windows_tests.py upload200
+  if ($LASTEXITCODE -ne 0) { throw 'Upload/deadline chưa đạt; giữ log và dừng.' }
+
+Có 7 bài deadline/cancel, 5 bài completion/driver và đúng ca L-200MiB từng lỗi:
+  test_k07_upload_sizes_postgres.py::test_real_physical_resumable_transfer_to_verified_source[L-200MiB]
+Dự kiến 13 passed. Ca L giữ nguyên 200 MiB/50 phần/deadline; có readback toàn
+byte/SHA và assert không bind lại 200 MiB ở final INSERT. Không sửa assert,
+timeout, giảm dung lượng hoặc đổi skip để lấy pass.
+
+6. UNIT TOÀN BỘ PHẠM VI HOSTED J01/K02–K12
+
+  & $aletheiaPython -B .\run_windows_tests.py unit
+  if ($LASTEXITCODE -ne 0) { throw 'Unit chưa đạt; giữ log và dừng.' }
+
+170 module, gồm contract/security. Mac trước đó 2.744 passed/13 Windows skip;
+trên Windows 13 bài đó được bật, dự kiến 2.757 passed và 4 PG deselected.
+Dùng số thực tế trong XML/console để kết luận, không ép bằng số của Mac.
+
+7. FULL POSTGRESQL K02–K12, CHẠY SAU CA 200 MiB RIÊNG
+
+  & $aletheiaPython -B .\run_windows_tests.py postgres
+  if ($LASTEXITCODE -ne 0) { throw 'Full PostgreSQL chưa đạt; giữ cả log failed và isolated.' }
+
+80 integration module + 4 PG query-probe trong unit/, tổng 373 cases/81 file.
+Ca 200 MiB được chạy lại trong full suite để kiểm lỗi cũ khi có tải tích lũy.
+Mac đạt 368 passed/5 opt-in skipped. Windows còn skip 3 POSIX-only cases,
+dự kiến 365 passed/8 skipped. Giữ lý do từng skip trong console/JUnit.
+8 skip dự kiến: 2 Docker restart/crash tách ở bước10; 2 K07 parser L và1 K08L
+tách ở bước8; 2 API POSIX SIGTERM và1 worker POSIX signal. Windows không thể
+thay test POSIX bằng pass. Skip khác danh sách này cần kiểm tra.
+
+Một lượt isolated pass không xóa lỗi full run. Nếu full có lỗi, giữ nguyên
+lượt lỗi và source; gửi results trước khi đổi code hoặc chạy lại.
+
+8. BÀI 100.000 DÒNG VÀ PIPELINE THẬT
+
+  & $aletheiaPython -B .\run_windows_tests.py large
+  if ($LASTEXITCODE -ne 0) { throw 'L100k chưa đạt; giữ log và dừng.' }
+
+3 cases: 2 parser K07 v1/v2 và1 K08 pipeline100k; runner chỉ bật cờ L cho phase
+này. K08 kiểm confirm → analysis → no-op/adverse refresh → history, rồi JSON/
+Markdown/PDF qua PostgreSQL và authenticated download đủ byte/hash.
+
+Lưu ý đây là 100.000 operand giữ trong snapshot, báo cáo tổng hợp đủ mọi dòng
+thành10 series; không phải PDF100.000 dòng. Source/runtime không được thay
+đổi trong lúc chạy. Chạy tuần tự, không pytest-xdist, không chạy đồng thời hai
+lượt. Mac pipeline K08 mất khoảng9phút; đó không là deadline hoặc dự đoán tốc
+độ Windows. Giữ nguyên mọi budget/timeout trong test.
+
+results của lượt này có large-100000-view.json, comparison và receipt.
+Heartbeat False count cần đọc cùng job outcome: không tự gọi nó lost lease.
+
+9. KIỂM BỘ CÀI, FONT VÀ PDF WINDOWS
+
+  & $aletheiaPython -B .\run_windows_tests.py wheel
+  if ($LASTEXITCODE -ne 0) { throw 'Installed wheel chưa đạt; giữ log và dừng.' }
+
+Chạy Python -I, kiểm639file đã cài khớp nguồn, child analysis thật và3child
+report JSON/Markdown/PDF, font/ToUnicode/claims/source IDs và origins. Không
+nhập code từ source/ ở phase này. Fixture nhỏ có12trang ở Mac; K08L hiện có
+13trang ở Mac, hai con số thuộc hai input khác nhau.
+
+Mở results\<lượt-wheel>\wheel\report.pdf: kiểm tiếng Việt có dấu, không mất/chồng/
+cắt chữ, copy thử một câu; mở JSON/Markdown để đối chiếu. Kết quả tự động và
+nhận xét nhìn PDF đều cần lưu khi nhận Windows.
+
+10. HAI BÀI DOCKER RESTART/KILL — CONTAINER THỨ HAI RIÊNG
+
+Chạy sau khi các bước4–9 đã xong, không cùng một lượt test khác. Đây là phần
+có chủ đích restart và KILL DB; dùng container riêng cổng55434, anonymous
+volume và guard. Không dùng container ở bước3 hoặc container của lượt cũ.
+
+  $aletheiaRecoveryRun = [guid]::NewGuid().ToString('N')
+  $aletheiaRecoveryName = "k06_recovery_$aletheiaRecoveryRun"
+  docker run -d --name $aletheiaRecoveryName --label aletheia.owner=k06 --label "aletheia.run_id=$aletheiaRecoveryRun" -p 127.0.0.1:55434:5432 --mount type=volume,target=/var/lib/postgresql/data -e POSTGRES_USER=k06 -e POSTGRES_PASSWORD=synthetic_recovery_only -e POSTGRES_DB=k06_recovery postgres:16
+  if ($LASTEXITCODE -ne 0) { throw 'Chưa tạo được recovery container.' }
+
+Chờ lệnh này báo accepting connections:
+  docker exec $aletheiaRecoveryName pg_isready -U k06 -d k06_recovery
+
+Sau đó:
+  $env:K06_RECOVERY_CONTAINER_ID = (docker inspect --format '{{.Id}}' $aletheiaRecoveryName).Trim()
+  $env:K06_RECOVERY_IMAGE_ID = (docker inspect --format '{{.Image}}' $aletheiaRecoveryName).Trim()
+  $env:K06_RECOVERY_CONTAINER_NAME = $aletheiaRecoveryName
+  $env:K06_RECOVERY_PORT = '55434'
+  $env:K06_RECOVERY_DATABASE_URL = 'postgresql://k06:synthetic_recovery_only@127.0.0.1:55434/k06_recovery'
+  $env:K06_RECOVERY_ALLOW = 'owned-container-only'
+  & $aletheiaPython -B .\run_windows_tests.py recovery
+  if ($LASTEXITCODE -ne 0) { throw 'Docker recovery chưa đạt; giữ container/volume và logs.' }
+
+Dự kiến2passed: graceful restart và crash/KILL, cùng volume/WAL durability.
+Đây là committed source/job/audit trên profile experimental cũ; suite K09
+hiện hành ở bước7 kiểm managed execution riêng. Hai bài này không thay tất
+cả K09, realIdP hay joint UI acceptance. Guard từ chối thì giữ nguyên, không
+bỏ label/identity/volume checks để ép chạy.
+
+Sau lượt recovery:
+  Get-ChildItem Env:K06_RECOVERY_* | Remove-Item
+  docker stop $aletheiaRecoveryName
+
+11. GỬI LẠI KẾT QUẢ, DỪNG DB VÀ GIỮ VOLUME
+
+Nếu lỗi kết nối/setup xảy ra trước pytest, giữ thông báo terminal; thư mục
+phase có thể chưa có console.txt/result.json. Mỗi phase chạy pytest có thư mục
+mới trong results/: console.txt, started.json,
+result.json, JUnitXML (trừ wheel) và evidence liên quan. Kể cả fail phải giữ.
+Runner chỉ dọn work/ của các phase thành công. Input tạm thất bại giữ ở
+work/, tách khỏi results để tránh gửi hàng trăm MiB không cần thiết.
+
+  Compress-Archive -Path .\results -DestinationPath .\Ket-qua-Windows-K08-K12.zip
+  docker stop aletheia-kien-pg-k08-k12
+
+Gửi Ket-qua-Windows-K08-K12.zip và nhận xét nhìn PDF. Nếu tên ZIP kết quả đã
+có, đặt tên mới, giữ các lượt cũ. Không gửi .venv, source, work, database volume
+hoặc cấu hình thật. Không cần xóa container/volume trước khi Kiên review log.
+
+Đợt này không chạy realIdP/đăng nhập thật, frontend mới của Quân, CI remote,
+catalog2triệu/coldcache hoặc tải50.000 người dùng. Chúng có gate nhận riêng.
+Toàn bộ kết quả Windows/Docker mới vẫn là CHƯA CHẠY tới khi bạn gửi log thật;
+việc chuẩn bị và kiểm công cụ trên Mac không thay thế chúng.
+
+Tham khảo cú pháp đã đối chiếu ngày12/11/2026:
+https://docs.docker.com/reference/cli/docker/container/start/
+https://docs.docker.com/reference/cli/docker/container/exec/
+https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_automatic_variables
