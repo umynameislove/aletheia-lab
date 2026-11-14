@@ -1,0 +1,43 @@
+{
+  "schema_version": "k17-native-seed-plan/v1",
+  "namespace": "k17_cardinality1",
+  "seed": 17,
+  "workspaces": 2000,
+  "projects_per_workspace": 5,
+  "generations": 20,
+  "results_per_generation": 10,
+  "size_cycle": [
+    "S",
+    "S",
+    "S",
+    "S",
+    "S",
+    "S",
+    "S",
+    "S",
+    "S",
+    "S",
+    "S",
+    "S",
+    "M",
+    "M",
+    "M",
+    "M",
+    "M",
+    "M",
+    "M",
+    "L"
+  ],
+  "source_rows": {
+    "S": 1000,
+    "M": 10000,
+    "L": 100000
+  },
+  "metric_series": {
+    "S": 1,
+    "M": 8,
+    "L": 32
+  },
+  "idle_seconds": 900,
+  "absolute_seconds": 28800
+}

@@ -1,0 +1,11 @@
+QUÂN CẦN CHỐT K17 — MODEL/SEED LỚN VÀ WORKLOAD,13/11/2026
+
+Kiên đang làm model lớn và recipe. Đề xuất để Quân phản hồi cụ thể (chưa phải contract đã được cả hai ký):
+1. Model mới upload-snapshot-metric-observation/v3, tách model v2 đang giới hạn64series. Mỗi claim là một nhóm (run,metric,class,unit,unit_origin) có thật trong mapped snapshot; lưu count/min/max/step và hash operand, local_evidence/external_call=false/causal unverified. Không padding, không biến từng raw row thành claim giả. S/M/L tạo100/1000/10000series bằng nguồn riêng thật.
+2. Wire ProductView/v2 có thể giữ nguyên cấu trúc vì model là field dữ liệu; xin Quân xác nhận validator không whitelist chỉ runtime.model=v2 và reader bounded xử lý modelv3. Nếu cần schema mới thì chốt rõ; Kiên không âm thầm mở giới hạn của modelv2.
+3. Mỗi claim có1evidence riêng và graph có cả claim/evidence/snapshot/decision. L10000claims kéo theo graph trên20000nodes; dùng pagination/subgraph, không cắt để ép còn đúng10000node. Chốt yêu cầu guide 'graph10k' là ít nhất10000nodes, hoặc cần thêm fixturegraph đúng10000node riêng. Không thể vừa10000claimnode vừa10000evidencenode mà toàngraph chỉ10000node.
+4. Header/claims/evidence/graph/search chỉ đọc page nhỏ, giữ scope/opaque cursor/lease4s; không gọi fullresult rồi cắt. Confirm/refresh comparison lớn cần phiên bản comparison riêng, giữ v1<=64series nguyên vẹn. Quân xác nhận UI không cần tải comparison đầy đủ theo timer.
+5. P13 là1business action analyze: clientPOST.../jobs operation=analyze; job status/updates/output/header là fanout, không đếm thêmaction. BảngR3.2 có các số synthetic và thinktime giả định; cần giữ hai nguồn này riêng. Kiên đưa session+caps+header và hidden/reconnect vào profile, không nới4slease.
+6. Những hành trình UI đang chưa có route tương ứng, Quân ghi rõ client_not_used và đường thay thế thực. Connector P32–P34 vẫncapability=false. Mutationadmin/logout/delete chạy dedicated trên fixture mới, không trộn vào normalđể phá dataset đang dùng.
+
+Xin Quân trả lời từng mục1–4 và gửi fixture reader test đối với mẫu lớn Kiên sẽ bàn giao. Kiên tiếp tục phần độc lập trong lúc chờ; chưa tự gắn primary_dataset_qualified hoặc50kPASS. Thư mục aletheia-lab chỉ đọc, không đề nghị Quân chạyDocker.

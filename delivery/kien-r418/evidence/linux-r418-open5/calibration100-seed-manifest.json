@@ -1,0 +1,117 @@
+{
+  "schema_version": "k17-native-seed-manifest/v1",
+  "plan_sha256": "7209064ecc57bb4780ce0de86167d4d8ba994bc30234c00afb1e923dda656970",
+  "namespace": "k17_calibration1",
+  "schema": "k17_seed_0bc5077f8b984ec9b51a782f573ed1ca",
+  "synthetic_authentication_bootstrap": true,
+  "real_idp_exercised": false,
+  "construction": "Genuine ZIP->native confirm/refresh->exact pinned metric analyzer->typed canonical records/projections",
+  "follow_up_chains_generated": false,
+  "results_are_independent_questions_per_snapshot": true,
+  "primary_dataset_qualified": false,
+  "primary_gaps": [
+    "Primary catalogue cardinalities are not present.",
+    "Primary source rows 1000/10000/100000 are not present.",
+    "The native metric analyzer permits at most 64 series; actual fixture claims 2/16/64 do not satisfy primary claims 100/1000/10000 or a 10000-node graph.",
+    "A generated dataset does not qualify heavy job journeys, real IdP, deployment SLOs or production capacity."
+  ],
+  "logical_counts": {
+    "principals": 100,
+    "workspaces": 4,
+    "projects": 20,
+    "snapshots": 20,
+    "results": 20,
+    "sources": 20,
+    "projections": 20,
+    "upload_projections": 20
+  },
+  "physical": {
+    "logical_source_zip_bytes": 82308,
+    "postgres_source_column_bytes": 82308,
+    "schema_allocated_bytes": 4628480,
+    "unique_source_payloads": 20,
+    "source_scope_hash_sha256": "81c5ac702b0a68931645fa9a86a8e1c9f5ee24d3b60261c02f7b7e74213ad6a0",
+    "metadata_object_rows": 40,
+    "unique_physical_object_files": 40,
+    "physical_object_file_bytes": 777792,
+    "object_hash_inventory_sha256": "4f5a931d6303e8877e753f1d033040e251e5265760cb62d05ddd0e1549247772",
+    "object_metadata_to_physical_ratio": 1.0,
+    "all_source_payload_hashes_verified": true,
+    "all_object_file_hashes_verified": true,
+    "physical_source_bytes_note": "pg_column_size and total schema allocation are reported separately from logical ZIP bytes; no logical count is presented as freed/unique disk bytes."
+  },
+  "strata": {
+    "S": {
+      "projects": 12,
+      "source_rows_per_generation": 32,
+      "metric_series_per_run": 1,
+      "actual_claims_per_result": 2,
+      "actual_graph_nodes_per_result": 6,
+      "actual_graph_edges_per_result": 6,
+      "minimum_source_zip_bytes": 1716,
+      "maximum_source_zip_bytes": 1729,
+      "minimum_result_json_bytes": 8993,
+      "maximum_result_json_bytes": 8994
+    },
+    "M": {
+      "projects": 7,
+      "source_rows_per_generation": 128,
+      "metric_series_per_run": 8,
+      "actual_claims_per_result": 16,
+      "actual_graph_nodes_per_result": 34,
+      "actual_graph_edges_per_result": 48,
+      "minimum_source_zip_bytes": 5684,
+      "maximum_source_zip_bytes": 5715,
+      "minimum_result_json_bytes": 50259,
+      "maximum_result_json_bytes": 50259
+    },
+    "L": {
+      "projects": 1,
+      "source_rows_per_generation": 512,
+      "metric_series_per_run": 32,
+      "actual_claims_per_result": 64,
+      "actual_graph_nodes_per_result": 130,
+      "actual_graph_edges_per_result": 192,
+      "minimum_source_zip_bytes": 21740,
+      "maximum_source_zip_bytes": 21740,
+      "minimum_result_json_bytes": 191845,
+      "maximum_result_json_bytes": 191845
+    }
+  },
+  "actors_file_sha256": "dbd43e0d9cf9f241f3c88f6305d8238605e9a34aead5ce9762bb3630a40382ab",
+  "inventory_sha256": "4eebc3ed83d8adc3645adb2e6acea71243c65f91a4b0c599f3b26fc90b752193",
+  "latest_projects_sha256": "3932d61868e6f04f403f11edd50177acf65d15f3d85852961afc841dfd833f7e",
+  "plan_file_sha256": "5f3653e05591623de03aae60a86a69ee8663a76c61af5beeccb54a0b175f047e",
+  "actors_issued": {
+    "count": 100,
+    "roles": {
+      "owner": 20,
+      "admin": 20,
+      "analyst": 20,
+      "reviewer": 20,
+      "viewer": 20
+    },
+    "sizes": {
+      "S": 60,
+      "M": 35,
+      "L": 5
+    },
+    "unique_identity_per_actor": true,
+    "unique_session_per_actor": true,
+    "hard_expiry_is_not_extended_by_fixture": true
+  },
+  "session_idle_seconds": 900,
+  "session_absolute_seconds": 28800,
+  "session_renewal_required_for_long_runs": true,
+  "session_issuance_after_dataset_import": true,
+  "active_distinct_actor_sessions_verified": true,
+  "elapsed_seconds": 6.648153989999628,
+  "peak_checked_schema_bytes": 4628480,
+  "maximum_bytes": 524288000,
+  "object_root": "/tmp/aletheia-r418-calibration-mnznCaX5/private-work/test_actual_tls_100_principal_0/seed/objects",
+  "private_files_do_not_share": [
+    "actors.jsonl"
+  ],
+  "status": "generated_not_capacity_accepted",
+  "dataset_sha256": "a5cb66f1bec612c0bd8c3545b0f828a67a92929c645cca1a2e9ca44f9ce5948a"
+}

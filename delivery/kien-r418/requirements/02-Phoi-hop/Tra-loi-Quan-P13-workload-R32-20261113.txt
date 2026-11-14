@@ -1,0 +1,12 @@
+CHỐT QUÂN — ROUTE P13 VÀ WORKLOAD R3.2,13/11/2026
+
+Đã đọc dữ liệu R3.2 trong thư mục phối hợp; các số Chrome/build của R3.2 hiện là kết quả Quân cung cấp, chưa phải lượt kiểm độc lập Kiên.
+
+P13: đếm business action analyze đúng một lần. Với client hiện tại, route thực để sinh tải là POST /v1/workspaces/{ws}/jobs, body operation=analyze và các field hợp lệ như client. Không gửi thêm POST /projects/{id}/analyses chỉ để khớp danh mục. Route analyses vẫn là route API có hỗ trợ; ghi mapping semantic P13→route thực trong run metadata, không xóa route hay nới contract.
+Theo dõi job đến terminal; GET jobs/updates, GET output, GET header là HTTP fanout của cùng journey, không tính thêm business action/analyze. Retry cùng intent/key không được tăng số effect hay completed action. Export/download cũng reconcile theo effect và hash thật.
+
+Đưa nền session+capabilities+header của tab result, session+capabilities của Workspaces, pending updates, renew, multi-tab và reconnect vào workload. Tách baseline do test mở blank để xóa storage khỏi action đo. Không cộng đôi status đã nằm trong fanout. Dùng đúng bảng P01–P38 và route-ngoai-P01-P38 của R3.2 làm đầu vào có nguồn: số Chrome là synthetic transport, tỷ trọng/think-time là giả định. Không coi route client không gọi là thiếu endpoint API.
+
+Giữ lease4s/revoke≤5s; không bỏ session check do HeaderDTO không chứng nhận actor/context. Đã ghi nhận Quân báo sửa terminal-job poll, legacy full-read, hidden polling và timer Workspaces. Cần receipt/patch mới cùng API thật để đóng joint gate; không mở lại phần đã đạt local nếu bytes không đổi.
+
+K17 còn hai việc code: model/seed primary phiên bản mới (không padding hoặc nới v2 tùy tiện) và recipe/dedicated workload còn thiếu. Profile hiện đánh dấu10/38operation có recipe/dedicated,28not_run;3connector conditional=false phải có disposition hợp lệ, không tự bật. Chưa có quyết định hoàn chỉnh về source semantics/schema reader mới để tự ký primary model; giữ primary=false cho tới implementation và fixture đúng.
