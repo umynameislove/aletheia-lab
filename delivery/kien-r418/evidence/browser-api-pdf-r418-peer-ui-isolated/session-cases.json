@@ -1,0 +1,23 @@
+{
+  "scope": "Chrome tabs on the same origin and profile, native API logout and PostgreSQL session, seeded synthetic identity.",
+  "a08": {
+    "pass": true,
+    "peerSignInMs": 125.03749999999854,
+    "privateVerdictRemoved": true,
+    "resultIdsCleared": true
+  },
+  "a09": {
+    "pass": true,
+    "elapsedMs": 80.3773000000001,
+    "persisted": false,
+    "visibleAtPageshow": false,
+    "bfcacheNotUsedReasons": [
+      "MainResourceHasCacheControlNoStore",
+      "JsNetworkRequestReceivedCacheControlNoStoreResource",
+      "BrowsingInstanceNotSwapped"
+    ],
+    "witnessScope": "Visibility sampled at pageshow and after sign-in screen."
+  },
+  "elapsedMs": 2666.9030999999995,
+  "previous_credential_replayed_http": 401
+}
