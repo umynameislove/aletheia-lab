@@ -1,0 +1,12 @@
+{
+  "source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+  "runtime_identity": "a046bccd9a0beb135951a0928c7ddd131b327302bcacf10c7ddb979757c9d495",
+  "phase": "calibration",
+  "exit_code": 0,
+  "pytest_functional_exit_code": 0,
+  "qualified": true,
+  "source_stable": true,
+  "elapsed_seconds": 250.22756570800084,
+  "finished_utc": "2026-11-14T03:40:22.024520+00:00",
+  "full_release_or_primary50k_pass": false
+}

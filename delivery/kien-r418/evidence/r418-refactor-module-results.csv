@@ -1,0 +1,5 @@
+﻿path,before_lines,after_lines,frozen_maximum,result,source_identity
+src/aletheia_lab/hosted/postgres_jobs.py,1241,784,800,pass,65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58
+src/aletheia_lab/project/importer.py,1241,1209,1217,pass,65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58
+src/aletheia_lab/project/mapping.py,904,796,800,pass,65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58
+src/aletheia_lab/project/regression.py,913,826,843,pass,65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58

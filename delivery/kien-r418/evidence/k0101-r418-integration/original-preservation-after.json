@@ -1,0 +1,32 @@
+[
+  {
+    "directory": "_repo_aletheia_ref",
+    "unchanged_head_status_wip": true,
+    "original_refs_preserved": true,
+    "new_refs": 6
+  },
+  {
+    "directory": "aletheia-kien-code",
+    "unchanged_head_status_wip": true,
+    "original_refs_preserved": true,
+    "new_refs": 0
+  },
+  {
+    "directory": "aletheia-quan-d4e7fb2-review",
+    "unchanged_head_status_wip": true,
+    "original_refs_preserved": true,
+    "new_refs": 0
+  },
+  {
+    "directory": "aletheia-j01-api",
+    "unchanged_head_status_wip": true,
+    "original_refs_preserved": true,
+    "new_refs": 0
+  },
+  {
+    "directory": "external/aletheia-lab",
+    "unchanged_head_status_wip": true,
+    "original_refs_preserved": true,
+    "new_refs": 0
+  }
+]

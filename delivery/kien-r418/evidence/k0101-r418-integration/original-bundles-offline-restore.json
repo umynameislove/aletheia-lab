@@ -1,0 +1,42 @@
+[
+  {
+    "repository": "_repo_aletheia_ref",
+    "offline_clone": true,
+    "all_original_ref_commits_present": true,
+    "git_fsck_connectivity": true,
+    "bundle": "C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\Kien-K01-K18-R4-20261113\\.private\\k0101-r418-snapshots-v2\\_repo_aletheia_ref\\refs-complete.bundle",
+    "shallow": "false"
+  },
+  {
+    "repository": "aletheia-kien-code",
+    "offline_clone": true,
+    "all_original_ref_commits_present": true,
+    "git_fsck_connectivity": true,
+    "bundle": "C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\Kien-K01-K18-R4-20261113\\.private\\k0101-r418-snapshots-v2\\aletheia-kien-code\\refs.bundle",
+    "shallow": "false"
+  },
+  {
+    "repository": "aletheia-quan-d4e7fb2-review",
+    "offline_clone": true,
+    "all_original_ref_commits_present": true,
+    "git_fsck_connectivity": true,
+    "bundle": "C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\Kien-K01-K18-R4-20261113\\.private\\k0101-r418-snapshots-v2\\aletheia-quan-d4e7fb2-review\\refs.bundle",
+    "shallow": "false"
+  },
+  {
+    "repository": "aletheia-j01-api",
+    "offline_clone": true,
+    "all_original_ref_commits_present": true,
+    "git_fsck_connectivity": true,
+    "bundle": "C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\Kien-K01-K18-R4-20261113\\.private\\k0101-r418-snapshots-v2\\aletheia-j01-api\\refs.bundle",
+    "shallow": "false"
+  },
+  {
+    "repository": "external/aletheia-lab",
+    "offline_clone": true,
+    "all_original_ref_commits_present": true,
+    "git_fsck_connectivity": true,
+    "bundle": "C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\Kien-K01-K18-R4-20261113\\.private\\k0101-r418-snapshots-v2\\external-aletheia-lab\\refs.bundle",
+    "shallow": "false"
+  }
+]

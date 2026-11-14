@@ -1,0 +1,8 @@
+{
+  "lint": 0,
+  "hygiene": 0,
+  "maintainability": 0,
+  "bandit": 0,
+  "project_mypy": 0,
+  "hosted_mypy": 0
+}
