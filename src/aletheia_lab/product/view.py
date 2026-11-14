@@ -5,15 +5,16 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable
 from decimal import Decimal
-from typing import Final, Literal, Self, TypeAlias
+from typing import Annotated, Final, Generic, Literal, Self, TypeAlias, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, field_validator, model_validator
 
 from aletheia_lab.product.questions import (
     COUNTERFACTUAL_NOT_AVAILABLE as COUNTERFACTUAL_NOT_AVAILABLE,
 )
 from aletheia_lab.product.questions import checked_product_question
 from aletheia_lab.project.identity import SHA256_PATTERN
+from aletheia_lab.project.mapping import _identifier
 
 PRODUCT_VIEW_SCHEMA_VERSION: Final[Literal["p6-product-view/v1"]] = "p6-product-view/v1"
 
@@ -45,7 +46,6 @@ ClaimSupport: TypeAlias = Literal[
 _ID_PATTERN: Final[str] = r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
 _EDGE_KIND_PATTERN: Final[str] = r"^[A-Z][A-Z0-9_]{0,63}$"
 _FORBIDDEN_EDGE_KINDS: Final[frozenset[str]] = frozenset({"CAUSES", "RELATED_TO"})
-_METRIC_NAME_PATTERN: Final[str] = r"^[A-Za-z0-9][A-Za-z0-9._:@+-]{0,127}$"
 
 
 class _StrictFrozenModel(BaseModel):
@@ -63,26 +63,41 @@ class ProductProject(_StrictFrozenModel):
 
 
 class ProductMetricDefinition(_StrictFrozenModel):
-    metric_name: str = Field(pattern=_METRIC_NAME_PATTERN)
+    metric_name: str = Field(min_length=1, max_length=128)
     direction: Literal["higher_is_better", "lower_is_better"]
     regression_threshold: float = Field(ge=0, allow_inf_nan=False)
+
+    @field_validator("metric_name")
+    @classmethod
+    def _metric_identifier(cls, value: str) -> str:
+        return _identifier(value, label="metric_name")
 
 
 class ProductMetricObservation(_StrictFrozenModel):
     snapshot_id: str = Field(pattern=_ID_PATTERN)
-    run_id: str = Field(pattern=_METRIC_NAME_PATTERN)
+    run_id: str = Field(min_length=1, max_length=128)
     step: int | None = Field(default=None, ge=0)
     value: float = Field(allow_inf_nan=False)
+
+    @field_validator("run_id")
+    @classmethod
+    def _run_identifier(cls, value: str) -> str:
+        return _identifier(value, label="run_id")
 
 
 class ProductMetricChange(_StrictFrozenModel):
     evidence_id: str = Field(pattern=_ID_PATTERN)
-    metric_name: str = Field(pattern=_METRIC_NAME_PATTERN)
+    metric_name: str = Field(min_length=1, max_length=128)
     kind: Literal["added", "removed", "increased", "decreased"]
     before: ProductMetricObservation | None
     after: ProductMetricObservation | None
     delta: float | None = Field(allow_inf_nan=False)
     adverse_status: Literal["adverse", "not_adverse", "not_applicable"]
+
+    @field_validator("metric_name")
+    @classmethod
+    def _metric_identifier(cls, value: str) -> str:
+        return _identifier(value, label="metric_name")
 
     @model_validator(mode="after")
     def _change_reconciles(self) -> Self:
@@ -92,7 +107,7 @@ class ProductMetricChange(_StrictFrozenModel):
         return self
 
 
-def _validate_metric_change_shape(change: ProductMetricChange) -> None:
+def _validate_metric_change_shape(change: AnyProductMetricChange) -> None:
     if change.kind == "added":
         valid = change.before is None and change.after is not None and change.delta is None
         message = "added product metric requires only an after observation"
@@ -106,7 +121,7 @@ def _validate_metric_change_shape(change: ProductMetricChange) -> None:
         raise ValueError(message)
 
 
-def _validate_metric_change_pair(change: ProductMetricChange) -> None:
+def _validate_metric_change_pair(change: AnyProductMetricChange) -> None:
     if change.before is None or change.after is None or change.delta is None:
         return
     if change.before.snapshot_id == change.after.snapshot_id:
@@ -122,7 +137,7 @@ def _validate_metric_change_pair(change: ProductMetricChange) -> None:
         raise ValueError("product metric kind does not match its delta")
 
 
-def _validate_metric_adverse_status(change: ProductMetricChange) -> None:
+def _validate_metric_adverse_status(change: AnyProductMetricChange) -> None:
     not_comparable = change.kind in {"added", "removed"}
     if not_comparable != (change.adverse_status == "not_applicable"):
         raise ValueError("product metric adverse status does not match its kind")
@@ -173,6 +188,114 @@ class ProductSnapshot(_StrictFrozenModel):
         return self
 
 
+class ProductMetricDefinitionV2(ProductMetricDefinition):
+    unit: str | None
+
+    @field_validator("unit")
+    @classmethod
+    def _unit_label(cls, value: str | None) -> str | None:
+        return _metric_label(value, label="metric unit", max_length=64)
+
+
+class ProductMetricObservationV2(ProductMetricObservation):
+    class_label: str | None
+    unit: str | None
+    unit_origin: Literal["source", "declared", "unknown"]
+
+    @field_validator("class_label", "unit")
+    @classmethod
+    def _dimension_label(cls, value: str | None, info: object) -> str | None:
+        label = str(getattr(info, "field_name", "metric dimension"))
+        return _metric_label(value, label=label, max_length=64 if label == "unit" else 128)
+
+    @model_validator(mode="after")
+    def _unit_origin_reconciles(self) -> Self:
+        if (self.unit is None) != (self.unit_origin == "unknown"):
+            raise ValueError("metric unit origin must distinguish an unknown unit")
+        return self
+
+
+def _metric_label(value: str | None, *, label: str, max_length: int) -> str | None:
+    if value is None:
+        return None
+    from aletheia_lab.project.mapping import metric_label
+    return metric_label(value, label=label, max_length=max_length)
+
+
+class ProductMetricChangeV2(_StrictFrozenModel):
+    evidence_id: str = Field(pattern=_ID_PATTERN)
+    metric_name: str = Field(min_length=1, max_length=128)
+    kind: Literal["added", "removed", "increased", "decreased"]
+    before: ProductMetricObservationV2 | None
+    after: ProductMetricObservationV2 | None
+    delta: float | None = Field(allow_inf_nan=False)
+    adverse_status: Literal["adverse", "not_adverse", "not_applicable"]
+
+    @field_validator("metric_name")
+    @classmethod
+    def _metric_identifier(cls, value: str) -> str:
+        return _identifier(value, label="metric_name")
+
+    @model_validator(mode="after")
+    def _change_reconciles(self) -> Self:
+        _validate_metric_change_shape(self)
+        _validate_metric_change_pair(self)
+        _validate_metric_adverse_status(self)
+        if self.before is not None and self.after is not None and (
+            self.before.class_label != self.after.class_label or self.before.unit != self.after.unit
+        ):
+            raise ValueError("product metric observations must share class and unit")
+        return self
+
+
+AnyProductMetricChange: TypeAlias = ProductMetricChange | ProductMetricChangeV2
+AnyProductMetricObservation: TypeAlias = ProductMetricObservation | ProductMetricObservationV2
+
+
+class ProductSnapshotV2(_StrictFrozenModel):
+    id: str = Field(pattern=_ID_PATTERN)
+    baseline_id: str = Field(pattern=_ID_PATTERN)
+    sha256: str = Field(pattern=SHA256_PATTERN)
+    metric_definitions: tuple[ProductMetricDefinitionV2, ...]
+    metric_changes: tuple[ProductMetricChangeV2, ...]
+
+    @field_validator("metric_definitions")
+    @classmethod
+    def _canonical_definitions(cls, values: tuple[ProductMetricDefinitionV2, ...]) -> tuple[ProductMetricDefinitionV2, ...]:
+        names = tuple(value.metric_name for value in values)
+        if len(names) != len(set(names)):
+            raise ValueError("product metric definitions must have unique names")
+        return tuple(sorted(values, key=lambda value: value.metric_name))
+
+    @field_validator("metric_changes")
+    @classmethod
+    def _canonical_changes(cls, values: tuple[ProductMetricChangeV2, ...]) -> tuple[ProductMetricChangeV2, ...]:
+        ids = tuple(value.evidence_id for value in values)
+        identities = tuple(_metric_change_identity(value) for value in values)
+        if len(ids) != len(set(ids)) or len(identities) != len(set(identities)):
+            raise ValueError("product metric changes must have unique evidence and dimension identities")
+        return tuple(sorted(values, key=lambda value: value.evidence_id))
+
+    @model_validator(mode="after")
+    def _metrics_reconcile(self) -> Self:
+        definitions = {value.metric_name: value for value in self.metric_definitions}
+        for change in self.metric_changes:
+            definition = definitions.get(change.metric_name)
+            if definition is None:
+                raise ValueError("product metric change does not have a definition")
+            for operand, expected_snapshot in ((change.before, self.baseline_id), (change.after, self.id)):
+                if operand is not None and (operand.snapshot_id != expected_snapshot or operand.unit != definition.unit):
+                    raise ValueError("product metric observation scope or declared unit differs")
+            if change.before is not None and change.after is not None:
+                delta = Decimal(str(change.after.value)) - Decimal(str(change.before.value))
+                threshold = Decimal(str(definition.regression_threshold))
+                adverse = (delta > 0 and delta >= threshold if definition.direction == "lower_is_better"
+                           else delta < 0 and -delta >= threshold)
+                if change.adverse_status != ("adverse" if adverse else "not_adverse"):
+                    raise ValueError("product metric classification differs from the declared policy")
+        return self
+
+
 class ProductRuntime(_StrictFrozenModel):
     provider: Literal["deterministic_mock", "local_evidence"]
     model: str = Field(min_length=1, max_length=160)
@@ -203,7 +326,7 @@ class ProductTurn(_StrictFrozenModel):
     snapshot_id: str = Field(pattern=_ID_PATTERN)
     result_id: str = Field(pattern=_ID_PATTERN)
     runtime: ProductRuntime
-    question: str = Field(min_length=1, max_length=2000)
+    question: str = Field(min_length=1, max_length=4000)
     answer: str = Field(min_length=1, max_length=4000)
     abstained: bool
     visible_evidence_ids: tuple[str, ...]
@@ -335,15 +458,16 @@ class ProductGraph(_StrictFrozenModel):
         return self
 
 
-class ProductView(_StrictFrozenModel):
-    """One exact, diagnosis-visible, self-contained product projection."""
+_SnapshotT = TypeVar("_SnapshotT", ProductSnapshot, ProductSnapshotV2)
 
-    schema_version: Literal["p6-product-view/v1"] = PRODUCT_VIEW_SCHEMA_VERSION
+
+class _ProductViewBase(_StrictFrozenModel, Generic[_SnapshotT]):
+    schema_version: str
     demo_only: bool
     mode: ProductMode
     visibility: ProductVisibility
     project: ProductProject
-    snapshot: ProductSnapshot
+    snapshot: _SnapshotT
     runtime: ProductRuntime
     result: ProductResult
     conversation: ProductConversation
@@ -505,10 +629,36 @@ class ProductView(_StrictFrozenModel):
             raise ValueError("product graph disposition edges do not match its claims")
 
 
-def _metric_change_identity(change: ProductMetricChange) -> tuple[str, str, int | None]:
+class ProductView(_ProductViewBase[ProductSnapshot]):
+    """One exact, diagnosis-visible, self-contained product projection."""
+
+    schema_version: Literal["p6-product-view/v1"] = PRODUCT_VIEW_SCHEMA_VERSION
+
+
+class ProductViewV2(_ProductViewBase[ProductSnapshotV2]):
+    """A product projection retaining explicit metric class and unit semantics."""
+
+    schema_version: Literal["p6-product-view/v2"] = "p6-product-view/v2"
+
+
+AnyProductView: TypeAlias = ProductView | ProductViewV2
+_PRODUCT_VIEW_ADAPTER = TypeAdapter(Annotated[AnyProductView, Field(discriminator="schema_version")])
+
+
+def parse_product_view(value: object) -> AnyProductView:
+    return _PRODUCT_VIEW_ADAPTER.validate_python(value)
+
+
+def parse_product_view_json(value: str | bytes) -> AnyProductView:
+    return _PRODUCT_VIEW_ADAPTER.validate_json(value)
+
+
+def _metric_change_identity(change: AnyProductMetricChange) -> tuple[object, ...]:
     observation = change.before if change.before is not None else change.after
     if observation is None:
         raise ValueError("product metric change requires an observation identity")
+    if isinstance(observation, ProductMetricObservationV2):
+        return observation.run_id, change.metric_name, observation.class_label, observation.unit, observation.step
     return observation.run_id, change.metric_name, observation.step
 
 
@@ -550,4 +700,14 @@ __all__ = [
     "COUNTERFACTUAL_NOT_AVAILABLE",
     "PRODUCT_VIEW_SCHEMA_VERSION",
     "ProductView",
+    "ProductViewV2",
+    "AnyProductView",
+    "ProductSnapshotV2",
+    "ProductMetricDefinitionV2",
+    "ProductMetricObservationV2",
+    "ProductMetricChangeV2",
+    "AnyProductMetricObservation",
+    "AnyProductMetricChange",
+    "parse_product_view",
+    "parse_product_view_json",
 ]

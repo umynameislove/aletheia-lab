@@ -8,9 +8,10 @@ do not by themselves establish a regression cause.
 from __future__ import annotations
 
 import math
-from typing import Annotated, Final, Literal, TypeVar
+from decimal import Decimal
+from typing import Annotated, Final, Generic, Literal, Self, TypeAlias, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, field_validator, model_validator
 
 from aletheia_lab.project.collectors import ProjectGitState
 from aletheia_lab.project.identity import (
@@ -23,8 +24,21 @@ from aletheia_lab.project.identity import (
     SNAPSHOT_ID_PATTERN,
     canonical_project_sha256,
 )
-from aletheia_lab.project.mapping import MetricObservation
-from aletheia_lab.project.snapshots import ProjectSnapshot, ProjectSnapshotItem
+from aletheia_lab.project.mapping import (
+    AnyMetricObservation,
+    MetricObservation,
+    MetricObservationV2,
+    metric_identity,
+    validate_metric_units,
+)
+from aletheia_lab.project.snapshots import (
+    AnyProjectSnapshot,
+    ProjectSnapshotItem,
+    ProjectSnapshotV2,
+)
+
+from .regression_changes import _changed_item_fields as _changed_item_fields
+from .regression_changes import _item_change, _metric_change
 
 PROJECT_SNAPSHOT_COMPARISON_SCHEMA_VERSION: Final[
     Literal["project-snapshot-comparison/v1"]
@@ -157,15 +171,15 @@ class ProjectItemChange(_StrictFrozenModel):
         return self
 
 
-def _metric_key(value: MetricObservation) -> tuple[str, str, int | None]:
-    return value.run_id, value.metric_name, value.step
+def _metric_key(value: AnyMetricObservation) -> tuple[object, ...]:
+    return metric_identity(value) if isinstance(value, MetricObservationV2) else (value.run_id, value.metric_name, value.step)
 
 
 def _metric_change_payload(
     *,
     kind: MetricChangeKind,
-    before: MetricObservation | None,
-    after: MetricObservation | None,
+    before: AnyMetricObservation | None,
+    after: AnyMetricObservation | None,
     delta: float | None,
 ) -> dict[str, object]:
     return {
@@ -176,15 +190,18 @@ def _metric_change_payload(
     }
 
 
-class ProjectMetricChange(_StrictFrozenModel):
+_OperandT = TypeVar("_OperandT", bound=AnyMetricObservation)
+
+
+class _MetricChangeBase(_StrictFrozenModel, Generic[_OperandT]):
     metric_change_id: str = Field(pattern=_METRIC_CHANGE_ID_PATTERN)
     kind: MetricChangeKind
-    before: MetricObservation | None = None
-    after: MetricObservation | None = None
+    before: _OperandT | None = None
+    after: _OperandT | None = None
     delta: float | None = None
 
     @model_validator(mode="after")
-    def _metric_change_reconciles(self) -> ProjectMetricChange:
+    def _metric_change_reconciles(self) -> Self:
         if self.kind == "added" and (self.before is not None or self.after is None):
             raise ValueError("added metric requires only an after observation")
         if self.kind == "removed" and (self.before is None or self.after is not None):
@@ -192,12 +209,14 @@ class ProjectMetricChange(_StrictFrozenModel):
         if self.kind in {"increased", "decreased"}:
             if self.before is None or self.after is None or self.delta is None:
                 raise ValueError("changed metric requires before, after and delta")
-            if _metric_key(self.before) != _metric_key(self.after):
+            if metric_identity(self.before) != metric_identity(self.after):
                 raise ValueError("changed metric observations must share an identity")
-            expected = self.after.metric_value - self.before.metric_value
+            version2 = isinstance(self.before, MetricObservationV2)
+            expected = (float(Decimal(str(self.after.metric_value)) - Decimal(str(self.before.metric_value)))
+                        if version2 else self.after.metric_value - self.before.metric_value)
             if self.delta == 0:
                 raise ValueError("changed metric delta must be non-zero")
-            if not math.isclose(self.delta, expected, rel_tol=0.0, abs_tol=1e-15):
+            if (self.delta != expected if version2 else not math.isclose(self.delta, expected, rel_tol=0.0, abs_tol=1e-15)):
                 raise ValueError("metric delta does not match observations")
             if (self.kind == "increased") != (self.delta > 0):
                 raise ValueError("metric direction does not match delta")
@@ -211,10 +230,20 @@ class ProjectMetricChange(_StrictFrozenModel):
         return self
 
 
-class ProjectSnapshotComparison(_StrictFrozenModel):
-    schema_version: Literal["project-snapshot-comparison/v1"] = (
-        PROJECT_SNAPSHOT_COMPARISON_SCHEMA_VERSION
-    )
+class ProjectMetricChange(_MetricChangeBase[MetricObservation]):
+    pass
+
+
+class ProjectMetricChangeV2(_MetricChangeBase[MetricObservationV2]):
+    pass
+
+
+AnyProjectMetricChange: TypeAlias = ProjectMetricChange | ProjectMetricChangeV2
+_ChangeT = TypeVar("_ChangeT", ProjectMetricChange, ProjectMetricChangeV2)
+
+
+class _ComparisonBase(_StrictFrozenModel, Generic[_ChangeT]):
+    schema_version: str
     comparison_id: str = Field(pattern=SNAPSHOT_COMPARISON_ID_PATTERN)
     project_id: str = Field(pattern=PROJECT_ID_PATTERN)
     before_snapshot_id: str = Field(pattern=SNAPSHOT_ID_PATTERN)
@@ -224,7 +253,7 @@ class ProjectSnapshotComparison(_StrictFrozenModel):
     status: Literal["unchanged", "changed"]
     source_changes: tuple[SourceChange, ...]
     item_changes: tuple[ProjectItemChange, ...]
-    metric_changes: tuple[ProjectMetricChange, ...]
+    metric_changes: tuple[_ChangeT, ...]
     comparison_sha256: Sha256
 
     @field_validator("source_changes")
@@ -247,15 +276,15 @@ class ProjectSnapshotComparison(_StrictFrozenModel):
     @field_validator("metric_changes")
     @classmethod
     def _canonical_metric_changes(
-        cls, values: tuple[ProjectMetricChange, ...]
-    ) -> tuple[ProjectMetricChange, ...]:
+        cls, values: tuple[_ChangeT, ...]
+    ) -> tuple[_ChangeT, ...]:
         ids = tuple(value.metric_change_id for value in values)
         if len(ids) != len(set(ids)):
             raise ValueError("metric changes must be unique")
         return tuple(sorted(values, key=lambda value: value.metric_change_id))
 
     @model_validator(mode="after")
-    def _comparison_reconciles(self) -> ProjectSnapshotComparison:
+    def _comparison_reconciles(self) -> Self:
         changed = bool(self.source_changes or self.item_changes or self.metric_changes)
         if (self.status == "changed") != changed:
             raise ValueError("comparison status does not reconcile with change census")
@@ -272,91 +301,38 @@ class ProjectSnapshotComparison(_StrictFrozenModel):
         return self
 
 
-def _changed_item_fields(
-    before: ProjectSnapshotItem, after: ProjectSnapshotItem
-) -> tuple[ChangedItemField, ...]:
-    fields: tuple[ChangedItemField, ...] = (
-        "project_item_id",
-        "relative_path",
-        "source_type",
-        "source_sha256",
-        "artifact_sha256",
-        "observation_sha256",
-        "visibility",
-        "redaction_state",
-    )
-    return tuple(field for field in fields if getattr(before, field) != getattr(after, field))
+class ProjectSnapshotComparison(_ComparisonBase[ProjectMetricChange]):
+    schema_version: Literal["project-snapshot-comparison/v1"] = PROJECT_SNAPSHOT_COMPARISON_SCHEMA_VERSION
 
 
-def _item_change(
-    kind: ItemChangeKind,
-    before: ProjectSnapshotItem | None,
-    after: ProjectSnapshotItem | None,
-    *,
-    rename_evidence_sha256: str | None = None,
-) -> ProjectItemChange:
-    if before is None:
-        fields: tuple[ChangedItemField, ...] = (
-            "project_item_id",
-            "relative_path",
-            "source_type",
-            "source_sha256",
-            "artifact_sha256",
-            "observation_sha256",
-            "visibility",
-            "redaction_state",
-        )
-    elif after is None:
-        fields = (
-            "project_item_id",
-            "relative_path",
-            "source_type",
-            "source_sha256",
-            "artifact_sha256",
-            "observation_sha256",
-            "visibility",
-            "redaction_state",
-        )
-    else:
-        fields = _changed_item_fields(before, after)
-    fields = tuple(sorted(fields))
-    payload = _item_change_payload(
-        kind=kind,
-        before=before,
-        after=after,
-        changed_fields=fields,
-        rename_evidence_sha256=rename_evidence_sha256,
-    )
-    return ProjectItemChange(
-        change_id=f"p3-change-{canonical_project_sha256(payload)}",
-        kind=kind,
-        before=before,
-        after=after,
-        changed_fields=fields,
-        rename_evidence_sha256=rename_evidence_sha256,
-    )
+class ProjectSnapshotComparisonV2(_ComparisonBase[ProjectMetricChangeV2]):
+    schema_version: Literal["project-snapshot-comparison/v2"] = "project-snapshot-comparison/v2"
+
+    @model_validator(mode="after")
+    def _units_are_compatible(self) -> Self:
+        validate_metric_comparison_units(
+            tuple(change.before for change in self.metric_changes if change.before is not None),
+            tuple(change.after for change in self.metric_changes if change.after is not None))
+        return self
 
 
-def _metric_change(
-    before: MetricObservation | None, after: MetricObservation | None
-) -> ProjectMetricChange:
-    if before is None:
-        kind: MetricChangeKind = "added"
-        delta = None
-    elif after is None:
-        kind = "removed"
-        delta = None
-    else:
-        delta = after.metric_value - before.metric_value
-        kind = "increased" if delta > 0 else "decreased"
-    payload = _metric_change_payload(kind=kind, before=before, after=after, delta=delta)
-    return ProjectMetricChange(
-        metric_change_id=f"p3-metric-change-{canonical_project_sha256(payload)}",
-        kind=kind,
-        before=before,
-        after=after,
-        delta=delta,
-    )
+AnySnapshotComparison: TypeAlias = ProjectSnapshotComparison | ProjectSnapshotComparisonV2
+_COMPARISON_ADAPTER = TypeAdapter(Annotated[AnySnapshotComparison, Field(discriminator="schema_version")])
+
+
+def parse_snapshot_comparison(value: object) -> AnySnapshotComparison:
+    return (_COMPARISON_ADAPTER.validate_json(value) if isinstance(value, str | bytes)
+            else _COMPARISON_ADAPTER.validate_python(value))
+
+
+def validate_metric_comparison_units(before: tuple[AnyMetricObservation, ...],
+                                    after: tuple[AnyMetricObservation, ...]) -> None:
+    validate_metric_units(before)
+    validate_metric_units(after)
+    before_units = {value.metric_name: getattr(value, "unit", None) for value in before}
+    after_units = {value.metric_name: getattr(value, "unit", None) for value in after}
+    if any(before_units[name] != after_units[name] for name in before_units.keys() & after_units.keys()):
+        raise ProjectRegressionError("metric units differ; conversion or cross-unit comparison is not supported")
 
 
 def _explicit_renames(
@@ -381,15 +357,17 @@ def _explicit_renames(
 
 
 def compare_project_snapshots(
-    before: ProjectSnapshot,
-    after: ProjectSnapshot,
+    before: AnyProjectSnapshot,
+    after: AnyProjectSnapshot,
     *,
     after_git_state: ProjectGitState | None = None,
-) -> ProjectSnapshotComparison:
+) -> AnySnapshotComparison:
     """Compare two validated states; rename inference requires exact Git evidence."""
 
     checked_before = _checked(before)
     checked_after = _checked(after)
+    if isinstance(checked_before, ProjectSnapshotV2) != isinstance(checked_after, ProjectSnapshotV2):
+        raise ProjectRegressionError("snapshot semantics versions differ; mixed-version comparison is not supported")
     if checked_before.project_id != checked_after.project_id:
         raise ProjectRegressionError("cannot compare snapshots from different projects")
     checked_git = None if after_git_state is None else _checked(after_git_state)
@@ -425,14 +403,17 @@ def compare_project_snapshots(
     for path in sorted(set(after_items) - set(before_items) - renamed_targets):
         item_changes.append(_item_change("added", None, after_items[path]))
 
-    before_metrics = {_metric_key(value): value for value in checked_before.metric_observations}
-    after_metrics = {_metric_key(value): value for value in checked_after.metric_observations}
-    metric_changes: list[ProjectMetricChange] = []
+    version2 = isinstance(checked_before, ProjectSnapshotV2) or isinstance(checked_after, ProjectSnapshotV2)
+    if version2:
+        validate_metric_comparison_units(checked_before.metric_observations, checked_after.metric_observations)
+    before_metrics = {(metric_identity(value) if version2 else _metric_key(value)): value for value in checked_before.metric_observations}
+    after_metrics = {(metric_identity(value) if version2 else _metric_key(value)): value for value in checked_after.metric_observations}
+    metric_changes: list[AnyProjectMetricChange] = []
     for key in sorted(set(before_metrics) | set(after_metrics), key=str):
         old = before_metrics.get(key)
         new = after_metrics.get(key)
         if old is None or new is None or old.metric_value != new.metric_value:
-            metric_changes.append(_metric_change(old, new))
+            metric_changes.append(_metric_change(old, new, version2=version2))
 
     source_pairs: tuple[tuple[SourceChange, object, object], ...] = (
         ("source_bundle", checked_before.source_bundle_sha256, checked_after.source_bundle_sha256),
@@ -457,7 +438,7 @@ def compare_project_snapshots(
         "changed" if source_changes or canonical_items or canonical_metrics else "unchanged"
     )
     values = {
-        "schema_version": PROJECT_SNAPSHOT_COMPARISON_SCHEMA_VERSION,
+        "schema_version": "project-snapshot-comparison/v2" if version2 else PROJECT_SNAPSHOT_COMPARISON_SCHEMA_VERSION,
         "project_id": checked_before.project_id,
         "before_snapshot_id": checked_before.snapshot_id,
         "after_snapshot_id": checked_after.snapshot_id,
@@ -469,7 +450,9 @@ def compare_project_snapshots(
         "metric_changes": [value.model_dump(mode="json") for value in canonical_metrics],
     }
     digest = canonical_project_sha256(values)
-    return ProjectSnapshotComparison(
+    model = ProjectSnapshotComparisonV2 if version2 else ProjectSnapshotComparison
+    return model.model_validate(dict(
+        schema_version=values["schema_version"],
         comparison_id=f"p3-comparison-{digest}",
         project_id=checked_before.project_id,
         before_snapshot_id=checked_before.snapshot_id,
@@ -481,7 +464,7 @@ def compare_project_snapshots(
         item_changes=canonical_items,
         metric_changes=canonical_metrics,
         comparison_sha256=digest,
-    )
+    ))
 
 
 class ProjectRegressionEvent(_StrictFrozenModel):
@@ -521,7 +504,7 @@ class ProjectRegressionEvent(_StrictFrozenModel):
 
 
 def build_project_regression_event(
-    comparison: ProjectSnapshotComparison,
+    comparison: AnySnapshotComparison,
 ) -> ProjectRegressionEvent:
     """Mint a non-causal regression candidate from observed metric changes."""
 
@@ -734,9 +717,9 @@ class ProjectEvidenceView(_StrictFrozenModel):
 
 
 def build_project_regression_evidence(
-    before: ProjectSnapshot,
-    after: ProjectSnapshot,
-    comparison: ProjectSnapshotComparison,
+    before: AnyProjectSnapshot,
+    after: AnyProjectSnapshot,
+    comparison: AnySnapshotComparison,
     event: ProjectRegressionEvent,
 ) -> ProjectEvidenceBundle:
     """Build a payload-free evidence graph for one regression candidate."""
