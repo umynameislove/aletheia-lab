@@ -14727,8 +14727,1341 @@
         ],
         "title": "ProductProject",
         "type": "object"
+      },
+      "ProductResult": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "complete",
+              "technical_failure"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "disposition": {
+            "anyOf": [
+              {
+                "enum": [
+                  "supported",
+                  "mixed",
+                  "abstain",
+                  "not_estimated",
+                  "redacted"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disposition"
+          },
+          "causal_status": {
+            "const": "unverified",
+            "title": "Causal Status",
+            "type": "string"
+          },
+          "summary": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Summary",
+            "type": "string"
+          },
+          "denominators": {
+            "$ref": "#/components/schemas/ProductDenominators"
+          },
+          "allowed_wording": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Allowed Wording",
+            "type": "string"
+          },
+          "forbidden_wording": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Forbidden Wording",
+            "type": "string"
+          },
+          "caveat": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Caveat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "disposition",
+          "causal_status",
+          "summary",
+          "denominators",
+          "allowed_wording",
+          "forbidden_wording",
+          "caveat"
+        ],
+        "title": "ProductResult",
+        "type": "object"
+      },
+      "ProductRuntime": {
+        "additionalProperties": false,
+        "properties": {
+          "provider": {
+            "enum": [
+              "deterministic_mock",
+              "local_evidence"
+            ],
+            "title": "Provider",
+            "type": "string"
+          },
+          "model": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Model",
+            "type": "string"
+          },
+          "external_call": {
+            "const": false,
+            "title": "External Call",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "provider",
+          "model",
+          "external_call"
+        ],
+        "title": "ProductRuntime",
+        "type": "object"
+      },
+      "ResultHeader": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "product-api/v1-draft",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "workspace_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "project_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "result_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Result Id",
+            "type": "string"
+          },
+          "snapshot_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "view_schema_version": {
+            "enum": [
+              "p6-product-view/v1",
+              "p6-product-view/v2"
+            ],
+            "title": "View Schema Version",
+            "type": "string"
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProductProject"
+          },
+          "runtime": {
+            "$ref": "#/components/schemas/ProductRuntime"
+          },
+          "result": {
+            "$ref": "#/components/schemas/ProductResult"
+          },
+          "conversation_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Conversation Id",
+            "type": "string"
+          },
+          "turn_count": {
+            "minimum": 0,
+            "title": "Turn Count",
+            "type": "integer"
+          },
+          "claim_count": {
+            "minimum": 0,
+            "title": "Claim Count",
+            "type": "integer"
+          },
+          "evidence_count": {
+            "minimum": 0,
+            "title": "Evidence Count",
+            "type": "integer"
+          },
+          "node_count": {
+            "minimum": 0,
+            "title": "Node Count",
+            "type": "integer"
+          },
+          "edge_count": {
+            "minimum": 0,
+            "title": "Edge Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "schema_version",
+          "workspace_id",
+          "project_id",
+          "result_id",
+          "snapshot_id",
+          "view_schema_version",
+          "project",
+          "runtime",
+          "result",
+          "conversation_id",
+          "turn_count",
+          "claim_count",
+          "evidence_count",
+          "node_count",
+          "edge_count"
+        ],
+        "title": "ResultHeader",
+        "type": "object"
+      },
+      "ProductConversation": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/ProductTurn"
+            },
+            "title": "Turns",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "turns"
+        ],
+        "title": "ProductConversation",
+        "type": "object"
+      },
+      "ProductMetricChange": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Evidence Id",
+            "type": "string"
+          },
+          "metric_name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Metric Name",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "added",
+              "removed",
+              "increased",
+              "decreased"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "before": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProductMetricObservation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProductMetricObservation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "delta": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta"
+          },
+          "adverse_status": {
+            "enum": [
+              "adverse",
+              "not_adverse",
+              "not_applicable"
+            ],
+            "title": "Adverse Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "evidence_id",
+          "metric_name",
+          "kind",
+          "before",
+          "after",
+          "delta",
+          "adverse_status"
+        ],
+        "title": "ProductMetricChange",
+        "type": "object"
+      },
+      "ProductMetricDefinition": {
+        "additionalProperties": false,
+        "properties": {
+          "metric_name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Metric Name",
+            "type": "string"
+          },
+          "direction": {
+            "enum": [
+              "higher_is_better",
+              "lower_is_better"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "regression_threshold": {
+            "minimum": 0,
+            "title": "Regression Threshold",
+            "type": "number"
+          }
+        },
+        "required": [
+          "metric_name",
+          "direction",
+          "regression_threshold"
+        ],
+        "title": "ProductMetricDefinition",
+        "type": "object"
+      },
+      "ProductMetricObservation": {
+        "additionalProperties": false,
+        "properties": {
+          "snapshot_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "run_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Run Id",
+            "type": "string"
+          },
+          "step": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Step"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "snapshot_id",
+          "run_id",
+          "value"
+        ],
+        "title": "ProductMetricObservation",
+        "type": "object"
+      },
+      "ProductSnapshot": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "baseline_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Baseline Id",
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Sha256",
+            "type": "string"
+          },
+          "metric_definitions": {
+            "items": {
+              "$ref": "#/components/schemas/ProductMetricDefinition"
+            },
+            "title": "Metric Definitions",
+            "type": "array"
+          },
+          "metric_changes": {
+            "items": {
+              "$ref": "#/components/schemas/ProductMetricChange"
+            },
+            "title": "Metric Changes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "baseline_id",
+          "sha256",
+          "metric_definitions",
+          "metric_changes"
+        ],
+        "title": "ProductSnapshot",
+        "type": "object"
+      },
+      "ProductTurn": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "snapshot_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "result_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Result Id",
+            "type": "string"
+          },
+          "runtime": {
+            "$ref": "#/components/schemas/ProductRuntime"
+          },
+          "question": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Question",
+            "type": "string"
+          },
+          "answer": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Answer",
+            "type": "string"
+          },
+          "abstained": {
+            "title": "Abstained",
+            "type": "boolean"
+          },
+          "visible_evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Visible Evidence Ids",
+            "type": "array"
+          },
+          "missing_evidence": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Evidence",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "snapshot_id",
+          "result_id",
+          "runtime",
+          "question",
+          "answer",
+          "abstained",
+          "visible_evidence_ids",
+          "missing_evidence"
+        ],
+        "title": "ProductTurn",
+        "type": "object"
+      },
+      "ProductView": {
+        "additionalProperties": false,
+        "description": "One exact, diagnosis-visible, self-contained product projection.",
+        "properties": {
+          "schema_version": {
+            "const": "p6-product-view/v1",
+            "default": "p6-product-view/v1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "demo_only": {
+            "title": "Demo Only",
+            "type": "boolean"
+          },
+          "mode": {
+            "const": "project_audit",
+            "title": "Mode",
+            "type": "string"
+          },
+          "visibility": {
+            "const": "diagnosis",
+            "title": "Visibility",
+            "type": "string"
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProductProject"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/ProductSnapshot"
+          },
+          "runtime": {
+            "$ref": "#/components/schemas/ProductRuntime"
+          },
+          "result": {
+            "$ref": "#/components/schemas/ProductResult"
+          },
+          "conversation": {
+            "$ref": "#/components/schemas/ProductConversation"
+          },
+          "claims": {
+            "items": {
+              "$ref": "#/components/schemas/ProductClaim"
+            },
+            "title": "Claims",
+            "type": "array"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/ProductEvidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "graph": {
+            "$ref": "#/components/schemas/ProductGraph"
+          }
+        },
+        "required": [
+          "demo_only",
+          "mode",
+          "visibility",
+          "project",
+          "snapshot",
+          "runtime",
+          "result",
+          "conversation",
+          "claims",
+          "evidence",
+          "graph"
+        ],
+        "title": "ProductView",
+        "type": "object"
+      },
+      "ResultView": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "product-api/v1-draft",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "workspace_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "project_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "result_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Result Id",
+            "type": "string"
+          },
+          "view": {
+            "$ref": "#/components/schemas/ProductView"
+          }
+        },
+        "required": [
+          "schema_version",
+          "workspace_id",
+          "project_id",
+          "result_id",
+          "view"
+        ],
+        "title": "ResultView",
+        "type": "object"
+      },
+      "ProductMetricChangeV2": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Evidence Id",
+            "type": "string"
+          },
+          "metric_name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Metric Name",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "added",
+              "removed",
+              "increased",
+              "decreased"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "before": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProductMetricObservationV2"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProductMetricObservationV2"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "delta": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta"
+          },
+          "adverse_status": {
+            "enum": [
+              "adverse",
+              "not_adverse",
+              "not_applicable"
+            ],
+            "title": "Adverse Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "evidence_id",
+          "metric_name",
+          "kind",
+          "before",
+          "after",
+          "delta",
+          "adverse_status"
+        ],
+        "title": "ProductMetricChangeV2",
+        "type": "object"
+      },
+      "ProductMetricDefinitionV2": {
+        "additionalProperties": false,
+        "properties": {
+          "metric_name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Metric Name",
+            "type": "string"
+          },
+          "direction": {
+            "enum": [
+              "higher_is_better",
+              "lower_is_better"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "regression_threshold": {
+            "minimum": 0,
+            "title": "Regression Threshold",
+            "type": "number"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "required": [
+          "metric_name",
+          "direction",
+          "regression_threshold",
+          "unit"
+        ],
+        "title": "ProductMetricDefinitionV2",
+        "type": "object"
+      },
+      "ProductMetricObservationV2": {
+        "additionalProperties": false,
+        "properties": {
+          "snapshot_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "run_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Run Id",
+            "type": "string"
+          },
+          "step": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Step"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          },
+          "class_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Class Label"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "unit_origin": {
+            "enum": [
+              "source",
+              "declared",
+              "unknown"
+            ],
+            "title": "Unit Origin",
+            "type": "string"
+          }
+        },
+        "required": [
+          "snapshot_id",
+          "run_id",
+          "value",
+          "class_label",
+          "unit",
+          "unit_origin"
+        ],
+        "title": "ProductMetricObservationV2",
+        "type": "object"
+      },
+      "ProductSnapshotV2": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "baseline_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Baseline Id",
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Sha256",
+            "type": "string"
+          },
+          "metric_definitions": {
+            "items": {
+              "$ref": "#/components/schemas/ProductMetricDefinitionV2"
+            },
+            "title": "Metric Definitions",
+            "type": "array"
+          },
+          "metric_changes": {
+            "items": {
+              "$ref": "#/components/schemas/ProductMetricChangeV2"
+            },
+            "title": "Metric Changes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "baseline_id",
+          "sha256",
+          "metric_definitions",
+          "metric_changes"
+        ],
+        "title": "ProductSnapshotV2",
+        "type": "object"
+      },
+      "ProductViewV2": {
+        "additionalProperties": false,
+        "description": "A product projection retaining explicit metric class and unit semantics.",
+        "properties": {
+          "schema_version": {
+            "const": "p6-product-view/v2",
+            "default": "p6-product-view/v2",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "demo_only": {
+            "title": "Demo Only",
+            "type": "boolean"
+          },
+          "mode": {
+            "const": "project_audit",
+            "title": "Mode",
+            "type": "string"
+          },
+          "visibility": {
+            "const": "diagnosis",
+            "title": "Visibility",
+            "type": "string"
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProductProject"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/ProductSnapshotV2"
+          },
+          "runtime": {
+            "$ref": "#/components/schemas/ProductRuntime"
+          },
+          "result": {
+            "$ref": "#/components/schemas/ProductResult"
+          },
+          "conversation": {
+            "$ref": "#/components/schemas/ProductConversation"
+          },
+          "claims": {
+            "items": {
+              "$ref": "#/components/schemas/ProductClaim"
+            },
+            "title": "Claims",
+            "type": "array"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/ProductEvidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "graph": {
+            "$ref": "#/components/schemas/ProductGraph"
+          }
+        },
+        "required": [
+          "demo_only",
+          "mode",
+          "visibility",
+          "project",
+          "snapshot",
+          "runtime",
+          "result",
+          "conversation",
+          "claims",
+          "evidence",
+          "graph"
+        ],
+        "title": "ProductViewV2",
+        "type": "object"
+      },
+      "ResultViewV2": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "product-api/v1-draft",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "workspace_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "project_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "result_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Result Id",
+            "type": "string"
+          },
+          "view": {
+            "$ref": "#/components/schemas/ProductViewV2"
+          }
+        },
+        "required": [
+          "schema_version",
+          "workspace_id",
+          "project_id",
+          "result_id",
+          "view"
+        ],
+        "title": "ResultViewV2",
+        "type": "object"
+      },
+      "RevokedInvitation": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "product-api/v1-draft",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "workspace_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "invitation_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Invitation Id",
+            "type": "string"
+          },
+          "revoked": {
+            "const": true,
+            "title": "Revoked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "schema_version",
+          "workspace_id",
+          "invitation_id",
+          "revoked"
+        ],
+        "title": "RevokedInvitation",
+        "type": "object"
+      },
+      "SourceGrant": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "product-api/v1-draft",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "workspace_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "source_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Source Id",
+            "type": "string"
+          },
+          "user_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "User Id",
+            "type": "string"
+          },
+          "actions": {
+            "items": {
+              "enum": [
+                "read",
+                "write",
+                "review",
+                "export",
+                "delete"
+              ],
+              "type": "string"
+            },
+            "maxItems": 5,
+            "title": "Actions",
+            "type": "array"
+          },
+          "revision": {
+            "minimum": 0,
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "schema_version",
+          "workspace_id",
+          "source_id",
+          "user_id",
+          "actions",
+          "revision"
+        ],
+        "title": "SourceGrant",
+        "type": "object"
+      },
+      "Submission": {
+        "additionalProperties": false,
+        "properties": {
+          "operation": {
+            "enum": [
+              "preview",
+              "confirm",
+              "analyze"
+            ],
+            "title": "Operation",
+            "type": "string"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source Id"
+          },
+          "mapping": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mapping"
+          },
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Snapshot Id"
+          },
+          "question": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Question"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "title": "Submission",
+        "type": "object"
+      },
+      "TransferOwner": {
+        "additionalProperties": false,
+        "properties": {
+          "user_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id"
+        ],
+        "title": "TransferOwner",
+        "type": "object"
+      },
+      "Membership": {
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "enum": [
+              "owner",
+              "admin",
+              "analyst",
+              "reviewer",
+              "viewer"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 0,
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "role",
+          "revision"
+        ],
+        "title": "Membership",
+        "type": "object"
+      },
+      "Workspace": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "product-api/v1-draft",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "workspace_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "workspace_name": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Workspace Name",
+            "type": "string"
+          },
+          "membership": {
+            "$ref": "#/components/schemas/Membership"
+          }
+        },
+        "required": [
+          "schema_version",
+          "workspace_id",
+          "workspace_name",
+          "membership"
+        ],
+        "title": "Workspace",
+        "type": "object"
+      },
+      "WorkspacePage": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "product-api/v1-draft",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Workspace"
+            },
+            "maxItems": 200,
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Next Cursor"
+          },
+          "total": {
+            "default": null,
+            "title": "Total",
+            "type": "null"
+          },
+          "total_kind": {
+            "const": "unknown",
+            "default": "unknown",
+            "title": "Total Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "items"
+        ],
+        "title": "WorkspacePage",
+        "type": "object"
+      },
+      "JobOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "product-api/v1-draft",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "workspace_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "job_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Job Id",
+            "type": "string"
+          },
+          "operation": {
+            "enum": [
+              "preview",
+              "confirm",
+              "analyze",
+              "follow_up",
+              "refresh"
+            ],
+            "title": "Operation",
+            "type": "string"
+          },
+          "result": {
+            "additionalProperties": true,
+            "title": "Result",
+            "type": "object"
+          }
+        },
+        "required": [
+          "schema_version",
+          "workspace_id",
+          "job_id",
+          "operation",
+          "result"
+        ],
+        "title": "JobOutput[dict[str, object]]",
+        "type": "object"
       }
     },
-    "securitySchemes": {}
+    "securitySchemes": {
+      "SessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-aletheia_session"
+      },
+      "CsrfHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-csrf-token"
+      },
+      "CsrfCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-aletheia_csrf"
+      }
+    }
   }
 }
