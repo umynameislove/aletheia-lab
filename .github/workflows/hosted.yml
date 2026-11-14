@@ -93,7 +93,9 @@ jobs:
     needs: contracts
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_postgres }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # The complete 437-case native suite reached 98% at the former 15-minute
+    # job ceiling. Reserve setup and query-probe time around the bounded tests.
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:16-bookworm@sha256:a49f7438ba03589f9b1ca062f2da82e899b48ea1dc50d2449fa09a70be83ebca
