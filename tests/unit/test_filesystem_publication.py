@@ -208,15 +208,6 @@ def test_immutable_file_publication_is_create_only_and_idempotent(tmp_path: Path
     assert not tuple(destination.parent.glob("*.stage"))
 
 
-def test_immutable_file_publication_supports_long_windows_paths(tmp_path: Path) -> None:
-    destination = tmp_path / ("deep-" * 20) / ("owned-" * 16) / ("a" * 62)
-    assert len(str(destination)) > 260
-    assert publish_immutable_file(destination, b"payload") == "created"
-    assert publish_immutable_file(destination, b"payload") == "identical"
-    assert windows_io_path(destination).read_bytes() == b"payload"
-    assert not tuple(windows_io_path(destination.parent).glob("*.stage"))
-
-
 def test_immutable_file_publication_rejects_conflicting_bytes(tmp_path: Path) -> None:
     destination = tmp_path / "receipt.json"
     publish_immutable_file(destination, b"first\n")

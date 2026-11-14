@@ -14,8 +14,8 @@ from http.cookies import SimpleCookie
 import httpx2
 from pydantic import SecretStr
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_contract.session_capabilities import Session
-from aletheia_lab.project.identity import content_hasher
 
 from .capacity_models import Actor, Profile
 

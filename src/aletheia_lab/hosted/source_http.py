@@ -13,11 +13,11 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_auth.boundary import SESSION_COOKIE, read_opaque_cookie
 from aletheia_lab.hosted_auth.csrf import CsrfMiddleware, CsrfTokens, SessionBindingLoader
 from aletheia_lab.hosted_auth.sessions import credential_digest
 from aletheia_lab.hosted_contract.session_capabilities import Identifier, Version
-from aletheia_lab.project.identity import content_hasher
 
 from .action_audit import report_outcome, request_context
 from .application import _ACCESS_ERRORS, VERSION, AccessDenied, Send, _cookie, _problem, _Response

@@ -14,10 +14,10 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel, SecretStr
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_contract.imports import PreviewImport
 from aletheia_lab.product.questions import checked_product_question
 from aletheia_lab.product.view import AnyProductView
-from aletheia_lab.project.identity import content_hasher
 
 from .async_work import run_blocking
 from .postgres_sources import SourceNotFound

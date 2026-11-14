@@ -11,8 +11,8 @@ from uuid import uuid4
 
 from pydantic import SecretStr
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_auth.postgres_sessions import Connection, Pool, _digest
-from aletheia_lab.project.identity import content_hasher
 
 from .action_audit import record_action
 from .async_work import run_blocking

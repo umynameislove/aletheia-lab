@@ -17,8 +17,8 @@ from urllib.parse import quote
 import httpx2
 from pydantic import ValidationError
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_contract.session_capabilities import Problem
-from aletheia_lab.project.identity import content_hasher
 
 from .capacity_assertions import CorrectnessFailure, assert_json, checked_path, pointer, template
 from .capacity_models import Actor, Journey, Profile, Step

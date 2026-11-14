@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Literal, Protocol
 
-from aletheia_lab.project.identity import content_hasher
+from aletheia_lab.hosted.content_hashing import content_hasher
 
 from .abuse import RatePolicy
 from .postgres_admission import AUTH_OPERATIONS

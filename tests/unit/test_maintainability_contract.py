@@ -80,6 +80,7 @@ def test_direct_hash_budgets_are_frozen_per_package() -> None:
         "diagnosis": 3,
         "evaluation": 7,
         "evidence": 3,
+        "hosted": 1,
         "project": 4,
     }
 

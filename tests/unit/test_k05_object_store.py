@@ -34,6 +34,20 @@ def test_publish_is_idempotent_and_checks_canonical_envelope(tmp_path):
                       media_type="application/json", schema_version="synthetic/v1")
 
 
+def test_publish_near_windows_path_limit(tmp_path):
+    # The object itself fits MAX_PATH, but the longer sibling stage does not.
+    root = tmp_path / ("a" * 40)
+    root /= "b" * (185 - len(str(root.resolve())) - 1)
+    store = FilesystemObjectStore(root)
+    payload = b"synthetic deep path"
+    descriptor = store.publish(payload, media_type="application/octet-stream")
+    assert len(str(store.path(descriptor.sha256))) == 258
+    assert store.publish(payload, media_type="application/octet-stream") == descriptor
+    assert store.read(descriptor) == payload
+    candidate, = store.candidates()
+    assert not candidate.staged
+
+
 @pytest.mark.parametrize("corruption", ["missing", "truncated", "same_length", "oversized"])
 def test_one_object_corruption_fails_closed(tmp_path, corruption):
     store = FilesystemObjectStore(tmp_path)

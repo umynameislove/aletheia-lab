@@ -8,6 +8,7 @@ from typing import cast
 
 from pydantic import SecretStr
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_auth.boundary import SESSION_COOKIE, read_opaque_cookie
 from aletheia_lab.hosted_auth.csrf import CsrfTokens
 from aletheia_lab.hosted_auth.postgres_sessions import Connection, _digest
@@ -15,7 +16,6 @@ from aletheia_lab.hosted_auth.sessions import credential_digest
 from aletheia_lab.hosted_contract.imports import ConfirmImport, PreviewRequest
 from aletheia_lab.hosted_contract.job_attempts import JobAttemptPage
 from aletheia_lab.hosted_contract.job_page import Job, JobReceipt
-from aletheia_lab.project.identity import content_hasher
 
 from .application import AccessDenied, Send, _cookie, _Response
 from .import_errors import PreviewRequired

@@ -5,8 +5,8 @@ import json
 import re
 from pathlib import Path
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_auth.postgres_sessions import Connection
-from aletheia_lab.project.identity import content_hasher
 
 from .read_indexes import ReadIndexesRejected, install_if_possible, verified_extension
 

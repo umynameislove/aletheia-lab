@@ -6,9 +6,9 @@ import random
 from collections.abc import Callable
 from typing import Literal
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_contract.job_page import Job
 from aletheia_lab.hosted_contract.job_updates import JobUpdate
-from aletheia_lab.project.identity import content_hasher
 
 from .cursors import CursorInvalid, ScopedCursors
 

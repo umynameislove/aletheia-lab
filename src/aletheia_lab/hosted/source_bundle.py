@@ -15,7 +15,7 @@ import zlib
 from dataclasses import dataclass
 from typing import Any, Protocol, cast
 
-from aletheia_lab.project.identity import content_hasher
+from aletheia_lab.hosted.content_hashing import content_hasher
 
 MAXIMUM_UPLOAD_BYTES = 200 * 1024 * 1024
 MAXIMUM_EXPANDED_BYTES = 512 * 1024 * 1024

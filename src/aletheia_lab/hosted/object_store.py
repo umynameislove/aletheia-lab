@@ -12,8 +12,13 @@ from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 
-from aletheia_lab.filesystem import _fsync_directory, publish_immutable_file, write_new_file
-from aletheia_lab.project.identity import content_hasher
+from aletheia_lab.filesystem import (
+    _fsync_directory,
+    publish_immutable_file,
+    windows_io_path,
+    write_new_file,
+)
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.project.persistence import _json_bytes
 
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -129,7 +134,7 @@ class FilesystemObjectStore:
         _regular(destination.parent, directory=True)
         try:
             _fsync_directory(self.object_root)
-            publish_immutable_file(destination, payload)
+            publish_immutable_file(windows_io_path(destination), payload)
             _fsync_directory(destination.parent)
         except OSError:
             raise ObjectIntegrityError("Object publication failed") from None

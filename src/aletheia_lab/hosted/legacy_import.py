@@ -16,6 +16,7 @@ from typing import Any
 
 from pydantic import SecretStr
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.product.lifecycle import (
     ProductLifecycleRecord,
     _canonical_utc_timestamp,
@@ -27,7 +28,6 @@ from aletheia_lab.project.contracts import ProjectBundle
 from aletheia_lab.project.identity import (
     PROJECT_ID_PATTERN,
     canonical_project_sha256,
-    content_hasher,
 )
 from aletheia_lab.project.lineage import ProjectLineageGraph
 from aletheia_lab.project.persistence import (

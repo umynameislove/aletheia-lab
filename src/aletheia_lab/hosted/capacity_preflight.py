@@ -13,8 +13,8 @@ from typing import TypeVar
 import httpx2
 from pydantic import BaseModel
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_contract.session_capabilities import Capabilities, Session
-from aletheia_lab.project.identity import content_hasher
 
 from .capacity_models import Actor, Profile
 

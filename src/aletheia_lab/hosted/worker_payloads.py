@@ -9,7 +9,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from aletheia_lab.project.identity import content_hasher
+from aletheia_lab.hosted.content_hashing import content_hasher
 
 from .upload_project import _native_path, _plain_directory
 from .worker_limits import MAX_UPLOAD_OUTPUT_BYTES

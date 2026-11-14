@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.product.boundary import ProductError
 from aletheia_lab.product.projection import build_product_graph
 from aletheia_lab.product.questions import checked_product_question
@@ -24,7 +25,7 @@ from aletheia_lab.product.view import (
     ProductViewV2,
     parse_product_view,
 )
-from aletheia_lab.project.identity import canonical_project_sha256, content_hasher
+from aletheia_lab.project.identity import canonical_project_sha256
 from aletheia_lab.project.mapping import MetricObservation, MetricObservationV2
 
 from .upload_snapshot import AnyUploadSnapshot, UploadSnapshotV2, parse_upload_snapshot

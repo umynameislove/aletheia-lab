@@ -11,6 +11,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel, model_validator
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.product.boundary import ProductError
 from aletheia_lab.product.mapping import (
     metric_definitions_match_observations,
@@ -18,7 +19,6 @@ from aletheia_lab.product.mapping import (
 )
 from aletheia_lab.project.collectors import collect_project_files
 from aletheia_lab.project.identity import (
-    content_hasher,
     granted_root_fingerprint,
     project_id_for_root,
 )

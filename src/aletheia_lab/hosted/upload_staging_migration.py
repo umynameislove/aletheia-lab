@@ -4,8 +4,8 @@ from __future__ import annotations
 import json
 from typing import Literal
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_auth.postgres_sessions import Connection
-from aletheia_lab.project.identity import content_hasher
 
 from .persistence_migration import _context, _exists, _shape
 from .persistence_migration import verify as verify_persistence

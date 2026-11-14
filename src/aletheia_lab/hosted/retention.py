@@ -14,11 +14,11 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import SecretStr
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_auth.postgres_sessions import Connection, Pool, _digest
 from aletheia_lab.hosted_contract.deletions import DeletionStatus
 from aletheia_lab.hosted_contract.runtime_management import ProjectId
 from aletheia_lab.hosted_contract.session_capabilities import Identifier
-from aletheia_lab.project.identity import content_hasher
 
 from .async_work import run_blocking_nowait
 from .authorization import AuthorizationDenied, PostgresAuthorization

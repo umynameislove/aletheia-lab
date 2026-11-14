@@ -10,7 +10,7 @@ from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
 
-from aletheia_lab.project.identity import content_hasher
+from aletheia_lab.hosted.content_hashing import content_hasher
 
 _NAME = r"^[A-Za-z][A-Za-z0-9_]{0,63}$"
 _SHA = r"^[0-9a-f]{64}$"

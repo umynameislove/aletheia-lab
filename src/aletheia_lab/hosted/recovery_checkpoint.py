@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from aletheia_lab.project.identity import content_hasher
+from aletheia_lab.hosted.content_hashing import content_hasher
 
 from .deletion_checkpoint import DeletionCheckpointPage
 from .persistence_migration import migration_schema

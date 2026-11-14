@@ -9,10 +9,11 @@ from uuid import uuid4
 
 from pydantic import SecretStr
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_auth.postgres_sessions import Connection, _digest
 from aletheia_lab.hosted_contract.job_page import JobReceipt
 from aletheia_lab.hosted_contract.project_operations import FollowUpRequest
-from aletheia_lab.project.identity import PROJECT_ID_PATTERN, content_hasher
+from aletheia_lab.project.identity import PROJECT_ID_PATTERN
 
 from .action_audit import current_request_id
 from .authorization import Authorization

@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import json
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_auth.postgres_sessions import Connection
 from aletheia_lab.hosted_auth.postgres_sessions import _operator_namespace as _owned_namespace
-from aletheia_lab.project.identity import content_hasher
 
 _INDEXES = (
     ('k10_projects_creator', 'k05_projects', '(workspace_id, creator_id, project_id)'),

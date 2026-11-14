@@ -21,10 +21,10 @@ from psycopg import AsyncConnection
 from psycopg_pool import AsyncConnectionPool
 from pydantic import SecretStr
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_auth.boundary import SESSION_COOKIE, new_opaque_secret
 from aletheia_lab.hosted_auth.csrf import CSRF_COOKIE, CsrfTokens
 from aletheia_lab.hosted_auth.sessions import credential_digest
-from aletheia_lab.project.identity import content_hasher
 
 from .async_work import run_blocking
 from .authorization import PostgresAuthorization

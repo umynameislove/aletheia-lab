@@ -12,6 +12,7 @@ from typing import Literal, TypeAlias, cast
 
 from pydantic import BaseModel, SecretStr
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_auth.postgres_sessions import Connection
 from aletheia_lab.hosted_auth.postgres_sessions import _operator_namespace as _owned_namespace
 from aletheia_lab.product.view import (
@@ -22,7 +23,6 @@ from aletheia_lab.product.view import (
     ProductGraphEdge,
     ProductGraphNode,
 )
-from aletheia_lab.project.identity import content_hasher
 
 from .async_work import run_blocking
 from .authorization import AuthorizationDenied

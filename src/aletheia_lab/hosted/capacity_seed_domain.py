@@ -8,8 +8,8 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.product.demo_flow import _demo_mapping
-from aletheia_lab.project.identity import content_hasher
 
 from .capacity_seed_models import SeedPlan
 

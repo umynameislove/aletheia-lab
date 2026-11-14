@@ -17,8 +17,8 @@ from datetime import UTC, datetime, timedelta
 from pydantic import SecretStr, ValidationError
 
 from aletheia_lab.hosted.application import AccessDenied
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted.read_backend import SessionRecord
-from aletheia_lab.project.identity import content_hasher
 
 from .boundary import SESSION_COOKIE, AuthInputRejected, new_opaque_secret, read_opaque_cookie
 from .repositories import (

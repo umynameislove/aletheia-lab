@@ -6,8 +6,8 @@ import json
 import re
 from pathlib import Path
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_auth.postgres_sessions import Connection
-from aletheia_lab.project.identity import content_hasher
 
 _SCHEMA = re.compile(r"[a-z][a-z0-9_]{0,62}")
 

@@ -27,9 +27,9 @@ from pydantic import (
     model_validator,
 )
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted.settings import RuntimeSettings
 from aletheia_lab.hosted_contract.session_capabilities import Identifier
-from aletheia_lab.project.identity import content_hasher
 
 from ._diagnostics import auth_stage
 from .boundary import (

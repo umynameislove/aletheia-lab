@@ -11,8 +11,9 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_contract.session_capabilities import Identifier
-from aletheia_lab.project.identity import canonical_project_sha256, content_hasher
+from aletheia_lab.project.identity import canonical_project_sha256
 from aletheia_lab.project.mapping import MetricIdentity, metric_identity
 
 from .upload_snapshot import AnyUploadSnapshot, parse_upload_snapshot

@@ -16,8 +16,8 @@ import re
 from pathlib import Path
 from typing import Final, TypeAlias
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_auth.postgres_sessions import Connection
-from aletheia_lab.project.identity import content_hasher
 
 from .job_analysis_version import ANALYSIS_VERSION_DDL
 from .job_execution_schema import JOB_CONFLICT_DDL, JOB_EXECUTION_DDL

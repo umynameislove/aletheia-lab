@@ -10,7 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from aletheia_lab.project.identity import content_hasher, content_sha256
+from aletheia_lab.hosted.content_hashing import content_hasher
+from aletheia_lab.project.identity import content_sha256
 
 
 @pytest.mark.parametrize('payload', [b'', b'abc', bytes(range(256)), 'độ_chính_xác'.encode(), b'\x00\xff' * 100000])
@@ -43,7 +44,7 @@ def test_auth_first_import_has_no_project_cycle(module):
     source = Path(__file__).resolve().parents[2] / 'src'
     env = dict(os.environ, PYTHONPATH=str(source), PYTHONDONTWRITEBYTECODE='1')
     code = ('import importlib,json;importlib.import_module("aletheia_lab.hosted_auth.' + module + '");'
-            'from aletheia_lab.project.identity import content_hasher;'
+            'from aletheia_lab.hosted.content_hashing import content_hasher;'
             'print(json.dumps({"sha256":content_hasher(b"abc").hexdigest()}))')
     completed = subprocess.run([sys.executable, '-B', '-c', code], env=env, capture_output=True, text=True, timeout=30)
     assert completed.returncode == 0, completed.stderr

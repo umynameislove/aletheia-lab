@@ -7,11 +7,11 @@ from typing import Literal, Protocol, cast
 
 from pydantic import SecretStr
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_auth.postgres_sessions import _digest
 from aletheia_lab.product.lifecycle import ProductLifecycleRecord
 from aletheia_lab.product.results import _view_from_record
 from aletheia_lab.product.view import AnyProductView, parse_product_view
-from aletheia_lab.project.identity import content_hasher
 
 from .application import VERSION
 from .async_work import run_blocking

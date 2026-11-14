@@ -6,10 +6,10 @@ from typing import TYPE_CHECKING, cast
 
 from pydantic import SecretStr
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_auth.postgres_sessions import Connection, _digest
 from aletheia_lab.hosted_contract.job_page import JobReceipt
 from aletheia_lab.project.identity import (
-    content_hasher,
     granted_root_fingerprint,
     project_id_for_root,
 )

@@ -18,6 +18,7 @@ from typing import TypedDict, cast
 
 from pydantic import ValidationError
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.product.boundary import ProductError
 from aletheia_lab.product.candidates import (
     MappingCandidates,
@@ -36,7 +37,7 @@ from aletheia_lab.product.mapping import (
 )
 from aletheia_lab.project.collectors import collect_project_files
 from aletheia_lab.project.contracts import ProjectItem
-from aletheia_lab.project.identity import canonical_project_sha256, content_hasher
+from aletheia_lab.project.identity import canonical_project_sha256
 from aletheia_lab.project.import_policy import ProjectImportPolicy
 from aletheia_lab.project.importer import (
     GrantedProjectRoot,

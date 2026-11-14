@@ -21,13 +21,13 @@ from pydantic import (
     model_validator,
 )
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_auth.postgres_sessions import Connection
 from aletheia_lab.hosted_contract.deletions import TombstoneId
 from aletheia_lab.hosted_contract.runtime_management import ProjectId
 from aletheia_lab.hosted_contract.session_capabilities import Identifier
 from aletheia_lab.product.deletion import _deletion_state
 from aletheia_lab.product.lifecycle import ProductLifecycleRecord
-from aletheia_lab.project.identity import content_hasher
 from aletheia_lab.project.persistence import _json_bytes
 
 from .async_work import run_blocking

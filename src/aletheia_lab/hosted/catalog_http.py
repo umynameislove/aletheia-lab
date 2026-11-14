@@ -11,6 +11,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, SecretStr
 
+from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_auth.boundary import SESSION_COOKIE, read_opaque_cookie
 from aletheia_lab.hosted_auth.csrf import CsrfMiddleware, CsrfTokens, SessionBindingLoader
 from aletheia_lab.hosted_auth.sessions import credential_digest
@@ -44,7 +45,6 @@ from aletheia_lab.product.view import (
     ProductViewV2,
     parse_product_view,
 )
-from aletheia_lab.project.identity import content_hasher
 from aletheia_lab.project.persistence import _model_identity
 
 from .action_audit import report_outcome, request_context

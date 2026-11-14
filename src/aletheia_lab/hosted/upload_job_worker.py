@@ -8,7 +8,7 @@ from collections.abc import Awaitable, Callable
 
 from pydantic import SecretStr
 
-from aletheia_lab.project.identity import content_hasher
+from aletheia_lab.hosted.content_hashing import content_hasher
 
 from .import_errors import MappingInvalid
 from .import_failures import ImportFailures

@@ -129,7 +129,6 @@ def publish_immutable_file(destination: Path, payload: bytes) -> ImmutableFileDi
     failure. Windows retries only transient access denials and remains bounded.
     """
 
-    destination = windows_io_path(destination)
     destination.parent.mkdir(parents=True, exist_ok=True)
     if destination.parent.is_symlink() or not destination.parent.is_dir():
         raise ImmutablePublicationIntegrityError(

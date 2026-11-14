@@ -7,7 +7,7 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from aletheia_lab.project.identity import content_hasher
+from aletheia_lab.hosted.content_hashing import content_hasher
 
 Size = Literal["S", "M", "L"]
 ROLES = ("owner", "admin", "analyst", "reviewer", "viewer")
