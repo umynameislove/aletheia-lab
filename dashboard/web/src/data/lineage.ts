@@ -51,3 +51,25 @@ export function lineageLayout(nodes: readonly GraphNode[], edges: readonly Graph
   const placed = lanes.reduce((n, l) => n + l.length, 0);
   return { lanes, links, edges: sortedEdges, dangling, duplicates: [...duplicates].sort(), unplaced: nodes.length - placed };
 }
+
+/* Zoom for the drawing, in fixed steps. The floor is 0.8: a lane node is about 30 px tall, so it
+   stays at least 24 px (WCAG 2.5.8 target size) when zoomed out. 1 is the fluid layout. */
+export const ZOOM_STEPS = [0.8, 1, 1.25, 1.5, 2] as const;
+export const ZOOM_MIN = ZOOM_STEPS[0];
+export const ZOOM_MAX = ZOOM_STEPS[ZOOM_STEPS.length - 1];
+
+/** The next step in that direction, clamped to the ends; 0 resets to 100%. A level between steps
+    (none is ever set, but it costs nothing) moves to the nearest step on that side. */
+export function zoomStep(current: number, by: -1 | 0 | 1): number {
+  if (by === 0 || !Number.isFinite(current)) return 1;
+  const eps = 1e-6;
+  if (by > 0) return ZOOM_STEPS.find(z => z > current + eps) ?? ZOOM_MAX;
+  return [...ZOOM_STEPS].reverse().find(z => z < current - eps) ?? ZOOM_MIN;
+}
+
+/** + and = zoom in, - zooms out, 0 resets. Not with Ctrl, Cmd or Alt: those belong to the browser's
+    own page zoom, which must keep working. Shift is allowed, since + needs it on many layouts. */
+export function zoomKey(e: { key: string; ctrlKey: boolean; metaKey: boolean; altKey: boolean }): -1 | 0 | 1 | null {
+  if (e.ctrlKey || e.metaKey || e.altKey) return null;
+  return e.key === "+" || e.key === "=" ? 1 : e.key === "-" ? -1 : e.key === "0" ? 0 : null;
+}
