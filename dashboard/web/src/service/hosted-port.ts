@@ -141,7 +141,7 @@ export function createHostedPort(): HostedProductPort {
      fresh one and sends its own request key. Without the feature, or when the history cannot be read, the job's own
      failure stands. */
   const ended = async (context: HostedPortContext, wait: <T>(answer: Promise<T>) => Promise<T>, jobId: string,
-                       projectId: string, failure: ProductError) => {
+                       projectId: string, failure: ProductError, conflictCode = "project_changed") => {
     if (context.caps.features?.["jobs.conflict_v1"] !== true) return failure;
     let history;
     try { history = await wait(context.client.loadJobAttempts(context.workspace, context.caps, jobId)); }
@@ -149,7 +149,7 @@ export function createHostedPort(): HostedProductPort {
     if (history.items.at(-1)?.failure_kind !== "conflict" || (history.conflict && history.conflict.project_id !== projectId)) return failure;
     revisions.delete(projectId);
     // the revision is as the service read it now: shown for orientation, never sent as a CAS
-    return new ProductError("project_changed", history.conflict ? `The project is now at revision ${history.conflict.current_revision}.` : "");
+    return new ProductError(conflictCode, history.conflict ? `The project is now at revision ${history.conflict.current_revision}.` : "");
   };
   /* The view check travels with the client, so the contract and its Unicode tables stay out of the main chunk. */
   const storedView = (context: HostedPortContext, value: unknown, expected?: { result?: string; project: string; snapshot: string }) => {
@@ -278,7 +278,8 @@ export function createHostedPort(): HostedProductPort {
       const status = await terminal(context, wait, jobId);
       if (status !== "succeeded") {
         intents.delete(name); intents.delete(upload);
-        throw await ended(context, wait, jobId, projectId, new ProductError("refresh_failed", "The hosted refresh did not complete."));
+        // a refresh that met a newer project says so as a stale refresh: there is no question to keep
+        throw await ended(context, wait, jobId, projectId, new ProductError("refresh_failed", "The hosted refresh did not complete."), "refresh_stale");
       }
       const answer = await wait(context.client.loadOutput(context.workspace, jobId, { operation: "refresh", projectId }));
       if (answer.workspace_id !== context.workspace || answer.job_id !== jobId || answer.operation !== "refresh") throw outOfScope();

@@ -624,3 +624,22 @@ test("F6 without jobs.conflict_v1, or when the history names another project, th
     assert.equal(calls.filter(call => call.url.endsWith("/attempts")).length, reads);
   }
 });
+
+test("R7 jobs.conflict_v1: a refresh that met a newer project is a stale refresh; nothing is retried and the next one reads a fresh revision", async () => {
+  const output = { schema_version: VERSION, workspace_id: WS, job_id: "job_r2", operation: "refresh",
+    result: { project_id: PROJECT, status: "new_snapshot", previous_snapshot_id: SNAPSHOT, snapshot_id: NEW_SNAPSHOT, revision: 6 } };
+  const { port, calls } = setup({
+    [`GET ${B}/projects/${PROJECT}`]: [json(details(3)), json(details(5))],
+    [`POST ${B}/projects/${PROJECT}/refresh`]: [json(receipt("job_c"), 202), json(receipt("job_r2"), 202)],
+    [`GET ${B}/jobs/job_c`]: [json(done("job_c", "failed"))],
+    [`GET ${B}/jobs/job_c/attempts`]: [json(conflictHistory())],
+    [`GET ${B}/jobs/job_r2`]: [json(done("job_r2"))],
+    [`GET ${B}/jobs/job_r2/output`]: [json(output)],
+  }, { over: conflictCaps });
+  await assert.rejects(port.refresh(PROJECT, { source_id: "src_new" }), { code: "refresh_stale" });
+  assert.equal(calls.some(call => call.url.endsWith("/retry")), false);
+  await port.refresh(PROJECT, { source_id: "src_new" });
+  const posts = calls.filter(call => call.url.endsWith("/refresh"));
+  assert.deepEqual(posts.map(call => call.headers["If-Match"]), ['"3"', '"5"']);
+  assert.notEqual(posts[0].headers["Idempotency-Key"], posts[1].headers["Idempotency-Key"]);
+});
