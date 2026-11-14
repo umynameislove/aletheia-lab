@@ -1,0 +1,740 @@
+{
+  "captured_utc": "2026-11-14T08:00:29.727551+00:00",
+  "repositories": [
+    {
+      "directory": "_repo_aletheia_ref",
+      "head": "2414944878c3aabebc26b472af0995833a5e14d3",
+      "status_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "refs_sha256": "7179e393d216957b1b7ebf68e00d79e37bd1315fd1ece351e6779acf413ccf3f",
+      "tracked_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "staged_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "wip": {}
+    },
+    {
+      "directory": "aletheia-kien-code",
+      "head": "6d1ba1469b5231971095b63d4f8069f542cc7993",
+      "status_sha256": "13a1000bed78af1c2b4bef785c586000c13e2f699c12fa10d49550a7c3f9794f",
+      "refs_sha256": "4042b343895068cbc367cf7460aa43073f1763ca50bafdcebe5f866774fb3d4c",
+      "tracked_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "staged_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "wip": {
+        "docs/k01-ban-giao-quan.md": {
+          "bytes": 7461,
+          "sha256": "884caf3b05fb062a065b805df9dc8a9db7c2cd799f4986f02658c7e7b1c07b63"
+        },
+        "docs/k01-baseline-inventory.md": {
+          "bytes": 36052,
+          "sha256": "bbe365cde833f3fa3c8f71bf919daf400fabcaa0cebb6463f37c5540325f1e0f"
+        }
+      }
+    },
+    {
+      "directory": "aletheia-quan-d4e7fb2-review",
+      "head": "d4e7fb214d3bb6a74b2ddf0f012bf69c7c3e8e7c",
+      "status_sha256": "6cb174ac5d4d56856f10f83efd46d756648b0af9614ffb4031940705424d4479",
+      "refs_sha256": "4042b343895068cbc367cf7460aa43073f1763ca50bafdcebe5f866774fb3d4c",
+      "tracked_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "staged_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "wip": {
+        "quan-d4e7fb2-build-live.log": {
+          "bytes": 6214,
+          "sha256": "cd6ca5356a8aa0064edfbfd841ee186f7f533aef4755ea0e8c6d47b5dab5ea09"
+        },
+        "quan-d4e7fb2-npm-test.log": {
+          "bytes": 82836,
+          "sha256": "a999a48e607874444a7b9ee8e82f1d291431780b9c04734cde11194c7a58f325"
+        }
+      }
+    },
+    {
+      "directory": "aletheia-j01-api",
+      "head": "2bdf855c2babd8b171e993a71b94104ceb0eaac5",
+      "status_sha256": "b2327440b8046a934c0c796f8f546defea5fb127867e328e04b2abe853c7d425",
+      "refs_sha256": "4042b343895068cbc367cf7460aa43073f1763ca50bafdcebe5f866774fb3d4c",
+      "tracked_patch_sha256": "21cb72d5cec54fc2930018a95f9ea006affa2f0e555ccef6a79d0a393454f45f",
+      "staged_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "wip": {
+        ".pytest-k08-immutable-rerun/test_claim_cannot_cite_wrong_tcurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable-rerun\\test_claim_cannot_cite_wrong_t2"
+        },
+        ".pytest-k08-immutable-rerun/test_comparison_question_and_bcurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable-rerun\\test_comparison_question_and_b0"
+        },
+        ".pytest-k08-immutable-rerun/test_comparison_reuses_domain_current": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable-rerun\\test_comparison_reuses_domain_0"
+        },
+        ".pytest-k08-immutable-rerun/test_follow_up_retains_comparicurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable-rerun\\test_follow_up_retains_compari0"
+        },
+        ".pytest-k08-immutable-rerun/test_initial_factory_rejects_o0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable-rerun/test_initial_factory_rejects_o0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable-rerun/test_initial_factory_rejects_o0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable-rerun/test_initial_factory_rejects_ocurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable-rerun\\test_initial_factory_rejects_o0"
+        },
+        ".pytest-k08-immutable-rerun/test_initial_identity_pins_que0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable-rerun/test_initial_identity_pins_que0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable-rerun/test_initial_identity_pins_que0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable-rerun/test_initial_identity_pins_quecurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable-rerun\\test_initial_identity_pins_que0"
+        },
+        ".pytest-k08-immutable-rerun/test_initial_upload_produces_h0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable-rerun/test_initial_upload_produces_h0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable-rerun/test_initial_upload_produces_h0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable-rerun/test_initial_upload_produces_hcurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable-rerun\\test_initial_upload_produces_h0"
+        },
+        ".pytest-k08-immutable-rerun/test_legacy_result_reads_origi0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable-rerun/test_legacy_result_reads_origi0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable-rerun/test_legacy_result_reads_origi0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable-rerun/test_legacy_result_reads_origicurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable-rerun\\test_legacy_result_reads_origi0"
+        },
+        ".pytest-k08-immutable-rerun/test_native_demo_visibility_an0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable-rerun/test_native_demo_visibility_an0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable-rerun/test_native_demo_visibility_an0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable-rerun/test_native_demo_visibility_ancurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable-rerun\\test_native_demo_visibility_an0"
+        },
+        ".pytest-k08-immutable-rerun/test_native_followup_reuses_p60/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable-rerun/test_native_followup_reuses_p60/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable-rerun/test_native_followup_reuses_p60/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable-rerun/test_native_followup_reuses_p6current": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable-rerun\\test_native_followup_reuses_p60"
+        },
+        ".pytest-k08-immutable-rerun/test_native_result_view_revali0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable-rerun/test_native_result_view_revali0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable-rerun/test_native_result_view_revali0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable-rerun/test_native_result_view_revalicurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable-rerun\\test_native_result_view_revali0"
+        },
+        ".pytest-k08-immutable-rerun/test_native_scope_or_initial_i0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable-rerun/test_native_scope_or_initial_i0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable-rerun/test_native_scope_or_initial_i0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable-rerun/test_native_scope_or_initial_i1/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable-rerun/test_native_scope_or_initial_i1/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable-rerun/test_native_scope_or_initial_i1/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable-rerun/test_native_scope_or_initial_i2/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable-rerun/test_native_scope_or_initial_i2/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable-rerun/test_native_scope_or_initial_i2/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable-rerun/test_native_scope_or_initial_icurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable-rerun\\test_native_scope_or_initial_i2"
+        },
+        ".pytest-k08-immutable-rerun/test_native_upload_worker_and_0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable-rerun/test_native_upload_worker_and_0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable-rerun/test_native_upload_worker_and_0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable-rerun/test_native_upload_worker_and_current": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable-rerun\\test_native_upload_worker_and_0"
+        },
+        ".pytest-k08-immutable-rerun/test_old_result_and_export_remcurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable-rerun\\test_old_result_and_export_rem0"
+        },
+        ".pytest-k08-immutable-rerun/test_typed_native_bytes_roundt0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable-rerun/test_typed_native_bytes_roundt0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable-rerun/test_typed_native_bytes_roundt0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable-rerun/test_typed_native_bytes_roundtcurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable-rerun\\test_typed_native_bytes_roundt0"
+        },
+        ".pytest-k08-immutable-rerun/test_wrong_comparison_source_ocurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable-rerun\\test_wrong_comparison_source_o3"
+        },
+        ".pytest-k08-immutable/test_claim_cannot_cite_wrong_tcurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable\\test_claim_cannot_cite_wrong_t2"
+        },
+        ".pytest-k08-immutable/test_comparison_question_and_bcurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable\\test_comparison_question_and_b0"
+        },
+        ".pytest-k08-immutable/test_comparison_reuses_domain_current": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable\\test_comparison_reuses_domain_0"
+        },
+        ".pytest-k08-immutable/test_follow_up_retains_comparicurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable\\test_follow_up_retains_compari0"
+        },
+        ".pytest-k08-immutable/test_initial_factory_rejects_o0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable/test_initial_factory_rejects_o0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable/test_initial_factory_rejects_o0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable/test_initial_factory_rejects_ocurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable\\test_initial_factory_rejects_o0"
+        },
+        ".pytest-k08-immutable/test_initial_identity_pins_que0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable/test_initial_identity_pins_que0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable/test_initial_identity_pins_que0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable/test_initial_identity_pins_quecurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable\\test_initial_identity_pins_que0"
+        },
+        ".pytest-k08-immutable/test_initial_upload_produces_h0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable/test_initial_upload_produces_h0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable/test_initial_upload_produces_h0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable/test_initial_upload_produces_hcurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable\\test_initial_upload_produces_h0"
+        },
+        ".pytest-k08-immutable/test_legacy_result_reads_origi0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable/test_legacy_result_reads_origi0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable/test_legacy_result_reads_origi0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable/test_legacy_result_reads_origicurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable\\test_legacy_result_reads_origi0"
+        },
+        ".pytest-k08-immutable/test_native_demo_visibility_an0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable/test_native_demo_visibility_an0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable/test_native_demo_visibility_an0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable/test_native_demo_visibility_ancurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable\\test_native_demo_visibility_an0"
+        },
+        ".pytest-k08-immutable/test_native_followup_reuses_p60/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable/test_native_followup_reuses_p60/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable/test_native_followup_reuses_p60/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable/test_native_followup_reuses_p6current": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable\\test_native_followup_reuses_p60"
+        },
+        ".pytest-k08-immutable/test_native_result_view_revali0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable/test_native_result_view_revali0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable/test_native_result_view_revali0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable/test_native_result_view_revalicurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable\\test_native_result_view_revali0"
+        },
+        ".pytest-k08-immutable/test_native_scope_or_initial_i0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable/test_native_scope_or_initial_i0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable/test_native_scope_or_initial_i0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable/test_native_scope_or_initial_i1/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable/test_native_scope_or_initial_i1/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable/test_native_scope_or_initial_i1/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable/test_native_scope_or_initial_i2/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable/test_native_scope_or_initial_i2/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable/test_native_scope_or_initial_i2/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable/test_native_scope_or_initial_icurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable\\test_native_scope_or_initial_i2"
+        },
+        ".pytest-k08-immutable/test_native_upload_worker_and_0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable/test_native_upload_worker_and_0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable/test_native_upload_worker_and_0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable/test_native_upload_worker_and_current": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable\\test_native_upload_worker_and_0"
+        },
+        ".pytest-k08-immutable/test_old_result_and_export_remcurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable\\test_old_result_and_export_rem0"
+        },
+        ".pytest-k08-immutable/test_typed_native_bytes_roundt0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-immutable/test_typed_native_bytes_roundt0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-immutable/test_typed_native_bytes_roundt0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-immutable/test_typed_native_bytes_roundtcurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable\\test_typed_native_bytes_roundt0"
+        },
+        ".pytest-k08-immutable/test_wrong_comparison_source_ocurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-immutable\\test_wrong_comparison_source_o3"
+        },
+        ".pytest-k08-pure-final/test_claim_cannot_cite_wrong_tcurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-pure-final\\test_claim_cannot_cite_wrong_t2"
+        },
+        ".pytest-k08-pure-final/test_comparison_question_and_bcurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-pure-final\\test_comparison_question_and_b0"
+        },
+        ".pytest-k08-pure-final/test_comparison_reuses_domain_current": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-pure-final\\test_comparison_reuses_domain_0"
+        },
+        ".pytest-k08-pure-final/test_follow_up_retains_comparicurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-pure-final\\test_follow_up_retains_compari0"
+        },
+        ".pytest-k08-pure-final/test_initial_factory_rejects_o0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-pure-final/test_initial_factory_rejects_o0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-pure-final/test_initial_factory_rejects_o0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-pure-final/test_initial_factory_rejects_ocurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-pure-final\\test_initial_factory_rejects_o0"
+        },
+        ".pytest-k08-pure-final/test_initial_identity_pins_que0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-pure-final/test_initial_identity_pins_que0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-pure-final/test_initial_identity_pins_que0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-pure-final/test_initial_identity_pins_quecurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-pure-final\\test_initial_identity_pins_que0"
+        },
+        ".pytest-k08-pure-final/test_initial_upload_produces_h0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-pure-final/test_initial_upload_produces_h0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-pure-final/test_initial_upload_produces_h0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-pure-final/test_initial_upload_produces_hcurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-pure-final\\test_initial_upload_produces_h0"
+        },
+        ".pytest-k08-pure-final/test_legacy_result_reads_origi0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-pure-final/test_legacy_result_reads_origi0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-pure-final/test_legacy_result_reads_origi0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-pure-final/test_legacy_result_reads_origicurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-pure-final\\test_legacy_result_reads_origi0"
+        },
+        ".pytest-k08-pure-final/test_native_demo_visibility_an0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-pure-final/test_native_demo_visibility_an0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-pure-final/test_native_demo_visibility_an0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-pure-final/test_native_demo_visibility_ancurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-pure-final\\test_native_demo_visibility_an0"
+        },
+        ".pytest-k08-pure-final/test_native_followup_reuses_p60/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-pure-final/test_native_followup_reuses_p60/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-pure-final/test_native_followup_reuses_p60/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-pure-final/test_native_followup_reuses_p6current": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-pure-final\\test_native_followup_reuses_p60"
+        },
+        ".pytest-k08-pure-final/test_native_result_view_revali0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-pure-final/test_native_result_view_revali0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-pure-final/test_native_result_view_revali0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-pure-final/test_native_result_view_revalicurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-pure-final\\test_native_result_view_revali0"
+        },
+        ".pytest-k08-pure-final/test_native_scope_or_initial_i0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-pure-final/test_native_scope_or_initial_i0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-pure-final/test_native_scope_or_initial_i0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-pure-final/test_native_scope_or_initial_i1/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-pure-final/test_native_scope_or_initial_i1/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-pure-final/test_native_scope_or_initial_i1/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-pure-final/test_native_scope_or_initial_i2/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-pure-final/test_native_scope_or_initial_i2/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-pure-final/test_native_scope_or_initial_i2/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-pure-final/test_native_scope_or_initial_icurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-pure-final\\test_native_scope_or_initial_i2"
+        },
+        ".pytest-k08-pure-final/test_old_result_and_export_remcurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-pure-final\\test_old_result_and_export_rem0"
+        },
+        ".pytest-k08-pure-final/test_typed_native_bytes_roundt0/config.json": {
+          "bytes": 28,
+          "sha256": "797a7a84e2a7364111eb953c7d98a96d6ebe08706cf38e13d775eb8318630d5d"
+        },
+        ".pytest-k08-pure-final/test_typed_native_bytes_roundt0/dataset.csv": {
+          "bytes": 29,
+          "sha256": "641043677d4109d6987f4a97cde35f2dc7eb6ebf2d0a9d94182fd5356e7b6e36"
+        },
+        ".pytest-k08-pure-final/test_typed_native_bytes_roundt0/metrics.csv": {
+          "bytes": 74,
+          "sha256": "32220b99efa7009196e352bf7af1b450d116032f7bca0aa3976fd3b16aec2f7d"
+        },
+        ".pytest-k08-pure-final/test_typed_native_bytes_roundtcurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-pure-final\\test_typed_native_bytes_roundt0"
+        },
+        ".pytest-k08-pure-final/test_wrong_comparison_source_ocurrent": {
+          "symlink": "\\\\?\\C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\aletheia-j01-api\\.pytest-k08-pure-final\\test_wrong_comparison_source_o3"
+        },
+        "docs/k08-scope-plan.md": {
+          "bytes": 2538,
+          "sha256": "fa4d96223b232f08407cd106462b33bf537637c894cc41222e57deac558e58d4"
+        },
+        "src/aletheia_lab/evaluation/product_handoff_acceptance.py": {
+          "bytes": 4745,
+          "sha256": "cf37118b40bb14a205c3e73fcb569901a7a9c894213340a22047c40da73f22fa"
+        },
+        "src/aletheia_lab/hosted/authorization.py": {
+          "bytes": 12101,
+          "sha256": "8c979823fab637a783a25e5f1557edd866482fb255df793453c5ba3248a89e99"
+        },
+        "src/aletheia_lab/hosted/canonical_results.py": {
+          "bytes": 14688,
+          "sha256": "4721b6675f004520fd5068866a507bd318751797ed2db13d9b914c2ab55c7c16"
+        },
+        "src/aletheia_lab/hosted/catalog_http.py": {
+          "bytes": 39589,
+          "sha256": "29a58ed43a4c27404a357e87f4717e425111df7ae71399cb522e6757feebfc9c"
+        },
+        "src/aletheia_lab/hosted/native_upload_records.py": {
+          "bytes": 11886,
+          "sha256": "83f6baa601f3bb9c6a4076bc1cb08a802096971d43e7869dc5d78e0c6b7ed3bc"
+        },
+        "src/aletheia_lab/hosted/postgres_catalog.py": {
+          "bytes": 23371,
+          "sha256": "4c89df6715598ad57974b2c62afe21ca15cd8ea29e6941d1fa07de9b70c426ed"
+        },
+        "src/aletheia_lab/hosted/postgres_jobs.py": {
+          "bytes": 63625,
+          "sha256": "43ecef3532abe432159fc6851ddde115af58e06727c5d24805d1ad7bb052ffcd"
+        },
+        "src/aletheia_lab/hosted/project_analysis_http.py": {
+          "bytes": 4010,
+          "sha256": "974cd8e0b08f0278d2af2d0645a7e49ef5feb63c207bb7233fd063438d6da56e"
+        },
+        "src/aletheia_lab/hosted/project_job_operations.py": {
+          "bytes": 12299,
+          "sha256": "52f1ea49cfba337803e82830cf471fdb3c738074ea0932afb06c5b8049a48687"
+        },
+        "src/aletheia_lab/hosted/project_operations.py": {
+          "bytes": 6685,
+          "sha256": "f92010af3b2d76f6d69cab4c137afeb1e9c8c26ba47cf55ce697b76990f21b37"
+        },
+        "src/aletheia_lab/hosted/upload_analysis.py": {
+          "bytes": 4625,
+          "sha256": "8c669b41aa1aea8c98db7193c77ca87e19b9fb4f0679d110f2ecebba062a468f"
+        },
+        "src/aletheia_lab/hosted/upload_comparison.py": {
+          "bytes": 11544,
+          "sha256": "bf7453e69cb5c8fce5766b580e60cfb4cd4e1d47e1dcce3239a3f6232c875baa"
+        },
+        "src/aletheia_lab/hosted/upload_publication.py": {
+          "bytes": 10087,
+          "sha256": "01554e488309575f88fff275a22560ba9d80227be39e33671684b3988e9599da"
+        },
+        "src/aletheia_lab/hosted/upload_worker.py": {
+          "bytes": 11430,
+          "sha256": "88c69b87272c3ba63490b3aa6dae531dc44d94cc915aee54495435396ebe09ce"
+        },
+        "src/aletheia_lab/hosted_contract/project_analysis.py": {
+          "bytes": 993,
+          "sha256": "be0a4403363e3560a438832d43e731f5431044feadfc383b957f716af1ae1b6a"
+        },
+        "src/aletheia_lab/hosted_contract/project_refresh.py": {
+          "bytes": 1553,
+          "sha256": "e334583dbace4ec2e87af72c3edcdc4b5bb3435e8176821bd0c163dfaf7a4307"
+        },
+        "src/aletheia_lab/product/analysis.py": {
+          "bytes": 16973,
+          "sha256": "bdce52636c5c483805d0c3c81bd566cc32e3be12ef1d54cc07ea79b71a89aa29"
+        },
+        "src/aletheia_lab/product/mapping.py": {
+          "bytes": 8290,
+          "sha256": "5d51f5089991bc2a54618e9b37fa9d2bc2b208b8ab5add6748fd102d4de19587"
+        },
+        "src/aletheia_lab/product/view.py": {
+          "bytes": 24387,
+          "sha256": "def44c1daf485a8caad9c6c199d8ff4c4e11beaf577970187b62d7039c75be5f"
+        },
+        "src/aletheia_lab/project/mapping.py": {
+          "bytes": 32145,
+          "sha256": "fc7154577efeea045f48f1d3be05d2856a66dac32ddb22578f40c108ab467ca7"
+        },
+        "src/aletheia_lab/project/regression.py": {
+          "bytes": 35556,
+          "sha256": "13935d245ee9a8c991d9d31c5ed817a918d260d2fb18bcfbfc7e9cc6e64df0ee"
+        },
+        "tests/fixtures/k08/numerical-outcomes.json": {
+          "bytes": 3027,
+          "sha256": "0d5b6677fce290db9aab76ebdbb4cb3103138dae29758fd2e68428b86ee23fbc"
+        },
+        "tests/integration/test_k08_pipeline_postgres.py": {
+          "bytes": 19732,
+          "sha256": "ff9d26aff4df067338268e84e71504ba00684a7252bcf5adfe6757015ffbe32a"
+        },
+        "tests/unit/test_k08_immutable_results.py": {
+          "bytes": 11703,
+          "sha256": "56094fe066816077cc9f5eef3b6f97908bf8efc3d226920be0561c1178cce472"
+        },
+        "tests/unit/test_k08_numerical.py": {
+          "bytes": 7745,
+          "sha256": "58e4645f88c00e979998c40946643d32faf4c16c42fc980e4eaa98897f9f00ab"
+        },
+        "tests/unit/test_product_handoff_acceptance.py": {
+          "bytes": 8775,
+          "sha256": "fa10454ca076acd64c8845594c4850e8882d3017a1aba9356dfb2db85becf768"
+        }
+      }
+    },
+    {
+      "directory": "external/aletheia-lab",
+      "head": "2414944878c3aabebc26b472af0995833a5e14d3",
+      "status_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "refs_sha256": "6d0ccdbcd703cf66215d3351d6cf54e06a50fc0cad17787d6b5912354a1d6081",
+      "tracked_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "staged_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "wip": {}
+    }
+  ],
+  "recoverable_private_snapshots": "C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\Kien-K01-K18-R4-20261113\\.private\\k0101-r418-snapshots-v2",
+  "purpose": "K01.01 branch and WIP preservation"
+}
