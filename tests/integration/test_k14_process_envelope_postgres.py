@@ -21,6 +21,7 @@ from uuid import uuid4
 import httpx
 import psycopg
 import pytest
+from k14_process_probe import local_postgres_root
 from psycopg import sql
 from pydantic import SecretStr
 from test_k02_https_edge import _certificate
@@ -140,9 +141,15 @@ def test_real_process_mixed_bursts_keep_quiet_tenant_health_and_reconnect_bounde
                 async with pool.connection() as conn:
                     await migrate_audit(conn, schema)
                     await conn.execute(files('aletheia_lab.hosted_auth').joinpath('admission_schema.sql').read_text())
-                    backend = (await (await conn.execute('SELECT pg_backend_pid()')).fetchone())[0]
-                _, all_processes = await asyncio.to_thread(_process_tree, {})
-                postgres_pid = all_processes[backend]['parent']
+                    backend, data_directory = await (await conn.execute(
+                        "SELECT pg_backend_pid(),current_setting('data_directory')")).fetchone()
+                    _, all_processes = await asyncio.to_thread(_process_tree, {})
+                    postgres_pid = local_postgres_root(backend, data_directory, all_processes)
+                report['postgres_process_observation'] = {
+                    'available': postgres_pid is not None,
+                    'binding': 'local PID file and live backend lineage' if postgres_pid is not None
+                    else 'server PID namespace is not visible; host process metrics unavailable',
+                }
                 async with await psycopg.AsyncConnection.connect(database, autocommit=True) as admin:
                     for mode, role in roles.items():
                         await admin.execute(sql.SQL('CREATE ROLE {} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS PASSWORD {}').format(
@@ -221,7 +228,9 @@ def test_real_process_mixed_bursts_keep_quiet_tenant_health_and_reconnect_bounde
                     worker = None
                     async def observe():
                         while not stop.is_set():
-                            roots = {'api': api.pid, 'postgres': postgres_pid, 'generator': os.getpid()}
+                            roots = {'api': api.pid, 'generator': os.getpid()}
+                            if postgres_pid is not None:
+                                roots['postgres'] = postgres_pid
                             if worker is not None:
                                 roots['worker'] = worker.pid
                             sample, _ = await asyncio.to_thread(_process_tree, roots)
