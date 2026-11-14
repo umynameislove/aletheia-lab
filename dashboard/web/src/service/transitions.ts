@@ -6,15 +6,19 @@ export function resultTransitions<T>(options: {
   identify: (view: T) => string;
   accept: (view: T) => void;
   reject: (error: unknown) => void;
+  /** a read that is no longer wanted can stop; its answer would be ignored either way */
+  abandon?: () => void;
 }) {
   let generation = 0;
   let target: string | null | undefined;
   let current: T | undefined;
   const accept = (view: T) => { current = view; options.accept(view); };
 
+  const supersede = () => { options.abandon?.(); return ++generation; };
+
   const load = async (id: string | null) => {
     target = id;
-    const request = ++generation;
+    const request = supersede();
     // Back to the displayed result must both cancel a pending load and restore a failed boot.
     if (id !== null && current !== undefined && options.identify(current) === id) {
       accept(current);
@@ -36,15 +40,15 @@ export function resultTransitions<T>(options: {
       if (id !== null) return load(id);
       // A confirmed project without a result keeps the displayed view, not its pending request.
       target = null;
-      ++generation;
+      supersede();
       return Promise.resolve();
     },
     show(view: T) {
-      ++generation;
+      supersede();
       target = options.identify(view);
       accept(view);
     },
-    cancel() { ++generation; target = undefined; },
+    cancel() { supersede(); target = undefined; },
   };
 }
 
