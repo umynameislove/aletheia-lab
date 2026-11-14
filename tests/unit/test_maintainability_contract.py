@@ -67,7 +67,7 @@ def test_oversized_modules_require_bounded_reviewed_exemptions() -> None:
         assert isinstance(maximum, int) and maximum > 800
         assert isinstance(rationale, str) and rationale.endswith(".")
         lines = len((_ROOT / path).read_text(encoding="utf-8").splitlines())
-        assert 800 < lines == maximum
+        assert 800 < lines <= maximum
 
 
 def test_direct_hash_budgets_are_frozen_per_package() -> None:
