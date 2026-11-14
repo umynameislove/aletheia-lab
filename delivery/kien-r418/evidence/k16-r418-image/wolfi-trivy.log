@@ -1,0 +1,6 @@
+2026-11-14T07:32:20Z	INFO	[vuln] Vulnerability scanning is enabled
+2026-11-14T07:33:45Z	INFO	[python] Licenses acquired from one or more METADATA files may be subject to additional terms. Use `--debug` flag to see all affected packages.
+2026-11-14T07:33:45Z	INFO	Detected OS	family="wolfi" version="20230201"
+2026-11-14T07:33:45Z	INFO	[wolfi] Detecting vulnerabilities...	pkg_num=34
+2026-11-14T07:33:45Z	INFO	Number of language-specific files	num=1
+2026-11-14T07:33:45Z	INFO	[python-pkg] Detecting vulnerabilities...

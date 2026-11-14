@@ -1,0 +1,51 @@
+{
+  "source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+  "runtime_identity": "a046bccd9a0beb135951a0928c7ddd131b327302bcacf10c7ddb979757c9d495",
+  "image_id": "sha256:993fef459d85a4e6fa3a10e966e768749d3d6409dbc7e899be9df96cf7643cb0",
+  "tag": "aletheia-hosted:r418-65c87fdb0a43",
+  "scanner_image_id": "sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb",
+  "scanner_db": {
+    "Version": 2,
+    "NextUpdate": "2026-11-14T12:56:33.451543367Z",
+    "UpdatedAt": "2026-11-13T12:56:33.451543713Z",
+    "DownloadedAt": "2026-11-13T16:16:54.823421139Z"
+  },
+  "readonly_offline_smoke": {
+    "uid": 10001,
+    "gid": 10001,
+    "sqlite": "3.46.1",
+    "zlib": "1.3.1",
+    "release_id": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+    "readonly": true,
+    "worker_entrypoint_import": true,
+    "runtime_files_verified": 676
+  },
+  "scan_sha256": "9bd8dce89e08204aef72cd374b13c82c6827c43c17fa048ea914a26be029234c",
+  "sbom_sha256": "3fff689109cd06ca7524bef0acbc6d55497a88a1a90dfbf923f54ca68f4d1d95",
+  "counts": {
+    "HIGH": 47,
+    "LOW": 67,
+    "MEDIUM": 99,
+    "UNKNOWN": 4
+  },
+  "critical": 0,
+  "high": 47,
+  "high_unique_ids": [
+    "CVE-2025-69720",
+    "CVE-2026-119373",
+    "CVE-2026-119374",
+    "CVE-2026-119379",
+    "CVE-2026-16742",
+    "CVE-2026-54369",
+    "CVE-2026-76642",
+    "CVE-2026-78408",
+    "CVE-2026-78409",
+    "CVE-2026-78410",
+    "CVE-2026-9538"
+  ],
+  "high_with_fixed_version": 0,
+  "sbom_components": 158,
+  "same_package_vulnerability_inventory_as_r415": true,
+  "release_security_pass": false,
+  "finished_utc": "2026-11-14T05:36:38.4580182Z"
+}

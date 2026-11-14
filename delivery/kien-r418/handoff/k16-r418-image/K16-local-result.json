@@ -1,0 +1,14 @@
+{
+  "completed_utc": "2026-11-14T07:38:27.3188700+00:00",
+  "k16_image_local": "pass",
+  "k16_deployment": "pending",
+  "final_bao_report_exported": false,
+  "source_identity": "65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58",
+  "image_id": "sha256:0f1ffb0bef45044451af1cd1b905e91587f87f284135eeac2bb4db894c26b81a",
+  "image_archive_bytes": 232465920,
+  "image_archive_sha256": "7493d0287d73d64f1f19ecc3277fbdb8f7d297bb98707913a0ff17f02097cf9b",
+  "original_dockerfile_compose_lock_unchanged": true,
+  "scope": "K16 only",
+  "scan": "evidence/k16-r418-image/wolfi-result.json",
+  "launch": "evidence/k16-r418-image/wolfi-launch-retry.json"
+}

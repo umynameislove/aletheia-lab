@@ -1,0 +1,37 @@
+latest: Pulling from chainguard/wolfi-base
+820848efcf94: Pulling fs layer
+7a4877cecca8: Pulling fs layer
+7751c9de7461: Pulling fs layer
+62bd281d8922: Pulling fs layer
+53abc9c20665: Pulling fs layer
+82087d46dc9d: Pulling fs layer
+f4265a56de30: Pulling fs layer
+386404bbcc5e: Pulling fs layer
+f53829540a90: Pulling fs layer
+1d5f5dc94af7: Pulling fs layer
+dc2b2c4d05a6: Pulling fs layer
+62bd281d8922: Download complete
+7751c9de7461: Download complete
+dc2b2c4d05a6: Download complete
+386404bbcc5e: Download complete
+82087d46dc9d: Download complete
+f53829540a90: Download complete
+53abc9c20665: Download complete
+820848efcf94: Download complete
+f4265a56de30: Download complete
+7a4877cecca8: Download complete
+1d5f5dc94af7: Download complete
+1d5f5dc94af7: Pull complete
+7a4877cecca8: Pull complete
+f4265a56de30: Pull complete
+82087d46dc9d: Pull complete
+f53829540a90: Pull complete
+dc2b2c4d05a6: Pull complete
+386404bbcc5e: Pull complete
+7751c9de7461: Pull complete
+53abc9c20665: Pull complete
+62bd281d8922: Pull complete
+820848efcf94: Pull complete
+Digest: sha256:1f6b749929164c3d9e7cad0289254f39b2ba51e1dddaeb0fa57532ea03f2db31
+Status: Downloaded newer image for cgr.dev/chainguard/wolfi-base:latest
+cgr.dev/chainguard/wolfi-base:latest

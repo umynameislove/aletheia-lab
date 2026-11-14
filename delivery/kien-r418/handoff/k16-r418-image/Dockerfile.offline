@@ -1,0 +1,23 @@
+# The named context "original" is the verified R4.18 Trixie image.
+FROM original AS dependencies
+USER 0:0
+RUN /opt/venv/bin/python -m pip uninstall -y wheel setuptools packaging pip
+
+FROM cgr.dev/chainguard/wolfi-base@sha256:1f6b749929164c3d9e7cad0289254f39b2ba51e1dddaeb0fa57532ea03f2db31
+RUN apk add --no-cache python-3.12=3.12.16_git20261030-r0 sqlite-libs=3.54.1-r0 libstdc++=16.2.0-r3 \
+ && addgroup -g 10001 aletheia \
+ && adduser -D -H -u 10001 -G aletheia aletheia \
+ && mkdir -p /var/lib/aletheia \
+ && chown 10001:10001 /var/lib/aletheia
+COPY --from=dependencies /opt/venv /opt/venv
+RUN ln -sfn /usr/bin/python3.12 /opt/venv/bin/python \
+ && printf 'home = /usr/bin\ninclude-system-site-packages = false\nversion = 3.12.16\n' > /opt/venv/pyvenv.cfg
+ARG ALETHEIA_RELEASE_ID=65c87fdb0a43e1ef465a1eb27901373a0f4f3d3a4a56da13e5b7b34341b56c58
+LABEL org.opencontainers.image.revision=$ALETHEIA_RELEASE_ID
+ENV ALETHEIA_RELEASE_ID=$ALETHEIA_RELEASE_ID PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
+    OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+USER 10001:10001
+WORKDIR /var/lib/aletheia
+EXPOSE 18766
+ENTRYPOINT ["/opt/venv/bin/python", "-m", "aletheia_lab.hosted.container_entrypoint"]
+CMD ["api"]

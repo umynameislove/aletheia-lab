@@ -1,0 +1,107 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.offline
+#1 transferring dockerfile: 1.26kB 0.0s done
+#1 DONE 0.1s
+
+#2 [internal] load metadata for cgr.dev/chainguard/wolfi-base@sha256:1f6b749929164c3d9e7cad0289254f39b2ba51e1dddaeb0fa57532ea03f2db31
+#2 DONE 0.0s
+
+#3 [context original] load metadata for aletheia-hosted:r418-65c87fdb0a43
+#3 DONE 0.1s
+
+#4 [runtime 1/2] FROM cgr.dev/chainguard/wolfi-base@sha256:1f6b749929164c3d9e7cad0289254f39b2ba51e1dddaeb0fa57532ea03f2db31
+#4 resolve cgr.dev/chainguard/wolfi-base@sha256:1f6b749929164c3d9e7cad0289254f39b2ba51e1dddaeb0fa57532ea03f2db31 0.1s done
+#4 DONE 1.0s
+
+#5 [runtime 2/2] RUN apk add --no-cache python-3.12=3.12.16_git20261030-r0 sqlite-libs=3.54.1-r0 libstdc++=16.2.0-r3  && addgroup -g 10001 aletheia  && adduser -D -H -u 10001 -G aletheia aletheia  && mkdir -p /var/lib/aletheia  && chown 10001:10001 /var/lib/aletheia
+#5 0.610 fetch https://apk.cgr.dev/chainguard/x86_64/APKINDEX.tar.gz
+#5 20.62 (1/15) Installing libstdc++ (16.2.0-r3)
+#5 27.00 (2/15) Installing py3-pip-wheel (26.2.2-r2)
+#5 29.45 (3/15) Installing libbz2-1 (1.0.8-r31)
+#5 30.43 (4/15) Installing libexpat1 (2.10.0-r1)
+#5 31.94 (5/15) Installing libffi (3.8.0-r2)
+#5 32.88 (6/15) Installing gdbm (1.26-r9)
+#5 34.05 (7/15) Installing xz (5.8.4-r1)
+#5 35.85 (8/15) Installing mpdecimal (4.0.1-r6)
+#5 37.07 (9/15) Installing ncurses-terminfo-base (6.6.20261107-r0)
+#5 37.92 (10/15) Installing ncurses (6.6.20261107-r0)
+#5 39.01 (11/15) Installing readline (8.3-r3)
+#5 40.05 (12/15) Installing sqlite-libs (3.54.1-r0)
+#5 41.78 (13/15) Installing libuuid (2.42.4-r2)
+#5 43.28 (14/15) Installing python-3.12-base (3.12.16_git20261030-r0)
+#5 50.27 (15/15) Installing python-3.12 (3.12.16_git20261030-r0)
+#5 51.85 Executing busybox-1.38.0-r3.trigger
+#5 51.88 OK: 59 MiB in 34 packages
+#5 DONE 52.2s
+
+#6 [internal] load .dockerignore
+#6 transferring context: 2B done
+#6 DONE 0.0s
+
+#7 [context original] aletheia-hosted:r418-65c87fdb0a43
+#7 resolve docker.io/library/aletheia-hosted:r418-65c87fdb0a43
+#7 resolve docker.io/library/aletheia-hosted:r418-65c87fdb0a43 7.6s done
+#7 DONE 7.6s
+
+#7 [context original] aletheia-hosted:r418-65c87fdb0a43
+#7 DONE 7.6s
+
+#8 [dependencies 1/2] RUN /opt/venv/bin/python -m pip uninstall -y wheel setuptools packaging pip
+#8 1.650 WARNING: The directory '/home/aletheia/.cache/pip' or its parent directory is not owned or is not writable by the current user. The cache has been disabled. Check the permissions and owner of that directory. If executing pip with sudo, you should use sudo's -H flag.
+#8 2.008 Found existing installation: wheel 0.46.2
+#8 2.017 Uninstalling wheel-0.46.2:
+#8 2.025 ERROR: Exception:
+#8 2.025 Traceback (most recent call last):
+#8 2.025   File "/usr/local/lib/python3.12/shutil.py", line 854, in move
+#8 2.025     os.rename(src, real_dst)
+#8 2.025 PermissionError: [Errno 13] Permission denied: '/opt/venv/bin/wheel' -> '/tmp/pip-uninstall-k6xwgn3n/wheel'
+#8 2.025 
+#8 2.025 During handling of the above exception, another exception occurred:
+#8 2.025 
+#8 2.025 Traceback (most recent call last):
+#8 2.025   File "/opt/venv/lib/python3.12/site-packages/pip/_internal/cli/base_command.py", line 106, in _run_wrapper
+#8 2.025     status = _inner_run()
+#8 2.025              ^^^^^^^^^^^^
+#8 2.025   File "/opt/venv/lib/python3.12/site-packages/pip/_internal/cli/base_command.py", line 97, in _inner_run
+#8 2.025     return self.run(options, args)
+#8 2.025            ^^^^^^^^^^^^^^^^^^^^^^^
+#8 2.025   File "/opt/venv/lib/python3.12/site-packages/pip/_internal/commands/uninstall.py", line 106, in run
+#8 2.025     uninstall_pathset = req.uninstall(
+#8 2.025                         ^^^^^^^^^^^^^^
+#8 2.025   File "/opt/venv/lib/python3.12/site-packages/pip/_internal/req/req_install.py", line 723, in uninstall
+#8 2.025     uninstalled_pathset.remove(auto_confirm, verbose)
+#8 2.025   File "/opt/venv/lib/python3.12/site-packages/pip/_internal/req/req_uninstall.py", line 370, in remove
+#8 2.025     moved.stash(path)
+#8 2.025   File "/opt/venv/lib/python3.12/site-packages/pip/_internal/req/req_uninstall.py", line 261, in stash
+#8 2.025     renames(path, new_path)
+#8 2.025   File "/opt/venv/lib/python3.12/site-packages/pip/_internal/utils/misc.py", line 350, in renames
+#8 2.025     shutil.move(old, new)
+#8 2.025   File "/usr/local/lib/python3.12/shutil.py", line 875, in move
+#8 2.025     os.unlink(src)
+#8 2.025 PermissionError: [Errno 13] Permission denied: '/opt/venv/bin/wheel'
+#8 ERROR: process "/bin/sh -c /opt/venv/bin/python -m pip uninstall -y wheel setuptools packaging pip" did not complete successfully: exit code: 2
+------
+ > [dependencies 1/2] RUN /opt/venv/bin/python -m pip uninstall -y wheel setuptools packaging pip:
+2.025     uninstalled_pathset.remove(auto_confirm, verbose)
+2.025   File "/opt/venv/lib/python3.12/site-packages/pip/_internal/req/req_uninstall.py", line 370, in remove
+2.025     moved.stash(path)
+2.025   File "/opt/venv/lib/python3.12/site-packages/pip/_internal/req/req_uninstall.py", line 261, in stash
+2.025     renames(path, new_path)
+2.025   File "/opt/venv/lib/python3.12/site-packages/pip/_internal/utils/misc.py", line 350, in renames
+2.025     shutil.move(old, new)
+2.025   File "/usr/local/lib/python3.12/shutil.py", line 875, in move
+2.025     os.unlink(src)
+2.025 PermissionError: [Errno 13] Permission denied: '/opt/venv/bin/wheel'
+------
+Dockerfile.offline:3
+--------------------
+   1 |     # The named context "original" is the verified R4.18 Trixie image.
+   2 |     FROM original AS dependencies
+   3 | >>> RUN /opt/venv/bin/python -m pip uninstall -y wheel setuptools packaging pip
+   4 |     
+   5 |     FROM cgr.dev/chainguard/wolfi-base@sha256:1f6b749929164c3d9e7cad0289254f39b2ba51e1dddaeb0fa57532ea03f2db31
+--------------------
+ERROR: failed to solve: process "/bin/sh -c /opt/venv/bin/python -m pip uninstall -y wheel setuptools packaging pip" did not complete successfully: exit code: 2
+
+View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/n1k0jdd0b6t02lq8p083pso1r

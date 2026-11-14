@@ -1,0 +1,5 @@
+Quân/Bù ơi, phần image backend K16 đã qua kiểm local. Image Linux/amd64 R4.18 dùng Wolfi, Trivy ghi 0 HIGH và 0 CRITICAL. Đã thử entrypoint API/worker qua TLS với PostgreSQL fixture. Digest image đã kiểm là sha256:0f1ffb0bef45044451af1cd1b905e91587f87f284135eeac2bb4db894c26b81a.
+
+Để chốt phần triển khai K16, cho Kiên đầu mối staging, IdP, edge/TLS và collector/cảnh báo đang dùng. Khi nhóm đưa đúng image lên môi trường được phép, gửi Git SHA, image digest và bằng chứng kiểm HTTPS/header, login IdP, quyền secret/collector. Cần tên người trực xác nhận đã nhận cảnh báo thử và một người khác thực hiện runbook từ cảnh báo tới hồi phục. Ghi timestamp, thao tác, kết quả và log đã che secret. Nếu hệ thống cảnh báo hoặc môi trường thử chưa có, ghi rõ phần thiếu và người phụ trách.
+
+Không gửi DSN, password, token, cookie hoặc key qua chat. Kiên phụ trách phần image, cấu hình backend và đối chiếu log. Gói này là kết quả kỹ thuật K16, hồ sơ nghiệm thu K01–K18 cho Bảo vẫn chờ đủ các mục.
