@@ -14,6 +14,7 @@ import subprocess
 import sys
 import time
 from contextlib import suppress
+from datetime import UTC, datetime
 from importlib.resources import files
 from pathlib import Path
 from uuid import uuid4
@@ -58,10 +59,51 @@ def _monitor_resources():
                 'peak_rss_reaped_child_bytes':children.ru_maxrss*factor,
                 'open_fds':len(os.listdir(fd_path)),
                 'fd_soft_limit':resource.getrlimit(resource.RLIMIT_NOFILE)[0],
+                'transport':dict(globals().get('_transport_counts',{})),
                 'telemetry':process_telemetry().snapshot()})+'\n')
             output.flush()
             _monitor_stop.wait(.1)
 _resource_monitor=threading.Thread(target=_monitor_resources,daemon=True)
+'''
+
+_INGRESS = r'''
+from contextlib import suppress
+_transport_counts=dict(accepted=0,active=0,peak_active=0,rejected=0,to_api_bytes=0,to_client_bytes=0)
+async def main():
+    ports=json.loads(sys.argv[2]);stop=asyncio.Event()
+    asyncio.get_running_loop().add_signal_handler(signal.SIGTERM,stop.set)
+    async def forward(reader,writer):
+        if _transport_counts['active']>=32:
+            _transport_counts['rejected']+=1;writer.close();await writer.wait_closed();return
+        ordinal=_transport_counts['accepted'];_transport_counts['accepted']+=1
+        _transport_counts['active']+=1
+        _transport_counts['peak_active']=max(_transport_counts['peak_active'],_transport_counts['active'])
+        upstream=None
+        try:
+            remote,upstream=await asyncio.open_connection('127.0.0.1',ports[ordinal%len(ports)])
+            async def pipe(source,target,counter):
+                while data:=await source.read(65536):
+                    _transport_counts[counter]+=len(data);target.write(data);await target.drain()
+            pumps = [asyncio.create_task(pipe(reader,upstream,'to_api_bytes')),
+                     asyncio.create_task(pipe(remote,writer,'to_client_bytes'))]
+            try:
+                await asyncio.wait(pumps, return_when=asyncio.FIRST_COMPLETED)
+            finally:
+                for pump in pumps:
+                    pump.cancel()
+                await asyncio.gather(*pumps, return_exceptions=True)
+        finally:
+            _transport_counts['active']-=1
+            for stream in (upstream,writer):
+                if stream is not None:
+                    stream.close()
+                    with suppress(OSError): await stream.wait_closed()
+    server=await asyncio.start_server(forward,'127.0.0.1',int(sys.argv[1]),backlog=64)
+    async with server: await stop.wait()
+try:
+    _resource_monitor.start();asyncio.run(main())
+finally:
+    _monitor_stop.set();_resource_monitor.join(2)
 '''
 
 
@@ -100,8 +142,10 @@ def _tree_totals(roots, rows):
                 break
             descendants |= additions
         values = [rows[pid] for pid in descendants if pid in rows]
+        fds = [v.get('open_fds') for v in values]
         observed[role] = {'processes': len(values), 'rss_bytes_sum': sum(v['rss_bytes'] for v in values),
-                          'live_cpu_seconds_sum': sum(v['cpu_seconds'] for v in values)}
+                          'live_cpu_seconds_sum': sum(v['cpu_seconds'] for v in values),
+                          'open_fds_sum': sum(fds) if fds and None not in fds else None}
     return observed
 
 
@@ -112,12 +156,33 @@ def _summary(values):
             'max_ms': max(values) * 1000}
 
 
+def _container_usage():
+    files = {
+        'cpu_usage_ns': ('cpuacct/cpuacct.usage',),
+        'memory_current_bytes': ('memory/memory.usage_in_bytes', 'memory.current'),
+        'memory_peak_bytes': ('memory/memory.max_usage_in_bytes', 'memory.peak'),
+    }
+    root = Path('/sys/fs/cgroup')
+    usage = {}
+    for key, options in files.items():
+        for name in options:
+            with suppress(OSError, ValueError):
+                usage[key] = int((root / name).read_text())
+                break
+    if 'cpu_usage_ns' not in usage:
+        with suppress(OSError, ValueError, KeyError):
+            counters = dict(line.split() for line in (root / 'cpu.stat').read_text().splitlines())
+            usage['cpu_usage_ns'] = int(counters['usage_usec']) * 1000
+    usage['monotonic_seconds'] = time.monotonic()
+    return usage
+
+
 @pytest.fixture(autouse=True)
 def private_database(monkeypatch):
     monkeypatch.setenv('K17_TEST_DATABASE_URL', os.environ['K14_TEST_DATABASE_URL'])
 
 
-def test_real_process_mixed_bursts_keep_quiet_tenant_health_and_reconnect_bounded(tmp_path):
+def _run_envelope(tmp_path, *, replicas=1, steady_seconds=0):
     async def scenario():
         database = os.environ['K14_TEST_DATABASE_URL']
         root = Path(__file__).resolve().parents[2]
@@ -128,10 +193,14 @@ def test_real_process_mixed_bursts_keep_quiet_tenant_health_and_reconnect_bounde
         children, handles, created_roles = [], [], []
         stop = asyncio.Event()
         tasks = []
-        report = {'schema_version': 'k14-native-process-envelope/v1',
-                  'scope': 'One native TLS API, actual two-slot worker and owned PG16 cluster; seeded sessions, no IdP. '
+        report = {'schema_version': 'k14-native-process-envelope/v2',
+                  'scope': f'{replicas} native TLS API and {replicas} two-slot worker replicas with owned PG16; seeded sessions, no IdP. '
                            'Physical S/M/L sources with bounded native result geometry. Application-cold/warm only; OS/PG caches uncontrolled. '
-                           'No multi-replica/ingress/NIC/primary50k or production memory qualification.'}
+                           'Local fixture only, no external NIC/primary50k or production memory qualification.',
+                  'api_replicas': replicas, 'worker_replicas': replicas,
+                  'runtime_connection_bound': replicas * (4 + 2), 'observer_admin_reserve': 2,
+                  'declared_total_connection_bound': replicas * 6 + 2,
+                  'steady_seconds': steady_seconds}
         try:
             async with _target() as (pool, schema):
                 output = tmp_path / 'private-seed'
@@ -168,6 +237,7 @@ def test_real_process_mixed_bursts_keep_quiet_tenant_health_and_reconnect_bounde
                 cert, key = _certificate(tmp_path)
                 key.chmod(0o600)
                 port = _port()
+                api_ports = []
                 tls = ssl.create_default_context(cafile=str(cert))
                 (output / 'worker-private').mkdir(mode=0o700)
 
@@ -175,19 +245,25 @@ def test_real_process_mixed_bursts_keep_quiet_tenant_health_and_reconnect_bounde
                 def start(mode):
                     label = mode + '-' + str(ordinals[mode])
                     ordinals[mode] += 1
+                    child_port = (port if not api_ports else _port()) if mode == 'api' else port
+                    if mode == 'api':
+                        api_ports.append(child_port)
                     config = tmp_path / (label + '.json')
                     config.write_text(json.dumps({'environment': 'local', 'public_origin': ORIGIN,
                         'identity': {'issuer': 'https://issuer.example.invalid', 'client_id': 'synthetic-preauthenticated',
                             'redirect_uri': ORIGIN + '/v1/auth/callback', 'client_kind': 'public'},
                         'storage': {'database_url_env': 'ALETHEIA_HOSTED_DATABASE_URL', 'object_root': str(output),
                             'expected_schema': schema, 'expected_database_role': roles[mode]},
-                        'api': {'port': port, 'database_pool_size': 4, 'graceful_shutdown_seconds': 10}}))
+                        'api': {'port': child_port, 'database_pool_size': 4, 'graceful_shutdown_seconds': 10},
+                        'worker': {'database_pool_size': 2, 'job_slots_per_process': 2}}))
                     config.chmod(0o600)
                     env = {name: os.environ[name] for name in ('SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP') if name in os.environ}
                     env.update(PYTHONPATH=str(root / 'src'), ALETHEIA_HOSTED_CSRF_SECRET=secret,
                         ALETHEIA_RELEASE_ID=source_before, K14_RESOURCE_SAMPLE_FILE=str(tmp_path / (label + '.resources.jsonl')),
                         ALETHEIA_HOSTED_DATABASE_URL=_application_url(_role_url(database, schema, roles[mode], passwords[mode]),
-                            'k14-' + mode))
+                            'k14-' + label))
+                    if replicas > 1:
+                        env.update(OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1', MKL_NUM_THREADS='1')
                     log = (tmp_path / (label + '.safe.jsonl')).open('xb')
                     handles.append(log)
                     child = subprocess.Popen([sys.executable, '-B', '-c', _monitored_child(), mode, str(config), str(cert), str(key)],
@@ -195,9 +271,24 @@ def test_real_process_mixed_bursts_keep_quiet_tenant_health_and_reconnect_bounde
                     children.append(child)
                     return child
 
-                api = start('api')
-                latencies = {name: [] for name in ('cold_result', 'warm_result', 'background_result', 'health', 'admission', 'reconnect')}
-                process_samples, db_samples, concurrent_samples, waves = [], [], [], []
+                apis = [start('api') for _ in range(replicas)]
+                ingress = None
+                if replicas > 1:
+                    port = _port()
+                    ingress_env = dict(os.environ, PYTHONPATH=str(root / 'src'),
+                        K14_RESOURCE_SAMPLE_FILE=str(tmp_path / 'ingress.resources.jsonl'))
+                    ingress_code = ('import asyncio,json,os,signal,sys\n'
+                        'from aletheia_lab.hosted.observability import process_telemetry\n' + _MONITOR + _INGRESS)
+                    ingress_log = (tmp_path / 'ingress.safe.log').open('xb')
+                    handles.append(ingress_log)
+                    ingress = subprocess.Popen([sys.executable, '-B', '-c', ingress_code, str(port), json.dumps(api_ports)],
+                        cwd=root, env=ingress_env, stdout=subprocess.DEVNULL, stderr=ingress_log)
+                    children.append(ingress)
+                latencies = {name: [] for name in ('cold_result', 'warm_result', 'background_result', 'health',
+                    'admin_sql', 'admission', 'reconnect')}
+                if steady_seconds:
+                    latencies['hot_large_result'] = []
+                process_samples, db_samples, replica_db_samples, concurrent_samples, waves = [], [], [], [], []
                 base_url = f'https://127.0.0.1:{port}'
                 client_options = dict(base_url=base_url, verify=tls, trust_env=False, timeout=10,
                                       limits=httpx.Limits(max_connections=8, max_keepalive_connections=4))
@@ -214,14 +305,18 @@ def test_real_process_mixed_bursts_keep_quiet_tenant_health_and_reconnect_bounde
 
                 async with httpx.AsyncClient(**client_options) as client:
                     async with asyncio.timeout(20):
-                        while True:
-                            assert api.poll() is None, 'Actual API failed; retain owned safe log.'
-                            try:
-                                if (await client.get('/health/ready', headers={'host': 'app.example.invalid'})).status_code == 200:
-                                    break
-                            except httpx.HTTPError:
-                                pass
-                            await asyncio.sleep(.05)
+                        for ready_port in [*api_ports, port] if ingress is not None else api_ports:
+                            while True:
+                                assert all(api.poll() is None for api in apis), 'Actual API failed; retain owned safe log.'
+                                assert ingress is None or ingress.poll() is None, 'Test ingress failed.'
+                                try:
+                                    ready = await client.get(
+                                        f'https://127.0.0.1:{ready_port}/health/ready', headers={'host': 'app.example.invalid'})
+                                    if ready.status_code == 200:
+                                        break
+                                except httpx.HTTPError:
+                                    pass
+                                await asyncio.sleep(.05)
                     for actor in owners:
                         session = await client.get('/v1/session', headers=headers(actor))
                         assert session.status_code == 200 and session.json()['actor']['user_id'] == actor.actor_id
@@ -232,22 +327,30 @@ def test_real_process_mixed_bursts_keep_quiet_tenant_health_and_reconnect_bounde
                             assert response.status_code == 200
                             assert response.json()['workspace_id'] == actor.values['workspace_id']
 
-                    worker = None
+                    workers = []
                     async def observe():
                         while not stop.is_set():
-                            roots = {'api': api.pid, 'generator': os.getpid()}
+                            roots = {f'api{index}': api.pid for index, api in enumerate(apis)}
                             if postgres_pid is not None:
                                 roots['postgres'] = postgres_pid
-                            if worker is not None:
-                                roots['worker'] = worker.pid
-                            sample, _ = await asyncio.to_thread(_process_tree, roots)
-                            sample.pop('generator')  # Generator tree includes SUT descendants; don't double count.
+                            roots.update({f'worker{index}': worker.pid for index, worker in enumerate(workers)})
+                            if ingress is not None:
+                                roots['ingress'] = ingress.pid
+                            sample, processes = await asyncio.to_thread(_process_tree, roots)
+                            generator = processes.get(os.getpid())
+                            if generator is not None:
+                                sample['generator_self'] = {'processes': 1, 'rss_bytes_sum': generator['rss_bytes'],
+                                    'live_cpu_seconds_sum': generator['cpu_seconds'], 'open_fds': generator.get('open_fds')}
+                            sample['container_usage'] = _container_usage()
                             process_samples.append(sample)
                             async with pool.connection() as conn:
                                 rows = await (await conn.execute('SELECT usename,count(*) FROM pg_stat_activity '
                                     'WHERE usename=ANY(%s) GROUP BY usename', (list(roles.values()),))).fetchall()
                                 db_samples.append({mode: next((count for name, count in rows if name == role), 0)
                                                    for mode, role in roles.items()})
+                                by_replica = await (await conn.execute('SELECT application_name,count(*) FROM pg_stat_activity '
+                                    'WHERE usename=ANY(%s) GROUP BY application_name', (list(roles.values()),))).fetchall()
+                                replica_db_samples.append(dict(by_replica))
                                 concurrent_samples.append(await (await conn.execute(
                                     "SELECT workspace_id,operation,count(*) FROM j01_jobs WHERE state IN ('running','cancel_requested') "
                                     'GROUP BY workspace_id,operation')).fetchall())
@@ -262,10 +365,16 @@ def test_real_process_mixed_bursts_keep_quiet_tenant_health_and_reconnect_bounde
                             assert response.status_code == 200 and response.json()['workspace_id'] == actor.values['workspace_id']
                             health = await request(client, 'health', 'GET', '/health/ready')
                             assert health.status_code == 200
+                            started = time.monotonic()
+                            async with pool.connection() as conn:
+                                assert await (await conn.execute('SELECT 1')).fetchone() == (1,)
+                            latencies['admin_sql'].append(time.monotonic() - started)
                             with suppress(TimeoutError):
                                 await asyncio.wait_for(stop.wait(), .05)
 
                     tasks.extend([asyncio.create_task(observe()), asyncio.create_task(background())])
+                    measurement_started_utc = datetime.now(UTC).isoformat()
+                    measurement_start = time.monotonic()
                     admitted_ids = []
                     for wave in range(2):
                         chosen = [noisy[index % 3] for index in range(8)] + [quiet[0], quiet[2]]
@@ -289,8 +398,8 @@ def test_real_process_mixed_bursts_keep_quiet_tenant_health_and_reconnect_bounde
                             response = await client.get(receipt['status_url'] + '/updates', headers=headers(actor))
                             assert response.status_code == 200
                             baseline.append(response.json())
-                        if worker is None:
-                            worker = start('worker')
+                        if not workers:
+                            workers.extend(start('worker') for _ in range(replicas))
                         async with asyncio.timeout(40):
                             while True:
                                 async with pool.connection() as conn:
@@ -332,20 +441,43 @@ def test_real_process_mixed_bursts_keep_quiet_tenant_health_and_reconnect_bounde
                                       'quiet_tenant_in_first_two_claims': True,
                                       'quiet_completion_before_last_noisy_claim': True,
                                       'quiet_first_finish_from_first_claim_ms': (quiet_finished - attempts[0][1]).total_seconds() * 1000})
-                        worker.terminate()
-                        await asyncio.to_thread(worker.wait, 15)
-                        worker = None  # Repeat an actual worker startup with the next burst already durably queued.
+                        for worker in workers:
+                            worker.terminate()
+                        for worker in workers:
+                            await asyncio.to_thread(worker.wait, 15)
+                        workers.clear()  # Each wave includes an actual worker startup.
+                    if steady_seconds:
+                        workers.extend(start('worker') for _ in range(replicas))
+                        end = time.monotonic() + steady_seconds
+                        while time.monotonic() < end:
+                            actor = noisy[2]
+                            response = await request(client, 'hot_large_result', 'GET',
+                                f"/v1/workspaces/{actor.values['workspace_id']}/results/{actor.values['result_id']}", actor)
+                            assert response.status_code == 200 and response.json()['workspace_id'] == actor.values['workspace_id']
+                            await asyncio.sleep(.05)
                     stop.set()
                     await asyncio.gather(*tasks)
+                    measurement_seconds = time.monotonic() - measurement_start
+                    measurement_finished_utc = datetime.now(UTC).isoformat()
                     async with pool.connection() as conn:
                         counts = await (await conn.execute("SELECT count(*),count(*) FILTER(WHERE state='succeeded') FROM j01_jobs")).fetchone()
                         audits = await (await conn.execute("SELECT action,count(*) FROM k06_action_audit WHERE action IN ('job.admit','job.complete','job.publish') GROUP BY action")).fetchall()
                     assert counts == (20, 20) and len(set(admitted_ids)) == 20
                     assert dict(audits) == {'job.admit': 20, 'job.complete': 20}
-                    assert db_samples and max(v['api'] for v in db_samples) <= 4 and max(v['worker'] for v in db_samples) <= 2
-                    assert max(sample.get('worker', {}).get('processes', 0) for sample in process_samples) <= 3
+                    assert db_samples and max(v['api'] for v in db_samples) <= 4 * replicas
+                    assert max(v['worker'] for v in db_samples) <= 2 * replicas
+                    assert all(values['processes'] <= 3 for sample in process_samples for label, values in sample.items() if label.startswith('worker'))
+                    for label in {name for sample in replica_db_samples for name in sample}:
+                        assert max(sample.get(label, 0) for sample in replica_db_samples) <= (4 if '-api-' in label else 2)
                     assert all(sum(row[2] for row in sample) <= 2 and all(row[2] <= 1 for row in sample) for sample in concurrent_samples)
                     assert len(latencies['background_result']) >= 5 and len(latencies['health']) >= 5
+                if ingress is not None:
+                    async with asyncio.timeout(3):
+                        while True:
+                            last = (tmp_path / 'ingress.resources.jsonl').read_text().splitlines()[-1]
+                            if json.loads(last)['transport']['active'] == 0:
+                                break
+                            await asyncio.sleep(.1)
                 for child in children:
                     child.terminate()
                 for child in children:
@@ -356,8 +488,11 @@ def test_real_process_mixed_bursts_keep_quiet_tenant_health_and_reconnect_bounde
                              for path in sorted(tmp_path.glob('*.resources.jsonl'))}
                 for samples in resources.values():
                     assert len(samples) > 2
-                    assert samples[-1]['telemetry']['gauges'].get('pool_waiting', 0) == 0
+                    if 'pool_waiting' in samples[-1]['telemetry']['gauges']:
+                        assert samples[-1]['telemetry']['gauges']['pool_waiting'] == 0
                     assert samples[-1]['open_fds'] <= samples[1]['open_fds'] + 16
+                transport = resources['ingress.resources'][-1]['transport'] if ingress is not None else None
+                summary = {name: _summary(values) for name, values in latencies.items() if values}
                 resource_summary = {label: {
                     'samples': len(samples),
                     'observed_seconds': samples[-1]['monotonic'] - samples[0]['monotonic'],
@@ -380,8 +515,16 @@ def test_real_process_mixed_bursts_keep_quiet_tenant_health_and_reconnect_bounde
                     exercised_principals=6, waves=waves, jobs_succeeded=20, actual_http_admissions=60,
                     same_key_duplicate_jobs=0, reconnect_job_observations=6, fresh_tls_client_transports=2,
                     reconnect_fraction_of_jobs=.3,
-                    latency={name: _summary(values) for name, values in latencies.items()},
+                    ingress_transport=transport,
+                    measurement_seconds=measurement_seconds,
+                    measurement_started_utc=measurement_started_utc, measurement_finished_utc=measurement_finished_utc,
+                    latency_samples_seconds=latencies,
+                    pool_samples=db_samples,
+                    per_replica_pool_samples=replica_db_samples,
+                    latency=summary,
                     native_pool_peaks={mode: max(values[mode] for values in db_samples) for mode in roles},
+                    per_replica_pool_peaks={name: max(values.get(name, 0) for values in replica_db_samples)
+                        for name in {name for values in replica_db_samples for name in values}},
                     process_samples=process_samples, process_resources=resources, resource_summary=resource_summary,
                     sampling_limits='100ms per-process kernel/telemetry; ~100ms+ps/query cost tree sampling can miss short children. '
                         'RSS sums double-count shared pages; RUSAGE_CHILDREN includes reaped children CPU and maximum single-child peak, not aggregate concurrent peak. '
@@ -395,7 +538,15 @@ def test_real_process_mixed_bursts_keep_quiet_tenant_health_and_reconnect_bounde
                         json.dump(report, handle, indent=2)
                         handle.write('\n')
                 print('K14_PROCESS_ENVELOPE ' + json.dumps({key: value for key, value in report.items()
-                    if key not in ('process_samples', 'process_resources', 'physical_strata', 'physical')}, sort_keys=True))
+                    if key not in ('process_samples', 'process_resources', 'physical_strata', 'physical',
+                        'latency_samples_seconds', 'pool_samples', 'per_replica_pool_samples')}, sort_keys=True))
+                if replicas > 1:
+                    assert summary.get('hot_large_result', {}).get('count', 0) >= 30
+                    assert transport is not None
+                    assert transport['active'] == transport['rejected'] == 0, transport
+                    assert 0 < transport['peak_active'] <= 32 and transport['to_api_bytes'] > 0 and transport['to_client_bytes'] > 0
+                    for name, bound in (('health', 250), ('admin_sql', 250), ('background_result', 500)):
+                        assert summary[name]['p95_observed_ms'] <= bound, (name, bound, summary[name])
         finally:
             stop.set()
             for task in tasks:
@@ -418,3 +569,12 @@ def test_real_process_mixed_bursts_keep_quiet_tenant_health_and_reconnect_bounde
                     await admin.execute(sql.SQL('DROP ROLE {}').format(sql.Identifier(role)))
 
     _run(scenario())
+
+
+def test_real_process_mixed_bursts_keep_quiet_tenant_health_and_reconnect_bounded(tmp_path):
+    _run_envelope(tmp_path)
+
+
+@pytest.mark.skipif(os.environ.get('K14_RUN_FLEET') != '1', reason='Explicit bounded local fleet measurement required')
+def test_two_api_two_worker_replicas_with_ingress_health_admin_and_mixed_tenant_load(tmp_path):
+    _run_envelope(tmp_path, replicas=2, steady_seconds=30)
