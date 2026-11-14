@@ -1,0 +1,966 @@
+{
+  "task": "K07 concurrent upload completion race only",
+  "status": "passed_local_targeted_validation",
+  "recorded_utc": "2026-11-14T18:48:38.499368+00:00",
+  "recorded_vietnam": "2026-11-15T01:48:38.499368+07:00",
+  "base_commit": "731f1bc2225805262761a21483cec3c693e6b9d4",
+  "branch": "product-api",
+  "committed": false,
+  "pushed": false,
+  "new_github_ci_run": false,
+  "source_sha256": {
+    "src/aletheia_lab/hosted/postgres_sources.py": "bae378eb5b4fc5ef776d5655743636fac129b0c5c019fd426c9f640c273e117a",
+    "tests/integration/test_k07_completion_race_postgres.py": "b804f728432986461be81a40cdd5f55b206d769b31f04969ad1ee936d74ff36f"
+  },
+  "production_diff": {
+    "files": 1,
+    "added": 8,
+    "deleted": 6
+  },
+  "root_cause": "ready checked in one transaction before assembly acquired a new row lock, permitting the winner to publish and clean parts between the two reads",
+  "fix": "Ready replay and active-part assembly now share the authorized FOR UPDATE read; caller distinguishes existing UploadStatus from record/payload. Publication transaction and resource-release finally remain unchanged.",
+  "profiles": {
+    "before": {
+      "tests": 10,
+      "failed": 2,
+      "errors": 0,
+      "skipped": 0,
+      "junit_seconds": 46.985,
+      "pytest_seconds": 47.15,
+      "cases": [
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[ready-three-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 4.969,
+          "outcome": "failed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[ready-eight-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 4.02,
+          "outcome": "failed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[cancelled-three-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 4.042,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[cancelled-eight-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 4.541,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[expired-three-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 4.57,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[expired-eight-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 4.553,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[membership-three-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 4.361,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[membership-eight-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 5.145,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[session-three-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 5.3,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[session-eight-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 4.532,
+          "outcome": "passed"
+        }
+      ]
+    },
+    "after": {
+      "tests": 10,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_seconds": 59.882,
+      "pytest_seconds": 60.06,
+      "cases": [
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[ready-three-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 4.331,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[ready-eight-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 3.955,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[cancelled-three-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 3.456,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[cancelled-eight-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 3.719,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[expired-three-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 3.622,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[expired-eight-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 3.387,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[membership-three-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 3.511,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[membership-eight-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 4.12,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[session-three-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 16.439,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[session-eight-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 12.785,
+          "outcome": "passed"
+        }
+      ]
+    },
+    "unit": {
+      "tests": 18,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_seconds": 2.372,
+      "pytest_seconds": 2.64,
+      "cases": [
+        {
+          "name": "test_create_and_resume_and_binary_parts_keep_exact_server_scope",
+          "class": "tests.unit.test_k07_upload_http",
+          "seconds": 0.489,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_denied_bad_framing_schema_and_foreign_scope_are_safe",
+          "class": "tests.unit.test_k07_upload_http",
+          "seconds": 0.196,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_head_keeps_length_without_body_and_wrong_method_lists_allow",
+          "class": "tests.unit.test_k07_upload_http",
+          "seconds": 0.105,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_large_completions_have_one_in_process_resource_slot",
+          "class": "tests.unit.test_k07_upload_http",
+          "seconds": 0.056,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_manifest_round_trip_keeps_seal_and_strict_types",
+          "class": "tests.unit.test_k07_upload_models",
+          "seconds": 0.001,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_manifest_rejects_ambiguous_or_unbounded_inputs[duplicate]",
+          "class": "tests.unit.test_k07_upload_models",
+          "seconds": 0.064,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_manifest_rejects_ambiguous_or_unbounded_inputs[gap]",
+          "class": "tests.unit.test_k07_upload_models",
+          "seconds": 0.001,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_manifest_rejects_ambiguous_or_unbounded_inputs[length]",
+          "class": "tests.unit.test_k07_upload_models",
+          "seconds": 0.001,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_manifest_rejects_ambiguous_or_unbounded_inputs[oversize]",
+          "class": "tests.unit.test_k07_upload_models",
+          "seconds": 0.006,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_manifest_rejects_ambiguous_or_unbounded_inputs[path]",
+          "class": "tests.unit.test_k07_upload_models",
+          "seconds": 0.001,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_manifest_rejects_ambiguous_or_unbounded_inputs[bool]",
+          "class": "tests.unit.test_k07_upload_models",
+          "seconds": 0.003,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_manifest_rejects_ambiguous_or_unbounded_inputs[format]",
+          "class": "tests.unit.test_k07_upload_models",
+          "seconds": 0.001,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_ready_requires_full_verified_bytes_and_source_reference",
+          "class": "tests.unit.test_k07_upload_models",
+          "seconds": 0.001,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_progress_rejects_part_numbers_outside_manifest_bounds[-1]",
+          "class": "tests.unit.test_k07_upload_models",
+          "seconds": 0.001,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_progress_rejects_part_numbers_outside_manifest_bounds[0]",
+          "class": "tests.unit.test_k07_upload_models",
+          "seconds": 0.001,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_progress_rejects_part_numbers_outside_manifest_bounds[513]",
+          "class": "tests.unit.test_k07_upload_models",
+          "seconds": 0.001,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_progress_rejects_empty_or_noncontiguous_part_universe[missing_parts0]",
+          "class": "tests.unit.test_k07_upload_models",
+          "seconds": 0.003,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_progress_rejects_empty_or_noncontiguous_part_universe[missing_parts1]",
+          "class": "tests.unit.test_k07_upload_models",
+          "seconds": 0.002,
+          "outcome": "passed"
+        }
+      ]
+    },
+    "regression": {
+      "tests": 21,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_seconds": 102.219,
+      "pytest_seconds": 102.42,
+      "cases": [
+        {
+          "name": "test_real_resume_out_of_order_parallel_retry_lost_ack_and_complete_once",
+          "class": "tests.integration.test_k07_upload_staging_postgres",
+          "seconds": 4.377,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_real_quota_concurrency_cancel_cleanup_expiry_and_source_preservation",
+          "class": "tests.integration.test_k07_upload_staging_postgres",
+          "seconds": 3.973,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_real_scope_role_parent_grant_revocation_and_manifest_conflict",
+          "class": "tests.integration.test_k07_upload_staging_postgres",
+          "seconds": 3.806,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_real_cancel_during_parser_prevents_source_publication",
+          "class": "tests.integration.test_k07_upload_staging_postgres",
+          "seconds": 3.671,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_real_hash_mismatch_corruption_and_migration_drift_fail_closed",
+          "class": "tests.integration.test_k07_upload_staging_postgres",
+          "seconds": 3.704,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_real_invalid_parser_and_total_hash_cancel_sealed_session_for_grace_cleanup",
+          "class": "tests.integration.test_k07_upload_staging_postgres",
+          "seconds": 3.924,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_real_database_diskfull_rolls_back_part_and_complete_then_retry_preserves_bytes",
+          "class": "tests.integration.test_k07_upload_staging_postgres",
+          "seconds": 3.893,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_publishes_verified_bytes_without_binding_the_bundle_again",
+          "class": "tests.integration.test_k07_upload_completion_postgres",
+          "seconds": 3.738,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_changed_staged_bytes_after_inspection_never_publish_as_the_validated_source[bytes]",
+          "class": "tests.integration.test_k07_upload_completion_postgres",
+          "seconds": 4.033,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_changed_staged_bytes_after_inspection_never_publish_as_the_validated_source[missing]",
+          "class": "tests.integration.test_k07_upload_completion_postgres",
+          "seconds": 3.789,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_unknown_part_commit_reconciles_same_intent_without_payload_reinsertion[after_commit]",
+          "class": "tests.integration.test_k07_upload_part_reconciliation_postgres",
+          "seconds": 4.296,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_unknown_part_commit_reconciles_same_intent_without_payload_reinsertion[before_commit_rollback]",
+          "class": "tests.integration.test_k07_upload_part_reconciliation_postgres",
+          "seconds": 5.35,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_committed_part_fast_replay_preserves_current_authority_state_and_integrity[revoked]",
+          "class": "tests.integration.test_k07_upload_part_reconciliation_postgres",
+          "seconds": 5.248,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_committed_part_fast_replay_preserves_current_authority_state_and_integrity[expired]",
+          "class": "tests.integration.test_k07_upload_part_reconciliation_postgres",
+          "seconds": 4.416,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_committed_part_fast_replay_preserves_current_authority_state_and_integrity[cancelled]",
+          "class": "tests.integration.test_k07_upload_part_reconciliation_postgres",
+          "seconds": 4.779,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_committed_part_fast_replay_preserves_current_authority_state_and_integrity[stored_metadata_conflict]",
+          "class": "tests.integration.test_k07_upload_part_reconciliation_postgres",
+          "seconds": 4.209,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_part_failure_diagnostic_observes_committed_metadata_without_hiding_unknown",
+          "class": "tests.integration.test_k07_upload_part_reconciliation_postgres",
+          "seconds": 3.935,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_memory_overload_never_fetches_parts_and_ready_replay_still_works",
+          "class": "tests.integration.test_k14_source_admission_postgres",
+          "seconds": 9.611,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_cancellation_keeps_byte_reservation_until_real_inspection_finishes",
+          "class": "tests.integration.test_k14_source_admission_postgres",
+          "seconds": 10.485,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_upload_conversion_and_direct_put_share_quota_fence_without_double_spend",
+          "class": "tests.integration.test_k02_source_quota_race_postgres",
+          "seconds": 5.272,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_identical_parallel_put_replays_at_exact_workspace_quota_across_parser_owners",
+          "class": "tests.integration.test_k02_source_quota_race_postgres",
+          "seconds": 4.571,
+          "outcome": "passed"
+        }
+      ]
+    },
+    "linux": {
+      "tests": 18,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_seconds": 75.004,
+      "pytest_seconds": 76.11,
+      "cases": [
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[ready-three-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 2.074,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[ready-eight-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 2.017,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[cancelled-three-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 1.712,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[cancelled-eight-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 1.768,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[expired-three-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 1.755,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[expired-eight-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 1.816,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[membership-three-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 1.818,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[membership-eight-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 1.916,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[session-three-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 3.721,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[session-eight-callers]",
+          "class": "tests.integration.test_k07_completion_race_postgres",
+          "seconds": 6.766,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_real_resume_out_of_order_parallel_retry_lost_ack_and_complete_once",
+          "class": "tests.integration.test_k07_upload_staging_postgres",
+          "seconds": 4.894,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_completion_publishes_verified_bytes_without_binding_the_bundle_again",
+          "class": "tests.integration.test_k07_upload_completion_postgres",
+          "seconds": 9.433,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_changed_staged_bytes_after_inspection_never_publish_as_the_validated_source[bytes]",
+          "class": "tests.integration.test_k07_upload_completion_postgres",
+          "seconds": 9.603,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_changed_staged_bytes_after_inspection_never_publish_as_the_validated_source[missing]",
+          "class": "tests.integration.test_k07_upload_completion_postgres",
+          "seconds": 3.653,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_memory_overload_never_fetches_parts_and_ready_replay_still_works",
+          "class": "tests.integration.test_k14_source_admission_postgres",
+          "seconds": 6.272,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_cancellation_keeps_byte_reservation_until_real_inspection_finishes",
+          "class": "tests.integration.test_k14_source_admission_postgres",
+          "seconds": 1.831,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_upload_conversion_and_direct_put_share_quota_fence_without_double_spend",
+          "class": "tests.integration.test_k02_source_quota_race_postgres",
+          "seconds": 1.834,
+          "outcome": "passed"
+        },
+        {
+          "name": "test_identical_parallel_put_replays_at_exact_workspace_quota_across_parser_owners",
+          "class": "tests.integration.test_k02_source_quota_race_postgres",
+          "seconds": 1.737,
+          "outcome": "passed"
+        }
+      ]
+    }
+  },
+  "final_passed_executions": 67,
+  "distinct_final_cases": 49,
+  "windows_passed": 49,
+  "linux_passed": 18,
+  "final_failed": 0,
+  "final_errors": 0,
+  "final_skipped": 0,
+  "race_scenarios": [
+    {
+      "profile": "windows311",
+      "test": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[ready-three-callers]",
+      "upload_id": "upl_edaeaeb424064ea18d985d6c3d3f2ed0",
+      "resolution": "ready",
+      "callers": "3",
+      "payload_bytes": "412",
+      "parts": "4",
+      "outcome": "identical_ready_receipts",
+      "source_count": "1",
+      "source_put_audit_count": "1",
+      "reservation_peak_bytes": "2472",
+      "reservation_final_bytes": "0",
+      "resolved_db_at": "2026-11-14T18:40:42.376807+00:00",
+      "settled_db_at": "2026-11-14T18:40:42.415224+00:00",
+      "verification_after_resolution_ms": 38.417,
+      "case_seconds": 4.331
+    },
+    {
+      "profile": "windows311",
+      "test": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[ready-eight-callers]",
+      "upload_id": "upl_f2cfa50d73cf48c483995e39e31e853d",
+      "resolution": "ready",
+      "callers": "8",
+      "payload_bytes": "412",
+      "parts": "4",
+      "outcome": "identical_ready_receipts",
+      "source_count": "1",
+      "source_put_audit_count": "1",
+      "reservation_peak_bytes": "6592",
+      "reservation_final_bytes": "0",
+      "resolved_db_at": "2026-11-14T18:40:46.342511+00:00",
+      "settled_db_at": "2026-11-14T18:40:46.388837+00:00",
+      "verification_after_resolution_ms": 46.326,
+      "case_seconds": 3.955
+    },
+    {
+      "profile": "windows311",
+      "test": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[cancelled-three-callers]",
+      "upload_id": "upl_0e386951e64a496f8948036c7eb1b998",
+      "resolution": "cancelled",
+      "callers": "3",
+      "payload_bytes": "412",
+      "parts": "4",
+      "outcome": "upload_conflict",
+      "source_count": "0",
+      "source_put_audit_count": "0",
+      "reservation_peak_bytes": "1648",
+      "reservation_final_bytes": "0",
+      "resolved_db_at": "2026-11-14T18:40:49.827791+00:00",
+      "settled_db_at": "2026-11-14T18:40:49.844130+00:00",
+      "verification_after_resolution_ms": 16.339,
+      "case_seconds": 3.456
+    },
+    {
+      "profile": "windows311",
+      "test": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[cancelled-eight-callers]",
+      "upload_id": "upl_64e5c4f827774ab0a61da28f48e42172",
+      "resolution": "cancelled",
+      "callers": "8",
+      "payload_bytes": "412",
+      "parts": "4",
+      "outcome": "upload_conflict",
+      "source_count": "0",
+      "source_put_audit_count": "0",
+      "reservation_peak_bytes": "5768",
+      "reservation_final_bytes": "0",
+      "resolved_db_at": "2026-11-14T18:40:53.499349+00:00",
+      "settled_db_at": "2026-11-14T18:40:53.565653+00:00",
+      "verification_after_resolution_ms": 66.304,
+      "case_seconds": 3.719
+    },
+    {
+      "profile": "windows311",
+      "test": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[expired-three-callers]",
+      "upload_id": "upl_713a930fe56045b0b4e4819208879527",
+      "resolution": "expired",
+      "callers": "3",
+      "payload_bytes": "412",
+      "parts": "4",
+      "outcome": "upload_expired",
+      "source_count": "0",
+      "source_put_audit_count": "0",
+      "reservation_peak_bytes": "1648",
+      "reservation_final_bytes": "0",
+      "resolved_db_at": "2026-11-14T18:40:57.172698+00:00",
+      "settled_db_at": "2026-11-14T18:40:57.188325+00:00",
+      "verification_after_resolution_ms": 15.627,
+      "case_seconds": 3.622
+    },
+    {
+      "profile": "windows311",
+      "test": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[expired-eight-callers]",
+      "upload_id": "upl_99581c51bc534688b2467fd3930bf434",
+      "resolution": "expired",
+      "callers": "8",
+      "payload_bytes": "412",
+      "parts": "4",
+      "outcome": "upload_expired",
+      "source_count": "0",
+      "source_put_audit_count": "0",
+      "reservation_peak_bytes": "5768",
+      "reservation_final_bytes": "0",
+      "resolved_db_at": "2026-11-14T18:41:00.507603+00:00",
+      "settled_db_at": "2026-11-14T18:41:00.569711+00:00",
+      "verification_after_resolution_ms": 62.108,
+      "case_seconds": 3.387
+    },
+    {
+      "profile": "windows311",
+      "test": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[membership-three-callers]",
+      "upload_id": "upl_edb2fa5cde0944858e2a2f5302ba8516",
+      "resolution": "membership",
+      "callers": "3",
+      "payload_bytes": "412",
+      "parts": "4",
+      "outcome": "authorization_denied",
+      "source_count": "1",
+      "source_put_audit_count": "1",
+      "reservation_peak_bytes": "2472",
+      "reservation_final_bytes": "0",
+      "resolved_db_at": "2026-11-14T18:41:04.071212+00:00",
+      "settled_db_at": "2026-11-14T18:41:04.087726+00:00",
+      "verification_after_resolution_ms": 16.514,
+      "case_seconds": 3.511
+    },
+    {
+      "profile": "windows311",
+      "test": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[membership-eight-callers]",
+      "upload_id": "upl_142048ac00dc48c3b5eec64bf2d2b089",
+      "resolution": "membership",
+      "callers": "8",
+      "payload_bytes": "412",
+      "parts": "4",
+      "outcome": "authorization_denied",
+      "source_count": "1",
+      "source_put_audit_count": "1",
+      "reservation_peak_bytes": "6592",
+      "reservation_final_bytes": "0",
+      "resolved_db_at": "2026-11-14T18:41:08.161824+00:00",
+      "settled_db_at": "2026-11-14T18:41:08.198333+00:00",
+      "verification_after_resolution_ms": 36.509,
+      "case_seconds": 4.12
+    },
+    {
+      "profile": "windows311",
+      "test": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[session-three-callers]",
+      "upload_id": "upl_14f693ffc0064464b80a8a8ce6b6aab5",
+      "resolution": "session",
+      "callers": "3",
+      "payload_bytes": "412",
+      "parts": "4",
+      "outcome": "authorization_denied",
+      "source_count": "1",
+      "source_put_audit_count": "1",
+      "reservation_peak_bytes": "2472",
+      "reservation_final_bytes": "0",
+      "resolved_db_at": "2026-11-14T18:41:24.524718+00:00",
+      "settled_db_at": "2026-11-14T18:41:24.545875+00:00",
+      "verification_after_resolution_ms": 21.157,
+      "case_seconds": 16.439
+    },
+    {
+      "profile": "windows311",
+      "test": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[session-eight-callers]",
+      "upload_id": "upl_dd238f342d0d4095abe4748216671c62",
+      "resolution": "session",
+      "callers": "8",
+      "payload_bytes": "412",
+      "parts": "4",
+      "outcome": "authorization_denied",
+      "source_count": "1",
+      "source_put_audit_count": "1",
+      "reservation_peak_bytes": "6592",
+      "reservation_final_bytes": "0",
+      "resolved_db_at": "2026-11-14T18:41:37.380688+00:00",
+      "settled_db_at": "2026-11-14T18:41:37.436405+00:00",
+      "verification_after_resolution_ms": 55.717,
+      "case_seconds": 12.785
+    },
+    {
+      "profile": "linux312",
+      "test": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[ready-three-callers]",
+      "upload_id": "upl_35554cc953c547bdb759a8f4696ce525",
+      "resolution": "ready",
+      "callers": "3",
+      "payload_bytes": "412",
+      "parts": "4",
+      "outcome": "identical_ready_receipts",
+      "source_count": "1",
+      "source_put_audit_count": "1",
+      "reservation_peak_bytes": "2472",
+      "reservation_final_bytes": "0",
+      "resolved_db_at": "2026-11-14T18:44:47.433867+00:00",
+      "settled_db_at": "2026-11-14T18:44:47.442178+00:00",
+      "verification_after_resolution_ms": 8.311,
+      "case_seconds": 2.074
+    },
+    {
+      "profile": "linux312",
+      "test": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[ready-eight-callers]",
+      "upload_id": "upl_e1b276e0fcda44e9b850eb262292cbc0",
+      "resolution": "ready",
+      "callers": "8",
+      "payload_bytes": "412",
+      "parts": "4",
+      "outcome": "identical_ready_receipts",
+      "source_count": "1",
+      "source_put_audit_count": "1",
+      "reservation_peak_bytes": "6592",
+      "reservation_final_bytes": "0",
+      "resolved_db_at": "2026-11-14T18:44:49.428508+00:00",
+      "settled_db_at": "2026-11-14T18:44:49.457758+00:00",
+      "verification_after_resolution_ms": 29.25,
+      "case_seconds": 2.017
+    },
+    {
+      "profile": "linux312",
+      "test": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[cancelled-three-callers]",
+      "upload_id": "upl_262f6504a68d4074acb5f1d676c395a4",
+      "resolution": "cancelled",
+      "callers": "3",
+      "payload_bytes": "412",
+      "parts": "4",
+      "outcome": "upload_conflict",
+      "source_count": "0",
+      "source_put_audit_count": "0",
+      "reservation_peak_bytes": "1648",
+      "reservation_final_bytes": "0",
+      "resolved_db_at": "2026-11-14T18:44:51.181102+00:00",
+      "settled_db_at": "2026-11-14T18:44:51.187907+00:00",
+      "verification_after_resolution_ms": 6.805,
+      "case_seconds": 1.712
+    },
+    {
+      "profile": "linux312",
+      "test": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[cancelled-eight-callers]",
+      "upload_id": "upl_00fc600526fa40f6a3c8401424484114",
+      "resolution": "cancelled",
+      "callers": "8",
+      "payload_bytes": "412",
+      "parts": "4",
+      "outcome": "upload_conflict",
+      "source_count": "0",
+      "source_put_audit_count": "0",
+      "reservation_peak_bytes": "5768",
+      "reservation_final_bytes": "0",
+      "resolved_db_at": "2026-11-14T18:44:52.946658+00:00",
+      "settled_db_at": "2026-11-14T18:44:52.961880+00:00",
+      "verification_after_resolution_ms": 15.222,
+      "case_seconds": 1.768
+    },
+    {
+      "profile": "linux312",
+      "test": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[expired-three-callers]",
+      "upload_id": "upl_4b799920d820481f8389167a8b32e031",
+      "resolution": "expired",
+      "callers": "3",
+      "payload_bytes": "412",
+      "parts": "4",
+      "outcome": "upload_expired",
+      "source_count": "0",
+      "source_put_audit_count": "0",
+      "reservation_peak_bytes": "1648",
+      "reservation_final_bytes": "0",
+      "resolved_db_at": "2026-11-14T18:44:54.709798+00:00",
+      "settled_db_at": "2026-11-14T18:44:54.715742+00:00",
+      "verification_after_resolution_ms": 5.944,
+      "case_seconds": 1.755
+    },
+    {
+      "profile": "linux312",
+      "test": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[expired-eight-callers]",
+      "upload_id": "upl_cc1f4f0d88d341389de2209f0f722436",
+      "resolution": "expired",
+      "callers": "8",
+      "payload_bytes": "412",
+      "parts": "4",
+      "outcome": "upload_expired",
+      "source_count": "0",
+      "source_put_audit_count": "0",
+      "reservation_peak_bytes": "5768",
+      "reservation_final_bytes": "0",
+      "resolved_db_at": "2026-11-14T18:44:56.508334+00:00",
+      "settled_db_at": "2026-11-14T18:44:56.529338+00:00",
+      "verification_after_resolution_ms": 21.004,
+      "case_seconds": 1.816
+    },
+    {
+      "profile": "linux312",
+      "test": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[membership-three-callers]",
+      "upload_id": "upl_c299561403be4ed697240dca6f0264e0",
+      "resolution": "membership",
+      "callers": "3",
+      "payload_bytes": "412",
+      "parts": "4",
+      "outcome": "authorization_denied",
+      "source_count": "1",
+      "source_put_audit_count": "1",
+      "reservation_peak_bytes": "2472",
+      "reservation_final_bytes": "0",
+      "resolved_db_at": "2026-11-14T18:44:58.361848+00:00",
+      "settled_db_at": "2026-11-14T18:44:58.369646+00:00",
+      "verification_after_resolution_ms": 7.798,
+      "case_seconds": 1.818
+    },
+    {
+      "profile": "linux312",
+      "test": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[membership-eight-callers]",
+      "upload_id": "upl_549e4e2151c248feb5273eab0711443d",
+      "resolution": "membership",
+      "callers": "8",
+      "payload_bytes": "412",
+      "parts": "4",
+      "outcome": "authorization_denied",
+      "source_count": "1",
+      "source_put_audit_count": "1",
+      "reservation_peak_bytes": "6592",
+      "reservation_final_bytes": "0",
+      "resolved_db_at": "2026-11-14T18:45:00.285921+00:00",
+      "settled_db_at": "2026-11-14T18:45:00.305763+00:00",
+      "verification_after_resolution_ms": 19.842,
+      "case_seconds": 1.916
+    },
+    {
+      "profile": "linux312",
+      "test": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[session-three-callers]",
+      "upload_id": "upl_9f0593ddfbe543cf89553010e725b85a",
+      "resolution": "session",
+      "callers": "3",
+      "payload_bytes": "412",
+      "parts": "4",
+      "outcome": "authorization_denied",
+      "source_count": "1",
+      "source_put_audit_count": "1",
+      "reservation_peak_bytes": "2472",
+      "reservation_final_bytes": "0",
+      "resolved_db_at": "2026-11-14T18:45:03.990390+00:00",
+      "settled_db_at": "2026-11-14T18:45:04.006663+00:00",
+      "verification_after_resolution_ms": 16.273,
+      "case_seconds": 3.721
+    },
+    {
+      "profile": "linux312",
+      "test": "test_completion_reconciles_winner_at_assembly_without_bypassing_authority[session-eight-callers]",
+      "upload_id": "upl_5b1a76fedadb44cfae68a0a3bcc5f7cc",
+      "resolution": "session",
+      "callers": "8",
+      "payload_bytes": "412",
+      "parts": "4",
+      "outcome": "authorization_denied",
+      "source_count": "1",
+      "source_put_audit_count": "1",
+      "reservation_peak_bytes": "6592",
+      "reservation_final_bytes": "0",
+      "resolved_db_at": "2026-11-14T18:45:10.808328+00:00",
+      "settled_db_at": "2026-11-14T18:45:10.814930+00:00",
+      "verification_after_resolution_ms": 6.602,
+      "case_seconds": 6.766
+    }
+  ],
+  "static_checks": {
+    "ruff": "passed on changed source and new test",
+    "complexity_C901_max10": "passed on changed runtime module",
+    "mypy_strict": "passed, 1 runtime file",
+    "bandit_medium_high": "passed, zero configured-level findings",
+    "git_diff_check": "passed"
+  },
+  "fixture_diagnostics": [
+    {
+      "files": [
+        "fixture-initial.log",
+        "fixture-initial.xml"
+      ],
+      "reason": "Test recorded AdmissionSnapshot.peak instead of the existing peak_active field. Corrected the new fixture."
+    },
+    {
+      "files": [
+        "fixture-expiry.log",
+        "fixture-expiry.xml"
+      ],
+      "reason": "Expiry injection initially violated expires_at > created_at. Corrected both timestamps within the UUID-owned test schema."
+    }
+  ],
+  "raw_logs": {
+    "archive": "raw-test-logs.zip",
+    "entries": 18,
+    "sha256": "15fc906f0c7bdd6376ca53587ed906d127aa9744cfe61d5c3d16a590cd9af85f"
+  },
+  "scope_limits": [
+    "Functional 3/8 caller interleavings, not production throughput or load capacity qualification",
+    "Windows Python 3.11.9 and Linux Python 3.12.16 targeted suites only",
+    "No new GitHub CI because user explicitly requested no commit/push",
+    "No other task implementation changes",
+    "Historical K09.03 evidence left unchanged",
+    "No final all-K acceptance export for Bao"
+  ],
+  "test_method": {
+    "barrier": "Pause losing callers before locked assembly, finish winner or change terminal/authority state, then release losers",
+    "concurrent_callers": [
+      3,
+      8
+    ],
+    "resolutions": [
+      "ready",
+      "cancelled",
+      "expired",
+      "membership revoked after winner",
+      "session revoked after winner"
+    ],
+    "actual_database": "PostgreSQL 16.15, isolated owned database and UUID schemas",
+    "timing_note": "verification_after_resolution_ms spans DB resolution witness to final DB assertions, not response latency or a performance percentile"
+  },
+  "cleanup": {
+    "recorded_utc": "2026-11-14T18:46:44.4094924Z",
+    "owned_container_id": "b6325af7c0bfaf816204bed1bcd2ea6e064bdaa979e0f85ca63072e491a4746b",
+    "label_verified": true,
+    "schemas_remaining": [],
+    "container_and_owned_anonymous_volume_removed": true,
+    "linux_test_container_auto_removed": true,
+    "docker_server_version": "28.0.4"
+  }
+}

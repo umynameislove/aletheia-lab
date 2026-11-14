@@ -1,0 +1,74 @@
+{
+  "after.log": {
+    "bytes": 112,
+    "sha256": "d16105726483de6eaab5efa28784af7f6809d84163291ce8dbb87a0d915fa1ab"
+  },
+  "after.xml": {
+    "bytes": 9683,
+    "sha256": "2e37d3b774fabd00630cc2736e4de18da09d04d4e8e331ac4ed4064d9cada02c"
+  },
+  "bandit.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "before.log": {
+    "bytes": 26333,
+    "sha256": "994c95ce2bd5700b48a880748558cfb54224d48c4100a93fff197128baa647b6"
+  },
+  "before.xml": {
+    "bytes": 34267,
+    "sha256": "2f8bc49993904ff7cb9ec14fd8cccbac8cc52ce1d511fdb4622588cdda09d5df"
+  },
+  "complexity.log": {
+    "bytes": 20,
+    "sha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0"
+  },
+  "fixture-expiry.log": {
+    "bytes": 45780,
+    "sha256": "55c71c192c16f3e9366ac40e0f059e858557fc83a72780f679d2467125e4a625"
+  },
+  "fixture-expiry.xml": {
+    "bytes": 52340,
+    "sha256": "5ad72cbfafa29d2d0bcfef1a02a5d9819d180ec21278ec1cbaf9989bd343cedb"
+  },
+  "fixture-initial.log": {
+    "bytes": 129040,
+    "sha256": "f9995e42c8950fe6c8cb998aabab0e8ecddd745c442ff4cf8e54f74131467ad7"
+  },
+  "fixture-initial.xml": {
+    "bytes": 130694,
+    "sha256": "a4917f919df2084d1ad69850dddef918728de344abcb50952bd8ea838f46699f"
+  },
+  "linux.log": {
+    "bytes": 112,
+    "sha256": "c2ec67c21deef1e023643c8b881f53cc0acb86ba9014b7966644706a7c4d58df"
+  },
+  "linux.xml": {
+    "bytes": 11672,
+    "sha256": "df3b0a9eebe847d6a14a327695e9565d6240a16f4e35afeb53807e83f74034b6"
+  },
+  "mypy.log": {
+    "bytes": 43,
+    "sha256": "8e63ae22e8213e327a5e9cbd584067681681bd8ef7f25c869877887ccdcfc4ff"
+  },
+  "regression.log": {
+    "bytes": 113,
+    "sha256": "9ef586394911779b9ae49cdd79c1b02171eb2263305730aff5479a24c90907bd"
+  },
+  "regression.xml": {
+    "bytes": 4054,
+    "sha256": "93b82a4d0bd719a34d9734cacee609b9882c32878c213418400987cf7cb52fd0"
+  },
+  "ruff.log": {
+    "bytes": 20,
+    "sha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0"
+  },
+  "unit.log": {
+    "bytes": 101,
+    "sha256": "e113984700e924a31ad4b3cdfe873029d4253378c1707545b9216fa4ee130234"
+  },
+  "unit.xml": {
+    "bytes": 2763,
+    "sha256": "d7a90c52e82380bfcc5e1ab1c794ed95359e49b340884a79fe4a33a4a26b5e48"
+  }
+}

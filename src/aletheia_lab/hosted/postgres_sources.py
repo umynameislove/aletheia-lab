@@ -470,11 +470,14 @@ class PostgresSources:
                 await run_transaction(self._pool, invalidate)
             raise
 
-    async def _assemble_upload(self, digest: str, workspace_id: str, upload_id: str) -> tuple[UploadRecord, bytes]:
+    async def _assemble_upload(self, digest: str, workspace_id: str,
+                               upload_id: str) -> tuple[UploadRecord, bytes] | UploadStatus:
         chunks: list[bytes] = []
         try:
             async with self._pool.connection() as conn:
                 _, record = await self._upload_record(conn, digest, workspace_id, upload_id)
+                if record.state == "ready":
+                    return await self._upload_status(conn, workspace_id, upload_id, record)
                 self._upload_writable(record)
                 if self._parse_future is not None and not self._parse_future.done():
                     raise TimeoutError("Source validation is temporarily busy.")
@@ -535,11 +538,10 @@ class PostgresSources:
     async def _complete_upload_reserved(self, *, credential_digest: SecretStr, workspace_id: str,
                                        upload_id: str) -> UploadStatus:
         digest = _digest(credential_digest)
-        async with self._pool.connection() as conn:
-            _, current = await self._upload_record(conn, digest, workspace_id, upload_id)
-            if current.state == "ready":
-                return await self._upload_status(conn, workspace_id, upload_id, current)
-        record, payload = await self._assemble_upload(digest, workspace_id, upload_id)
+        assembled = await self._assemble_upload(digest, workspace_id, upload_id)
+        if isinstance(assembled, UploadStatus):
+            return assembled
+        record, payload = assembled
         try:
             entries = await self._inspect(payload)
         finally:

@@ -1,0 +1,9 @@
+{
+  "recorded_utc": "2026-11-14T18:46:44.4094924Z",
+  "owned_container_id": "b6325af7c0bfaf816204bed1bcd2ea6e064bdaa979e0f85ca63072e491a4746b",
+  "label_verified": true,
+  "schemas_remaining": [],
+  "container_and_owned_anonymous_volume_removed": true,
+  "linux_test_container_auto_removed": true,
+  "docker_server_version": "28.0.4"
+}

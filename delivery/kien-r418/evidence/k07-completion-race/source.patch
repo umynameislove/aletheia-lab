@@ -1,0 +1,21 @@
+diff --git a/src/aletheia_lab/hosted/postgres_sources.py b/src/aletheia_lab/hosted/postgres_sources.py
+index b02f1b2..9debc65 100644
+--- a/src/aletheia_lab/hosted/postgres_sources.py
++++ b/src/aletheia_lab/hosted/postgres_sources.py
+@@ -473 +473,2 @@ class PostgresSources:
+-    async def _assemble_upload(self, digest: str, workspace_id: str, upload_id: str) -> tuple[UploadRecord, bytes]:
++    async def _assemble_upload(self, digest: str, workspace_id: str,
++                               upload_id: str) -> tuple[UploadRecord, bytes] | UploadStatus:
+@@ -477,0 +479,2 @@ class PostgresSources:
++                if record.state == "ready":
++                    return await self._upload_status(conn, workspace_id, upload_id, record)
+@@ -538,5 +541,4 @@ class PostgresSources:
+-        async with self._pool.connection() as conn:
+-            _, current = await self._upload_record(conn, digest, workspace_id, upload_id)
+-            if current.state == "ready":
+-                return await self._upload_status(conn, workspace_id, upload_id, current)
+-        record, payload = await self._assemble_upload(digest, workspace_id, upload_id)
++        assembled = await self._assemble_upload(digest, workspace_id, upload_id)
++        if isinstance(assembled, UploadStatus):
++            return assembled
++        record, payload = assembled

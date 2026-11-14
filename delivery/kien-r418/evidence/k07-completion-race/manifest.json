@@ -1,0 +1,34 @@
+{
+  "cleanup.json": {
+    "bytes": 345,
+    "sha256": "7639a2600545356818a2236ac2e02b08edb10c5c5d3d5e6eb116df57ef883483"
+  },
+  "environment.json": {
+    "bytes": 5558,
+    "sha256": "828efa1d50a5e87b0982fa18007bbd597879ddf8a634e2985e2c0fd61029f825"
+  },
+  "KET-QUA-RACE-K07.md": {
+    "bytes": 8502,
+    "sha256": "1f04d075f460f570120b2b33b5c918977e1298e49eea52c7a2a045fcc793f002"
+  },
+  "log-manifest.json": {
+    "bytes": 2321,
+    "sha256": "eab524ff6a57787296eec323ffedd62e4ddd87bfe149897ed1bcbafe2f57f3b4"
+  },
+  "race-cases.csv": {
+    "bytes": 5663,
+    "sha256": "124d69ff314e7cbd63b403d9d3f0b6512de58cef05281aedb886a8d685e7c8be"
+  },
+  "raw-test-logs.zip": {
+    "bytes": 33792,
+    "sha256": "15fc906f0c7bdd6376ca53587ed906d127aa9744cfe61d5c3d16a590cd9af85f"
+  },
+  "result.json": {
+    "bytes": 39056,
+    "sha256": "7397c8b04101b3ef5d044c39a6df5038aa59ca3cb4474092d17697bbfb176a91"
+  },
+  "source.patch": {
+    "bytes": 1341,
+    "sha256": "11460c81012d78dbcb6232bf991602ea2bf0693661586c7de9cce4af74e44085"
+  }
+}
