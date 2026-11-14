@@ -1,0 +1,9 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "type": "urn:aletheia:problem:source-invalid",
+  "title": "Request could not be completed",
+  "status": 422,
+  "code": "source_invalid",
+  "detail": "The source bundle could not be accepted.",
+  "request_id": "req_synthetic_k07"
+}

@@ -1,0 +1,26 @@
+{
+  "$defs": {
+    "JsonValue": {}
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "product-api/v1-draft",
+      "default": "product-api/v1-draft",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "mapping": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Mapping",
+      "type": "object"
+    }
+  },
+  "required": [
+    "mapping"
+  ],
+  "title": "ConfirmImport",
+  "type": "object"
+}

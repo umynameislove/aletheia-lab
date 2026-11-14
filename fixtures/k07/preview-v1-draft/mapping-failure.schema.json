@@ -1,0 +1,82 @@
+{
+  "$defs": {
+    "MappingIssue": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "title": "Code",
+          "type": "string"
+        },
+        "field": {
+          "pattern": "^[A-Za-z0-9_.\\[\\]-]{1,128}$",
+          "title": "Field",
+          "type": "string"
+        },
+        "candidate_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Candidate Id"
+        },
+        "record_index": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Record Index"
+        }
+      },
+      "required": [
+        "code",
+        "field"
+      ],
+      "title": "MappingIssue",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "hosted-upload-error/v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "code": {
+      "const": "mapping_invalid",
+      "title": "Code",
+      "type": "string"
+    },
+    "issues": {
+      "items": {
+        "$ref": "#/$defs/MappingIssue"
+      },
+      "maxItems": 128,
+      "minItems": 1,
+      "title": "Issues",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "code",
+    "issues"
+  ],
+  "title": "MappingFailure",
+  "type": "object"
+}

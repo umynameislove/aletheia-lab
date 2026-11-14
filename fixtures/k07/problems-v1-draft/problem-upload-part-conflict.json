@@ -1,0 +1,9 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "type": "urn:aletheia:problem:upload-part-conflict",
+  "title": "Request could not be completed",
+  "status": 409,
+  "code": "upload_part_conflict",
+  "detail": "The upload part does not match its sealed manifest.",
+  "request_id": "req_synthetic_k07"
+}

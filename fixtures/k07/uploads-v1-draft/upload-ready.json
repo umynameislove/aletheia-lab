@@ -1,0 +1,17 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "ws_synthetic",
+  "upload_id": "upl_synthetic",
+  "state": "ready",
+  "byte_size": 172,
+  "sha256": "5dc916724844c610f01c4cb1b875a08c6a1d24720fdf4325889e9ac4e995754f",
+  "expires_at": "2030-01-01T00:00:00Z",
+  "received_bytes": 172,
+  "received_parts": [
+    1,
+    2,
+    3
+  ],
+  "missing_parts": [],
+  "source_id": "src_upload_synthetic"
+}

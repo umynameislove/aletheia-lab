@@ -1,0 +1,90 @@
+{
+  "$defs": {
+    "UploadPart": {
+      "additionalProperties": false,
+      "properties": {
+        "part_number": {
+          "maximum": 512,
+          "minimum": 1,
+          "title": "Part Number",
+          "type": "integer"
+        },
+        "byte_size": {
+          "maximum": 4194304,
+          "minimum": 1,
+          "title": "Byte Size",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "part_number",
+        "byte_size",
+        "sha256"
+      ],
+      "title": "UploadPart",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "product-api/v1-draft",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_type": {
+      "const": "zip_bundle",
+      "title": "Source Type",
+      "type": "string"
+    },
+    "byte_size": {
+      "maximum": 209715200,
+      "minimum": 1,
+      "title": "Byte Size",
+      "type": "integer"
+    },
+    "sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Sha256",
+      "type": "string"
+    },
+    "parts": {
+      "items": {
+        "$ref": "#/$defs/UploadPart"
+      },
+      "maxItems": 512,
+      "minItems": 1,
+      "title": "Parts",
+      "type": "array"
+    },
+    "parent_source_id": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Parent Source Id"
+    }
+  },
+  "required": [
+    "schema_version",
+    "source_type",
+    "byte_size",
+    "sha256",
+    "parts"
+  ],
+  "title": "UploadManifest",
+  "type": "object"
+}

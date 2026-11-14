@@ -1,0 +1,9 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "type": "urn:aletheia:problem:upload-too-large",
+  "title": "Request could not be completed",
+  "status": 413,
+  "code": "upload_too_large",
+  "detail": "The source exceeds the configured upload limit.",
+  "request_id": "req_synthetic_k07"
+}
