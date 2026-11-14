@@ -14567,8 +14567,533 @@
         ],
         "title": "ProductMetricObservationV2",
         "type": "object"
+      },
+      "ProductSnapshotV2": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "baseline_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Baseline Id",
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Sha256",
+            "type": "string"
+          },
+          "metric_definitions": {
+            "items": {
+              "$ref": "#/components/schemas/ProductMetricDefinitionV2"
+            },
+            "title": "Metric Definitions",
+            "type": "array"
+          },
+          "metric_changes": {
+            "items": {
+              "$ref": "#/components/schemas/ProductMetricChangeV2"
+            },
+            "title": "Metric Changes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "baseline_id",
+          "sha256",
+          "metric_definitions",
+          "metric_changes"
+        ],
+        "title": "ProductSnapshotV2",
+        "type": "object"
+      },
+      "ProductViewV2": {
+        "additionalProperties": false,
+        "description": "A product projection retaining explicit metric class and unit semantics.",
+        "properties": {
+          "schema_version": {
+            "const": "p6-product-view/v2",
+            "default": "p6-product-view/v2",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "demo_only": {
+            "title": "Demo Only",
+            "type": "boolean"
+          },
+          "mode": {
+            "const": "project_audit",
+            "title": "Mode",
+            "type": "string"
+          },
+          "visibility": {
+            "const": "diagnosis",
+            "title": "Visibility",
+            "type": "string"
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProductProject"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/ProductSnapshotV2"
+          },
+          "runtime": {
+            "$ref": "#/components/schemas/ProductRuntime"
+          },
+          "result": {
+            "$ref": "#/components/schemas/ProductResult"
+          },
+          "conversation": {
+            "$ref": "#/components/schemas/ProductConversation"
+          },
+          "claims": {
+            "items": {
+              "$ref": "#/components/schemas/ProductClaim"
+            },
+            "title": "Claims",
+            "type": "array"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/ProductEvidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "graph": {
+            "$ref": "#/components/schemas/ProductGraph"
+          }
+        },
+        "required": [
+          "demo_only",
+          "mode",
+          "visibility",
+          "project",
+          "snapshot",
+          "runtime",
+          "result",
+          "conversation",
+          "claims",
+          "evidence",
+          "graph"
+        ],
+        "title": "ProductViewV2",
+        "type": "object"
+      },
+      "ResultViewV2": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "product-api/v1-draft",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "workspace_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "project_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "result_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Result Id",
+            "type": "string"
+          },
+          "view": {
+            "$ref": "#/components/schemas/ProductViewV2"
+          }
+        },
+        "required": [
+          "schema_version",
+          "workspace_id",
+          "project_id",
+          "result_id",
+          "view"
+        ],
+        "title": "ResultViewV2",
+        "type": "object"
+      },
+      "RevokedInvitation": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "product-api/v1-draft",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "workspace_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "invitation_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Invitation Id",
+            "type": "string"
+          },
+          "revoked": {
+            "const": true,
+            "title": "Revoked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "schema_version",
+          "workspace_id",
+          "invitation_id",
+          "revoked"
+        ],
+        "title": "RevokedInvitation",
+        "type": "object"
+      },
+      "SourceGrant": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "product-api/v1-draft",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "workspace_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "source_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Source Id",
+            "type": "string"
+          },
+          "user_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "User Id",
+            "type": "string"
+          },
+          "actions": {
+            "items": {
+              "enum": [
+                "read",
+                "write",
+                "review",
+                "export",
+                "delete"
+              ],
+              "type": "string"
+            },
+            "maxItems": 5,
+            "title": "Actions",
+            "type": "array"
+          },
+          "revision": {
+            "minimum": 0,
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "schema_version",
+          "workspace_id",
+          "source_id",
+          "user_id",
+          "actions",
+          "revision"
+        ],
+        "title": "SourceGrant",
+        "type": "object"
+      },
+      "Submission": {
+        "additionalProperties": false,
+        "properties": {
+          "operation": {
+            "enum": [
+              "preview",
+              "confirm",
+              "analyze"
+            ],
+            "title": "Operation",
+            "type": "string"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source Id"
+          },
+          "mapping": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mapping"
+          },
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Snapshot Id"
+          },
+          "question": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Question"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "title": "Submission",
+        "type": "object"
+      },
+      "TransferOwner": {
+        "additionalProperties": false,
+        "properties": {
+          "user_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id"
+        ],
+        "title": "TransferOwner",
+        "type": "object"
+      },
+      "Membership": {
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "enum": [
+              "owner",
+              "admin",
+              "analyst",
+              "reviewer",
+              "viewer"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 0,
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "role",
+          "revision"
+        ],
+        "title": "Membership",
+        "type": "object"
+      },
+      "Workspace": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "product-api/v1-draft",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "workspace_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "workspace_name": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Workspace Name",
+            "type": "string"
+          },
+          "membership": {
+            "$ref": "#/components/schemas/Membership"
+          }
+        },
+        "required": [
+          "schema_version",
+          "workspace_id",
+          "workspace_name",
+          "membership"
+        ],
+        "title": "Workspace",
+        "type": "object"
+      },
+      "WorkspacePage": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "product-api/v1-draft",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Workspace"
+            },
+            "maxItems": 200,
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Next Cursor"
+          },
+          "total": {
+            "default": null,
+            "title": "Total",
+            "type": "null"
+          },
+          "total_kind": {
+            "const": "unknown",
+            "default": "unknown",
+            "title": "Total Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "items"
+        ],
+        "title": "WorkspacePage",
+        "type": "object"
+      },
+      "JobOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "product-api/v1-draft",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "workspace_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "job_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Job Id",
+            "type": "string"
+          },
+          "operation": {
+            "enum": [
+              "preview",
+              "confirm",
+              "analyze",
+              "follow_up",
+              "refresh"
+            ],
+            "title": "Operation",
+            "type": "string"
+          },
+          "result": {
+            "additionalProperties": true,
+            "title": "Result",
+            "type": "object"
+          }
+        },
+        "required": [
+          "schema_version",
+          "workspace_id",
+          "job_id",
+          "operation",
+          "result"
+        ],
+        "title": "JobOutput[dict[str, object]]",
+        "type": "object"
       }
     },
-    "securitySchemes": {}
+    "securitySchemes": {
+      "SessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-aletheia_session"
+      },
+      "CsrfHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-csrf-token"
+      },
+      "CsrfCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-aletheia_csrf"
+      }
+    }
   }
 }
