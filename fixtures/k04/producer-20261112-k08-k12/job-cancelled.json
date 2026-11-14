@@ -1,0 +1,15 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "ws_synthetic",
+  "job_id": "job_synthetic",
+  "status": "cancelled",
+  "progress": null,
+  "operation": null,
+  "created_at": null,
+  "deadline_at": null,
+  "terminal_at": null,
+  "attempt": null,
+  "max_attempts": null,
+  "retryable": null,
+  "output_url": null
+}
