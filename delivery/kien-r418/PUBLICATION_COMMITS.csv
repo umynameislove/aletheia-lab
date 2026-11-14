@@ -1,0 +1,129 @@
+sequence,commit,parent,publication_group,subject,added,deleted,changed_files,commit_recorded_utc
+1,8cb0f440ba2b1c6aaf5cf2821198df2ea79c6ba9,2bbcdc2a7637c840babd8b71910306c64072bc4b,K01,"build(hosted): configure dependencies, CI and source line endings",173,23,4,2026-11-14T08:43:58.536599+00:00
+2,7a446cb034d6151ee53106cc97d6c86d71e84590,8cb0f440ba2b1c6aaf5cf2821198df2ea79c6ba9,K01,feat(dashboard): integrate the hosted shell and transport state,1902,773,20,2026-11-14T08:44:03.088881+00:00
+3,e2360a8877d3cf8f4fc68cf09b8af978da0e2082,7a446cb034d6151ee53106cc97d6c86d71e84590,K01,feat(dashboard): implement connection controls and accessible primitives,2471,253,22,2026-11-14T08:44:08.424505+00:00
+4,39eac2ea0b975ede6ecdefc5a2089813cf28ed48,e2360a8877d3cf8f4fc68cf09b8af978da0e2082,K01,feat(dashboard): add shared visual styles and client bindings,2520,78,24,2026-11-14T08:44:14.327857+00:00
+5,3ccff27ee90ddca8af4eba5f4877bd868b74473f,39eac2ea0b975ede6ecdefc5a2089813cf28ed48,K01,feat(hosted): enforce request boundaries and runtime budgets,2200,137,19,2026-11-14T08:44:20.556110+00:00
+6,c40e57663b5114f5bf575a372971d916e27710a4,3ccff27ee90ddca8af4eba5f4877bd868b74473f,K01,test(dashboard): cover accessibility and client boundary validation,2317,1,8,2026-11-14T08:44:24.347295+00:00
+7,80030bcb3052c029c8cafb33478459c9b70f1ef0,c40e57663b5114f5bf575a372971d916e27710a4,K01,test(dashboard): cover hosted browser flows and paged resources,1993,3,10,2026-11-14T08:44:28.051844+00:00
+8,c421ddae2ff4ff8b67c42ab2faeca71497189948,80030bcb3052c029c8cafb33478459c9b70f1ef0,K01,docs(handoff): document delivered source and verification scope,2789,1,23,2026-11-14T08:44:32.563913+00:00
+9,c8d4df8416723a4efbfde0e2d0df07c00f2a32b0,c421ddae2ff4ff8b67c42ab2faeca71497189948,K01,docs(handoff): preserve task requirements and coordination records,2623,0,16,2026-11-14T08:44:37.206758+00:00
+10,829f4e52768f275b195e8ec91fc66ff87efbc63e,c8d4df8416723a4efbfde0e2d0df07c00f2a32b0,K01,docs(verification): explain operator checks and dashboard usage,491,3,3,2026-11-14T08:44:41.257295+00:00
+11,b6c0ac7234228d01493cd78878ef5281da40e974,829f4e52768f275b195e8ec91fc66ff87efbc63e,K01,chore(verification): preserve branch snapshots and verification tools,2590,0,27,2026-11-14T08:44:45.968164+00:00
+12,edb96804f4c09a1ce70129fe466808d84102bc5e,b6c0ac7234228d01493cd78878ef5281da40e974,K02,"feat(contracts): implement capabilities, contract",1581,0,11,2026-11-14T08:44:50.217154+00:00
+13,f1baf3ffc3d88172bb1248fafc47471422259d49,edb96804f4c09a1ce70129fe466808d84102bc5e,K02,"test(contracts): cover contract.test, capabilities",2618,7,26,2026-11-14T08:44:54.864560+00:00
+14,86a0f52f55822e43a09602a6fdd2aee8e6fed5dc,f1baf3ffc3d88172bb1248fafc47471422259d49,K02,"test(contracts): cover problem producer.schema, capabilities",2800,0,29,2026-11-14T08:44:59.579672+00:00
+15,32fc826df302a9e8b85058a55b51c734fadc0b06,86a0f52f55822e43a09602a6fdd2aee8e6fed5dc,K02,"test(contracts): cover page.schema, problem consumer.schema",2682,0,18,2026-11-14T08:45:04.132616+00:00
+16,95d23349cba905d1758261c7db99fa2180ef2c99,32fc826df302a9e8b85058a55b51c734fadc0b06,K02,"test(contracts): cover managed runtime, readiness diagnostics",2773,0,20,2026-11-14T08:45:08.950051+00:00
+17,bbc50460cb985a96fc7b73465e2632c6d1e84f3f,95d23349cba905d1758261c7db99fa2180ef2c99,K02,"test(contracts): cover json numbers, json resource limits",2414,0,16,2026-11-14T08:45:13.325631+00:00
+18,517fcce89beea1a006c74cfa94a67a6a801669a6,bbc50460cb985a96fc7b73465e2632c6d1e84f3f,K02,"test(contracts): cover runtime lifecycle, runtime management",1918,1,14,2026-11-14T08:45:17.982208+00:00
+19,3722f57cbbfa812f7b37065703deba0d53681bf8,517fcce89beea1a006c74cfa94a67a6a801669a6,K02,"docs(contracts): record hosted contract ci, hosted r412 contract additions",1921,0,18,2026-11-14T08:45:22.475783+00:00
+20,e6c5c52baef184e7bf010564812939faf826826a,3722f57cbbfa812f7b37065703deba0d53681bf8,K03,"feat(auth): implement auth.example, SessionGate",2712,0,19,2026-11-14T08:45:26.881466+00:00
+21,cbb829bd14295a90db14893f4daa0768b51a85ab,e6c5c52baef184e7bf010564812939faf826826a,K03,"feat(auth): implement oidc, oidc discovery",2322,2,15,2026-11-14T08:45:31.087209+00:00
+22,34791409b2723bd43db61887cc1bdfe3515eb1a9,cbb829bd14295a90db14893f4daa0768b51a85ab,K03,"test(auth): cover problem csrf invalid, problem session expired",2746,0,57,2026-11-14T08:45:37.380568+00:00
+23,a24ed51f23c51300761a3f877d203f57cb1cd2f9,34791409b2723bd43db61887cc1bdfe3515eb1a9,K03,"test(auth): cover admission rollout live, auth abuse",2737,0,11,2026-11-14T08:45:42.352168+00:00
+24,b9b8083842faae50cc9b21a9b90f51c8727719f6,a24ed51f23c51300761a3f877d203f57cb1cd2f9,K03,"test(auth): cover j02 backend, keycloak account switch",2654,0,5,2026-11-14T08:45:46.350238+00:00
+25,437ea03e46345f24b45553aa609b486017b13071,b9b8083842faae50cc9b21a9b90f51c8727719f6,K03,"test(auth): cover oidc library, oidc outage live",2271,0,6,2026-11-14T08:45:50.135584+00:00
+26,81d836b3031d5f36bfb478c4f391ef14f3bc1219,437ea03e46345f24b45553aa609b486017b13071,K03,"test(auth): cover process restart live, rate limit live",2790,0,7,2026-11-14T08:45:54.012945+00:00
+27,24253e14599db7445b755c095c417bd65846210b,81d836b3031d5f36bfb478c4f391ef14f3bc1219,K03,"test(auth): cover session http, worker binding",932,0,4,2026-11-14T08:45:57.535742+00:00
+28,68f1df98710c6f4f66b77b8e9cdce93fc0951dd3,24253e14599db7445b755c095c417bd65846210b,K03,"docs(auth): record session cases, j01 experimental fresh login schema",2758,0,18,2026-11-14T08:46:01.854103+00:00
+29,a6cd2b13dbaa0b58f0a35f8b4859dd930b6a33d7,68f1df98710c6f4f66b77b8e9cdce93fc0951dd3,K03,"docs(auth): record implementation status, j01 auth freeze 20261111",2771,0,18,2026-11-14T08:46:06.389554+00:00
+30,7eab4263e2182996bd9fa29a62672ba8075ee50c,a6cd2b13dbaa0b58f0a35f8b4859dd930b6a33d7,K03,chore(auth): preserve browser session cases,118,0,1,2026-11-14T08:46:09.974281+00:00
+31,c046f3704bfc747c26f6ec078d7dd6c43dcc3fb5,7eab4263e2182996bd9fa29a62672ba8075ee50c,K04,"feat(workspaces): implement WorkspaceManager, workspace client",2428,0,9,2026-11-14T08:46:13.631761+00:00
+32,060c0b8b16fc3bbc694b181820dbb60f291371ad,c046f3704bfc747c26f6ec078d7dd6c43dcc3fb5,K04,feat(workspaces): implement workspaces,451,0,1,2026-11-14T08:46:17.223178+00:00
+33,6b61cb36ffa1d9e00f050817948cdf45c830f286,060c0b8b16fc3bbc694b181820dbb60f291371ad,K04,"test(workspaces): cover problem membership revoked, grant",2245,0,13,2026-11-14T08:46:21.354161+00:00
+34,74f2c4bda2479b81e50b10318acdfb814b45a190,6b61cb36ffa1d9e00f050817948cdf45c830f286,K04,"test(workspaces): cover openapi workspaces, workspace",2721,0,19,2026-11-14T08:46:25.820515+00:00
+35,899bcac3a391136e54d4a08131fc5721b9c849c8,74f2c4bda2479b81e50b10318acdfb814b45a190,K04,"test(workspaces): cover download markdown, events workspace",2796,0,65,2026-11-14T08:46:32.851356+00:00
+36,013efcf2fabccfe45c0d0d41fc449ce6011f21ae,899bcac3a391136e54d4a08131fc5721b9c849c8,K04,"test(workspaces): cover problem invitation wrong account, problem job state conflict",2776,0,69,2026-11-14T08:46:40.577686+00:00
+37,d81fcb6080dd5cd33b87b2eceae386afefa55a95,013efcf2fabccfe45c0d0d41fc449ce6011f21ae,K04,"test(workspaces): cover evidence page, evidence",2603,0,46,2026-11-14T08:46:46.561792+00:00
+38,c178d90309639e947bc34de2fd70f7beda0112dc,d81fcb6080dd5cd33b87b2eceae386afefa55a95,K04,"test(workspaces): cover http postgres, job controls legacy postgres",2748,0,15,2026-11-14T08:46:51.053280+00:00
+39,052bdb7a60776af3cbeb4b794f116b8d8ce41277,c178d90309639e947bc34de2fd70f7beda0112dc,K04,"test(workspaces): cover runtime principal postgres, workspace directory postgres",2619,0,13,2026-11-14T08:46:55.378782+00:00
+40,6dde1fe3cb5829805a1f28a7223ea2be3910e6e5,052bdb7a60776af3cbeb4b794f116b8d8ce41277,K04,"test(workspaces): cover native catalog adapter, native record policy",1627,0,16,2026-11-14T08:46:59.801857+00:00
+41,d4be5ee8aa076bba9a98344542bf04a7ffd6bd4d,6dde1fe3cb5829805a1f28a7223ea2be3910e6e5,K04,"test(workspaces): extend producer-20261110-native API paths and schemas, part 1",2510,0,1,2026-11-14T08:47:06.669926+00:00
+42,9e9a80f59095dad638d3cc2722e892c16fec522e,d4be5ee8aa076bba9a98344542bf04a7ffd6bd4d,K04,"test(workspaces): extend producer-20261110-native API paths and schemas, part 2",2373,0,1,2026-11-14T08:47:11.107272+00:00
+43,c69d7bd9cda922550041b2b8d82f2279af259834,9e9a80f59095dad638d3cc2722e892c16fec522e,K04,"test(workspaces): extend producer-20261110-native API paths and schemas, part 3",2364,0,1,2026-11-14T08:47:14.433039+00:00
+44,01e16b6522d14c908435999c64e9cc71919df3b1,c69d7bd9cda922550041b2b8d82f2279af259834,K04,"test(workspaces): extend producer-20261110-native API paths and schemas, part 4",2236,0,1,2026-11-14T08:47:17.736398+00:00
+45,5496b286a8e0e3744f317d8af8cbd4fe0611f483,01e16b6522d14c908435999c64e9cc71919df3b1,K04,"test(workspaces): extend producer-20261110-native API paths and schemas, part 5",2518,1,1,2026-11-14T08:47:22.202819+00:00
+46,63ed7dffb7ac01efb61f7b4e7156878ef5694f2c,5496b286a8e0e3744f317d8af8cbd4fe0611f483,K04,"test(workspaces): extend producer-20261110-native API paths and schemas, part 6",2558,1,1,2026-11-14T08:47:26.531790+00:00
+47,82b44a654e505644f0c40bba95f7e01c5a899a47,63ed7dffb7ac01efb61f7b4e7156878ef5694f2c,K04,"test(workspaces): extend producer-20261110 API paths and schemas, part 1",2510,0,1,2026-11-14T08:47:30.380609+00:00
+48,731a90a7171d3928007ca26a0029fac33aafba4f,82b44a654e505644f0c40bba95f7e01c5a899a47,K04,"test(workspaces): extend producer-20261110 API paths and schemas, part 2",2373,0,1,2026-11-14T08:47:33.796889+00:00
+49,544dfcac81a319ff3f94b8202bd3c2a00f96bf60,731a90a7171d3928007ca26a0029fac33aafba4f,K04,"test(workspaces): extend producer-20261110 API paths and schemas, part 3",2360,0,1,2026-11-14T08:47:37.341634+00:00
+50,33793490027df55ab01c86041959e27a556b0655,544dfcac81a319ff3f94b8202bd3c2a00f96bf60,K04,"test(workspaces): extend producer-20261110 API paths and schemas, part 4",2236,0,1,2026-11-14T08:47:41.434667+00:00
+51,a5617a6f319e35609a2d8f6fb273a1a42683664a,33793490027df55ab01c86041959e27a556b0655,K04,"test(workspaces): extend producer-20261110 API paths and schemas, part 5",2598,1,1,2026-11-14T08:47:44.691326+00:00
+52,5544d8d0dda84ab994dc6df45d445f595c1353c1,a5617a6f319e35609a2d8f6fb273a1a42683664a,K04,"test(workspaces): extend producer-20261110 API paths and schemas, part 6",2474,1,1,2026-11-14T08:47:48.616887+00:00
+53,a911234f6ccfd8b6d94ea47113aabc767922505c,5544d8d0dda84ab994dc6df45d445f595c1353c1,K04,"test(workspaces): extend producer-20261111-shared-contract API paths and schemas, part 1",2510,0,1,2026-11-14T08:47:51.963637+00:00
+54,0adbd0de0b8ebbed79f1bdd25046517cdeff4d06,a911234f6ccfd8b6d94ea47113aabc767922505c,K04,"test(workspaces): extend producer-20261111-shared-contract API paths and schemas, part 2",2373,0,1,2026-11-14T08:47:55.439825+00:00
+55,e2de5fa59138fd58d7a9c4fc6ed744e5c3e891a4,0adbd0de0b8ebbed79f1bdd25046517cdeff4d06,K04,"test(workspaces): extend producer-20261111-shared-contract API paths and schemas, part 3",2371,0,1,2026-11-14T08:47:59.003430+00:00
+56,d04486f25674225fd2b0eb639217cbb9430f6c17,e2de5fa59138fd58d7a9c4fc6ed744e5c3e891a4,K04,"test(workspaces): extend producer-20261111-shared-contract API paths and schemas, part 4",2236,0,1,2026-11-14T08:48:02.489743+00:00
+57,38960f3a8128fb98b908e979d9f01b9b05e67e03,d04486f25674225fd2b0eb639217cbb9430f6c17,K04,"test(workspaces): extend producer-20261111-shared-contract API paths and schemas, part 5",2518,1,1,2026-11-14T08:48:05.760610+00:00
+58,c4657c84837544918ccf26689ed0061e766d078e,38960f3a8128fb98b908e979d9f01b9b05e67e03,K04,"test(workspaces): extend producer-20261111-shared-contract API paths and schemas, part 6",2567,0,1,2026-11-14T08:48:09.221269+00:00
+59,2d6258d87b733cc9fe2a5480fe6e37017b7731da,c4657c84837544918ccf26689ed0061e766d078e,K04,"test(workspaces): extend producer-20261111-shared-contract API paths and schemas, part 7",526,1,1,2026-11-14T08:48:12.686864+00:00
+60,6e70034656d24ee50ade7557eaf8f80633d44d06,2d6258d87b733cc9fe2a5480fe6e37017b7731da,K04,"test(workspaces): extend producer-20261112 API paths and schemas, part 1",2510,0,1,2026-11-14T08:48:16.947354+00:00
+61,c1a14be559c2501e4ce84f65763092bea24dc5af,6e70034656d24ee50ade7557eaf8f80633d44d06,K04,"test(workspaces): extend producer-20261112 API paths and schemas, part 2",2373,0,1,2026-11-14T08:48:21.362592+00:00
+62,11955d1b9d91f33262ad59876c033b820048492f,c1a14be559c2501e4ce84f65763092bea24dc5af,K04,"test(workspaces): extend producer-20261112 API paths and schemas, part 3",2325,0,1,2026-11-14T08:48:24.691589+00:00
+63,80c4ccb975bf725e596e9be353680ccfbbadb01b,11955d1b9d91f33262ad59876c033b820048492f,K04,"test(workspaces): extend producer-20261112 API paths and schemas, part 4",2420,0,1,2026-11-14T08:48:28.131963+00:00
+64,fd7dd5a87f6e9a2189a0da3f5687b7485eb81757,80c4ccb975bf725e596e9be353680ccfbbadb01b,K04,"test(workspaces): extend producer-20261112 API paths and schemas, part 5",2572,1,1,2026-11-14T08:48:32.787312+00:00
+65,ff09edcdf204bdc3ab62110964dac37d2ee785aa,fd7dd5a87f6e9a2189a0da3f5687b7485eb81757,K04,"test(workspaces): extend producer-20261112 API paths and schemas, part 6",2535,0,1,2026-11-14T08:48:36.363874+00:00
+66,256604602f3455277152a705ad2fba6549c82069,ff09edcdf204bdc3ab62110964dac37d2ee785aa,K04,"test(workspaces): extend producer-20261112 API paths and schemas, part 7",1334,1,1,2026-11-14T08:48:40.271416+00:00
+67,b3a7372d52c5ed56974afd7cc2ceb76e8aaa689c,256604602f3455277152a705ad2fba6549c82069,K04,"docs(workspaces): record workspaces README, j01 project policy packaging 20261110",546,0,7,2026-11-14T08:48:44.044349+00:00
+68,8c86ee7fd01f619511c98224ea81eeaf008852cb,b3a7372d52c5ed56974afd7cc2ceb76e8aaa689c,K05,"feat(storage): implement import local, integrity probe",2496,0,10,2026-11-14T08:48:48.053419+00:00
+69,6dd5637e23fccd4455f6dbe9332975a1d14fcde9,8c86ee7fd01f619511c98224ea81eeaf008852cb,K05,"feat(storage): implement postgres sources, postgres workspaces",1293,53,8,2026-11-14T08:48:52.432386+00:00
+70,123fc4d31ce0adfe2e3687fca62449ad9ac7a721,6dd5637e23fccd4455f6dbe9332975a1d14fcde9,K05,"test(storage): cover canonical results postgres, catalog postgres",2795,0,14,2026-11-14T08:48:56.514325+00:00
+71,7eeb2df486a4a049a0554b38fc27cc8e074c2e17,123fc4d31ce0adfe2e3687fca62449ad9ac7a721,K05,"test(storage): cover catalog, legacy import",879,6,7,2026-11-14T08:49:00.784155+00:00
+72,79456a6f54560dd7ee59698f42885eb014f65ebd,7eeb2df486a4a049a0554b38fc27cc8e074c2e17,K05,"docs(storage): record access paths, database cases",598,0,10,2026-11-14T08:49:04.539912+00:00
+73,227fdd41ad4abe31b0b49e4438e0272b5f01b0bc,79456a6f54560dd7ee59698f42885eb014f65ebd,K05,"chore(storage): preserve prepare linux postgres, prepare test postgres",115,0,2,2026-11-14T08:49:08.002508+00:00
+74,6552431c2024d2f15ce35eef23e671ddb4afa983,227fdd41ad4abe31b0b49e4438e0272b5f01b0bc,K06,"feat(concurrency): implement transactions admin, project operations",205,0,3,2026-11-14T08:49:11.640609+00:00
+75,7fbbaee4616ed8f64fe815afca13395736c6753f,6552431c2024d2f15ce35eef23e671ddb4afa983,K06,"test(concurrency): cover problem revision conflict, action audit postgres",2495,0,15,2026-11-14T08:49:15.631060+00:00
+76,00f97d6e56751bc58ecf02e5a9572b79d7ae09d4,7fbbaee4616ed8f64fe815afca13395736c6753f,K06,"test(concurrency): cover idempotency postgres, native reviews postgres",2541,0,18,2026-11-14T08:49:20.503676+00:00
+77,6635fd1d3ba06dbddc0d498eda73e2033546ea18,00f97d6e56751bc58ecf02e5a9572b79d7ae09d4,K06,"docs(concurrency): record race cases, transactions runbook",519,0,3,2026-11-14T08:49:24.680907+00:00
+78,676e4123377e1ecadcbde70838c36dd065ab85ec,6635fd1d3ba06dbddc0d498eda73e2033546ea18,K06,"chore(concurrency): preserve linux r411 diagnostic revision probe, linux r411 diagnostic revision probe v2",152,0,2,2026-11-14T08:49:28.911783+00:00
+79,a30e09771f85ef41cbd4586a87b669236ee2ad3e,676e4123377e1ecadcbde70838c36dd065ab85ec,K07,"feat(uploads): implement mapping characters, contract",2660,0,14,2026-11-14T08:49:32.781818+00:00
+80,f619fa09eab7801225b0d5ecde33e92fc906a818,a30e09771f85ef41cbd4586a87b669236ee2ad3e,K07,"feat(uploads): implement upload runtime, upload staging",1200,241,13,2026-11-14T08:49:36.781286+00:00
+81,fa6358fba68d9a361a94dda616330513751505b5,f619fa09eab7801225b0d5ecde33e92fc906a818,K07,"test(uploads): cover hosted upload.test, README",2768,0,45,2026-11-14T08:49:42.889566+00:00
+82,93f6406ca0c6153beb1257d1ff14b62d994f6307,fa6358fba68d9a361a94dda616330513751505b5,K07,"test(uploads): cover repeat import postgres, upload completion postgres",2725,0,23,2026-11-14T08:49:47.604137+00:00
+83,788e42a8b1ce44aa0f40ef45a135fc1015bfb445,93f6406ca0c6153beb1257d1ff14b62d994f6307,K07,"docs(uploads): record archive mapping, migration compatibility",590,0,6,2026-11-14T08:49:51.906617+00:00
+84,0cc2b5a0e1e1b12590a4655090569b164ebbc3da,788e42a8b1ce44aa0f40ef45a135fc1015bfb445,K08,"feat(refresh): implement project refresh, project refresh http",333,8,4,2026-11-14T08:49:55.344611+00:00
+85,7809924686e219ff07f768fe0d6ac4221eddb4be,0cc2b5a0e1e1b12590a4655090569b164ebbc3da,K08,"test(refresh): cover large native pipeline, upload generation postgres",885,0,4,2026-11-14T08:49:58.798737+00:00
+86,9710a343fd6917cd322ad2af906583db686b4d4f,7809924686e219ff07f768fe0d6ac4221eddb4be,K08,"docs(refresh): record junit, windows r418 result",1216,0,7,2026-11-14T08:50:03.166594+00:00
+87,b198e09539680ce55602b8900de04f84c18cad97,9710a343fd6917cd322ad2af906583db686b4d4f,K09,"feat(jobs): implement JobControls, async work",2781,0,18,2026-11-14T08:50:09.190112+00:00
+88,d27d2b2e3a91948eed99c86404fd53f9ae811482,b198e09539680ce55602b8900de04f84c18cad97,K09,"feat(jobs): implement resource admission, upload job worker",1390,0,11,2026-11-14T08:50:13.106127+00:00
+89,bd03d5a220333a81c8ff1d1161c1fc91df85dff1,d27d2b2e3a91948eed99c86404fd53f9ae811482,K09,"test(jobs): cover job receipt, job receipt.schema",2272,0,26,2026-11-14T08:50:18.218637+00:00
+90,9693a6352b3c93634ff389a714dbcb726204143b,bd03d5a220333a81c8ff1d1161c1fc91df85dff1,K09,"docs(jobs): record j01 experimental jobs schema, j01 job page revision proposal",111,0,4,2026-11-14T08:50:22.207907+00:00
+91,7b281c5cdeef4708c9252f180d83c84972173059,9693a6352b3c93634ff389a714dbcb726204143b,K10,"feat(catalog): implement lineageBench, Lineage",2522,69,11,2026-11-14T08:50:27.001600+00:00
+92,867f8253a0148bebdc6dc9ee857da2a3e7060e23,7b281c5cdeef4708c9252f180d83c84972173059,K10,"feat(catalog): implement result views, upload snapshot",598,46,6,2026-11-14T08:50:30.677028+00:00
+93,0d5f58ba4691c34ff67957cbb205006112ae677a,867f8253a0148bebdc6dc9ee857da2a3e7060e23,K10,"test(catalog): cover GraphView.schema, graph r3 README",2545,1,42,2026-11-14T08:50:36.020512+00:00
+94,eb71c72d63824902280e29306b7e87331b76fa75,0d5f58ba4691c34ff67957cbb205006112ae677a,K10,"test(catalog): cover read views postgres, read fakes",909,0,6,2026-11-14T08:50:39.848626+00:00
+95,244b52f6c654ddb823a65645e696f7f992caa344,eb71c72d63824902280e29306b7e87331b76fa75,K10,"docs(catalog): record image r418 smoke, repo aletheia ref before",2014,0,11,2026-11-14T08:50:43.711343+00:00
+96,dcdfe837e02ec0a0453ca41600526ede57193c93,244b52f6c654ddb823a65645e696f7f992caa344,K10,"docs(catalog): record diff main, diff quan",2411,0,8,2026-11-14T08:50:47.416980+00:00
+97,cdc3b937fbd203f9c6af3b019e761badc22e3330,dcdfe837e02ec0a0453ca41600526ede57193c93,K10,"docs(catalog): record final diff kien api, final diff kien old",1747,0,2,2026-11-14T08:50:50.725934+00:00
+98,5fef0abe44f7c2c01c9005a1b39c6a41341f267c,cdc3b937fbd203f9c6af3b019e761badc22e3330,K10,"docs(catalog): record final diff main, final diff quan old",2522,0,2,2026-11-14T08:50:54.216061+00:00
+99,831db5adeb203361690104fdfe8ae7924fe988c0,5fef0abe44f7c2c01c9005a1b39c6a41341f267c,K10,"docs(catalog): record final diff quan, handoff receipt",2800,0,37,2026-11-14T08:50:59.433304+00:00
+100,c15031ff680747872fd6db376ba4ff145f979509,831db5adeb203361690104fdfe8ae7924fe988c0,K10,"docs(catalog): record junit, windows r418 restore delivery complete result",584,0,10,2026-11-14T08:51:04.587839+00:00
+101,48f60bb1dd9628868a60ee240b1922467931a6cd,c15031ff680747872fd6db376ba4ff145f979509,K11,"feat(analysis): implement metric, job analysis version",613,86,12,2026-11-14T08:51:08.934943+00:00
+102,9d3f51afbf20bcab0806f41edcf3a619b7d3b941,48f60bb1dd9628868a60ee240b1922467931a6cd,K11,"test(analysis): cover metric dimensions.test, metric dimensions hosted v2 README",2701,0,20,2026-11-14T08:51:13.569120+00:00
+103,20cbdf06e86dfb5f29063d09731fe4e3bc748b5b,9d3f51afbf20bcab0806f41edcf3a619b7d3b941,K11,"test(analysis): cover snapshot after.schema, snapshot before",1550,1,11,2026-11-14T08:51:17.473103+00:00
+104,3321cdde5f3f54771cf8af52f4bb5148bbefb34d,20cbdf06e86dfb5f29063d09731fe4e3bc748b5b,K12,"feat(exports): implement export, hosted openapi",1084,120,8,2026-11-14T08:51:21.448974+00:00
+105,2eb1ac2aa6f5d245d903d98977888ae9f1c8f278,3321cdde5f3f54771cf8af52f4bb5148bbefb34d,K12,"test(exports): cover exports postgres, download admission",474,0,4,2026-11-14T08:51:25.636150+00:00
+106,f1e5d9a525c499950c344aeb4aff4891afeaeeed,2eb1ac2aa6f5d245d903d98977888ae9f1c8f278,K12,"docs(exports): record api.safe, chrome",250,0,9,2026-11-14T08:51:29.455079+00:00
+107,d237789341a86762c3e0602c5b7e749492fe6959,f1e5d9a525c499950c344aeb4aff4891afeaeeed,K12,"chore(exports): preserve browser pdf, run browser pdf",354,0,2,2026-11-14T08:51:32.842781+00:00
+108,e294408f0327998db41874ca9252a3766efb9a69,d237789341a86762c3e0602c5b7e749492fe6959,K13,"feat(deletion): implement DeletionStatus, Retention",1237,52,8,2026-11-14T08:51:37.107370+00:00
+109,e80b640a426c86e460807b88936c623e8ebfb55d,e294408f0327998db41874ca9252a3766efb9a69,K13,"test(deletion): cover hosted .test, retention delivery postgres",1340,0,5,2026-11-14T08:51:41.159734+00:00
+110,7fa709fdc1de0b11351428b4558234ad4f6c8e75,e80b640a426c86e460807b88936c623e8ebfb55d,K13,"docs(deletion): record Bao cao 20261113, Chi tiet 17 muc 20261113 R2",1172,0,8,2026-11-14T08:51:44.844262+00:00
+111,384e9eb9f5ae918c2073d0b6444ea464163f1708,7fa709fdc1de0b11351428b4558234ad4f6c8e75,K14,"feat(pagination): implement resource plan, cursors",143,0,2,2026-11-14T08:51:48.230068+00:00
+112,50a0467947901ab3697f9e5b5ad2ba43a8c73ad9,384e9eb9f5ae918c2073d0b6444ea464163f1708,K14,"test(pagination): cover problem cursor expired, problem cursor invalid",1247,0,16,2026-11-14T08:51:52.579248+00:00
+113,653e2ce9e53452d4b5ec8adf8e581fedff59e34c,50a0467947901ab3697f9e5b5ad2ba43a8c73ad9,K14,"docs(pagination): record linux r418 export result, windows r415 export comparison result",68,0,4,2026-11-14T08:51:56.251090+00:00
+114,c1122fb5b3bd49d88eff950b65276bc85b2ea381,653e2ce9e53452d4b5ec8adf8e581fedff59e34c,K15,"feat(observability): implement action audit, action audit migration",906,0,6,2026-11-14T08:52:00.861480+00:00
+115,7a0fcfc1bc4d64c871a29acc728070b1cfe15d85,c1122fb5b3bd49d88eff950b65276bc85b2ea381,K15,"test(observability): cover metrics after, metrics before",448,0,4,2026-11-14T08:52:04.467856+00:00
+116,53ddc93e7ab5672bc201a885279b1c7fdf357cb9,7a0fcfc1bc4d64c871a29acc728070b1cfe15d85,K15,docs(observability): record job updates,37,0,1,2026-11-14T08:52:07.903212+00:00
+117,1366835b55717be28bf4b9efcd8bd303e9c3aca6,53ddc93e7ab5672bc201a885279b1c7fdf357cb9,K16,"build(security): configure Dockerfile, build requirements",1469,0,7,2026-11-14T08:52:12.242440+00:00
+118,61c8f5159fe034fc1bf33dbd3b8d5936d4d4d7bd,1366835b55717be28bf4b9efcd8bd303e9c3aca6,K16,"feat(security): implement dependency report, license reviews",390,0,3,2026-11-14T08:52:16.325282+00:00
+119,4314a5c41247ff6f3e84cd6b65b609b938d6cc57,61c8f5159fe034fc1bf33dbd3b8d5936d4d4d7bd,K16,"test(security): cover operator observation postgres, runbook replay postgres",1022,8,5,2026-11-14T08:52:20.066106+00:00
+120,8a1c4b41c14f7aa3edf0f1c1ffe3e254cdd2fd85,4314a5c41247ff6f3e84cd6b65b609b938d6cc57,K16,"docs(security): record image r418 security summary, wolfi apk inventory",1413,0,35,2026-11-14T08:52:25.471093+00:00
+121,d2b5275118d94c1eea1e70ec50dff4452a2c3324,8a1c4b41c14f7aa3edf0f1c1ffe3e254cdd2fd85,K17,"feat(capacity): implement capacity, reconcile",2371,0,10,2026-11-14T08:52:29.727426+00:00
+122,d390610ef3e0ebe2cc9d759ecf6a7cfd22a93345,d2b5275118d94c1eea1e70ec50dff4452a2c3324,K17,"feat(capacity): implement capacity seed, capacity seed domain",992,0,3,2026-11-14T08:52:33.421834+00:00
+123,1b67a066c4a6dd3c0a48b7e385f41a6d80139f90,d390610ef3e0ebe2cc9d759ecf6a7cfd22a93345,K17,"test(capacity): cover capacity postgres, fault load postgres",2303,0,9,2026-11-14T08:52:38.411453+00:00
+124,dabf18166022f6ac1d5ec3f6556c8c3417f96a68,1b67a066c4a6dd3c0a48b7e385f41a6d80139f90,K17,"docs(capacity): record calibration100 profile, calibration100 raw before reconciliation.json",1448,0,14,2026-11-14T08:52:42.797452+00:00
+125,03192387c234105a5c55abf627c2dabdbdc10a20,dabf18166022f6ac1d5ec3f6556c8c3417f96a68,K17,"chore(capacity): preserve capacity diagnostic plugin, window contract prototype",549,0,6,2026-11-14T08:52:46.683165+00:00
+126,d8ebbedf6eae8f1eb2d4e2653ec16b7f682ae90a,03192387c234105a5c55abf627c2dabdbdc10a20,K18,"feat(recovery): implement installed release check, recovery admin",1500,0,8,2026-11-14T08:52:52.098912+00:00
+127,9f4ed167f4802168e572586343b505e0fc51efc5,d8ebbedf6eae8f1eb2d4e2653ec16b7f682ae90a,K18,"test(recovery): cover wal copy, backup restore postgres",2024,0,14,2026-11-14T08:52:56.845126+00:00
+128,92507a1e76dc981dc0c61ed74196b36fb73a536f,9f4ed167f4802168e572586343b505e0fc51efc5,K18,"docs(recovery): record installed wheel check, native pitr fixture",382,0,5,2026-11-14T08:53:00.440299+00:00
