@@ -1,0 +1,41 @@
+BÁO CÁO KIÊN WINDOWS/DOCKER — ĐIỀN KẾT QUẢ THẬT
+
+Người chạy / ngày giờ có múi giờ:
+ZIP nhận / SHA bên ngoài ZIP / checksum đã đối chiếu:
+source_identity / file_count:
+runtime_identity / runtime_count:
+Wheel SHA / Python / Windows / CPU / RAM:
+Docker Server / image ID+digest / PostgreSQL server / Psycopg+pool:
+Docker VM RAM/CPU / HostConfig actual budget / disk trước-sau:
+Có thay source/assert/deadline/200MiB50phần/worker/config giữa lượt không:
+
+MỖI ATTEMPT MỘT MỤC, KHÔNG XÓA LƯỢT LỖI
+Phase / output folder:
+Command thực tế:
+Summary nguyên dòng / exit_code / qualified:
+source/runtime identity trước-sau, cache-cleanup:
+Fail/error/skip/deselection và lý do từng mục:
+Nếu upload: current_part, last_acknowledged_bytes, error_type, phase,
+transaction_outcome_unknown, ready/completed/failure receipt path:
+Đã giữ nguyên unknown, không tự replay hoặc coi metadata absence là rollback:
+Diagnostic capture trước/sau / section nào thiếu:
+
+Checklist phase (ĐẠT / LỖI / CHƯA CHẠY + evidence):
+verify:
+smoke native Windows:
+upload200 isolated:
+unit J01/K02–K18:
+postgres full (giữ200MiB trong suite):
+metric100k:
+large100k +3exports:
+Linux/WSL unit / full postgres (các ca POSIX bỏ qua ở Windows):
+Linux/WSL calibration / renewal / health / PITR (không cộng duplicate case):
+Production-only installed wheel:
+Optional secondary Docker recovery:
+Actual appimage/IdP/offhostDR/primary campaign: CHƯA CHẠY nếu không có receipt riêng.
+
+PDF visual: đường dẫn / reader / số trang / câu tiếng Việt copy / lỗi-ảnh:
+Các phase chưa chạy và vì sao:
+Container ID/name/image/volume/state lúc trả; đã dừng container nào:
+Không xóa volume / không gửi URL,key,cookie,CSRF,actors,work hoặcDBvolume:
+TênZIPkếtquả / SHA gửi RIÊNG bên ngoàiZIP:

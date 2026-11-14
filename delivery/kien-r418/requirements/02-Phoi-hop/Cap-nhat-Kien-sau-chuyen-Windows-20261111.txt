@@ -1,0 +1,84 @@
+CẬP NHẬT KIÊN K02–K07 SAU KHI CHUYỂN WINDOWS — 11/11/2026
+
+1. ĐỢI LƯỢT TEST WINDOWS ĐANG CHẠY XONG
+
+Giữ log của Chuyen-Windows-Docker-20261111.zip theo đúng bản cũ; gói ZIP đó
+không bị thay đổi. Không chép source mới trong lúc pytest/API/worker đang chạy.
+Đây là delta cho gói đó, không phải lệnh cập nhật checkout Quân.
+
+2. ĐÃ HOÀN THIỆN THÊM
+
+K02: CI PostgreSQL chọn đủ 73 module integration K02–K07, có K03 DSN. Pytest
+được khai báo helper path tests/unit, nên gọi riêng bài session cũng thu thập
+được, không dựa vào trạng thái import hoặc shell PYTHONPATH của lượt trước.
+
+K03: trước đây GET session báo được tạo workspace nhưng POST renew lại trả
+false mặc định. Đã dùng chung policy hiện hành; lookup trước rotation nên lỗi,
+timeout hoặc kết quả policy không phải boolean không làm mất credential cũ.
+Không thêm schema field, không đổi quyền thực hiện create-workspace.
+
+K06: thêm 2 regression gọi đúng routine cleanup, chứng minh TLS key được xóa
+khi startup hoặc DROP ROLE lỗi. Code cleanup đã có sẵn, không sửa lặp lại.
+K04/K05/K07: chưa tìm thấy bug backend mới cần sửa sau lượt rà và kiểm lại.
+
+3. KẾT QUẢ THỰC ĐÃ CHẠY TRÊN MAC
+
+- 2.633 hosted/J01/security unit đạt; 13 Windows-only skip, 3 PG-marked deselect.
+- 320 integration đạt trên PostgreSQL riêng; 4 opt-in skip:
+  2 Docker recovery và 2 L parser. Không tính skipped là passed.
+- 3 query-probe PostgreSQL đạt riêng.
+- 297 consumer đạt với producer mới trong bản copy ghép frontend Quân riêng;
+  19 binding cases nằm trong 297, không cộng thành tổng test độc lập mới.
+- Hosted build đạt; OpenAPI 92 operation/53 path/94 schema/1007 refs đạt.
+- Wheel mới chứa đủ 623 runtime file khớp source; cài riêng rồi 10 ca renewal
+  đạt, kiểm 121 module Aletheia đều được load từ wheel đã cài.
+- Native PG đã dừng/dọn: schema/role/connection riêng đều 0, password/URL/WAL
+  trong runtime thử đã xóa. Không chạy Docker hay IdP/provider trên Mac.
+
+Wheel mới: runtime/aletheia_lab-0.1.0-py3-none-any.whl
+SHA-256: 44b335de4764abc298048ef72c9312d7e525151d087a99c8dcaca2a3e8ab9061
+Wheel/soak2h cũ giữ nguyên scope bản cũ, không coi là proof whole-runtime mới.
+
+4. ÁP DELTA TRÊN WINDOWS SAU KHI ĐÃ GIỮ LOG CŨ
+
+Giải nén Cap-nhat-Kien-sau-chuyen-Windows-20261111.zip ra thư mục riêng.
+Trong đó code/ có đúng 10 file: 8 file sửa và 2 file test mới. Danh sách cùng
+SHA trước/sau ở changed-files.json. Đối chiếu SHA trước với source Windows;
+nếu khác, giữ WIP và đọc diff trước khi ghép. Không ghi đè một bản đã sửa khác.
+
+Sao lưu 8 file cũ, rồi chép nội dung code/ vào đúng source của gói Windows
+(ví dụ C:\work\Aletheia-Windows-Docker\source), giữ cấu trúc thư mục. Không
+chép vào .venv; không có dashboard file nên frontend Quân không bị thay đổi.
+Không đổi dependency hay cần migration DB mới.
+
+Nếu môi trường test đang dùng pip install -e thì source mới có hiệu lực ở
+process kế tiếp; dùng chính Python của .venv đã tạo. Wheel đi kèm dành cho
+nơi triển khai/cài package riêng; không cần cài wheel đè môi trường editable
+để chạy bộ test source.
+
+Từ source trong PowerShell, chạy focused trước:
+  $aletheiaPython = (Resolve-Path .\.venv\Scripts\python.exe).Path
+  $env:PYTHONUTF8 = '1'
+  $env:PYTHONDONTWRITEBYTECODE = '1'
+  & $aletheiaPython -B -m pytest -o addopts= -q -ra -p no:cacheprovider tests/unit/test_k03_renewal_creation_hint.py tests/unit/test_k06_api_shutdown_cleanup.py tests/unit/test_security_ci_contract.py
+
+Sau đó chạy lại bộ Windows/PostgreSQL đã hướng dẫn, ghi log mới riêng. Giữ
+K02–K07_TEST_DATABASE_URL trỏ đúng DB thử riêng và K02_TEST_HTTPS=1. POSIX
+SIGTERM skip trên Windows native là ranh giới nền tảng, không sửa test cho qua.
+Không bật Docker crash/IdP opt-in chỉ vì đã có container PostgreSQL smoke.
+
+5. PHẦN CHƯA TỰ NHẬN ĐẠT
+
+Năm child còn blocked: K02.05 (remote CI/joint release), K03.02/.03/.05/.06
+(policy/operator, real IdP, browser/multi-device/multi-tab/revoke/outage).
+Sáu parent giữ joint/release gates. Windows Docker owner đang chạy chưa có
+kết quả nhận lại; evidence Mac trên không ký thay target Windows.
+
+Ba lỗi client đã ghi trong file trả lời để chuyển Quân: export sai project mất key,
+mutation 500/503 có thể sau effect nhưng key bị bỏ, và xóa intent trước tải
+xong output/result. Chưa nhận bản sửa để kiểm. Bản consumer 297 đạt hiện tại
+vẫn là bounded contract receiving, chưa chứng minh đã sửa ba lỗi này.
+
+Không commit/push/merge/CI remote hoặc sửa /Users/apple/study/aletheia-lab.
+Hồ sơ test nằm ở evidence/ trong delta; canonical hiện trạng vẫn ở thư mục
+Aletheia-Kien-API. Gửi lại log Windows và tên/hash bản source dùng để đối chiếu.

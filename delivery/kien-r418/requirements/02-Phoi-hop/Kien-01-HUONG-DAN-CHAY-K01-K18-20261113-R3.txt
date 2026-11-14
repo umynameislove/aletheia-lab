@@ -1,0 +1,346 @@
+KIÊN — HƯỚNG DẪN CHẠY GÓI MỚI K01–K18 TRÊN WINDOWS + DOCKER
+Gói Ban-giao-Kien-Windows-K01-K18-20261113-R3.zip, ngày13/11/2026. Chạy từng khối, kiểm exit code sau từng lệnh. Không sửa source/test,
+assertion, 5s part transaction, 200 MiB, 50 phần x4 MiB hoặc worker slots.
+
+1. NHẬN ĐÚNG GÓI VÀ TẠO OUTPUT TRƯỚC
+
+Nhận ZIP và fileSHA256 đáng tin cậy BÊN NGOÀI ZIP vào Downloads. Hai file:
+  Ban-giao-Kien-Windows-K01-K18-20261113-R3.zip
+  Ban-giao-Kien-Windows-K01-K18-20261113-R3.zip.sha256
+Nếu tải nơi khác, chỉ sửa hai biến đường input. ZIP chứa đúng một thư mục gốc
+cùng basename; giải nén vào C:\Aletheia thì source nằm tại:
+  C:\Aletheia\Ban-giao-Kien-Windows-K01-K18-20261113-R3\source
+Không giải nén thêm một lớp K01-K18-current/R3 hoặc chép đè thư mục đã có.
+
+Mở PowerShell thường trên Windows native, không dùng CMD/terminal container:
+
+  $ErrorActionPreference = 'Stop'
+  $kienZip = Join-Path $env:USERPROFILE 'Downloads\Ban-giao-Kien-Windows-K01-K18-20261113-R3.zip'
+  $kienZipShaFile = Join-Path $env:USERPROFILE 'Downloads\Ban-giao-Kien-Windows-K01-K18-20261113-R3.zip.sha256'
+  $kienShaText = (Get-Content -LiteralPath $kienZipShaFile -Raw).Trim()
+  if ($kienShaText -notmatch '^([0-9a-fA-F]{64})(?:\s+[^\r\n]+)?$') { throw 'External SHA file must contain the trusted64hex checksum.' }
+  $kienExpectedZip = $Matches[1]
+  $kienActualZip = (Get-FileHash -LiteralPath $kienZip -Algorithm SHA256).Hash
+  if ($kienActualZip -ine $kienExpectedZip) { throw 'ZIP checksum mismatch. Stop; do not extract.' }
+  $kienExtractRoot = 'C:\Aletheia'
+  $kienKit = Join-Path $kienExtractRoot 'Ban-giao-Kien-Windows-K01-K18-20261113-R3'
+  if (Test-Path -LiteralPath $kienKit) { throw 'Destination exists. Preserve it and choose a fresh extraction root.' }
+  if (-not (Test-Path -LiteralPath $kienExtractRoot)) { New-Item -ItemType Directory -Path $kienExtractRoot | Out-Null }
+  Expand-Archive -LiteralPath $kienZip -DestinationPath $kienExtractRoot
+  if (-not (Test-Path -LiteralPath (Join-Path $kienKit 'tools\run_checks.py'))) { throw 'Unexpected ZIP folder layout; stop without moving/overwriting files.' }
+  Set-Location -LiteralPath $kienKit
+  $kienKit = (Get-Location).Path
+  New-Item -ItemType Directory -Force .\results\setup,.\work | Out-Null
+  $kienSession = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N').Substring(0,8)
+  Start-Transcript -LiteralPath (Join-Path $kienKit "results\setup\powershell-$kienSession.txt") -NoClobber
+  Copy-Item .\02-MAU-BAO-CAO.txt .\results\BAO-CAO-KET-QUA.txt
+  py -3.12 --version
+  py -3.12 -B tools\run_checks.py verify
+  if ($LASTEXITCODE -ne 0) { throw 'Source verify failed; stop and return setup log.' }
+
+Ghi nguyên source_identity/runtime_identity/file_count/runtime_count từ verify
+vào báo cáo. Đối chiếu release.json và manifest trong gói mới. SHA aggregate là
+identity của tập file, không phải Git commit. Không chép số dự kiến từ tài liệu
+cũ. Runner tạo work parent và từ chối symlink/junction hoặc đường dẫn vào sealed
+source; không xóa assertion để chữa lỗi WinError 3.
+
+2. CÀI PYTHON TEST ENV RIÊNG
+
+Dùng Python 3.12, không dùng editable install. Windows Developer Mode hoặc quyền
+symlink cần cho test symlink thật. Nếu không có quyền, giữ reason và chạy lane
+Linux/WSL riêng; không giả skip thành PASS. Giữ ít nhất20GiB free để chuẩn bị;
+runner chặn dưới4GiB lúc bắt đầu phase, không giám sát toàn bộ disk/VM liên tục.
+Không chạy song song Node/build/L/soak khi đo. Ghi đúng máy/VM budget thực tế.
+
+  py -3.12 -m venv .venv-test
+  $kienPython = (Resolve-Path .\.venv-test\Scripts\python.exe).Path
+  $kienWheels = @(Get-ChildItem .\dist\*.whl)
+  if ($kienWheels.Count -ne 1) { throw 'Expected exactly one sealed wheel.' }
+  $kienWheel = $kienWheels[0].FullName
+  & $kienPython -m pip install -c .\test-constraints.txt "${kienWheel}[dev,hosted]" --log .\results\setup\pip-install.log
+  if ($LASTEXITCODE -ne 0) { throw 'Install failed; retain pip log and stop.' }
+  & $kienPython -m pip check
+  if ($LASTEXITCODE -ne 0) { throw 'pip check failed.' }
+  & $kienPython -m pip freeze > .\results\setup\pip-freeze.txt
+  & $kienPython --version > .\results\setup\python-version.txt
+  Remove-Item Env:PYTEST_ADDOPTS -ErrorAction SilentlyContinue
+  & $kienPython -B tools\run_checks.py verify
+  if ($LASTEXITCODE -ne 0) { throw 'Source verify failed after install.' }
+
+Không nới constraint hoặc nâng package giữa các lượt. Nếu thiếu wheel Windows,
+giữ nguyên lỗi và báo. Test env [dev,hosted] KHÁC production-only env ở bước8.
+
+3. POSTGRESQL16 TRONG DOCKER — CHỈ NGƯỜI CHẠY THỰC HIỆN
+
+Mở Docker Desktop, chọn Linux engine và chờ Server sẵn sàng. Không đổi/xóa
+container hay volume cũ. Tạo tên mới ngẫu nhiên. Cổng55437 phải chưa dùng:
+
+  docker version
+  if ($LASTEXITCODE -ne 0) { throw 'Docker Server unavailable.' }
+  if (Get-NetTCPConnection -LocalPort 55437 -ErrorAction SilentlyContinue) { throw 'Port55437 is occupied; stop, do not remove another service.' }
+  $kienRun = [guid]::NewGuid().ToString('N')
+  $kienContainer = "aletheia-kien-review-$kienRun"
+  $kienVolume = "aletheia_kien_review_$kienRun"
+  $kienContainer | Out-File -Encoding utf8 .\results\setup\main-container-name.txt
+  $kienVolume | Out-File -Encoding utf8 .\results\setup\main-volume-name.txt
+  docker volume create $kienVolume
+  if ($LASTEXITCODE -ne 0) { throw 'Create test volume failed.' }
+  docker run -d --name $kienContainer --label aletheia.purpose=k01-k18-windows-review -p 127.0.0.1:55437:5432 --mount "source=$kienVolume,target=/var/lib/postgresql/data" -e POSTGRES_USER=hosted_test -e POSTGRES_PASSWORD=synthetic_test_only -e POSTGRES_DB=hosted_test postgres:16-bookworm@sha256:a49f7438ba03589f9b1ca062f2da82e899b48ea1dc50d2449fa09a70be83ebca
+  if ($LASTEXITCODE -ne 0) { throw 'Create test PostgreSQL failed; retain output.' }
+  docker exec $kienContainer pg_isready -U hosted_test -d hosted_test
+
+Lặp lại đúng pg_isready tới khi accepting connections. Không chạy test khi chưa
+ready. Mật khẩu trên là fixture công khai cho DB loopback disposable, không dùng
+ở production. DB test phải riêng; tests tự tạo/dọn namespace UUID của chúng.
+
+Tạo file URL ngoài source và results, UTF-8 không BOM:
+
+  $kienPrivate = Join-Path $env:USERPROFILE 'Aletheia-private'
+  New-Item -ItemType Directory -Force $kienPrivate | Out-Null
+  $kienDbFile = Join-Path $kienPrivate "test-url-$kienRun.txt"
+  [IO.File]::WriteAllText($kienDbFile, 'postgresql://hosted_test:synthetic_test_only@127.0.0.1:55437/hosted_test', (New-Object Text.UTF8Encoding($false)))
+
+Không đưa URL thật, IdP secret, HMAC key, cookie/CSRF hoặc actors.jsonl vào results.
+Nếu dùng DB khác được phép, nhận file private qua kênh riêng; đừng dán secret vào
+lệnh/transcript/chat. Capture dưới dùng local psql với user/database fixture,
+không đọc Config.Env. Nếu fixture này không truy cập local socket được thì ghi
+capture section thiếu; không sửa pg_hba hoặc bỏ auth của DB công việc.
+
+4. HAI GATE BẮT BUỘC — DỪNG NGAY NẾU LỖI
+
+Lưu selected machine/VM/container/image/server/PG settings, wait và stats trước:
+
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Capture-Kien.ps1 -Python $kienPython -Container $kienContainer -Output "results\diagnostics-before-$kienSession"
+
+Capture chạy bằng PowerShell child với policy tạm của đúng process cho script
+local đã verify trong gói; không đổi execution policy máy. Capture chỉ lưu allowlist; raw Docker log/SQL/credential bị loại, log chỉ giữ
+fixed event counts. Docker stats là một snapshot, không phải peak CPU/RAM hay
+bằng chứng nguyên nhân chậm. New K07 receipt quan sát thật trong lúc test.
+Không tự đổi Docker RAM/CPU, fsync, synchronous_commit hoặc deadline giữa lượt.
+
+  & $kienPython -B tools\run_checks.py smoke --database-file $kienDbFile --output "results\smoke-$kienSession"
+  if ($LASTEXITCODE -ne 0) { throw 'SMOKE FAILED/SKIPPED: stop and return all evidence.' }
+
+Smoke dùng native Windows worker/reaping cùng PostgreSQL migration và API→worker.
+Không chấp nhận skip. Native Linux/WSL smoke sẽ bị guard từ chối; đó không là lỗi
+Windows. Không nhận định cả hệ thống PASS từ smoke.
+
+  & $kienPython -B tools\run_checks.py upload200 --database-file $kienDbFile --output "results\upload200-$kienSession"
+  $kienUploadExit = $LASTEXITCODE
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Capture-Kien.ps1 -Python $kienPython -Container $kienContainer -Output "results\diagnostics-after-upload-$kienSession"
+  if ($kienUploadExit -ne 0) { throw 'UPLOAD200 FAILED: stop here. Keep diagnostics and send results; do not retry automatically.' }
+
+Upload200 vẫn200MiB,50phần4MiB, deadline part5s gốc. Chạy deadline/cancel và
+completion/driver tests cùng physical200MiB. Phải không skip/fail/error, và có
+transfer-200MiB-result.json schema k07-transfer-observation/v2: completed,
+ready=true,50confirmed-progress, đủ200MiB và sha256=stored_sha256.
+
+Nếu lỗi create/part/resume/complete/read: giữ transfer-200MiB_failure-result.json,
+ready receipt nếu đã có, junit.xml, pytest.log, attempt/result/cache-cleanup.
+Failure receipt có current_part/last_acknowledged_bytes, query/connection/context
+exit timings, waits/blockers, pool/PG/driver metadata và bounded read-only ledger
+observation. Nó KHÔNG biến unknown thành rollback/success, KHÔNG tự gửi lại part.
+Nếu diagnostic write thất bại, nguyên lỗi vẫn phải giữ và gate vẫn FAIL.
+
+Các phase sau chỉ chạy nếu hai gate trên đạt. Nếu không: ghi CHƯA CHẠY rồi đến
+bước10 để gửi kết quả. Người review sẽ chỉ định lượt tiếp nếu thật sự cần.
+
+5. UNIT TOÀN PHẠM VI J01/K02–K18 — KHÔNG CẦN DOCKER RIÊNG
+
+  & $kienPython -B tools\run_checks.py unit --output "results\unit-$kienSession"
+  if ($LASTEXITCODE -ne 0) { throw 'Unit failed; stop and return evidence.' }
+
+Runner tự lấy file hiện có J01, securityCI, K02–K18; integration-marked nodes
+được tách sang postgres. Gửi nguyên summary/skip/deselection thật. Số pass thay
+đổi theo source/platform; không lấy số trong báo cáo local làm kết quả của máy này.
+
+6. FULL POSTGRESQL / HTTPS / WORKER VÀ100K
+
+Cài PG16 client tools đúng kiến trúc. Không chỉ trỏ thư mục chưa kiểm version:
+
+  $kienPgBin = 'C:\Program Files\PostgreSQL\16\bin'
+  & "$kienPgBin\pg_dump.exe" --version
+  & "$kienPgBin\pg_restore.exe" --version
+  & $kienPython -B tools\run_checks.py postgres --database-file $kienDbFile --pg-bin $kienPgBin --output "results\postgres-$kienSession"
+  if ($LASTEXITCODE -ne 0) { throw 'Full PostgreSQL failed; keep every failed attempt.' }
+  & $kienPython -B tools\run_checks.py metric100k --output "results\metric100k-$kienSession"
+  if ($LASTEXITCODE -ne 0) { throw 'Metric100k failed.' }
+  & $kienPython -B tools\run_checks.py large100k --database-file $kienDbFile --output "results\large100k-$kienSession"
+  if ($LASTEXITCODE -ne 0) { throw 'Large100k failed.' }
+
+Full postgres chạy lại physical200MiB trong suite để kiểm sau tải tích lũy. Nếu
+isolated đạt nhưng full lỗi, cả hai kết quả vẫn tồn tại, full vẫn chưa đạt.
+Full phase có opt-in/POSIX/Docker-recovery skip: ghi từng reason, không ký thay.
+metric100k là2parser v1/v2; large100k là actual queue/worker/PG confirm→analysis→
+no-op/adverse refresh→history→3format exports→authenticated đủ byte/hash.
+Không giảm100k, không thêm timeout bên ngoài để làm ngắn bài. Có thể mất nhiều
+phút.100krow không là100kuser và không đáp ứng primary10kclaim/graph.
+
+7. LINUX/WSL OPT-IN — CÙNG SOURCE, VENV RIÊNG
+
+Không dùng .venv-test\Scripts\python.exe trong WSL. Tạo .venv-linux bằng
+python3.12, cài wheel[dev,hosted] với cùng test-constraints, pip check. Dùng file
+URL private hợp lệ từ WSL tới chính DB test, không chép secret vào results.
+
+Windows publish127.0.0.1 không tự bảo đảm WSL2 NAT truy cập được địa chỉ127.0.0.1
+của Windows. Cần Docker Desktop WSL integration/network phù hợp đã được operator
+cho phép, Linux private DB thử riêng, hoặc mirrored network do operator cấu hình.
+Không mặc định đổi cấu hình toàn máy. Không rebind PostgreSQL ra0.0.0.0, tắt auth,
+đổi pg_hba hoặc bỏ TLS để làm test qua. Kiểm kết nối thật TRƯỚC khi chạy WSL suite:
+
+  .venv-linux/bin/python -B - /private/operator/test-url.txt <<'PY-PREFLIGHT'
+import json, os, sys
+from pathlib import Path
+import psycopg
+try:
+    for name in list(os.environ):
+        if name.upper().startswith("PG"):
+            os.environ.pop(name, None)
+    database_url = Path(sys.argv[1]).read_text(encoding="utf-8-sig").strip()
+    with psycopg.connect(database_url, connect_timeout=3, autocommit=True,
+            options="-c statement_timeout=2000 -c default_transaction_read_only=on") as conn:
+        row = conn.execute("SELECT 1,current_setting('server_version_num'),current_database()").fetchone()
+    if row is None or row[0] != 1 or int(row[1]) // 10000 != 16:
+        raise ValueError("Unexpected test PostgreSQL major version")
+    print(json.dumps({"connected": True, "server_version_num": row[1], "database": row[2]}))
+except Exception as error:
+    print(json.dumps({"connected": False, "error_type": type(error).__name__}))
+    raise SystemExit(1)
+PY-PREFLIGHT
+  if [ "$?" -ne 0 ]; then echo "WSL DB preflight failed; stop and return safe output."; exit 1; fi
+
+Thay đường file private bằng đường thực của WSL. Output chỉ có connection status,
+PGversion/database hoặc exception type, không URL/password/driver error text.
+Nếu refused/timeout/khácDB: dừng lane WSL, gửi output an toàn và nhờ operator chỉnh
+kết nối đã được phép. Không coi lỗi NAT là lỗi capacity, không đổi source/deadline.
+Trước full postgres trong WSL cần PostgreSQL16 client tools (pg_dump/pg_restore)
+và pgrep (thường trong gói procps). Kiểm đúng binary/version; nếu thiếu thì ghi
+SETUP FAILED, không đánh dấu skip thành PASS. Chạy lại unit/full postgres ở WSL
+để thực thi các ca POSIX mà Windows native bỏ qua: shutdown/SIGTERM, process
+resource envelope, process recovery và download+queued-job drain. Giữ riêng
+results Windows và WSL, cùng source/runtime; không cộng ca chạy lặp thành unique.
+Sau MỖI lệnh sau, kiểm exit code; khác0thì dừng, không chạy cả chuỗi bỏ qua lỗi:
+
+  .venv-linux/bin/python -B tools/run_checks.py verify
+  .venv-linux/bin/python -B tools/run_checks.py unit --output results/unit-wsl-01
+  .venv-linux/bin/python -B tools/run_checks.py postgres --database-file /private/operator/test-url.txt --pg-bin /usr/lib/postgresql/16/bin --output results/postgres-wsl-01
+  .venv-linux/bin/python -B tools/run_checks.py calibration --database-file /private/operator/test-url.txt --output results/calibration-01
+  .venv-linux/bin/python -B tools/run_checks.py renewal --database-file /private/operator/test-url.txt --output results/renewal-01
+  .venv-linux/bin/python -B tools/run_checks.py health --output results/health-01
+  .venv-linux/bin/python -B tools/run_checks.py pitr --pg-bin /usr/lib/postgresql/16/bin --output results/pitr-01
+
+Các đường /private/operator và PG bin là chỗ thay bằng đường thực của máy.
+Full postgres WSL vẫn ghi các opt-in chưa bật; các lệnh calibration/renewal ở
+dưới là probe riêng, có thể lặp ca đã chạy, không thêm unique-case credit.
+PITR cần userkhôngroot, đủpostgres/initdb/pg_ctl/pg_basebackup/pg_dump/pg_restore
+PG16. Fixture sở hữu2cluster riêng; cổng bận thì FAIL, không dừng PG người khác.
+Health kiểm CA/SNI/Host/ready thật; không tắt TLS. Renewal có policy fixture ngắn,
+không rewrite DB clock. Calibration chỉ100principal/25s debug, kiểm business
+success riêng; pytest0nhưng failed/drop/unknown/pending hoặc success<99.9% vẫn
+nonzero. Đây không là full50k/30s steady/p99/2h/8h campaign.
+
+8. INSTALLED WHEEL VÀ PDF — PRODUCTION-ONLY WSL/LINUX
+
+Đây là command riêng đã có, không phải phase wheel của run_checks. Không dùng
+test venv. Native Windows có dependency conditional ngoài Linux52pin; không bỏ
+closure guard hoặc nới lock để ép qua. Ở root gói trong WSL/Linux:
+
+  mkdir -p results/setup
+  python3.12 -m venv .venv-runtime
+  .venv-runtime/bin/python -m pip install --index-url https://pypi.org/simple --only-binary=:all: --require-hashes --report results/setup/runtime-install.json -r source/deploy/hosted/requirements.lock
+  .venv-runtime/bin/python -m pip install --no-deps dist/aletheia_lab-0.1.0-py3-none-any.whl
+  .venv-runtime/bin/python -m pip check
+  unset PYTHONPATH SOURCE_DATE_EPOCH
+  .venv-runtime/bin/python -I installed_wheel_check.py --kit . --output results/wheel-01
+
+Kiểm exit code sau TỪNG lệnh, không chạy tiếp khi cài lỗi. Không -O/-OO. Checker
+phải verify exact52runtimeversions, chỉ cho phép pip/app extra, dynamicruntime
+byte parity,1analysis+3reportchildren thật và fonts. Lưu report.json/md/pdf và
+child-origins. PDF parser validation là dev-only verifier riêng; không cài pypdf
+vào runtime venv. Mở PDF bằng Edge/Adobe: ghi đường dẫn/số trang/câu tiếng Việt
+copy, lỗi mất/cắt/chồng/font/ngắt trang và ảnh nếu có. Chưa mở thì ghi CHƯA KIỂM.
+
+9. OPTIONAL DOCKER RECOVERY — SECONDARY CONTAINER RIÊNG
+
+Chỉ chạy sau các core gate đã đạt, không có bài khác đang chạy. Phase recovery
+cố ý restart/KILL PG; nó KHÔNG thuộc full postgres mặc định. Tạo secondary mới,
+loopback55438 và anonymous volume; tuyệt đối không dùng container chính/cũ:
+
+  if (Get-NetTCPConnection -LocalPort 55438 -ErrorAction SilentlyContinue) { throw 'Recovery port occupied; stop.' }
+  $kienRecoveryRun = [guid]::NewGuid().ToString('N')
+  $kienRecoveryName = "k06_recovery_$kienRecoveryRun"
+  docker run -d --name $kienRecoveryName --label aletheia.owner=k06 --label "aletheia.run_id=$kienRecoveryRun" -p 127.0.0.1:55438:5432 --mount type=volume,target=/var/lib/postgresql/data -e POSTGRES_USER=k06 -e POSTGRES_PASSWORD=synthetic_recovery_only -e POSTGRES_DB=k06_recovery postgres:16-bookworm@sha256:a49f7438ba03589f9b1ca062f2da82e899b48ea1dc50d2449fa09a70be83ebca
+  if ($LASTEXITCODE -ne 0) { throw 'Create secondary recovery fixture failed.' }
+  docker exec $kienRecoveryName pg_isready -U k06 -d k06_recovery
+
+Lặp lại pg_isready tới accepting connections. Tạo URL private ngoài results và
+config CHỈ chứa danh tính fixture + đường dẫn file URL, không chứa URL/password:
+
+  $kienRecoveryDbFile = Join-Path $kienPrivate "recovery-url-$kienRecoveryRun.txt"
+  [IO.File]::WriteAllText($kienRecoveryDbFile, 'postgresql://k06:synthetic_recovery_only@127.0.0.1:55438/k06_recovery', (New-Object Text.UTF8Encoding($false)))
+  $kienRecoveryConfig = Join-Path $kienKit "results\setup\recovery-$kienRecoveryRun.json"
+  $kienRecoveryIdentity = [ordered]@{
+    container_id = (docker inspect --format '{{.Id}}' $kienRecoveryName).Trim()
+    container_name = $kienRecoveryName
+    image_id = (docker inspect --format '{{.Image}}' $kienRecoveryName).Trim()
+    port = 55438
+    database_file = $kienRecoveryDbFile
+  }
+  [IO.File]::WriteAllText($kienRecoveryConfig, ($kienRecoveryIdentity | ConvertTo-Json), (New-Object Text.UTF8Encoding($false)))
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Capture-Kien.ps1 -Python $kienPython -Container $kienRecoveryName -DbUser k06 -Database k06_recovery -Output "results\recovery-before-$kienSession"
+  & $kienPython -B tools\run_checks.py recovery --recovery-config $kienRecoveryConfig --output "results\recovery-$kienSession"
+  $kienRecoveryExit = $LASTEXITCODE
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Capture-Kien.ps1 -Python $kienPython -Container $kienRecoveryName -DbUser k06 -Database k06_recovery -Output "results\recovery-after-$kienSession"
+  docker stop $kienRecoveryName
+  if ($kienRecoveryExit -ne 0) { throw 'Recovery failed; preserve guards/logs/witnesses and volume.' }
+
+Runner xóa K06_RECOVERY_* và mọi PG* libpq environment kế thừa. URL recovery
+không được có query/fragment; không dùng hostaddr/service/options để đổi đích.
+Chỉ config explicit của phase này được cấp quyền recovery.
+Fixture kiểm exact containerID/imageID/name/labels/loopbackport/anonymousvolume;
+không bỏ guard khi bị từ chối. Phải2case thực chạy,0skip và cả graceful-witness.json
++crash-witness.json giữ original receipt/durable settings. Đây là test profile
+source/job/audit PostgreSQL cũ; không suy full managed runtime, host-loss,
+container app rollout hoặcIdP recovery. Nếu không làm phase này, ghi CHƯA CHẠY.
+Không rm/down-v/prune; dừng đúng secondary nhưng GIỮ anonymous volume.
+
+Actual appimage build/nonroot/secret/TLS/volume/rollout/rollback, IdP/MFA/recovery,
+collector/oncall/otherhuman, offhostDR vàfullprimarycampaign làgate độc lập theo
+source/deploy/hosted/README.txt vàdocs/runbooks. Bộ này không tạo remotecloud,
+không có command fullprimaryfake, không chạy nghiêncứu/paidprovider, không làm
+việc củaBu/Quân. Việc máy chạy hết cácphase trên vẫn không là fullreleasePASS.
+
+10. TRẢ KẾT QUẢ — KỂ CẢ KHI PHASE ĐẦU LỖI
+
+Điền results/BAO-CAO-KET-QUA.txt: source/runtime/wheel/image/server/driver, mỗi
+attempt summary/exit/qualified/skips, lỗi đầu+rerun riêng, cácphase CHƯA CHẠY.
+Đừng sửa JSON/XML thànhtrue. Mỗioutput phải mới; output đã tồn tại bị từ chối.
+Capture lần cuối bằng Output mới rồi dừng đúng container mới, GIỮ VOLUME:
+
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Capture-Kien.ps1 -Python $kienPython -Container $kienContainer -Output "results\diagnostics-final-$kienSession"
+  docker stop $kienContainer
+  if ($LASTEXITCODE -ne 0) { throw 'Stop failed; record actual state, do not remove volume.' }
+  Stop-Transcript
+
+Chỉ đóng gói results đã kiểm secret: không source/.venv/work/DBvolume/privateURL,
+key/cookie/CSRF/actors.jsonl hoặc pytest temporary tree. Runner che URL/password
+đã biết trong console/JUnit; vẫn đọc kiểm package trước gửi, không giả scan này
+là bảo đảm mọi secret trên máy. Raw Dockerlogs bị loại; selected diagnostics còn.
+
+  $kienReturnStamp = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N').Substring(0,8)
+  $kienReturnZip = Join-Path $kienKit "Ket-qua-Kien-Windows-$kienReturnStamp.zip"
+  Compress-Archive -LiteralPath .\results -DestinationPath $kienReturnZip
+  Get-FileHash -LiteralPath $kienReturnZip -Algorithm SHA256
+
+Gửi ZIP vàSHA ngoàiZIP. Nếu results có file>2GB hoặc hiddenfile quan trọng,
+PowerShell Compress-Archive không phù hợp; báo để đóng ZIP64 bằng công cụ đã có,
+không bỏ file âm thầm. Không nhét hashZIP vào chínhZIP rồi nén lại.
+
+Mẫu tin trả: 'Máy..., Python..., gói/SHA..., source/runtime..., đã chạy..., phase
+lỗi/chưa chạy..., giữ nguyên source/assert/deadline/size. Container đã..., volume
+giữ. Đính kèm results vàSHA...'. Kiên/bên review sẽ đối chiếu và chỉ định bước sau.
+
+Nguồn cú pháp đối chiếu13/11/2026:
+https://docs.docker.com/reference/cli/docker/container/inspect/
+https://docs.docker.com/reference/cli/docker/container/stats/
+https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.archive/compress-archive?view=powershell-5.1

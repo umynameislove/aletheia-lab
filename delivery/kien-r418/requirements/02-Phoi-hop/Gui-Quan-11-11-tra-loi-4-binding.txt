@@ -1,0 +1,130 @@
+KIÊN TRẢ LỜI QUÂN — NHẬN NỀN HOSTED VÀ 4 BINDING — 11/11/2026
+
+Đây là nội dung để chuyển lại cho Quân; chưa gửi qua chat/email.
+
+1. ĐÃ NHẬN VÀ ĐỐI CHIẾU
+
+Đã đọc Gui-Kien-11-11-nhan-ban-giao-4-binding.txt và kiểm gói gui-kien-11-11.zip:
+SHA-256 93597f2d477a610885f5aa04a4400cd51e5f6e4499c1f34c969a7076f5455566.
+12 entry, CRC sạch, đủ 11/11 checksum của README. Ghi nhận Quân đã nối refresh,
+follow-up, export và delete; không giao làm lại bốn binding từ đầu.
+
+Hai lỗi P1 trong thư là lệch source backend, không cần bỏ/nới test. Kiên đã
+chụp riêng 133 file web của Quân, ghép trên source backend hiện hành và kiểm:
+- Consumer 297/297, gồm 19/19 bài bốn binding.
+- 7 trường hợp payload từ producer thật và 11 request theo OpenAPI hiện hành.
+- Hosted TypeScript/build đạt.
+
+Bằng chứng đã có, không chạy lại các bài này trong lượt đọc thư:
+/Users/apple/study/Aletheia-Kien-API/Bang-chung/20261111-kien-remaining/quan-consumer/qualification.json
+Source web được kiểm có identity SHA-256:
+b8fbb242a5fa10a8cbd7373d22df8d7764011c849fbb94a167f65855f271f73c.
+
+P1 đặt PYTHONPATH vào src của chính checkout và gọi script bằng đường dẫn
+repo. Vì vậy chỉ cài wheel mới vào môi trường nhưng giữ src/script cũ chưa
+chắc giải quyết được: cần source backend và scripts cùng bản. Giữ nguyên hai
+test P1; dùng full source đã bàn giao và phần bổ sung Kiên hiện hành.
+
+Đây là nhận contract LOCAL trên bản ghép riêng, transport có kiểm soát.
+Chưa phải UI→API→DB thật, CI remote, nhánh tích hợp đã phát hành hay joint sign-off.
+
+2. CHỐT MÃ LỖI VÀ QUYỀN REFRESH
+
+Đồng ý thêm vào bảng extension phía client:
+  invalid_request: 400
+  schema_invalid: 422
+  job_state_conflict: 409
+  service_unavailable: 503
+
+Producer hiện thực sự trả những mã này. Giữ nguyên bảng J01 v1 đã đóng;
+không sửa fixture lịch sử để nhận thêm mã. Vẫn kiểm cấu trúc Problem,
+HTTP status và status trong body theo đúng cặp. Mã lạ/sai cặp không được tin.
+not_found:404 và export_expired:410 của binding tiếp tục áp dụng.
+
+Refresh: xác nhận hiện import, analyze và refresh cùng nhóm owner/admin/analyst.
+Client yêu cầu import+analyze phù hợp hành trình chọn ZIP thay thế. Server
+vẫn kiểm project/source grant ở thời điểm effect. Chưa cần thêm quyền hoặc
+sửa cờ backend; nếu role matrix sau này tách import/analyze thì đối chiếu lại.
+
+3. CHỐT OUTCOME_UNKNOWN; BA CHỖ PHỤC HỒI QUÂN CẦN CHỈNH
+
+Đồng ý giữ outcome_unknown khi POST thành công nhưng descriptor không tin
+được. Giữ nguyên key và request của intent cũ; lần thử lại đối chiếu receipt
+cùng key, không tự tạo export khác. Replay vẫn chịu kiểm quyền và expiry;
+410 export_expired kết thúc intent cũ, tạo mới phải là ý định mới rõ ràng.
+
+Đọc source hiện tại thấy ba khoảng trống sau. Đây là kết quả review tĩnh;
+cần Quân sửa và thêm regression, chưa có lượt test mới chứng minh đã sửa.
+
+A. Export trả project_id khác project đang mở:
+  hosted-port.ts đang intents.delete(name) trước khi so descriptor.project_id.
+  Như vậy trường hợp này mất key và trả response_out_of_scope, khác mô tả
+  “descriptor sai scope giữ key”. Kiểm project trước khi xóa intent; trả
+  outcome_unknown và không gọi download nếu POST receipt chưa tin được.
+  Test: sai project rồi retry, cùng key, không có GET download ở lần đầu.
+
+B. HTTP 500/503 của mutation không bảo đảm chưa có effect:
+  catalog_http.py tạo export trước rồi mới chạy authorization checkpoint;
+  timeout/lỗi sau publication có thể được chuyển thành 503/500. Hiện client
+  ném response_invalid hoặc ProductError, còn mutate() xóa key nếu code khác
+  outcome_unknown. Chỉ thêm service_unavailable vào whitelist chưa sửa được.
+  Với mutation chưa xác định kết quả sau 5xx/response hỏng, giữ intent và
+  thể hiện outcome_unknown; người dùng thử lại cùng key/body/If-Match.
+  GET vẫn có thể hiện service_unavailable. Không tự retry mutation bằng key
+  mới, và không nói “chưa thay đổi gì” chỉ từ phản hồi lỗi.
+  Test: server đã commit, sau đó trả 500 hoặc 503, retry chỉ có một effect.
+
+C. Refresh/follow-up đã succeeded nhưng tải output/result bị lỗi:
+  hosted-port.ts xóa intent ngay sau terminal(), trước loadOutput/loadResult.
+  Nếu GET sau đó lỗi, lần thử lại có thể tạo key mới thay vì nhận lại job đã
+  thành công. Cần giữ job_id và intent cho tới khi nhận đủ output/result
+  đúng scope; retry tiếp tục đọc job/output cũ. Follow-up còn cần dời cập
+  nhật revision tới sau khi child đã qua validation, giữ CAS gốc trong
+  intent đang phục hồi. Chỉ kết thúc intent khi đã nhận kết quả tin được
+  hoặc đã có trạng thái thất bại cuối cùng rõ ràng.
+  Test riêng refresh output lỗi và follow-up child GET lỗi rồi phục hồi;
+  không sinh mutation/job/child thứ hai, không đổi key hay tự nâng CAS.
+
+Các vị trí tham chiếu hiện tại (dòng có thể đổi khi Quân sửa):
+/Users/apple/study/aletheia-lab/dashboard/web/src/service/hosted-port.ts
+  mutate: khoảng 111; refresh: 238; follow-up: 262; export: 294.
+/Users/apple/study/aletheia-lab/dashboard/web/src/service/hosted-client.ts
+  request/readProblem: khoảng 266.
+/Users/apple/study/aletheia-lab-feat-product-api/src/aletheia_lab/hosted/catalog_http.py
+  checkpoint sau dispatch: khoảng 254; publication/201 export: khoảng 467.
+
+19 bài binding hiện tại chưa đóng các khoảng trống phục hồi nêu trên.
+Không cần sửa quyền hoặc publication backend để che các lỗi retry phía client.
+
+4. BUDGET
+
+Giữ live budget 80 kB: Quân đo 79,2 kB đạt. Hosted 89,4 kB đang vượt 80;
+bản hosted trước đó của Kiên khoảng 85,4 kB, nên không quy toàn bộ phần vượt
+cho bốn binding. Workflow hiện gate live; không ghi hosted đã đạt ngưỡng 80.
+
+Đề xuất bước nhỏ để Quân thử: chuyển HostedRequestDiscarded sang module
+chung hiện có (service/port.ts), re-export từ hosted-client để giữ identity,
+và để hosted-port import class từ module chung; createHostedClient giữ
+type-only. Import runtime hiện tại kéo hosted-client vào main dù HostedApp
+đã lazy. Đo lại main, các chunk và tổng byte/request lúc boot; tách chunk
+không tự chứng minh khởi động nhanh hơn hoặc tổng tải ít hơn.
+
+Chưa có build xác minh đề xuất này và chưa chốt tăng budget hosted. Nếu vẫn
+vượt thì đưa số đo/baseline cho owner quyết định budget hosted riêng; giữ
+nguyên gate live hiện hành.
+
+5. BƯỚC PHỐI HỢP TIẾP
+
+Quân nhận sửa ba điểm phục hồi và bảng mã lỗi, chạy focused regression,
+consumer đầy đủ với backend cùng bản, types/build/demo/controlled-hosted E2E
+và đo budget. Gửi patch cùng output thực tế; không bỏ hai test P1.
+
+Kiên đã có nhận contract LOCAL trên cùng snapshot. Git integration, remote
+CI và joint UI→API→DB trên release thật còn riêng; thư đề xuất push/áp patch
+chưa phải lệnh thực thi của owner. Lượt này không commit/push/merge hay áp
+patch vào checkout Quân. /Users/apple/study/aletheia-lab chỉ được đọc.
+
+Docker tiếp tục bỏ qua theo owner. Real IdP/staging do owner kiểm sau;
+không mở lại soak hai giờ hoặc nhận nghiệm thu K03 thay phần còn chờ.
+K02.02 chỉ đã nhận LOCAL; K02.05/release và các K03 còn thiếu bằng chứng
+thực vẫn giữ trạng thái hiện hành, không nâng thành passed từ thư này.
