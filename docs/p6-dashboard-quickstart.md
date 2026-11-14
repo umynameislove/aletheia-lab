@@ -19,8 +19,20 @@ UI-side adapter. It adds no product behaviour:
 - an unexpected exception leaves as `service_failure`, never as a traceback;
 - the store root is fixed at start-up and is never taken from a request.
 
-The mode is chosen at build time and shown in the top bar (`LIVE`, and `DEMO` for demo data). A
-Live failure is shown with its code. The app never falls back to demo data.
+The mode is chosen at build time and shown in the top bar (`Local app` or `Demo`, plus `Sample
+data` whenever the view is the demo projection). A Live failure is shown with its code. The app
+never falls back to demo data. Opening the app without a link lands on Start, never on a result.
+
+Every Live answer is checked at run time for schema version, shape and scope before anything reads
+it (`src/service/contract.ts`). A view with another `schema_version`, a malformed field, a dangling
+citation or another result's ID is refused with `schema_unsupported`, `response_invalid` or
+`response_out_of_scope`. Mutations are never retried automatically: a lost answer is reported as
+`outcome_unknown`. An answer that arrives after the person moved to another screen, result or project
+changes nothing on screen (`src/service/fence.ts`); it is listed under "Finished after you moved on".
+
+The session guard (`src/service/session.ts`) decides what the client does when access can change while
+a tab is open. The local app has no accounts and does not run it. The demo drives it from a simulated
+answer, with previews in the account menu. A hosted build gets its answers from `GET /v1/session`.
 
 Asking about a connected project in Live uses `analyze_observations`. It computes
 exact changes from imported metric snapshots and shows `local_evidence`, keeping
@@ -31,7 +43,8 @@ its existing callers; a Live connection alone is not a model-quality claim.
 
 ## Run
 
-Use Node.js 22.12 or newer; CI uses Node.js 24. Vite is locked to 7.3.7.
+Use Node.js 22.12 or newer; CI uses Node.js 24. `npm test` passes `--experimental-strip-types`, which
+Node 22 needs for the `.ts` test imports and Node 24 accepts. Vite is locked to 7.3.7.
 
 Setup, once:
 
@@ -108,6 +121,7 @@ every selected run keeps its own metric and config mapping.
 cd dashboard/web
 npm test
 npx tsc -b
+npm run build:live && npm run budget   # gzip size limits for the Live bundle
 ```
 
 ```bash
