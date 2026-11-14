@@ -1,0 +1,136 @@
+﻿CHI TIẾT 13 PARTIAL VÀ 4 MỤC MỞ — K13–K18 / R2 / 13-11-2026
+
+Trong 31 tiêu chí: 14 đạt local, 13 partial, 4 còn mở. K13 đạt 5/5 local.
+Đây là tiêu chí nghiệm thu, không phải danh sách 17 bug. Partial nghĩa đã có
+implementation/bằng chứng một phần; chưa đủ điều kiện của toàn bộ tiêu chí.
+Không có kết luận release production, primary 50k hoặc 27 gate chung đã pass.
+
+13 MỤC PARTIAL
+
+1. K-14.01 — Ngân sách process và pool
+R2 đã đo CPU/RSS/FD của API, worker và child; pool 4+2; 216 lượt health và 216
+lượt đọc đều 200. Source thực có 1.000/10.000/100.000 dòng. Còn thiếu mean demand/
+CPU của đủ loại operation, toàn bộ replica/process, NIC/ingress và headroom cho
+admin trên topology triển khai. Template 2 CPU/2 GiB còn là cấu hình tạm.
+
+2. K-14.05 — Fairness và burst
+R2 kiểm hai đợt 8 job tenant ồn + 2 job tenant nền: 60 lần gửi cùng key tạo đúng
+20 job và đủ 20 output đã kiểm hash. Tenant nền được phục vụ trước khi hàng chờ
+ồn cạn. Có 6 quan sát resume qua 2 TLS transport mới. Còn mixed upload/analysis/
+export, result primary S/M/L, hot row, OS/PG cold cache thật, mạng/proxy và fairness
+ở topology/tải triển khai. Không gọi 2 transport này là 6 browser client độc lập.
+
+3. K-15.03 — Quyền và scope cập nhật
+Backend kiểm quyền hiện tại mỗi lần đọc. Source Quân mới đã có lease tính từ
+request start và bỏ response quá hạn; không giao lại như chưa có code. Kiên dựng
+bản sao và kiểm 327 unit + 13 Chrome đạt với transport kiểm soát. Còn UI nối API
+thật: revoke hiển thị <=5 giây, quyền object/result, đổi account/workspace, logout,
+hai tab renew và response cũ đúng scope. /session hoặc capabilities riêng chưa đủ
+xác nhận quyền của object đang hiển thị.
+
+4. K-15.04 — Reconnect
+Đã có probe 100 pending job/130 poll/30% reconnect ở adapter và resume TLS local.
+Quân có pacing/cursor tests. Còn browser hide/show, proxy idle, socket/TLS/network
+loss, đổi account và reconnect storm nhiều replica trong campaign thực tế.
+
+5. K-16.03 — Threat model và control
+Auth/tenant/CSRF/path/parser/PDF cùng security negatives và threat mapping local
+đã có. Còn real IdP, edge TLS/security headers triển khai thật, quyền secret và
+collector, abuse/fairness trên cấu hình triển khai. Scanner local không là pentest.
+
+6. K-16.04 — Dependency và image
+R2 nhận diện bốn khai báo license trước đây chưa xác định theo version và hash
+của bộ notice: ItsDangerous là BSD-3-Clause; ReportLab/SciPy/xlrd giữ đầy đủ nhiều
+notice bằng ba SPDX LicenseRef. Có 52 khai báo được nhận diện; licenseConcluded
+vẫn NOASSERTION, không có phê duyệt pháp lý hoặc binary. Còn build/run image,
+OS scan, image SBOM/digest, UID/import/secret/volume thực. Notice SciPy ở platform/
+architecture khác cần review riêng. Kiên không chạy Docker trên Mac.
+
+7. K-16.05 — Alert và runbook
+R2 có agent local thực hiện: 20 readiness 503 -> burn alert -> operator lock
+timeout (không báo 0) -> ROLLBACK -> 20 readiness 200, kiểm session/capability và
+source commit/full hash -> alert resolved. Còn collector/routing/paging, người
+on-call thực và human/operator nghiệm thu ở môi trường triển khai.
+
+8. K-17.01 — Seed và import
+Importer native streaming/hash/scope/session có kiểm thật; R2 có source S/M/L
+1.000/10.000/100.000 dòng. Claim vẫn là 2/16/64 đúng model native. Còn chốt model/
+version hợp lệ cho guide 100/1.000/10.000 claim và graph 10.000 node; sau đó import
+thật 50k principal, 2k workspace, 10k project, 200k snapshot và 2 triệu result với
+payload đủ đa dạng. Không padding claim hoặc lấy metadata count thay byte thật.
+Primary guard vẫn từ chối trước khi ghi dữ liệu không đạt điều kiện.
+
+9. K-17.02 — Harness từ hành vi tới tải
+Đã có closed/open, actor riêng, current auth, job terminal, export full hash,
+offered/drop/unknown accounting, reconciliation và renewal local. Còn profile
+P01–P38 chốt với Quân và campaign đủ hành vi/dataset/50k engagement, cùng RC/profile/
+dataset. Mẫu 25 giây/100 principal chưa đủ steady primary 30 PHÚT, soak, browser,
+real IdP hoặc số mẫu p99. Không coi đủ 38 operation đã có recipe thực thi.
+
+10. K-17.03 — Tài nguyên máy phát tải
+Có calibration 100 principal và số đo CPU/RSS/FD; R2 bổ sung cây process API/worker/
+PG cùng cửa sổ đọc nền/health. Còn generator host riêng, NIC, CPU idle, RAM, FD,
+clock/RTT và SUT headroom trong campaign chính. RSS gồm pytest/fixture không là
+memory trên mỗi VU; mẫu nhỏ không chứng minh p99 hay khả năng phát tải 50k.
+
+11. K-18.01 — Release có thể tái dựng
+R2 cài 52 runtime pin theo artifact hash trong venv riêng, không dùng .pth/source
+reuse; kiểm đủ 667 runtime file và một analysis + ba report child thực. Có helper
+normalize wheel/sdist và so byte hai build với tool pin độc lập. Kiểm cuối công cụ
+còn có guard chống -O, closure dependency và provenance được ghi đúng phạm vi.
+Còn operator khác dựng trên Windows/Linux sạch, image/OS/UID/secret/TLS/volume thực
+và canary IdP. Venv Mac sạch không thay thế máy sạch hay Linux image.
+
+12. K-18.03 — Readiness, drain và rollout
+Native SIGTERM/SIGKILL, ACK replay, queued job, slow download/range/full hash/quyền
+hiện tại và child/pool cleanup đã kiểm. Còn pinned-image upgrade/rollback, nhiều
+replica và ingress/drain/health rollout thực. Ledger strict không chứng minh chạy
+lẫn binary cũ/mới; dùng drained upgrade/forward fix theo runbook hiện hành.
+
+13. K-18.04 — Backup, PITR và object
+Logical restore và native physical basebackup/WAL target đã kiểm object closure,
+checkpoint quyền/xóa mới nhất và witness. Còn dataset thực, mã hóa và storage độc
+lập ngoài host cho DB/WAL/object/checkpoint/key, cùng tình huống mất host và
+RPO <=5 phút/RTO <=30 phút đo bằng witness. Tiny cached same-host timing không là DR.
+
+4 MỤC CÒN MỞ
+
+14. K-17.04 — Normal, stress, spike và soak
+Cần cùng RC/profile/dataset đủ: 3 closed + 3 open normal, ramp 5k/10k/25k/50k,
+breakpoint/recovery, soak chính 2 giờ và extension 8 giờ có lý do/tài nguyên.
+Đang chặn bởi model/dataset/profile và topology được phép; không chỉ Docker/IdP.
+Không chạy tải vào hạ tầng hay dịch vụ ngoài phạm vi đã được cấp.
+
+15. K-17.05 — DB40/F26 dưới tải
+Có nhiều ca native riêng; R2 thêm row lock/pool full trong khi tenant khác đọc
+đúng byte: lỗi hữu hạn, không effect của lần lỗi; gỡ lỗi tạo đúng một effect và
+replay cùng receipt, pool sạch. Còn đủ 40 DB + 26 fault theo declared load, telemetry
+cùng cửa sổ và effect tới consumer; tách process/storage fault. Ma trận gốc có
+12 DB/4 fault passed LOCAL, không phải 66 ca đã chạy dưới tải chính. Bằng chứng mới
+được dẫn rõ, không dùng để tự đóng campaign hoặc các điều kiện chưa thực chạy.
+
+16. K-17.06 — Capacity và chi phí
+Có local debug envelope và số đo tài nguyên/byte, cùng correction export FIFO.
+Còn passing envelope trên topology thật và nguồn đơn giá/hóa đơn infra/DB/object/
+bandwidth/observability/generator/IdP/provider trên journey/job hoàn tất đúng.
+Chưa có giá thì để null, không ghi 0; không ngoại suy 100 VU thành capacity 50k.
+
+17. K-18.06 — Bàn giao chéo
+Kiên đã dựng source UI Quân mới nhất ở bản sao riêng: 327 unit, 13 Chrome và hai
+build đạt. Hosted budget FAIL hai file, cần Quân sửa/chốt. Quân còn dựng API/restore/
+canary cùng RC; hai bên đối chiếu 27 gate và gửi receipt/hash của chính mỗi bên.
+Chưa có Quân ký hoặc bằng chứng triển khai thì không tự đóng joint gate.
+
+CẦN QUÂN CHỐT
+Đọc 02-Phoi-hop/Gui-Quan-can-chot-K13-K18-20261113-R2.txt: tám mục có người phụ
+trách và đầu ra cụ thể — RC; hosted budget; K15 API/browser; wording và ca K13;
+model/version primary; workload/browser fanout; UI/manual gate; cross-owner/API/
+operator replay. Binding/request-start Quân đã làm được ghi nhận đúng hiện trạng.
+Kiên vẫn chịu phần backend/tooling. Quân không mặc định chịu thuê hạ tầng, IdP/
+provider trả phí hoặc on-call khi chưa có phân công của chủ dự án/operator.
+
+Mọi thử nghiệm Kiên trong lượt này không chạy Docker hoặc real IdP.
+/Users/apple/study/aletheia-lab chỉ đọc; không sửa/cài/build/test trong thư mục gốc.
+Giữ nguyên các ZIP/bằng chứng cũ. R2 có source/artifact identity riêng, giữ cả lượt
+failed và rerun. Đọc result-final.json tại Bang-chung/20261113-k13-k18-followup
+và gói R2 để biết số kiểm cuối, phạm vi, hash và các giới hạn chính xác.

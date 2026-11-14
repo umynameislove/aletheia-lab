@@ -1,0 +1,140 @@
+﻿GỬI QUÂN — K13–K18 / 13-11-2026
+
+Đây là bàn giao để Quân tiếp tục phía frontend và nghiệm thu chung. Chưa phải
+biên bản Quân đã nhận/đã chạy. Kiên chỉ đọc thư mục /Users/apple/study/aletheia-lab,
+không sửa, cài dependency, build hay chạy test ở đó. Kiểm tra source read-only
+hiện chưa thấy hai route/capability mới. UI đã có cover4giây trong
+hosted-bootstrap.ts; session.ts còn đóng dấu xác nhận lúc response settle, cần
+nối freshness tính từ REQUEST START thay vì coi cover đang thiếu hoàn toàn.
+Gói này không thay thế các ZIP K08–K12 đã niêm phong; dùng manifest RC mới đi kèm.
+Source/runtime/image/schema phải khớp cùng RC trước khi ghi kết quả nghiệm thu.
+
+1. K13 — xóa/retention
+
+DeletedProject hiện tại giữ nguyên: tombstoned + retained là đã nhận xóa logic,
+không phải xác nhận đã xóa hết byte. Khi caps.features['projects.deletion_status'] === true (flat map key):
+  GET /v1/workspaces/{workspace_id}/projects/{project_id}/deletion-status
+  HEAD cùng đường dẫn, không query, no-store, cần quyền read hiện tại trên project.
+
+DTO DeletionStatus có retained/purging/purged, requested_at/eligible_at/purged_at,
+project_retention_days, time_basis, pending_objects/shared_objects_retained và hai policy:
+raw_source_policy=workspace_sources_retained;
+backup_policy=operator_managed_not_erased_here.
+Purged vẫn có thể giữ byte đang được reference dùng chung cùng raw source/backup
+như count/policy mô tả. Hiển thị đúng phạm vi; không nói đã xóa source gốc/backup. Purged có purged_at; pending_objects=0
+không tự chứng minh purged. time_basis=migration_first_seen/restore_checkpoint
+phải hiển thị đúng nguồn thời gian, không suy diễn thành ngày delete commit thật.
+Revision là revision xóa project, không phải event sequence cho mọi bước purge;
+không bỏ qua status mới chỉ vì revision vẫn bằng nhau. Không có public purge,
+configure hay restore endpoint. Những việc đó chỉ owner/operator CLI được làm.
+Hủy dialog phía UI không gửi DELETE; receipt lỗi/unknown không tự báo thành công.
+
+2. K15 — job update có cursor
+
+Chỉ bật khi caps.features['jobs.polling_v1'] === true (flat map key). GET/HEAD:
+  /v1/workspaces/{workspace_id}/jobs/{job_id}/updates[?cursor=<opaque signed cursor>]
+GET /jobs/{id} và cancel/retry/output hiện tại giữ nguyên.
+
+JobUpdate: disposition=snapshot|unchanged|resync, revision, job có thể null,
+cursor, poll_after_ms và authorization_valid_for_ms=4000.
+- Snapshot/resync có job; unchanged bỏ job để giảm payload, không được xóa job UI.
+  Unchanged/same revision vẫn cập nhật cursor, poll_after_ms và lease hợp lệ từ
+  request start; chỉ dedup business state. cancel_requested vẫn pending request,
+  không phải cancelled/đã dừng worker hay đã hoàn tất fencing.
+- Revision monotonic cho trường trạng thái nhìn thấy; lease/heartbeat không tăng.
+- Đây là status coalescing, không phải event log bảo đảm thấy mọi bước trung gian.
+- Job revision gap hoặc catalog authority revision đổi:200 resync snapshot.
+  Membership/session generation/context bind đổi có thể làm cursor_invalid400.
+  Quyền thực đã bị thu hồi:deny, không lặp reset cursor để che lỗi quyền.
+- Cursor bind SERVER actor/context_id/session generation/workspace/job; không
+  bind browser tab ID. Không dùng xuyên client context,
+  account/workspace. Session DTO không lộ generation. Sau renew/reauth thành công,
+  cập nhật CSRF từ returned Session, để browser xử lý HttpOnly Set-Cookie, tăng local
+  client epoch, bỏ cursor và đọc snapshot mới; phối hợp renew giữa các tab.
+  Cursor expired410/invalid400 thì bỏ cursor và đọc snapshot mới nếu vẫn có quyền.
+- Pending có jitter2000–3499ms; Retry-After HTTP làm tròn lên giây. Không poll mọi
+  người dùng cố định2giây; chỉ job/panel đang quan sát. Terminal poll_after_ms=null.
+- null retryable nghĩa chưa biết; thao tác retry phải dùng quyền hiện tại của GET
+  hiện hữu, không đoán retry từ status polling.
+
+3. Quyền hiển thị tối đa4giây
+
+Đọc docs/k15-job-updates.md: lease tính từ REQUEST START bằng monotonic clock,
+không từ thời điểm response về. Response tới sau lease không gia hạn quyền cũ.
+Khi không kịp xác nhận quyền, phải che/xóa nội dung riêng tư theo lease, rồi kiểm
+lại. Backoff dài/terminal dừng status poll không cho phép giữ private UI vô hạn;
+watchdog quyền riêng phải theo đúng object/project đang hiển thị. Khi đổi account,
+workspace, tab, logout/revoke: hủy request cũ, bỏ cursor và cache riêng tư, không
+cho response cũ đè context mới. Mất mạng/ẩn tab rồi quay lại phải xác nhận lại.
+Yêu cầu chung revoke<=5giây cần test browser thật; backend local chưa thay cho UI.
+
+4. K14 — overload/retry/cancel
+
+429/503 có Retry-After/no-store. UI giữ ý định và idempotency key ban đầu khi
+retry cùng request; dùng jitter, không bấm tự động sinh job/key mới sau ACK lost.
+Browser disconnect không tự cancel job đã ACK. Timeout/partial download không
+phải completed; chưa biết outcome mutation phải tra/replay cùng key đúng scope.
+Hiển thị queue/running/failed/cancelled/expired theo DTO, không dùng waiting thành
+success. Một tab không được kéo vòng lặp poll đồng bộ tất cả job trong workspace.
+
+5. K16 — support/error/telemetry
+
+Chỉ thông báo safe Problem + request_id/job_id cần thiết. Không log cookie, token,
+CSRF, raw source/question hoặc dump error driver. Server correlation ID do server
+phát hành; không dựa request-ID do trình duyệt tự chèn để truy cập dữ liệu khác.
+Metric dùng nhãn route/method/status/stage cố định, không user/project/job làm label.
+Theo docs/k16-observability-runbook.md và k16-threat-model.md; scanner không thay
+cho kiểm quyền/UI. Image/Linux và collector/alert deployment cần nghiệm thu riêng.
+
+6. K17 — cần Quân cung cấp/đối chiếu hành vi thật
+
+Đối chiếu operation38, role, think-time, positive/negative journeys, browser fanout,
+reconnect/cross-tab và phân bố S/M/L với guide Thu-tai-50k.md. Chỉ sinh JSONL hoặc
+seed record count không phải benchmark DB hay50k active. Harness ghi offered/drop/
+reject/timeout/pending/completed, theo dõi job terminal và tải đủ export hash.
+
+Primary hiện còn mở: guide cần claim100/1000/10000 + graph10k; native analyzer chỉ
+hỗ trợ tối đa64series và các seed debug giữ đúng model thực. --require-primary
+phải fail trước ghi dữ liệu, không tăng limit/giả model để qua benchmark. Chưa chạy
+50k/200k snapshots/2M results trên staging,3normal,stress/spike,2h soak hay8h extension.
+Calibration100VU/debug chỉ chứng minh harness trên đúng scope được ghi trong report.
+Quân không ký G15/G18 chỉ từ kết quả này. Browser/provider/IdP là tier riêng.
+
+7. K18 — Quân dựng API, Kiên đối chiếu UI cùng RC
+
+Đọc deploy/hosted/README.txt để build non-root image và chuẩn bị config/secret/TLS,
+owner migration/role grants/canary/drain. Không dùng owner DSN chạy API/worker.
+Docker chưa được Kiên chạy trên Mac theo yêu cầu. Image build/scan và đăng nhập
+thật phải có receipt riêng. Không đưa secret vào source/ZIP/chat.
+
+Restore: target mới và offline; backup DB+objects đi với checkpoint quyền/xóa MỚI
+NHẤT ở inventory ngoài backup. Checkpoint phải sau snapshot backup. HMAC chỉ xác
+thực, không mã hóa. Cấm mở runtime/grant CONNECT trước khi áp checkpoint, revoke
+session cũ, xác minh schema/hash/tombstone/quyền và canary. Physical PITR cần chặn
+runtime bằng mạng/pg_hba từ đầu vì basebackup chứa role/grant. Native PITR/process
+proof nhỏ không chứng minh mất host, power-loss, productionRTO hay provider.
+Không down -v/prune volume hay xóa source người dùng. Giữ mọi log failed/rerun.
+
+8. Quân gửi lại
+
+- Source/runtime/image/client SHA và migration versions của RC thực chạy.
+- Binding tests cho hai route + capability fallback/old server, cursor400/410,
+  unchanged/resync, request-start4s lease, terminal/mất mạng/reconnect30%/đổi account,
+  logout/revoke/object grant và response cũ tới sau context switch.
+- UI delete accepted/purging/purged/raw-source/backup policy + cancel dialog.
+- Build/test/budget live/hosted và manual browser/accessibility; hosted budget cũ
+  đang mở không tự được đóng bởi thay đổi backend.
+- Docker image/config/secret mount/non-root/readiness/drain/restore receipts;
+  dữ liệu đã che secret, thời gian UTC, exactcommands/exitcodes và mọi run lỗi.
+- Đối chiếu 27 release gates; chưa có cross-owner replay thì giữ G26 mở.
+
+Cập nhật local cuối: sau bounded export FIFO1active+4waiters, giữ nguyên business workload100VU/
+open25giây và deadline đạt486/486positive+14deny đúng,21jobs/50exports đủ hash,0reject/timeout/
+pending; source cũ có18export503 được giữ nguyên. Renewal thật3lần cũng đạt.
+Đây là fixture nhỏ, n<10k/stratum;25giây chưa đủ một cửa sổ active30giây và
+chưa đủ30phút steady primary, không chứng minh
+primary50k/SLO production. Xem kết quả RC mới và resource-cost-summary.json.
+
+Thư mục contract chứa ví dụ SYNTHETIC đã validate, cursor ví dụ KHÔNG phải runtime
+token hợp lệ. OpenAPI/matrix phản ánh producer, không phải joint acceptance.
+Không có credentials thật hoặc actors.jsonl trong gói này.

@@ -1,0 +1,120 @@
+﻿GỬI QUÂN — CÁC ĐIỂM CẦN CHỐT K13–K18 / BỔ SUNG R2 / 13-11-2026
+
+Đây là yêu cầu bàn giao để Quân phản hồi; chưa phải xác nhận Quân đã nhận, đồng ý
+hoặc đã nghiệm thu. Không yêu cầu Quân làm thay phần backend của Kiên.
+Bản TXT/gói 13-11 trước được giữ nguyên; nội dung dưới cập nhật theo source mới.
+Kiên chỉ đọc /Users/apple/study/aletheia-lab. Mọi npm/test/build/Chrome chạy trong
+bản sao riêng tại Bang-chung/20261113-k13-k18-followup/ui-replay/source.
+
+ĐÃ ĐỐI CHIẾU — KHÔNG GIAO LẠI VIỆC QUÂN ĐÃ LÀM
+Source hiện có projects.deletion_status, jobs.polling_v1, DeletionStatus và tests
+hosted-k13-k15. Session guard đã dùng sentAt và bỏ response hết cửa sổ quyền.
+Kiên dựng bản sao bằng Node 24.22.2/npm 11.19.1:327/327 test,13/13 Chrome đạt;
+không skip. Build live+hosted đạt. Chrome dùng HTTP/fetch kiểm soát và fixture
+synthetic; chưa phải UI nối API hiện hành/IdP thật. Không ký joint gate từ mock.
+UI/fixture snapshot161 file, hash canonical path→SHA256:
+c2a2dda0553f2fd66b749b220e07495eb35a929ebe1b2c6f1f5000411ec5e1dd
+Các file đã sao chép được băm lại ở thư mục tham khảo sau lượt chạy: không đổi.
+
+1. CHỐT BẢN SOURCE VÀ PHẠM VI ĐÃ NHẬN — Quân + Kiên
+Quân trả client source/build hash, Node/npm, API/runtime/image/schema version đã
+thực chạy và xác nhận đang dùng contract của gói nào. Kiên cung cấp hash backend
+trong gói R2 cuối, giữ riêng baseline cũ. Không ghép log của hai RC thành một pass.
+Đầu ra cần: TXT ngắn ghi định danh và thư mục log; chưa chạy thì ghi chưa chạy.
+
+2. SỬA VÀ CHỐT HOSTED BUDGET — Quân
+Giữ đúng ngưỡng hiện hữu của scripts/bundle-budget.mjs:
+- Hosted index-NOhH4gxj.js:81.893 byte gzip, ngưỡng80.000 — vượt1.893 byte.
+- HostedApp-EI1m9k9k.js:26.858 byte gzip, ngưỡng25.000 — vượt1.858 byte.
+- Live index-BhIBpZuj.js:79.376/80.000 byte — đạt.
+Các file/chunk đổi tên theo build; đo lại từ index.html của build mới. Đề xuất tối
+ưu import/code splitting trước. Không tự tăng ngưỡng để đổi FAIL thành PASS.
+Đầu ra cần: source diff, npm test, build live/budget rồi build hosted/budget, đầy đủ
+exit code và gzip byte từng file. Kiên giữ nguyên log FAIL hiện tại để đối chiếu.
+
+3. CHỐT K15 VỚI API THẬT VÀ TRÌNH DUYỆT — Quân chạy, Kiên hỗ trợ backend
+Code/request-start và U5 scripted fetch đã có; còn cần receipt kết hợp API thật:
+- Pending-only, snapshot/unchanged/resync, same revision vẫn nhận cursor/pacing;
+  cancel_requested không hiển thị đã cancelled; terminal dừng status poll.
+- Cursor400/410 bỏ cursor khi còn quyền;403/404 do mất quyền phải dừng/che dữ liệu,
+  không reset vô hạn. Membership/session bind và catalog gap không đánh đồng.
+- Response chậm quá4 giây không được mở/gia hạn nội dung cũ; private object/result
+  cũng phải được xác nhận quyền hiện tại, không chỉ /session hoặc capabilities.
+- Đổi account/workspace, logout/revoke/grant, back/deep-link, hai tab renew đồng
+  thời: local epoch/cursor/cache/CSRF đúng; cookie HttpOnly do browser xử lý.
+- Mất mạng/tab ẩn-hiện/proxy idle rồi quay lại và30% reconnect: không storm,
+  không response cũ đè scope mới. Revoke hiển thị<=5 giây cần mốc revoke+cover.
+Đầu ra cần: tên từng ca, browser/OS, timestamp monotonic/UTC phù hợp, request trace
+đã che cookie/CSRF, assertion và log. Scripted fetch/controlled HTTP ghi riêng.
+
+4. CHỐT NGÔN NGỮ VÀ NGHIỆM THU K13 — Quân + Kiên
+Quân đã có binding và Chrome ca status/cancel dialog. Chốt wording theo backend:
+retained=đã xóa logic nhưng còn giữ; purging=đang dọn; purged=đã dọn phạm vi project.
+Raw source workspace, shared reference và backup vẫn theo policy được trả về.
+Không nói đã xóa mọi byte/backup; pending_objects=0 không thay status=purged.
+Time basis restore_checkpoint/migration_first_seen không phải ngày delete commit.
+Kiên giữ default project30ngày/terminaljob7ngày; operator cấu hình theo policy thật,
+Quân không tự đổi policy backend. Backup expiry/erasure do operator/product owner
+xác nhận, không có thời hạn xóa backup được bảo đảm trong DTO này.
+Đầu ra cần: wording chốt, ca capability bật/tắt, cancel dialog không DELETE, trạng thái giữ
+revision nhưng đổi tiến độ, cùng ca API thật deny result/export sau delete/restore.
+
+5. CHỐT MODEL VÀ DỮ LIỆU PRIMARY — Kiên + Quân; quyết định phạm vi thuộc đội
+Đây là chặn về model, không chỉ thiếu máy: analyzer native hiện tối đa64series;
+seed thực tạo2/16/64claim. Guide cần100/1.000/10.000claim và graph10.000node.
+Đề xuất: giữ model hiện tại đúng nghĩa; bổ sung contract/model có version cho dữ
+liệu lớn, với nguồn claim/evidence/citation/graph hợp lệ và publication/job thật.
+Quân chốt consumer có đọc đủ pagination/subgraph, tìm kiếm/citation và trạng thái
+loading/error trên model mới; Kiên chịu trách nhiệm implementation producer.
+Nếu chọn fixture read/graph stress synthetic riêng thì phải ghi là lane riêng,
+không dùng nó ký pass campaign primary hiện hành. Không padding claim, đổi limit
+hoặc đổi định nghĩa50k để qua gate. Cần văn bản chọn hướng/version/fixture trước
+khi khóa lại primary profile. Chưa quyết định thì K17.01/.04/.05/.06 và G10/G15/G18
+liên quan vẫn mở đúng phạm vi; không biến đề xuất này thành phê duyệt sẵn.
+
+6. CHỐT WORKLOAD VÀ BROWSER FANOUT — Quân cung cấp, Kiên đo/server harness
+Trả bảng operationP01–P38: có/không/dedicated/browser/IdP, role, journey, tỷ trọng,
+think-time, double click/tab, reconnect và HTTP/status fanout đã quan sát hoặc ghi
+rõ là giả định. Chốt cohort/S-M-L/cold-warm/hot tenant trước run, không sửa sau
+khi thấy số. Quân cung cấp browser cohort và UX task; Kiên chịu offered/drop/job/
+export accounting, DB/fault/resource measurement và load execution.
+Quan sát6–10người chỉ hỗ trợ phát hiện UX, không chứng minh đại diện50k.
+Không bắt Quân tự cấp hạ tầng/IdP/provider trả phí. Ai vận hành môi trường, cấu
+hình/host nào và ngân sách được phép phải được chủ dự án/operator xác nhận riêng.
+
+7. CHỐT UI MANUAL VÀ CÁC GATE CỦA QUÂN — Quân
+G09 navigation/races;G12 design;G13 keyboard/screenreader/zoom/focus/contrast;
+G14 UX behavior; phần UI của G08 citation,G10 large data,G19 export,G20 retention,
+G23 CSP/XSS/no-secret-console.327unit+13 Chrome hiện tại không thay manual AA,
+không xác nhận screenreader/thiết bị/mạng/primary10k data chưa chạy.
+Đầu ra cần checklist từng ca và môi trường, ảnh/video nếu cần, raw log đã che
+secret, ghi fail/skip/chưa chạy rõ. Không đánh passed toàn bộ từ build thành công.
+
+8. CHỐT BÀN GIAO CHÉO VÀ TRIỂN KHAI — Quân + Kiên + operator
+Kiên đã độc lập rebuild UI như trên; Quân còn dựng API/vertical slice theo gói
+R2 và chạy restore/canary quyền sai trên môi trường được phép. Nếu dùng Docker
+hoặc IdP thì chạy bên Windows/Linux/operator, Kiên không khởi chạy trên Mac.
+Giữ command/exit code/log/source+runtime+image+schema/hash và mọi lần lỗi.
+K18 storageDR còn cần DB/WAL/object/checkpoint/key được mã hóa ở storage ngoài
+host, failed-host witness và dataset thật; tiny local restore không thay thế.
+Operator chốt nơi nhận alert/on-call, routing và policy backup/key thực tế;
+Quân không phải người mặc định gánh việc vận hành nếu chưa được phân công.
+Đối chiếu27dòng Gate-phat-hanh.csv: chỉ ký từng gate khi đủ bằng chứng cả hai bên.
+G26 chưa pass chỉ vì Kiên chạy UI; không tự điền quan_evidence bằng log Kiên.
+
+QUÂN GỬI LẠI MỘT THƯ MỤC
+00-Phan-hoi.txt: đã nhận RC nào; từng mục1–8 đã chốt/chưa, quyết định và lý do.
+01-Source-va-build: source/diff + manifest/build/budget logs, không node_modules.
+02-Browser: testcase/result/raw logs, ghi controlled transport/API thật/IdP rõ.
+03-API-operator: kết quả replay/restore/Docker nếu được phân công, giữ cả failed.
+04-Gates: evidence path và verdict theo từng gate; chưa chạy giữ mở.
+SHA256SUMS hoặc hash ZIP đặt ngoài ZIP sau khi nén. Không gửi secrets, cookie,
+CSRF, actor/session file, .env thật, DB URL, private dump/key hoặc volume người dùng.
+
+Kiên sẽ tự xử lý các thiếu sót backend local thuộc mình; các mục trên là phần
+cần Quân/đội xác nhận hoặc cung cấp bằng chứng, không phải lời xác nhận đã pass.
+
+Lưu ý runtime Windows: lock 52 pin hiện dùng cho profile production/Linux và đã
+kiểm local Mac. Click/Typer có dependency colorama riêng Windows, chưa nằm trong
+profile này. Chạy proof exact-52 ở WSL/Linux; Windows native dev tests ghi riêng.
+Không thêm dependency không pin hoặc nới checker để nhận pass máy sạch Windows.

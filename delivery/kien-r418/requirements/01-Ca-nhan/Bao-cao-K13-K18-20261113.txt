@@ -1,0 +1,123 @@
+﻿BÁO CÁO K13–K18 — 13/11/2026
+
+Đã triển khai và kiểm tra những phần có thể làm trên máy hiện tại. Chưa đạt
+nghiệm thu toàn bộ K13–K18 hoặc release production.
+
+Trong 31 tiêu chí: 14 đạt local, 13 mới có bằng chứng một phần, 4 còn mở.
+K13 có 5/5 tiêu chí local đạt. Chi tiết từng dòng nằm trong 03-Tieu-chi-K13-K18.csv
+và proofs/acceptance-final-review.json; các gate triển khai/chung không được tự đóng.
+
+ĐỊNH DANH BẢN BÀN GIAO
+Source: 2488 file
+c5410f5021643d565bbb5365989459a49a2eeb62ca72fa6e81ca48aa49b683c6
+Runtime: 667 file
+ d5209e5f4f64bf51165229df465b403a98ca0003ff722d1dc32d0016f0c2af31
+SOURCE_DATE_EPOCH: 1794540675
+Không có Git commit mới hoặc remote CI. Runtime tree 61e0308... trong receipt
+K17 dùng một cách mã hóa khác của cùng 667 file, đã được đối chiếu độc lập.
+
+KIỂM TRA CUỐI — KHÔNG CỘNG TRÙNG
+- 2.900 unit test đạt; 13 test dành riêng Windows bị bỏ qua trên Mac. Năm case
+  integration được tách sang lượt PostgreSQL.
+- Lượt native tổng đạt 407 bài, bỏ qua 7 bài. Sau đó chạy riêng 5 opt-in trên đúng
+  source đóng băng, cả 5 đạt. Tổng unique: 412 đạt, còn 2 bài Docker recovery chưa chạy.
+- Ruff và strict mypy đạt cho 45 module thay đổi.
+- OpenAPI kiểm 102 cặp method/path trên 58 đường dẫn và 102 schema. Đây là
+  inventory handler có điều kiện, không phải 102 business operation đã nghiệm thu.
+- Wheel và sdist khớp đủ 667 file runtime. Cài wheel không editable vào venv mới,
+  chạy thật một analysis child và ba report child; font, Unicode, ID và hash đạt.
+  Test dependency local được dùng lại qua .pth; chưa phải kiểm máy sạch/Linux image.
+- Audit 52 package runtime và 3 build pin: không có lỗ hổng đã biết tại thời điểm
+  quét. Đã sửa wheel 0.45.1/CVE-2026-24049 lên 0.46.2 cùng packaging 26.3;
+  bằng chứng audit lỗi cũ được giữ nguyên. Image/OS scan vẫn chưa chạy.
+
+TỪNG PHẦN
+
+K13 — Delete và retention
+Có API tiến độ retained/purging/purged, phân biệt dữ liệu project với source và
+backup. Owner CLI purge/expire chạy theo batch; bảo vệ shared reference, read
+lease và backup barrier. Writer cũ bị fencing; purge xóa cả tên riêng của project.
+Hai kiểm tra bổ sung đạt: cleanup trong khi reader/job còn hoạt động; sau restore,
+HTTP bằng session mới chặn đúng result/export/download/range/refresh đã bị xóa.
+Raw source và dữ liệu dùng chung vẫn đọc được theo quyền hiện tại.
+
+K14 — Tài nguyên và backpressure
+Đã giới hạn pool, blocking work, hàng chờ, logical assembly và cancellation.
+Bài 200 MiB giữ nguyên kích thước/assert/deadline đạt; RSS đo khoảng 1,09 GiB,
+tính cả fixture/driver copies. Mức 400 MiB là logical assembly budget, không phải
+cam kết RSS. Đã sửa export burst bằng FIFO 1 active + 4 waiter trước khi tải view,
+kiểm lại quyền và replay receipt; giữ nguyên một renderer và deadline.
+37 unit + 9 native riêng kiểm queue/revoke/cancel/replay/child cleanup đạt.
+Budget nhiều replica, FD/NIC và fairness dưới tải triển khai còn cần đo.
+
+K15 — Job update
+Có snapshot polling, revision bền, cursor theo scope, gap/resync, kiểm quyền hiện
+tại, jitter/backoff và reconnect bound. Bài 100 pending job + 30% reconnect đạt
+130/130 lượt đọc. Phía Quân còn cần tích hợp lease 4 giây tính từ REQUEST START,
+loại response cũ và kiểm browser khi mất mạng, đổi tab/account/workspace.
+Backend từ chối lượt đọc tiếp theo chưa đủ chứng minh revoke trên UI trong 5 giây.
+
+K16 — Quan sát và bảo mật
+Có log/metric hữu hạn, request/action/job correlation, stage/pool/loop observation,
+alert và runbook đã diễn tập local; security negatives và dependency inventory đạt.
+Còn image thật, OS scan, collector/on-call, quyền secret/volume và review bốn
+NOASSERTION/bundled license notice. Không coi scanner local là pentest đầy đủ.
+
+K17 — Seed và harness tải
+Có importer native thật, hash/scope/projection/session manifest; harness closed/open
+HTTP, xác minh role/principal, đếm đầy đủ offered/drop/reject/timeout/pending,
+theo job tới terminal, tải toàn file và đối chiếu write chưa biết outcome.
+Renewal thật ba lần giữ actor/context: cookie cũ 401, cookie mới 200; không sửa
+DB clock hoặc lách absolute expiry/IdP.
+
+Sau sửa FIFO, giữ nguyên business demand 100 VU/open 25 giây/20 action mỗi giây,
+60:35:5, 32 action slot và deadline: 500 offered/terminal gồm 486/486 positive
+đúng trong deadline và 14 deny đúng; 21 job, 50 export đủ hash; không reject/drop/
+timeout/unknown/pending. Hai lượt lỗi cũ 96,48% và 96,296% với 17/18 export 503
+vẫn được giữ nguyên. Mẫu này chưa đủ active window 30 giây, steady primary
+30 PHÚT hoặc n>=10k/stratum để nghiệm thu p95/p99/50k.
+
+K18 — Migration, deploy và phục hồi
+Migration V14→V16 giữ nguyên byte của 14 DDL cũ, review SQL V1/V2 và ledger/history
+khi có read traffic. Có Dockerfile/lock/config/secret/role CLI/runbook cùng kiểm
+metadata độc lập; chưa build hoặc chạy Docker trên Mac theo yêu cầu.
+Logical restore và physical PG16 basebackup/WAL đều đã kiểm object closure và
+checkpoint quyền/xóa mới nhất trước khi mở runtime. Hai effect đã ACK giữ đúng,
+witness sau target không xuất hiện. Timing khoảng 0,5 giây là fixture nhỏ trên
+cùng host/cache; không phải RPO/RTO production khi mất host/storage.
+API/worker SIGKILL/SIGTERM, ACK replay và stale-worker fencing đạt. Bài download
+8 MiB đang chạy cùng queued job phục hồi đúng range/full hash/quyền trong 11,389
+ giây; download cũ bị client hủy được ghi là chưa hoàn tất.
+
+HỒI QUY DỮ LIỆU L
+Pipeline 100.000 dòng vật lý, PG/queue/catalog/worker thật đạt trong 403,60 giây.
+End-to-end: confirm 34,13s; analysis 109,36s; refresh 101,77/93,80s. Đây là số đo
+một fixture, chưa đủ chứng minh SLO thống kê. Canonical source giữ đủ row;
+report aggregate có giới hạn là model đã công bố, không phải âm thầm bỏ dữ liệu.
+JSON/Markdown/PDF được tải có quyền và đối chiếu toàn byte/hash. Lượt này có
+63 heartbeat true/0 false; receipt RC cũ 82 true/1 false không bị sửa lại.
+
+CÁC ĐIỀU KIỆN CÒN MỞ
+1. Primary dataset: guide cần 100/1.000/10.000 claim và graph 10k, trong khi native
+   analyzer hiện giới hạn 64 series. Primary guard từ chối sớm; không padding
+   hoặc giả model. Cần quyết định model/fixture contract hợp lệ trước campaign.
+2. Chưa thực chạy dữ liệu đủ 50k principal/200k snapshot/2M result trên staging;
+   3 closed + 3 open normal, stress/spike 5k/10k/25k, soak 2h/8h, DB40/F26 dưới
+   declared load, chi phí và generator headroom trên host riêng chưa nghiệm thu.
+3. Docker image/OS scan/UID/secret/volume/TLS/rollout thật, real IdP, collector và
+   backup/WAL/object/key DR trên storage độc lập còn cần operator thực hiện.
+4. Quân/browser binding, lease/reconnect, hosted budget/accessibility và cross-owner
+   rebuild/27 release gate còn mở. Đã soạn TXT + folder cho Quân, chưa có xác nhận
+   Quân nhận hoặc chạy. Đọc CSV để biết chính xác 13 partial và 4 open.
+
+DỌN DẸP VÀ BÀN GIAO
+Đã dừng native PG 50813 và hai PITR port 50814/50815; dọn schema/role/DB thử con,
+xóa private DB URL/password/data runtime, thu hồi khoảng 220 MB dữ liệu tạm.
+Không động Docker/container/volume hay source gốc của người dùng.
+/Users/apple/study/aletheia-lab chỉ được đọc, không npm/test/build/edit trong đó.
+
+Đọc 01-Huong-dan-Windows-Linux-K13-K18.txt để chuyển máy/chạy lại. Trong audit:
+api: tương ứng source/; path phase nằm dưới proofs/; canonical: trỏ tracking hoặc
+workspace gốc. Gói không chứa actors.jsonl, private fixture tmp hoặc secret thật.
+Gửi kết quả bằng output mới, giữ cả failed/rerun, log/JUnit/JSON/version và hash ZIP
+ở bên ngoài ZIP. Source và các ZIP K08–K12 đã niêm phong trước đây được giữ nguyên.
