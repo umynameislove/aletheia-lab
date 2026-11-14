@@ -14,7 +14,7 @@ from aletheia_lab.product.evidence import (
 from aletheia_lab.project.identity import PROJECT_ID_PATTERN, SNAPSHOT_ID_PATTERN
 from aletheia_lab.project.persistence import ProjectStore
 from aletheia_lab.project.regression import ProjectEvidenceBundle, ProjectEvidenceReference
-from aletheia_lab.project.snapshots import ProjectSnapshot
+from aletheia_lab.project.snapshots import AnyProjectSnapshot
 
 _EVIDENCE_NOT_AVAILABLE_MESSAGE: Final[str] = "Evidence is not available for this snapshot."
 _STORE_INTEGRITY_MESSAGE: Final[str] = "Stored evidence failed its integrity check."
@@ -42,12 +42,12 @@ def _load_scoped_snapshot(
     store: ProjectStore,
     project_id: str,
     snapshot_id: str,
-) -> ProjectSnapshot:
+) -> AnyProjectSnapshot:
     snapshots = {record.record_id for record in store.list_records(project_id, "snapshot")}
     if snapshot_id not in snapshots:
         raise ProductError("evidence_not_available", _EVIDENCE_NOT_AVAILABLE_MESSAGE)
     snapshot = store.load(snapshot_id)
-    if not isinstance(snapshot, ProjectSnapshot) or snapshot.project_id != project_id:
+    if not isinstance(snapshot, AnyProjectSnapshot) or snapshot.project_id != project_id:
         raise ValueError("stored snapshot does not match evidence scope")
     return snapshot
 
@@ -55,7 +55,7 @@ def _load_scoped_snapshot(
 def _matching_evidence_bundles(
     store: ProjectStore,
     project_id: str,
-    snapshot: ProjectSnapshot,
+    snapshot: AnyProjectSnapshot,
 ) -> tuple[ProjectEvidenceBundle, ...]:
     matches: list[ProjectEvidenceBundle] = []
     for record in store.list_records(project_id, "evidence_bundle"):

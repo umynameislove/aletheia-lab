@@ -10,9 +10,9 @@ timestamp from mutation.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated, Final, Literal, TypeVar
+from typing import Annotated, Final, Generic, Literal, Self, TypeAlias, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, field_validator, model_validator
 
 from aletheia_lab.project.collectors import ProjectFileCollection, ProjectGitState
 from aletheia_lab.project.contracts import ProjectBundle, build_project_bundle
@@ -27,9 +27,17 @@ from aletheia_lab.project.identity import (
     normalize_text,
 )
 from aletheia_lab.project.mapping import (
+    AnyMappingConfiguration,
+    AnyMappingResult,
+    AnyMetricObservation,
     MetricObservation,
-    ProjectMappingConfiguration,
-    ProjectMappingResult,
+    MetricObservationV2,
+    ProjectMappingConfigurationV2,
+    ProjectMappingResultV2,
+    metric_identity,
+    metric_sort_key,
+    validate_mapping_dimensions,
+    validate_metric_units,
 )
 
 PROJECT_SNAPSHOT_SCHEMA_VERSION: Final[Literal["project-snapshot/v1"]] = (
@@ -119,10 +127,11 @@ def _state_payload(
     baseline_run_id: str,
     collectors: tuple[SnapshotCollectorBinding, ...],
     items: tuple[ProjectSnapshotItem, ...],
-    metric_observations: tuple[MetricObservation, ...],
+    metric_observations: tuple[AnyMetricObservation, ...],
+    schema_version: str = PROJECT_SNAPSHOT_STATE_SCHEMA_VERSION,
 ) -> dict[str, object]:
     return {
-        "schema_version": PROJECT_SNAPSHOT_STATE_SCHEMA_VERSION,
+        "schema_version": schema_version,
         "project_id": project_id,
         "source_bundle_id": source_bundle_id,
         "source_bundle_sha256": source_bundle_sha256,
@@ -140,20 +149,24 @@ def _state_payload(
     }
 
 
-def _record_digest(*, state_sha256: str, captured_at: str) -> str:
+def _record_digest(*, state_sha256: str, captured_at: str,
+                   schema_version: str = PROJECT_SNAPSHOT_RECORD_SCHEMA_VERSION) -> str:
     return canonical_project_sha256(
         {
-            "schema_version": PROJECT_SNAPSHOT_RECORD_SCHEMA_VERSION,
+            "schema_version": schema_version,
             "state_sha256": state_sha256,
             "captured_at": captured_at,
         }
     )
 
 
-class ProjectSnapshot(_StrictFrozenModel):
+_ObservationT = TypeVar("_ObservationT", MetricObservation, MetricObservationV2)
+
+
+class _ProjectSnapshotBase(_StrictFrozenModel, Generic[_ObservationT]):
     """One immutable and recursively self-validating project state."""
 
-    schema_version: Literal["project-snapshot/v1"] = PROJECT_SNAPSHOT_SCHEMA_VERSION
+    schema_version: str
     snapshot_id: str = Field(pattern=SNAPSHOT_ID_PATTERN)
     project_id: str = Field(pattern=PROJECT_ID_PATTERN)
     source_bundle_id: str = Field(pattern=PROJECT_BUNDLE_ID_PATTERN)
@@ -166,7 +179,7 @@ class ProjectSnapshot(_StrictFrozenModel):
     baseline_run_id: str = Field(min_length=1, max_length=128)
     collectors: tuple[SnapshotCollectorBinding, ...]
     items: tuple[ProjectSnapshotItem, ...]
-    metric_observations: tuple[MetricObservation, ...]
+    metric_observations: tuple[_ObservationT, ...]
     captured_at: str
     state_sha256: Sha256
     record_sha256: Sha256
@@ -208,27 +221,23 @@ class ProjectSnapshot(_StrictFrozenModel):
     @field_validator("metric_observations")
     @classmethod
     def _canonical_metrics(
-        cls, values: tuple[MetricObservation, ...]
-    ) -> tuple[MetricObservation, ...]:
+        cls, values: tuple[_ObservationT, ...]
+    ) -> tuple[_ObservationT, ...]:
         ids = tuple(value.observation_id for value in values)
         identities = tuple(
-            (value.run_id, value.metric_name, value.step) for value in values
+            metric_identity(value) for value in values
         )
         if not values or len(ids) != len(set(ids)) or len(identities) != len(set(identities)):
             raise ValueError("snapshot metrics must be non-empty with unique identities")
         return tuple(
             sorted(
                 values,
-                key=lambda value: (
-                    value.run_id,
-                    value.metric_name,
-                    -1 if value.step is None else value.step,
-                ),
+                key=metric_sort_key,
             )
         )
 
     @model_validator(mode="after")
-    def _identity_reconciles(self) -> ProjectSnapshot:
+    def _identity_reconciles(self) -> Self:
         item_ids = {value.project_item_id for value in self.items}
         if any(value.project_item_id not in item_ids for value in self.metric_observations):
             raise ValueError("snapshot metrics reference an item outside the snapshot")
@@ -247,6 +256,7 @@ class ProjectSnapshot(_StrictFrozenModel):
             collectors=self.collectors,
             items=self.items,
             metric_observations=self.metric_observations,
+            schema_version=self.schema_version.replace("project-snapshot/", "project-snapshot-state/"),
         )
         expected_state = canonical_project_sha256(state)
         if self.state_sha256 != expected_state:
@@ -254,19 +264,48 @@ class ProjectSnapshot(_StrictFrozenModel):
         if self.snapshot_id != f"p3-snapshot-{expected_state}":
             raise ValueError("snapshot_id does not match snapshot state")
         if self.record_sha256 != _record_digest(
-            state_sha256=expected_state, captured_at=self.captured_at
+            state_sha256=expected_state, captured_at=self.captured_at,
+            schema_version=self.schema_version.replace("project-snapshot/", "project-snapshot-record/"),
         ):
             raise ValueError("record_sha256 does not match snapshot audit record")
         return self
+
+
+class ProjectSnapshot(_ProjectSnapshotBase[MetricObservation]):
+    """One immutable and recursively self-validating project state."""
+
+    schema_version: Literal["project-snapshot/v1"] = PROJECT_SNAPSHOT_SCHEMA_VERSION
+
+
+class ProjectSnapshotV2(_ProjectSnapshotBase[MetricObservationV2]):
+    schema_version: Literal["project-snapshot/v2"] = "project-snapshot/v2"
+
+    @model_validator(mode="after")
+    def _units_are_consistent(self) -> Self:
+        validate_metric_units(self.metric_observations)
+        return self
+
+
+AnyProjectSnapshot: TypeAlias = ProjectSnapshot | ProjectSnapshotV2
+_SNAPSHOT_ADAPTER = TypeAdapter(Annotated[AnyProjectSnapshot, Field(discriminator="schema_version")])
+
+
+def parse_project_snapshot(value: object) -> AnyProjectSnapshot:
+    return (_SNAPSHOT_ADAPTER.validate_json(value) if isinstance(value, str | bytes)
+            else _SNAPSHOT_ADAPTER.validate_python(value))
 
 
 def _reconcile_sources(
     bundle: ProjectBundle,
     collection: ProjectFileCollection,
     git_state: ProjectGitState,
-    configuration: ProjectMappingConfiguration,
-    result: ProjectMappingResult,
+    configuration: AnyMappingConfiguration,
+    result: AnyMappingResult,
 ) -> None:
+    try:
+        validate_mapping_dimensions(configuration, result)
+    except ValueError as exc:
+        raise ProjectSnapshotError("mapping metric dimensions do not reconcile") from exc
     if collection.project_id != bundle.project_id or git_state.project_id != bundle.project_id:
         raise ProjectSnapshotError("snapshot sources belong to different projects")
     if (
@@ -325,11 +364,11 @@ def build_project_snapshot(
     bundle: ProjectBundle,
     collection: ProjectFileCollection,
     git_state: ProjectGitState,
-    configuration: ProjectMappingConfiguration,
-    result: ProjectMappingResult,
+    configuration: AnyMappingConfiguration,
+    result: AnyMappingResult,
     *,
     captured_at: str,
-) -> ProjectSnapshot:
+) -> AnyProjectSnapshot:
     """Mint a deterministic snapshot from independently revalidated sources."""
 
     checked_bundle = _checked(bundle)
@@ -337,6 +376,9 @@ def build_project_snapshot(
     checked_git = _checked(git_state)
     checked_configuration = _checked(configuration)
     checked_result = _checked(result)
+    version2 = isinstance(checked_configuration, ProjectMappingConfigurationV2)
+    if version2 != isinstance(checked_result, ProjectMappingResultV2):
+        raise ProjectSnapshotError("mapping configuration and result versions differ")
     captured_at = _canonical_timestamp(captured_at)
     _reconcile_sources(
         checked_bundle,
@@ -399,9 +441,11 @@ def build_project_snapshot(
         collectors=collectors,
         items=items,
         metric_observations=checked_result.metric_observations,
+        schema_version="project-snapshot-state/v2" if version2 else PROJECT_SNAPSHOT_STATE_SCHEMA_VERSION,
     )
     state_sha256 = canonical_project_sha256(state)
-    return ProjectSnapshot(
+    model = ProjectSnapshotV2 if version2 else ProjectSnapshot
+    return model.model_validate(dict(
         snapshot_id=f"p3-snapshot-{state_sha256}",
         project_id=checked_bundle.project_id,
         source_bundle_id=checked_bundle.project_bundle_id,
@@ -417,5 +461,6 @@ def build_project_snapshot(
         metric_observations=checked_result.metric_observations,
         captured_at=captured_at,
         state_sha256=state_sha256,
-        record_sha256=_record_digest(state_sha256=state_sha256, captured_at=captured_at),
-    )
+        record_sha256=_record_digest(state_sha256=state_sha256, captured_at=captured_at,
+            schema_version="project-snapshot-record/v2" if version2 else PROJECT_SNAPSHOT_RECORD_SCHEMA_VERSION),
+    ))
