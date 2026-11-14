@@ -62,7 +62,8 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[dev,provenance,hosted]"
+          python -m pip install -e ".[dev,provenance]"
+          python -m pip install -e ".[hosted]"
       - name: Test architecture and maintainability contracts
         run: python scripts/run_test_profile.py contract
       - name: Prepare pinned test dataset
@@ -127,6 +128,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev,provenance]"
+          python -m pip install -e ".[hosted]"
       - name: Test Windows project boundary
         run: python scripts/run_test_profile.py project -- --durations=20
       - name: Test Windows offline product flow
