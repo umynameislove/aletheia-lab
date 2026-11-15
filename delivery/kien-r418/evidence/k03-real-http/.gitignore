@@ -1,0 +1,3 @@
+# Raw copies are sealed and published in raw-test-logs.zip.
+/attempt-*/
+/ci-*/

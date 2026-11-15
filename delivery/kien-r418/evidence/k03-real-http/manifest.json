@@ -1,0 +1,58 @@
+{
+  "delivery/kien-r418/evidence/k03-real-http/.gitattributes": {
+    "sha256": "82cfda782141e01a859b637e3ed6946ec1c7ef1ca8b2d83dbe8fc9bad42508ba",
+    "bytes": 145
+  },
+  "delivery/kien-r418/evidence/k03-real-http/.gitignore": {
+    "sha256": "b46f4ec77f9e459c2093fc4f6a76c796bcc5a9da6532201cf34a10cd3a8d0cf4",
+    "bytes": 82
+  },
+  "delivery/kien-r418/evidence/k03-real-http/attempts.json": {
+    "sha256": "9d9e1af64d929b3590b86273d691d4914e67e96e21d850e73f17bccc15a7ce0e",
+    "bytes": 3664
+  },
+  "delivery/kien-r418/evidence/k03-real-http/baseline.json": {
+    "sha256": "282ca966e8fe7191857b0503006ecedc829c415ad2e78f2089d10267b2a24302",
+    "bytes": 900
+  },
+  "delivery/kien-r418/evidence/k03-real-http/cleanup-and-safety.json": {
+    "sha256": "63bc0a8e51582435901a8da4bcaa89e1edf5f8e6e46d3bff2d440fa8d89b8ea0",
+    "bytes": 395
+  },
+  "delivery/kien-r418/evidence/k03-real-http/KET-QUA-K03.md": {
+    "sha256": "2af5dc3181c2f20f4dcbbafece14c4ca8686b2e2d6e05151984ecc5480584677",
+    "bytes": 12127
+  },
+  "delivery/kien-r418/evidence/k03-real-http/PHUONG-PHAP-K03.md": {
+    "sha256": "476e6a6c7e054a2fe48e19abab270885e175af0d8cf7bf4f96bdd5fdfa7d92b4",
+    "bytes": 11382
+  },
+  "delivery/kien-r418/evidence/k03-real-http/raw-test-logs.zip": {
+    "sha256": "9634bbec1ad5837d0649a335e51b64513f9630b0f6edd291613498d12cb2e0be",
+    "bytes": 931773
+  },
+  "delivery/kien-r418/evidence/k03-real-http/raw-test-logs.zip.sha256": {
+    "sha256": "b1eb98789724e99ee4f1b40ada848a2582fc251b3a24a1aa6a461e8648ab251e",
+    "bytes": 85
+  },
+  "delivery/kien-r418/evidence/k03-real-http/regression-after.log": {
+    "sha256": "cd6d2f95932c35e775d9e8b549aad589384ed850ded10b459862c1a2bebbd2f4",
+    "bytes": 100
+  },
+  "delivery/kien-r418/evidence/k03-real-http/regression-before.log": {
+    "sha256": "5723f61912f299656fc85c49ac259440dbe93a78446efb26e9e570aaec05b18e",
+    "bytes": 4452
+  },
+  "delivery/kien-r418/evidence/k03-real-http/result.json": {
+    "sha256": "e92c858e211d05be1cdbcf1691e4b8e6cf6e2818ec72de7d01f8c8cdbdd5c5cd",
+    "bytes": 2261
+  },
+  "delivery/kien-r418/evidence/k03-real-http/scenario-results.csv": {
+    "sha256": "9d72f2daeb19fa391ed0ffc25ba60d5c9455b8dddb33040a04cf1f50830d5e1d",
+    "bytes": 2309
+  },
+  "delivery/kien-r418/evidence/k03-real-http/source.patch": {
+    "sha256": "85d1363f219c270d4e43ecbe76acfc365ec3ed98aab2509ad6c775de0397fc9c",
+    "bytes": 3418
+  }
+}

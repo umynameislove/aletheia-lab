@@ -31,7 +31,8 @@ def test_discovery_pins_issuer_caches_and_refreshes(tmp_path, monkeypatch):
         result = urlsplit(await loader.end_session_url())
         query = parse_qs(result.query)
         assert result.path.endswith('/logout')
-        assert query['post_logout_redirect_uri'] == ['https://app.example.invalid/#/signed-out']
+        assert query['post_logout_redirect_uri'] == ['https://app.example.invalid/']
+        assert not urlsplit(query['post_logout_redirect_uri'][0]).fragment
         loader._expires = datetime.now(UTC) - timedelta(seconds=1)
         assert await loader._current() is not first and len(calls) == 4
         loader._expires = datetime.now(UTC) - timedelta(seconds=1)

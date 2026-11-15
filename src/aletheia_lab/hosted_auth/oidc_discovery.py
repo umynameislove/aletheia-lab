@@ -88,7 +88,8 @@ class RefreshingOidc:
         endpoint = self._end_session_endpoint
         if endpoint is None:
             raise OidcUnavailable()
-        destination = self._runtime.public_origin.rstrip('/') + '/#/signed-out'
+        # Registered OIDC post-logout URIs cannot contain a fragment.
+        destination = self._runtime.public_origin.rstrip('/') + '/'
         return endpoint + '?' + urlencode({'client_id': self._runtime.identity.client_id,
                                            'post_logout_redirect_uri': destination})
 

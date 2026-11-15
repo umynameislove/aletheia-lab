@@ -1,0 +1,37 @@
+{
+  "status": "kiens_local_technical_pass",
+  "scope": "K03 personal implementation and isolated real managed staging qualification; not shared deployment/joint signoff",
+  "baseline_head": "5ac1c54d90ce1ee507e4cdce3b0f8310b49505cf",
+  "runtime_release_id": "e04ff2ad03f40f5021453fc356ad25ad2eec22f8f0fac1ab0085a1ba935cf081",
+  "unique_python_scenarios": 21,
+  "chrome_cases_nested_in_one_python_scenario": 7,
+  "focused_pytest_passed": 8,
+  "intentional_regression_before_fix_failed": 1,
+  "accepted_slices": {
+    "attempt-16": "20 completed scenarios accepted individually; full run remains failed at quota assertion",
+    "attempt-17": "5/5 passed, includes the one remaining quota scenario and four overlapping preflights"
+  },
+  "early_renew_record_erratum": "attempt-16 status field 200 was an HTTP metadata key collision; assertion passed; report marks pass and preserves original raw record",
+  "shared_non_tool_inputs_compared": 1416,
+  "shared_source_config_ui_test_drift": [],
+  "source_changed_during_accepted_slices": false,
+  "production_delta": "only fragment-free fixed post-logout destination in oidc_discovery.py; corresponding regression and handoff correction",
+  "requirements": {
+    "K03.01": "prior pass retained; callback replay/redirect integration rechecked",
+    "K03.02": "local retained-factor recovery/disabled account technical pass",
+    "K03.03": "local real-cookie lifecycle and natural 12-way renewal technical pass",
+    "K03.04": "prior pass retained; missing-CSRF integration rechecked",
+    "K03.05": "backend plus measured current two-tab/logout/login-A-to-B browser sample pass",
+    "K03.06": "actual IdP pause/resume plus serial admission quota and parallel renewal pass"
+  },
+  "not_claimed": [
+    "team deployment or production acceptance",
+    "production issuer/assurance/lost-factor policy signoff",
+    "full BFCache/back-forward and all A01-A32 joint scenarios",
+    "automatic IdP-event revocation bridge",
+    "8-hour real-time expiry soak",
+    "maximum RPS/50k-user capacity"
+  ],
+  "ci": "will be recorded against published SHA in separate CI receipt; no CI pass inferred here",
+  "archive_sha256": "9634bbec1ad5837d0649a335e51b64513f9630b0f6edd291613498d12cb2e0be"
+}

@@ -1,0 +1,22 @@
+﻿scenario,verdict,elapsed_seconds,source_attempt,actual_details_json
+real_idp_bootstrap,pass,0.312,16,"{""scope"": ""outside request latency measurement""}"
+managed_runtime_dependency_preflight,pass,1.5,16,{}
+real_managed_runtime_https_ready,pass,6.188,16,"{""environment"": ""staging"", ""api_pool"": 8}"
+anonymous_cross_site_and_unsafe_return_denied,pass,0.172,16,{}
+real_password_wrong_otp_good_otp_http_callback,pass,2.344,16,"{""session_status"": 200, ""cookie_secure"": true, ""cookie_http_only"": true}"
+real_callback_replay_no_new_session,pass,0.14,16,{}
+missing_csrf_denied_without_logout,pass,0.266,16,{}
+real_two_accounts_distinct_server_sessions,pass,1.75,16,{}
+real_logout_all_preserves_other_account,pass,0.594,16,{}
+real_idp_process_outage_no_session_or_retry_loop,pass,21.641,16,"{""callback_seconds"": 3.1409999999996217, ""callbacks_sent"": 1, ""created_sessions"": 0}"
+real_idp_resume_fresh_login_recovers,pass,24.297,16,{}
+real_smtp_expired_reset_link_denied,pass,6.687,16,"{""token_ttl_seconds"": 2, ""wait_seconds"": 5}"
+real_smtp_reset_retains_factor_no_auto_session,pass,1.172,16,"{""original_factor_retained"": true}"
+real_reset_replay_and_old_password_denied,pass,0.672,16,"{""replay_contexts"": 2}"
+real_new_password_still_requires_original_otp,pass,20.984,16,{}
+real_operator_revoke_after_reset_preserves_b,pass,0.344,16,"{""denied_status"": 401, ""other_status"": 200}"
+real_disabled_provider_account_cannot_login,pass,1.0,16,{}
+real_chrome_identity_journey,pass,66.171,16,"{""browser_cases"": 7}"
+real_early_renew_does_not_rotate,pass,22.438,16,"{""record_status_original"": 200, ""http_status"": 200}"
+real_natural_300s_rotation_12_parallel_renewals_one_winner,pass,301.844,16,"{""natural_wait_seconds"": 300.34364, ""requests"": 12, ""statuses"": {""409"": 9, ""401"": 2, ""200"": 1}, ""rotations"": 1, ""old_cookie_status"": 401, ""new_cookie_status"": 200, ""idle_seconds"": 900, ""absolute_seconds"": 28800, ""clock_mutation"": false}"
+real_bounded_auth_start_abuse_subject_limit,pass,15.297,17,"{""requests"": 35, ""maximum_parallel"": 1, ""statuses"": {""303"": 30, ""429"": 5}, ""retries"": 0, ""followed_redirects"": 0, ""retry_after_min"": 49, ""retry_after_max"": 49, ""subject_limit"": 30, ""window_seconds"": 60, ""public_idp_requests"": 0}"

@@ -1,5 +1,10 @@
 # J-01: handoff logout Keycloak — bản thử nghiệm
 
+Đính chính K03 ngày 15/11/2026: URL post-logout hiện là origin app cộng `/`,
+không có fragment. Keycloak 26.8.2 từ chối đăng ký chính xác `/#/signed-out`;
+wildcard trong thử nghiệm cũ không chứng minh đăng ký chính xác đó hợp lệ.
+Kết quả mới nằm tại `delivery/kien-r418/evidence/k03-real-http/`.
+
 Trạng thái: đề xuất để Quân review; không phải contract đã chốt hoặc staging
 được nghiệm thu. Code đang là WIP chưa commit, base checkout `2bbcdc2` không
 đại diện cho toàn bộ nội dung đang chạy.
@@ -18,7 +23,7 @@ Trạng thái: đề xuất để Quân review; không phải contract đã ch�
    local đã được thu hồi. Không báo logout IdP thành công. Hiện chưa có route
    khôi phục URL sau khi session đã bị thu hồi; cần thống nhất UX/retry.
 4. Keycloak phải được cấu hình cho `post_logout_redirect_uri` bằng origin app
-   cộng `/#/signed-out`. Đây là URL cố định từ cấu hình server, không nhận URL
+   cộng `/`. Đây là URL cố định từ cấu hình server, không nhận URL
    tùy ý từ client. Màn signed-out và hành vi dẫn đến login tiếp chưa triển khai
    trong backend này; client cần điều phối sau khi người dùng xác nhận logout.
 5. Khi chế độ logout IdP bật, `GET /v1/auth/start?mode=switch` bị từ chối

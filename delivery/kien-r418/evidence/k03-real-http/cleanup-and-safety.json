@@ -1,0 +1,15 @@
+{
+  "checked_utc": "2026-11-15T03:34:46.430458+00:00",
+  "owned_containers_remaining": [],
+  "owned_pg_remaining": [],
+  "owned_networks_remaining": [],
+  "secret_pattern_scan": {
+    "jwt": 0,
+    "database_uri_credentials": 0,
+    "private_key": 0,
+    "callback_code_value": 0,
+    "literal_password_value": 0
+  },
+  "raw_files_scanned": 121,
+  "archive_verified_entries": 121
+}

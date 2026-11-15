@@ -1,0 +1,121 @@
+[
+  {
+    "attempt": 1,
+    "run_status": "failed",
+    "recorded_cases": 1,
+    "elapsed_seconds": 79.0,
+    "explanation": "Fixture: release ID/DB URI chưa đúng định dạng."
+  },
+  {
+    "attempt": 2,
+    "run_status": "failed",
+    "recorded_cases": 1,
+    "elapsed_seconds": 59.29699999999866,
+    "explanation": "Startup fixture thất bại; log cũ không đủ phân lập nguyên nhân."
+  },
+  {
+    "attempt": 3,
+    "run_status": "failed",
+    "recorded_cases": 1,
+    "elapsed_seconds": 119.17200000000003,
+    "explanation": "Fixture preflight thiếu biến cấu hình."
+  },
+  {
+    "attempt": 4,
+    "run_status": "failed",
+    "recorded_cases": 1,
+    "elapsed_seconds": 100.21800000000007,
+    "explanation": "Fixture workspace/owner chưa cùng transaction."
+  },
+  {
+    "attempt": 5,
+    "run_status": "failed",
+    "recorded_cases": 1,
+    "elapsed_seconds": 88.75,
+    "explanation": "Fixture PostgreSQL chưa có TLS verify-full."
+  },
+  {
+    "attempt": 6,
+    "run_status": "failed",
+    "recorded_cases": 9,
+    "elapsed_seconds": 144.06299999999987,
+    "explanation": "Driver đọc DOM khi navigation chưa xong."
+  },
+  {
+    "attempt": 7,
+    "run_status": "failed",
+    "recorded_cases": 9,
+    "elapsed_seconds": 164.35899999999992,
+    "explanation": "Driver đọc DOM khi navigation chưa xong."
+  },
+  {
+    "attempt": 8,
+    "run_status": "failed",
+    "recorded_cases": 9,
+    "elapsed_seconds": 146.8130000000001,
+    "explanation": "Keycloak giữ SSO A; trình tự chọn B chưa đúng."
+  },
+  {
+    "attempt": 9,
+    "run_status": "failed",
+    "recorded_cases": 9,
+    "elapsed_seconds": 157.9369999999999,
+    "explanation": "Keycloak từ chối đổi user trong SSO A."
+  },
+  {
+    "attempt": 10,
+    "run_status": "failed",
+    "recorded_cases": 9,
+    "elapsed_seconds": 159.88999999999987,
+    "explanation": "Gọi switch sau logout; server yêu cầu phiên đang hoạt động."
+  },
+  {
+    "attempt": 11,
+    "run_status": "failed",
+    "recorded_cases": 17,
+    "elapsed_seconds": 250.71900000000005,
+    "explanation": "Driver kỳ vọng SSO tự đi qua form mật khẩu."
+  },
+  {
+    "attempt": 12,
+    "run_status": "failed",
+    "recorded_cases": 17,
+    "elapsed_seconds": 202.21900000000005,
+    "explanation": "Driver kỳ vọng mất cookie A trước khi B xác thực xong."
+  },
+  {
+    "attempt": 13,
+    "run_status": "failed",
+    "recorded_cases": 17,
+    "elapsed_seconds": 225.53200000000015,
+    "explanation": "Keycloak yêu cầu logout SSO A trước khi đăng nhập B."
+  },
+  {
+    "attempt": 14,
+    "run_status": "failed",
+    "recorded_cases": 0,
+    "elapsed_seconds": 68.20299999999997,
+    "explanation": "Đăng ký chính xác URI logout có fragment bị từ chối; thiếu HTTP code trong log lượt này."
+  },
+  {
+    "attempt": 15,
+    "run_status": "failed",
+    "recorded_cases": 0,
+    "elapsed_seconds": 48.29700000000048,
+    "explanation": "HTTP400 invalid_input khi đăng ký URI logout có fragment."
+  },
+  {
+    "attempt": 16,
+    "run_status": "failed",
+    "recorded_cases": 20,
+    "elapsed_seconds": 551.5929999999998,
+    "explanation": "20 scenario trước đã hoàn tất; bài quota 4 đồng thời dừng ở HTTP503. Không công nhận cả lượt là pass."
+  },
+  {
+    "attempt": 17,
+    "run_status": "passed",
+    "recorded_cases": 5,
+    "elapsed_seconds": 116.86000000000058,
+    "explanation": "Lượt quota tuần tự riêng đạt; không chạy lại 20 scenario đã hoàn tất."
+  }
+]

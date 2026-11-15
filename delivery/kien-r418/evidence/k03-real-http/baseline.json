@@ -1,0 +1,23 @@
+{
+  "captured_utc": "2026-11-15T03:03:56.268083+00:00",
+  "branch": "product-api",
+  "head": "5ac1c54d90ce1ee507e4cdce3b0f8310b49505cf",
+  "remote": "https://github.com/umynameislove/aletheia-lab.git",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "python": "3.11.9",
+  "packages": {
+    "httpx": "0.28.1",
+    "psycopg": "3.3.8",
+    "psycopg-pool": "3.3.3",
+    "Authlib": "1.9.5",
+    "joserfc": "1.8.0",
+    "cryptography": "50.0.2",
+    "pydantic": "2.14.2",
+    "uvicorn": "0.48.0"
+  },
+  "preexisting_non_k03_dirty_file_sha256": {
+    "delivery/kien-r418/evidence/k0903-authorization/KET-QUA-K09.03.md": "dccf71fa8dffce216f00ade7a326f499bcd52ef02fed75cc42b8e8220b1379e4",
+    "delivery/kien-r418/evidence/k0903-authorization/result.json": "e97f17026fc18f7d152982fa3756a7e3a1e11c5d4d6d0704b03bf26f02886e3f"
+  },
+  "main_before": "2bbcdc2a7637c840babd8b71910306c64072bc4b"
+}

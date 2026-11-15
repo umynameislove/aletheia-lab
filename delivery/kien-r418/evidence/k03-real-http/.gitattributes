@@ -1,0 +1,4 @@
+# Preserve sealed evidence bytes and intentional raw capture formatting.
+* -text !eol whitespace=cr-at-eol
+*.log -whitespace
+*.patch -whitespace
