@@ -222,16 +222,18 @@ test("polling is serial, deduplicated, capability paced, bounded and cancellable
 });
 
 test("logout keeps null/204 local-only and only returns handoffs at the pinned identity origin", async () => {
-  assert.equal(await harness({ logout_url: null }).client.logout(), null);
-  assert.equal(await harness(() => new Response(null, { status: 204 })).client.logout(), null);
   const destination = "https://identity.example.invalid/realms/test/logout?client_id=synthetic";
-  const h = harness({ logout_url: destination }, { idpOrigin: "https://identity.example.invalid" });
-  assert.equal(await h.client.logout(), destination);
-  assert.equal(h.calls[0].url, "/v1/auth/logout"); assert.equal(h.calls[0].init.body, "{}");
-  assert.equal(h.calls[0].init.headers["X-CSRF-Token"], session.csrf_token);
-  assert.equal(h.calls[0].init.headers["Idempotency-Key"], undefined);
-  for (const options of [{}, { idpOrigin: "https://other.invalid" }]) {
-    await assert.rejects(harness({ logout_url: destination }, options).client.logout(), { code: "outcome_unknown" });
+  for (const [method, path] of [["logout", "/v1/auth/logout"], ["logoutAll", "/v1/auth/logout-all"]]) {
+    assert.equal(await harness({ logout_url: null }).client[method](), null);
+    assert.equal(await harness(() => new Response(null, { status: 204 })).client[method](), null);
+    const h = harness({ logout_url: destination }, { idpOrigin: "https://identity.example.invalid" });
+    assert.equal(await h.client[method](), destination);
+    assert.equal(h.calls[0].url, path); assert.equal(h.calls[0].init.body, "{}");
+    assert.equal(h.calls[0].init.headers["X-CSRF-Token"], session.csrf_token);
+    assert.equal(h.calls[0].init.headers["Idempotency-Key"], undefined);
+    for (const options of [{}, { idpOrigin: "https://other.invalid" }]) {
+      await assert.rejects(harness({ logout_url: destination }, options).client[method](), { code: "outcome_unknown" });
+    }
   }
 });
 

@@ -98,6 +98,10 @@ function Workspace({ boot, state, hash }: { boot: HostedBootstrap; state: Hosted
     try { await work(); } catch (failure) { if (current() && !(failure instanceof HostedRequestDiscarded)) setError(safe(failure)); }
     finally { if (current()) setBusy(false); }
   }
+  async function signOut(all: boolean) {
+    const destination = await boot.logout(all);
+    if (destination) location.assign(destination);
+  }
   const link = resultLink(hash), connect = hash.split("?")[0] === "#/connect";
   function show(result: HostedAnalysisResult, job: string) {
     if (!current() || !caps) return;
@@ -113,8 +117,8 @@ function Workspace({ boot, state, hash }: { boot: HostedBootstrap; state: Hosted
       <button className="btn btn--sm" onClick={() => go("workspaces")}>Workspaces</button>
       {caps && <button className="btn btn--sm" onClick={() => go("connect")}>Connect project</button>}
       <button className="btn btn--sm" disabled={busy} onClick={() => { void action(() => boot.renew()); }}>Renew session</button>
-      <button className="btn btn--sm" disabled={busy} onClick={() => { void action(async () => { const destination = await boot.logout(); if (destination) location.assign(destination); }); }}>Sign out</button>
-      <button className="btn btn--sm" disabled={busy} onClick={() => { void action(() => boot.logout(true)); }}>Sign out all sessions</button>
+      <button className="btn btn--sm" disabled={busy} onClick={() => { void action(() => signOut(false)); }}>Sign out</button>
+      <button className="btn btn--sm" disabled={busy} onClick={() => { void action(() => signOut(true)); }}>Sign out all sessions</button>
     </div>{(error || state.error) && <RefusalNote refusal={{ code: (error ?? state.error)!.code, message: (error ?? state.error)!.safe_message }} />}</header>
     <ScreenBoundary key={connect ? "connect" : link ? JSON.stringify(link) : "workspaces"}><Suspense fallback={opening}>{connect && caps ? <main className="page" id="main"><div className="page-inner"><HostedConnect client={boot.client()} session={session}
       workspaceId={caps.workspace_id} caps={caps} isCurrent={current} onView={show} onJob={boot.watchJob} onBack={() => go("workspaces")} /></div></main>

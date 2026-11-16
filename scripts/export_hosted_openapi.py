@@ -51,7 +51,11 @@ def document(repo: Path) -> tuple[dict, dict, list[tuple[object, object]], list[
     from aletheia_lab.hosted_contract.job_page import JobOutput, JobReceipt
     from aletheia_lab.hosted_contract.job_updates import JobUpdate
     from aletheia_lab.hosted_contract.project_analysis import AnalysisRequest
-    from aletheia_lab.hosted_contract.project_operations import FollowUpJobOutput, FollowUpRequest
+    from aletheia_lab.hosted_contract.project_operations import (
+        AnalysisResultReference,
+        FollowUpJobOutput,
+        FollowUpRequest,
+    )
     from aletheia_lab.hosted_contract.project_refresh import RefreshRequest, RefreshResult
     from aletheia_lab.hosted_contract.runtime_management import (
         ChangeProject,
@@ -211,12 +215,12 @@ def document(repo: Path) -> tuple[dict, dict, list[tuple[object, object]], list[
     job_outputs = {
         "refresh": model(JobOutput[RefreshResult], "RefreshJobOutput"),
         "follow_up": model(FollowUpJobOutput),
-        "analyze": model(JobOutput[AnyProductView], "AnalysisJobOutput"),
+        "analyze": model(JobOutput[AnyProductView | AnalysisResultReference], "AnalysisJobOutput"),
     }
     # The handler's discriminated parser requires the tag, despite model defaults.
     job_outputs["analyze"] = {"allOf": [job_outputs["analyze"], {
-        "properties": {"result": {"required": ["schema_version"],
-                                  "properties": {"demo_only": {"const": False}}}}}]}
+        "properties": {"result": {"if": {"required": ["kind"], "properties": {"kind": {"const": "result_reference"}}},
+            "else": {"required": ["schema_version"], "properties": {"demo_only": {"const": False}}}}}}]}
     output = spec["paths"][prefix + "/jobs/{job_id}/output"]["get"]
     output["responses"]["200"]["content"]["application/json"]["schema"] = {
         "allOf": [{"$ref": "#/components/schemas/JobOutput"}, *(
@@ -243,8 +247,10 @@ def document(repo: Path) -> tuple[dict, dict, list[tuple[object, object]], list[
     op["responses"]["200"]["headers"]["Set-Cookie"] = {"schema": {"type": "string"}, "description": "Two separate Set-Cookie fields clear session and CSRF cookies."}
     add("/v1/auth/renew", "post", session_empty, model(Session), "200", "hosted_auth.session_http.SessionMutationApplication",
         description="Rechecks the existing session; optional credentials/cookies may rotate. The creation hint currently defaults false; GET /v1/session refreshes current management policy.")
-    add("/v1/auth/logout-all", "post", session_empty, None, "204", "hosted_auth.session_http.SessionMutationApplication",
-        description="Revokes this actor's local sessions; not an IdP logout guarantee.")
+    op = add("/v1/auth/logout-all", "post", session_empty, logout_shape, "200", "hosted_auth.session_http.SessionMutationApplication",
+        description="Revokes this actor's local sessions. With IdP handoff: 200 URL or null; without handoff: 204. The browser completes IdP sign-out.")
+    op["responses"]["204"] = {"description": "Local-only logout; empty body. Session and CSRF cookies cleared."}
+    op["responses"]["200"]["headers"]["Set-Cookie"] = {"schema": {"type": "string"}, "description": "Two separate Set-Cookie fields clear session and CSRF cookies."}
     for path, handler in (("/v1/auth/start", "hosted_auth.start_http.LoginStartApplication"),
                           ("/v1/auth/callback", "hosted_auth.callback_http.CallbackApplication")):
         op = add(path, "get", None, None, "303", handler, public=True)

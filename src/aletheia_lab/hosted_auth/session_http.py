@@ -23,6 +23,7 @@ from aletheia_lab.hosted_contract.session_capabilities import PROBLEM_STATUS, Se
 
 from .boundary import SESSION_COOKIE, clear_opaque_cookie, read_opaque_cookie, set_opaque_cookie
 from .csrf import CsrfMiddleware, CsrfTokens, SessionBindingLoader, clear_csrf_cookie, csrf_cookie
+from .logout_http import idp_logout_response
 from .repositories import RepositoryDataRejected
 from .sessions import RenewalConflict, ServerSessions, SessionRenewal, credential_digest
 
@@ -51,11 +52,13 @@ class SessionMutationApplication:
         runtime: RuntimeSettings, *, body_limits: BodyLimits,
         clock_check: Callable[[], Awaitable[bool]], clock: Callable[[], datetime] = _now,
         creation_hint: Callable[[SecretStr], Awaitable[bool]] | None = None,
+        idp_logout_url: Callable[[], Awaitable[str]] | None = None,
     ) -> None:
         self._runtime = RuntimeSettings.model_validate(runtime.model_dump(warnings=False))
         self._fallback, self._sessions, self._limits = fallback, sessions, body_limits
         self._clock_check, self._clock = clock_check, clock
         self._creation_hint = creation_hint
+        self._idp_logout_url = idp_logout_url
         self._guard = CsrfMiddleware(
             self._mutate, tokens, SessionBindingLoader(sessions), self._runtime,
             lookup_timeout_seconds=self._runtime.api.backend_timeout_seconds, clock=clock,
@@ -100,8 +103,8 @@ class SessionMutationApplication:
                 response, extra = self._renewed(result, can_create_workspace=allowed)
                 status = 200
             else:
+                status, response = await idp_logout_response(self._idp_logout_url, self._runtime.api.backend_timeout_seconds)
                 await self._sessions.logout_all(cookie)
-                response, status = b"", 204
                 extra = [
                     (b"set-cookie", clear_opaque_cookie(name=SESSION_COOKIE)),
                     (b"set-cookie", clear_csrf_cookie()),

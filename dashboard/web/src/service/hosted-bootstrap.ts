@@ -228,7 +228,7 @@ export function createHostedBootstrap(options: {
     async renew() { const generation = state.generation; const next = await client.renew(); if (current(generation)) applySession(next); },
     async logout(all = false) {
       const generation = state.generation;
-      const destination = all ? (await client.logoutAll(), null) : await client.logout();
+      const destination = all ? await client.logoutAll() : await client.logout();
       if (!current(generation)) throw new HostedRequestDiscarded();
       options.tell?.({ type: "revoked" }); clear(); return destination;
     },

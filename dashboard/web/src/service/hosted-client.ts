@@ -439,6 +439,19 @@ export function createHostedClient(options: HostedClientOptions) {
     return { workspace_id: workspace, source_id: state.source_id, sha256: manifest.sha256 };
   }
   const polling = new Set<string>();
+  function logout(path: "/v1/auth/logout" | "/v1/auth/logout-all") {
+    authenticated();
+    return request(path, "POST", (value, status): string | null => {
+      if (status === 204) return null;
+      need(status === 200 && obj(value) && (value.logout_url === null || typeof value.logout_url === "string"));
+      if (value.logout_url === null) return null;
+      need(value.logout_url.length <= 8192 && !/[\u0000-\u0020\u007f\\]/.test(value.logout_url));
+      const url = new URL(value.logout_url);
+      need(idpOrigin !== undefined && url.origin === idpOrigin && url.protocol === "https:" && !url.username && !url.password && !url.hash);
+      return value.logout_url;
+    }, "{}", "application/json");
+  }
+
   return {
     /** ProductView check, for the hosted port: carried here so the main chunk need not load the contract. */
     checkView: checkProductView,
@@ -452,10 +465,7 @@ export function createHostedClient(options: HostedClientOptions) {
       authenticated();
       return request("/v1/auth/renew", "POST", (value, status) => { need(status === 200); return readSession(value); }, "{}", "application/json");
     },
-    logoutAll: () => {
-      authenticated();
-      return request("/v1/auth/logout-all", "POST", (_value, status) => { need(status === 204); }, "{}", "application/json");
-    },
+    logoutAll: () => logout("/v1/auth/logout-all"),
     uploadZip: (workspace: string, caps: HostedCapabilities, bundle: Blob, requestKey: string,
                 upload: { resume?: HostedUploadResume; onProgress?: (status: HostedUploadStatus) => void; signal?: AbortSignal } = {}) => {
       capability(workspace, caps, "import");
@@ -901,17 +911,6 @@ export function createHostedClient(options: HostedClientOptions) {
         }
       } finally { polling.delete(pollingKey); }
     },
-    logout: () => {
-      authenticated();
-      return request("/v1/auth/logout", "POST", (value, status): string | null => {
-        if (status === 204) return null;
-        need(status === 200 && obj(value) && (value.logout_url === null || typeof value.logout_url === "string"));
-        if (value.logout_url === null) return null;
-        need(value.logout_url.length <= 8192 && !/[\u0000-\u0020\u007f\\]/.test(value.logout_url));
-        const url = new URL(value.logout_url);
-        need(idpOrigin !== undefined && url.origin === idpOrigin && url.protocol === "https:" && !url.username && !url.password && !url.hash);
-        return value.logout_url;
-      }, "{}", "application/json");
-    },
+    logout: () => logout("/v1/auth/logout"),
   };
 }

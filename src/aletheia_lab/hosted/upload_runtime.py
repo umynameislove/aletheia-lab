@@ -209,7 +209,7 @@ def compose_upload_runtime(*, settings: RuntimeSettings, sessions: ServerSession
                                     allow_direct_switch=idp_logout_url is None)
         app = LogoutApplication(app, sessions, tokens, settings, body_limits=json_limits, clock_check=clock_check,
                                 idp_logout_url=idp_logout_url)
-        app = SessionMutationApplication(app, sessions, tokens, settings,
+        app = SessionMutationApplication(app, sessions, tokens, settings, idp_logout_url=idp_logout_url,
                                          body_limits=json_limits, clock_check=clock_check,
                                          creation_hint=reader.creation_hint)
         if resumable_uploads:

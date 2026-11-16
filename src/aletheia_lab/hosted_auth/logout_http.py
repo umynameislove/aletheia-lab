@@ -29,6 +29,18 @@ class _EmptyBody(BaseModel):
     model_config = ConfigDict(extra='forbid', strict=True)
 
 
+async def idp_logout_response(url: Callable[[], Awaitable[str]] | None, timeout: float) -> tuple[int, bytes]:
+    if url is None:
+        return 204, b''
+    destination = None
+    try:
+        async with asyncio.timeout(min(1.0, timeout / 4)):
+            destination = await url()
+    except Exception:
+        pass
+    return 200, json.dumps({'logout_url': destination}, separators=(',', ':')).encode()
+
+
 class LogoutApplication:
     def __init__(self, fallback: Application, sessions: ServerSessions, tokens: CsrfTokens,
                  runtime: RuntimeSettings, *, body_limits: BodyLimits,
@@ -56,17 +68,8 @@ class LogoutApplication:
                 headers = cast(Sequence[tuple[bytes, bytes]], scope.get('headers', ()))
                 body = await read_json_body(receive, headers, self._limits)
                 decode_json_model(body, _EmptyBody, maximum_bytes=self._limits.maximum_bytes)
-                destination = None
-                if self._idp_logout_url is not None:
-                    try:
-                        async with asyncio.timeout(min(1.0, self._runtime.api.backend_timeout_seconds / 4)):
-                            destination = await self._idp_logout_url()
-                    except Exception:
-                        pass
+                status, response = await idp_logout_response(self._idp_logout_url, self._runtime.api.backend_timeout_seconds)
                 await self._sessions.logout(_cookie(scope, self._runtime.api.maximum_cookie_bytes))
-            response = (json.dumps({'logout_url': destination}, separators=(',', ':')).encode()
-                        if self._idp_logout_url is not None else b'')
-            status = 200 if self._idp_logout_url is not None else 204
             extra = [(b'set-cookie', clear_opaque_cookie(name=SESSION_COOKIE)),
                      (b'set-cookie', clear_csrf_cookie())]
             if self._idp_logout_url is not None:

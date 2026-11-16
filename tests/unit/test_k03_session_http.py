@@ -31,7 +31,7 @@ from aletheia_lab.hosted_auth.sessions import ServerSessions
 from aletheia_lab.hosted_contract.session_capabilities import Problem, Session
 
 
-def _system(tmp_path, *, timeout=5.0, clock_check=None):
+def _system(tmp_path, *, timeout=5.0, clock_check=None, idp_logout_url=None):
     store = SyntheticAtomicStore()
     tokens = CsrfTokens(SecretStr(SIGNING_SECRET))
     record = _facts().model_copy(update={"csrf_token": tokens.issue("ctx_synthetic_a")})
@@ -48,7 +48,8 @@ def _system(tmp_path, *, timeout=5.0, clock_check=None):
         await send({"type": "http.response.body", "body": b""})
 
     app = SessionMutationApplication(fallback, sessions, tokens, settings,
-        body_limits=BodyLimits(1024, 1.0, 1.0, 16), clock_check=clock_check or ready, clock=lambda: store.now)
+        body_limits=BodyLimits(1024, 1.0, 1.0, 16), clock_check=clock_check or ready, clock=lambda: store.now,
+        idp_logout_url=idp_logout_url)
     headers = [
         (b"origin", b"https://app.example.invalid"), (b"sec-fetch-site", b"same-origin"),
         (b"content-type", b"application/json"), (b"content-length", b"2"),
@@ -126,13 +127,27 @@ def test_early_renew_returns_unchanged_expiry_without_any_cookie(tmp_path):
     asyncio.run(scenario())
 
 
-def test_logout_all_uses_current_actor_and_leaves_another_account_valid(tmp_path):
+@pytest.mark.parametrize("mode", ["disabled", "available", "unavailable"])
+def test_logout_all_uses_current_actor_and_leaves_another_account_valid(tmp_path, mode):
     async def scenario():
-        app, sessions, store, tokens, headers = _system(tmp_path)
+        destination = "https://issuer.example.invalid/logout?client_id=synthetic"
+
+        async def handoff():
+            if mode == "unavailable":
+                raise TimeoutError
+            return destination
+
+        app, sessions, store, tokens, headers = _system(tmp_path, idp_logout_url=None if mode == "disabled" else handoff)
         store.seed(_facts(TOKEN_B, "usr_synthetic_b", "ctx_b").model_copy(update={"csrf_token": tokens.issue("ctx_b")}))
         store.seed(_facts(TOKEN_C, "usr_synthetic_a", "ctx_c").model_copy(update={"csrf_token": tokens.issue("ctx_c")}))
         events, _ = await _request(app, headers, path=LOGOUT_ALL_PATH)
-        assert events[0]["status"] == 204 and events[1]["body"] == b""
+        if mode == "disabled":
+            assert events[0]["status"] == 204 and events[1]["body"] == b""
+        else:
+            import json
+
+            assert events[0]["status"] == 200
+            assert json.loads(events[1]["body"]) == {"logout_url": destination if mode == "available" else None}
         assert all(cookie["max-age"] == "0" for cookie in _cookies(events).values())
         for token in (TOKEN_A, TOKEN_C):
             with pytest.raises(AccessDenied):
