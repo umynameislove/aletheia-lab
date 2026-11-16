@@ -1,0 +1,238 @@
+{
+  "created_utc": "2026-11-15T07:08:48.087224+00:00",
+  "scope": "Only local K14.05 analysis S timeouts; not full deployment acceptance",
+  "analysis_timeout_gate_pass": true,
+  "fix_kind": "Measurement source placement: verified native Linux snapshot instead of Windows bind-mounted imports",
+  "production_source_modified": false,
+  "original_source_files_unchanged": 1649,
+  "head": "fa46dd8cbb2239c6f116456894a2009b45846245",
+  "committed": false,
+  "pushed": false,
+  "staged_changes": 0,
+  "analysis_deadline_seconds": 5,
+  "total_offered": 287,
+  "total_completed": 287,
+  "total_timeouts": 0,
+  "analysis_S": {
+    "count": 72,
+    "mean_ms": 2482.9784244583634,
+    "p95_observed_ms": 2634.963198999685,
+    "max_ms": 2737.604542000554,
+    "min_ms": 2292.378054999972
+  },
+  "analysis_attempt": {
+    "count": 72,
+    "mean_ms": 1306.3950671090022,
+    "p95_observed_ms": 1494.286060333252,
+    "max_ms": 1990.1139736175537,
+    "min_ms": 1085.5019092559814
+  },
+  "jobs_succeeded": 147,
+  "exports_verified": 140,
+  "windows": [
+    {
+      "window": "native-01",
+      "pytest_exit": 0,
+      "wrapper_seconds": 106.26599999999962,
+      "mixed_seconds": 62.71266544700029,
+      "offered": 95,
+      "completed": 95,
+      "analysis": {
+        "count": 24,
+        "mean_ms": 2498.1752049583292,
+        "p95_observed_ms": 2724.5469800000137,
+        "max_ms": 2737.604542000554,
+        "min_ms": 2299.36864299998
+      },
+      "analysis_attempt": {
+        "count": 24,
+        "mean_ms": 1321.498304605484,
+        "p95_observed_ms": 1580.8889865875244,
+        "max_ms": 1990.1139736175537,
+        "min_ms": 1085.5019092559814
+      },
+      "jobs": 49,
+      "exports": 46,
+      "latency": {
+        "background": {
+          "count": 424,
+          "mean_ms": 65.05933633017544,
+          "p95_observed_ms": 140.0431000001845,
+          "max_ms": 328.2001190000301
+        },
+        "health": {
+          "count": 424,
+          "mean_ms": 22.20561395518176,
+          "p95_observed_ms": 32.443868999507686,
+          "max_ms": 125.86859599923628
+        },
+        "admin": {
+          "count": 424,
+          "mean_ms": 1.1939070990601461,
+          "p95_observed_ms": 1.4294069997049519,
+          "max_ms": 47.825206000197795
+        }
+      },
+      "http": {
+        "requests": 313,
+        "request_body_bytes": 8673,
+        "status_202": 49,
+        "response_body_bytes": 9278609,
+        "response_completed": 313,
+        "response_duration_microseconds": 67795026,
+        "status_200": 218,
+        "job_poll_snapshot": 51,
+        "status_201": 46,
+        "job_poll_resync": 47
+      },
+      "source_snapshot": {
+        "source_files": 1663,
+        "total_bytes": 19577731,
+        "all_file_hashes_verified": true,
+        "input_manifest_sha256": "c22a4d66ec15e5c54ca1090c535aac5d69409405fe6f403cfd88058f92c74619",
+        "execution_root": "/tmp/k14-native-source",
+        "placement": "native Linux tmpfs; same source bytes",
+        "reason": "Exclude Windows bind-mount source-file I/O from per-job import latency."
+      },
+      "source_identity": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529"
+    },
+    {
+      "window": "native-02",
+      "pytest_exit": 0,
+      "wrapper_seconds": 102.76500000000033,
+      "mixed_seconds": 61.90510819300016,
+      "offered": 96,
+      "completed": 96,
+      "analysis": {
+        "count": 24,
+        "mean_ms": 2488.513226333339,
+        "p95_observed_ms": 2617.5259629999346,
+        "max_ms": 2620.2805399998397,
+        "min_ms": 2292.378054999972
+      },
+      "analysis_attempt": {
+        "count": 24,
+        "mean_ms": 1280.2713414033253,
+        "p95_observed_ms": 1470.7520008087158,
+        "max_ms": 1494.286060333252,
+        "min_ms": 1128.6089420318604
+      },
+      "jobs": 49,
+      "exports": 47,
+      "latency": {
+        "background": {
+          "count": 428,
+          "mean_ms": 63.36444041823308,
+          "p95_observed_ms": 132.54511400009505,
+          "max_ms": 342.8802749995157
+        },
+        "health": {
+          "count": 428,
+          "mean_ms": 21.983597612166008,
+          "p95_observed_ms": 32.78655200028879,
+          "max_ms": 129.08809399959864
+        },
+        "admin": {
+          "count": 428,
+          "mean_ms": 0.9481316845641427,
+          "p95_observed_ms": 1.3213749998612911,
+          "max_ms": 5.863244000465784
+        }
+      },
+      "http": {
+        "requests": 315,
+        "request_body_bytes": 8691,
+        "status_202": 49,
+        "response_body_bytes": 9470823,
+        "response_completed": 315,
+        "response_duration_microseconds": 66349276,
+        "status_200": 219,
+        "job_poll_snapshot": 52,
+        "status_201": 47,
+        "job_poll_resync": 46
+      },
+      "source_snapshot": {
+        "source_files": 1663,
+        "total_bytes": 19577731,
+        "all_file_hashes_verified": true,
+        "input_manifest_sha256": "c22a4d66ec15e5c54ca1090c535aac5d69409405fe6f403cfd88058f92c74619",
+        "execution_root": "/tmp/k14-native-source",
+        "placement": "native Linux tmpfs; same source bytes",
+        "reason": "Exclude Windows bind-mount source-file I/O from per-job import latency."
+      },
+      "source_identity": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529"
+    },
+    {
+      "window": "native-03",
+      "pytest_exit": 0,
+      "wrapper_seconds": 100.04699999999957,
+      "mixed_seconds": 61.922861561999525,
+      "offered": 96,
+      "completed": 96,
+      "analysis": {
+        "count": 24,
+        "mean_ms": 2462.2468420834216,
+        "p95_observed_ms": 2580.162143999587,
+        "max_ms": 2592.0606299996507,
+        "min_ms": 2310.20148800053
+      },
+      "analysis_attempt": {
+        "count": 24,
+        "mean_ms": 1317.4155553181965,
+        "p95_observed_ms": 1463.2518291473389,
+        "max_ms": 1556.4100742340088,
+        "min_ms": 1099.8711585998535
+      },
+      "jobs": 49,
+      "exports": 47,
+      "latency": {
+        "background": {
+          "count": 427,
+          "mean_ms": 63.625856496501065,
+          "p95_observed_ms": 136.96767700002965,
+          "max_ms": 344.5490770000106
+        },
+        "health": {
+          "count": 427,
+          "mean_ms": 22.094278704916533,
+          "p95_observed_ms": 40.99326999948971,
+          "max_ms": 131.25499399939144
+        },
+        "admin": {
+          "count": 427,
+          "mean_ms": 1.1158226417037376,
+          "p95_observed_ms": 1.6468809999423684,
+          "max_ms": 30.69286799927795
+        }
+      },
+      "http": {
+        "requests": 315,
+        "request_body_bytes": 8690,
+        "status_202": 49,
+        "response_body_bytes": 9470930,
+        "response_completed": 315,
+        "response_duration_microseconds": 66968257,
+        "status_200": 219,
+        "job_poll_snapshot": 50,
+        "status_201": 47,
+        "job_poll_resync": 48
+      },
+      "source_snapshot": {
+        "source_files": 1663,
+        "total_bytes": 19577731,
+        "all_file_hashes_verified": true,
+        "input_manifest_sha256": "c22a4d66ec15e5c54ca1090c535aac5d69409405fe6f403cfd88058f92c74619",
+        "execution_root": "/tmp/k14-native-source",
+        "placement": "native Linux tmpfs; same source bytes",
+        "reason": "Exclude Windows bind-mount source-file I/O from per-job import latency."
+      },
+      "source_identity": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529"
+    }
+  ],
+  "source_identity": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529",
+  "full_k14_deployment_pass": false,
+  "source_drift_guard": "passed expected rejection, exit 1",
+  "old_evidence_unchanged": true,
+  "owned_test_resources_remaining": 0,
+  "api_workflow_ui_limits_polling_unchanged": true
+}

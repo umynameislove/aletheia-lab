@@ -1,0 +1,20 @@
+{
+  "scope": "Only observed analysis S timeouts; no staging acceptance",
+  "source_identity": "09ca804f5990998510918c68d2628202df8d9fd6092ded9199c1f0556f5d74ee",
+  "planned_unchanged_mixed_windows": [
+    "after-02",
+    "after-03",
+    "after-04"
+  ],
+  "criteria": {
+    "analysis_S_deadline_seconds": 5,
+    "all_offered_complete": true,
+    "timeouts": 0,
+    "job_failed": 0,
+    "harness_fatal": null,
+    "background_p95_ms_max": 500,
+    "health_admin_p95_ms_max": 250
+  },
+  "no_deadline_or_polling_change": true,
+  "no_commit_or_push": true
+}

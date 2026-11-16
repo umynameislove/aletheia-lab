@@ -1,0 +1,16 @@
+{
+  "scope": "Only analysis S timeout caused by Windows bind-mounted source imports",
+  "planned_windows": [
+    "native-01",
+    "native-02",
+    "native-03"
+  ],
+  "source_identity": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529",
+  "source_unchanged_from_pre_task": true,
+  "thresholds_unchanged": true,
+  "fixed_concurrency": 3,
+  "scheduled_seconds_per_window": 60,
+  "repeat_criteria": "all offered complete; zero timeout/reject/failure; all jobs succeeded; p95 background<=500ms,health/admin<=250ms",
+  "native_snapshot_all_files_byte_verified": true,
+  "production_topology_qualification": false
+}
