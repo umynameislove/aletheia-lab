@@ -1,0 +1,13 @@
+# Preserve raw-byte evidence checksums on every platform.
+"/ARCHIVE-MANIFEST.csv" -text !eol whitespace=cr-at-eol
+"/ARCHIVE-README.md" -text !eol whitespace=cr-at-eol
+"/KET-QUA-BO-SUNG-K14.01-K14.05.md" -text !eol whitespace=cr-at-eol
+"/SHA256SUMS.txt" -text !eol whitespace=cr-at-eol
+"/manifest.json" -text !eol whitespace=cr-at-eol
+"/raw-records-20261116.zip" -text !eol whitespace=cr-at-eol
+"/raw-records-20261116.zip.sha256" -text !eol whitespace=cr-at-eol
+"/summary.json" -text !eol whitespace=cr-at-eol
+"/targeted-02/runner-tested.py" -text !eol whitespace=cr-at-eol
+"/targeted-02/verify_remaining-tested.py" -text !eol whitespace=cr-at-eol
+"/targeted-03/runner-tested.py" -text !eol whitespace=cr-at-eol
+"/targeted-03/verify_remaining-tested.py" -text !eol whitespace=cr-at-eol

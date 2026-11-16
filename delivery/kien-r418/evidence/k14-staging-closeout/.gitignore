@@ -1,0 +1,24 @@
+# Raw records are preserved byte-for-byte in raw-records-20261116.zip.
+/action-results.csv
+/cpu-memory-fd-by-operation.csv
+/http-requests.csv
+/targeted-01/api0-restarted.json
+/targeted-01/console.log
+/targeted-01/exit.json
+/targeted-01/idp-resource.jsonl
+/targeted-01/inputs.json
+/targeted-01/pg-resource.jsonl
+/targeted-01/result.json
+/targeted-01/sessions-ready
+/targeted-02/console.log
+/targeted-02/exit.json
+/targeted-02/idp-resource.jsonl
+/targeted-02/inputs.json
+/targeted-02/pg-resource.jsonl
+/targeted-02/result.json
+/targeted-03/console.log
+/targeted-03/exit.json
+/targeted-03/idp-resource.jsonl
+/targeted-03/inputs.json
+/targeted-03/pg-resource.jsonl
+/targeted-03/result.json
