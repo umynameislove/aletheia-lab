@@ -26,3 +26,35 @@ Ruff trên ba tệp đạt. C901 của mô-đun runtime giữ trần 10 và đ�
 Docker đã gián đoạn giữa lượt kiểm PostgreSQL trước. Khi tiếp tục, engine đã hoạt động, container thử đang dừng. Đã start đúng container, nhận cổng loopback mới 58478 và chờ pg_isready. Lượt có kết quả cuối bắt đầu 23:08 ngày 14/11/2026 giờ Việt Nam. Các lượt fixture unit ban đầu có lỗi dựng exception và kết quả preview đã được sửa. Log trước/sau, log fixture và lượt gián đoạn được giữ trong `raw-test-logs.zip`. `log-manifest.json` ghi hash và số byte của từng entry, đã giải nén so từng byte sau khi đóng gói.
 
 `native-cases.csv` chứa job ID tổng hợp, timestamps claim/heartbeat/revoke/finished, failure_kind, retry, output và audit của bốn ca. `result.json` ghi tổng kết, môi trường và hash mã. Hồ sơ này là kết quả riêng K09.03. Bài chạy dùng worker/repository và PostgreSQL thật với barrier được điều khiển trong test. Receipt browser A10 của Quân giữ phạm vi nguồn của lần chạy đó. Nghiệm thu toàn bộ K01–K18 cho Bảo tiếp tục theo điều kiện bàn giao đã yêu cầu.
+
+## Bổ sung kết quả CI GitHub
+
+Xác minh lúc 2026-11-15T01:31:08.867665+07:00. Commit `731f1bc2225805262761a21483cec3c693e6b9d4` trên `product-api`, PR #193, đạt **11/11 check thành công**. Ba workflow gồm ci, hosted backend và dependency-audit. CI checkout merge tạm `1f57a8210daf4dad24a98fc1574be230e0c2521d`; cây mã merge và cây mã head cùng hash `e2c8fab2300b2ec8ba6e7d7cf7a4182eef36239f`. Mã nguồn giữ nguyên trong toàn bộ lần theo dõi này.
+
+| Workflow / job | Lượt thực chạy | Thời gian job | Kết quả |
+| --- | ---: | ---: | --- |
+| ci / test (3.12) | 2 | 2889 giây | success |
+| ci / security | 1 | 62 giây | success |
+| ci / windows-project (0) | 1 | 1271 giây | success |
+| ci / quality | 1 | 67 giây | success |
+| ci / test (3.11) | 1 | 4583 giây | success |
+| ci / application | 1 | 86 giây | success |
+| ci / windows-project (1) | 1 | 1545 giây | success |
+| hosted backend / dashboard | 1 | 131 giây | success |
+| hosted backend / backend | 1 | 932 giây | success |
+| dependency-audit / audit (3.11) | 1 | 42 giây | success |
+| dependency-audit / audit (3.12) | 1 | 46 giây | success |
+
+Thời gian bảng tính từ startedAt đến completedAt của GitHub, gồm cài đặt và dọn môi trường. Các job thành công của lượt 1 được GitHub giữ kết quả khi chạy lại riêng Python 3.12, không phải thực chạy lại toàn bộ. `ci-731f1bc/jobs.csv` có timestamps UTC, job ID và link từng job.
+
+Linux dùng image ubuntu-26.04, Python 3.11.18 và 3.12.16, PostgreSQL 16.16. Dịch vụ PostgreSQL có image pin theo workflow, cổng loopback 5432, dữ liệu tổng hợp. K09_TEST_DATABASE_URL có trong cả matrix và job hosted native. Workflow lấy cả hai tệp test K09 mới qua glob hiện có; không sửa workflow hoặc nới điều kiện pass.
+
+Python 3.11 đạt **11.452 pass, 56 skip, 0 fail**, 7 warning, pytest 2.777,62 giây; coverage **88,73%**, qua ngưỡng 88%. Python 3.12 ở lượt cuối đạt **11.452 pass, 56 skip, 0 fail**, 7 warning, pytest 1.939,56 giây. Mypy strict của cả hai interpreter đạt trên 403 tệp. Bộ kiểm tái lập Python 3.11 chạy ba lần, mỗi lần 4.041 pass/9 skip, mất 567,02 / 590,30 / 554,78 giây. Bộ tương thích đánh giá Python 3.12 của lượt chạy lại đạt 4.041 pass/9 skip trong 819,13 giây. Các số này có ca trùng nhau, không cộng thành số ca duy nhất. Skip giữ nguyên nghĩa là không thực thi, không tính là pass.
+
+Job hosted native có 430 dấu pass và 11 dấu skip trong log quiet, thêm 4 ca query-probe pass. Đây là số đếm dấu tiến độ vì cấu hình -qq không in dòng tổng kết. Offline hosted đạt 2.985 pass/13 skip/5 deselect trong 58,01 giây. Consumer UI đạt 359/359, 0 fail, 10.851,230815 ms. Application đạt 162 pass trong 30,71 giây, coverage 92,31%. Chất lượng mã, maintainability, repo hygiene, Bandit và hai audit thư viện đều success. Bộ K09.03 chọn riêng trước đó vẫn là **61/61, 0 skip**; các số của CI tổng không thay thế kết quả chọn riêng đó.
+
+**Lượt đầu có lỗi, đã lưu nguyên bằng chứng.** Python 3.12 lần đầu ghi 1 fail / 11.451 pass / 56 skip trong 1.676,52 giây. Ca fail là `test_k07_upload_staging_postgres.py::test_real_resume_out_of_order_parallel_retry_lost_ack_and_complete_once`. Ba complete_upload đồng thời gặp cửa sổ record chuyển ready giữa đọc metadata và assemble, trả upload_conflict. Traceback nằm ở postgres_sources.py, không đi qua worker được sửa cho K09.03. GitHub từ chối yêu cầu rerun khi lượt đang chạy; sau khi Python 3.11 kết thúc đã chạy lại duy nhất job Python 3.12 đúng một lần, cùng SHA, và pass. Không sửa test, không thêm skip, không sửa K07. Race K07 vẫn là rủi ro chưa được sửa; lượt rerun xanh không chứng minh nguyên nhân gốc đã hết.
+
+Metadata, log ZIP nguyên gốc của cả hai lượt, snapshot 11 check và SHA-256 nằm trong `ci-731f1bc/`. `github-ci-result.json` tổng hợp phương pháp và kết quả; `test-summary-lines.json` dẫn từng dòng tổng kết về đúng entry log; `manifest.json` kiểm toàn vẹn các tệp. Hồ sơ CI được cập nhật trên máy, không tạo commit nguồn mới để SHA đã kiểm vẫn giữ nguyên. K09.03 đã qua các kiểm thử nêu trên và CI của SHA sửa. Phần browser A10, staging/tải và sửa race K07 nằm ngoài lần xử lý này.
+
+[CI cuối](https://github.com/umynameislove/aletheia-lab/actions/runs/43615235322/attempts/2), [hosted backend](https://github.com/umynameislove/aletheia-lab/actions/runs/43615235242), [dependency-audit](https://github.com/umynameislove/aletheia-lab/actions/runs/43615235240).

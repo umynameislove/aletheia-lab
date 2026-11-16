@@ -169,5 +169,16 @@
     "entries": 21
   },
   "consumer_scope": "Attempt DTO serialization checked on real PostgreSQL results. Browser A10 replay belongs to the peer receipt and is not relabeled as this run.",
-  "final_bao_all_tasks_acceptance_exported": false
+  "final_bao_all_tasks_acceptance_exported": false,
+  "github_ci": {
+    "status": "passed",
+    "checked_head_sha": "731f1bc2225805262761a21483cec3c693e6b9d4",
+    "successful_checks": 11,
+    "total_checks": 11,
+    "recorded_utc": "2026-11-14T18:31:08.867665+00:00",
+    "result": "ci-731f1bc/github-ci-result.json",
+    "result_sha256": "746b0629c7018423e8870af8325b141d1adc57a145a3bde53d1bb3b8f375055d",
+    "first_attempt_failure_and_single_retry_retained": true,
+    "k07_race_fixed": false
+  }
 }
