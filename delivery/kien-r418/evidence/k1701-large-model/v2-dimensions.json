@@ -1,0 +1,12 @@
+{
+  "status": "passed",
+  "snapshot_schema": "hosted-upload-snapshot/v2",
+  "view_schema": "p6-product-view/v2",
+  "record_schema": "hosted-upload-result/v2",
+  "distinct_dimension_groups": 10,
+  "observations": 10,
+  "claims": 10,
+  "runs": 5,
+  "source_sha256": "bc8328265b884be112c6f782d928969f77368f97f41d0dac53b8fa203dac3981",
+  "record_sha256": "2b37fb636e0c3afde9dbaa96ac5563b7ab9bd1420658033ac4143d6c92168bad"
+}
