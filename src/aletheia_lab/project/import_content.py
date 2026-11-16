@@ -13,8 +13,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final
 
-import pyarrow as pa  # type: ignore[import-untyped]
-import pyarrow.parquet as pq  # type: ignore[import-untyped]
 import yaml
 
 from aletheia_lab.project.identity import canonical_project_json, normalize_text
@@ -192,6 +190,9 @@ def _csv_metadata(text: str, *, delimiter: str) -> dict[str, object]:
 
 
 def _parquet_metadata(source_bytes: bytes) -> dict[str, object]:
+    import pyarrow as pa  # type: ignore[import-untyped]
+    import pyarrow.parquet as pq  # type: ignore[import-untyped]
+
     try:
         parquet = pq.ParquetFile(pa.BufferReader(source_bytes))
         metadata = parquet.metadata
@@ -273,5 +274,3 @@ def _canonical_ingested_at(value: str) -> str:
     except ValueError as exc:
         raise ValueError("ingested_at must be a valid UTC timestamp") from exc
     return value
-
-
