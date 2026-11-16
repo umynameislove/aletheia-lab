@@ -1,0 +1,326 @@
+{
+  "recorded_vietnam": "2026-11-15T12:03:59.776250+07:00",
+  "head": "fa46dd8cbb2239c6f116456894a2009b45846245",
+  "audit_kind": "Requirements/evidence reconciliation only; not a new test run or final acceptance for Bao",
+  "original_child_total": 92,
+  "coordination_excluded": 1,
+  "kien_assessed_total": 91,
+  "passed_in_personal_technical_scope": 76,
+  "remaining_kien": 15,
+  "groups_original_total": 18,
+  "groups_with_no_remaining_kien_work": 13,
+  "groups_with_remaining_kien_work": 5,
+  "ci": {
+    "success": 11,
+    "total": 11,
+    "head": "fa46dd8cbb2239c6f116456894a2009b45846245"
+  },
+  "basis": "68 historical personal-scope passes preserved plus 8 newly evidenced closures (K01.01/.02 K02.05 K03.02/.03/.05/.06 K16.04); partner-only handoff row excluded. Formal deployment gates remain open as listed.",
+  "newly_closed": [
+    "K-01.01",
+    "K-01.02",
+    "K-02.05",
+    "K-03.02",
+    "K-03.03",
+    "K-03.05",
+    "K-03.06",
+    "K-16.04"
+  ],
+  "remaining": [
+    {
+      "task": "K-14.01",
+      "title": "Ngân sách process và pool",
+      "action": "Đo trên topology triển khai đã khai báo: toàn bộ replica/process/pool, CPU theo operation, RAM/FD/NIC/ingress và dự phòng health/admin. Giữ nguyên kết quả local 2 API + 2 worker đã đạt."
+    },
+    {
+      "task": "K-14.05",
+      "title": "Fairness và burst",
+      "action": "Đo fairness/burst với workload S/M/L của môi trường triển khai; chứng minh tenant nền, retry, queue và deadline trong envelope. Không dùng debug local nhỏ thay capacity thực."
+    },
+    {
+      "task": "K-15.03",
+      "title": "Quyền và scope của stream",
+      "action": "Kiểm phía server/proxy/multi-replica khi revoke trong lúc có update/response đang chờ; dữ liệu, cursor và buffer không vượt quyền, mục tiêu phản ánh ≤5 giây. Loại phần UI/BFCache của Quân."
+    },
+    {
+      "task": "K-15.04",
+      "title": "Ngân sách reconnect",
+      "action": "Chạy mất TLS/network, proxy idle timeout và reconnect đồng loạt qua nhiều replica; đo connection/FD, request fanout, retry và khớp job ledger. Fresh TLS transport đã pass không thay một sự cố socket thật."
+    },
+    {
+      "task": "K-16.03",
+      "title": "Threat model và biện pháp kiểm soát",
+      "action": "Kiểm hardening trên deployment thật: edge TLS/security headers, quyền secret/collector và abuse theo tải được công bố. IdP/MFA local K03 và image local đã pass được giữ nguyên."
+    },
+    {
+      "task": "K-16.05",
+      "title": "Alert và runbook",
+      "action": "Triển khai và thử collection/routing cảnh báo thật, tới đầu mối trực; lưu bằng chứng trigger, hành động/runbook và kiểm cardinality."
+    },
+    {
+      "task": "K-17.01",
+      "title": "Adapter cho seed và import",
+      "action": "Hoàn thiện adapter/seed và import dữ liệu primary vật lý: 50.000 principal, 2.000 workspace, 10.000 project, 200.000 snapshot, 2.000.000 result; S/M/L đạt 100/1.000/10.000 claim, L ≥10.000 node, đủ hash/nguồn."
+    },
+    {
+      "task": "K-17.02",
+      "title": "Harness từ hành vi tới tải",
+      "action": "Hoàn thiện các hành trình còn thiếu trong harness tải và đối chiếu count scheduled/started/completed/waiting/idle/drop/reject; logout/renewal/upload/confirm/refresh/cancel/delete/membership/invite/settings phải được thực thi, không chỉ khai báo disposition."
+    },
+    {
+      "task": "K-17.03",
+      "title": "Đánh giá generator và tài nguyên",
+      "action": "Hiệu chuẩn máy phát tải riêng; đo CPU/RAM/FD/NIC/clock cùng cửa sổ và chứng minh generator không là nút thắt."
+    },
+    {
+      "task": "K-17.04",
+      "title": "Normal, stress, spike và soak",
+      "action": "Chạy primary normal 3 closed + 3 open, các mức 5k/10k/25k/50k, stress/spike/soak 2 giờ (8 giờ khi có căn cứ), giữ đủ mẫu số lỗi/timeout và SLO."
+    },
+    {
+      "task": "K-17.05",
+      "title": "Liên kết DB, fault và tải",
+      "action": "Chạy DB40/F26 gắn với tải thực: fault quanh commit/ACK/lease/quyền, telemetry đồng thời, reconciliation effect; tách tier process khỏi storage."
+    },
+    {
+      "task": "K-17.06",
+      "title": "Báo cáo capacity và chi phí",
+      "action": "Từ envelope đã đo đạt, lập capacity/cost/headroom thực tế cho infra/DB/object/bandwidth/generator/IdP/provider; không ngoại suy 10k lên 50k."
+    },
+    {
+      "task": "K-18.01",
+      "title": "Release có thể tái dựng",
+      "action": "Đóng gói/build image và release theo SHA cuối, lưu digest/lock/SBOM/config identity, kiểm API/worker/volume/secret/TLS và canary IdP trên môi trường triển khai. Không liệt kê xác nhận rebuild của Quân."
+    },
+    {
+      "task": "K-18.03",
+      "title": "Readiness, drain và rollout",
+      "action": "Thử rollout/upgrade/rollback image nhiều replica qua ingress: readiness, drain job đang nhận, worker cũ bị fencing và đủ tài nguyên dự phòng."
+    },
+    {
+      "task": "K-18.04",
+      "title": "Backup, PITR và object",
+      "action": "Thử host-loss và khôi phục DB/WAL/object/authority-checkpoint từ bản mã hóa ngoài host, trên dataset đích; đo RPO ≤5 phút, RTO ≤30 phút. PITR local đã pass giữ đúng phạm vi."
+    }
+  ],
+  "groups": [
+    {
+      "group": "K01",
+      "original_total": 4,
+      "counted_for_kien": 4,
+      "passed_in_personal_technical_scope": 4,
+      "remaining_kien": 0,
+      "coordination_excluded": 0
+    },
+    {
+      "group": "K02",
+      "original_total": 5,
+      "counted_for_kien": 5,
+      "passed_in_personal_technical_scope": 5,
+      "remaining_kien": 0,
+      "coordination_excluded": 0
+    },
+    {
+      "group": "K03",
+      "original_total": 6,
+      "counted_for_kien": 6,
+      "passed_in_personal_technical_scope": 6,
+      "remaining_kien": 0,
+      "coordination_excluded": 0
+    },
+    {
+      "group": "K04",
+      "original_total": 5,
+      "counted_for_kien": 5,
+      "passed_in_personal_technical_scope": 5,
+      "remaining_kien": 0,
+      "coordination_excluded": 0
+    },
+    {
+      "group": "K05",
+      "original_total": 6,
+      "counted_for_kien": 6,
+      "passed_in_personal_technical_scope": 6,
+      "remaining_kien": 0,
+      "coordination_excluded": 0
+    },
+    {
+      "group": "K06",
+      "original_total": 5,
+      "counted_for_kien": 5,
+      "passed_in_personal_technical_scope": 5,
+      "remaining_kien": 0,
+      "coordination_excluded": 0
+    },
+    {
+      "group": "K07",
+      "original_total": 5,
+      "counted_for_kien": 5,
+      "passed_in_personal_technical_scope": 5,
+      "remaining_kien": 0,
+      "coordination_excluded": 0
+    },
+    {
+      "group": "K08",
+      "original_total": 5,
+      "counted_for_kien": 5,
+      "passed_in_personal_technical_scope": 5,
+      "remaining_kien": 0,
+      "coordination_excluded": 0
+    },
+    {
+      "group": "K09",
+      "original_total": 6,
+      "counted_for_kien": 6,
+      "passed_in_personal_technical_scope": 6,
+      "remaining_kien": 0,
+      "coordination_excluded": 0
+    },
+    {
+      "group": "K10",
+      "original_total": 5,
+      "counted_for_kien": 5,
+      "passed_in_personal_technical_scope": 5,
+      "remaining_kien": 0,
+      "coordination_excluded": 0
+    },
+    {
+      "group": "K11",
+      "original_total": 5,
+      "counted_for_kien": 5,
+      "passed_in_personal_technical_scope": 5,
+      "remaining_kien": 0,
+      "coordination_excluded": 0
+    },
+    {
+      "group": "K12",
+      "original_total": 4,
+      "counted_for_kien": 4,
+      "passed_in_personal_technical_scope": 4,
+      "remaining_kien": 0,
+      "coordination_excluded": 0
+    },
+    {
+      "group": "K13",
+      "original_total": 5,
+      "counted_for_kien": 5,
+      "passed_in_personal_technical_scope": 5,
+      "remaining_kien": 0,
+      "coordination_excluded": 0
+    },
+    {
+      "group": "K14",
+      "original_total": 5,
+      "counted_for_kien": 5,
+      "passed_in_personal_technical_scope": 3,
+      "remaining_kien": 2,
+      "coordination_excluded": 0
+    },
+    {
+      "group": "K15",
+      "original_total": 4,
+      "counted_for_kien": 4,
+      "passed_in_personal_technical_scope": 2,
+      "remaining_kien": 2,
+      "coordination_excluded": 0
+    },
+    {
+      "group": "K16",
+      "original_total": 5,
+      "counted_for_kien": 5,
+      "passed_in_personal_technical_scope": 3,
+      "remaining_kien": 2,
+      "coordination_excluded": 0
+    },
+    {
+      "group": "K17",
+      "original_total": 6,
+      "counted_for_kien": 6,
+      "passed_in_personal_technical_scope": 0,
+      "remaining_kien": 6,
+      "coordination_excluded": 0
+    },
+    {
+      "group": "K18",
+      "original_total": 6,
+      "counted_for_kien": 5,
+      "passed_in_personal_technical_scope": 2,
+      "remaining_kien": 3,
+      "coordination_excluded": 1
+    }
+  ],
+  "source_receipts": [
+    {
+      "path": "C:\\Users\\Trung Kiên\\.codex\\worktrees\\product-api-publication\\_repo_aletheia_ref\\delivery\\kien-r418\\requirements\\01-Ca-nhan\\09-Dau-viec-chi-tiet.csv",
+      "sha256": "e8ff55b8c10159fe047e62c115cd4abf1f95f3313ef0a68d46ea12005efcfc59"
+    },
+    {
+      "path": "C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\Kien-K01-K18-R4-20261113\\evidence\\k01-k02-product-api-6e388db\\KET-QUA-K01-K02.md",
+      "sha256": "3146e9982a38bfa17b42f08fd2ee19781d7dc886d93be3e9d377a7c3c2665852"
+    },
+    {
+      "path": "C:\\Users\\Trung Kiên\\.codex\\worktrees\\product-api-publication\\_repo_aletheia_ref\\delivery\\kien-r418\\evidence\\k03-real-http\\result.json",
+      "sha256": "77e3cba15b291d9a8d3e2267ad28ca223552804b6112445aed12c6abcb442739"
+    },
+    {
+      "path": "C:\\Users\\Trung Kiên\\.codex\\worktrees\\product-api-publication\\_repo_aletheia_ref\\delivery\\kien-r418\\evidence\\k03-real-http\\ci-fa46dd8\\github-ci-result.json",
+      "sha256": "0be3903b65649951be42b6d4aee4270b9ab949536d50996779e36c8e351bb701"
+    },
+    {
+      "path": "C:\\Users\\Trung Kiên\\.codex\\worktrees\\product-api-publication\\_repo_aletheia_ref\\delivery\\kien-r418\\evidence\\k07-completion-race\\ci-5ac1c54\\github-ci-result.json",
+      "sha256": "640cc677e4dc0752d28bd238634e29023de4599e5f3814f84e5a4c111bc1cec4"
+    },
+    {
+      "path": "C:\\Users\\Trung Kiên\\.codex\\worktrees\\product-api-publication\\_repo_aletheia_ref\\delivery\\kien-r418\\evidence\\k0903-authorization\\result.json",
+      "sha256": "e97f17026fc18f7d152982fa3756a7e3a1e11c5d4d6d0704b03bf26f02886e3f"
+    },
+    {
+      "path": "C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\Kien-K01-K18-R4-20261113\\evidence\\k14-current-windows\\result.json",
+      "sha256": "48988745290432407edfff529163b2fc4bd74571acffdc76842c379aa9e9ddcd"
+    },
+    {
+      "path": "C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\Kien-K01-K18-R4-20261113\\evidence\\k14-current-windows\\pytest.log",
+      "sha256": "b0d01c419be469cba9a46b36175f0dfec932a5f567e99ad6532a2b5ff40029ee"
+    },
+    {
+      "path": "C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\Kien-K01-K18-R4-20261113\\evidence\\k14-queue-pressure-3\\K14.01-K14.05-KET-QUA.md",
+      "sha256": "541087c7ad4908a19eef18952a2bb817138d81adfc05b97a8fe71026c5b28922"
+    },
+    {
+      "path": "C:\\Users\\Trung Kiên\\.codex\\worktrees\\product-api-publication\\_repo_aletheia_ref\\delivery\\kien-r418\\handoff\\k16-r418-image\\KET-QUA-K16.md",
+      "sha256": "18d7b5508d67759978da81b37976d2da82c8cc71527a8d98d7263e8eb0d6a870"
+    },
+    {
+      "path": "C:\\Users\\Trung Kiên\\.codex\\worktrees\\product-api-publication\\_repo_aletheia_ref\\docs\\k15-job-updates.md",
+      "sha256": "8cf6093ba69bc54e6628f34cb1060d05d321c75f619f94ecaa9587eb75783521"
+    },
+    {
+      "path": "C:\\Users\\Trung Kiên\\.codex\\worktrees\\product-api-publication\\_repo_aletheia_ref\\docs\\k17-expanded-workload.md",
+      "sha256": "938330b6dceb267d89b0cf7135e9637d704643f576ef781661ca1e977339bb67"
+    },
+    {
+      "path": "C:\\Users\\Trung Kiên\\.codex\\worktrees\\product-api-publication\\_repo_aletheia_ref\\docs\\k17-primary-v3-proposal.md",
+      "sha256": "ac3fb1775ecf2fb83b290f0195ba73154b6243242a6e70947a06b4b22637d488"
+    },
+    {
+      "path": "C:\\Users\\Trung Kiên\\.codex\\worktrees\\product-api-publication\\_repo_aletheia_ref\\scripts\\k17_capacity.py",
+      "sha256": "b659e372e63dce84176fb0803f4536ca964d6cd25b224b75f4a5240be03bd30f"
+    },
+    {
+      "path": "C:\\Users\\Trung Kiên\\.codex\\worktrees\\product-api-publication\\_repo_aletheia_ref\\docs\\k18-operator-review.md",
+      "sha256": "b9ec1f00ed4acb20d93a2fbca60e119b1c0f947da4d9ad892a7c16eab7a7a1e3"
+    },
+    {
+      "path": "C:\\Users\\Trung Kiên\\.codex\\worktrees\\product-api-publication\\_repo_aletheia_ref\\docs\\k18-process-recovery.md",
+      "sha256": "cbe04af853fd922a30f0145fc98ccbfac6b484dc984538dd2938da04a271d9eb"
+    },
+    {
+      "path": "C:\\Users\\Trung Kiên\\.codex\\worktrees\\product-api-publication\\_repo_aletheia_ref\\docs\\k18-native-pitr-fixture.md",
+      "sha256": "c7c3c5ffff9cb9f728ac635d7c7ef6c9092b72dd041411d33cb430e445317be8"
+    }
+  ],
+  "no_source_changes": true,
+  "no_tests_rerun": true,
+  "no_commit_or_push": true,
+  "final_bao_report_exported": false
+}
