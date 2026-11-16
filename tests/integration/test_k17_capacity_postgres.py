@@ -14,6 +14,7 @@ import secrets
 import ssl
 import subprocess
 import sys
+from contextlib import AsyncExitStack
 from datetime import UTC, datetime
 from importlib.resources import files
 from pathlib import Path
@@ -97,7 +98,7 @@ async def main():
             from aletheia_lab.hosted_auth.worker_sessions import WorkerPostgresSources
             SourceType=WorkerPostgresSources
         sources=SourceType(pool,maximum_upload_bytes=200*1024**2,maximum_expanded_bytes=512*1024**2,maximum_entries=100000,audit=True,catalog=catalog)
-        jobs=PostgresJobs(pool,sources,audit=True,catalog=catalog,execution=True,analysis_model='upload-snapshot-metric-observation/v2')
+        jobs=PostgresJobs(pool,sources,audit=True,catalog=catalog,execution=True,analysis_model=settings.api.analysis_model)
         async def clock():
             return await jobs.is_ready() and await jobs.execution_ready() and await jobs.follow_up_ready() and await probe_clock(pool,max_skew_seconds=30,timeout_seconds=2)
         assert await clock()
@@ -160,7 +161,7 @@ def _identity(root):
     return digest.hexdigest()
 
 
-def _exercise(tmp_path, *, rotation=False):
+def _exercise(tmp_path, *, rotation=False, windowed=False):
     async def scenario():
         root = Path(__file__).resolve().parents[2]
         source_before = _identity(root)
@@ -169,6 +170,11 @@ def _exercise(tmp_path, *, rotation=False):
         roles = {mode: "k17_" + mode + "_" + uuid4().hex for mode in ("api", "worker")}
         passwords = {mode: secrets.token_urlsafe(32) for mode in roles}
         children, handles, created_roles = [], [], []
+        replica_count = int(os.environ.get("K17_API_REPLICAS", "1"))
+        assert replica_count in (1, 2)
+        api_ports = []
+        process_names = []
+        ingress = AsyncExitStack()
         saved = Path(os.environ["K17_EVIDENCE_DIR"]) if os.environ.get("K17_EVIDENCE_DIR") else None
         prefix = "renewal" if rotation else "calibration100"
 
@@ -205,6 +211,8 @@ def _exercise(tmp_path, *, rotation=False):
                         idle_seconds=60,
                         absolute_seconds=120,
                     )
+                if windowed:
+                    plan = SeedPlan(namespace="k17_windowdemo", generations=1, results_per_generation=1)
                 manifest = await seed_native(
                     pool,
                     schema=schema,
@@ -239,8 +247,16 @@ def _exercise(tmp_path, *, rotation=False):
                 key.chmod(0o600)
                 port = _port()
                 (output / "worker-private").mkdir(mode=0o700)
-                for mode in roles:
-                    config = tmp_path / (mode + ".json")
+                modes = [
+                    ("api" if index == 0 else f"api{index}", "api")
+                    for index in range(replica_count)
+                ] + [("worker", "worker")]
+                for name, mode in modes:
+                    process_names.append(name)
+                    child_port = port if name in ("api", "worker") else _port()
+                    if mode == "api":
+                        api_ports.append(child_port)
+                    config = tmp_path / (name + ".json")
                     config.write_text(
                         json.dumps(
                             {
@@ -259,9 +275,13 @@ def _exercise(tmp_path, *, rotation=False):
                                     "expected_database_role": roles[mode],
                                 },
                                 "api": {
-                                    "port": port,
+                                    "port": child_port,
+                                    "processes": replica_count,
                                     "database_pool_size": 4,
                                     "graceful_shutdown_seconds": 10,
+                                    **({"analysis_model": "upload-snapshot-windowed-metric-observation/v3",
+                                        "backend_timeout_seconds": 60, "request_timeout_seconds": 90}
+                                       if windowed else {}),
                                 },
                             }
                         )
@@ -292,7 +312,7 @@ def _exercise(tmp_path, *, rotation=False):
                                 "login_transaction_seconds": 30,
                             }
                         )
-                    log = (tmp_path / (mode + ".safe.jsonl")).open("wb")
+                    log = (tmp_path / (name + ".safe.jsonl")).open("wb")
                     handles.append(log)
                     child = subprocess.Popen(
                         [
@@ -312,6 +332,16 @@ def _exercise(tmp_path, *, rotation=False):
                     )
                     children.append(child)
                 target = f"https://127.0.0.1:{port}"
+                edge = None
+                if replica_count > 1:
+                    sys.path.insert(0, str(root / "delivery/kien-r418/tests"))
+                    try:
+                        from k15_tls_edge import Edge
+                    finally:
+                        sys.path.pop(0)
+
+                    edge = await ingress.enter_async_context(Edge(api_ports))
+                    target = edge.url
                 profile = calibration_profile(
                     target=target,
                     origin=ORIGIN,
@@ -325,9 +355,15 @@ def _exercise(tmp_path, *, rotation=False):
                 profile = type(profile).model_validate(
                     {
                         **profile.model_dump(),
-                        "duration_seconds": float(os.environ.get("K17_CALIBRATION_DURATION_SECONDS", "25")),
-                        "warmup_seconds": float(os.environ.get("K17_CALIBRATION_WARMUP_SECONDS", "0")),
-                        "arrivals_per_second": float(os.environ.get("K17_CALIBRATION_ARRIVALS_PER_SECOND", "20")),
+                        "duration_seconds": float(
+                            os.environ.get("K17_CALIBRATION_DURATION_SECONDS", "25")
+                        ),
+                        "warmup_seconds": float(
+                            os.environ.get("K17_CALIBRATION_WARMUP_SECONDS", "0")
+                        ),
+                        "arrivals_per_second": float(
+                            os.environ.get("K17_CALIBRATION_ARRIVALS_PER_SECOND", "20")
+                        ),
                         "think_seconds": 5.0,
                         "max_inflight": 32,
                         "max_pending": 128,
@@ -348,11 +384,11 @@ def _exercise(tmp_path, *, rotation=False):
                             "journeys": (profile.journeys[0],),
                         }
                     )
-                assert len(actors) == len({a.actor_id for a in actors}) == (1 if rotation else 100)
+                assert len(actors) == len({a.actor_id for a in actors}) == (1 if rotation else plan.principals)
                 assert rotation or {
                     role: sum(a.role == role for a in actors)
                     for role in ("owner", "admin", "analyst", "reviewer", "viewer")
-                } == dict.fromkeys(("owner", "admin", "analyst", "reviewer", "viewer"), 20)
+                } == dict.fromkeys(("owner", "admin", "analyst", "reviewer", "viewer"), plan.projects)
                 async with httpx2.AsyncClient(
                     base_url=target,
                     verify=ssl.create_default_context(cafile=str(cert)),
@@ -379,6 +415,11 @@ def _exercise(tmp_path, *, rotation=False):
                     (saved / (prefix + "-seed-manifest.json")).write_text(
                         json.dumps(manifest, indent=2) + "\n"
                     )
+                if windowed:
+                    from test_k17_window_pipeline_postgres import exercise_window_pipeline
+
+                    await exercise_window_pipeline(target, cert, actors, pool, saved or tmp_path)
+                    return
                 started = datetime.now(UTC).isoformat()
                 harness = CapacityHarness(profile, actors)
                 result = await harness.run()
@@ -455,7 +496,7 @@ def _exercise(tmp_path, *, rotation=False):
                     runtime_tree_sha256_after=_identity(root),
                     native_topology={
                         "same_host_generator_sut": True,
-                        "api_processes": 1,
+                        "api_processes": replica_count,
                         "api_pool": 4,
                         "worker_processes": 1,
                         "worker_pool": 2,
@@ -468,6 +509,7 @@ def _exercise(tmp_path, *, rotation=False):
                         "active_window_scope": f"{profile.duration_seconds:g}s measured window, {profile.warmup_seconds:g}s warmup; local calibration only, no primary engaged/SLO/50k certification",
                     },
                     postrun_reconciliation=reconciliation,
+                    tls_ingress=None if edge is None else dict(edge.counts),
                 )
                 if saved:
                     (saved / (prefix + "-result.json")).write_text(
@@ -496,10 +538,11 @@ def _exercise(tmp_path, *, rotation=False):
                 assert result["peak_action_inflight"] <= 32
         finally:
             await stop_children()
+            await ingress.aclose()
             for handle in handles:
                 handle.close()
             if saved:
-                for mode in roles:
+                for mode in process_names:
                     log = tmp_path / (mode + ".safe.jsonl")
                     if log.exists():
                         content = log.read_bytes()
@@ -521,15 +564,27 @@ def test_actual_native_rotation_retains_actor_context_and_old_cookie_is_denied(t
     _exercise(tmp_path, rotation=True)
 
 
-
 def test_reconciliation_uses_native_job_key_hash():
     async def scenario():
         async with _target() as (pool, schema), pool.connection() as conn:
             await conn.execute("SET TRANSACTION READ ONLY")
-            result = await reconcile_mutations(conn, schema, {"mutation_reconciliation": {
-                "unresolved": 1, "witnesses": [{"workspace_id": "ws_fixture",
-                "request_key_sha256": "a" * 64, "operation_id": "P13"}],
-            }})
+            result = await reconcile_mutations(
+                conn,
+                schema,
+                {
+                    "mutation_reconciliation": {
+                        "unresolved": 1,
+                        "witnesses": [
+                            {
+                                "workspace_id": "ws_fixture",
+                                "request_key_sha256": "a" * 64,
+                                "operation_id": "P13",
+                            }
+                        ],
+                    }
+                },
+            )
             assert result["observations"][0]["status"] == "no_effect_visible_at_observation"
             assert result["original_slo_outcomes_unchanged"]
+
     _run(scenario())

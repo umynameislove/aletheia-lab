@@ -94,9 +94,11 @@ def _primary_dataset(manifest: dict[str, object]) -> bool:
             if type(n) is not int or n < minimum:
                 return False
     nodes = strata["L"].get("actual_graph_nodes_per_result")
+    membership = manifest.get("shared_workspace_active_memberships")
     return (
         type(nodes) is int
         and nodes >= 10000
+        and membership == {"shared": 50, "hot": 500}
         and physical.get("all_source_payload_hashes_verified") is True
         and physical.get("all_object_file_hashes_verified") is True
     )
@@ -169,7 +171,7 @@ def main() -> int:
             raise ValueError(
                 "Private actor file does not match the pinned public dataset manifest."
             )
-        if profile.scope == "primary" and not _primary_dataset(manifest):
+        if profile.scope == "primary" and ((args.dataset.parent / "INCOMPLETE").exists() or not _primary_dataset(manifest)):
             raise ValueError(
                 "Primary execution requires the verified full logical/physical guide dataset, not debug dimensions."
             )
