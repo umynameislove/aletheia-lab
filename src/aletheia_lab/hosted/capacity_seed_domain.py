@@ -12,6 +12,7 @@ from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.product.demo_flow import _demo_mapping
 
 from .capacity_seed_models import SeedPlan
+from .upload_analysis import WINDOW_OBSERVATION_MODEL
 
 
 def source_payload(plan: SeedPlan, project: int, generation: int) -> bytes:
@@ -26,12 +27,18 @@ def source_payload(plan: SeedPlan, project: int, generation: int) -> bytes:
                 f"{plan.seed}:{project}:{generation}:{row}".encode()
             ).hexdigest()
             dataset.write(f"{row},{row % 2},{feature}\n")
-        metrics = ["run,name,value"]
-        for index in range(plan.metric_series[size]):
-            for run, offset in [("baseline", 0), ("candidate", 1)]:
-                metrics.append(
-                    f"{run},loss_{index},{(5000 + index + generation * 10 + offset * 100) / 10000:.4f}"
-                )
+        if plan.analysis_model == WINDOW_OBSERVATION_MODEL:
+            metrics = ["run,name,value,step"]
+            for run, offset in (("baseline", 0), ("candidate", 1)):
+                for row in range(plan.source_rows[size] // 2):
+                    metrics.append(f"{run},loss_0,{(5000 + row % 100 + generation * 10 + offset * 100) / 10000:.4f},{row}")
+        else:
+            metrics = ["run,name,value"]
+            for index in range(plan.metric_series[size]):
+                for run, offset in [("baseline", 0), ("candidate", 1)]:
+                    metrics.append(
+                        f"{run},loss_{index},{(5000 + index + generation * 10 + offset * 100) / 10000:.4f}"
+                    )
         config = json.dumps(
             {
                 "seed": plan.seed,
@@ -53,7 +60,7 @@ def source_payload(plan: SeedPlan, project: int, generation: int) -> bytes:
     return buffer.getvalue()
 
 
-def confirm_mapping(preview: dict[str, object], series: int) -> dict[str, object]:
+def confirm_mapping(preview: dict[str, object], series: int, *, windowed: bool = False) -> dict[str, object]:
     mapping = _demo_mapping(preview)
     mapping["metric_definitions"] = [
         {
@@ -63,6 +70,8 @@ def confirm_mapping(preview: dict[str, object], series: int) -> dict[str, object
         }
         for index in range(series)
     ]
+    if windowed:
+        mapping["metric_sources"][0]["step_field"] = "step"
     return mapping
 
 

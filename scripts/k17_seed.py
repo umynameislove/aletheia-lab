@@ -29,7 +29,7 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--require-primary",
         action="store_true",
-        help="Fail before writes while current native analyzer dimensions do not meet primary guide",
+        help="Fail before writes if the plan cannot qualify as the primary catalog",
     )
     return parser.parse_args(argv)
 
@@ -82,7 +82,7 @@ async def execute(args: argparse.Namespace) -> dict[str, object]:
         "dataset_sha256": result["dataset_sha256"],
         "manifest": str(args.output / "manifest.json"),
         "logical_counts": result["logical_counts"],
-        "primary_dataset_qualified": False,
+        "primary_dataset_qualified": result["primary_dataset_qualified"],
         "primary_gaps": result["primary_gaps"],
     }
 

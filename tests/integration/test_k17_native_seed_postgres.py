@@ -7,6 +7,7 @@ import os
 import stat
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from pathlib import Path
 from uuid import uuid4
 
 import psycopg
@@ -19,7 +20,14 @@ from test_k05_native_results_postgres import _run
 
 from aletheia_lab.hosted.authorization import AuthorizationDenied
 from aletheia_lab.hosted.capacity_models import Actor
-from aletheia_lab.hosted.capacity_seed import SeedLimits, SeedRejected, seed_native
+from aletheia_lab.hosted.capacity_seed import (
+    SeedLimits,
+    SeedRejected,
+    _bootstrap,
+    _populate_shared_workspaces,
+    _refresh_seed_operator,
+    seed_native,
+)
 from aletheia_lab.hosted.capacity_seed_models import SeedPlan
 from aletheia_lab.hosted.object_store import FilesystemObjectStore
 from aletheia_lab.hosted.persistence_migration import migrate
@@ -29,6 +37,7 @@ from aletheia_lab.hosted.postgres_objects import PostgresObjects
 from aletheia_lab.hosted.postgres_sources import PostgresSources
 from aletheia_lab.hosted.project_policy_migration import migrate as migrate_policy
 from aletheia_lab.hosted.review_migration import migrate as migrate_reviews
+from aletheia_lab.hosted.upload_analysis import WINDOW_OBSERVATION_MODEL
 from aletheia_lab.hosted_auth.csrf import CsrfTokens
 from aletheia_lab.hosted_auth.postgres_sessions import PostgresSessionStore
 from aletheia_lab.hosted_auth.sessions import ServerSessions
@@ -64,6 +73,104 @@ async def _target():
                 yield pool, schema
         finally:
             await admin.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema)))
+
+
+@pytest.mark.parametrize(("source_rows", "results_per_generation"), [
+    ({"S": 1000, "M": 10000, "L": 100000}, 1),
+    ({"S": 20, "M": 40, "L": 60}, 2),
+], ids=["physical", "small"])
+def test_window_catalog_pilot_verifies_native_multi_generation_results(tmp_path, source_rows, results_per_generation):
+    async def scenario():
+        plan = SeedPlan(namespace="k17_windowsizing", projects_per_workspace=2, generations=2,
+                        results_per_generation=results_per_generation, analysis_model=WINDOW_OBSERVATION_MODEL,
+                        source_rows=source_rows)
+        output = tmp_path / "window-seed"
+        secret = SecretStr("synthetic-k17-csrf-signing-key-not-production")
+        async with _target() as (pool, schema):
+            manifest = await seed_native(pool, schema=schema, output=output, plan=plan, csrf_secret=secret,
+                                         limits=SeedLimits(700 * 1024**2, 230000, 30, maximum_seconds=720))
+            assert manifest["logical_counts"] == {
+                "principals": 20, "workspaces": 2, "projects": 4, "snapshots": 8, "results": plan.results,
+                "sources": 8, "projections": plan.results, "upload_projections": 8,
+            }
+            assert manifest["physical"]["all_source_payload_hashes_verified"]
+            assert manifest["physical"]["all_object_file_hashes_verified"]
+            assert not manifest["primary_dataset_qualified"] and not (output / "INCOMPLETE").exists()
+            assert not manifest["shared_workspace_active_memberships"]
+            inventory = [json.loads(line) for line in (output / "inventory.jsonl").read_text().splitlines()]
+            sizes = {}
+            async with pool.connection() as conn:
+                for size in ("S", "M", "L"):
+                    claims = plan.expected_claims(size)
+                    stratum = [row for row in inventory if row["size"] == size]
+                    results = [row for row in stratum if row["kind"] == "result"]
+                    generations = [row for row in stratum if row["kind"] == "generation"]
+                    assert len(results) == len(generations) * results_per_generation and len(generations) >= 2
+                    assert all(len(set(row["result_ids"])) == results_per_generation for row in generations)
+                    assert all(row["claims"] == row["evidence"] == claims for row in results)
+                    assert all(row["graph_nodes"] == 2 * claims + 2 and row["graph_edges"] == 3 * claims for row in results)
+                    pairs = await (await conn.execute(
+                        "SELECT r.record_type, count(*), sum(o.byte_size) FROM k05_records r "
+                        "JOIN k05_objects o ON (o.workspace_id,o.sha256)=(r.workspace_id,r.object_sha256) "
+                        "WHERE r.project_id=ANY(%s) GROUP BY r.record_type ORDER BY r.record_type",
+                        (sorted({row["project_id"] for row in stratum}),),
+                    )).fetchall()
+                    sizes[size] = {"source_zip_bytes": [row["source_zip_bytes"] for row in generations],
+                                   "result_bytes": [row["bytes"] for row in results],
+                                   "objects_by_type": {kind: {"count": count, "bytes": int(n)} for kind, count, n in pairs}}
+                columns = await (await conn.execute(
+                    "SELECT relname, pg_total_relation_size(oid) FROM pg_class WHERE relnamespace=current_schema()::regnamespace "
+                    "AND relkind='r' ORDER BY relname"
+                )).fetchall()
+            if evidence := os.environ.get("K17_EVIDENCE_DIR"):
+                (Path(evidence) / "window-catalog-measurement.json").write_text(json.dumps({
+                    "manifest": manifest, "stratum_objects": sizes, "relation_bytes": dict(columns),
+                    "seed_files_bytes": sum(f.stat().st_size for f in output.iterdir() if f.is_file()),
+                }, indent=2) + "\n")
+
+    _run(scenario())
+
+
+def test_window_catalog_hot_memberships_keep_distinct_principals():
+    async def scenario():
+        plan = SeedPlan(namespace="k17_hotcohorts", workspaces=20, projects_per_workspace=5,
+                        analysis_model=WINDOW_OBSERVATION_MODEL, source_rows={"S": 20, "M": 40, "L": 60})
+        tokens = CsrfTokens(SecretStr("synthetic-k17-csrf-signing-key-not-production"))
+        async with _target() as (pool, _schema):
+            for index in range(plan.workspaces):
+                await _bootstrap(pool, plan, tokens, index)
+            assert await _populate_shared_workspaces(pool, plan) == {"shared": 50, "hot": 500}
+            async with pool.connection() as conn:
+                assert await (await conn.execute("SELECT count(*) FROM hosted_identity_bindings")).fetchone() == (500,)
+                assert await (await conn.execute(
+                    "SELECT count(*), count(DISTINCT user_id) FROM j01_memberships WHERE active"
+                )).fetchone() == (1000, 500)
+
+    _run(scenario())
+
+
+def test_window_seed_preserves_live_owner_and_replaces_expired_session():
+    async def scenario():
+        plan = SeedPlan(namespace="k17_windowexpiry", analysis_model=WINDOW_OBSERVATION_MODEL,
+                        source_rows={"S": 20, "M": 40, "L": 60})
+        tokens = CsrfTokens(SecretStr("synthetic-k17-csrf-signing-key-not-production"))
+        async with _target() as (pool, _schema):
+            owner, context = await _bootstrap(pool, plan, tokens, 0)
+            async with pool.connection() as conn:
+                assert await _refresh_seed_operator(conn, plan, tokens, 0, owner, context) == (owner, context)
+                await conn.execute("UPDATE j01_sessions SET issued_at=statement_timestamp()-interval '2 hours', "
+                    "rotated_at=statement_timestamp()-interval '2 hours', last_seen_at=statement_timestamp()-interval '2 hours', "
+                    "idle_expires_at=statement_timestamp()-interval '1 hour' WHERE context_id=%s", (context,))
+                renewed, new_context = await _refresh_seed_operator(conn, plan, tokens, 0, owner, context)
+                assert (renewed, new_context) != (owner, context)
+                states = await (await conn.execute("SELECT state,user_id FROM j01_sessions ORDER BY state")).fetchall()
+                assert states == [("active", plan.user(0)), ("revoked", plan.user(0))]
+                from aletheia_lab.hosted.authorization import PostgresAuthorization
+
+                auth = await PostgresAuthorization().authorize(conn, renewed.get_secret_value(), plan.workspace(0), "confirm")
+                assert auth.user_id == plan.user(0)
+
+    _run(scenario())
 
 
 def test_small_streamed_native_seed_has_real_scoped_records_role_mix_and_independent_physical_sizes(

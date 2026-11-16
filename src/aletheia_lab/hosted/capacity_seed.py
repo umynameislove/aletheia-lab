@@ -15,16 +15,14 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, BinaryIO
-from uuid import uuid4
 
 from psycopg import AsyncConnection
 from psycopg_pool import AsyncConnectionPool
 from pydantic import SecretStr
 
 from aletheia_lab.hosted.content_hashing import content_hasher
-from aletheia_lab.hosted_auth.boundary import SESSION_COOKIE, new_opaque_secret
+from aletheia_lab.hosted_auth.boundary import SESSION_COOKIE
 from aletheia_lab.hosted_auth.csrf import CSRF_COOKIE, CsrfTokens
-from aletheia_lab.hosted_auth.sessions import credential_digest
 
 from .async_work import run_blocking
 from .authorization import PostgresAuthorization
@@ -35,7 +33,14 @@ from .capacity_seed_domain import (
     owned_scratch,
     source_payload,
 )
-from .capacity_seed_models import ROLES, SeedPlan
+from .capacity_seed_identity import (
+    _bootstrap,
+    _populate_shared_workspaces,
+    _refresh_seed_operator,
+    _session,
+    _source_operator,
+)
+from .capacity_seed_models import ROLES, SeedPlan, SeedRejected
 from .native_upload_records import build_initial_upload_result
 from .object_store import FilesystemObjectStore
 from .persistence_migration import verify as verify_persistence
@@ -45,14 +50,9 @@ from .project_policy_migration import verify as verify_policy
 from .project_refresh import refresh_uploaded_project
 from .recovery_points import file_digest
 from .review_migration import verify as verify_reviews
-from .upload_analysis import METRIC_OBSERVATION_MODEL, analyze_upload_metrics
+from .upload_analysis import WINDOW_OBSERVATION_MODEL, analyze_upload
 from .upload_project import UploadProject
 from .upload_publication import UploadPublication
-
-
-class SeedRejected(ValueError):
-    def __init__(self) -> None:
-        super().__init__("Seed plan, fresh owned target, or resource guard did not match.")
 
 
 @dataclass(frozen=True)
@@ -152,59 +152,6 @@ async def _preflight(
         ).fetchone()
         if populated != (False,):
             raise SeedRejected()
-
-
-async def _session(
-    conn: AsyncConnection, user: str, tokens: CsrfTokens, plan: SeedPlan
-) -> tuple[SecretStr, str, str, str, str]:
-    context = "k17ctx_" + uuid4().hex
-    raw = new_opaque_secret()
-    proof = tokens.issue(context)
-    digest = credential_digest(raw)
-    inserted = await conn.execute(
-        "INSERT INTO j01_sessions(context_id,user_id,csrf_token,state,issued_at,rotated_at,last_seen_at,idle_expires_at,absolute_expires_at,session_epoch,generation) "
-        "VALUES(%s,%s,%s,'active',statement_timestamp(),statement_timestamp(),statement_timestamp(),statement_timestamp()+%s*interval '1 second',statement_timestamp()+%s*interval '1 second',0,0) RETURNING absolute_expires_at",
-        (context, user, proof.get_secret_value(), plan.idle_seconds, plan.absolute_seconds),
-    )
-    expiry = await inserted.fetchone()
-    if expiry is None or not isinstance(expiry[0], datetime) or expiry[0].utcoffset() is None:
-        raise SeedRejected()
-    await conn.execute(
-        "INSERT INTO j01_session_credentials VALUES(%s,%s,'active',0)",
-        (digest.get_secret_value(), context),
-    )
-    return (
-        digest,
-        context,
-        raw.get_secret_value(),
-        proof.get_secret_value(),
-        expiry[0].astimezone(UTC).isoformat(),
-    )
-
-
-async def _bootstrap(
-    pool: AsyncConnectionPool, plan: SeedPlan, tokens: CsrfTokens, workspace_index: int
-) -> tuple[SecretStr, str]:
-    workspace = plan.workspace(workspace_index)
-    async with pool.connection() as conn:
-        await conn.execute(
-            "INSERT INTO j01_workspaces(workspace_id,name) VALUES(%s,%s)",
-            (workspace, "Synthetic K17 workspace"),
-        )
-        first = workspace_index * plan.projects_per_workspace * len(ROLES)
-        for offset in range(plan.projects_per_workspace * len(ROLES)):
-            user = plan.user(first + offset)
-            await conn.execute(
-                "INSERT INTO hosted_identity_bindings(issuer,subject,user_id,display_name,email,email_verified,enabled,account_epoch,onboarding) "
-                "VALUES('https://k17-synthetic.example.invalid',%s,%s,'Synthetic capacity actor',%s,true,true,0,'ready')",
-                (user, user, user + "@example.invalid"),
-            )
-            await conn.execute(
-                "INSERT INTO j01_memberships(workspace_id,user_id,role,active,revision) VALUES(%s,%s,%s,true,1)",
-                (workspace, user, ROLES[offset % len(ROLES)]),
-            )
-        digest, context, _, _, _ = await _session(conn, plan.user(first), tokens, plan)
-    return digest, context
 
 
 def _actions(role: str) -> list[str]:
@@ -322,8 +269,8 @@ async def seed_native(
         size: {
             "projects": 0,
             "source_rows_per_generation": plan.source_rows[size],
-            "metric_series_per_run": plan.metric_series[size],
-            "actual_claims_per_result": 2 * plan.metric_series[size],
+            "metric_series_per_run": 1 if plan.analysis_model == WINDOW_OBSERVATION_MODEL else plan.metric_series[size],
+            "actual_claims_per_result": plan.expected_claims(size),
             "actual_graph_nodes_per_result": None,
             "actual_graph_edges_per_result": None,
             "minimum_source_zip_bytes": None,
@@ -354,6 +301,7 @@ async def seed_native(
                         )
                         budget.logical_written += len(payload)
                         budget.quick()
+                        owner, bootstrap_context = await _source_operator(pool, plan, tokens, wi, owner, bootstrap_context)
                         source = await sources.put(
                             credential_digest=owner,
                             workspace_id=workspace,
@@ -372,7 +320,9 @@ async def seed_native(
                                 payload,
                                 workspace_id=workspace,
                                 source_id=source.source_id,
-                                mapping=confirm_mapping(preview, plan.metric_series[size]),
+                                mapping=confirm_mapping(preview,
+                                    1 if plan.analysis_model == WINDOW_OBSERVATION_MODEL else plan.metric_series[size],
+                                    windowed=plan.analysis_model == WINDOW_OBSERVATION_MODEL),
                                 captured_at=captured.isoformat(),
                             )
                             origin = source.sha256
@@ -398,6 +348,7 @@ async def seed_native(
                             snapshot, parent=previous
                         )
                         async with pool.connection() as conn:
+                            owner, bootstrap_context = await _refresh_seed_operator(conn, plan, tokens, wi, owner, bootstrap_context)
                             auth = await access.authorize(
                                 conn, owner.get_secret_value(), workspace, "confirm"
                             )
@@ -439,7 +390,7 @@ async def seed_native(
                         for analysis in range(plan.results_per_generation):
                             budget.quick()
                             question = f"Synthetic observation for project{project_index}, generation{generation}, analysis{analysis}: what is recorded in these validated metrics?"
-                            view = await run_blocking(analyze_upload_metrics, snapshot, question)
+                            view = await run_blocking(analyze_upload, snapshot, question, plan.analysis_model)
                             record = await run_blocking(
                                 build_initial_upload_result, snapshot, question, view
                             )
@@ -447,6 +398,7 @@ async def seed_native(
                                 workspace, snapshot=snapshot, record=record
                             )
                             async with pool.connection() as conn:
+                                owner, bootstrap_context = await _refresh_seed_operator(conn, plan, tokens, wi, owner, bootstrap_context)
                                 auth = await access.authorize(
                                     conn, owner.get_secret_value(), workspace, "analyze"
                                 )
@@ -458,7 +410,7 @@ async def seed_native(
                                 )
                             revision = published_result.revision
                             budget.logical_written += prepared_result.staged.descriptor.byte_size
-                            actual_claims, count = _record_result_dimensions(view, 2 * plan.metric_series[size], prepared_result, dimensions)
+                            actual_claims, count = _record_result_dimensions(view, plan.expected_claims(size), prepared_result, dimensions)
                             result_ids.append(record.record_id)
                             _line(
                                 inventory,
@@ -531,6 +483,7 @@ async def seed_native(
                         "UPDATE j01_sessions SET state='revoked' WHERE context_id=%s",
                         (bootstrap_context,),
                     )
+        shared_memberships = await _populate_shared_workspaces(pool, plan)
         counts, physical = await _verify_all(pool, objects, plan, budget)
         actors_hash, issued = await _actors(
             pool, latest_path, output / "actors.jsonl", plan, tokens, budget
@@ -557,9 +510,10 @@ async def seed_native(
             "construction": "Genuine ZIP->native confirm/refresh->exact pinned metric analyzer->typed canonical records/projections",
             "follow_up_chains_generated": False,
             "results_are_independent_questions_per_snapshot": True,
-            "primary_dataset_qualified": False,
+            "primary_dataset_qualified": not plan.primary_gaps(),
             "primary_gaps": plan.primary_gaps(),
             "logical_counts": counts,
+            "shared_workspace_active_memberships": shared_memberships,
             "physical": physical,
             "strata": physical_sizes,
             "actors_file_sha256": actors_hash,
@@ -730,7 +684,7 @@ async def _actors(
                     values.update(
                         context_id=context,
                         absolute_expires_at=absolute_expiry,
-                        analysis_model=METRIC_OBSERVATION_MODEL,
+                        analysis_model=plan.analysis_model,
                         foreign_workspace_id=foreign["workspace_id"],
                         foreign_project_id=foreign["project_id"],
                         foreign_result_id=foreign["result_id"],

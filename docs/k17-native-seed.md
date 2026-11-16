@@ -26,17 +26,14 @@ measured; logical object/record counts are never called physical diversity.
 
 ## Current primary gate
 
-**This importer does not qualify the primary dataset or production capacity.**
-The primary guide asks for 100/1,000/10,000 claims and a 10,000-node graph.
-The real native metric analyzer is capped at 64 series, producing at most
-64 observed claims in this fixture. Increasing source rows or generating two
-million records does not satisfy that missing dimension. Both plans produce
-`primary_dataset_qualified=false` with the exact gaps. `--require-primary`
-returns an unsupported result before connecting to a database or creating any
-output. There is no legacy substitution, duplicated claim padding, invented
-model output, full-scale Mac run or production-load claim. A product/model
-scope decision is needed before that guide can be an executable primary gate.
-The separate K17 harness must also qualify real heavy-job journeys and SLOs.
+The small plan and the legacy full-cardinality v2 plan still report
+`primary_dataset_qualified=false`. The v3 plan in `k17-seed-window-catalog.json`
+pins 100/1,000/10,000 source-based claims and 202/2,002/20,002 graph nodes by
+stratum. It keeps separate identities for 50,000 principals and adds verified
+50-member shared and 500-member hot workspaces without granting access to
+private projects. The loader verifies counts, scope and hashes after import.
+Qualification of the resulting dataset requires a completed import. Heavy-job
+journeys and load SLOs remain separate K17 acceptance gates.
 
 ## Prepare a private target
 
@@ -67,15 +64,17 @@ earlier than actual deduplicated disk usage. On failure the target stays
 with the operator's existing cleanup workflow. Re-running into the same output
 or populated schema is rejected. No successful resume is implied.
 
-The full cardinality plan is an operator-only generation option on a suitably
-provisioned external test machine. First measure a representative subset and
-choose an approved byte ceiling; this repository supplies no unmeasured disk
-estimate. Its exact source-row limit is 1,820,000,000 and canonical-record limit
-is 2,390,000 (including 190,000 generation-comparison records). It can take many
-hours and does not become a primary pass after completion.
+Generate the full catalog on the test server using storage for the object store
+and PostgreSQL. Keeping these files on the server avoids a local copy on the
+operator's laptop. Verify free space for both allocations, including PostgreSQL
+WAL and temporary data, before choosing a byte ceiling. This exact plan has
+1,820,000,000 source rows and 2,390,000 canonical records, including 190,000
+generation comparisons. See the K17.01 sizing receipt in
+`delivery/kien-r418/evidence/k1701-catalog` before attempting this command. A
+complete run at that scale has yet to establish its elapsed time and resource budget.
 
 ```text
-python scripts/k17_seed.py --plan docs/k17-seed-full-cardinality.json --schema k17_seed_32_LOWERCASE_HEX_CHARACTERS --output ABSOLUTE_NEW_PRIVATE_DIRECTORY --max-bytes OPERATOR_APPROVED_BYTE_LIMIT --max-source-rows 1820000000 --max-records 2390000 --max-seconds 604800
+python scripts/k17_seed.py --plan docs/k17-seed-window-catalog.json --schema k17_seed_32_LOWERCASE_HEX_CHARACTERS --output ABSOLUTE_NEW_PRIVATE_DIRECTORY --max-bytes VERIFIED_BYTE_LIMIT --max-source-rows 1820000000 --max-records 2390000 --max-seconds 604800 --require-primary
 ```
 
 ## Private actors and handoff

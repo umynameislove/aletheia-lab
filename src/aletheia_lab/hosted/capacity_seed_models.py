@@ -9,8 +9,15 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from aletheia_lab.hosted.content_hashing import content_hasher
 
+from .upload_analysis import METRIC_OBSERVATION_MODEL, WINDOW_OBSERVATION_MODEL
+
 Size = Literal["S", "M", "L"]
 ROLES = ("owner", "admin", "analyst", "reviewer", "viewer")
+
+
+class SeedRejected(ValueError):
+    def __init__(self) -> None:
+        super().__init__("Seed plan, fresh owned target, or resource guard did not match.")
 
 
 class SeedPlan(BaseModel):
@@ -25,6 +32,8 @@ class SeedPlan(BaseModel):
     size_cycle: tuple[Size, ...] = ("S", "M", "L")
     source_rows: dict[str, int] = Field(default_factory=lambda: {"S": 32, "M": 128, "L": 512})
     metric_series: dict[str, int] = Field(default_factory=lambda: {"S": 1, "M": 8, "L": 32})
+    analysis_model: Literal["upload-snapshot-metric-observation/v2",
+                            "upload-snapshot-windowed-metric-observation/v3"] = METRIC_OBSERVATION_MODEL
     idle_seconds: int = Field(default=900, ge=60, le=86400)
     absolute_seconds: int = Field(default=28800, ge=60, le=604800)
 
@@ -45,6 +54,8 @@ class SeedPlan(BaseModel):
                 raise ValueError("Physical source and metric strata must differ independently.")
         if self.idle_seconds > self.absolute_seconds:
             raise ValueError("Idle lifetime cannot exceed the real hard expiry.")
+        if self.analysis_model == WINDOW_OBSERVATION_MODEL and any(n % 20 for n in self.source_rows.values()):
+            raise ValueError("Window fixtures require complete ten-row windows in both mapped runs.")
         if self.projects < 3 or {self.size(i) for i in range(self.projects)} != {"S", "M", "L"}:
             raise ValueError("The actual dataset must contain every physical stratum.")
         return self
@@ -72,6 +83,9 @@ class SeedPlan(BaseModel):
     def size(self, project: int) -> Size:
         return self.size_cycle[project % len(self.size_cycle)]
 
+    def expected_claims(self, size: Size) -> int:
+        return self.source_rows[size] // 10 if self.analysis_model == WINDOW_OBSERVATION_MODEL else 2 * self.metric_series[size]
+
     def workspace(self, index: int) -> str:
         return f"ws_{self.namespace}_{index:04d}"
 
@@ -79,8 +93,11 @@ class SeedPlan(BaseModel):
         return f"a_{self.namespace}_{index:06d}"
 
     def fingerprint(self) -> str:
+        data = self.model_dump(mode="json")
+        if self.analysis_model == METRIC_OBSERVATION_MODEL:
+            data.pop("analysis_model")  # Preserve existing v2 plan identities.
         return content_hasher(
-            json.dumps(self.model_dump(mode="json"), sort_keys=True, separators=(",", ":")).encode()
+            json.dumps(data, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
 
     def primary_gaps(self) -> tuple[str, ...]:
@@ -95,11 +112,12 @@ class SeedPlan(BaseModel):
             gaps.append("Primary catalogue cardinalities are not present.")
         if self.source_rows != {"S": 1000, "M": 10000, "L": 100000}:
             gaps.append("Primary source rows 1000/10000/100000 are not present.")
-        claims = "/".join(str(2 * self.metric_series[size]) for size in ("S", "M", "L"))
-        gaps.append(
-            f"The native metric analyzer permits at most 64 series; actual fixture claims {claims} do not satisfy primary claims 100/1000/10000 or a 10000-node graph."
-        )
-        gaps.append(
-            "A generated dataset does not qualify heavy job journeys, real IdP, deployment SLOs or production capacity."
-        )
+        if self.analysis_model != WINDOW_OBSERVATION_MODEL:
+            claims = "/".join(str(2 * self.metric_series[size]) for size in ("S", "M", "L"))
+            gaps.append(
+                f"The native metric analyzer permits at most 64 series; actual fixture claims {claims} do not satisfy primary claims 100/1000/10000 or a 10000-node graph."
+            )
+            gaps.append(
+                "A generated dataset does not qualify heavy job journeys, real IdP, deployment SLOs or production capacity."
+            )
         return tuple(gaps)
