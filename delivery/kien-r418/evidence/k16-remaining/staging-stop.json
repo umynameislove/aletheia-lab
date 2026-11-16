@@ -1,0 +1,22 @@
+{
+  "utc": "2026-11-15T10:59:05.627557+00:00",
+  "stopped_k16_services": [
+    "pg",
+    "idp",
+    "api0",
+    "api1",
+    "worker0",
+    "worker1",
+    "ingress"
+  ],
+  "k16_staging_volumes_retained_for_replay": true,
+  "original_k14_services_running": [
+    "pg",
+    "idp",
+    "api0",
+    "api1",
+    "worker0",
+    "worker1",
+    "ingress"
+  ]
+}
