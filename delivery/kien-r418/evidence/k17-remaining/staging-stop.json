@@ -1,0 +1,23 @@
+{
+  "utc": "2026-11-15T11:41:49.018342+00:00",
+  "owner": "2c637fdf17c8",
+  "stopped_k17_services": [
+    "pg",
+    "idp",
+    "api0",
+    "api1",
+    "worker0",
+    "worker1",
+    "ingress"
+  ],
+  "k17_staging_volumes_retained_for_replay": true,
+  "original_k14_services_running": [
+    "pg",
+    "idp",
+    "api0",
+    "api1",
+    "worker0",
+    "worker1",
+    "ingress"
+  ]
+}
