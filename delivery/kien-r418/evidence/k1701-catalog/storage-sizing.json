@@ -1,0 +1,47 @@
+{
+  "status": "pilot_measured_full_target_unimported",
+  "pilot": {
+    "references": "physical-pilot-01/window-catalog-measurement.json",
+    "persistent_measured_bytes": 440013883,
+    "claims": 22400
+  },
+  "full_plan_sha256": "d6e0fe0550badd6a6734ce38d7b4df93f9d8831e286dee7146c23aafc4b6031b",
+  "free_bytes_C": 67524849664,
+  "mix": {
+    "S": {
+      "sources": 120000,
+      "results": 1200000,
+      "comparisons": 114000
+    },
+    "M": {
+      "sources": 70000,
+      "results": 700000,
+      "comparisons": 66500
+    },
+    "L": {
+      "sources": 10000,
+      "results": 100000,
+      "comparisons": 9500
+    }
+  },
+  "target_claims": 1820000000,
+  "estimated_object_files_bytes_by_record": {
+    "upload_result": 5608651100000,
+    "upload_snapshot": 619361850000,
+    "snapshot_comparison": 348973000
+  },
+  "estimated_postgresql_selected_relations_bytes": {
+    "sources_with_indexes": 82983514661,
+    "snapshots_with_indexes": 160331828536,
+    "claim_evidence_graph_and_links": 21380403200000,
+    "result_headers": 16384000000
+  },
+  "estimated_catalog_bytes_without_other_relations_wal_temp_backups": 27868464466197,
+  "estimate_excludes": [
+    "Remaining PostgreSQL relations and allocations",
+    "WAL and temporary data",
+    "Backup copies",
+    "full-scale index behavior and bloat"
+  ],
+  "projection_sizing_method": "Scale allocated storage of items and links by number of claims, whose projection dimensions are fixed per result. Approximate only."
+}

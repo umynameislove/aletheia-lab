@@ -1,0 +1,38 @@
+{
+  "status": "storage_preflight_rejected_before_writes",
+  "plan_sha256": "d6e0fe0550badd6a6734ce38d7b4df93f9d8831e286dee7146c23aafc4b6031b",
+  "target_plan_counts": {
+    "principals": 50000,
+    "workspaces": 2000,
+    "projects": 10000,
+    "snapshots": 200000,
+    "results": 2000000,
+    "total_source_rows": 1820000000
+  },
+  "free_bytes_C": 67532652544,
+  "sample_estimated_catalog_canonical_and_zip_bytes": 6306739620000,
+  "guard_bytes_with_reserve": 6307276490912,
+  "strata": {
+    "S": {
+      "projects": 6000,
+      "snapshot_bytes": 339614,
+      "result_bytes": 309205,
+      "source_zip_bytes": 44105
+    },
+    "M": {
+      "projects": 3500,
+      "snapshot_bytes": 3393079,
+      "result_bytes": 3075894,
+      "source_zip_bytes": 432388
+    },
+    "L": {
+      "projects": 500,
+      "snapshot_bytes": 34107729,
+      "result_bytes": 30841703,
+      "source_zip_bytes": 4349126
+    }
+  },
+  "database_called": false,
+  "output_created": false,
+  "full_catalog_imported": false
+}
