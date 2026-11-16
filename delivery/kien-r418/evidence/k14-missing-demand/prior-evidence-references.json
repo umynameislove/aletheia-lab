@@ -1,0 +1,27 @@
+[
+  {
+    "path": "C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\Kien-K01-K18-R4-20261113\\evidence\\k14-current-windows\\result.json",
+    "sha256": "48988745290432407edfff529163b2fc4bd74571acffdc76842c379aa9e9ddcd",
+    "rerun": false
+  },
+  {
+    "path": "C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\Kien-K01-K18-R4-20261113\\evidence\\k14-current-windows\\pytest.log",
+    "sha256": "b0d01c419be469cba9a46b36175f0dfec932a5f567e99ad6532a2b5ff40029ee",
+    "rerun": false
+  },
+  {
+    "path": "C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\Kien-K01-K18-R4-20261113\\evidence\\k14-queue-pressure-3\\result.json",
+    "sha256": "ffe4a1e1680707d1e26da943cdbcbb78190d3fa445894a38ca3e81d982798322",
+    "rerun": false
+  },
+  {
+    "path": "C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\Kien-K01-K18-R4-20261113\\evidence\\k14-queue-pressure-3\\K14.01-K14.05-KET-QUA.md",
+    "sha256": "541087c7ad4908a19eef18952a2bb817138d81adfc05b97a8fe71026c5b28922",
+    "rerun": false
+  },
+  {
+    "path": "C:\\Users\\Trung Kiên\\Documents\\ChatGPT\\Đồ Án\\Kien-K01-K18-R4-20261113\\evidence\\k14-queue-pressure-3\\fleet-summary.json",
+    "sha256": "4cc8bff0286d415ff63e5623e563db9dc4aec018339b9dac1817678ed0abab65",
+    "rerun": false
+  }
+]

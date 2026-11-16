@@ -1,0 +1,370 @@
+{
+  "recorded_utc": "2026-11-15T06:31:12.493586+00:00",
+  "scope": "Only missing K14.01/K14.05, internal technical results; not final acceptance for Bao",
+  "head": "fa46dd8cbb2239c6f116456894a2009b45846245",
+  "branch": "product-api",
+  "committed": false,
+  "pushed": false,
+  "production_source_modified": false,
+  "full_k14_deployment_pass": false,
+  "K14_01": "open_deployment_and_complete_workload_budget",
+  "K14_05": "open_mixed_deadline_and_deployment",
+  "isolated_resume_attempt": "attempt-06",
+  "isolated_resume_offered": 68,
+  "isolated_resume_completed": 68,
+  "latest_mixed_attempt": "attempt-08",
+  "latest_mixed_offered": 55,
+  "latest_mixed_completed": 52,
+  "latest_mixed_timeout": 3,
+  "latest_mixed_latency": {
+    "background": {
+      "count": 450,
+      "mean_ms": 56.75326296889276,
+      "p95_observed_ms": 125.76677400011249,
+      "max_ms": 429.7447640001337
+    },
+    "health": {
+      "count": 450,
+      "mean_ms": 23.458094666671563,
+      "p95_observed_ms": 31.49882100024115,
+      "max_ms": 107.48341900034575
+    },
+    "admin": {
+      "count": 450,
+      "mean_ms": 0.835677282202596,
+      "p95_observed_ms": 1.2392549997457536,
+      "max_ms": 2.265703999910329
+    }
+  },
+  "latest_mixed_drain": {
+    "seconds": 0.0020785170004273823,
+    "job_states": {
+      "succeeded": 30
+    },
+    "note": "Drain after action timeout does not turn the action into success."
+  },
+  "latest_mixed_source_hash": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529",
+  "resource_summary": [
+    {
+      "attempt": "attempt-06",
+      "role": "postgres",
+      "samples": 393,
+      "sampled_window_seconds": 59.914090447000035,
+      "average_cpu_cores": 0.3091092573020495,
+      "maximum_sampled_tree_rss_bytes": 391073792,
+      "maximum_sampled_tree_open_fds": null,
+      "fd_unavailable": true
+    },
+    {
+      "attempt": "attempt-06",
+      "role": "generator",
+      "samples": 393,
+      "sampled_window_seconds": 59.914090447000035,
+      "average_cpu_cores": 0.0600860327368995,
+      "maximum_sampled_tree_rss_bytes": 210886656,
+      "maximum_sampled_tree_open_fds": 25,
+      "fd_unavailable": false
+    },
+    {
+      "attempt": "attempt-06",
+      "role": "api0",
+      "samples": 393,
+      "sampled_window_seconds": 59.914090447000035,
+      "average_cpu_cores": 0.6963303571620683,
+      "maximum_sampled_tree_rss_bytes": 256643072,
+      "maximum_sampled_tree_open_fds": 23,
+      "fd_unavailable": false
+    },
+    {
+      "attempt": "attempt-06",
+      "role": "api1",
+      "samples": 393,
+      "sampled_window_seconds": 59.914090447000035,
+      "average_cpu_cores": 0.18877028618175917,
+      "maximum_sampled_tree_rss_bytes": 245272576,
+      "maximum_sampled_tree_open_fds": 20,
+      "fd_unavailable": false
+    },
+    {
+      "attempt": "attempt-06",
+      "role": "worker0",
+      "samples": 393,
+      "sampled_window_seconds": 59.914090447000035,
+      "average_cpu_cores": 0.6168832694321681,
+      "maximum_sampled_tree_rss_bytes": 355565568,
+      "maximum_sampled_tree_open_fds": 23,
+      "fd_unavailable": false
+    },
+    {
+      "attempt": "attempt-06",
+      "role": "worker1",
+      "samples": 393,
+      "sampled_window_seconds": 59.914090447000035,
+      "average_cpu_cores": 0.4518135850521857,
+      "maximum_sampled_tree_rss_bytes": 359288832,
+      "maximum_sampled_tree_open_fds": 23,
+      "fd_unavailable": false
+    },
+    {
+      "attempt": "attempt-06",
+      "role": "ingress",
+      "samples": 393,
+      "sampled_window_seconds": 59.914090447000035,
+      "average_cpu_cores": 0.011015772668431569,
+      "maximum_sampled_tree_rss_bytes": 37994496,
+      "maximum_sampled_tree_open_fds": 16,
+      "fd_unavailable": false
+    },
+    {
+      "attempt": "attempt-07",
+      "role": "postgres",
+      "samples": 460,
+      "sampled_window_seconds": 59.851990961999945,
+      "average_cpu_cores": 0.26381745613149404,
+      "maximum_sampled_tree_rss_bytes": 364109824,
+      "maximum_sampled_tree_open_fds": null,
+      "fd_unavailable": true
+    },
+    {
+      "attempt": "attempt-07",
+      "role": "generator",
+      "samples": 460,
+      "sampled_window_seconds": 59.851990961999945,
+      "average_cpu_cores": 0.05931298095419909,
+      "maximum_sampled_tree_rss_bytes": 325853184,
+      "maximum_sampled_tree_open_fds": 25,
+      "fd_unavailable": false
+    },
+    {
+      "attempt": "attempt-07",
+      "role": "api0",
+      "samples": 460,
+      "sampled_window_seconds": 59.851990961999945,
+      "average_cpu_cores": 0.43290122155585886,
+      "maximum_sampled_tree_rss_bytes": 246140928,
+      "maximum_sampled_tree_open_fds": 20,
+      "fd_unavailable": false
+    },
+    {
+      "attempt": "attempt-07",
+      "role": "api1",
+      "samples": 460,
+      "sampled_window_seconds": 59.851990961999945,
+      "average_cpu_cores": 0.4003208517359466,
+      "maximum_sampled_tree_rss_bytes": 246026240,
+      "maximum_sampled_tree_open_fds": 20,
+      "fd_unavailable": false
+    },
+    {
+      "attempt": "attempt-07",
+      "role": "worker0",
+      "samples": 460,
+      "sampled_window_seconds": 59.851990961999945,
+      "average_cpu_cores": 0.5617189914592039,
+      "maximum_sampled_tree_rss_bytes": 342917120,
+      "maximum_sampled_tree_open_fds": 22,
+      "fd_unavailable": false
+    },
+    {
+      "attempt": "attempt-07",
+      "role": "worker1",
+      "samples": 460,
+      "sampled_window_seconds": 59.851990961999945,
+      "average_cpu_cores": 0.43290122155585886,
+      "maximum_sampled_tree_rss_bytes": 359190528,
+      "maximum_sampled_tree_open_fds": 23,
+      "fd_unavailable": false
+    },
+    {
+      "attempt": "attempt-07",
+      "role": "ingress",
+      "samples": 460,
+      "sampled_window_seconds": 59.851990961999945,
+      "average_cpu_cores": 0.009857650355768304,
+      "maximum_sampled_tree_rss_bytes": 37904384,
+      "maximum_sampled_tree_open_fds": 16,
+      "fd_unavailable": false
+    },
+    {
+      "attempt": "attempt-08",
+      "role": "postgres",
+      "samples": 450,
+      "sampled_window_seconds": 60.22552554999993,
+      "average_cpu_cores": 0.27911753108811216,
+      "maximum_sampled_tree_rss_bytes": 351522816,
+      "maximum_sampled_tree_open_fds": null,
+      "fd_unavailable": true
+    },
+    {
+      "attempt": "attempt-08",
+      "role": "generator",
+      "samples": 450,
+      "sampled_window_seconds": 60.22552554999993,
+      "average_cpu_cores": 0.05994136152457376,
+      "maximum_sampled_tree_rss_bytes": 321658880,
+      "maximum_sampled_tree_open_fds": 25,
+      "fd_unavailable": false
+    },
+    {
+      "attempt": "attempt-08",
+      "role": "api0",
+      "samples": 450,
+      "sampled_window_seconds": 60.22552554999993,
+      "average_cpu_cores": 0.42822374341239816,
+      "maximum_sampled_tree_rss_bytes": 249831424,
+      "maximum_sampled_tree_open_fds": 20,
+      "fd_unavailable": false
+    },
+    {
+      "attempt": "attempt-08",
+      "role": "api1",
+      "samples": 450,
+      "sampled_window_seconds": 60.22552554999993,
+      "average_cpu_cores": 0.4048117434817475,
+      "maximum_sampled_tree_rss_bytes": 246173696,
+      "maximum_sampled_tree_open_fds": 20,
+      "fd_unavailable": false
+    },
+    {
+      "attempt": "attempt-08",
+      "role": "worker0",
+      "samples": 450,
+      "sampled_window_seconds": 60.22552554999993,
+      "average_cpu_cores": 0.5618879983356166,
+      "maximum_sampled_tree_rss_bytes": 344391680,
+      "maximum_sampled_tree_open_fds": 22,
+      "fd_unavailable": false
+    },
+    {
+      "attempt": "attempt-08",
+      "role": "worker1",
+      "samples": 450,
+      "sampled_window_seconds": 60.22552554999993,
+      "average_cpu_cores": 0.5134035729473189,
+      "maximum_sampled_tree_rss_bytes": 348897280,
+      "maximum_sampled_tree_open_fds": 23,
+      "fd_unavailable": false
+    },
+    {
+      "attempt": "attempt-08",
+      "role": "ingress",
+      "samples": 450,
+      "sampled_window_seconds": 60.22552554999993,
+      "average_cpu_cores": 0.01029463826737832,
+      "maximum_sampled_tree_rss_bytes": 37728256,
+      "maximum_sampled_tree_open_fds": 16,
+      "fd_unavailable": false
+    }
+  ],
+  "attempts": [
+    {
+      "attempt": "attempt-01",
+      "wrapper_status": "failed",
+      "raw_demand_status": "running",
+      "pytest_exit": 1,
+      "elapsed_seconds": 89.24999999999994,
+      "phases": 0,
+      "offered": 0,
+      "completed": 0,
+      "inputs_unchanged": true,
+      "oom_killed": false,
+      "full_k14_deployment_pass": false
+    },
+    {
+      "attempt": "attempt-02",
+      "wrapper_status": "failed",
+      "raw_demand_status": "failed",
+      "pytest_exit": 1,
+      "elapsed_seconds": 71.95299999999997,
+      "phases": 8,
+      "offered": 160,
+      "completed": 159,
+      "inputs_unchanged": true,
+      "oom_killed": false,
+      "full_k14_deployment_pass": false
+    },
+    {
+      "attempt": "attempt-03",
+      "wrapper_status": "failed",
+      "raw_demand_status": "failed",
+      "pytest_exit": 1,
+      "elapsed_seconds": 226.70299999999986,
+      "phases": 51,
+      "offered": 804,
+      "completed": 315,
+      "inputs_unchanged": true,
+      "oom_killed": false,
+      "full_k14_deployment_pass": false
+    },
+    {
+      "attempt": "attempt-04",
+      "wrapper_status": "failed",
+      "raw_demand_status": "failed",
+      "pytest_exit": 1,
+      "elapsed_seconds": 169.34399999999982,
+      "phases": 46,
+      "offered": 740,
+      "completed": 738,
+      "inputs_unchanged": true,
+      "oom_killed": false,
+      "full_k14_deployment_pass": false
+    },
+    {
+      "attempt": "attempt-05",
+      "wrapper_status": "failed",
+      "raw_demand_status": "failed",
+      "pytest_exit": 1,
+      "elapsed_seconds": 168.96900000000005,
+      "phases": 46,
+      "offered": 740,
+      "completed": 737,
+      "inputs_unchanged": true,
+      "oom_killed": false,
+      "full_k14_deployment_pass": false
+    },
+    {
+      "attempt": "attempt-06",
+      "wrapper_status": "failed",
+      "raw_demand_status": "failed",
+      "pytest_exit": 1,
+      "elapsed_seconds": 228.25,
+      "phases": 7,
+      "offered": 68,
+      "completed": 68,
+      "inputs_unchanged": true,
+      "oom_killed": false,
+      "full_k14_deployment_pass": false
+    },
+    {
+      "attempt": "attempt-07",
+      "wrapper_status": "failed",
+      "raw_demand_status": "failed",
+      "pytest_exit": 1,
+      "elapsed_seconds": 161.34400000000005,
+      "phases": 0,
+      "offered": 0,
+      "completed": 0,
+      "inputs_unchanged": true,
+      "oom_killed": false,
+      "full_k14_deployment_pass": false
+    },
+    {
+      "attempt": "attempt-08",
+      "wrapper_status": "failed",
+      "raw_demand_status": "failed",
+      "pytest_exit": 1,
+      "elapsed_seconds": 129.35899999999992,
+      "phases": 0,
+      "offered": 0,
+      "completed": 0,
+      "inputs_unchanged": true,
+      "oom_killed": false,
+      "full_k14_deployment_pass": false
+    }
+  ],
+  "latest_successful_phase_coverage_count": 51,
+  "cross_run_phase_coverage_is_not_single_cohort_pass": true,
+  "no_staging_available": true,
+  "latest_mixed_timeline": "timeout-timeline.json",
+  "diagnostic_08_all_jobs_succeeded": 30
+}

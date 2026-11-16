@@ -1,0 +1,66 @@
+{
+  "captured_utc": "2026-11-15T06:11:12.279278+00:00",
+  "host_python": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+  "branch": "product-api",
+  "head": "fa46dd8cbb2239c6f116456894a2009b45846245",
+  "docker_server": {
+    "Platform": {
+      "Name": "Docker Desktop 4.40.0 (187762)"
+    },
+    "Components": [
+      {
+        "Name": "Engine",
+        "Version": "28.0.4",
+        "Details": {
+          "ApiVersion": "1.48",
+          "Arch": "amd64",
+          "BuildTime": "Tue Mar 25 15:07:22 2025",
+          "Experimental": "false",
+          "GitCommit": "6430e49",
+          "GoVersion": "go1.23.7",
+          "KernelVersion": "5.15.167.4-microsoft-standard-WSL2",
+          "MinAPIVersion": "1.24",
+          "Os": "linux"
+        }
+      },
+      {
+        "Name": "containerd",
+        "Version": "1.7.26",
+        "Details": {
+          "GitCommit": "753481ec61c7c8955a23d6ff7bc8e4daed455734"
+        }
+      },
+      {
+        "Name": "runc",
+        "Version": "1.2.5",
+        "Details": {
+          "GitCommit": "v1.2.5-0-g59923ef"
+        }
+      },
+      {
+        "Name": "docker-init",
+        "Version": "0.19.0",
+        "Details": {
+          "GitCommit": "de40ad0"
+        }
+      }
+    ],
+    "Version": "28.0.4",
+    "ApiVersion": "1.48",
+    "MinAPIVersion": "1.24",
+    "GitCommit": "6430e49",
+    "GoVersion": "go1.23.7",
+    "Os": "linux",
+    "Arch": "amd64",
+    "KernelVersion": "5.15.167.4-microsoft-standard-WSL2",
+    "BuildTime": "2025-03-25T15:07:22.000000000+00:00"
+  },
+  "docker_vm": {
+    "cpus": 16,
+    "memory_bytes": 8135200768,
+    "os": "Docker Desktop",
+    "kernel": "5.15.167.4-microsoft-standard-WSL2"
+  },
+  "no_commit_or_push": true,
+  "note": "Test quotas are recorded per attempt; Docker VM also runs unrelated user workloads, left untouched."
+}

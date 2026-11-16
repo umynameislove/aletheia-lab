@@ -1,0 +1,10 @@
+{
+  "captured_utc": "2026-11-15T06:31:12.268553+00:00",
+  "aletheia.k14.demand": [],
+  "aletheia.owner=k03-private-postgres": [],
+  "git_head": "fa46dd8cbb2239c6f116456894a2009b45846245",
+  "git_branch": "product-api",
+  "committed": false,
+  "pushed": false,
+  "known_password_cookie_csrf_log_scan": "passed in fixture before copying runtime logs"
+}
