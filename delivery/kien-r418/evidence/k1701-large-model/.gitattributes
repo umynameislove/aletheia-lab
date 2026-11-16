@@ -1,0 +1,17 @@
+# Preserve raw-byte evidence checksums on every platform.
+"/ARCHIVE-MANIFEST.csv" -text !eol whitespace=cr-at-eol
+"/ARCHIVE-README.md" -text !eol whitespace=cr-at-eol
+"/KET-QUA-NOI-MODEL-K17.01.md" -text !eol whitespace=cr-at-eol
+"/calls-Chrome-completes-the-hosted-v2-mapping-with-exact-producer-payload-opens-and-rel.json" -text !eol whitespace=cr-at-eol
+"/calls-Chrome-opens-the-completed-window-analysis-directly-in-the-paged-reader.json" -text !eol whitespace=cr-at-eol
+"/calls-Chrome-reads-a-result-too-large-to-open-whole-in-pages-K10-exact-counts-a-cursor.json" -text !eol whitespace=cr-at-eol
+"/hosted-large-result-390.png" -text !eol whitespace=cr-at-eol
+"/hosted-large-result.png" -text !eol whitespace=cr-at-eol
+"/hosted-v2-mapping.png" -text !eol whitespace=cr-at-eol
+"/maintainability.json" -text !eol whitespace=cr-at-eol
+"/migration-checksums.json" -text !eol whitespace=cr-at-eol
+"/migration-prefix-before.json" -text !eol whitespace=cr-at-eol
+"/raw-records-20261116.zip" -text !eol whitespace=cr-at-eol
+"/raw-records-20261116.zip.sha256" -text !eol whitespace=cr-at-eol
+"/v2-dimensions.json" -text !eol whitespace=cr-at-eol
+"/window-model-paged.png" -text !eol whitespace=cr-at-eol
