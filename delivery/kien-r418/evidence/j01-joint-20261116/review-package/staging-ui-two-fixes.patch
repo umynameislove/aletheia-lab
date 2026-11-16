@@ -1,0 +1,51 @@
+--- a/dashboard/web/src/components/hosted/HostedApp.tsx
++++ b/dashboard/web/src/components/hosted/HostedApp.tsx
+@@ -42,7 +42,8 @@
+   const boot = instance.current;
+   const state = useSyncExternalStore(boot.subscribe, boot.snapshot);
+   const [hash, setHash] = useState(location.hash);
+-  const selected = useRef<string | null>(null);
++  const linkWorkspace = resultLink(hash)?.workspace;
++  const selected = useRef<{ account: string; linkWorkspace?: string } | null>(null);
+   useEffect(() => {
+     channel.current = sessionChannel(message => boot.guard()?.onPeer(message));
+     void boot.start();
+@@ -56,12 +57,13 @@
+   }, [boot, state.session, state.generation]);
+   useEffect(() => {
+     if (state.status !== "ready" || !state.session) { selected.current = null; return; }
+-    const key = state.session.user_id + "/" + state.session.context_id;
+-    if (selected.current === key) return;
+-    selected.current = key;
+-    const target = resultLink(location.hash)?.workspace ?? state.session.last_workspace_id;
+-    if (target) void boot.selectWorkspace(target);
+-  }, [boot, state.status, state.session]);
++    const account = state.session.user_id + "/" + state.session.context_id;
++    const sameAccount = selected.current?.account === account;
++    if (sameAccount && selected.current?.linkWorkspace === linkWorkspace) return;
++    selected.current = { account, linkWorkspace };
++    const target = linkWorkspace ?? (sameAccount ? null : state.session.last_workspace_id);
++    if (target && target !== state.workspace?.workspace_id && target !== state.opening) void boot.selectWorkspace(target);
++  }, [boot, linkWorkspace, state.status, state.session, state.workspace?.workspace_id, state.opening]);
+   useEffect(() => {
+     // Once no one is signed in, nothing of the previous account's scope stays in the address bar (Kiên R4.18):
+     // workspace, project, snapshot, result and selection IDs are dropped in place, without a new history entry.
+@@ -183,3 +185,4 @@
+       <button className="btn btn--sm" onClick={() => { location.hash = "#/workspaces"; }}>Workspaces</button>
+     </div></div></div>;
+ }
++
+--- a/dashboard/web/src/service/session.ts
++++ b/dashboard/web/src/service/session.ts
+@@ -90,6 +90,11 @@
+     lastConfirmed = Math.max(lastConfirmed, sentAt);
+     failures = 0;
+     interval = spread(nextInterval());
++    if (lease !== Infinity) {
++      // Start early enough for another check of comparable duration, with room for timer jitter.
++      const elapsed = options.now() - lastConfirmed;
++      interval = Math.min(interval, Math.max(lease * 0.5, lease - elapsed - 750));
++    }
+   };
+ 
+   /** Wiping happens once, before anything else can render or read. */

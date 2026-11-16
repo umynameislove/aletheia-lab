@@ -1,0 +1,9 @@
+{
+  "status": "failed",
+  "base_sha": "fa46dd8cbb2239c6f116456894a2009b45846245",
+  "source_sha256": "bc8328265b884be112c6f782d928969f77368f97f41d0dac53b8fa203dac3981",
+  "steps": [],
+  "failed_stage": "real OIDC login",
+  "error_type": "Error",
+  "message": "TypeError: Cannot read properties of null (reading 'innerText')\n    at <anonymous>:1:67"
+}

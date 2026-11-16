@@ -1,0 +1,15 @@
+{
+  "archive_name": "J01-CHOT-VOI-QUAN-20261116.zip",
+  "archive_sha256": "60811526cc51c39cc8f217e88ca1ed7df3eb0bd306ea1b547a0479a0eb2ae813",
+  "archive_bytes": 441820,
+  "review_file_count": 50,
+  "pending_before_quan_reply": [
+    "Quân shared confirmation J01.01/.02/.04",
+    "Quân browser S01-S05 on shared staging"
+  ],
+  "pending_joint_confirmations": [],
+  "joint_receipt": "j01-lan-kien-quan-20261116-031448",
+  "current_acceptance": "4/4 J01 staging integration with recorded UI/campaign/release followups",
+  "current_report": "KET-QUA-CHOT-J01-20261116.md",
+  "quan_reply_manifest": "quan-reply/SHA256SUMS.txt"
+}
