@@ -32,3 +32,9 @@ ALTER TABLE j01_jobs ADD CONSTRAINT k05_job_request_shape_v6 CHECK(jsonb_typeof(
    AND request->>'analysis_model' IN ('upload-snapshot-observation/v1','upload-snapshot-metric-observation/v2')))
  ELSE source_id IS NOT NULL AND jsonb_typeof(request->'source_id')='string' END);
 """
+
+# A separate migration retains the checksums of previously installed schemas.
+WINDOW_ANALYSIS_VERSION_DDL = ANALYSIS_VERSION_DDL.replace(
+    "'upload-snapshot-metric-observation/v2'",
+    "'upload-snapshot-metric-observation/v2','upload-snapshot-windowed-metric-observation/v3'",
+)

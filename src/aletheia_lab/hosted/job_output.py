@@ -9,6 +9,7 @@ from aletheia_lab.hosted_auth.postgres_sessions import Connection, _digest
 from aletheia_lab.hosted_contract.project_operations import FollowUpResult
 from aletheia_lab.hosted_contract.project_refresh import RefreshResult
 from aletheia_lab.product.lifecycle import ProductLifecycleRecord
+from aletheia_lab.project.identity import canonical_project_sha256
 
 from .authorization import Authorization, PostgresAuthorization
 from .native_upload_records import (
@@ -18,6 +19,8 @@ from .native_upload_records import (
 )
 from .postgres_catalog import CatalogIntegrityError
 from .postgres_sources import PostgresSources, SourceNotFound
+from .result_views import ProjectionUnavailable, ResultViews
+from .upload_analysis import WINDOW_OBSERVATION_MODEL, analysis_identity
 from .upload_snapshot import (
     UploadSnapshot,
     UploadSnapshotV2,
@@ -75,6 +78,12 @@ async def _canonical_output(self: PostgresJobs, *, credential_digest: SecretStr,
     digest = _digest(credential_digest)
     if self._read_catalog is None:
         raise TimeoutError("Canonical result storage is unavailable.")
+    if operation == "analyze" and request.get("analysis_model") == WINDOW_OBSERVATION_MODEL:
+        reference = await _window_reference(ResultViews(self._read_catalog), credential_digest,
+                                            workspace_id, request, result, linked, project)
+        async with self._pool.connection() as conn:
+            await self._authorize(conn, digest, workspace_id, operation, request, reading=True)
+        return reference
     record = await self._read_catalog.read_record(credential_digest=credential_digest, workspace_id=workspace_id,
                                                    project_id=project, record_id=linked)
     if (not isinstance(record, (ProductLifecycleRecord, UploadResultRecord, UploadResultRecordV2))
@@ -101,6 +110,23 @@ async def _canonical_output(self: PostgresJobs, *, credential_digest: SecretStr,
     async with self._pool.connection() as conn:
         await self._authorize(conn, digest, workspace_id, operation, request, reading=True)
     return result
+
+
+async def _window_reference(views: ResultViews, credential: SecretStr, workspace: str, request: dict[str, object],
+                            result: dict[str, object], linked: str, project: str) -> dict[str, object]:
+    snapshot, question = request.get("snapshot_id"), request.get("question")
+    if not isinstance(snapshot, str) or not isinstance(question, str) or result != {"result_id": linked}:
+        raise CatalogIntegrityError()
+    identity = analysis_identity(workspace, snapshot, question, WINDOW_OBSERVATION_MODEL)
+    if linked != "p6-result-" + canonical_project_sha256(identity):
+        raise CatalogIntegrityError()
+    try:
+        manifest = await views.manifest(credential, workspace, linked)
+    except ProjectionUnavailable:
+        raise TimeoutError("Paged result storage is unavailable.") from None
+    if (manifest.project_id, manifest.snapshot_id) != (project, snapshot):
+        raise CatalogIntegrityError()
+    return {"kind": "result_reference", "result_id": linked, "project_id": project, "snapshot_id": snapshot}
 
 
 async def _refresh_output(self: PostgresJobs, *, credential_digest: SecretStr, workspace_id: str,

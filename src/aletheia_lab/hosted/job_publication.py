@@ -100,7 +100,10 @@ async def complete_result(self: PostgresJobs, *, claim: JobClaim, lease_digest: 
         await self._record_action(conn, claim.workspace_id, claim.job_id, "job.publish", effect=published.record_id, parent=project)
         return True
 
-    return await run_transaction(self._pool, publish)
+    from .upload_analysis import WINDOW_OBSERVATION_MODEL
+
+    large_window = request.get("analysis_model") == WINDOW_OBSERVATION_MODEL and len(prepared.projection.items) > 10000
+    return await run_transaction(self._pool, publish, timeout_seconds=30 if large_window else 5)
 
 
 async def _complete_canonical_snapshot(self: PostgresJobs, *, claim: JobClaim, lease_digest: SecretStr,

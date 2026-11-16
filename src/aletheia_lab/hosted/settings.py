@@ -74,6 +74,8 @@ def _loopback(host: str | None) -> bool:
 
 class ApiSettings(_Settings):
     bind_host: str = "127.0.0.1"
+    analysis_model: Literal["upload-snapshot-observation/v1", "upload-snapshot-metric-observation/v2",
+                            "upload-snapshot-windowed-metric-observation/v3"] = "upload-snapshot-metric-observation/v2"
     port: int = Field(default=18766, ge=1, le=65535)
     processes: Positive = 1
     database_pool_size: Positive = 8

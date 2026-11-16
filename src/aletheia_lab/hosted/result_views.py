@@ -131,14 +131,27 @@ async def publish_projection(conn: Connection, workspace: str, prepared: Prepare
         if existing != (view.projection_sha256,):
             raise CatalogIntegrityError()
         return
-    for kind, identity, payload, digest, source, target, text in prepared.items:
-        await conn.execute('INSERT INTO k10_result_items(workspace_id,result_id,projection_version,kind,item_id,'
-            'payload,sha256,source_id,target_id,search_text) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
-            (workspace, view.result_id, PROJECTION_VERSION, kind, identity, payload, digest, source, target, text))
-    for claim, evidence, relation in prepared.links:
-        await conn.execute('INSERT INTO k10_evidence_links(workspace_id,result_id,projection_version,claim_id,'
-            'evidence_id,relation) VALUES(%s,%s,%s,%s,%s,%s)',
-            (workspace, view.result_id, PROJECTION_VERSION, claim, evidence, relation))
+    if len(prepared.items) > 10000:
+        from psycopg import AsyncConnection
+
+        async with cast(AsyncConnection, conn).cursor() as cursor:
+            async with cursor.copy('COPY k10_result_items(workspace_id,result_id,projection_version,kind,item_id,'
+                                   'payload,sha256,source_id,target_id,search_text) FROM STDIN') as batch:
+                for item in prepared.items:
+                    await batch.write_row((workspace, view.result_id, PROJECTION_VERSION, *item))
+            async with cursor.copy('COPY k10_evidence_links(workspace_id,result_id,projection_version,claim_id,'
+                                   'evidence_id,relation) FROM STDIN') as batch:
+                for link in prepared.links:
+                    await batch.write_row((workspace, view.result_id, PROJECTION_VERSION, *link))
+    else:
+        for item in prepared.items:
+            await conn.execute('INSERT INTO k10_result_items(workspace_id,result_id,projection_version,kind,item_id,'
+                'payload,sha256,source_id,target_id,search_text) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+                (workspace, view.result_id, PROJECTION_VERSION, *item))
+        for link in prepared.links:
+            await conn.execute('INSERT INTO k10_evidence_links(workspace_id,result_id,projection_version,claim_id,'
+                'evidence_id,relation) VALUES(%s,%s,%s,%s,%s,%s)',
+                (workspace, view.result_id, PROJECTION_VERSION, *link))
     # The complete manifest is last. Rollback (including rebuild interruption) hides all rows.
     await conn.execute('INSERT INTO k10_result_views(workspace_id,result_id,projection_version,project_id,'
         'snapshot_id,canonical_sha256,projection_sha256,claim_count,evidence_count,node_count,edge_count,header,header_sha256) '

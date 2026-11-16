@@ -11,6 +11,7 @@ from pydantic import RootModel
 from aletheia_lab.hosted_contract.project_operations import FollowUpRequest
 from aletheia_lab.product.follow_up import resolve_product_follow_up_selection
 from aletheia_lab.product.lifecycle import ProductLifecycleRecord
+from aletheia_lab.product.questions import checked_product_question
 from aletheia_lab.product.results import _validate_derived_result
 from aletheia_lab.product.view import AnyProductView
 
@@ -28,7 +29,9 @@ from .postgres_jobs import JobClaim
 from .preview_leases import PreviewLeases
 from .project_refresh import AnyPreparedRefresh, RefreshParents, prepare_refresh
 from .request_boundary import decode_json_model
+from .upload_analysis import WINDOW_OBSERVATION_MODEL
 from .upload_operations import Sources, UploadOperations, Worker
+from .upload_snapshot import UploadSnapshotV2
 from .worker_limits import MAX_OUTPUT_BYTES
 
 
@@ -54,6 +57,17 @@ class CanonicalProjectOperations(UploadOperations):
         if (claim.operation != "analyze" or set(claim.request) not in ({"snapshot_id", "question"}, {"snapshot_id", "question", "analysis_model"})
                 or not isinstance(snapshot_id, str) or not isinstance(question, str)):
             raise ValueError("invalid canonical analysis request")
+        if claim.request.get("analysis_model") == WINDOW_OBSERVATION_MODEL:
+            question = checked_product_question(question)
+            snapshot = await self._sources.snapshot(credential_digest=claim.credential_digest,
+                workspace_id=claim.workspace_id, snapshot_id=snapshot_id)
+            view = await self._analyze_snapshot(snapshot, question, WINDOW_OBSERVATION_MODEL)
+            if view.runtime.model != WINDOW_OBSERVATION_MODEL:
+                raise ValueError("Worker analysis model mismatch")
+            record_type = UploadResultRecordV2 if isinstance(snapshot, UploadSnapshotV2) else UploadResultRecord
+            # The durable publisher rereads the snapshot and independently recomputes the full result.
+            return await run_blocking(record_type, workspace_id=claim.workspace_id,
+                project_id=snapshot.mapping.project_id, snapshot_id=snapshot_id, view=view)
         view = await self.analyze(credential_digest=claim.credential_digest, workspace_id=claim.workspace_id,
                                   snapshot_id=snapshot_id, question=question,
                                   analysis_model=str(claim.request.get('analysis_model', 'upload-snapshot-observation/v1')))

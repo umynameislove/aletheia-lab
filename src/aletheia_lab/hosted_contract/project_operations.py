@@ -15,6 +15,16 @@ from .session_capabilities import Identifier, Version
 ResultId = Annotated[str, Field(pattern=r"^p6-result-[0-9a-f]{64}$")]
 
 
+class AnalysisResultReference(BaseModel):
+    """Large immutable analyses are opened through the bounded result reader."""
+    model_config = ConfigDict(extra="forbid", strict=True, frozen=True, hide_input_in_errors=True)
+
+    kind: Literal["result_reference"]
+    project_id: Annotated[str, Field(pattern=PROJECT_ID_PATTERN)]
+    result_id: ResultId
+    snapshot_id: Annotated[str, Field(pattern=r"^upload-snapshot-[0-9a-f]{64}$")]
+
+
 class FollowUpRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True, frozen=True, hide_input_in_errors=True)
 

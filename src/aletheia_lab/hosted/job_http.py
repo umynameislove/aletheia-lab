@@ -17,7 +17,10 @@ from aletheia_lab.hosted_auth.sessions import credential_digest
 from aletheia_lab.hosted_contract.job_attempts import JobAttemptPage
 from aletheia_lab.hosted_contract.job_page import Job, JobOutput, JobReceipt
 from aletheia_lab.hosted_contract.job_updates import JobUpdate
-from aletheia_lab.hosted_contract.project_operations import FollowUpJobOutput
+from aletheia_lab.hosted_contract.project_operations import (
+    AnalysisResultReference,
+    FollowUpJobOutput,
+)
 from aletheia_lab.hosted_contract.project_refresh import RefreshResult
 from aletheia_lab.hosted_contract.session_capabilities import Identifier
 from aletheia_lab.product.questions import checked_product_question
@@ -310,10 +313,13 @@ class JobApplication:
         elif value["operation"] == "refresh":
             value["result"] = RefreshResult.model_validate(value["result"], strict=True).model_dump(mode="json")
         elif value["operation"] == "analyze":
-            view = parse_product_view_json(json.dumps(value["result"], allow_nan=False))
-            if view.demo_only or view.visibility != "diagnosis":
-                raise ValueError("invalid analysis output")
-            value["result"] = view.model_dump(mode="json")
+            if value["result"].get("kind") == "result_reference":
+                value["result"] = AnalysisResultReference.model_validate(value["result"], strict=True).model_dump(mode="json")
+            else:
+                view = parse_product_view_json(json.dumps(value["result"], allow_nan=False))
+                if view.demo_only or view.visibility != "diagnosis":
+                    raise ValueError("invalid analysis output")
+                value["result"] = view.model_dump(mode="json")
         body = json.dumps(value, ensure_ascii=True, allow_nan=False, separators=(",", ":")).encode()
         if len(body) > self._runtime.api.maximum_response_bytes:
             raise ValueError("job output too large")

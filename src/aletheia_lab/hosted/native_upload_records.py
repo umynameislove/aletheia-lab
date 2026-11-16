@@ -28,10 +28,8 @@ from aletheia_lab.product.view import (
 from aletheia_lab.project.identity import PROJECT_ID_PATTERN, canonical_project_sha256
 
 from .upload_analysis import (
-    METRIC_OBSERVATION_MODEL,
     analysis_identity,
-    analyze_initial_upload,
-    analyze_upload_metrics,
+    analyze_upload,
 )
 from .upload_snapshot import (
     UPLOAD_SNAPSHOT_TYPES,
@@ -111,8 +109,7 @@ def build_initial_upload_result(snapshot: AnyUploadSnapshot, question: str, view
     """Verify the existing exact projection before any database connection is held."""
     snapshot = parse_upload_snapshot(snapshot.model_dump(mode='python'))
     view = parse_product_view(view.model_dump(mode='python'))
-    analyzer = analyze_upload_metrics if view.runtime.model == METRIC_OBSERVATION_MODEL else analyze_initial_upload
-    if view != analyzer(snapshot, question):
+    if view != analyze_upload(snapshot, question, view.runtime.model):
         raise ValueError('Initial upload result differs from the verified snapshot projection')
     model = UploadResultRecordV2 if isinstance(snapshot, UploadSnapshotV2) else UploadResultRecord
     return parse_upload_result_record({'schema_version': model.model_fields['schema_version'].default,

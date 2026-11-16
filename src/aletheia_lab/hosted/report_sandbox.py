@@ -5,13 +5,14 @@ import os
 import sys
 
 
-def restrict_report_process() -> None:
+def restrict_report_process(*, windowed: bool = False) -> None:
     for name in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
         os.environ[name] = "1"
     if sys.platform != "win32":
         import resource
 
-        limits = [(resource.RLIMIT_CPU, 15, 16), (resource.RLIMIT_NOFILE, 64, 64),
+        cpu_seconds = 55 if windowed else 15
+        limits = [(resource.RLIMIT_CPU, cpu_seconds, cpu_seconds + 1), (resource.RLIMIT_NOFILE, 64, 64),
                   (resource.RLIMIT_FSIZE, 32 * 1024 * 1024, 32 * 1024 * 1024)]
         # macOS reserves large virtual mappings; RLIMIT_RSS there is not enforced.
         if sys.platform.startswith("linux"):

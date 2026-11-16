@@ -41,7 +41,8 @@ class WorkerInput(BaseModel):
     mapping: dict[str, object] | None = None
     snapshot: dict[str, object] | None = None
     question: str | None = None
-    analysis_model: Literal['upload-snapshot-observation/v1', 'upload-snapshot-metric-observation/v2'] | None = None
+    analysis_model: Literal['upload-snapshot-observation/v1', 'upload-snapshot-metric-observation/v2',
+                            'upload-snapshot-windowed-metric-observation/v3'] | None = None
     parent: dict[str, object] | None = None
     selection_kind: Literal["claim", "node"] | None = None
     selection_id: str | None = None
@@ -126,12 +127,11 @@ def _execute(request: WorkerInput, root: Path) -> dict[str, object]:
                 or request.source_path is not None or request.captured_at is not None or request.mapping is not None
                 or request.workspace_id is not None or request.source_id is not None):
             raise ValueError("invalid analysis fields")
-        from .upload_analysis import analyze_initial_upload, analyze_upload_metrics
+        from .upload_analysis import INITIAL_OBSERVATION_MODEL, analyze_upload
 
         snapshot = parse_upload_snapshot(json.dumps(request.snapshot))
-        analyzer = (analyze_upload_metrics if request.analysis_model == 'upload-snapshot-metric-observation/v2'
-                    else analyze_initial_upload)
-        return analyzer(snapshot, request.question).model_dump(mode="json")
+        return analyze_upload(snapshot, request.question,
+                              request.analysis_model or INITIAL_OBSERVATION_MODEL).model_dump(mode="json")
     if "analysis_model" in request.model_fields_set:
         raise ValueError("unexpected analysis version")
     if ((request.source_base64 is None) == (request.source_path is None)

@@ -172,7 +172,7 @@ class ManagedRuntime:
         sources = PostgresSources(pool, maximum_upload_bytes=200*1024*1024,
                                    maximum_expanded_bytes=512*1024*1024, maximum_entries=100000, audit=audit_enabled, catalog=catalog)
         jobs = PostgresJobs(pool, sources, audit=audit_enabled, catalog=catalog,
-                            execution=True, analysis_model='upload-snapshot-metric-observation/v2')
+                            execution=True, analysis_model=settings.api.analysis_model)
         job_updates = PostgresJobUpdates(jobs, cursors)
         preview_leases = PreviewLeases(sources)
         async with asyncio.timeout(settings.api.startup_timeout_seconds):

@@ -61,6 +61,21 @@ class ReportWorkerSupervisor:
         if not task.cancelled():
             task.exception()
 
+    def _check_input_budget(self, report_format: ReportFormat, payload: bytes) -> None:
+        if len(payload) <= MAX_INPUT_BYTES:
+            return
+        from .upload_analysis import WINDOW_OBSERVATION_MODEL
+
+        if len(payload) > MAX_OUTPUT_BYTES or self._command(report_format)[0] != "aletheia_lab.hosted.worker":
+            raise WorkerRejected("worker_input_too_large")
+        try:
+            runtime = json.loads(payload)["runtime"]
+            if runtime["model"] == WINDOW_OBSERVATION_MODEL:
+                return
+        except (ValueError, TypeError, KeyError, UnicodeError):
+            pass
+        raise WorkerRejected("worker_input_too_large")
+
     async def render(self, report_format: ReportFormat, payload: bytes) -> bytes:
         loop = asyncio.get_running_loop()
         if self._loop is not None and self._loop is not loop:
@@ -70,8 +85,7 @@ class ReportWorkerSupervisor:
             raise WorkerRejected("worker_closed")
         if report_format not in ("json", "markdown", "pdf") or not isinstance(payload, bytes):
             raise WorkerRejected("worker_invalid_request")
-        if len(payload) > MAX_INPUT_BYTES:
-            raise WorkerRejected("worker_input_too_large")
+        self._check_input_budget(report_format, payload)
         if self._slots.locked():
             raise WorkerRejected("worker_busy")
         await self._slots.acquire()
@@ -105,6 +119,9 @@ class ReportWorkerSupervisor:
 
     async def _execute(self, report_format: ReportFormat, payload: bytes) -> bytes:
         module, argument = self._command(report_format)
+        large_report = module == "aletheia_lab.hosted.worker" and len(payload) > MAX_INPUT_BYTES
+        if large_report:
+            argument += "-windowed-v3"
         spawn = asyncio.create_task(asyncio.create_subprocess_exec(
             str(self._python), "-B", "-m", module, argument,
             stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
@@ -112,7 +129,7 @@ class ReportWorkerSupervisor:
         ))
         process: asyncio.subprocess.Process | None = None
         try:
-            async with asyncio.timeout(self._timeout):
+            async with asyncio.timeout(55 if large_report else self._timeout):
                 process = await asyncio.shield(spawn)
                 output = await self._communicate(process, payload)
             if report_format == "pdf" and process.returncode == 3:

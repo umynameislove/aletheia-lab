@@ -148,7 +148,8 @@ async def _run_upload_claim(jobs: PostgresJobs, operations: UploadOperations, cl
         snapshot_id, question = claim.request.get("snapshot_id"), claim.request.get("question")
         if (set(claim.request) not in ({"snapshot_id", "question"}, {"snapshot_id", "question", "analysis_model"})
                 or claim.request.get("analysis_model", "upload-snapshot-observation/v1") not in
-                    ("upload-snapshot-observation/v1", "upload-snapshot-metric-observation/v2")
+                    ("upload-snapshot-observation/v1", "upload-snapshot-metric-observation/v2",
+                     "upload-snapshot-windowed-metric-observation/v3")
                 or not isinstance(snapshot_id, str) or not isinstance(question, str)):
             raise ValueError("invalid analysis job")
         from typing import cast

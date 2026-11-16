@@ -132,9 +132,22 @@ class UploadOperations:
         question = checked_product_question(question)
         snapshot = await self._sources.snapshot(credential_digest=credential_digest, workspace_id=workspace_id,
                                                 snapshot_id=snapshot_id)
+        view = await self._analyze_snapshot(snapshot, question, analysis_model)
+        current = await self._sources.snapshot(credential_digest=credential_digest, workspace_id=workspace_id,
+                                               snapshot_id=snapshot_id)
+        if current != snapshot:
+            raise SourceNotFound()
+        from .upload_analysis import analyze_upload
+
+        if view != await run_blocking(analyze_upload, snapshot, question, analysis_model):
+            raise ValueError("Worker analysis mismatch")
+        return view
+
+    async def _analyze_snapshot(self, snapshot: AnyUploadSnapshot, question: str, analysis_model: str) -> AnyProductView:
         payload: dict[str, object] = {"operation": "analyze", "question": question}
         if analysis_model != 'upload-snapshot-observation/v1':
-            if analysis_model != 'upload-snapshot-metric-observation/v2':
+            if analysis_model not in ('upload-snapshot-metric-observation/v2',
+                                      'upload-snapshot-windowed-metric-observation/v3'):
                 raise ValueError('Unsupported analysis version.')
             payload['analysis_model'] = analysis_model
         def encode() -> bytes:
@@ -144,17 +157,7 @@ class UploadOperations:
         if len(request) > self._worker_input_limit():
             raise ValueError("Snapshot exceeds worker input budget")
         raw = await self._worker.run_upload(request)
-        current = await self._sources.snapshot(credential_digest=credential_digest, workspace_id=workspace_id,
-                                               snapshot_id=snapshot_id)
-        if current != snapshot:
-            raise SourceNotFound()
-        view = decode_json_model(raw, _ProductViewOutput, maximum_bytes=MAX_OUTPUT_BYTES).root
-        from .upload_analysis import analyze_initial_upload, analyze_upload_metrics
-
-        analyzer = analyze_upload_metrics if analysis_model == 'upload-snapshot-metric-observation/v2' else analyze_initial_upload
-        if view != await run_blocking(analyzer, snapshot, question):
-            raise ValueError("Worker analysis mismatch")
-        return view
+        return (await run_blocking(decode_json_model, raw, _ProductViewOutput, maximum_bytes=MAX_OUTPUT_BYTES)).root
 
     async def _execute(self, *, credential_digest: SecretStr, workspace_id: str, source_id: str,
                        mapping: dict[str, object] | None,

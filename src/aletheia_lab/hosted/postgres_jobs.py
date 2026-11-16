@@ -41,8 +41,10 @@ from .upload_snapshot import (
 )
 from .workspace_management import _revision
 
-AnalysisModel = Literal["upload-snapshot-observation/v1", "upload-snapshot-metric-observation/v2"]
-_ANALYSIS_MODELS = ("upload-snapshot-observation/v1", "upload-snapshot-metric-observation/v2")
+AnalysisModel = Literal["upload-snapshot-observation/v1", "upload-snapshot-metric-observation/v2",
+                        "upload-snapshot-windowed-metric-observation/v3"]
+_ANALYSIS_MODELS = ("upload-snapshot-observation/v1", "upload-snapshot-metric-observation/v2",
+                    "upload-snapshot-windowed-metric-observation/v3")
 
 Operation = Literal["preview", "confirm", "analyze", "follow_up", "refresh"]
 _AVAILABLE = "(state='queued' OR (state='running' AND lease_until<clock_timestamp()))"

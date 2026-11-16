@@ -118,6 +118,8 @@ class UploadReadBackend(ReadOnlyHostedBackend):
                 features['jobs.conflict_v1'] = conflict_ready is not None and await conflict_ready()
             if getattr(self._jobs, 'analysis_model', '') == 'upload-snapshot-metric-observation/v2':
                 features['analysis.metric_observations_v2'] = True
+            if getattr(self._jobs, 'analysis_model', '') == 'upload-snapshot-windowed-metric-observation/v3':
+                features['analysis.metric_windows_v3'] = True
 
     async def capabilities(self, session: Session, workspace_id: str) -> Capabilities:
         value = await super().capabilities(session, workspace_id)

@@ -202,7 +202,7 @@ def _validated_request(request: dict[str, object], operation: Operation, analysi
                 or not isinstance(request.get("question"), str)):
             raise ValueError("invalid analysis request")
         checked_product_question(cast(str, request["question"]))
-        if "analysis_model" not in request and analysis_model == _ANALYSIS_MODELS[1] and retry_of_job_id is None:
+        if "analysis_model" not in request and analysis_model != _ANALYSIS_MODELS[0] and retry_of_job_id is None:
             request = dict(request, analysis_model=analysis_model)
     elif (set(request) != ({"source_id"} if operation == "preview" else {"source_id", "mapping"})
           or not isinstance(request.get("source_id"), str)

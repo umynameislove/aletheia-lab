@@ -32,22 +32,42 @@ from .upload_snapshot import AnyUploadSnapshot, UploadSnapshotV2, parse_upload_s
 
 INITIAL_OBSERVATION_MODEL = 'upload-snapshot-observation/v1'
 METRIC_OBSERVATION_MODEL = 'upload-snapshot-metric-observation/v2'
+WINDOW_OBSERVATION_MODEL = 'upload-snapshot-windowed-metric-observation/v3'
+WINDOW_AGGREGATION_POLICY = 'canonical-mapped-metric-window-decimal/v1'
 MAX_OBSERVATION_SERIES = 64
 
 
 def analysis_identity(workspace: str, snapshot_id: str, question: str, model: str) -> dict[str, str]:
     identity = {'workspace': workspace, 'snapshot': snapshot_id, 'question': question}
-    if model == METRIC_OBSERVATION_MODEL:
+    if model in (METRIC_OBSERVATION_MODEL, WINDOW_OBSERVATION_MODEL):
         identity['analysis_model'] = model
     elif model != INITIAL_OBSERVATION_MODEL:
         raise ValueError('Unsupported native observation version.')
+    if model == WINDOW_OBSERVATION_MODEL:
+        identity['aggregation_policy'] = WINDOW_AGGREGATION_POLICY
     return identity
+
+
+def analyze_upload(snapshot: AnyUploadSnapshot, question: str, model: str) -> AnyProductView:
+    if model == INITIAL_OBSERVATION_MODEL:
+        return analyze_initial_upload(snapshot, question)
+    if model == METRIC_OBSERVATION_MODEL:
+        return analyze_upload_metrics(snapshot, question)
+    if model == WINDOW_OBSERVATION_MODEL:
+        from .window_observations import analyze_metric_windows
+
+        return analyze_metric_windows(snapshot, question)
+    raise ValueError('Unsupported native observation version.')
 
 
 def analyze_initial_upload(snapshot: AnyUploadSnapshot, question: str) -> AnyProductView:
     """Project one verified snapshot; no prior snapshot or cause is inferred."""
     snapshot = parse_upload_snapshot(snapshot.model_dump(mode="python"))
     question = checked_product_question(question)
+    return _initial_view(snapshot, question)
+
+
+def _initial_view(snapshot: AnyUploadSnapshot, question: str) -> AnyProductView:
     identity = {"workspace": snapshot.workspace_id, "snapshot": snapshot.snapshot_id, "question": question}
     def scoped(prefix: str, value: object) -> str:
         return prefix + "-" + canonical_project_sha256(value)
