@@ -5,6 +5,7 @@ import { HostedRequestDiscarded, type createHostedClient, type HostedClaim, type
 import type { HostedCapabilities } from "../../service/hosted";
 import { isProductError } from "../../service/port";
 import { TERM } from "../../vocab";
+import { saveReport, type ReportKind } from "../../export";
 import { Id, Term } from "../primitives";
 import { RefusalNote, refusalOf, type Refusal } from "../Ask";
 
@@ -35,6 +36,7 @@ export function LargeResult(reader: Reader) {
   if (refusal) return <div className="boot"><div><b>This result could not be opened</b><RefusalNote refusal={refusal} /></div></div>;
   if (!header) return <div className="boot" role="status">Loading the result summary…</div>;
   const { result, runtime, counts } = header;
+  const windowed = runtime.model === "upload-snapshot-windowed-metric-observation/v3";
   return (
     <main className="page" id="main"><div className="page-inner large-result">
       <header>
@@ -59,10 +61,47 @@ export function LargeResult(reader: Reader) {
         <dt>Result</dt><dd><Id v={header.result_id} /></dd>
         <dt>Snapshot</dt><dd><Id v={header.snapshot_id} /></dd>
       </dl>
+      {windowed && caps.features?.["exports.download"] === true
+        && caps.allowed_actions.includes("export") && <WindowExports reader={reader} header={header} />}
       <Claims reader={reader} total={counts.claims} />
-      <Graph reader={reader} nodes={counts.nodes} edges={counts.edges} />
+      <Graph reader={reader} nodes={counts.nodes} edges={counts.edges} pageAtATime={windowed} />
     </div></main>
   );
+}
+
+function WindowExports({ reader, header }: { reader: Reader; header: HostedResultHeader }) {
+  const { client, caps, scope, isCurrent } = reader;
+  const [busy, setBusy] = useState(false), [refusal, setRefusal] = useState<Refusal>(null);
+  const active = useRef<AbortController | null>(null);
+  const keys = useRef<Partial<Record<ReportKind, string>>>({});
+  useEffect(() => () => active.current?.abort(), []);
+  async function exportReport(format: ReportKind) {
+    if (active.current || !isCurrent()) return;
+    const stop = new AbortController();
+    active.current = stop;
+    setBusy(true); setRefusal(null);
+    try {
+      const key = keys.current[format] ??= crypto.randomUUID();
+      const descriptor = await client.createExport(caps.workspace_id, caps, scope.resultId, format, key, stop.signal, true);
+      if (descriptor.project_id !== scope.projectId) throw new Error("The export belongs to another project.");
+      const bytes = await client.downloadExport(caps.workspace_id, descriptor, stop.signal);
+      if (!stop.signal.aborted && isCurrent()) {
+        saveReport({ project: { display_name: header.display_name }, result: { id: scope.resultId } }, format, bytes);
+        delete keys.current[format];
+      }
+    } catch (error) {
+      if (isProductError(error) && (error.code === "export_expired" || error.code === "not_found")) delete keys.current[format];
+      if (!stop.signal.aborted && isCurrent() && !ignored(error)) setRefusal(refusalOf(error));
+    } finally {
+      active.current = null;
+      if (!stop.signal.aborted && isCurrent()) setBusy(false);
+    }
+  }
+  return <div className="actions" aria-label="Export report">
+    {caps.supported_export_formats.map(format => <button key={format} className="btn btn--sm" disabled={busy}
+      onClick={() => { void exportReport(format); }}>Export {format === "markdown" ? "Markdown" : format.toUpperCase()}</button>)}
+    <RefusalNote refusal={refusal} />
+  </div>;
 }
 
 function Claims({ reader, total }: { reader: Reader; total: number }) {
@@ -187,7 +226,9 @@ function ClaimRow({ claim, reader }: { claim: HostedClaim; reader: Reader }) {
 /* The lineage, read a page at a time on request and merged by ID (edge pages repeat their endpoint nodes).
    Only a null cursor ends it; an expired cursor drops what was read and starts again, never splicing two
    reads. The union is called whole only when it matches the header's exact counts. */
-function Graph({ reader, nodes: totalNodes, edges: totalEdges }: { reader: Reader; nodes: number; edges: number }) {
+function Graph({ reader, nodes: totalNodes, edges: totalEdges, pageAtATime }: {
+  reader: Reader; nodes: number; edges: number; pageAtATime: boolean;
+}) {
   const { client, caps, scope, isCurrent } = reader;
   const [read, setRead] = useState<{ nodes: Map<string, HostedGraphNode>; edges: Map<string, HostedGraphEdge> } | null>(null);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -205,7 +246,8 @@ function Graph({ reader, nodes: totalNodes, edges: totalEdges }: { reader: Reade
       const page = await client.loadGraphPage(caps.workspace_id, caps, scope, { cursor: after }, stop.current.signal);
       if (mine !== generation.current || !isCurrent()) return;
       setRead(held => {
-        const nodes = new Map(after === null ? [] : held?.nodes), edges = new Map(after === null ? [] : held?.edges);
+        const append = after !== null && !pageAtATime;
+        const nodes = new Map(append ? held?.nodes : []), edges = new Map(append ? held?.edges : []);
         for (const node of page.nodes) nodes.set(node.id, node);
         for (const edge of page.edges) edges.set(edge.id, edge);
         return { nodes, edges };
@@ -223,7 +265,7 @@ function Graph({ reader, nodes: totalNodes, edges: totalEdges }: { reader: Reade
 
   if (totalNodes === 0 && totalEdges === 0) return <section className="large-graph" aria-labelledby="large-graph"><h2 id="large-graph">Lineage</h2>
     <p className="dim">This result has no lineage graph.</p></section>;
-  const held = read ? read.nodes.size + read.edges.size : 0, full = held >= GRAPH_HOLD;
+  const held = read ? read.nodes.size + read.edges.size : 0, full = !pageAtATime && held >= GRAPH_HOLD;
   const ended = read !== null && cursor === null;
   const whole = ended && read.nodes.size === totalNodes && read.edges.size === totalEdges;
   const label = (nodeId: string) => { const node = read?.nodes.get(nodeId);
@@ -235,10 +277,15 @@ function Graph({ reader, nodes: totalNodes, edges: totalEdges }: { reader: Reade
       {restarted && <p className="notice" role="status">The lineage changed or timed out, so it started again from the first page.</p>}
       <p className="dim" role="status" aria-live="polite">
         {read === null ? (busy ? "Loading the lineage…" : "Read the lineage in pages, as a list of how claims, evidence and conclusions connect.")
+          : pageAtATime ? `This page shows ${count(read.nodes.size)} nodes and ${count(read.edges.size)} edges.`
+            + (ended ? " Last page." : "")
           : `Read ${count(read.nodes.size)} of ${count(totalNodes)} nodes and ${count(read.edges.size)} of ${count(totalEdges)} edges.`
             + (whole ? " That is the whole lineage." : ended ? " The pages did not add up to these counts, so this is not the whole lineage." : "")}
       </p>
       {kinds && kinds.size > 0 && <p className="large-graph-kinds">{[...kinds].map(([kind, n]) => `${kind} ${count(n)}`).join(", ")}</p>}
+      {read && pageAtATime && read.edges.size === 0 && <ul className="large-graph-edges">
+        {[...read.nodes.keys()].map(id => <li key={id}>{label(id)}</li>)}
+      </ul>}
       {read && read.edges.size > 0 && <ul className="large-graph-edges">
         {[...read.edges.values()].map(edge => <li key={edge.id}>{label(edge.source)} <b>{EDGE[edge.kind] ?? edge.kind.toLowerCase().replace(/_/g, " ")}</b> {label(edge.target)}</li>)}
       </ul>}

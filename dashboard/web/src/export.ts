@@ -35,11 +35,13 @@ const KIND: Record<ReportKind, { ext: string; mime: string }> = {
   pdf: { ext: "pdf", mime: "application/pdf" },
 };
 
+type ReportScope = { project: Pick<ProductView["project"], "display_name">; result: Pick<ProductView["result"], "id"> };
+
 /** The name a report of this result is saved under. */
-export const reportName = (v: ProductView, kind: ReportKind) => reportFilename(v.project.display_name, v.result.id, KIND[kind].ext);
+export const reportName = (v: ReportScope, kind: ReportKind) => reportFilename(v.project.display_name, v.result.id, KIND[kind].ext);
 
 /** Saves the service's bytes untouched (Q11). The caller decides whether the scope is still current. */
-export function saveReport(v: ProductView, kind: ReportKind, bytes: Uint8Array) {
+export function saveReport(v: ReportScope, kind: ReportKind, bytes: Uint8Array) {
   download(reportName(v, kind), bytes as BlobPart, KIND[kind].mime);
 }
 

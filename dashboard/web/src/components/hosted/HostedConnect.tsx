@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { ProductView } from "../../types";
-import type { createHostedClient, HostedPreview, HostedSource, HostedSubmission, HostedUploadResume, OutputExpectation } from "../../service/hosted-client";
+import type { createHostedClient, HostedAnalysisResult, HostedPreview, HostedSource, HostedSubmission, HostedUploadResume, OutputExpectation } from "../../service/hosted-client";
 import { HostedRequestDiscarded } from "../../service/hosted-client";
 import type { HostedCapabilities, HostedSession, JobReceipt } from "../../service/hosted";
 import { ProductError } from "../../service/port";
@@ -15,7 +14,7 @@ interface Props {
   workspaceId: string;
   caps: HostedCapabilities;
   isCurrent: () => boolean;
-  onView: (view: ProductView, jobId: string) => void;
+  onView: (view: HostedAnalysisResult, jobId: string) => void;
   onBack: () => void;
   onJob?: (job: string | null) => void;
 }
@@ -125,7 +124,9 @@ function ConnectForm(props: Props) {
         setReceipt(accepted);
         latest.current.onJob?.(accepted.job_id);
       }
-      const job = await client.pollJob(workspace, attempt.receipt.job_id, granted, { signal: controller.signal, timeoutMs: 120_000 });
+      const windowed = granted.features?.["analysis.metric_windows_v3"] === true;
+      const timeoutMs = windowed && attempt.submission.operation !== "preview" ? 300_000 : 120_000;
+      const job = await client.pollJob(workspace, attempt.receipt.job_id, granted, { signal: controller.signal, timeoutMs });
       if (!current()) return;
       setJobState(job.status);
       if (job.status !== "succeeded") {
@@ -138,7 +139,7 @@ function ConnectForm(props: Props) {
         }
         throw new ProductError("job_failed", `The ${attempt.submission.operation} job ended as ${job.status}. No output was used.`);
       }
-      const output = await client.loadOutput(workspace, attempt.receipt.job_id, attempt.expected, controller.signal);
+      const output = await client.loadOutput(workspace, attempt.receipt.job_id, attempt.expected, controller.signal, windowed);
       if (!current()) return;
       pending.current = null;
       if (output.operation === "preview") {

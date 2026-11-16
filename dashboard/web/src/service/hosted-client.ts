@@ -94,10 +94,12 @@ export interface HostedDeletionStatus {
 export interface HostedDeletedProject {
   workspace_id: string; project_id: string; revision: number; tombstone_id: string; status: "tombstoned"; retention: "retained";
 }
+export interface HostedAnalysisReference { kind: "result_reference"; result_id: string; project_id: string; snapshot_id: string }
+export type HostedAnalysisResult = ProductView | HostedAnalysisReference;
 export type HostedOutput = { workspace_id: string; job_id: string } & (
   | { operation: "preview"; result: HostedPreview }
   | { operation: "confirm"; result: { snapshot_id: string } }
-  | { operation: "analyze"; result: ProductView }
+  | { operation: "analyze"; result: HostedAnalysisResult }
   | { operation: "refresh"; result: HostedRefreshResult }
   | { operation: "follow_up"; result: HostedFollowUpResult }
 );
@@ -251,6 +253,7 @@ export function createHostedClient(options: HostedClientOptions) {
                             body?: BodyInit, contentType?: string, requestKey?: string,
                             extraSignal?: AbortSignal, budget = timeout,
                             extra: { ifMatch?: number; raw?: { media: string; maximum: number };
+                                     timeoutOverrideMs?: number;
                                      /** every answer's status and its Retry-After in ms, for callers that pace themselves */
                                      onStatus?: (status: number, retryAfterMs: number | null) => void } = {}): Promise<T> {
     const mutation = method !== "GET";
@@ -261,7 +264,8 @@ export function createHostedClient(options: HostedClientOptions) {
     if (requestKey !== undefined) headers["Idempotency-Key"] = key(requestKey);
     if (extra.ifMatch !== undefined) { input(revision(extra.ifMatch)); headers["If-Match"] = `"${extra.ifMatch}"`; }
     const controller = new AbortController();
-    const deadline = performance.now() + Math.min(timeout, budget);
+    const requestTimeout = extra.timeoutOverrideMs ?? Math.min(timeout, budget);
+    const deadline = performance.now() + requestTimeout;
     let expired = false;
     const timeoutFailure = () => mutation ? unknownOutcome() : new ProductError("deadline_exceeded", "The service did not answer in time.");
     let rejectStop: (error: Error) => void = () => {};
@@ -273,7 +277,7 @@ export function createHostedClient(options: HostedClientOptions) {
       expired = true;
       controller.abort();
       rejectStop(timeoutFailure());
-    }, Math.min(timeout, budget));
+    }, requestTimeout);
     const active = () => {
       check(mutation, extraSignal);
       if (expired || performance.now() >= deadline) throw timeoutFailure();
@@ -498,7 +502,7 @@ export function createHostedClient(options: HostedClientOptions) {
       }, body, "application/json", key(requestKey), extraSignal);
     },
     loadJob,
-    loadOutput: (workspace: string, jobId: string, expected: OutputExpectation, extraSignal?: AbortSignal) => {
+    loadOutput: (workspace: string, jobId: string, expected: OutputExpectation, extraSignal?: AbortSignal, windowed = false) => {
       authenticated(); input(id(jobId));
       input(expected.operation === "preview" ? hash(expected.sourceSha256) && (expected.leaseSourceId === undefined || id(expected.leaseSourceId))
         : expected.operation === "refresh" ? id(expected.projectId)
@@ -533,12 +537,22 @@ export function createHostedClient(options: HostedClientOptions) {
           return { ...scope, operation: "follow_up", result: { project_id: r.project_id, result_id: r.result_id,
             parent_result_id: r.parent_result_id, snapshot_id: r.snapshot_id, revision: r.revision } };
         }
+        if (obj(x.result) && x.result.kind === "result_reference") {
+          const r = x.result;
+          need(matches(PROJECT, r.project_id) && matches(RESULT, r.result_id) && matches(UPLOAD_SNAPSHOT, r.snapshot_id));
+          if (r.snapshot_id !== expected.snapshotId || (expected.projectId !== undefined && r.project_id !== expected.projectId)) {
+            throw outOfScope("snapshot or project");
+          }
+          return { ...scope, operation: "analyze", result: { kind: "result_reference", result_id: r.result_id,
+            project_id: r.project_id, snapshot_id: r.snapshot_id } };
+        }
         const view = checkProductView(x.result);
         if (view.demo_only || view.snapshot.id !== expected.snapshotId || (expected.projectId !== undefined && view.project.id !== expected.projectId)) {
           throw new ProductError("response_out_of_scope", "The analysis belongs to another snapshot or project.");
         }
         return { ...scope, operation: "analyze", result: view };
-      }, undefined, undefined, undefined, extraSignal);
+      }, undefined, undefined, undefined, extraSignal, undefined,
+      { timeoutOverrideMs: windowed && expected.operation === "confirm" ? 65_000 : undefined });
     },
     /** The PROJECT revision for CAS: ProjectDetails when the management route is on, else the project's
         ProjectPage entry. A deleting project is not offered for another change. */
@@ -762,7 +776,7 @@ export function createHostedClient(options: HostedClientOptions) {
     },
     /** POST exports answers 201 with a descriptor, not a job. Only formats the workspace advertises are asked for. */
     createExport: (workspace: string, caps: HostedCapabilities, resultId: string, format: ReportFormat,
-                   requestKey?: string, extraSignal?: AbortSignal) => {
+                   requestKey?: string, extraSignal?: AbortSignal, windowed = false) => {
       capability(workspace, caps, "export");
       input(matches(RESULT, resultId) && exportFormat(format) && caps.supported_export_formats.includes(format));
       return request(`${base(workspace)}/results/${resultId}/exports`, "POST", (value, status): HostedExport => {
@@ -780,7 +794,8 @@ export function createHostedClient(options: HostedClientOptions) {
         if (x.download_url !== `${base(workspace)}/exports/${x.export_id}/download`) throw outOfScope("download address");
         return { workspace_id: workspace, project_id: x.project_id, result_id: resultId, export_id: x.export_id, format,
           byte_size: x.byte_size as number, sha256: x.sha256, download_url: x.download_url, expires_at: expires as string | null };
-      }, JSON.stringify({ format }), "application/json", requestKey === undefined ? undefined : key(requestKey), extraSignal);
+      }, JSON.stringify({ format }), "application/json", requestKey === undefined ? undefined : key(requestKey), extraSignal,
+      undefined, { timeoutOverrideMs: windowed ? 90_000 : undefined });
     },
     /** The described bytes, from this workspace's own download route: media type, size and SHA-256 must all match. */
     downloadExport: async (workspace: string, descriptor: HostedExport, extraSignal?: AbortSignal): Promise<Uint8Array> => {
@@ -819,7 +834,8 @@ export function createHostedClient(options: HostedClientOptions) {
                     poll: { signal?: AbortSignal; timeoutMs?: number } = {}): Promise<HostedJob> => {
       authenticated(); input(id(jobId) && caps.workspace_id === workspace && Number.isSafeInteger(caps.job_poll_min_ms) && caps.job_poll_min_ms > 0);
       const budget = poll.timeoutMs ?? 120_000;
-      input(Number.isSafeInteger(budget) && budget > 0 && budget <= 120_000);
+      const maximum = caps.features?.["analysis.metric_windows_v3"] ? 300_000 : 120_000;
+      input(Number.isSafeInteger(budget) && budget > 0 && budget <= maximum);
       const pollingKey = `${workspace}/${jobId}`;
       if (polling.has(pollingKey)) throw new ProductError("invalid_request", "This job is already being watched.");
       polling.add(pollingKey);

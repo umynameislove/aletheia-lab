@@ -218,6 +218,10 @@ export function createHostedPort(): HostedProductPort {
       const answer = await wait(context.client.loadOutput(context.workspace, job,
         { operation: "analyze", projectId: pointer.project, snapshotId: pointer.snapshot }));
       if (answer.workspace_id !== context.workspace || answer.job_id !== job || answer.operation !== "analyze") throw outOfScope();
+      if ("kind" in answer.result) {
+        if (answer.result.result_id !== resultId) throw outOfScope();
+        throw new ProductError("response_too_large", "Open this result with the paged reader.");
+      }
       const view = storedView(context, answer.result, { result: resultId, project: pointer.project, snapshot: pointer.snapshot });
       check(); remember(view, job); latestJob = job; return view;
     },
@@ -228,12 +232,21 @@ export function createHostedPort(): HostedProductPort {
         { operation: "analyze", snapshot_id: snapshotId, question }, newKey()));
       if (receipt.workspace_id !== context.workspace || !id(receipt.job_id)) throw outOfScope();
       latestJob = receipt.job_id;
-      const job = await wait(context.client.pollJob(context.workspace, receipt.job_id, context.caps));
+      const job = await wait(context.client.pollJob(context.workspace, receipt.job_id, context.caps,
+        context.caps.features?.["analysis.metric_windows_v3"] ? { timeoutMs: 300_000 } : undefined));
       if (job.workspace_id !== context.workspace || job.job_id !== receipt.job_id) throw outOfScope();
       if (job.status !== "succeeded") throw new ProductError("analysis_failed", "The hosted analysis job did not complete.");
       const answer = await wait(context.client.loadOutput(context.workspace, receipt.job_id,
         { operation: "analyze", projectId, snapshotId }));
       if (answer.workspace_id !== context.workspace || answer.job_id !== receipt.job_id || answer.operation !== "analyze") throw outOfScope();
+      if ("kind" in answer.result) {
+        const r = answer.result;
+        check();
+        const query = new URLSearchParams({ workspace: context.workspace, job: receipt.job_id,
+          project: r.project_id, snapshot: r.snapshot_id, result: r.result_id, paged: "1" });
+        location.hash = "#/investigation?" + query;
+        throw new ProductError("response_too_large", "Opening the result in the paged reader.");
+      }
       const view = storedView(context, answer.result, { project: projectId, snapshot: snapshotId });
       check(); remember(view, receipt.job_id); return view;
     },

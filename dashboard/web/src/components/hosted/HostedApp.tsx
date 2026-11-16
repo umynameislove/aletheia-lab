@@ -1,9 +1,9 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { App } from "../../App";
 import { ServiceProvider, bindHostedSession, setHostedContext, type Boot } from "../../service";
 import { createHostedBootstrap, type HostedBootstrap, type HostedBoot } from "../../service/hosted-bootstrap";
 import { sessionChannel } from "../../service/session";
-import { HostedRequestDiscarded } from "../../service/hosted-client";
+import { HostedRequestDiscarded, type HostedAnalysisResult } from "../../service/hosted-client";
 import { ProductError } from "../../service/port";
 import { wipeAll } from "../../service/wipe";
 import type { ProductView } from "../../types";
@@ -25,11 +25,12 @@ const REASONS: Record<string, string> = {
   login_cancelled: "Sign-in was cancelled.", login_failed: "Sign-in could not be completed.",
   account_disabled: "This account is disabled. Contact its administrator.", idp_unavailable: "The identity service could not be reached. Try signing in again.",
 };
-interface ResultLink { workspace: string; job: string; project: string; snapshot: string; result: string }
+interface ResultLink { workspace: string; job: string; project: string; snapshot: string; result: string; paged?: boolean }
 function resultLink(hash: string): ResultLink | null {
   const query = new URLSearchParams(hash.split("?")[1] ?? "");
   const result = Object.fromEntries(["workspace", "job", "project", "snapshot", "result"].map(key => [key, query.get(key)]));
-  return Object.entries(result).every(([key, value]) => query.getAll(key).length === 1 && id(value)) ? result as unknown as ResultLink : null;
+  return Object.entries(result).every(([key, value]) => query.getAll(key).length === 1 && id(value))
+    ? { ...result as unknown as ResultLink, ...(query.get("paged") === "1" ? { paged: true } : {}) } : null;
 }
 
 export function HostedApp() {
@@ -98,10 +99,12 @@ function Workspace({ boot, state, hash }: { boot: HostedBootstrap; state: Hosted
     finally { if (current()) setBusy(false); }
   }
   const link = resultLink(hash), connect = hash.split("?")[0] === "#/connect";
-  function show(result: ProductView, job: string) {
+  function show(result: HostedAnalysisResult, job: string) {
     if (!current() || !caps) return;
-    setView(result);
-    const query = new URLSearchParams({ workspace: caps.workspace_id, job, project: result.project.id, snapshot: result.snapshot.id, result: result.result.id });
+    const reference = "kind" in result ? result : { project_id: result.project.id, snapshot_id: result.snapshot.id, result_id: result.result.id };
+    setView("kind" in result ? undefined : result);
+    const query = new URLSearchParams({ workspace: caps.workspace_id, job, project: reference.project_id, snapshot: reference.snapshot_id, result: reference.result_id });
+    if ("kind" in result) query.set("paged", "1");
     location.hash = "#/investigation?" + query;
   }
   return <>
@@ -129,7 +132,19 @@ function Workspace({ boot, state, hash }: { boot: HostedBootstrap; state: Hosted
 function Result({ boot, state, link, view }: { boot: HostedBootstrap; state: HostedBoot; link: ResultLink; view?: ProductView }) {
   // without the bounded header there is no light way to keep confirming access to one result, so none is shown
   if (state.workspace?.features?.["catalog.paged_read"] !== true) return <Unconfirmable boot={boot} workspace={link.workspace} />;
+  if (link.paged) return <PagedResult boot={boot} state={state} link={link} />;
   return <ShownResult boot={boot} state={state} link={link} view={view} />;
+}
+
+function PagedResult({ boot, state, link }: { boot: HostedBootstrap; state: HostedBoot; link: ResultLink }) {
+  const { result, project, snapshot } = link;
+  const scope = useMemo(() => ({ resultId: result, projectId: project, snapshotId: snapshot }), [result, project, snapshot]);
+  const isCurrent = useCallback(() => boot.isCurrent(state.generation), [boot, state.generation]);
+  useLayoutEffect(() => {
+    boot.watchResult(scope);
+    return () => boot.watchResult(null);
+  }, [boot, scope]);
+  return <LargeResult client={boot.client()} caps={state.workspace!} scope={scope} isCurrent={isCurrent} />;
 }
 
 /* Kiên, 13/11: a server that cannot confirm access to a single result shows none, rather than reading the

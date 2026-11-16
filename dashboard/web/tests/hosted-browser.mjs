@@ -44,6 +44,7 @@ const caps = () => ({ ...workspace, deployment_mode: "hosted", analysis_backends
   supported_source_types: ["zip_bundle"], supported_export_formats: bindings ? ["json", "markdown", ...(pdfOffered ? ["pdf"] : [])] : [],
   allowed_actions: bindings ? ["read", "review", "export", "delete", "import", "analyze"] : ["import", "analyze"],
   features: { ...(metadata ? { "mapping.class_unit_v2": true } : {}),
+    ...(output.result.kind === "result_reference" ? { "analysis.metric_windows_v3": true } : {}),
     ...(resumable ? { "sources.resumable": true, "sources.preview_lease": true } : {}),
     ...(bindings === "on" ? BINDING_FEATURES : bindings === "off" ? { "catalog.read": true } : {}),
     ...(large || paged ? { "catalog.paged_read": true } : {}),
@@ -145,7 +146,8 @@ before(async () => {
       if (path === `${B}/results/${LARGE}`) return json(problem("response_too_large", 413), 413);
       if (path.endsWith("/header")) return json({ schema_version: VERSION, ...scope, snapshot_id: parentView.snapshot.id,
         view_schema_version: "p6-product-view/v1", project: parentView.project, runtime: { provider: "local_evidence",
-          model: "upload-snapshot-metric-observation/v2", external_call: false },
+          model: output.result.kind === "result_reference" ? "upload-snapshot-windowed-metric-observation/v3"
+            : "upload-snapshot-metric-observation/v2", external_call: false },
         result: { ...parentView.result, id: LARGE }, conversation_id: "conversation_large",
         turn_count: 1, claim_count: 120000, evidence_count: 240000, node_count: 22, edge_count: 30 });
       if (path.endsWith("/graph")) {
@@ -477,6 +479,37 @@ test("Chrome offers PDF once the workspace advertises it (K12) and downloads exa
   assert.deepEqual(JSON.parse(created.text), { format: "pdf" });
   assert.match(created.headers["idempotency-key"], /^[A-Za-z0-9_-]{16,128}$/);
   assert.ok(calls.some(call => /\/exports\/ex_pdf_[^/]+\/download$/.test(call.path)));
+});
+
+test("Chrome opens the completed window analysis directly in the paged reader", async () => {
+  reset(); bindings = "on"; large = true;
+  const B = "/v1/workspaces/a";
+  output = { ...analysis, result: { kind: "result_reference", project_id: parentView.project.id,
+    snapshot_id: parentView.snapshot.id, result_id: LARGE } };
+  await connect();
+  await fillMapping(true);
+  await page.clickText("Confirm mapping and save snapshot");
+  await page.until("document.querySelector('#hosted-first-question')");
+  await page.eval(`(() => { const e = document.querySelector('#hosted-first-question'); Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(e, 'What is observed?'); e.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+  await page.clickText("Analyze saved snapshot");
+  await page.until(`document.body?.innerText.includes('Large result, read in pages')`);
+  assert.ok(calls.some(call => call.path === `${B}/results/${LARGE}/header`));
+  assert.equal(calls.some(call => call.path === `${B}/results/${LARGE}`), false);
+  await page.send("Page.reload");
+  await page.until(`document.body?.innerText.includes('Showing 2 of 120,000.')`);
+  assert.equal(calls.some(call => call.path === `${B}/results/${LARGE}`), false);
+  assert.match(await page.eval("document.body.innerText"), /Metric window summary/);
+  await page.clickText("Read the lineage");
+  await page.until(`document.body?.innerText.includes('This page shows')`);
+  await page.clickText("Load more of the lineage");
+  await page.until(`[...document.querySelectorAll('.large-graph button')].some(b => b.textContent === 'Load more of the lineage')`);
+  assert.equal(calls.filter(call => call.path === `${B}/results/${LARGE}/graph`).length, 2);
+  await page.clickText("Export JSON");
+  if (process.env.E2E_EVIDENCE_DIR) await page.shot(resolve(process.env.E2E_EVIDENCE_DIR, "window-model-paged.png"), true);
+  const exportRoute = `${B}/results/${LARGE}/exports`;
+  await page.until(`!Array.from(document.querySelectorAll('button')).find(b => b.textContent === 'Export JSON')?.disabled`);
+  assert.ok(calls.some(call => call.path === exportRoute && JSON.parse(call.text).format === "json"));
+  assert.ok(calls.some(call => call.path.startsWith(`${B}/exports/ex_json_${LARGE}_`) && call.path.endsWith("/download")));
 });
 
 test("Chrome reads a result too large to open whole in pages (K10): exact counts, a cursor restart, search and one claim's evidence", async () => {

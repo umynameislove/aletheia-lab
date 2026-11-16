@@ -24,6 +24,7 @@ export const TERM: Record<string, [plain: string, gloss: string]> = {
   // runtime.model of local_evidence: which pinned analysis version answered (K08–K12 integration)
   "upload-snapshot-observation/v1": ["Snapshot record", "records that the upload was stored; no metric analysis"],
   "upload-snapshot-metric-observation/v2": ["Metric observation summary", "every mapped row counted per run, metric, class and unit; no sampling, no cause"],
+  "upload-snapshot-windowed-metric-observation/v3": ["Metric window summary", "minimum, maximum and mean of consecutive mapped values in the same series"],
   deterministic_mock: ["Scripted answer, no model", "a fixed local answer, not a model result"],
   not_estimated: ["Not counted", "null, not 0"],
   // claim_type — closed enum (K08)

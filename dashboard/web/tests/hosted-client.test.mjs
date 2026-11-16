@@ -39,6 +39,28 @@ function harness(reply, options = {}) {
   return { client, calls, answers };
 }
 
+test("analyze output accepts a bounded reference and rejects other project or snapshot scopes", async () => {
+  const reference = { kind: "result_reference", result_id: "p6-result-" + SHA,
+    project_id: "p3-project-" + SHA, snapshot_id: SNAPSHOT };
+  const expected = { operation: "analyze", projectId: reference.project_id, snapshotId: SNAPSHOT };
+  assert.deepEqual((await harness(output("analyze", reference)).client.loadOutput("ws1", "job1", expected)).result, reference);
+  for (const [change, code] of [[{ result_id: "invalid" }, "response_invalid"],
+    [{ project_id: "p3-project-" + "b".repeat(64) }, "response_out_of_scope"],
+    [{ snapshot_id: "upload-snapshot-" + "b".repeat(64) }, "response_out_of_scope"]]) {
+    await assert.rejects(harness(output("analyze", { ...reference, ...change })).client.loadOutput("ws1", "job1", expected), { code });
+  }
+});
+
+test("confirm output for the window analyzer can wait for the canonical snapshot check", async () => {
+  const pending = harness(async () => {
+    await new Promise(resolve => setTimeout(resolve, 30));
+    return json(output("confirm", { snapshot_id: SNAPSHOT }));
+  }, { timeoutMs: 10 });
+  const expected = { operation: "confirm" };
+  await assert.rejects(pending.client.loadOutput("ws1", "job1", expected), { code: "deadline_exceeded" });
+  assert.equal((await pending.client.loadOutput("ws1", "job1", expected, undefined, true)).result.snapshot_id, SNAPSHOT);
+});
+
 test("bootstrap and capabilities use checked readers over fixed same-origin requests", async () => {
   const h = harness((url) => json(url === "/v1/session" ? sessionWire : capsWire));
   assert.equal((await h.client.loadSession()).context_id, "ctx1");
