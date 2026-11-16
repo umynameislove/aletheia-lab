@@ -76,8 +76,9 @@ def test_follow_up_changed_after_ack_has_typed_conflict_and_no_stale_publication
     _run(scenario())
 
 
-def test_v16_to_v17_preserves_old_migration_checksums_and_canonical_bytes(tmp_path, monkeypatch):
-    migrations = core.MIGRATIONS
+@pytest.mark.parametrize('target_version', [17, len(core.MIGRATIONS)])
+def test_v16_upgrade_preserves_old_migration_checksums_and_canonical_bytes(tmp_path, monkeypatch, target_version):
+    migrations = core.MIGRATIONS[:target_version]
 
     async def scenario():
         with monkeypatch.context() as old:
@@ -95,10 +96,12 @@ def test_v16_to_v17_preserves_old_migration_checksums_and_canonical_bytes(tmp_pa
                 assert await core.migrate(conn, schema) == 'upgraded'
                 assert await core.verify(conn, schema)
                 after = await (await conn.execute('SELECT version,checksum,signature FROM k05_persistence_migrations ORDER BY version')).fetchall()
-                assert after[:16] == ledger and len(after) == 17
+                assert after[:16] == ledger and len(after) == target_version
                 assert await core.migrate(conn, schema) == 'unchanged'
             assert (await case.catalog.read_record(credential_digest=case.a, workspace_id='a',
                 project_id=case.initial.project_id, record_id=case.initial.record_id)).model_dump_json() == before
         finally:
             await manager.__aexit__(None, None, None)
-    _run(scenario())
+    with monkeypatch.context() as target:
+        target.setattr(core, 'MIGRATIONS', migrations)
+        _run(scenario())

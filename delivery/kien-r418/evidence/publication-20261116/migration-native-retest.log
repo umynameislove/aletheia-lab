@@ -1,0 +1,19 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.16, pytest-9.2.0, pluggy-1.7.0 -- /opt/venv/bin/python
+hypothesis profile 'default' -> database=InMemoryExampleDatabase({})
+rootdir: /work
+configfile: pyproject.toml
+plugins: hypothesis-6.170.15, anyio-4.16.0
+collecting ... collected 4 items
+
+tests/integration/test_k09_revision_conflict_postgres.py::test_follow_up_changed_after_ack_has_typed_conflict_and_no_stale_publication PASSED [ 25%]
+tests/integration/test_k09_revision_conflict_postgres.py::test_v16_upgrade_preserves_old_migration_checksums_and_canonical_bytes[17] PASSED [ 50%]
+tests/integration/test_k09_revision_conflict_postgres.py::test_v16_upgrade_preserves_old_migration_checksums_and_canonical_bytes[18] PASSED [ 75%]
+tests/integration/test_k17_window_pipeline_postgres.py::test_window_model_schema_upgrade_retains_installed_checksums PASSED [100%]
+
+-------------- generated xml file: /evidence/migration-native.xml --------------
+============================== 4 passed in 24.00s ==============================
+/opt/test-deps/hypothesis/_settings.py:1114: HypothesisWarning: The database setting is not configured, and the default location is unusable - falling back to an in-memory database for this session.  path=PosixPath('/work/.hypothesis/examples')
+  value = getattr(self, name)
+/opt/test-deps/hypothesis/_settings.py:1115: HypothesisWarning: The database setting is not configured, and the default location is unusable - falling back to an in-memory database for this session.  path=PosixPath('/work/.hypothesis/examples')
+  if value != getattr(default, name):

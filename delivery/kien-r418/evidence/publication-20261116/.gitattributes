@@ -1,0 +1,2 @@
+*.log -text !eol whitespace=cr-at-eol,-blank-at-eol,-blank-at-eof
+*.xml -text !eol whitespace=cr-at-eol

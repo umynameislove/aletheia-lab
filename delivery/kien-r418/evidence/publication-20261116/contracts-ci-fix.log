@@ -1,0 +1,24 @@
+........................................................................ [ 57%]
+......................................................                   [100%]
+============================ slowest 20 durations =============================
+16.83s call     tests/unit/test_maintainability_contract.py::test_tracked_maintainability_budget_passes_with_a_self_hashing_receipt
+16.32s call     tests/unit/test_maintainability_contract.py::test_tightened_budget_blocks_instead_of_self_declaring_success
+1.39s call     tests/unit/test_test_runtime_contract.py::test_named_profiles_resolve_without_collecting_tests
+0.65s call     tests/unit/test_test_runtime_contract.py::test_abrupt_child_exit_preserves_real_measurements_and_exit_code
+0.54s call     tests/unit/test_security_ci_contract.py::test_bandit_suppression_is_narrow_and_documented
+0.27s call     tests/unit/test_test_runtime_contract.py::test_full_coverage_records_child_processes_without_source_exclusions
+0.21s call     tests/unit/test_test_runtime_contract.py::test_study_replay_and_artifact_guards_are_selected_by_blocking_profiles[evaluation]
+0.20s call     tests/unit/test_test_runtime_contract.py::test_evaluation_profile_includes_claim_corpus_and_human_validation_contracts
+0.18s call     tests/unit/test_test_runtime_contract.py::test_study_replay_and_artifact_guards_are_selected_by_blocking_profiles[windows-publication]
+0.17s setup    tests/unit/test_security_ci_contract.py::test_suppressed_execution_rejects_changed_pinned_source[methods]
+0.17s call     tests/unit/test_test_runtime_contract.py::test_publication_profile_resolves_the_shared_core_and_all_immutable_stores
+0.15s call     tests/unit/test_security_ci_contract.py::test_execution_uses_checked_buffer_when_path_changes_after_pin_check[module]
+0.14s call     tests/unit/test_test_runtime_contract.py::test_full_profile_preserves_coverage_floor
+0.14s call     tests/unit/test_test_runtime_contract.py::test_coverage_merges_only_identical_replay_copies_without_losing_lines[cache_lifecycle_analysis]
+0.13s call     tests/unit/test_test_runtime_contract.py::test_evaluation_profile_includes_the_production_gateway_contract
+0.11s call     tests/unit/test_test_runtime_contract.py::test_coverage_merges_only_identical_replay_copies_without_losing_lines[cache_lifecycle_study]
+0.10s call     tests/unit/test_security_ci_contract.py::test_public_property_tests_contain_no_internal_tracking_language
+0.10s call     tests/unit/test_security_ci_contract.py::test_suppressed_execution_rejects_changed_pinned_source[methods]
+0.08s call     tests/unit/test_filesystem_publication.py::test_concurrent_identical_publishers_converge_without_replacement
+0.06s call     tests/unit/test_security_ci_contract.py::test_manual_contract_job_is_independent_of_runtime_services
+126 passed in 47.55s
