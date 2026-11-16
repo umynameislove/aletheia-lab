@@ -67,6 +67,7 @@ test("each binding is offered only by its workspace feature and the role's actio
   assert.match(bindingOff(caps({ features: { ...FEATURES, "projects.refresh": false } }), "refresh"), /does not offer/);
   assert.match(bindingOff(caps({ features: {} }), "export"), /does not offer/);
   assert.match(bindingOff(caps({ allowed_actions: ["read", "export"] }), "follow_up"), /role/);
+  assert.match(bindingOff(caps({ allowed_actions: ["read", "review", "export"], features: {} }), "follow_up"), /role/);
   assert.match(bindingOff(caps({ allowed_actions: ["read", "analyze"] }), "refresh"), /role/, "refresh also uploads, so it needs import");
   assert.match(bindingOff(caps({ allowed_actions: ["read"] }), "delete"), /role/);
 });

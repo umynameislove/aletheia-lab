@@ -301,9 +301,7 @@ function WorkspaceScreen(props: WorkspaceManagerProps & { currentContext: () => 
                 value={inviteExpiry} required onChange={event => setInviteExpiry(event.target.value)} /></label>
             </div><div className="actions"><button className="btn" disabled={!!busy || !target || lookupPending}>Create invitation</button></div></form>
             {issued && <div className="notice" role="status"><div><p>Invitation ready for {issuedName || issued.user_id}. Expires {new Date(issued.expires_at).toLocaleString()}.</p>
-              <label className="fld"><span className="fld-label">Invitation token</span><input className="input mono-in" type="password" readOnly autoComplete="off"
-                value={issued.token} onFocus={event => event.currentTarget.select()} /></label>
-              <p className="fld-note">Copy the selected token and share it with the invited account through your usual private channel.</p>
+              <InvitationToken key={issued.invitation_id} token={issued.token} isCurrent={current} />
               <div className="actions"><button className="btn btn--danger" disabled={!!busy} onClick={() => {
                 void change("Revoking invitation", () => client.revokeInvitation(issued.invitation_id), () => setIssued(null));
               }}>Revoke invitation</button><button className="btn" onClick={() => setIssued(null)}>Clear token</button></div>
@@ -337,6 +335,28 @@ function WorkspaceScreen(props: WorkspaceManagerProps & { currentContext: () => 
       }}>This changes who can access the workspace. The server will check current permissions and ownership.</ConfirmDialog>}
     </div>
   </div>;
+}
+
+function InvitationToken({ token, isCurrent }: { token: string; isCurrent: () => boolean }) {
+  const [outcome, setOutcome] = useState<"idle" | "copied" | "failed">("idle");
+  const [visible, setVisible] = useState(false);
+  async function copy() {
+    if (!isCurrent()) return;
+    try {
+      await navigator.clipboard.writeText(token);
+      if (isCurrent()) setOutcome("copied");
+    } catch {
+      if (isCurrent()) setOutcome("failed");
+    }
+  }
+  return <>
+    <label className="fld"><span className="fld-label">Invitation token</span><input className="input mono-in" type={visible ? "text" : "password"}
+      readOnly autoComplete="off" value={token} onFocus={event => { if (visible) event.currentTarget.select(); }} /></label>
+    <button className="btn" onClick={() => { void copy(); }}>Copy invitation token</button>
+    {outcome === "failed" && <button className="btn" onClick={() => setVisible(value => !value)}>{visible ? "Hide token" : "Show token"}</button>}
+    <p className="fld-note" role="status">{outcome === "copied" ? "Invitation token copied. Share it privately with the invited account."
+      : outcome === "failed" ? "Clipboard unavailable. Show the token to copy it manually." : "Share the token privately with the invited account."}</p>
+  </>;
 }
 
 function MemberRow({ member, owner, currentUser, disabled, onChange, onActive, onTransfer }: {

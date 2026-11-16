@@ -48,8 +48,8 @@ const BINDINGS: Readonly<Record<HostedBinding, { feature: string; actions: reado
 export function bindingOff(caps: HostedCapabilities | null, binding: HostedBinding): string | null {
   if (!caps) return "Open a workspace first.";
   const { feature, actions } = BINDINGS[binding];
-  if (caps.features?.[feature] !== true) return "This workspace does not offer it.";
   if (!actions.every(action => caps.allowed_actions.includes(action))) return "Your role in this workspace does not allow it.";
+  if (caps.features?.[feature] !== true) return "This workspace does not offer it.";
   return null;
 }
 
