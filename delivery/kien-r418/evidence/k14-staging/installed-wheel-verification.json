@@ -1,0 +1,6 @@
+{
+  "runtime_identity": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529",
+  "package_files": 677,
+  "python": "3.12.16 (heads/3.12-dirty:cee5c456b83, Nov  4 2026, 01:20:49) [GCC 16.2.0]",
+  "package_root": "/opt/venv/lib/python3.12/site-packages/aletheia_lab"
+}

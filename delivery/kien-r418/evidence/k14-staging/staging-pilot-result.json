@@ -1,0 +1,1375 @@
+{
+  "status": "failed",
+  "source_identity": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529",
+  "profile": {
+    "schema_version": "k17-capacity-profile/v1",
+    "target": "https://localhost:18776",
+    "origin": "https://localhost:18776",
+    "host": "localhost:18776",
+    "tls_ca_file": "/run/config/ca.pem",
+    "release_sha256": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529",
+    "dataset_sha256": "cd0dbc6d89ab61c1355c81a8a6f9a96f76f7dbe119b363192e5ebc4b6b84f229",
+    "seed": 170013,
+    "shard_index": 0,
+    "shard_count": 1,
+    "mode": "closed",
+    "duration_seconds": 30.0,
+    "warmup_seconds": 0.0,
+    "drain_seconds": 120.0,
+    "arrivals_per_second": 20.0,
+    "max_inflight": 32,
+    "max_pending": 128,
+    "max_response_bytes": 33554432,
+    "poll_seconds": 0.5,
+    "job_polling": "updates",
+    "renew_every_seconds": 300.0,
+    "think_seconds": 1.0,
+    "jitter_fraction": 0.2,
+    "active_window_seconds": 30,
+    "size_weights": {
+      "S": 60,
+      "M": 35,
+      "L": 5
+    },
+    "journeys": [
+      {
+        "name": "result_header",
+        "weight": 40,
+        "roles": [
+          "owner",
+          "admin",
+          "analyst",
+          "reviewer",
+          "viewer"
+        ],
+        "sizes": [
+          "S",
+          "M",
+          "L"
+        ],
+        "deadline_seconds": 0.5,
+        "size_budgets": {
+          "S": {
+            "deadline_seconds": 0.5,
+            "p95_seconds": 0.2,
+            "p99_seconds": 0.5
+          },
+          "M": {
+            "deadline_seconds": 0.5,
+            "p95_seconds": 0.2,
+            "p99_seconds": 0.5
+          },
+          "L": {
+            "deadline_seconds": 0.5,
+            "p95_seconds": 0.2,
+            "p99_seconds": 0.5
+          }
+        },
+        "expected": "positive",
+        "steps": [
+          {
+            "method": "GET",
+            "path": "/v1/workspaces/{workspace_id}/results/{result_id}/header",
+            "statuses": [
+              200
+            ],
+            "body": null,
+            "headers": {},
+            "assertions": [
+              {
+                "pointer": "/workspace_id",
+                "check": "equals",
+                "value": "$workspace_id"
+              },
+              {
+                "pointer": "/project_id",
+                "check": "equals",
+                "value": "$project_id"
+              },
+              {
+                "pointer": "/result_id",
+                "check": "equals",
+                "value": "$result_id"
+              },
+              {
+                "pointer": "/snapshot_id",
+                "check": "equals",
+                "value": "$snapshot_id"
+              }
+            ],
+            "captures": {},
+            "follow_job": false,
+            "download_descriptor": false,
+            "operation_id": "P15"
+          }
+        ]
+      },
+      {
+        "name": "claim_citation",
+        "weight": 20,
+        "roles": [
+          "owner",
+          "admin",
+          "analyst",
+          "reviewer",
+          "viewer"
+        ],
+        "sizes": [
+          "S",
+          "M",
+          "L"
+        ],
+        "deadline_seconds": 1.5,
+        "size_budgets": {
+          "S": {
+            "deadline_seconds": 1.5,
+            "p95_seconds": 0.7,
+            "p99_seconds": 1.5
+          },
+          "M": {
+            "deadline_seconds": 1.5,
+            "p95_seconds": 0.7,
+            "p99_seconds": 1.5
+          },
+          "L": {
+            "deadline_seconds": 1.5,
+            "p95_seconds": 0.7,
+            "p99_seconds": 1.5
+          }
+        },
+        "expected": "positive",
+        "steps": [
+          {
+            "method": "GET",
+            "path": "/v1/workspaces/{workspace_id}/results/{result_id}/claims?limit=50",
+            "statuses": [
+              200
+            ],
+            "body": null,
+            "headers": {},
+            "assertions": [
+              {
+                "pointer": "/workspace_id",
+                "check": "equals",
+                "value": "$workspace_id"
+              },
+              {
+                "pointer": "/project_id",
+                "check": "equals",
+                "value": "$project_id"
+              },
+              {
+                "pointer": "/result_id",
+                "check": "equals",
+                "value": "$result_id"
+              },
+              {
+                "pointer": "/items",
+                "check": "nonempty",
+                "value": null
+              },
+              {
+                "pointer": "/items",
+                "check": "length_le",
+                "value": 50
+              }
+            ],
+            "captures": {
+              "selected_claim": "/items/0/id",
+              "selected_evidence": "/items/0/citation_ids/0"
+            },
+            "follow_job": false,
+            "download_descriptor": false,
+            "operation_id": "P16"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/workspaces/{workspace_id}/results/{result_id}/evidence/{selected_evidence}?claim_id={selected_claim}",
+            "statuses": [
+              200
+            ],
+            "body": null,
+            "headers": {},
+            "assertions": [
+              {
+                "pointer": "/workspace_id",
+                "check": "equals",
+                "value": "$workspace_id"
+              },
+              {
+                "pointer": "/project_id",
+                "check": "equals",
+                "value": "$project_id"
+              },
+              {
+                "pointer": "/result_id",
+                "check": "equals",
+                "value": "$result_id"
+              },
+              {
+                "pointer": "/claim_id",
+                "check": "equals",
+                "value": "$selected_claim"
+              },
+              {
+                "pointer": "/evidence_id",
+                "check": "equals",
+                "value": "$selected_evidence"
+              },
+              {
+                "pointer": "/relation",
+                "check": "equals",
+                "value": "citation"
+              },
+              {
+                "pointer": "/evidence/text",
+                "check": "nonempty",
+                "value": null
+              }
+            ],
+            "captures": {},
+            "follow_job": false,
+            "download_descriptor": false,
+            "operation_id": "P17"
+          }
+        ]
+      },
+      {
+        "name": "project_current",
+        "weight": 10,
+        "roles": [
+          "owner",
+          "admin",
+          "analyst",
+          "reviewer",
+          "viewer"
+        ],
+        "sizes": [
+          "S",
+          "M",
+          "L"
+        ],
+        "deadline_seconds": 0.5,
+        "size_budgets": {
+          "S": {
+            "deadline_seconds": 0.5,
+            "p95_seconds": 0.2,
+            "p99_seconds": 0.5
+          },
+          "M": {
+            "deadline_seconds": 0.5,
+            "p95_seconds": 0.2,
+            "p99_seconds": 0.5
+          },
+          "L": {
+            "deadline_seconds": 0.5,
+            "p95_seconds": 0.2,
+            "p99_seconds": 0.5
+          }
+        },
+        "expected": "positive",
+        "steps": [
+          {
+            "method": "GET",
+            "path": "/v1/workspaces/{workspace_id}/projects/{project_id}",
+            "statuses": [
+              200
+            ],
+            "body": null,
+            "headers": {},
+            "assertions": [
+              {
+                "pointer": "/workspace_id",
+                "check": "equals",
+                "value": "$workspace_id"
+              },
+              {
+                "pointer": "/project_id",
+                "check": "equals",
+                "value": "$project_id"
+              }
+            ],
+            "captures": {},
+            "follow_job": false,
+            "download_descriptor": false,
+            "operation_id": "P11"
+          }
+        ]
+      },
+      {
+        "name": "graph_page",
+        "weight": 10,
+        "roles": [
+          "owner",
+          "admin",
+          "analyst",
+          "reviewer",
+          "viewer"
+        ],
+        "sizes": [
+          "S",
+          "M",
+          "L"
+        ],
+        "deadline_seconds": 1.0,
+        "size_budgets": {
+          "S": {
+            "deadline_seconds": 1.0,
+            "p95_seconds": 0.4,
+            "p99_seconds": 1.0
+          },
+          "M": {
+            "deadline_seconds": 1.0,
+            "p95_seconds": 0.4,
+            "p99_seconds": 1.0
+          },
+          "L": {
+            "deadline_seconds": 1.0,
+            "p95_seconds": 0.4,
+            "p99_seconds": 1.0
+          }
+        },
+        "expected": "positive",
+        "steps": [
+          {
+            "method": "GET",
+            "path": "/v1/workspaces/{workspace_id}/results/{result_id}/graph?limit=100",
+            "statuses": [
+              200
+            ],
+            "body": null,
+            "headers": {},
+            "assertions": [
+              {
+                "pointer": "/workspace_id",
+                "check": "equals",
+                "value": "$workspace_id"
+              },
+              {
+                "pointer": "/project_id",
+                "check": "equals",
+                "value": "$project_id"
+              },
+              {
+                "pointer": "/result_id",
+                "check": "equals",
+                "value": "$result_id"
+              },
+              {
+                "pointer": "/graph/nodes",
+                "check": "nonempty",
+                "value": null
+              },
+              {
+                "pointer": "/graph/nodes",
+                "check": "length_le",
+                "value": 100
+              }
+            ],
+            "captures": {},
+            "follow_job": false,
+            "download_descriptor": false,
+            "operation_id": "P18"
+          }
+        ]
+      },
+      {
+        "name": "analysis_terminal",
+        "weight": 5,
+        "roles": [
+          "owner",
+          "admin",
+          "analyst"
+        ],
+        "sizes": [
+          "S",
+          "M",
+          "L"
+        ],
+        "deadline_seconds": 120.0,
+        "size_budgets": {
+          "S": {
+            "deadline_seconds": 5.0,
+            "p95_seconds": 2.0,
+            "p99_seconds": 5.0
+          },
+          "M": {
+            "deadline_seconds": 20.0,
+            "p95_seconds": 10.0,
+            "p99_seconds": 20.0
+          },
+          "L": {
+            "deadline_seconds": 120.0,
+            "p95_seconds": 60.0,
+            "p99_seconds": 120.0
+          }
+        },
+        "expected": "positive",
+        "steps": [
+          {
+            "method": "POST",
+            "path": "/v1/workspaces/{workspace_id}/jobs",
+            "statuses": [
+              202
+            ],
+            "body": {
+              "operation": "analyze",
+              "snapshot_id": "$snapshot_id",
+              "question": "$action_question"
+            },
+            "headers": {},
+            "assertions": [
+              {
+                "pointer": "/workspace_id",
+                "check": "equals",
+                "value": "$workspace_id"
+              },
+              {
+                "pointer": "/operation",
+                "check": "equals",
+                "value": "analyze"
+              },
+              {
+                "pointer": "/result/project/id",
+                "check": "equals",
+                "value": "$project_id"
+              },
+              {
+                "pointer": "/result/snapshot/id",
+                "check": "equals",
+                "value": "$snapshot_id"
+              },
+              {
+                "pointer": "/result/claims",
+                "check": "nonempty",
+                "value": null
+              }
+            ],
+            "captures": {},
+            "follow_job": true,
+            "download_descriptor": false,
+            "operation_id": "P13"
+          }
+        ]
+      },
+      {
+        "name": "followup_terminal",
+        "weight": 3,
+        "roles": [
+          "owner",
+          "admin",
+          "analyst"
+        ],
+        "sizes": [
+          "S",
+          "M",
+          "L"
+        ],
+        "deadline_seconds": 120.0,
+        "size_budgets": {
+          "S": {
+            "deadline_seconds": 5.0,
+            "p95_seconds": 2.0,
+            "p99_seconds": 5.0
+          },
+          "M": {
+            "deadline_seconds": 20.0,
+            "p95_seconds": 10.0,
+            "p99_seconds": 20.0
+          },
+          "L": {
+            "deadline_seconds": 120.0,
+            "p95_seconds": 60.0,
+            "p99_seconds": 120.0
+          }
+        },
+        "expected": "positive",
+        "steps": [
+          {
+            "method": "GET",
+            "path": "/v1/workspaces/{workspace_id}/projects/{project_id}",
+            "statuses": [
+              200
+            ],
+            "body": null,
+            "headers": {},
+            "assertions": [
+              {
+                "pointer": "/project_id",
+                "check": "equals",
+                "value": "$project_id"
+              }
+            ],
+            "captures": {
+              "project_revision": "/revision"
+            },
+            "follow_job": false,
+            "download_descriptor": false,
+            "operation_id": "P11"
+          },
+          {
+            "method": "POST",
+            "path": "/v1/workspaces/{workspace_id}/results/{result_id}/follow-ups",
+            "statuses": [
+              202
+            ],
+            "body": {
+              "schema_version": "product-api/v1-draft",
+              "selection_kind": "claim",
+              "selection_id": "$claim_id",
+              "question": "$action_question"
+            },
+            "headers": {
+              "if-match": "$project_revision"
+            },
+            "assertions": [
+              {
+                "pointer": "/workspace_id",
+                "check": "equals",
+                "value": "$workspace_id"
+              },
+              {
+                "pointer": "/operation",
+                "check": "equals",
+                "value": "follow_up"
+              },
+              {
+                "pointer": "/result/project_id",
+                "check": "equals",
+                "value": "$project_id"
+              },
+              {
+                "pointer": "/result/snapshot_id",
+                "check": "equals",
+                "value": "$snapshot_id"
+              },
+              {
+                "pointer": "/result/parent_result_id",
+                "check": "equals",
+                "value": "$result_id"
+              },
+              {
+                "pointer": "/result/result_id",
+                "check": "nonempty",
+                "value": null
+              }
+            ],
+            "captures": {},
+            "follow_job": true,
+            "download_descriptor": false,
+            "operation_id": "P19"
+          }
+        ]
+      },
+      {
+        "name": "export_whole_file",
+        "weight": 10,
+        "roles": [
+          "owner",
+          "admin",
+          "analyst",
+          "reviewer",
+          "viewer"
+        ],
+        "sizes": [
+          "S",
+          "M",
+          "L"
+        ],
+        "deadline_seconds": 10.0,
+        "size_budgets": {
+          "S": {
+            "deadline_seconds": 10.0,
+            "p95_seconds": 5.0,
+            "p99_seconds": 10.0
+          },
+          "M": {
+            "deadline_seconds": 10.0,
+            "p95_seconds": 5.0,
+            "p99_seconds": 10.0
+          },
+          "L": {
+            "deadline_seconds": 10.0,
+            "p95_seconds": 5.0,
+            "p99_seconds": 10.0
+          }
+        },
+        "expected": "positive",
+        "steps": [
+          {
+            "method": "POST",
+            "path": "/v1/workspaces/{workspace_id}/results/{result_id}/exports",
+            "statuses": [
+              201
+            ],
+            "body": {
+              "format": "json"
+            },
+            "headers": {},
+            "assertions": [
+              {
+                "pointer": "/workspace_id",
+                "check": "equals",
+                "value": "$workspace_id"
+              },
+              {
+                "pointer": "/project_id",
+                "check": "equals",
+                "value": "$project_id"
+              },
+              {
+                "pointer": "/result_id",
+                "check": "equals",
+                "value": "$result_id"
+              }
+            ],
+            "captures": {},
+            "follow_job": false,
+            "download_descriptor": true,
+            "operation_id": "P23"
+          }
+        ]
+      },
+      {
+        "name": "foreign_result_denied",
+        "weight": 2,
+        "roles": [
+          "owner",
+          "admin",
+          "analyst",
+          "reviewer",
+          "viewer"
+        ],
+        "sizes": [
+          "S",
+          "M",
+          "L"
+        ],
+        "deadline_seconds": 0.5,
+        "size_budgets": {
+          "S": {
+            "deadline_seconds": 0.5,
+            "p95_seconds": 0.2,
+            "p99_seconds": 0.5
+          },
+          "M": {
+            "deadline_seconds": 0.5,
+            "p95_seconds": 0.2,
+            "p99_seconds": 0.5
+          },
+          "L": {
+            "deadline_seconds": 0.5,
+            "p95_seconds": 0.2,
+            "p99_seconds": 0.5
+          }
+        },
+        "expected": "deny",
+        "steps": [
+          {
+            "method": "GET",
+            "path": "/v1/workspaces/{foreign_workspace_id}/results/{foreign_result_id}/header",
+            "statuses": [
+              404
+            ],
+            "body": null,
+            "headers": {},
+            "assertions": [
+              {
+                "pointer": "/code",
+                "check": "equals",
+                "value": "not_found"
+              },
+              {
+                "pointer": "/type",
+                "check": "equals",
+                "value": "urn:aletheia:problem:not-found"
+              },
+              {
+                "pointer": "/title",
+                "check": "equals",
+                "value": "Request could not be completed"
+              },
+              {
+                "pointer": "/detail",
+                "check": "equals",
+                "value": "The requested resource is unavailable."
+              }
+            ],
+            "captures": {},
+            "follow_job": false,
+            "download_descriptor": false,
+            "operation_id": "P15"
+          }
+        ]
+      },
+      {
+        "name": "session_context",
+        "weight": 5,
+        "roles": [
+          "owner",
+          "admin",
+          "analyst",
+          "reviewer",
+          "viewer"
+        ],
+        "sizes": [
+          "S",
+          "M",
+          "L"
+        ],
+        "deadline_seconds": 0.5,
+        "size_budgets": {},
+        "expected": "positive",
+        "steps": [
+          {
+            "method": "GET",
+            "path": "/v1/session",
+            "statuses": [
+              200
+            ],
+            "body": null,
+            "headers": {},
+            "assertions": [
+              {
+                "pointer": "/actor/user_id",
+                "check": "equals",
+                "value": "$actor_id"
+              },
+              {
+                "pointer": "/session/context_id",
+                "check": "equals",
+                "value": "$context_id"
+              }
+            ],
+            "captures": {},
+            "follow_job": false,
+            "download_descriptor": false,
+            "operation_id": "P01"
+          }
+        ]
+      },
+      {
+        "name": "workspace_directory",
+        "weight": 5,
+        "roles": [
+          "owner",
+          "admin",
+          "analyst",
+          "reviewer",
+          "viewer"
+        ],
+        "sizes": [
+          "S",
+          "M",
+          "L"
+        ],
+        "deadline_seconds": 0.5,
+        "size_budgets": {},
+        "expected": "positive",
+        "steps": [
+          {
+            "method": "GET",
+            "path": "/v1/workspaces?limit=50",
+            "statuses": [
+              200
+            ],
+            "body": null,
+            "headers": {},
+            "assertions": [
+              {
+                "pointer": "/items",
+                "check": "nonempty",
+                "value": null
+              },
+              {
+                "pointer": "/items",
+                "check": "length_le",
+                "value": 50
+              }
+            ],
+            "captures": {},
+            "follow_job": false,
+            "download_descriptor": false,
+            "operation_id": "P03"
+          }
+        ]
+      },
+      {
+        "name": "workspace_capabilities",
+        "weight": 5,
+        "roles": [
+          "owner",
+          "admin",
+          "analyst",
+          "reviewer",
+          "viewer"
+        ],
+        "sizes": [
+          "S",
+          "M",
+          "L"
+        ],
+        "deadline_seconds": 0.5,
+        "size_budgets": {},
+        "expected": "positive",
+        "steps": [
+          {
+            "method": "GET",
+            "path": "/v1/workspaces/{workspace_id}/capabilities",
+            "statuses": [
+              200
+            ],
+            "body": null,
+            "headers": {},
+            "assertions": [
+              {
+                "pointer": "/workspace_id",
+                "check": "equals",
+                "value": "$workspace_id"
+              },
+              {
+                "pointer": "/deployment_mode",
+                "check": "equals",
+                "value": "hosted"
+              }
+            ],
+            "captures": {},
+            "follow_job": false,
+            "download_descriptor": false,
+            "operation_id": "P04"
+          }
+        ]
+      },
+      {
+        "name": "project_page",
+        "weight": 5,
+        "roles": [
+          "owner",
+          "admin",
+          "analyst",
+          "reviewer",
+          "viewer"
+        ],
+        "sizes": [
+          "S",
+          "M",
+          "L"
+        ],
+        "deadline_seconds": 0.5,
+        "size_budgets": {},
+        "expected": "positive",
+        "steps": [
+          {
+            "method": "GET",
+            "path": "/v1/workspaces/{workspace_id}/projects?limit=50",
+            "statuses": [
+              200
+            ],
+            "body": null,
+            "headers": {},
+            "assertions": [
+              {
+                "pointer": "/workspace_id",
+                "check": "equals",
+                "value": "$workspace_id"
+              },
+              {
+                "pointer": "/items",
+                "check": "nonempty",
+                "value": null
+              },
+              {
+                "pointer": "/items",
+                "check": "length_le",
+                "value": 50
+              }
+            ],
+            "captures": {},
+            "follow_job": false,
+            "download_descriptor": false,
+            "operation_id": "P05"
+          }
+        ]
+      },
+      {
+        "name": "snapshot_page",
+        "weight": 5,
+        "roles": [
+          "owner",
+          "admin",
+          "analyst",
+          "reviewer",
+          "viewer"
+        ],
+        "sizes": [
+          "S",
+          "M",
+          "L"
+        ],
+        "deadline_seconds": 0.5,
+        "size_budgets": {},
+        "expected": "positive",
+        "steps": [
+          {
+            "method": "GET",
+            "path": "/v1/workspaces/{workspace_id}/projects/{project_id}/snapshots?limit=50",
+            "statuses": [
+              200
+            ],
+            "body": null,
+            "headers": {},
+            "assertions": [
+              {
+                "pointer": "/workspace_id",
+                "check": "equals",
+                "value": "$workspace_id"
+              },
+              {
+                "pointer": "/project_id",
+                "check": "equals",
+                "value": "$project_id"
+              },
+              {
+                "pointer": "/items",
+                "check": "nonempty",
+                "value": null
+              },
+              {
+                "pointer": "/items",
+                "check": "length_le",
+                "value": 50
+              }
+            ],
+            "captures": {},
+            "follow_job": false,
+            "download_descriptor": false,
+            "operation_id": "P12"
+          }
+        ]
+      },
+      {
+        "name": "result_catalog",
+        "weight": 5,
+        "roles": [
+          "owner",
+          "admin",
+          "analyst",
+          "reviewer",
+          "viewer"
+        ],
+        "sizes": [
+          "S",
+          "M",
+          "L"
+        ],
+        "deadline_seconds": 0.5,
+        "size_budgets": {},
+        "expected": "positive",
+        "steps": [
+          {
+            "method": "GET",
+            "path": "/v1/workspaces/{workspace_id}/results?project_id={project_id}&snapshot_id={snapshot_id}&limit=50",
+            "statuses": [
+              200
+            ],
+            "body": null,
+            "headers": {},
+            "assertions": [
+              {
+                "pointer": "/workspace_id",
+                "check": "equals",
+                "value": "$workspace_id"
+              },
+              {
+                "pointer": "/project_id",
+                "check": "equals",
+                "value": "$project_id"
+              },
+              {
+                "pointer": "/items",
+                "check": "nonempty",
+                "value": null
+              },
+              {
+                "pointer": "/items",
+                "check": "length_le",
+                "value": 50
+              }
+            ],
+            "captures": {},
+            "follow_job": false,
+            "download_descriptor": false,
+            "operation_id": "P14"
+          }
+        ]
+      },
+      {
+        "name": "member_page",
+        "weight": 5,
+        "roles": [
+          "owner",
+          "admin"
+        ],
+        "sizes": [
+          "S",
+          "M",
+          "L"
+        ],
+        "deadline_seconds": 0.5,
+        "size_budgets": {},
+        "expected": "positive",
+        "steps": [
+          {
+            "method": "GET",
+            "path": "/v1/workspaces/{workspace_id}/members?limit=50",
+            "statuses": [
+              200
+            ],
+            "body": null,
+            "headers": {},
+            "assertions": [
+              {
+                "pointer": "/workspace_id",
+                "check": "equals",
+                "value": "$workspace_id"
+              },
+              {
+                "pointer": "/items",
+                "check": "nonempty",
+                "value": null
+              },
+              {
+                "pointer": "/items",
+                "check": "length_le",
+                "value": 50
+              }
+            ],
+            "captures": {},
+            "follow_job": false,
+            "download_descriptor": false,
+            "operation_id": "P27"
+          }
+        ]
+      },
+      {
+        "name": "settings_read",
+        "weight": 5,
+        "roles": [
+          "owner",
+          "admin"
+        ],
+        "sizes": [
+          "S",
+          "M",
+          "L"
+        ],
+        "deadline_seconds": 0.5,
+        "size_budgets": {},
+        "expected": "positive",
+        "steps": [
+          {
+            "method": "GET",
+            "path": "/v1/workspaces/{workspace_id}/settings",
+            "statuses": [
+              200
+            ],
+            "body": null,
+            "headers": {},
+            "assertions": [
+              {
+                "pointer": "/workspace_id",
+                "check": "equals",
+                "value": "$workspace_id"
+              },
+              {
+                "pointer": "/source_policy",
+                "check": "equals",
+                "value": "zip_bundle_only"
+              }
+            ],
+            "captures": {},
+            "follow_job": false,
+            "download_descriptor": false,
+            "operation_id": "P37"
+          }
+        ]
+      },
+      {
+        "name": "preview_lease",
+        "weight": 3,
+        "roles": [
+          "owner",
+          "admin",
+          "analyst"
+        ],
+        "sizes": [
+          "S",
+          "M",
+          "L"
+        ],
+        "deadline_seconds": 120.0,
+        "size_budgets": {},
+        "expected": "positive",
+        "steps": [
+          {
+            "method": "POST",
+            "path": "/v1/workspaces/{workspace_id}/imports/preview",
+            "statuses": [
+              202
+            ],
+            "body": {
+              "schema_version": "product-api/v1-draft",
+              "source_id": "$source_id"
+            },
+            "headers": {},
+            "assertions": [
+              {
+                "pointer": "/workspace_id",
+                "check": "equals",
+                "value": "$workspace_id"
+              },
+              {
+                "pointer": "/operation",
+                "check": "equals",
+                "value": "preview"
+              },
+              {
+                "pointer": "/result/source_id",
+                "check": "equals",
+                "value": "$source_id"
+              },
+              {
+                "pointer": "/result/source_sha256",
+                "check": "equals",
+                "value": "$source_sha256"
+              }
+            ],
+            "captures": {
+              "preview_id": "/result/preview_id"
+            },
+            "follow_job": true,
+            "download_descriptor": false,
+            "operation_id": "P07"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/workspaces/{workspace_id}/imports/{preview_id}",
+            "statuses": [
+              200
+            ],
+            "body": null,
+            "headers": {},
+            "assertions": [
+              {
+                "pointer": "/workspace_id",
+                "check": "equals",
+                "value": "$workspace_id"
+              },
+              {
+                "pointer": "/preview_id",
+                "check": "equals",
+                "value": "$preview_id"
+              },
+              {
+                "pointer": "/source_id",
+                "check": "equals",
+                "value": "$source_id"
+              },
+              {
+                "pointer": "/source_sha256",
+                "check": "equals",
+                "value": "$source_sha256"
+              }
+            ],
+            "captures": {},
+            "follow_job": false,
+            "download_descriptor": false,
+            "operation_id": "P08"
+          }
+        ]
+      },
+      {
+        "name": "own_review_comment",
+        "weight": 2,
+        "roles": [
+          "owner",
+          "admin",
+          "analyst",
+          "reviewer"
+        ],
+        "sizes": [
+          "S",
+          "M",
+          "L"
+        ],
+        "deadline_seconds": 2.0,
+        "size_budgets": {},
+        "expected": "positive",
+        "steps": [
+          {
+            "method": "PUT",
+            "path": "/v1/workspaces/{workspace_id}/results/{result_id}/annotations/{action_id}",
+            "statuses": [
+              200
+            ],
+            "body": {
+              "body": "$action_question",
+              "status": "comment"
+            },
+            "headers": {
+              "if-match": "\"0\""
+            },
+            "assertions": [
+              {
+                "pointer": "/workspace_id",
+                "check": "equals",
+                "value": "$workspace_id"
+              },
+              {
+                "pointer": "/project_id",
+                "check": "equals",
+                "value": "$project_id"
+              },
+              {
+                "pointer": "/result_id",
+                "check": "equals",
+                "value": "$result_id"
+              },
+              {
+                "pointer": "/annotation_id",
+                "check": "equals",
+                "value": "$action_id"
+              },
+              {
+                "pointer": "/author_id",
+                "check": "equals",
+                "value": "$actor_id"
+              },
+              {
+                "pointer": "/revision",
+                "check": "equals",
+                "value": 1
+              },
+              {
+                "pointer": "/status",
+                "check": "equals",
+                "value": "comment"
+              }
+            ],
+            "captures": {},
+            "follow_job": false,
+            "download_descriptor": false,
+            "operation_id": "P26"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/workspaces/{workspace_id}/results/{result_id}/annotations/{action_id}/history?limit=50",
+            "statuses": [
+              200
+            ],
+            "body": null,
+            "headers": {},
+            "assertions": [
+              {
+                "pointer": "/workspace_id",
+                "check": "equals",
+                "value": "$workspace_id"
+              },
+              {
+                "pointer": "/project_id",
+                "check": "equals",
+                "value": "$project_id"
+              },
+              {
+                "pointer": "/result_id",
+                "check": "equals",
+                "value": "$result_id"
+              },
+              {
+                "pointer": "/annotation_id",
+                "check": "equals",
+                "value": "$action_id"
+              },
+              {
+                "pointer": "/items/0/author_id",
+                "check": "equals",
+                "value": "$actor_id"
+              },
+              {
+                "pointer": "/items/0/revision",
+                "check": "equals",
+                "value": 1
+              },
+              {
+                "pointer": "/items/0/body",
+                "check": "equals",
+                "value": "$action_question"
+              },
+              {
+                "pointer": "/items/0/status",
+                "check": "equals",
+                "value": "comment"
+              }
+            ],
+            "captures": {},
+            "follow_job": false,
+            "download_descriptor": false,
+            "operation_id": "P26"
+          }
+        ]
+      }
+    ],
+    "operation_dispositions": {
+      "P01": "recipe",
+      "P02": "not_run",
+      "P03": "recipe",
+      "P04": "recipe",
+      "P05": "recipe",
+      "P06": "not_run",
+      "P07": "recipe",
+      "P08": "recipe",
+      "P09": "not_run",
+      "P10": "not_run",
+      "P11": "recipe",
+      "P12": "recipe",
+      "P13": "recipe",
+      "P14": "recipe",
+      "P15": "recipe",
+      "P16": "recipe",
+      "P17": "recipe",
+      "P18": "recipe",
+      "P19": "recipe",
+      "P20": "dedicated",
+      "P21": "not_run",
+      "P22": "dedicated",
+      "P23": "recipe",
+      "P24": "dedicated",
+      "P25": "not_run",
+      "P26": "recipe",
+      "P27": "recipe",
+      "P28": "not_run",
+      "P29": "not_run",
+      "P30": "not_run",
+      "P31": "not_run",
+      "P32": "unsupported",
+      "P33": "unsupported",
+      "P34": "unsupported",
+      "P35": "not_run",
+      "P36": "not_run",
+      "P37": "recipe",
+      "P38": "not_run"
+    },
+    "scope": "calibration",
+    "cache_state": "unknown",
+    "run_label": "stage1794736003"
+  },
+  "phases": [],
+  "all_ops_primary_qualified": false,
+  "full_k14_deployment_pass": false,
+  "scope": "Separately deployed local staging, native S/M/L pilot; not primary or 50k",
+  "actions": [],
+  "outcomes": {},
+  "http": {},
+  "operation_counts": {},
+  "harness_failure": null
+}

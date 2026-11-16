@@ -1,0 +1,164 @@
+{
+  "UTC": "2026-11-15T09:54:22.524485+00:00",
+  "containers": {
+    "pg": {
+      "id": "6cb27f719dd5e8dfc4e9ba6bfefbd833ae044e855900b10d4e6b3d8d009a8956",
+      "name": "/aletheia-k14-stg-da2093353a73-pg",
+      "image": "sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94",
+      "status": "running",
+      "oom": false,
+      "restart_count": 0,
+      "nano_cpus": 1000000000,
+      "limit_ram_bytes": 671088640,
+      "limit_pids": 128,
+      "read_only_rootfs": false,
+      "uid": "",
+      "fd_limits": [],
+      "ports_effective": {},
+      "networks": [
+        "aletheia-k14-stg-da2093353a73-network"
+      ]
+    },
+    "idp": {
+      "id": "95a5ea68170cc62eb29bc97fcfe663cb2cd8a31739cb1c8dcc553bc2a78c7e0a",
+      "name": "/aletheia-k14-stg-da2093353a73-idp",
+      "image": "sha256:3879c623248408de29a5303178b5816c77e8dfef3890c361f8c0bbeaa979ba3b",
+      "status": "running",
+      "oom": false,
+      "restart_count": 0,
+      "nano_cpus": 1000000000,
+      "limit_ram_bytes": 671088640,
+      "limit_pids": 256,
+      "read_only_rootfs": false,
+      "uid": "1000",
+      "fd_limits": [],
+      "ports_effective": {},
+      "networks": [
+        "aletheia-k14-stg-da2093353a73-network"
+      ]
+    },
+    "api0": {
+      "id": "98558ed93da6ce3c7612d5b432caa304861b48bd4e67abc9694d46fa6236e462",
+      "name": "/aletheia-k14-stg-da2093353a73-api0",
+      "image": "sha256:35ab7a8638b1f3ef7134bfeb87a4bbb6aac0a0101d74857cdaabafee251b8add",
+      "status": "running",
+      "oom": false,
+      "restart_count": 0,
+      "nano_cpus": 750000000,
+      "limit_ram_bytes": 536870912,
+      "limit_pids": 192,
+      "read_only_rootfs": true,
+      "uid": "10001:10001",
+      "fd_limits": [
+        {
+          "Name": "nofile",
+          "Hard": 512,
+          "Soft": 512
+        }
+      ],
+      "ports_effective": {},
+      "networks": [
+        "aletheia-k14-stg-da2093353a73-network"
+      ]
+    },
+    "api1": {
+      "id": "a617d051ec8e21390bc3e8a6923bf809e91ab23d0565d5bb5fc6313c060fb908",
+      "name": "/aletheia-k14-stg-da2093353a73-api1",
+      "image": "sha256:35ab7a8638b1f3ef7134bfeb87a4bbb6aac0a0101d74857cdaabafee251b8add",
+      "status": "running",
+      "oom": false,
+      "restart_count": 0,
+      "nano_cpus": 750000000,
+      "limit_ram_bytes": 536870912,
+      "limit_pids": 192,
+      "read_only_rootfs": true,
+      "uid": "10001:10001",
+      "fd_limits": [
+        {
+          "Name": "nofile",
+          "Hard": 512,
+          "Soft": 512
+        }
+      ],
+      "ports_effective": {},
+      "networks": [
+        "aletheia-k14-stg-da2093353a73-network"
+      ]
+    },
+    "worker0": {
+      "id": "0f877700a3ea4a34f8e1a6978e9b34c232e39754811473a020a61394ee375c15",
+      "name": "/aletheia-k14-stg-da2093353a73-worker0",
+      "image": "sha256:35ab7a8638b1f3ef7134bfeb87a4bbb6aac0a0101d74857cdaabafee251b8add",
+      "status": "running",
+      "oom": false,
+      "restart_count": 0,
+      "nano_cpus": 1000000000,
+      "limit_ram_bytes": 671088640,
+      "limit_pids": 192,
+      "read_only_rootfs": true,
+      "uid": "10001:10001",
+      "fd_limits": [
+        {
+          "Name": "nofile",
+          "Hard": 512,
+          "Soft": 512
+        }
+      ],
+      "ports_effective": {},
+      "networks": [
+        "aletheia-k14-stg-da2093353a73-network"
+      ]
+    },
+    "worker1": {
+      "id": "67da3cd00e4c8f468fe1dbb75f96702bccc8c8e7e3211be699f89aabfee24a6f",
+      "name": "/aletheia-k14-stg-da2093353a73-worker1",
+      "image": "sha256:35ab7a8638b1f3ef7134bfeb87a4bbb6aac0a0101d74857cdaabafee251b8add",
+      "status": "running",
+      "oom": false,
+      "restart_count": 0,
+      "nano_cpus": 1000000000,
+      "limit_ram_bytes": 671088640,
+      "limit_pids": 192,
+      "read_only_rootfs": true,
+      "uid": "10001:10001",
+      "fd_limits": [
+        {
+          "Name": "nofile",
+          "Hard": 512,
+          "Soft": 512
+        }
+      ],
+      "ports_effective": {},
+      "networks": [
+        "aletheia-k14-stg-da2093353a73-network"
+      ]
+    },
+    "ingress": {
+      "id": "ed278d0ae03ddf222517329e83259a99074655303c62f95975e9d3c259178d62",
+      "name": "/aletheia-k14-stg-da2093353a73-ingress",
+      "image": "sha256:35ab7a8638b1f3ef7134bfeb87a4bbb6aac0a0101d74857cdaabafee251b8add",
+      "status": "running",
+      "oom": false,
+      "restart_count": 0,
+      "nano_cpus": 250000000,
+      "limit_ram_bytes": 100663296,
+      "limit_pids": 32,
+      "read_only_rootfs": true,
+      "uid": "10001:10001",
+      "fd_limits": [
+        {
+          "Name": "nofile",
+          "Hard": 128,
+          "Soft": 128
+        }
+      ],
+      "ports_effective": {},
+      "networks": [
+        "aletheia-k14-stg-da2093353a73-network"
+      ]
+    }
+  },
+  "network_internal": true,
+  "network": "dfc3388933f09236173580aa29bc83c591ac2fe622016bfe9f1a3c0d7ba85cec",
+  "effective_host_port_bindings": 0
+}
