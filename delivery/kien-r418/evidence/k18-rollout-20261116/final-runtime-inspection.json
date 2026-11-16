@@ -1,0 +1,483 @@
+[
+  {
+    "name": "/aletheia-k14-stg-9fc7adf58fe1-attempt-05-rollback-worker1",
+    "image": "sha256:4b589a4b2945003a0a12ff979b0fe119b6522882596b11e8a8c759b380ea9395",
+    "state": {
+      "Status": "running",
+      "Running": true,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 121897,
+      "ExitCode": 0,
+      "Error": "",
+      "StartedAt": "2026-11-16T07:03:32.634597683Z",
+      "FinishedAt": "0001-01-01T00:00:00Z"
+    },
+    "limits": {
+      "Memory": 671088640,
+      "NanoCpus": 1000000000,
+      "PidsLimit": 192,
+      "Ulimits": [
+        {
+          "Name": "nofile",
+          "Hard": 512,
+          "Soft": 512
+        }
+      ]
+    }
+  },
+  {
+    "name": "/aletheia-k14-stg-9fc7adf58fe1-attempt-05-rollback-api1",
+    "image": "sha256:4b589a4b2945003a0a12ff979b0fe119b6522882596b11e8a8c759b380ea9395",
+    "state": {
+      "Status": "running",
+      "Running": true,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 121659,
+      "ExitCode": 0,
+      "Error": "",
+      "StartedAt": "2026-11-16T07:03:25.143817747Z",
+      "FinishedAt": "0001-01-01T00:00:00Z"
+    },
+    "limits": {
+      "Memory": 536870912,
+      "NanoCpus": 750000000,
+      "PidsLimit": 192,
+      "Ulimits": [
+        {
+          "Name": "nofile",
+          "Hard": 512,
+          "Soft": 512
+        }
+      ]
+    }
+  },
+  {
+    "name": "/aletheia-k14-stg-9fc7adf58fe1-attempt-05-rollback-worker0",
+    "image": "sha256:4b589a4b2945003a0a12ff979b0fe119b6522882596b11e8a8c759b380ea9395",
+    "state": {
+      "Status": "running",
+      "Running": true,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 121586,
+      "ExitCode": 0,
+      "Error": "",
+      "StartedAt": "2026-11-16T07:03:23.850186911Z",
+      "FinishedAt": "0001-01-01T00:00:00Z"
+    },
+    "limits": {
+      "Memory": 671088640,
+      "NanoCpus": 1000000000,
+      "PidsLimit": 192,
+      "Ulimits": [
+        {
+          "Name": "nofile",
+          "Hard": 512,
+          "Soft": 512
+        }
+      ]
+    }
+  },
+  {
+    "name": "/aletheia-k14-stg-9fc7adf58fe1-attempt-05-rollback-api0",
+    "image": "sha256:4b589a4b2945003a0a12ff979b0fe119b6522882596b11e8a8c759b380ea9395",
+    "state": {
+      "Status": "running",
+      "Running": true,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 121369,
+      "ExitCode": 0,
+      "Error": "",
+      "StartedAt": "2026-11-16T07:03:12.707783646Z",
+      "FinishedAt": "0001-01-01T00:00:00Z"
+    },
+    "limits": {
+      "Memory": 536870912,
+      "NanoCpus": 750000000,
+      "PidsLimit": 192,
+      "Ulimits": [
+        {
+          "Name": "nofile",
+          "Hard": 512,
+          "Soft": 512
+        }
+      ]
+    }
+  },
+  {
+    "name": "/aletheia-k14-stg-9fc7adf58fe1-attempt-05-upgrade-worker1",
+    "image": "sha256:35ab7a8638b1f3ef7134bfeb87a4bbb6aac0a0101d74857cdaabafee251b8add",
+    "state": {
+      "Status": "exited",
+      "Running": false,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 0,
+      "ExitCode": 0,
+      "Error": "",
+      "StartedAt": "2026-11-16T07:03:11.069192327Z",
+      "FinishedAt": "2026-11-16T07:03:31.386680816Z"
+    },
+    "limits": {
+      "Memory": 671088640,
+      "NanoCpus": 1000000000,
+      "PidsLimit": 192,
+      "Ulimits": [
+        {
+          "Name": "nofile",
+          "Hard": 512,
+          "Soft": 512
+        }
+      ]
+    }
+  },
+  {
+    "name": "/aletheia-k14-stg-9fc7adf58fe1-attempt-05-upgrade-api1",
+    "image": "sha256:35ab7a8638b1f3ef7134bfeb87a4bbb6aac0a0101d74857cdaabafee251b8add",
+    "state": {
+      "Status": "exited",
+      "Running": false,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 0,
+      "ExitCode": 241,
+      "Error": "",
+      "StartedAt": "2026-11-16T07:03:02.425714767Z",
+      "FinishedAt": "2026-11-16T07:03:30.509347368Z"
+    },
+    "limits": {
+      "Memory": 536870912,
+      "NanoCpus": 750000000,
+      "PidsLimit": 192,
+      "Ulimits": [
+        {
+          "Name": "nofile",
+          "Hard": 512,
+          "Soft": 512
+        }
+      ]
+    }
+  },
+  {
+    "name": "/aletheia-k14-stg-9fc7adf58fe1-attempt-05-upgrade-worker0",
+    "image": "sha256:35ab7a8638b1f3ef7134bfeb87a4bbb6aac0a0101d74857cdaabafee251b8add",
+    "state": {
+      "Status": "exited",
+      "Running": false,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 0,
+      "ExitCode": 0,
+      "Error": "",
+      "StartedAt": "2026-11-16T07:03:01.308878865Z",
+      "FinishedAt": "2026-11-16T07:03:21.57529657Z"
+    },
+    "limits": {
+      "Memory": 671088640,
+      "NanoCpus": 1000000000,
+      "PidsLimit": 192,
+      "Ulimits": [
+        {
+          "Name": "nofile",
+          "Hard": 512,
+          "Soft": 512
+        }
+      ]
+    }
+  },
+  {
+    "name": "/aletheia-k14-stg-9fc7adf58fe1-attempt-05-upgrade-api0",
+    "image": "sha256:35ab7a8638b1f3ef7134bfeb87a4bbb6aac0a0101d74857cdaabafee251b8add",
+    "state": {
+      "Status": "exited",
+      "Running": false,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 0,
+      "ExitCode": 241,
+      "Error": "",
+      "StartedAt": "2026-11-16T07:02:50.301793593Z",
+      "FinishedAt": "2026-11-16T07:03:22.791709027Z"
+    },
+    "limits": {
+      "Memory": 536870912,
+      "NanoCpus": 750000000,
+      "PidsLimit": 192,
+      "Ulimits": [
+        {
+          "Name": "nofile",
+          "Hard": 512,
+          "Soft": 512
+        }
+      ]
+    }
+  },
+  {
+    "name": "/aletheia-k14-stg-9fc7adf58fe1-attempt-05-driver",
+    "image": "sha256:4b589a4b2945003a0a12ff979b0fe119b6522882596b11e8a8c759b380ea9395",
+    "state": {
+      "Status": "exited",
+      "Running": false,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 0,
+      "ExitCode": 0,
+      "Error": "",
+      "StartedAt": "2026-11-16T07:02:45.269618904Z",
+      "FinishedAt": "2026-11-16T07:03:38.379357039Z"
+    },
+    "limits": {
+      "Memory": 402653184,
+      "NanoCpus": 750000000,
+      "PidsLimit": 64,
+      "Ulimits": [
+        {
+          "Name": "nofile",
+          "Hard": 256,
+          "Soft": 256
+        }
+      ]
+    }
+  },
+  {
+    "name": "/aletheia-k14-stg-9fc7adf58fe1-attempt-05-edge",
+    "image": "sha256:35ab7a8638b1f3ef7134bfeb87a4bbb6aac0a0101d74857cdaabafee251b8add",
+    "state": {
+      "Status": "running",
+      "Running": true,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 120537,
+      "ExitCode": 0,
+      "Error": "",
+      "StartedAt": "2026-11-16T07:02:44.329961715Z",
+      "FinishedAt": "0001-01-01T00:00:00Z"
+    },
+    "limits": {
+      "Memory": 402653184,
+      "NanoCpus": 750000000,
+      "PidsLimit": 64,
+      "Ulimits": [
+        {
+          "Name": "nofile",
+          "Hard": 256,
+          "Soft": 256
+        }
+      ]
+    }
+  },
+  {
+    "name": "/aletheia-k14-stg-9fc7adf58fe1-ingress",
+    "image": "sha256:4b589a4b2945003a0a12ff979b0fe119b6522882596b11e8a8c759b380ea9395",
+    "state": {
+      "Status": "running",
+      "Running": true,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 80071,
+      "ExitCode": 0,
+      "Error": "",
+      "StartedAt": "2026-11-16T05:43:57.618693458Z",
+      "FinishedAt": "0001-01-01T00:00:00Z"
+    },
+    "limits": {
+      "Memory": 100663296,
+      "NanoCpus": 250000000,
+      "PidsLimit": 32,
+      "Ulimits": [
+        {
+          "Name": "nofile",
+          "Hard": 128,
+          "Soft": 128
+        }
+      ]
+    }
+  },
+  {
+    "name": "/aletheia-k14-stg-9fc7adf58fe1-worker1",
+    "image": "sha256:4b589a4b2945003a0a12ff979b0fe119b6522882596b11e8a8c759b380ea9395",
+    "state": {
+      "Status": "exited",
+      "Running": false,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 0,
+      "ExitCode": 0,
+      "Error": "",
+      "StartedAt": "2026-11-16T07:00:34.655571421Z",
+      "FinishedAt": "2026-11-16T07:03:09.887661884Z"
+    },
+    "limits": {
+      "Memory": 671088640,
+      "NanoCpus": 1000000000,
+      "PidsLimit": 192,
+      "Ulimits": [
+        {
+          "Name": "nofile",
+          "Hard": 512,
+          "Soft": 512
+        }
+      ]
+    }
+  },
+  {
+    "name": "/aletheia-k14-stg-9fc7adf58fe1-worker0",
+    "image": "sha256:4b589a4b2945003a0a12ff979b0fe119b6522882596b11e8a8c759b380ea9395",
+    "state": {
+      "Status": "exited",
+      "Running": false,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 0,
+      "ExitCode": 0,
+      "Error": "",
+      "StartedAt": "2026-11-16T07:02:42.983671495Z",
+      "FinishedAt": "2026-11-16T07:02:59.253098843Z"
+    },
+    "limits": {
+      "Memory": 671088640,
+      "NanoCpus": 1000000000,
+      "PidsLimit": 192,
+      "Ulimits": [
+        {
+          "Name": "nofile",
+          "Hard": 512,
+          "Soft": 512
+        }
+      ]
+    }
+  },
+  {
+    "name": "/aletheia-k14-stg-9fc7adf58fe1-api1",
+    "image": "sha256:4b589a4b2945003a0a12ff979b0fe119b6522882596b11e8a8c759b380ea9395",
+    "state": {
+      "Status": "exited",
+      "Running": false,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 0,
+      "ExitCode": 241,
+      "Error": "",
+      "StartedAt": "2026-11-16T07:00:34.128395419Z",
+      "FinishedAt": "2026-11-16T07:03:08.61800268Z"
+    },
+    "limits": {
+      "Memory": 536870912,
+      "NanoCpus": 750000000,
+      "PidsLimit": 192,
+      "Ulimits": [
+        {
+          "Name": "nofile",
+          "Hard": 512,
+          "Soft": 512
+        }
+      ]
+    }
+  },
+  {
+    "name": "/aletheia-k14-stg-9fc7adf58fe1-api0",
+    "image": "sha256:4b589a4b2945003a0a12ff979b0fe119b6522882596b11e8a8c759b380ea9395",
+    "state": {
+      "Status": "exited",
+      "Running": false,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 0,
+      "ExitCode": 241,
+      "Error": "",
+      "StartedAt": "2026-11-16T07:00:33.917204917Z",
+      "FinishedAt": "2026-11-16T07:03:00.248065871Z"
+    },
+    "limits": {
+      "Memory": 536870912,
+      "NanoCpus": 750000000,
+      "PidsLimit": 192,
+      "Ulimits": [
+        {
+          "Name": "nofile",
+          "Hard": 512,
+          "Soft": 512
+        }
+      ]
+    }
+  },
+  {
+    "name": "/aletheia-k14-stg-9fc7adf58fe1-idp",
+    "image": "sha256:3879c623248408de29a5303178b5816c77e8dfef3890c361f8c0bbeaa979ba3b",
+    "state": {
+      "Status": "running",
+      "Running": true,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 77450,
+      "ExitCode": 0,
+      "Error": "",
+      "StartedAt": "2026-11-16T05:41:47.359371525Z",
+      "FinishedAt": "0001-01-01T00:00:00Z"
+    },
+    "limits": {
+      "Memory": 671088640,
+      "NanoCpus": 1000000000,
+      "PidsLimit": 256,
+      "Ulimits": []
+    }
+  },
+  {
+    "name": "/aletheia-k14-stg-9fc7adf58fe1-pg",
+    "image": "sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94",
+    "state": {
+      "Status": "running",
+      "Running": true,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 77363,
+      "ExitCode": 0,
+      "Error": "",
+      "StartedAt": "2026-11-16T05:41:46.739142834Z",
+      "FinishedAt": "0001-01-01T00:00:00Z"
+    },
+    "limits": {
+      "Memory": 671088640,
+      "NanoCpus": 1000000000,
+      "PidsLimit": 128,
+      "Ulimits": []
+    }
+  }
+]

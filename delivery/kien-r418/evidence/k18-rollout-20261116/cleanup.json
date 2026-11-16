@@ -1,0 +1,9 @@
+{
+  "owner": "9fc7adf58fe1",
+  "removed_containers": 17,
+  "removed_volumes": 11,
+  "removed_network": true,
+  "no_oom": true,
+  "lan_staging_running_containers": 7,
+  "private_directories_removed": 2
+}

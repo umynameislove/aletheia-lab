@@ -1,0 +1,82 @@
+{
+  "status": "passed_k18_03_staging",
+  "attempt": "attempt-05",
+  "images": {
+    "previous": {
+      "revision": "5ac1c54d90ce1ee507e4cdce3b0f8310b49505cf",
+      "image_id": "sha256:4b589a4b2945003a0a12ff979b0fe119b6522882596b11e8a8c759b380ea9395",
+      "tag": "aletheia-k18-rollout:5ac1c54d-9fc7adf58fe1",
+      "release_identity": "82b534a8e2004bc19d8787864ee18d7546b49ea4040efb1cc900983bd7096bb3"
+    },
+    "current": {
+      "revision": "fa46dd8cbb2239c6f116456894a2009b45846245",
+      "image_id": "sha256:35ab7a8638b1f3ef7134bfeb87a4bbb6aac0a0101d74857cdaabafee251b8add",
+      "tag": "aletheia-k14-staging:fa46dd8-da2093353a73",
+      "release_identity": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529"
+    }
+  },
+  "successful_jobs_during_rollout": 12,
+  "verified_inflight_downloads": 2,
+  "fence_recovered_jobs": 1,
+  "canary_replicas": 4,
+  "drained_processes": 8,
+  "probes": {
+    "header": {
+      "count": 184,
+      "mean_ms": 156.76535051093396,
+      "p95_observed_ms": 223.5419720000209,
+      "max_ms": 615.4619520002598
+    },
+    "admin": {
+      "count": 184,
+      "mean_ms": 0.657174249958505,
+      "p95_observed_ms": 0.96525700064376,
+      "max_ms": 1.6124659996421542
+    }
+  },
+  "pg_peak_connections": 15,
+  "rollout_configured_connection_bound": 20,
+  "postgres_max_connections": 24,
+  "resource_samples": 28,
+  "resources_by_role": {
+    "api": {
+      "cpu_peak_sample_cores": 0.7529,
+      "memory_peak_sample_mib": 88.92,
+      "memory_limit_mib": 512.0,
+      "pids_peak_sample": 6
+    },
+    "worker": {
+      "cpu_peak_sample_cores": 1.0218,
+      "memory_peak_sample_mib": 185.8,
+      "memory_limit_mib": 640.0,
+      "pids_peak_sample": 23
+    },
+    "pg": {
+      "cpu_peak_sample_cores": 0.6096,
+      "memory_peak_sample_mib": 117.1,
+      "memory_limit_mib": 640.0,
+      "pids_peak_sample": 21
+    },
+    "idp": {
+      "cpu_peak_sample_cores": 0.0851,
+      "memory_peak_sample_mib": 542.2,
+      "memory_limit_mib": 640.0,
+      "pids_peak_sample": 47
+    },
+    "edge": {
+      "cpu_peak_sample_cores": 0.07490000000000001,
+      "memory_peak_sample_mib": 18.06,
+      "memory_limit_mib": 384.0,
+      "pids_peak_sample": 6
+    },
+    "driver": {
+      "cpu_peak_sample_cores": 0.09,
+      "memory_peak_sample_mib": 64.75,
+      "memory_limit_mib": 384.0,
+      "pids_peak_sample": 8
+    }
+  },
+  "first_resource_utc": "2026-11-16T07:03:08.2317633+00:00",
+  "last_resource_utc": "2026-11-16T07:04:29.3243699+00:00",
+  "verified_utc": "2026-11-16T14:11:14.830420+07:00"
+}

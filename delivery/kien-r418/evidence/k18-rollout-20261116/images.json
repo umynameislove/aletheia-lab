@@ -1,0 +1,14 @@
+{
+  "previous": {
+    "revision": "5ac1c54d90ce1ee507e4cdce3b0f8310b49505cf",
+    "image_id": "sha256:4b589a4b2945003a0a12ff979b0fe119b6522882596b11e8a8c759b380ea9395",
+    "tag": "aletheia-k18-rollout:5ac1c54d-9fc7adf58fe1",
+    "release_identity": "82b534a8e2004bc19d8787864ee18d7546b49ea4040efb1cc900983bd7096bb3"
+  },
+  "current": {
+    "revision": "fa46dd8cbb2239c6f116456894a2009b45846245",
+    "image_id": "sha256:35ab7a8638b1f3ef7134bfeb87a4bbb6aac0a0101d74857cdaabafee251b8add",
+    "tag": "aletheia-k14-staging:fa46dd8-da2093353a73",
+    "release_identity": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529"
+  }
+}
