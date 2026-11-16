@@ -1,0 +1,5 @@
+# Preserve raw-byte evidence checksums on every platform.
+"/ARCHIVE-MANIFEST.csv" -text !eol whitespace=cr-at-eol
+"/ARCHIVE-README.md" -text !eol whitespace=cr-at-eol
+"/raw-records-20261116.zip" -text !eol whitespace=cr-at-eol
+"/raw-records-20261116.zip.sha256" -text !eol whitespace=cr-at-eol

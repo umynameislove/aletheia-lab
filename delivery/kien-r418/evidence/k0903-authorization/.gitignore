@@ -1,0 +1,18 @@
+# Raw records are preserved byte-for-byte in raw-records-20261116.zip.
+/ci-731f1bc/ci-43615235322-attempt1-logs.zip
+/ci-731f1bc/ci-43615235322-attempt1.json
+/ci-731f1bc/ci-43615235322-attempt2-logs.zip
+/ci-731f1bc/ci-43615235322-attempt2.json
+/ci-731f1bc/commit-1f57a82.json
+/ci-731f1bc/commit-731f1bc2225805262761a21483cec3c693e6b9d4.json
+/ci-731f1bc/dependency-audit-43615235240-logs.zip
+/ci-731f1bc/dependency-audit-43615235240.json
+/ci-731f1bc/github-ci-result.json
+/ci-731f1bc/hosted-backend-43615235242-logs.zip
+/ci-731f1bc/hosted-backend-43615235242.json
+/ci-731f1bc/initial-ci-failure.json
+/ci-731f1bc/jobs.csv
+/ci-731f1bc/manifest.json
+/ci-731f1bc/pr-193-checks-final.json
+/ci-731f1bc/test-python312-attempt1.zip
+/ci-731f1bc/test-summary-lines.json
