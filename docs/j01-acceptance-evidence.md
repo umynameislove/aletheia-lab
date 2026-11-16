@@ -1,3 +1,9 @@
+# Cập nhật J01 ngày 16/11/2026
+
+**J01 đạt 4/4 mục phối hợp trên bản staging LAN đã nhận diện**, sau khi nhận thư ký xác nhận, ba trace và ảnh của Quân. MacBook chạy source→preview→mapping→analyze→result/reload; kiểm đọc PostgreSQL xác nhận job MacBook succeeded và đúng source/result. Biên nhận `j01-lan-kien-quan-20261116-031448`. Xem [kết quả chốt và giới hạn bằng chứng](../delivery/kien-r418/evidence/j01-joint-20261116/KET-QUA-CHOT-J01-20261116.md). CI 11/11 thuộc SHA nền fa46dd8, hai sửa UI cục bộ được nhận diện bằng patch/manifest, chưa commit/push. Quân giữ ba việc tiếp theo: tích hợp hai patch có SHA/CI, thống nhất giới hạn câu hỏi và giảm fanout trước J06/J07. Chưa nhận capacity 50k hoặc release cuối; các phần dưới giữ lịch sử 10/11.
+
+---
+
 # J-01 — trạng thái hiện tại 10/11/2026
 
 Nguồn đối chiếu mới nhất: `j01-current-review-20261110.md`. Phần bên dưới
