@@ -1,0 +1,12 @@
+# Preserve raw-byte evidence checksums on every platform.
+"/ARCHIVE-MANIFEST.csv" -text !eol whitespace=cr-at-eol
+"/ARCHIVE-README.md" -text !eol whitespace=cr-at-eol
+"/KET-QUA-K17-TOI-UU-EXPORT.md" -text !eol whitespace=cr-at-eol
+"/KET-QUA-K17.md" -text !eol whitespace=cr-at-eol
+"/export-followup-manifest.json" -text !eol whitespace=cr-at-eol
+"/export-followup-summary.json" -text !eol whitespace=cr-at-eol
+"/manifest.json" -text !eol whitespace=cr-at-eol
+"/raw-records-20261116.zip" -text !eol whitespace=cr-at-eol
+"/raw-records-20261116.zip.sha256" -text !eol whitespace=cr-at-eol
+"/staging-stop.json" -text !eol whitespace=cr-at-eol
+"/summary.json" -text !eol whitespace=cr-at-eol
