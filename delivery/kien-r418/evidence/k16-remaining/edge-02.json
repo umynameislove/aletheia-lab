@@ -1,0 +1,69 @@
+{
+  "status": "passed",
+  "checks": {
+    "trusted_ca_and_hostname": "TLSv1.3",
+    "untrusted_ca": "rejected",
+    "hostname_mismatch": "rejected",
+    "wrong_host": {
+      "status": 400,
+      "cache_control": "no-store",
+      "nosniff": "nosniff"
+    },
+    "anonymous_session": {
+      "status": 401,
+      "cache_control": "no-store",
+      "nosniff": "nosniff"
+    },
+    "foreign_result": {
+      "status": 404,
+      "cache_control": "no-store",
+      "nosniff": "nosniff"
+    },
+    "csrf_cross_site": {
+      "status": 403,
+      "cache_control": "no-store",
+      "nosniff": "nosniff"
+    },
+    "oidc_start_cookie": "Secure, HttpOnly, SameSite=Lax, host-only",
+    "static_asset": {
+      "status": 404
+    },
+    "hsts_seen": false,
+    "final_readiness": 200
+  },
+  "auth_burst": {
+    "offered": 60,
+    "lanes": 6,
+    "elapsed_seconds": 3.1520592490001036,
+    "statuses": {
+      "303": 28,
+      "429": 32
+    },
+    "latency": {
+      "count": 60,
+      "mean_ms": 177.26984910001042,
+      "p95_observed_ms": 643.8714910000272,
+      "max_ms": 740.00660899992
+    },
+    "quiet_workspace_reads": {
+      "count": 12,
+      "mean_ms": 211.6251147500634,
+      "p95_observed_ms": 753.627353000411,
+      "max_ms": 753.627353000411
+    },
+    "retry_after_seconds": [
+      45,
+      46
+    ],
+    "distinct_spoofed_forwarded_ips": 60
+  },
+  "oidc": {
+    "start": 303,
+    "provider_form": 200,
+    "provider_submission": 302,
+    "callback": 303,
+    "session": 200,
+    "issuer": "idp-713e12808805.test:18777",
+    "flow": "real Keycloak OIDC authorization code via HTTPS"
+  }
+}
