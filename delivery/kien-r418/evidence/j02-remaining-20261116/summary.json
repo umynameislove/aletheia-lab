@@ -1,0 +1,141 @@
+{
+  "recorded_ict": "2026-11-16T10:56:13.831021+07:00",
+  "status": "technical_retest_passed_joint_reconfirmation_pending",
+  "base_sha": "fa46dd8cbb2239c6f116456894a2009b45846245",
+  "branch": "product-api",
+  "changed_product_files": {
+    "dashboard/web/src/service/hosted-bootstrap.ts": "91517e23707aa2733f6424af0c8e6d9386f4bff0df09ac603f9f6776f57ebd71",
+    "dashboard/web/tests/hosted-bootstrap.test.mjs": "1aa4ba01a9cb0979a9185c6531eed46109316ac33af77864602bb8686ee66b6a"
+  },
+  "ui_build_identity": "c419ed09e74aa021592960b8ddc63b8bf287b32bb31c33d678fac4bf995d6c21",
+  "completed_scenarios": 38,
+  "focused_node_tests": {
+    "passed": 67,
+    "failed": 0,
+    "skipped": 0,
+    "note": "51 bootstrap/session checks are a subset of this 67; do not sum"
+  },
+  "intentional_product_regression_before_fix": {
+    "selected": 2,
+    "passed": 0,
+    "failed": 2
+  },
+  "isolated_hosted_build": "passed tsc and Vite",
+  "controlled_api_entries": 229,
+  "controlled_api_status_counts": {
+    "200": 154,
+    "201": 21,
+    "403": 4,
+    "404": 22,
+    "410": 1,
+    "401": 26,
+    "412": 1
+  },
+  "api_count_scope": "explicit driver HTTPS calls including fixture setup, negative cases and failed attempts; not all browser traffic and not a capacity measurement",
+  "historical_harness_failures": 18,
+  "disqualified_then_requalified_cases": 3,
+  "reused_auth_source_exact_matches": "28/28; historical K03 configs and qualification limits retained",
+  "bfcache": {
+    "actual_persisted_pageshow": false,
+    "not_restored_reasons": [
+      "MainResourceHasCacheControlNoStore",
+      "JsNetworkRequestReceivedCacheControlNoStoreResource",
+      "BrowsingInstanceNotSwapped"
+    ],
+    "private_view_returned_only_after_access_check": true
+  },
+  "joint_items": {
+    "J02.01": {
+      "joint_status": "accepted_by_quan",
+      "scope": "roles and object boundary, expected 404 confirmed"
+    },
+    "J02.02": {
+      "joint_status": "fixed and retested on Kien staging; pending Quan Mac confirmation",
+      "followups": [
+        "FL-147 invite token copy",
+        "FL-148 same-tab workspace deep link after revoke"
+      ]
+    },
+    "J02.03": {
+      "joint_status": "accepted_by_quan",
+      "scope": "T04–T08 fencing and revocation, ordinary UI account change pending under logout"
+    },
+    "J02.04": {
+      "joint_status": "fixed and retested on Kien staging; pending Quan Mac confirmation",
+      "reason": "normal/all logout do not end Keycloak SSO on observed staging; UI A→B needed a manual provider step"
+    }
+  },
+  "committed": false,
+  "pushed": false,
+  "not_claimed": [
+    "joint J02 closure without Quan feedback",
+    "actual BFCache restoration on Chrome when no-store excluded it",
+    "new IdP shutdown qualification from browser offline fault",
+    "complete browser HTTP packet capture",
+    "production release or 50k capacity"
+  ],
+  "quan_connectivity": {
+    "status": "passed_reported_by_quan",
+    "reported_at": "2026-11-16T10:58:04+07:00",
+    "probe_at": "2026-11-16T10:57:45+07:00",
+    "device": "MacBook Pro M1 8GB, macOS 15.3.2, Chrome 157",
+    "peer_ipv4": "192.168.2.7",
+    "app_lan_port": 18976,
+    "app_root_http": 200,
+    "app_root_seconds": 1.25,
+    "readiness": "ready",
+    "idp_lan_port": 18977,
+    "idp_discovery_http": 200,
+    "chrome_sign_in_screen": true,
+    "package_sha256_verified_on_kien": "9dc6bd391a2b0feb45ebd4d22c9f0a90e0dac318bf9fb3ea73e624bdb857db2f",
+    "kien_live_recheck": {
+      "app_readiness_http": 200,
+      "idp_discovery_http": 200,
+      "enabled_accounts": 7,
+      "actor5_workspaces": [
+        "A"
+      ],
+      "actor6_workspaces": [
+        "A",
+        "B"
+      ],
+      "actor1_workspaces": [
+        "B",
+        "C"
+      ]
+    },
+    "t01_to_t10": "reported PASS with caveats in DOI-CHIEU-MAC-J02-20261116.md"
+  },
+  "mac_reply": {
+    "reported_pass_cases": 10,
+    "reply_zip_sha256": "14c43f1e8f62fc15f06fd5b7a907f3cc1b5439e8542a676e8ab523098708877c",
+    "verified_manifest_files": 56,
+    "mac_ms": {
+      "T04_ack_to_hide": 1966,
+      "T05_ack_to_hide": 1895,
+      "T07_followup_ack_to_hide": 2181,
+      "T07_download_ack_to_release": 1027,
+      "T08_click_to_peer_hide": 197,
+      "T10_offline_to_cover": 2969,
+      "T10_online_to_restore": 630
+    },
+    "T07_download_events": 0,
+    "T07_download_success_messages": 0,
+    "fixture_accounts_retired": 7,
+    "active_app_sessions": 0,
+    "sso_sessions": 0,
+    "report": "DOI-CHIEU-MAC-J02-20261116.md"
+  },
+  "final_retest": {
+    "report": "KIEM-LAI-J02-20261116.md",
+    "browser_passes": 4,
+    "python_passes": 25,
+    "node_passes": 88,
+    "ui_identity": "a846b67d992531ad03ca42c8781babe87e7e011baa09c52cae0f3149c5a3df75",
+    "mac_packet_sha256": "b1c114239974b4fab97b2510587ef4ffc2ce4680c464c859dd2d618619281951",
+    "awaiting_mac_confirmation": [
+      "J02.02",
+      "J02.04"
+    ]
+  }
+}

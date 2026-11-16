@@ -1,0 +1,7 @@
+{
+  "comparison": "K03 attempt16 inputs-before vs installed staging source manifest",
+  "auth_source_files": 28,
+  "exact_hash_matches": 28,
+  "differing": [],
+  "reused_scope": "K03 backend scenarios retain their original config, source identity and limitations; no new whole J02 acceptance inferred"
+}

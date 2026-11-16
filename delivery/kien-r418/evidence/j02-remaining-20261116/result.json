@@ -1,0 +1,2206 @@
+{
+  "run": "2be4f511",
+  "started": "2026-11-15T20:43:31.945Z",
+  "cases": [
+    {
+      "name": "oidc_login_actor_0_needs_workspace",
+      "status": "pass",
+      "ms": 2191,
+      "onboarding": "needs_workspace"
+    },
+    {
+      "name": "oidc_login_actor_1_needs_workspace",
+      "status": "pass",
+      "ms": 1803,
+      "onboarding": "needs_workspace"
+    },
+    {
+      "name": "oidc_login_actor_2_needs_workspace",
+      "status": "pass",
+      "ms": 1776,
+      "onboarding": "needs_workspace"
+    },
+    {
+      "name": "oidc_login_actor_3_needs_workspace",
+      "status": "pass",
+      "ms": 1885,
+      "onboarding": "needs_workspace"
+    },
+    {
+      "name": "oidc_login_actor_4_needs_workspace",
+      "status": "pass",
+      "ms": 1785,
+      "onboarding": "needs_workspace"
+    },
+    {
+      "name": "oidc_login_actor_5_needs_workspace",
+      "status": "pass",
+      "ms": 2039,
+      "onboarding": "needs_workspace"
+    },
+    {
+      "name": "oidc_login_actor_6_needs_workspace",
+      "status": "pass",
+      "ms": 2026,
+      "onboarding": "needs_workspace"
+    },
+    {
+      "name": "normal_user_first_owner_0",
+      "status": "pass",
+      "ms": 1463,
+      "workspace_id": "ws_79e07c15e3964079ad6a044f2203b854",
+      "role": "owner",
+      "via": "actual WorkspaceManager create form"
+    },
+    {
+      "name": "normal_user_first_owner_1",
+      "status": "pass",
+      "ms": 1763,
+      "workspace_id": "ws_a754dc275d52451cb990f472cfd232a6",
+      "role": "owner",
+      "via": "actual WorkspaceManager create form"
+    },
+    {
+      "name": "owned_native_result_0",
+      "status": "pass",
+      "ms": 10308,
+      "claims": 10,
+      "ids": {
+        "workspace": "ws_79e07c15e3964079ad6a044f2203b854",
+        "job": "job_2abb35b0564948f19cc390e481024e33",
+        "project": "p3-project-8d30974979d3ed40cd431a04c510ea910843f7a1fae377e2b22193855a452da6",
+        "snapshot": "upload-snapshot-d8db7a77a38390382cb835f14a76d0d32175bdee56aa7d6b80d077341a440205",
+        "result": "p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e"
+      }
+    },
+    {
+      "name": "owned_native_result_1",
+      "status": "pass",
+      "ms": 10404,
+      "claims": 10,
+      "ids": {
+        "workspace": "ws_a754dc275d52451cb990f472cfd232a6",
+        "job": "job_42b8d3bb5b7d4e6fb965d3c774ef5164",
+        "project": "p3-project-8d30974979d3ed40cd431a04c510ea910843f7a1fae377e2b22193855a452da6",
+        "snapshot": "upload-snapshot-563a8ee66350f55df8ee00504813c12be21c488aadb309da1728230692e6f47e",
+        "result": "p6-result-ae41a412c5a1bbe72c485261b18892c72bd8090b0e4a844e2b1e4fa46a617476"
+      }
+    },
+    {
+      "name": "invite_accept_admin",
+      "status": "pass",
+      "ms": 1489,
+      "role": "admin",
+      "via": "actual WorkspaceManager accept form"
+    },
+    {
+      "name": "invite_accept_analyst",
+      "status": "pass",
+      "ms": 1330,
+      "role": "analyst",
+      "via": "actual WorkspaceManager accept form"
+    },
+    {
+      "name": "invite_accept_reviewer",
+      "status": "pass",
+      "ms": 1485,
+      "role": "reviewer",
+      "via": "actual WorkspaceManager accept form"
+    },
+    {
+      "name": "invite_accept_viewer",
+      "status": "pass",
+      "ms": 1377,
+      "role": "viewer",
+      "via": "actual WorkspaceManager accept form"
+    },
+    {
+      "name": "invite_wrong_account_revoked_and_replay",
+      "status": "pass",
+      "ms": 702,
+      "wrong": "invitation_wrong_account",
+      "revoked": "invitation_unavailable",
+      "replay": "invitation_unavailable"
+    },
+    {
+      "name": "last_owner_cannot_leave",
+      "status": "pass",
+      "ms": 177,
+      "code": "permission_denied"
+    },
+    {
+      "name": "grant_boundaries_before_and_after_explicit_grants",
+      "status": "pass",
+      "ms": 1252,
+      "no_grant_denials": 3,
+      "project_grants": "operator-created synthetic grants; normal runtime authorization still enforced",
+      "source_grants": "authenticated owner HTTP endpoint"
+    },
+    {
+      "name": "role_matrix_owner",
+      "status": "pass",
+      "ms": 2692,
+      "read_header_claims_evidence_graph": 4,
+      "export_bytes": 31904,
+      "export_hash_matches": true,
+      "upload_status": 201
+    },
+    {
+      "name": "role_matrix_admin",
+      "status": "pass",
+      "ms": 2045,
+      "read_header_claims_evidence_graph": 4,
+      "export_bytes": 31904,
+      "export_hash_matches": true,
+      "upload_status": 201
+    },
+    {
+      "name": "role_matrix_analyst",
+      "status": "pass",
+      "ms": 1765,
+      "read_header_claims_evidence_graph": 4,
+      "export_bytes": 31904,
+      "export_hash_matches": true,
+      "upload_status": 201
+    },
+    {
+      "name": "role_matrix_reviewer",
+      "status": "pass",
+      "ms": 904,
+      "read_header_claims_evidence_graph": 4,
+      "export_bytes": 31904,
+      "export_hash_matches": true,
+      "upload_status": 404
+    },
+    {
+      "name": "role_matrix_viewer",
+      "status": "pass",
+      "ms": 1682,
+      "read_header_claims_evidence_graph": 4,
+      "export_bytes": 31904,
+      "export_hash_matches": true,
+      "upload_status": 404
+    },
+    {
+      "name": "cross_tenant_and_export_creator_scope",
+      "status": "pass",
+      "ms": 2175,
+      "http_denials": 9,
+      "browser_private_title_visible": false
+    },
+    {
+      "name": "invitation_natural_expiry_60s",
+      "status": "pass",
+      "ms": 54,
+      "code": "invitation_expired",
+      "configured_seconds": 60,
+      "clock_mutation": false
+    },
+    {
+      "name": "membership_revoke_no_workspace_preserves_session_and_clears_view",
+      "status": "pass",
+      "ms": 5019,
+      "revoke_to_private_view_cleared_ms": 2630,
+      "session_status": 200,
+      "onboarding": "needs_workspace"
+    },
+    {
+      "name": "membership_revoke_remaining_workspace_can_continue",
+      "status": "pass",
+      "ms": 5275,
+      "revoke_to_view_clear_ms": 2529,
+      "session_status": 200,
+      "remaining_workspace": "ws_a754dc275d52451cb990f472cfd232a6"
+    },
+    {
+      "name": "owner_transfer_vs_self_leave_preserves_one_owner",
+      "status": "pass",
+      "ms": 92,
+      "transfer_status": 200,
+      "self_leave_status": 412,
+      "self_leave_code": "revision_conflict",
+      "active_owners": 1,
+      "real_concurrent_http": true,
+      "qualification": "retained actual race; corrected harness HTTP expectation and independently checked final owner; no race rerun"
+    },
+    {
+      "name": "actual_back_forward_cache_or_safe_history_reload",
+      "status": "pass",
+      "ms": 7310,
+      "actual_persisted_pageshow": false,
+      "not_restored_reasons": [
+        "MainResourceHasCacheControlNoStore",
+        "JsNetworkRequestReceivedCacheControlNoStoreResource",
+        "BrowsingInstanceNotSwapped"
+      ],
+      "private_view_returned_only_after_access_check": true
+    },
+    {
+      "name": "browser_network_outage_covers_then_recovers_without_mutation",
+      "status": "pass",
+      "ms": 13414,
+      "fault": "Chrome network offline; not IdP process shutdown",
+      "cover_ms": 3371,
+      "recovery_ms": 671,
+      "mutation_requests": 0,
+      "observed_requests": 3
+    },
+    {
+      "name": "two_tabs_logout_all_clears_peer_private_view",
+      "status": "pass",
+      "ms": 3943,
+      "tabs": 2,
+      "peer_clear_ms": 213,
+      "server_session_after_logout": 401
+    },
+    {
+      "name": "real_idp_logout_then_other_account_drops_draft_and_old_route",
+      "status": "pass",
+      "ms": 4884,
+      "real_idp_logout": true,
+      "account_after_login": "user_dae02c53e17b1f1688faadb249a6548f",
+      "old_private_title_visible": false,
+      "old_draft_visible": false,
+      "old_result_link_denied": true
+    },
+    {
+      "name": "real_followup_running_then_membership_revoke_fences_publication_and_ui",
+      "status": "pass",
+      "ms": 8256,
+      "job_id": "job_aa6716a8f29a4851a29ff37f546e1b14",
+      "worker_state_before_revoke": "running",
+      "terminal_status": "failed",
+      "failure_kind": "authorization",
+      "new_project_records": 0,
+      "private_view_clear_ms": 1242,
+      "barrier": "none; worker running state observed in real PostgreSQL before revoke",
+      "backend_stub": false
+    },
+    {
+      "name": "foreign_deep_link_mutation_observer_zero_private_title_flashes",
+      "status": "pass",
+      "ms": 3494,
+      "private_title_flash_count": 0,
+      "observer": "every DOM mutation in the new document; not just final screenshot",
+      "limit": "observed Chrome route only, not a proof of every browser or every private field"
+    },
+    {
+      "name": "late_result_success_after_workspace_switch_is_discarded",
+      "status": "pass",
+      "ms": 3988,
+      "held_actual_status": 200,
+      "release_cancelled": true,
+      "current_workspace": "ws_a754dc275d52451cb990f472cfd232a6",
+      "old_title_visible": false,
+      "method": "hold actual response at CDP transport boundary; no backend stub"
+    },
+    {
+      "name": "late_session_revoked_after_workspace_switch_is_ignored",
+      "status": "pass",
+      "ms": 3873,
+      "controlled_late_status": 401,
+      "code": "session_revoked",
+      "old_request_cancelled": true,
+      "current_workspace": "ws_a754dc275d52451cb990f472cfd232a6",
+      "classification": "synthetic late refusal at transport boundary; real current workspace/result"
+    },
+    {
+      "name": "late_membership_revoked_after_workspace_switch_is_ignored",
+      "status": "pass",
+      "ms": 4550,
+      "controlled_late_status": 403,
+      "code": "membership_revoked",
+      "old_request_cancelled": true,
+      "current_workspace": "ws_a754dc275d52451cb990f472cfd232a6",
+      "classification": "synthetic late refusal at transport boundary; real current workspace/result"
+    },
+    {
+      "name": "download_response_held_before_membership_revoke_never_starts_browser_download",
+      "status": "pass",
+      "ms": 9086,
+      "actual_response_before_revoke": 200,
+      "private_view_clear_ms": 284,
+      "browser_download_events": 0,
+      "old_request_cancelled": true,
+      "new_download_request_after_revoke": 404,
+      "limit": "does not revoke bytes already downloaded while authorized"
+    }
+  ],
+  "http": [
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 116
+    },
+    {
+      "actor": 1,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 52
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 73
+    },
+    {
+      "actor": 3,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 74
+    },
+    {
+      "actor": 4,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 115
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 131
+    },
+    {
+      "actor": 6,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 124
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces",
+      "status": 200,
+      "ms": 163
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/capabilities",
+      "status": 200,
+      "ms": 162
+    },
+    {
+      "actor": 1,
+      "method": "GET",
+      "path": "/v1/workspaces",
+      "status": 200,
+      "ms": 97
+    },
+    {
+      "actor": 1,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_a754dc275d52451cb990f472cfd232a6/capabilities",
+      "status": 200,
+      "ms": 219
+    },
+    {
+      "actor": 0,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/invitations",
+      "status": 201,
+      "ms": 123
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/capabilities",
+      "status": 200,
+      "ms": 211
+    },
+    {
+      "actor": 0,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/invitations",
+      "status": 201,
+      "ms": 71
+    },
+    {
+      "actor": 3,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/capabilities",
+      "status": 200,
+      "ms": 153
+    },
+    {
+      "actor": 0,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/invitations",
+      "status": 201,
+      "ms": 60
+    },
+    {
+      "actor": 4,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/capabilities",
+      "status": 200,
+      "ms": 185
+    },
+    {
+      "actor": 0,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/invitations",
+      "status": 201,
+      "ms": 67
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/capabilities",
+      "status": 200,
+      "ms": 173
+    },
+    {
+      "actor": 0,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/invitations",
+      "status": 201,
+      "ms": 65
+    },
+    {
+      "actor": 1,
+      "method": "POST",
+      "path": "/v1/invitations/accept",
+      "status": 403,
+      "ms": 45,
+      "code": "invitation_wrong_account"
+    },
+    {
+      "actor": 0,
+      "method": "DELETE",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/invitations/inv_fc83784ec3a44027aae8a03497859b7c",
+      "status": 200,
+      "ms": 57
+    },
+    {
+      "actor": 6,
+      "method": "POST",
+      "path": "/v1/invitations/accept",
+      "status": 404,
+      "ms": 33,
+      "code": "invitation_unavailable"
+    },
+    {
+      "actor": 0,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/invitations",
+      "status": 201,
+      "ms": 110
+    },
+    {
+      "actor": 1,
+      "method": "POST",
+      "path": "/v1/invitations/accept",
+      "status": 403,
+      "ms": 33,
+      "code": "invitation_wrong_account"
+    },
+    {
+      "actor": 0,
+      "method": "DELETE",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/invitations/inv_332e93fd98ef4f798afc6a984da6aeda",
+      "status": 200,
+      "ms": 84
+    },
+    {
+      "actor": 6,
+      "method": "POST",
+      "path": "/v1/invitations/accept",
+      "status": 404,
+      "ms": 35,
+      "code": "invitation_unavailable"
+    },
+    {
+      "actor": 0,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/invitations",
+      "status": 201,
+      "ms": 245
+    },
+    {
+      "actor": 0,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/invitations",
+      "status": 201,
+      "ms": 84
+    },
+    {
+      "actor": 6,
+      "method": "POST",
+      "path": "/v1/invitations/accept",
+      "status": 200,
+      "ms": 68
+    },
+    {
+      "actor": 6,
+      "method": "POST",
+      "path": "/v1/invitations/accept",
+      "status": 404,
+      "ms": 35,
+      "code": "invitation_unavailable"
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members",
+      "status": 200,
+      "ms": 73
+    },
+    {
+      "actor": 0,
+      "method": "PATCH",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members/user_953c458c7d49f18fd9596d28586b5533",
+      "status": 403,
+      "ms": 41,
+      "code": "permission_denied"
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members",
+      "status": 200,
+      "ms": 128
+    },
+    {
+      "actor": 0,
+      "method": "PATCH",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members/user_953c458c7d49f18fd9596d28586b5533",
+      "status": 403,
+      "ms": 47,
+      "code": "permission_denied"
+    },
+    {
+      "actor": 3,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/header",
+      "status": 404,
+      "ms": 93,
+      "code": "not_found"
+    },
+    {
+      "actor": 4,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/header",
+      "status": 404,
+      "ms": 48,
+      "code": "not_found"
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/header",
+      "status": 404,
+      "ms": 36,
+      "code": "not_found"
+    },
+    {
+      "actor": 0,
+      "method": "PUT",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/sources/src_66866c9a28494919a7dbb33fbc55a0f8/grants/user_a7ce972262d2b1b94accc5d0ab8bdbc2",
+      "status": 200,
+      "ms": 82
+    },
+    {
+      "actor": 0,
+      "method": "PUT",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/sources/src_66866c9a28494919a7dbb33fbc55a0f8/grants/user_ab2be47337296f727ccd12a96d8098e0",
+      "status": 200,
+      "ms": 75
+    },
+    {
+      "actor": 0,
+      "method": "PUT",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/sources/src_66866c9a28494919a7dbb33fbc55a0f8/grants/user_be84ca8d4f04798f519eef647341b197",
+      "status": 200,
+      "ms": 100
+    },
+    {
+      "actor": 0,
+      "method": "PUT",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/sources/src_66866c9a28494919a7dbb33fbc55a0f8/grants/user_f08dbb6b8439266dbafa866cafaa5f10",
+      "status": 200,
+      "ms": 74
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e",
+      "status": 200,
+      "ms": 118
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/capabilities",
+      "status": 200,
+      "ms": 374
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/header",
+      "status": 200,
+      "ms": 156
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/claims?limit=2",
+      "status": 200,
+      "ms": 90
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/evidence/p6-evidence-f3260c48e929f73957fb145b7028bdb3b7378c581a0173c445c6b010ffac99c2",
+      "status": 200,
+      "ms": 75
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/graph?limit=2",
+      "status": 200,
+      "ms": 140
+    },
+    {
+      "actor": 0,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/exports",
+      "status": 201,
+      "ms": 1600
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/exports/ex_json_p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e_7fba22988f6c4cc28121878868a4fe7a/download",
+      "status": 200,
+      "ms": 136
+    },
+    {
+      "actor": 0,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/uploads",
+      "status": 201,
+      "ms": 108
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/capabilities",
+      "status": 200,
+      "ms": 158
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/header",
+      "status": 200,
+      "ms": 79
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/claims?limit=2",
+      "status": 200,
+      "ms": 89
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/evidence/p6-evidence-f3260c48e929f73957fb145b7028bdb3b7378c581a0173c445c6b010ffac99c2",
+      "status": 200,
+      "ms": 62
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/graph?limit=2",
+      "status": 200,
+      "ms": 83
+    },
+    {
+      "actor": 2,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/exports",
+      "status": 201,
+      "ms": 1259
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/exports/ex_json_p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e_530756cb48ec4d19bec95b740938456f/download",
+      "status": 200,
+      "ms": 236
+    },
+    {
+      "actor": 2,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/uploads",
+      "status": 201,
+      "ms": 70
+    },
+    {
+      "actor": 3,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/capabilities",
+      "status": 200,
+      "ms": 116
+    },
+    {
+      "actor": 3,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/header",
+      "status": 200,
+      "ms": 123
+    },
+    {
+      "actor": 3,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/claims?limit=2",
+      "status": 200,
+      "ms": 113
+    },
+    {
+      "actor": 3,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/evidence/p6-evidence-f3260c48e929f73957fb145b7028bdb3b7378c581a0173c445c6b010ffac99c2",
+      "status": 200,
+      "ms": 94
+    },
+    {
+      "actor": 3,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/graph?limit=2",
+      "status": 200,
+      "ms": 107
+    },
+    {
+      "actor": 3,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/exports",
+      "status": 201,
+      "ms": 1011
+    },
+    {
+      "actor": 3,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/exports/ex_json_p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e_142af304424543838832b2081124070a/download",
+      "status": 200,
+      "ms": 142
+    },
+    {
+      "actor": 3,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/uploads",
+      "status": 201,
+      "ms": 50
+    },
+    {
+      "actor": 4,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/capabilities",
+      "status": 200,
+      "ms": 132
+    },
+    {
+      "actor": 4,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/header",
+      "status": 200,
+      "ms": 60
+    },
+    {
+      "actor": 4,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/claims?limit=2",
+      "status": 200,
+      "ms": 75
+    },
+    {
+      "actor": 4,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/evidence/p6-evidence-f3260c48e929f73957fb145b7028bdb3b7378c581a0173c445c6b010ffac99c2",
+      "status": 200,
+      "ms": 63
+    },
+    {
+      "actor": 4,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/graph?limit=2",
+      "status": 200,
+      "ms": 86
+    },
+    {
+      "actor": 4,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/exports",
+      "status": 201,
+      "ms": 933
+    },
+    {
+      "actor": 4,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/exports/ex_json_p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e_f9a64d0706f94fb8ab39626c99ac4e8a/download",
+      "status": 200,
+      "ms": 143
+    },
+    {
+      "actor": 4,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/uploads",
+      "status": 404,
+      "ms": 27,
+      "code": "not_found"
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e",
+      "status": 200,
+      "ms": 164
+    },
+    {
+      "actor": 4,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/capabilities",
+      "status": 200,
+      "ms": 166
+    },
+    {
+      "actor": 4,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/header",
+      "status": 200,
+      "ms": 95
+    },
+    {
+      "actor": 4,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/claims?limit=2",
+      "status": 200,
+      "ms": 111
+    },
+    {
+      "actor": 4,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/evidence/p6-evidence-f3260c48e929f73957fb145b7028bdb3b7378c581a0173c445c6b010ffac99c2",
+      "status": 200,
+      "ms": 88
+    },
+    {
+      "actor": 4,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/graph?limit=2",
+      "status": 200,
+      "ms": 97
+    },
+    {
+      "actor": 4,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/exports",
+      "status": 201,
+      "ms": 131
+    },
+    {
+      "actor": 4,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/exports/ex_json_p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e_f9a64d0706f94fb8ab39626c99ac4e8a/download",
+      "status": 200,
+      "ms": 166
+    },
+    {
+      "actor": 4,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/uploads",
+      "status": 404,
+      "ms": 41,
+      "code": "not_found"
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/capabilities",
+      "status": 200,
+      "ms": 109
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/header",
+      "status": 200,
+      "ms": 80
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/claims?limit=2",
+      "status": 200,
+      "ms": 95
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/evidence/p6-evidence-f3260c48e929f73957fb145b7028bdb3b7378c581a0173c445c6b010ffac99c2",
+      "status": 200,
+      "ms": 75
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/graph?limit=2",
+      "status": 200,
+      "ms": 89
+    },
+    {
+      "actor": 5,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/exports",
+      "status": 201,
+      "ms": 1047
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/exports/ex_json_p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e_b7eac07495444c10bbe8320dc4cf3fda/download",
+      "status": 200,
+      "ms": 151
+    },
+    {
+      "actor": 5,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/uploads",
+      "status": 404,
+      "ms": 29,
+      "code": "not_found"
+    },
+    {
+      "actor": 1,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e",
+      "status": 404,
+      "ms": 33,
+      "code": "not_found"
+    },
+    {
+      "actor": 1,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/header",
+      "status": 404,
+      "ms": 38,
+      "code": "not_found"
+    },
+    {
+      "actor": 1,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/claims?limit=2",
+      "status": 404,
+      "ms": 35,
+      "code": "not_found"
+    },
+    {
+      "actor": 1,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/evidence/p6-evidence-f3260c48e929f73957fb145b7028bdb3b7378c581a0173c445c6b010ffac99c2",
+      "status": 404,
+      "ms": 34,
+      "code": "not_found"
+    },
+    {
+      "actor": 1,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/graph?limit=2",
+      "status": 404,
+      "ms": 36,
+      "code": "not_found"
+    },
+    {
+      "actor": 1,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/jobs/job_2abb35b0564948f19cc390e481024e33",
+      "status": 404,
+      "ms": 56,
+      "code": "not_found"
+    },
+    {
+      "actor": 1,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/sources/src_66866c9a28494919a7dbb33fbc55a0f8",
+      "status": 404,
+      "ms": 4,
+      "code": "not_found"
+    },
+    {
+      "actor": 1,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/exports/ex_json_p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e_7fba22988f6c4cc28121878868a4fe7a/download",
+      "status": 404,
+      "ms": 29,
+      "code": "not_found"
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/exports/ex_json_p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e_7fba22988f6c4cc28121878868a4fe7a/download",
+      "status": 404,
+      "ms": 38,
+      "code": "not_found"
+    },
+    {
+      "actor": 6,
+      "method": "POST",
+      "path": "/v1/invitations/accept",
+      "status": 410,
+      "ms": 53,
+      "code": "invitation_expired"
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members",
+      "status": 200,
+      "ms": 96
+    },
+    {
+      "actor": 0,
+      "method": "PATCH",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members/user_be84ca8d4f04798f519eef647341b197",
+      "status": 200,
+      "ms": 227
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 91
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/header",
+      "status": 404,
+      "ms": 42,
+      "code": "not_found"
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e",
+      "status": 200,
+      "ms": 157
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members",
+      "status": 200,
+      "ms": 57
+    },
+    {
+      "actor": 0,
+      "method": "PATCH",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members/user_be84ca8d4f04798f519eef647341b197",
+      "status": 200,
+      "ms": 88
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members",
+      "status": 200,
+      "ms": 105
+    },
+    {
+      "actor": 0,
+      "method": "PATCH",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members/user_be84ca8d4f04798f519eef647341b197",
+      "status": 200,
+      "ms": 68
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 104
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/header",
+      "status": 404,
+      "ms": 41,
+      "code": "not_found"
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/exports/ex_json_p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e_b7eac07495444c10bbe8320dc4cf3fda/download",
+      "status": 404,
+      "ms": 37,
+      "code": "not_found"
+    },
+    {
+      "actor": 1,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_a754dc275d52451cb990f472cfd232a6/invitations",
+      "status": 201,
+      "ms": 73
+    },
+    {
+      "actor": 6,
+      "method": "POST",
+      "path": "/v1/invitations/accept",
+      "status": 200,
+      "ms": 84
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members",
+      "status": 200,
+      "ms": 101
+    },
+    {
+      "actor": 0,
+      "method": "PATCH",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members/user_f08dbb6b8439266dbafa866cafaa5f10",
+      "status": 200,
+      "ms": 95
+    },
+    {
+      "actor": 6,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 90
+    },
+    {
+      "actor": 6,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_a754dc275d52451cb990f472cfd232a6/capabilities",
+      "status": 200,
+      "ms": 175
+    },
+    {
+      "actor": 5,
+      "method": "POST",
+      "path": "/v1/workspaces",
+      "status": 401,
+      "ms": 86,
+      "code": "session_expired"
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 137,
+      "code": "session_expired"
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 55,
+      "code": "session_expired"
+    },
+    {
+      "actor": 1,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 69,
+      "code": "session_expired"
+    },
+    {
+      "actor": 1,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 66,
+      "code": "session_expired"
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 172
+    },
+    {
+      "actor": 1,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 123
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 123,
+      "code": "session_expired"
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 72,
+      "code": "session_expired"
+    },
+    {
+      "actor": 3,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 92,
+      "code": "session_expired"
+    },
+    {
+      "actor": 3,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 85,
+      "code": "session_expired"
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 49,
+      "code": "session_expired"
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 53,
+      "code": "session_expired"
+    },
+    {
+      "actor": 5,
+      "method": "POST",
+      "path": "/v1/workspaces",
+      "status": 201,
+      "ms": 153
+    },
+    {
+      "actor": 5,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_83fbe04aa2f94d96a3b8ea4137df61be/invitations",
+      "status": 201,
+      "ms": 202
+    },
+    {
+      "actor": 1,
+      "method": "POST",
+      "path": "/v1/invitations/accept",
+      "status": 200,
+      "ms": 128
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_83fbe04aa2f94d96a3b8ea4137df61be/members",
+      "status": 200,
+      "ms": 114
+    },
+    {
+      "actor": 5,
+      "method": "PATCH",
+      "path": "/v1/workspaces/ws_83fbe04aa2f94d96a3b8ea4137df61be/members/user_be84ca8d4f04798f519eef647341b197",
+      "status": 412,
+      "ms": 101,
+      "code": "revision_conflict"
+    },
+    {
+      "actor": 5,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_83fbe04aa2f94d96a3b8ea4137df61be/transfer-owner",
+      "status": 200,
+      "ms": 129
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 175
+    },
+    {
+      "actor": 1,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 114
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 139
+    },
+    {
+      "actor": 3,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 163
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 97
+    },
+    {
+      "actor": 1,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_83fbe04aa2f94d96a3b8ea4137df61be/members",
+      "status": 200,
+      "ms": 88
+    },
+    {
+      "actor": 1,
+      "method": "POST",
+      "path": "/v1/workspaces/ws_a754dc275d52451cb990f472cfd232a6/invitations",
+      "status": 201,
+      "ms": 151
+    },
+    {
+      "actor": 2,
+      "method": "POST",
+      "path": "/v1/invitations/accept",
+      "status": 200,
+      "ms": 149
+    },
+    {
+      "actor": 1,
+      "method": "PUT",
+      "path": "/v1/workspaces/ws_a754dc275d52451cb990f472cfd232a6/sources/src_09af74193100407c955cf23a5f89cacd/grants/user_102b291bcab321a9e767f667f64fddc5",
+      "status": 200,
+      "ms": 133
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 130
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 120
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 160
+    },
+    {
+      "actor": 3,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 117
+    },
+    {
+      "actor": 3,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 87,
+      "code": "session_revoked"
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 126
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 114,
+      "code": "session_revoked"
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 50,
+      "code": "session_revoked"
+    },
+    {
+      "actor": 1,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 123
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 116
+    },
+    {
+      "actor": 3,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 57,
+      "code": "session_revoked"
+    },
+    {
+      "actor": 3,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 56,
+      "code": "session_revoked"
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 96
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 105
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 187
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 98
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 52,
+      "code": "session_revoked"
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 100
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e",
+      "status": 200,
+      "ms": 175
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 247
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 87
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e",
+      "status": 200,
+      "ms": 268
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 206
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 137
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e",
+      "status": 200,
+      "ms": 169
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members",
+      "status": 200,
+      "ms": 104
+    },
+    {
+      "actor": 0,
+      "method": "PATCH",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members/user_102b291bcab321a9e767f667f64fddc5",
+      "status": 200,
+      "ms": 108
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/jobs/job_6fea5aad1d554f2fb416874da72dd1ea",
+      "status": 200,
+      "ms": 154
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/jobs/job_6fea5aad1d554f2fb416874da72dd1ea",
+      "status": 200,
+      "ms": 165
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/jobs/job_6fea5aad1d554f2fb416874da72dd1ea",
+      "status": 200,
+      "ms": 161
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 189
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members",
+      "status": 200,
+      "ms": 110
+    },
+    {
+      "actor": 0,
+      "method": "PATCH",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members/user_102b291bcab321a9e767f667f64fddc5",
+      "status": 200,
+      "ms": 133
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 164
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e",
+      "status": 200,
+      "ms": 188
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members",
+      "status": 200,
+      "ms": 99
+    },
+    {
+      "actor": 0,
+      "method": "PATCH",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members/user_102b291bcab321a9e767f667f64fddc5",
+      "status": 200,
+      "ms": 103
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/jobs/job_aa6716a8f29a4851a29ff37f546e1b14",
+      "status": 200,
+      "ms": 154
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/jobs/job_aa6716a8f29a4851a29ff37f546e1b14",
+      "status": 200,
+      "ms": 114
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/jobs/job_aa6716a8f29a4851a29ff37f546e1b14/attempts",
+      "status": 200,
+      "ms": 136
+    },
+    {
+      "actor": 1,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 135,
+      "code": "session_expired"
+    },
+    {
+      "actor": 1,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 251
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 85
+    },
+    {
+      "actor": 4,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 53,
+      "code": "session_expired"
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members",
+      "status": 200,
+      "ms": 273
+    },
+    {
+      "actor": 0,
+      "method": "PATCH",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members/user_ab2be47337296f727ccd12a96d8098e0",
+      "status": 200,
+      "ms": 194
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 203
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members",
+      "status": 200,
+      "ms": 117
+    },
+    {
+      "actor": 0,
+      "method": "PATCH",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members/user_ab2be47337296f727ccd12a96d8098e0",
+      "status": 200,
+      "ms": 129
+    },
+    {
+      "actor": 4,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 153
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members",
+      "status": 200,
+      "ms": 170
+    },
+    {
+      "actor": 0,
+      "method": "PATCH",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members/user_ab2be47337296f727ccd12a96d8098e0",
+      "status": 200,
+      "ms": 156
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 269
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members",
+      "status": 200,
+      "ms": 134
+    },
+    {
+      "actor": 0,
+      "method": "PATCH",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members/user_102b291bcab321a9e767f667f64fddc5",
+      "status": 200,
+      "ms": 120
+    },
+    {
+      "actor": 0,
+      "method": "PATCH",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members/user_ab2be47337296f727ccd12a96d8098e0",
+      "status": 200,
+      "ms": 110
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 192
+    },
+    {
+      "actor": 1,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 95
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 50,
+      "code": "session_expired"
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 51,
+      "code": "session_expired"
+    },
+    {
+      "actor": 3,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 70,
+      "code": "session_expired"
+    },
+    {
+      "actor": 3,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 63,
+      "code": "session_expired"
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 63,
+      "code": "session_expired"
+    },
+    {
+      "actor": 5,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 84,
+      "code": "session_expired"
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 92
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 271
+    },
+    {
+      "actor": 2,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 79
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 188
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members",
+      "status": 200,
+      "ms": 158
+    },
+    {
+      "actor": 4,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 200,
+      "ms": 96
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members",
+      "status": 200,
+      "ms": 197
+    },
+    {
+      "actor": 0,
+      "method": "PATCH",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members/user_ab2be47337296f727ccd12a96d8098e0",
+      "status": 200,
+      "ms": 151
+    },
+    {
+      "actor": 4,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/exports/ex_json_p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e_f9a64d0706f94fb8ab39626c99ac4e8a/download",
+      "status": 404,
+      "ms": 75,
+      "code": "not_found"
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/session",
+      "status": 401,
+      "ms": 132,
+      "code": "session_expired"
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members",
+      "status": 200,
+      "ms": 98
+    },
+    {
+      "actor": 0,
+      "method": "PATCH",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members/user_ab2be47337296f727ccd12a96d8098e0",
+      "status": 200,
+      "ms": 130
+    },
+    {
+      "actor": 0,
+      "method": "PATCH",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members/user_be84ca8d4f04798f519eef647341b197",
+      "status": 200,
+      "ms": 90
+    },
+    {
+      "actor": 0,
+      "method": "PATCH",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members/user_f08dbb6b8439266dbafa866cafaa5f10",
+      "status": 200,
+      "ms": 104
+    },
+    {
+      "actor": 1,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_83fbe04aa2f94d96a3b8ea4137df61be/members",
+      "status": 200,
+      "ms": 101
+    },
+    {
+      "actor": 1,
+      "method": "PATCH",
+      "path": "/v1/workspaces/ws_83fbe04aa2f94d96a3b8ea4137df61be/members/user_be84ca8d4f04798f519eef647341b197",
+      "status": 200,
+      "ms": 98
+    },
+    {
+      "actor": 0,
+      "method": "GET",
+      "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/members",
+      "status": 200,
+      "ms": 89
+    }
+  ],
+  "failures": [
+    {
+      "name": "owned_native_result_0",
+      "ms": 26586,
+      "type": "Error",
+      "message": "timed out waiting for: [...document.querySelectorAll(\"button\")].some(b=>b.textContent.includes(\"Confirm mapping\"))"
+    },
+    {
+      "name": "owned_native_result_0",
+      "ms": 26572,
+      "type": "Error",
+      "message": "timed out waiting for: [...document.querySelectorAll(\"button\")].some(b=>b.textContent.includes(\"Confirm mapping\"))"
+    },
+    {
+      "name": "invite_wrong_account_revoked_and_replay",
+      "ms": 205,
+      "type": "AssertionError",
+      "message": "POST /v1/invitations/accept: invitation_unavailable\n\n404 !== 409\n"
+    },
+    {
+      "name": "last_owner_cannot_leave",
+      "ms": 116,
+      "type": "AssertionError",
+      "message": "Expected values to be strictly equal:\n\n403 !== 409\n"
+    },
+    {
+      "name": "role_matrix_reviewer",
+      "ms": 1528,
+      "type": "AssertionError",
+      "message": "Expected values to be strictly equal:\n\n404 !== 403\n"
+    },
+    {
+      "name": "membership_revoke_no_workspace_preserves_session_and_clears_view",
+      "ms": 4785,
+      "type": "AssertionError",
+      "message": "GET /v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/results/p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e/header: not_found\n\n404 !== 403\n"
+    },
+    {
+      "name": "owner_transfer_vs_self_leave_preserves_one_owner",
+      "ms": 94,
+      "type": "Error",
+      "message": "connect ECONNREFUSED 127.0.0.1:18876"
+    },
+    {
+      "name": "owner_transfer_vs_self_leave_preserves_one_owner",
+      "ms": 158,
+      "type": "Error",
+      "message": "Client network socket disconnected before secure TLS connection was established"
+    },
+    {
+      "name": "owner_transfer_vs_self_leave_preserves_one_owner",
+      "ms": 80,
+      "type": "Error",
+      "message": "Client network socket disconnected before secure TLS connection was established"
+    },
+    {
+      "name": "owner_transfer_vs_self_leave_preserves_one_owner",
+      "ms": 91,
+      "type": "AssertionError",
+      "message": "POST /v1/workspaces: session_expired\n\n401 !== 201\n"
+    },
+    {
+      "name": "owner_transfer_vs_self_leave_preserves_one_owner",
+      "ms": 790,
+      "type": "AssertionError",
+      "message": "The expression evaluated to a falsy value:\n\n  assert.ok([200,403].includes(leave.status))\n"
+    },
+    {
+      "name": "real_idp_logout_then_other_account_drops_draft_and_old_route",
+      "ms": 4010,
+      "type": "Error",
+      "message": "TypeError: Cannot read properties of null (reading 'innerText')\n    at <anonymous>:1:63"
+    },
+    {
+      "name": "real_followup_running_then_membership_revoke_fences_publication_and_ui",
+      "ms": 6553,
+      "type": "Error",
+      "message": "SyntaxError: missing ) after argument list"
+    },
+    {
+      "name": "real_followup_running_then_membership_revoke_fences_publication_and_ui",
+      "ms": 8421,
+      "type": "AssertionError",
+      "message": "real worker must claim the follow-up before revocation\n+ actual - expected\n\n+ undefined\n- 'running'\n"
+    },
+    {
+      "name": "real_followup_running_then_membership_revoke_fences_publication_and_ui",
+      "ms": 7751,
+      "type": "AssertionError",
+      "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'authorization'\n"
+    },
+    {
+      "name": "foreign_deep_link_mutation_observer_zero_private_title_flashes",
+      "ms": 4987,
+      "type": "Error",
+      "message": "TypeError: Cannot read properties of undefined (reading 'length')\n    at <anonymous>:1:28"
+    },
+    {
+      "name": "download_response_held_before_membership_revoke_never_starts_browser_download",
+      "ms": 10123,
+      "type": "AssertionError",
+      "message": "Expected values to be strictly equal:\n\n2 !== 0\n"
+    },
+    {
+      "name": "download_response_held_before_membership_revoke_never_starts_browser_download",
+      "ms": 9536,
+      "type": "AssertionError",
+      "message": "Expected values to be strictly equal:\n\n2 !== 0\n"
+    }
+  ],
+  "status": "stage5_pass",
+  "fixture_session_refreshes": [
+    {
+      "actor": 0,
+      "at": "2026-11-16T03:28:36.547Z",
+      "reason": "expired after Docker interruption"
+    },
+    {
+      "actor": 1,
+      "at": "2026-11-16T03:28:47.221Z",
+      "reason": "expired after Docker interruption"
+    },
+    {
+      "actor": 2,
+      "at": "2026-11-16T03:30:03.208Z",
+      "reason": "expired after Docker interruption"
+    },
+    {
+      "actor": 3,
+      "at": "2026-11-16T03:30:07.540Z",
+      "reason": "expired after Docker interruption"
+    },
+    {
+      "actor": 5,
+      "at": "2026-11-16T03:30:11.775Z",
+      "reason": "expired after Docker interruption"
+    },
+    {
+      "actor": 0,
+      "at": "2026-11-16T03:32:22.281Z",
+      "reason": "expired after Docker interruption"
+    },
+    {
+      "actor": 3,
+      "at": "2026-11-16T03:32:25.858Z",
+      "reason": "expired after Docker interruption"
+    },
+    {
+      "actor": 0,
+      "at": "2026-11-16T03:38:20.755Z",
+      "reason": "401 in fixture preflight; acquired a fresh real OIDC session"
+    },
+    {
+      "actor": 1,
+      "at": "2026-11-16T03:44:04.462Z",
+      "reason": "401 in fixture preflight; acquired a fresh real OIDC session"
+    },
+    {
+      "actor": 4,
+      "at": "2026-11-16T03:44:33.134Z",
+      "reason": "401 in fixture preflight; acquired a fresh real OIDC session"
+    },
+    {
+      "actor": 2,
+      "at": "2026-11-16T03:49:34.258Z",
+      "reason": "expired after Docker interruption"
+    },
+    {
+      "actor": 3,
+      "at": "2026-11-16T03:49:37.522Z",
+      "reason": "expired after Docker interruption"
+    },
+    {
+      "actor": 5,
+      "at": "2026-11-16T03:49:40.321Z",
+      "reason": "expired after Docker interruption"
+    },
+    {
+      "actor": 0,
+      "at": "2026-11-16T03:55:14.270Z",
+      "reason": "401 in fixture preflight; acquired a fresh real OIDC session"
+    }
+  ],
+  "invalidated_cases": [
+    {
+      "name": "late_result_success_after_workspace_switch_is_discarded",
+      "status": "disqualified_harness_auto_continued_response",
+      "ms": 5618,
+      "held_actual_status": 200,
+      "release_cancelled": true,
+      "current_workspace": "ws_a754dc275d52451cb990f472cfd232a6",
+      "old_title_visible": false,
+      "method": "hold actual response at CDP transport boundary; no backend stub",
+      "reason": "Custom Fetch observer coexisted with automatic continueRequest; response was not held as intended."
+    },
+    {
+      "name": "late_session_revoked_after_workspace_switch_is_ignored",
+      "status": "disqualified_harness_auto_continued_response",
+      "ms": 5375,
+      "controlled_late_status": 401,
+      "code": "session_revoked",
+      "old_request_cancelled": true,
+      "current_workspace": "ws_a754dc275d52451cb990f472cfd232a6",
+      "classification": "synthetic late refusal at transport boundary; real current workspace/result",
+      "reason": "Custom Fetch observer coexisted with automatic continueRequest; response was not held as intended."
+    },
+    {
+      "name": "late_membership_revoked_after_workspace_switch_is_ignored",
+      "status": "disqualified_harness_auto_continued_response",
+      "ms": 4680,
+      "controlled_late_status": 403,
+      "code": "membership_revoked",
+      "old_request_cancelled": true,
+      "current_workspace": "ws_a754dc275d52451cb990f472cfd232a6",
+      "classification": "synthetic late refusal at transport boundary; real current workspace/result",
+      "reason": "Custom Fetch observer coexisted with automatic continueRequest; response was not held as intended."
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+diff --git a/dashboard/web/src/service/hosted-bootstrap.ts b/dashboard/web/src/service/hosted-bootstrap.ts
+index 583a804..4fa796c 100644
+--- a/dashboard/web/src/service/hosted-bootstrap.ts
++++ b/dashboard/web/src/service/hosted-bootstrap.ts
+@@ -49,6 +49,13 @@ export function createHostedBootstrap(options: {
+     options.onClear();
+     publish({ status, session: null, workspace: null, error, generation: state.generation + 1, opening: null });
+   }
++  function dropWorkspace() {
++    controller.abort(); controller = new AbortController(); checking = null; watchedJob = null; watchedResult = null; jobReadAt = null; selecting++;
++    options.onClear();
++    publish({ workspace: null, generation: state.generation + 1, opening: null,
++      error: new ProductError("permission_denied", "This work is no longer available. Select a workspace to continue.") });
++    client = makeClient();
++  }
+   function makeClient() {
+     const generation = state.generation;
+     // A 2xx GET of the watched job (or its updates) from this generation is a read of that job's own scope.
+@@ -64,7 +71,11 @@ export function createHostedBootstrap(options: {
+     return createHostedClient({ fetch, session: state.session ?? undefined,
+       signal: controller.signal, isCurrent: () => current(generation), idpOrigin: options.idpOrigin,
+       // A session/capability answer alone cannot renew a result's authorization lease.
+-      onAnswer: (status, code) => { if (status >= 300) guard?.noteResponse(status, code); } });
++      onAnswer: (status, code) => {
++        // Membership revocation ends this scope, not the authenticated session or other tabs' workspaces.
++        if (code === "membership_revoked") dropWorkspace();
++        else if (status >= 300) guard?.noteResponse(status, code);
++      } });
+   }
+   function requireSession() {
+     if (!state.session || !alive) throw new HostedRequestDiscarded();
+@@ -102,16 +113,12 @@ export function createHostedBootstrap(options: {
+     const probe = createHostedClient({ fetch: options.fetch, session, signal: controller.signal,
+       isCurrent: () => current(generation), onAnswer: (status, code) => {
+         denied = status === 403 || status === 404;
+-        if (status >= 300) guard?.noteResponse(status, code);
++        if (status >= 300 && code !== "membership_revoked") guard?.noteResponse(status, code);
+       } });
+     try { await read(probe); }
+     catch (error) {
+       if (!denied || !current(generation)) throw error;
+-      controller.abort(); controller = new AbortController(); checking = null; watchedJob = null; watchedResult = null;
+-      options.onClear();
+-      state = { ...state, workspace: null, generation: state.generation + 1, opening: null,
+-        error: new ProductError("permission_denied", "This work is no longer available. Select a workspace to continue.") };
+-      client = makeClient(); publish({});
++      dropWorkspace();
+     }
+   }
+   /* The result on screen is confirmed by its own bounded header (Kiên, 13/11). A server without it is never
+@@ -151,6 +158,9 @@ export function createHostedBootstrap(options: {
+           }
+           return { status: "ok", context_id: next.context_id, ...(polled !== null ? { since: polled } : {}) };
+         } catch (error) {
++          if (error instanceof HostedRequestDiscarded && state.session && !state.workspace && state.error?.code === "permission_denied") {
++            return { status: "ok", context_id: state.session.context_id };
++          }
+           if (error instanceof ProductError && error.code === "session_expired") return { status: "expired" };
+           if (error instanceof ProductError && ["session_revoked", "membership_revoked"].includes(error.code)) return { status: "revoked" };
+           return { status: "unreachable" };
+@@ -223,7 +233,8 @@ export function createHostedBootstrap(options: {
+     isCurrent: (generation: number) => current(generation),
+     authError(error: ProductError) {
+       if (error.code === "session_expired") guard?.noteResponse(401, error.code);
+-      else if (["session_revoked", "membership_revoked"].includes(error.code)) clear();
++      else if (error.code === "membership_revoked") dropWorkspace();
++      else if (error.code === "session_revoked") clear();
+     },
+     async renew() { const generation = state.generation; const next = await client.renew(); if (current(generation)) applySession(next); },
+     async logout(all = false) {
+diff --git a/dashboard/web/tests/hosted-bootstrap.test.mjs b/dashboard/web/tests/hosted-bootstrap.test.mjs
+index f6066d7..92dfc4a 100644
+--- a/dashboard/web/tests/hosted-bootstrap.test.mjs
++++ b/dashboard/web/tests/hosted-bootstrap.test.mjs
+@@ -112,7 +112,7 @@ test("visible private views cover at the hosted confirmation lease even with a c
+ test("known revocation clears workspace/session; successful logout broadcasts no private content", async () => {
+   let revoked = false;
+   const h = system(url => url === "/v1/session" ? json(session()) : url === "/v1/auth/logout"
+-    ? json({ logout_url: null }) : revoked ? problem("membership_revoked", 403) : json(caps("w")));
++    ? json({ logout_url: null }) : revoked ? problem("session_revoked", 401) : json(caps("w")));
+   await h.boot.start(); await h.boot.selectWorkspace("w"); revoked = true;
+   await assert.rejects(h.boot.refreshCapabilities("w"));
+   assert.equal(h.boot.snapshot().session, null); assert.equal(h.boot.snapshot().workspace, null);
+@@ -129,15 +129,40 @@ test("stopping an unresolved bootstrap prevents its late session from becoming v
+   assert.equal(h.boot.snapshot().session, null);
+ });
+ 
+-test("the hosted guard rechecks the selected workspace and wipes a revoked membership", async () => {
++test("the hosted guard drops revoked workspace scope while retaining its valid session", async () => {
+   let revoked = false;
+   const h = system(url => url === "/v1/session" ? json(session())
+     : revoked ? problem("membership_revoked", 403) : json(caps("w")));
+   await h.boot.start(); await h.boot.selectWorkspace("w");
+   const guard = h.boot.guard(); revoked = true;
+   await guard.check(true);
+-  assert.equal(guard.state(), "revoked");
+-  assert.equal(h.boot.snapshot().session, null); assert.equal(h.boot.snapshot().workspace, null);
++  assert.equal(guard.state(), "active");
++  assert.equal(h.boot.snapshot().session.user_id, "actor"); assert.equal(h.boot.snapshot().workspace, null);
++  assert.equal(h.messages.some(message => message.type === "revoked"), false);
++  h.boot.stop();
++});
++
++test("J02 membership loss fences late reads and allows another workspace without signing in again", async () => {
++  let revoked = false, release;
++  const h = system(url => url === "/v1/session" ? json(session())
++    : url.endsWith("/jobs/late") ? new Promise(done => { release = done; })
++    : url.includes("/w/") && revoked ? problem("membership_revoked", 403)
++    : json(caps(url.includes("/other/") ? "other" : "w")));
++  await h.boot.start(); await h.boot.selectWorkspace("w");
++  const generation = h.boot.snapshot().generation;
++  const late = h.boot.client().loadJob("w", "late");
++  const discarded = assert.rejects(late, error => error.name === "HostedRequestDiscarded");
++  revoked = true;
++  await assert.rejects(h.boot.refreshCapabilities("w"));
++  assert.equal(h.boot.isCurrent(generation), false);
++  assert.equal(h.boot.snapshot().status, "ready");
++  assert.equal(h.boot.snapshot().session.user_id, "actor");
++  assert.equal(h.boot.snapshot().workspace, null);
++  assert.equal(h.messages.some(message => message.type === "revoked"), false);
++  release(json({ schema_version: VERSION, workspace_id: "w", job_id: "late", status: "succeeded", progress: null }));
++  await discarded;
++  await h.boot.selectWorkspace("other");
++  assert.equal(h.boot.snapshot().workspace.workspace_id, "other");
+   h.boot.stop();
+ });
+ 
