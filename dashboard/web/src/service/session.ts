@@ -90,6 +90,11 @@ export function createSessionGuard(options: {
     lastConfirmed = Math.max(lastConfirmed, sentAt);
     failures = 0;
     interval = spread(nextInterval());
+    if (lease !== Infinity) {
+      // Start early enough for another check of comparable duration, with room for timer jitter.
+      const elapsed = options.now() - lastConfirmed;
+      interval = Math.min(interval, Math.max(lease * 0.5, lease - elapsed - 750));
+    }
   };
 
   /** Wiping happens once, before anything else can render or read. */

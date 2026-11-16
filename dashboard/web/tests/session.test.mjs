@@ -270,6 +270,20 @@ test("K2 an answer that arrives after the lease it would grant has run out leave
   assert.equal(guard.due(true), true, "and the next check is due at once");
 });
 
+test("a slow hosted check moves the next check forward without changing the lease", async () => {
+  const { guard, clock, answer } = leased();
+  const checking = guard.check(false);
+  clock.t += 1200; answer(); await checking;
+  clock.t += 849;
+  assert.equal(guard.due(true), false);
+  clock.t++;
+  assert.equal(guard.due(true), true);
+  const rechecking = guard.check(false);
+  clock.t += 1200; answer(); await rechecking;
+  guard.onTick(true);
+  assert.equal(guard.state(), "active");
+});
+
 test("K3 under a lease a successful API answer is not a confirmation: when it was sent is unknown", () => {
   const { guard, clock } = leased();
   clock.t += 3_900; guard.noteResponse(200, null);
