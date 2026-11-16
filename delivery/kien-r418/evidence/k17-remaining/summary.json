@@ -1,0 +1,2275 @@
+{
+  "generated_utc": "2026-11-15T11:33:53.304002+00:00",
+  "head": "fa46dd8cbb2239c6f116456894a2009b45846245",
+  "technical_scope": "K17 supplementary correctness, lifecycle and bounded native calibration",
+  "primary_closed": 0,
+  "primary_total": 6,
+  "primary_campaign_passed": false,
+  "git_committed": false,
+  "git_pushed": false,
+  "staging_image": "sha256:35ab7a8638b1f3ef7134bfeb87a4bbb6aac0a0101d74857cdaabafee251b8add",
+  "runtime_identity": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529",
+  "dataset_identity": "338fe87203fda77ac389998577dfbcac07d74e2354643c48feadb765826ca1ec",
+  "pilot_logical_counts": {
+    "principals": 30,
+    "workspaces": 2,
+    "projects": 6,
+    "snapshots": 6,
+    "results": 6,
+    "sources": 6,
+    "projections": 6,
+    "upload_projections": 6
+  },
+  "physical_strata": {
+    "S": {
+      "projects": 2,
+      "source_rows_per_generation": 1000,
+      "metric_series_per_run": 1,
+      "actual_claims_per_result": 2,
+      "actual_graph_nodes_per_result": 6,
+      "actual_graph_edges_per_result": 6,
+      "minimum_source_zip_bytes": 41265,
+      "maximum_source_zip_bytes": 41268,
+      "minimum_result_json_bytes": 8996,
+      "maximum_result_json_bytes": 8996
+    },
+    "M": {
+      "projects": 2,
+      "source_rows_per_generation": 10000,
+      "metric_series_per_run": 8,
+      "actual_claims_per_result": 16,
+      "actual_graph_nodes_per_result": 34,
+      "actual_graph_edges_per_result": 48,
+      "minimum_source_zip_bytes": 406149,
+      "maximum_source_zip_bytes": 406166,
+      "minimum_result_json_bytes": 50261,
+      "maximum_result_json_bytes": 50261
+    },
+    "L": {
+      "projects": 2,
+      "source_rows_per_generation": 100000,
+      "metric_series_per_run": 32,
+      "actual_claims_per_result": 64,
+      "actual_graph_nodes_per_result": 130,
+      "actual_graph_edges_per_result": 192,
+      "minimum_source_zip_bytes": 4083047,
+      "maximum_source_zip_bytes": 4083355,
+      "minimum_result_json_bytes": 191847,
+      "maximum_result_json_bytes": 191847
+    }
+  },
+  "lifecycle": {
+    "imports-03": {
+      "status": "passed_dedicated_https",
+      "phase": "imports",
+      "primary_campaign_passed": false,
+      "elapsed_seconds": 62.879704545000095,
+      "request_count": 215,
+      "http_statuses": {
+        "201": 18,
+        "200": 182,
+        "202": 15
+      },
+      "cases": [
+        {
+          "operation": "P31",
+          "cancelled_upload_readback": true,
+          "source_published": false
+        },
+        {
+          "operation": "P06/P29/P30",
+          "bytes": 41259,
+          "parts": 1,
+          "sha256": "da1e9b0731ec23e474f58ec0e94c6e2a683d1996f1e990b45a24bed2fcad4d77",
+          "ready": true,
+          "resumed_in_new_client": true,
+          "duplicate_part_and_completion_preserved": true
+        },
+        {
+          "operation": "P06/P29/P30",
+          "bytes": 41251,
+          "parts": 1,
+          "sha256": "bbfcc41e18a837aa0096f3e50e570ba1f15b22531f90bdd79c201afadea6dacf",
+          "ready": true,
+          "resumed_in_new_client": true,
+          "duplicate_part_and_completion_preserved": true
+        },
+        {
+          "operation": "P09/P10/P25/P35",
+          "size": "S",
+          "confirm_seconds": 2.2688590210000257,
+          "refresh_seconds": 2.3418618250007057,
+          "confirm_replay_same_job": true,
+          "refresh_noop_and_new_snapshot": true,
+          "renamed_and_tombstoned": true
+        },
+        {
+          "operation": "P31",
+          "cancelled_upload_readback": true,
+          "source_published": false
+        },
+        {
+          "operation": "P06/P29/P30",
+          "bytes": 406343,
+          "parts": 4,
+          "sha256": "4c89b26d1907120851b8cc8d1711ddb8bbf688b6433164c68dcc4e17b5a8f9b2",
+          "ready": true,
+          "resumed_in_new_client": true,
+          "duplicate_part_and_completion_preserved": true
+        },
+        {
+          "operation": "P06/P29/P30",
+          "bytes": 406162,
+          "parts": 4,
+          "sha256": "f497b355878a291e307d39f02df65c9a47d5b4fd4505a961dd7afc1b1e9885fc",
+          "ready": true,
+          "resumed_in_new_client": true,
+          "duplicate_part_and_completion_preserved": true
+        },
+        {
+          "operation": "P09/P10/P25/P35",
+          "size": "M",
+          "confirm_seconds": 2.2387154609996287,
+          "refresh_seconds": 2.3177090299996053,
+          "confirm_replay_same_job": true,
+          "refresh_noop_and_new_snapshot": true,
+          "renamed_and_tombstoned": true
+        },
+        {
+          "operation": "P31",
+          "cancelled_upload_readback": true,
+          "source_published": false
+        },
+        {
+          "operation": "P06/P29/P30",
+          "bytes": 4083509,
+          "parts": 32,
+          "sha256": "c8427c5d2e0f270b6d8dc27821157501799ef0374b32b5a90ec24acde7ce1f12",
+          "ready": true,
+          "resumed_in_new_client": true,
+          "duplicate_part_and_completion_preserved": true
+        },
+        {
+          "operation": "P06/P29/P30",
+          "bytes": 4083666,
+          "parts": 32,
+          "sha256": "f33631b16fcd7bf3168660f3d25e498722baf3119d8548aaf2e842db1a701939",
+          "ready": true,
+          "resumed_in_new_client": true,
+          "duplicate_part_and_completion_preserved": true
+        },
+        {
+          "operation": "P09/P10/P25/P35",
+          "size": "L",
+          "confirm_seconds": 7.211958509999931,
+          "refresh_seconds": 6.548549158000242,
+          "confirm_replay_same_job": true,
+          "refresh_noop_and_new_snapshot": true,
+          "renamed_and_tombstoned": true
+        }
+      ],
+      "background_reads": {
+        "count": 270,
+        "mean_ms": 127.44202349633134,
+        "p95_observed_ms": 199.7799800001303,
+        "max_ms": 1710.502371000075
+      },
+      "runtime_identity": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529"
+    },
+    "delete-integrity-02": {
+      "status": "passed_dedicated_https",
+      "phase": "delete_integrity",
+      "primary_campaign_passed": false,
+      "real_oidc_preflight": {
+        "principals": 2,
+        "seconds": 1.3441613249997317,
+        "separate_from_business_requests": true
+      },
+      "elapsed_seconds": 17.221421835999536,
+      "request_count": 55,
+      "http_statuses": {
+        "201": 7,
+        "200": 40,
+        "202": 6,
+        "404": 2
+      },
+      "cases": [
+        {
+          "operation": "P31",
+          "cancelled_upload_readback": true,
+          "source_published": false
+        },
+        {
+          "operation": "P06/P29/P30",
+          "bytes": 41285,
+          "parts": 1,
+          "sha256": "4ba1f16332cfef35ff560813e2b90c887da3f52c33673c531d4f61e8c850c289",
+          "ready": true,
+          "resumed_in_new_client": true,
+          "duplicate_part_and_completion_preserved": true
+        },
+        {
+          "operation": "P06/P29/P30",
+          "bytes": 41215,
+          "parts": 1,
+          "sha256": "11daf6f554b5c6378cd0649e9fa07d9b1b028cfb6c2a5827c9498dff5177e3bb",
+          "ready": true,
+          "resumed_in_new_client": true,
+          "duplicate_part_and_completion_preserved": true
+        },
+        {
+          "operation": "P09/P10/P25/P35",
+          "size": "S",
+          "confirm_seconds": 2.2755763639997895,
+          "refresh_seconds": 2.262596978000147,
+          "confirm_replay_same_job": true,
+          "refresh_noop_and_new_snapshot": true,
+          "renamed_and_tombstoned": true,
+          "old_result_and_verified_export_denied_after_delete": true
+        }
+      ],
+      "background_reads": {
+        "count": 75,
+        "mean_ms": 110.92493486669507,
+        "p95_observed_ms": 165.3790439995646,
+        "max_ms": 193.03866400059633
+      },
+      "runtime_identity": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529"
+    },
+    "management-01": {
+      "status": "failed",
+      "phase": "management",
+      "primary_campaign_passed": false,
+      "elapsed_seconds": 3.714559356999416,
+      "request_count": 11,
+      "http_statuses": {
+        "200": 8,
+        "201": 1,
+        "403": 1,
+        "204": 1
+      },
+      "cases": [
+        {
+          "operation": "P28/P36/P38",
+          "settings_readback_and_restored": true,
+          "invitation_accepted": true,
+          "membership_revoke_observed_ms": 149.24007099943992
+        }
+      ],
+      "background_reads": {
+        "count": 17,
+        "mean_ms": 111.12056058813965,
+        "p95_observed_ms": 189.2234090000784,
+        "max_ms": 189.2234090000784
+      },
+      "runtime_identity": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529"
+    },
+    "logout-01": {
+      "status": "passed_dedicated_https",
+      "phase": "logout",
+      "primary_campaign_passed": false,
+      "elapsed_seconds": 0.9076388780003981,
+      "request_count": 3,
+      "http_statuses": {
+        "200": 1,
+        "204": 1,
+        "401": 1
+      },
+      "cases": [
+        {
+          "operation": "P02",
+          "real_oidc": true,
+          "context_id": "ctx_uNgBrC4niP_mmwQtuYMCLuC5KKfGuOph0sygLhfNFfA",
+          "old_session_denied": true
+        }
+      ],
+      "background_reads": {
+        "count": 4,
+        "mean_ms": 110.63604175001274,
+        "p95_observed_ms": 115.68573200020182,
+        "max_ms": 115.68573200020182
+      },
+      "runtime_identity": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529"
+    },
+    "cancel-02": {
+      "status": "passed_dedicated_https",
+      "phase": "cancel",
+      "primary_campaign_passed": false,
+      "elapsed_seconds": 0.5174191100004464,
+      "request_count": 4,
+      "http_statuses": {
+        "202": 1,
+        "200": 2,
+        "404": 1
+      },
+      "cases": [
+        {
+          "operation": "P21",
+          "job_id": "job_66e26e369cde42b9a724a5233c5f7bc8",
+          "status": "cancelled",
+          "output_denied": 404
+        }
+      ],
+      "background_reads": {
+        "count": 2,
+        "mean_ms": 109.48844850008754,
+        "p95_observed_ms": 124.07866400008061,
+        "max_ms": 124.07866400008061
+      },
+      "runtime_identity": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529"
+    }
+  },
+  "native": {
+    "native-faults-01": {
+      "status": "passed",
+      "mode": "faults",
+      "primary_pass": false,
+      "exit_code": 0,
+      "oom": false,
+      "elapsed_seconds": 27.717999999999847,
+      "inputs_unchanged": true,
+      "git_sha": "fa46dd8cbb2239c6f116456894a2009b45846245",
+      "test_image": "sha256:6aed97ec4d6691527a72667ecdac67e4964ddcd6c1e4077aab9d8073a249b797",
+      "test_outcomes": {
+        "passed": 2
+      },
+      "elapsed_pytest_seconds": 6.301
+    },
+    "native-remaining-01": {
+      "status": "failed",
+      "mode": "remaining",
+      "primary_pass": false,
+      "exit_code": 1,
+      "oom": false,
+      "elapsed_seconds": 57.67199999999957,
+      "inputs_unchanged": true,
+      "git_sha": "fa46dd8cbb2239c6f116456894a2009b45846245",
+      "test_image": "sha256:6aed97ec4d6691527a72667ecdac67e4964ddcd6c1e4077aab9d8073a249b797",
+      "test_outcomes": {
+        "passed": 62,
+        "failed": 2
+      },
+      "elapsed_pytest_seconds": 32.073
+    },
+    "native-cli-02": {
+      "status": "passed",
+      "mode": "cli",
+      "primary_pass": false,
+      "exit_code": 0,
+      "oom": false,
+      "elapsed_seconds": 20.20299999999952,
+      "inputs_unchanged": true,
+      "git_sha": "fa46dd8cbb2239c6f116456894a2009b45846245",
+      "test_image": "sha256:6aed97ec4d6691527a72667ecdac67e4964ddcd6c1e4077aab9d8073a249b797",
+      "test_outcomes": {
+        "passed": 2
+      },
+      "elapsed_pytest_seconds": 0.465
+    }
+  },
+  "calibration": {
+    "native-open-02": {
+      "correctness_test_exit_code": 0,
+      "business_slo_passed": false,
+      "measured_positive": {
+        "offered": 782,
+        "correct_by_deadline": 729,
+        "success_fraction": 0.9322250639386189,
+        "observed_subset_success_target_met": false
+      },
+      "counts": {
+        "planned": 900,
+        "offered": 900,
+        "warmup_offered": 100,
+        "started": 900,
+        "sent": 897,
+        "admitted": 825,
+        "terminal": 900,
+        "completed": 822,
+        "denied": 20,
+        "jobs_admitted": 42,
+        "exports_verified": 37,
+        "unknown_mutations": 49,
+        "rejected": 49,
+        "jobs_terminal": 40,
+        "job_succeeded": 40,
+        "measured_offered": 800,
+        "timeout": 9,
+        "pending": 0
+      },
+      "http": {
+        "requests": 1263,
+        "status_200": 1110,
+        "response_body_bytes": 4792210,
+        "response_completed": 1259,
+        "response_duration_microseconds": 348449850,
+        "request_body_bytes": 11746,
+        "status_404": 20,
+        "status_202": 42,
+        "job_poll_snapshot": 44,
+        "status_201": 37,
+        "status_503": 49,
+        "job_poll_resync": 46,
+        "status_400": 1,
+        "catalog_page_restarts": 1
+      },
+      "reconciliation": {
+        "offered_equals_terminal_plus_pending": true,
+        "planned_equals_offered_plus_not_offered": true,
+        "terminal_outcomes": 900,
+        "terminal_outcomes_match": true
+      },
+      "principal_count": 100,
+      "profile": {
+        "schema_version": "k17-capacity-profile/v1",
+        "target": "https://127.0.0.1:47861",
+        "origin": "https://app.example.invalid",
+        "host": "app.example.invalid",
+        "tls_ca_file": "/tmp/k17test/test_actual_tls_100_principal_0/test-cert.pem",
+        "release_sha256": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529",
+        "dataset_sha256": "1c4317d478b775b5b010d60b4a3e39baa49b5f7ff66879d119af2a0180c006d4",
+        "seed": 170013,
+        "shard_index": 0,
+        "shard_count": 1,
+        "mode": "open",
+        "duration_seconds": 40.0,
+        "warmup_seconds": 5.0,
+        "drain_seconds": 120.0,
+        "arrivals_per_second": 20.0,
+        "max_inflight": 32,
+        "max_pending": 128,
+        "max_response_bytes": 33554432,
+        "poll_seconds": 2.0,
+        "job_polling": "updates",
+        "renew_every_seconds": 300.0,
+        "think_seconds": 5.0,
+        "jitter_fraction": 0.2,
+        "active_window_seconds": 30,
+        "size_weights": {
+          "S": 60,
+          "M": 35,
+          "L": 5
+        },
+        "journeys": [
+          {
+            "name": "result_header",
+            "weight": 40,
+            "roles": [
+              "owner",
+              "admin",
+              "analyst",
+              "reviewer",
+              "viewer"
+            ],
+            "sizes": [
+              "S",
+              "M",
+              "L"
+            ],
+            "deadline_seconds": 0.5,
+            "size_budgets": {
+              "S": {
+                "deadline_seconds": 0.5,
+                "p95_seconds": 0.2,
+                "p99_seconds": 0.5
+              },
+              "M": {
+                "deadline_seconds": 0.5,
+                "p95_seconds": 0.2,
+                "p99_seconds": 0.5
+              },
+              "L": {
+                "deadline_seconds": 0.5,
+                "p95_seconds": 0.2,
+                "p99_seconds": 0.5
+              }
+            },
+            "expected": "positive",
+            "steps": [
+              {
+                "method": "GET",
+                "path": "/v1/workspaces/{workspace_id}/results/{result_id}/header",
+                "statuses": [
+                  200
+                ],
+                "body": null,
+                "headers": {},
+                "assertions": [
+                  {
+                    "pointer": "/workspace_id",
+                    "check": "equals",
+                    "value": "$workspace_id"
+                  },
+                  {
+                    "pointer": "/project_id",
+                    "check": "equals",
+                    "value": "$project_id"
+                  },
+                  {
+                    "pointer": "/result_id",
+                    "check": "equals",
+                    "value": "$result_id"
+                  },
+                  {
+                    "pointer": "/snapshot_id",
+                    "check": "equals",
+                    "value": "$snapshot_id"
+                  }
+                ],
+                "captures": {},
+                "follow_job": false,
+                "download_descriptor": false,
+                "operation_id": "P15"
+              }
+            ]
+          },
+          {
+            "name": "claim_citation",
+            "weight": 20,
+            "roles": [
+              "owner",
+              "admin",
+              "analyst",
+              "reviewer",
+              "viewer"
+            ],
+            "sizes": [
+              "S",
+              "M",
+              "L"
+            ],
+            "deadline_seconds": 1.5,
+            "size_budgets": {
+              "S": {
+                "deadline_seconds": 1.5,
+                "p95_seconds": 0.7,
+                "p99_seconds": 1.5
+              },
+              "M": {
+                "deadline_seconds": 1.5,
+                "p95_seconds": 0.7,
+                "p99_seconds": 1.5
+              },
+              "L": {
+                "deadline_seconds": 1.5,
+                "p95_seconds": 0.7,
+                "p99_seconds": 1.5
+              }
+            },
+            "expected": "positive",
+            "steps": [
+              {
+                "method": "GET",
+                "path": "/v1/workspaces/{workspace_id}/results/{result_id}/claims?limit=50",
+                "statuses": [
+                  200
+                ],
+                "body": null,
+                "headers": {},
+                "assertions": [
+                  {
+                    "pointer": "/workspace_id",
+                    "check": "equals",
+                    "value": "$workspace_id"
+                  },
+                  {
+                    "pointer": "/project_id",
+                    "check": "equals",
+                    "value": "$project_id"
+                  },
+                  {
+                    "pointer": "/result_id",
+                    "check": "equals",
+                    "value": "$result_id"
+                  },
+                  {
+                    "pointer": "/items",
+                    "check": "nonempty",
+                    "value": null
+                  },
+                  {
+                    "pointer": "/items",
+                    "check": "length_le",
+                    "value": 50
+                  }
+                ],
+                "captures": {
+                  "selected_claim": "/items/0/id",
+                  "selected_evidence": "/items/0/citation_ids/0"
+                },
+                "follow_job": false,
+                "download_descriptor": false,
+                "operation_id": "P16"
+              },
+              {
+                "method": "GET",
+                "path": "/v1/workspaces/{workspace_id}/results/{result_id}/evidence/{selected_evidence}?claim_id={selected_claim}",
+                "statuses": [
+                  200
+                ],
+                "body": null,
+                "headers": {},
+                "assertions": [
+                  {
+                    "pointer": "/workspace_id",
+                    "check": "equals",
+                    "value": "$workspace_id"
+                  },
+                  {
+                    "pointer": "/project_id",
+                    "check": "equals",
+                    "value": "$project_id"
+                  },
+                  {
+                    "pointer": "/result_id",
+                    "check": "equals",
+                    "value": "$result_id"
+                  },
+                  {
+                    "pointer": "/claim_id",
+                    "check": "equals",
+                    "value": "$selected_claim"
+                  },
+                  {
+                    "pointer": "/evidence_id",
+                    "check": "equals",
+                    "value": "$selected_evidence"
+                  },
+                  {
+                    "pointer": "/relation",
+                    "check": "equals",
+                    "value": "citation"
+                  },
+                  {
+                    "pointer": "/evidence/text",
+                    "check": "nonempty",
+                    "value": null
+                  }
+                ],
+                "captures": {},
+                "follow_job": false,
+                "download_descriptor": false,
+                "operation_id": "P17"
+              }
+            ]
+          },
+          {
+            "name": "project_current",
+            "weight": 10,
+            "roles": [
+              "owner",
+              "admin",
+              "analyst",
+              "reviewer",
+              "viewer"
+            ],
+            "sizes": [
+              "S",
+              "M",
+              "L"
+            ],
+            "deadline_seconds": 0.5,
+            "size_budgets": {
+              "S": {
+                "deadline_seconds": 0.5,
+                "p95_seconds": 0.2,
+                "p99_seconds": 0.5
+              },
+              "M": {
+                "deadline_seconds": 0.5,
+                "p95_seconds": 0.2,
+                "p99_seconds": 0.5
+              },
+              "L": {
+                "deadline_seconds": 0.5,
+                "p95_seconds": 0.2,
+                "p99_seconds": 0.5
+              }
+            },
+            "expected": "positive",
+            "steps": [
+              {
+                "method": "GET",
+                "path": "/v1/workspaces/{workspace_id}/projects/{project_id}",
+                "statuses": [
+                  200
+                ],
+                "body": null,
+                "headers": {},
+                "assertions": [
+                  {
+                    "pointer": "/workspace_id",
+                    "check": "equals",
+                    "value": "$workspace_id"
+                  },
+                  {
+                    "pointer": "/project_id",
+                    "check": "equals",
+                    "value": "$project_id"
+                  }
+                ],
+                "captures": {},
+                "follow_job": false,
+                "download_descriptor": false,
+                "operation_id": "P11"
+              }
+            ]
+          },
+          {
+            "name": "graph_page",
+            "weight": 10,
+            "roles": [
+              "owner",
+              "admin",
+              "analyst",
+              "reviewer",
+              "viewer"
+            ],
+            "sizes": [
+              "S",
+              "M",
+              "L"
+            ],
+            "deadline_seconds": 1.0,
+            "size_budgets": {
+              "S": {
+                "deadline_seconds": 1.0,
+                "p95_seconds": 0.4,
+                "p99_seconds": 1.0
+              },
+              "M": {
+                "deadline_seconds": 1.0,
+                "p95_seconds": 0.4,
+                "p99_seconds": 1.0
+              },
+              "L": {
+                "deadline_seconds": 1.0,
+                "p95_seconds": 0.4,
+                "p99_seconds": 1.0
+              }
+            },
+            "expected": "positive",
+            "steps": [
+              {
+                "method": "GET",
+                "path": "/v1/workspaces/{workspace_id}/results/{result_id}/graph?limit=100",
+                "statuses": [
+                  200
+                ],
+                "body": null,
+                "headers": {},
+                "assertions": [
+                  {
+                    "pointer": "/workspace_id",
+                    "check": "equals",
+                    "value": "$workspace_id"
+                  },
+                  {
+                    "pointer": "/project_id",
+                    "check": "equals",
+                    "value": "$project_id"
+                  },
+                  {
+                    "pointer": "/result_id",
+                    "check": "equals",
+                    "value": "$result_id"
+                  },
+                  {
+                    "pointer": "/graph/nodes",
+                    "check": "nonempty",
+                    "value": null
+                  },
+                  {
+                    "pointer": "/graph/nodes",
+                    "check": "length_le",
+                    "value": 100
+                  }
+                ],
+                "captures": {},
+                "follow_job": false,
+                "download_descriptor": false,
+                "operation_id": "P18"
+              }
+            ]
+          },
+          {
+            "name": "analysis_terminal",
+            "weight": 5,
+            "roles": [
+              "owner",
+              "admin",
+              "analyst"
+            ],
+            "sizes": [
+              "S",
+              "M",
+              "L"
+            ],
+            "deadline_seconds": 120.0,
+            "size_budgets": {
+              "S": {
+                "deadline_seconds": 5.0,
+                "p95_seconds": 2.0,
+                "p99_seconds": 5.0
+              },
+              "M": {
+                "deadline_seconds": 20.0,
+                "p95_seconds": 10.0,
+                "p99_seconds": 20.0
+              },
+              "L": {
+                "deadline_seconds": 120.0,
+                "p95_seconds": 60.0,
+                "p99_seconds": 120.0
+              }
+            },
+            "expected": "positive",
+            "steps": [
+              {
+                "method": "POST",
+                "path": "/v1/workspaces/{workspace_id}/jobs",
+                "statuses": [
+                  202
+                ],
+                "body": {
+                  "operation": "analyze",
+                  "snapshot_id": "$snapshot_id",
+                  "question": "$action_question"
+                },
+                "headers": {},
+                "assertions": [
+                  {
+                    "pointer": "/workspace_id",
+                    "check": "equals",
+                    "value": "$workspace_id"
+                  },
+                  {
+                    "pointer": "/operation",
+                    "check": "equals",
+                    "value": "analyze"
+                  },
+                  {
+                    "pointer": "/result/project/id",
+                    "check": "equals",
+                    "value": "$project_id"
+                  },
+                  {
+                    "pointer": "/result/snapshot/id",
+                    "check": "equals",
+                    "value": "$snapshot_id"
+                  },
+                  {
+                    "pointer": "/result/claims",
+                    "check": "nonempty",
+                    "value": null
+                  }
+                ],
+                "captures": {},
+                "follow_job": true,
+                "download_descriptor": false,
+                "operation_id": "P13"
+              }
+            ]
+          },
+          {
+            "name": "followup_terminal",
+            "weight": 3,
+            "roles": [
+              "owner",
+              "admin",
+              "analyst"
+            ],
+            "sizes": [
+              "S",
+              "M",
+              "L"
+            ],
+            "deadline_seconds": 120.0,
+            "size_budgets": {
+              "S": {
+                "deadline_seconds": 5.0,
+                "p95_seconds": 2.0,
+                "p99_seconds": 5.0
+              },
+              "M": {
+                "deadline_seconds": 20.0,
+                "p95_seconds": 10.0,
+                "p99_seconds": 20.0
+              },
+              "L": {
+                "deadline_seconds": 120.0,
+                "p95_seconds": 60.0,
+                "p99_seconds": 120.0
+              }
+            },
+            "expected": "positive",
+            "steps": [
+              {
+                "method": "GET",
+                "path": "/v1/workspaces/{workspace_id}/projects/{project_id}",
+                "statuses": [
+                  200
+                ],
+                "body": null,
+                "headers": {},
+                "assertions": [
+                  {
+                    "pointer": "/project_id",
+                    "check": "equals",
+                    "value": "$project_id"
+                  }
+                ],
+                "captures": {
+                  "project_revision": "/revision"
+                },
+                "follow_job": false,
+                "download_descriptor": false,
+                "operation_id": "P11"
+              },
+              {
+                "method": "POST",
+                "path": "/v1/workspaces/{workspace_id}/results/{result_id}/follow-ups",
+                "statuses": [
+                  202
+                ],
+                "body": {
+                  "schema_version": "product-api/v1-draft",
+                  "selection_kind": "claim",
+                  "selection_id": "$claim_id",
+                  "question": "$action_question"
+                },
+                "headers": {
+                  "if-match": "$project_revision"
+                },
+                "assertions": [
+                  {
+                    "pointer": "/workspace_id",
+                    "check": "equals",
+                    "value": "$workspace_id"
+                  },
+                  {
+                    "pointer": "/operation",
+                    "check": "equals",
+                    "value": "follow_up"
+                  },
+                  {
+                    "pointer": "/result/project_id",
+                    "check": "equals",
+                    "value": "$project_id"
+                  },
+                  {
+                    "pointer": "/result/snapshot_id",
+                    "check": "equals",
+                    "value": "$snapshot_id"
+                  },
+                  {
+                    "pointer": "/result/parent_result_id",
+                    "check": "equals",
+                    "value": "$result_id"
+                  },
+                  {
+                    "pointer": "/result/result_id",
+                    "check": "nonempty",
+                    "value": null
+                  }
+                ],
+                "captures": {},
+                "follow_job": true,
+                "download_descriptor": false,
+                "operation_id": "P19"
+              }
+            ]
+          },
+          {
+            "name": "export_whole_file",
+            "weight": 10,
+            "roles": [
+              "owner",
+              "admin",
+              "analyst",
+              "reviewer",
+              "viewer"
+            ],
+            "sizes": [
+              "S",
+              "M",
+              "L"
+            ],
+            "deadline_seconds": 10.0,
+            "size_budgets": {
+              "S": {
+                "deadline_seconds": 10.0,
+                "p95_seconds": 5.0,
+                "p99_seconds": 10.0
+              },
+              "M": {
+                "deadline_seconds": 10.0,
+                "p95_seconds": 5.0,
+                "p99_seconds": 10.0
+              },
+              "L": {
+                "deadline_seconds": 10.0,
+                "p95_seconds": 5.0,
+                "p99_seconds": 10.0
+              }
+            },
+            "expected": "positive",
+            "steps": [
+              {
+                "method": "POST",
+                "path": "/v1/workspaces/{workspace_id}/results/{result_id}/exports",
+                "statuses": [
+                  201
+                ],
+                "body": {
+                  "format": "json"
+                },
+                "headers": {},
+                "assertions": [
+                  {
+                    "pointer": "/workspace_id",
+                    "check": "equals",
+                    "value": "$workspace_id"
+                  },
+                  {
+                    "pointer": "/project_id",
+                    "check": "equals",
+                    "value": "$project_id"
+                  },
+                  {
+                    "pointer": "/result_id",
+                    "check": "equals",
+                    "value": "$result_id"
+                  }
+                ],
+                "captures": {},
+                "follow_job": false,
+                "download_descriptor": true,
+                "operation_id": "P23"
+              }
+            ]
+          },
+          {
+            "name": "foreign_result_denied",
+            "weight": 2,
+            "roles": [
+              "owner",
+              "admin",
+              "analyst",
+              "reviewer",
+              "viewer"
+            ],
+            "sizes": [
+              "S",
+              "M",
+              "L"
+            ],
+            "deadline_seconds": 0.5,
+            "size_budgets": {
+              "S": {
+                "deadline_seconds": 0.5,
+                "p95_seconds": 0.2,
+                "p99_seconds": 0.5
+              },
+              "M": {
+                "deadline_seconds": 0.5,
+                "p95_seconds": 0.2,
+                "p99_seconds": 0.5
+              },
+              "L": {
+                "deadline_seconds": 0.5,
+                "p95_seconds": 0.2,
+                "p99_seconds": 0.5
+              }
+            },
+            "expected": "deny",
+            "steps": [
+              {
+                "method": "GET",
+                "path": "/v1/workspaces/{foreign_workspace_id}/results/{foreign_result_id}/header",
+                "statuses": [
+                  404
+                ],
+                "body": null,
+                "headers": {},
+                "assertions": [
+                  {
+                    "pointer": "/code",
+                    "check": "equals",
+                    "value": "not_found"
+                  },
+                  {
+                    "pointer": "/type",
+                    "check": "equals",
+                    "value": "urn:aletheia:problem:not-found"
+                  },
+                  {
+                    "pointer": "/title",
+                    "check": "equals",
+                    "value": "Request could not be completed"
+                  },
+                  {
+                    "pointer": "/detail",
+                    "check": "equals",
+                    "value": "The requested resource is unavailable."
+                  }
+                ],
+                "captures": {},
+                "follow_job": false,
+                "download_descriptor": false,
+                "operation_id": "P15"
+              }
+            ]
+          }
+        ],
+        "operation_dispositions": {
+          "P01": "not_run",
+          "P02": "not_run",
+          "P03": "not_run",
+          "P04": "not_run",
+          "P05": "not_run",
+          "P06": "not_run",
+          "P07": "not_run",
+          "P08": "not_run",
+          "P09": "not_run",
+          "P10": "not_run",
+          "P11": "recipe",
+          "P12": "not_run",
+          "P13": "recipe",
+          "P14": "not_run",
+          "P15": "recipe",
+          "P16": "recipe",
+          "P17": "recipe",
+          "P18": "recipe",
+          "P19": "recipe",
+          "P20": "dedicated",
+          "P21": "not_run",
+          "P22": "not_run",
+          "P23": "recipe",
+          "P24": "dedicated",
+          "P25": "not_run",
+          "P26": "not_run",
+          "P27": "not_run",
+          "P28": "not_run",
+          "P29": "not_run",
+          "P30": "not_run",
+          "P31": "not_run",
+          "P32": "not_run",
+          "P33": "not_run",
+          "P34": "not_run",
+          "P35": "not_run",
+          "P36": "not_run",
+          "P37": "not_run",
+          "P38": "not_run"
+        },
+        "scope": "calibration",
+        "cache_state": "unknown",
+        "run_label": "native100"
+      },
+      "active_coverage_samples": 49,
+      "active_coverage_last": {
+        "elapsed_seconds": 48.13713401200039,
+        "phase": "drain",
+        "intended_engaged": 100,
+        "actually_started": 100,
+        "unique_completing": 100,
+        "valid_waiting": 0,
+        "idle": 0,
+        "http_actions_inflight": 1,
+        "pending_queue": 0
+      },
+      "generator": {
+        "sample_count": 49,
+        "sampled_seconds": 48.13684115900014,
+        "cpu_seconds_delta": 3.8433910000000004,
+        "mean_cpu_cores": 0.07984302474906793,
+        "rss_peak_kib": 206164,
+        "fd_peak": 51
+      },
+      "jobs_pending_terminal": 2,
+      "postrun_reconciliation": {
+        "schema_version": "k17-mutation-reconciliation/v1",
+        "profile_sha256": "41993620f1b39f1303120755db73b75bc59e9df04fbb80e9725b363acc4301d7",
+        "original_unresolved_mutations": 49,
+        "witnesses_observed": 49,
+        "unobserved_or_unsupported": 0,
+        "original_slo_outcomes_unchanged": true,
+        "scope": "Read-only point-in-time metadata. Absence is a final no-effect conclusion only with independently verified API/worker quiescence. Visible bytes still need full hash verification. Original timeout/503/rejection remains failed in its original deadline denominator.",
+        "quiescence": {
+          "actual_child_processes_exited": true,
+          "process_exit_codes": [
+            -15,
+            0
+          ],
+          "parent_controls_every_SUT_api_worker_in_this_fixture": true
+        },
+        "exports_full_hash_verified": 0,
+        "no_effect_after_quiescence": 49,
+        "remaining_unobserved_or_unsupported": 0
+      },
+      "non_success_strata": [
+        {
+          "operation": "analysis_terminal",
+          "size": "S",
+          "outcomes": {
+            "completed": 13,
+            "timeout": 1
+          },
+          "deadline_seconds": 5.0
+        },
+        {
+          "operation": "export_whole_file",
+          "size": "L",
+          "outcomes": {
+            "rejected": 3
+          },
+          "deadline_seconds": 10.0
+        },
+        {
+          "operation": "export_whole_file",
+          "size": "M",
+          "outcomes": {
+            "rejected": 10,
+            "completed": 8
+          },
+          "deadline_seconds": 10.0
+        },
+        {
+          "operation": "export_whole_file",
+          "size": "S",
+          "outcomes": {
+            "rejected": 33,
+            "completed": 23
+          },
+          "deadline_seconds": 10.0
+        },
+        {
+          "operation": "graph_page",
+          "size": "S",
+          "outcomes": {
+            "completed": 50,
+            "timeout": 1
+          },
+          "deadline_seconds": 1.0
+        },
+        {
+          "operation": "result_header",
+          "size": "M",
+          "outcomes": {
+            "completed": 124,
+            "timeout": 2
+          },
+          "deadline_seconds": 0.5
+        },
+        {
+          "operation": "result_header",
+          "size": "S",
+          "outcomes": {
+            "completed": 205,
+            "timeout": 3
+          },
+          "deadline_seconds": 0.5
+        }
+      ]
+    },
+    "native-closed-01": {
+      "correctness_test_exit_code": 0,
+      "business_slo_passed": false,
+      "measured_positive": {
+        "offered": 715,
+        "correct_by_deadline": 682,
+        "success_fraction": 0.9538461538461539,
+        "observed_subset_success_target_met": false
+      },
+      "counts": {
+        "offered": 830,
+        "warmup_offered": 102,
+        "started": 830,
+        "sent": 830,
+        "admitted": 783,
+        "terminal": 830,
+        "completed": 783,
+        "jobs_admitted": 32,
+        "exports_verified": 52,
+        "jobs_terminal": 32,
+        "job_succeeded": 32,
+        "denied": 14,
+        "measured_offered": 728,
+        "unknown_mutations": 31,
+        "rejected": 31,
+        "timeout": 2,
+        "planned": 830,
+        "pending": 0
+      },
+      "http": {
+        "requests": 1179,
+        "status_200": 1046,
+        "response_body_bytes": 5630925,
+        "response_completed": 1177,
+        "response_duration_microseconds": 312275517,
+        "request_body_bytes": 9406,
+        "status_201": 52,
+        "status_202": 32,
+        "job_poll_snapshot": 32,
+        "status_400": 2,
+        "catalog_page_restarts": 2,
+        "job_poll_resync": 33,
+        "status_404": 14,
+        "status_503": 31
+      },
+      "reconciliation": {
+        "offered_equals_terminal_plus_pending": true,
+        "planned_equals_offered_plus_not_offered": true,
+        "terminal_outcomes": 830,
+        "terminal_outcomes_match": true
+      },
+      "principal_count": 100,
+      "profile": {
+        "schema_version": "k17-capacity-profile/v1",
+        "target": "https://127.0.0.1:49453",
+        "origin": "https://app.example.invalid",
+        "host": "app.example.invalid",
+        "tls_ca_file": "/tmp/k17test/test_actual_tls_100_principal_0/test-cert.pem",
+        "release_sha256": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529",
+        "dataset_sha256": "bd1b740b61db9b1d726ed4c9f876c4f353fe73c69d9db1563c06a9072127c8cc",
+        "seed": 170013,
+        "shard_index": 0,
+        "shard_count": 1,
+        "mode": "closed",
+        "duration_seconds": 40.0,
+        "warmup_seconds": 5.0,
+        "drain_seconds": 120.0,
+        "arrivals_per_second": 20.0,
+        "max_inflight": 32,
+        "max_pending": 128,
+        "max_response_bytes": 33554432,
+        "poll_seconds": 2.0,
+        "job_polling": "updates",
+        "renew_every_seconds": 300.0,
+        "think_seconds": 5.0,
+        "jitter_fraction": 0.2,
+        "active_window_seconds": 30,
+        "size_weights": {
+          "S": 60,
+          "M": 35,
+          "L": 5
+        },
+        "journeys": [
+          {
+            "name": "result_header",
+            "weight": 40,
+            "roles": [
+              "owner",
+              "admin",
+              "analyst",
+              "reviewer",
+              "viewer"
+            ],
+            "sizes": [
+              "S",
+              "M",
+              "L"
+            ],
+            "deadline_seconds": 0.5,
+            "size_budgets": {
+              "S": {
+                "deadline_seconds": 0.5,
+                "p95_seconds": 0.2,
+                "p99_seconds": 0.5
+              },
+              "M": {
+                "deadline_seconds": 0.5,
+                "p95_seconds": 0.2,
+                "p99_seconds": 0.5
+              },
+              "L": {
+                "deadline_seconds": 0.5,
+                "p95_seconds": 0.2,
+                "p99_seconds": 0.5
+              }
+            },
+            "expected": "positive",
+            "steps": [
+              {
+                "method": "GET",
+                "path": "/v1/workspaces/{workspace_id}/results/{result_id}/header",
+                "statuses": [
+                  200
+                ],
+                "body": null,
+                "headers": {},
+                "assertions": [
+                  {
+                    "pointer": "/workspace_id",
+                    "check": "equals",
+                    "value": "$workspace_id"
+                  },
+                  {
+                    "pointer": "/project_id",
+                    "check": "equals",
+                    "value": "$project_id"
+                  },
+                  {
+                    "pointer": "/result_id",
+                    "check": "equals",
+                    "value": "$result_id"
+                  },
+                  {
+                    "pointer": "/snapshot_id",
+                    "check": "equals",
+                    "value": "$snapshot_id"
+                  }
+                ],
+                "captures": {},
+                "follow_job": false,
+                "download_descriptor": false,
+                "operation_id": "P15"
+              }
+            ]
+          },
+          {
+            "name": "claim_citation",
+            "weight": 20,
+            "roles": [
+              "owner",
+              "admin",
+              "analyst",
+              "reviewer",
+              "viewer"
+            ],
+            "sizes": [
+              "S",
+              "M",
+              "L"
+            ],
+            "deadline_seconds": 1.5,
+            "size_budgets": {
+              "S": {
+                "deadline_seconds": 1.5,
+                "p95_seconds": 0.7,
+                "p99_seconds": 1.5
+              },
+              "M": {
+                "deadline_seconds": 1.5,
+                "p95_seconds": 0.7,
+                "p99_seconds": 1.5
+              },
+              "L": {
+                "deadline_seconds": 1.5,
+                "p95_seconds": 0.7,
+                "p99_seconds": 1.5
+              }
+            },
+            "expected": "positive",
+            "steps": [
+              {
+                "method": "GET",
+                "path": "/v1/workspaces/{workspace_id}/results/{result_id}/claims?limit=50",
+                "statuses": [
+                  200
+                ],
+                "body": null,
+                "headers": {},
+                "assertions": [
+                  {
+                    "pointer": "/workspace_id",
+                    "check": "equals",
+                    "value": "$workspace_id"
+                  },
+                  {
+                    "pointer": "/project_id",
+                    "check": "equals",
+                    "value": "$project_id"
+                  },
+                  {
+                    "pointer": "/result_id",
+                    "check": "equals",
+                    "value": "$result_id"
+                  },
+                  {
+                    "pointer": "/items",
+                    "check": "nonempty",
+                    "value": null
+                  },
+                  {
+                    "pointer": "/items",
+                    "check": "length_le",
+                    "value": 50
+                  }
+                ],
+                "captures": {
+                  "selected_claim": "/items/0/id",
+                  "selected_evidence": "/items/0/citation_ids/0"
+                },
+                "follow_job": false,
+                "download_descriptor": false,
+                "operation_id": "P16"
+              },
+              {
+                "method": "GET",
+                "path": "/v1/workspaces/{workspace_id}/results/{result_id}/evidence/{selected_evidence}?claim_id={selected_claim}",
+                "statuses": [
+                  200
+                ],
+                "body": null,
+                "headers": {},
+                "assertions": [
+                  {
+                    "pointer": "/workspace_id",
+                    "check": "equals",
+                    "value": "$workspace_id"
+                  },
+                  {
+                    "pointer": "/project_id",
+                    "check": "equals",
+                    "value": "$project_id"
+                  },
+                  {
+                    "pointer": "/result_id",
+                    "check": "equals",
+                    "value": "$result_id"
+                  },
+                  {
+                    "pointer": "/claim_id",
+                    "check": "equals",
+                    "value": "$selected_claim"
+                  },
+                  {
+                    "pointer": "/evidence_id",
+                    "check": "equals",
+                    "value": "$selected_evidence"
+                  },
+                  {
+                    "pointer": "/relation",
+                    "check": "equals",
+                    "value": "citation"
+                  },
+                  {
+                    "pointer": "/evidence/text",
+                    "check": "nonempty",
+                    "value": null
+                  }
+                ],
+                "captures": {},
+                "follow_job": false,
+                "download_descriptor": false,
+                "operation_id": "P17"
+              }
+            ]
+          },
+          {
+            "name": "project_current",
+            "weight": 10,
+            "roles": [
+              "owner",
+              "admin",
+              "analyst",
+              "reviewer",
+              "viewer"
+            ],
+            "sizes": [
+              "S",
+              "M",
+              "L"
+            ],
+            "deadline_seconds": 0.5,
+            "size_budgets": {
+              "S": {
+                "deadline_seconds": 0.5,
+                "p95_seconds": 0.2,
+                "p99_seconds": 0.5
+              },
+              "M": {
+                "deadline_seconds": 0.5,
+                "p95_seconds": 0.2,
+                "p99_seconds": 0.5
+              },
+              "L": {
+                "deadline_seconds": 0.5,
+                "p95_seconds": 0.2,
+                "p99_seconds": 0.5
+              }
+            },
+            "expected": "positive",
+            "steps": [
+              {
+                "method": "GET",
+                "path": "/v1/workspaces/{workspace_id}/projects/{project_id}",
+                "statuses": [
+                  200
+                ],
+                "body": null,
+                "headers": {},
+                "assertions": [
+                  {
+                    "pointer": "/workspace_id",
+                    "check": "equals",
+                    "value": "$workspace_id"
+                  },
+                  {
+                    "pointer": "/project_id",
+                    "check": "equals",
+                    "value": "$project_id"
+                  }
+                ],
+                "captures": {},
+                "follow_job": false,
+                "download_descriptor": false,
+                "operation_id": "P11"
+              }
+            ]
+          },
+          {
+            "name": "graph_page",
+            "weight": 10,
+            "roles": [
+              "owner",
+              "admin",
+              "analyst",
+              "reviewer",
+              "viewer"
+            ],
+            "sizes": [
+              "S",
+              "M",
+              "L"
+            ],
+            "deadline_seconds": 1.0,
+            "size_budgets": {
+              "S": {
+                "deadline_seconds": 1.0,
+                "p95_seconds": 0.4,
+                "p99_seconds": 1.0
+              },
+              "M": {
+                "deadline_seconds": 1.0,
+                "p95_seconds": 0.4,
+                "p99_seconds": 1.0
+              },
+              "L": {
+                "deadline_seconds": 1.0,
+                "p95_seconds": 0.4,
+                "p99_seconds": 1.0
+              }
+            },
+            "expected": "positive",
+            "steps": [
+              {
+                "method": "GET",
+                "path": "/v1/workspaces/{workspace_id}/results/{result_id}/graph?limit=100",
+                "statuses": [
+                  200
+                ],
+                "body": null,
+                "headers": {},
+                "assertions": [
+                  {
+                    "pointer": "/workspace_id",
+                    "check": "equals",
+                    "value": "$workspace_id"
+                  },
+                  {
+                    "pointer": "/project_id",
+                    "check": "equals",
+                    "value": "$project_id"
+                  },
+                  {
+                    "pointer": "/result_id",
+                    "check": "equals",
+                    "value": "$result_id"
+                  },
+                  {
+                    "pointer": "/graph/nodes",
+                    "check": "nonempty",
+                    "value": null
+                  },
+                  {
+                    "pointer": "/graph/nodes",
+                    "check": "length_le",
+                    "value": 100
+                  }
+                ],
+                "captures": {},
+                "follow_job": false,
+                "download_descriptor": false,
+                "operation_id": "P18"
+              }
+            ]
+          },
+          {
+            "name": "analysis_terminal",
+            "weight": 5,
+            "roles": [
+              "owner",
+              "admin",
+              "analyst"
+            ],
+            "sizes": [
+              "S",
+              "M",
+              "L"
+            ],
+            "deadline_seconds": 120.0,
+            "size_budgets": {
+              "S": {
+                "deadline_seconds": 5.0,
+                "p95_seconds": 2.0,
+                "p99_seconds": 5.0
+              },
+              "M": {
+                "deadline_seconds": 20.0,
+                "p95_seconds": 10.0,
+                "p99_seconds": 20.0
+              },
+              "L": {
+                "deadline_seconds": 120.0,
+                "p95_seconds": 60.0,
+                "p99_seconds": 120.0
+              }
+            },
+            "expected": "positive",
+            "steps": [
+              {
+                "method": "POST",
+                "path": "/v1/workspaces/{workspace_id}/jobs",
+                "statuses": [
+                  202
+                ],
+                "body": {
+                  "operation": "analyze",
+                  "snapshot_id": "$snapshot_id",
+                  "question": "$action_question"
+                },
+                "headers": {},
+                "assertions": [
+                  {
+                    "pointer": "/workspace_id",
+                    "check": "equals",
+                    "value": "$workspace_id"
+                  },
+                  {
+                    "pointer": "/operation",
+                    "check": "equals",
+                    "value": "analyze"
+                  },
+                  {
+                    "pointer": "/result/project/id",
+                    "check": "equals",
+                    "value": "$project_id"
+                  },
+                  {
+                    "pointer": "/result/snapshot/id",
+                    "check": "equals",
+                    "value": "$snapshot_id"
+                  },
+                  {
+                    "pointer": "/result/claims",
+                    "check": "nonempty",
+                    "value": null
+                  }
+                ],
+                "captures": {},
+                "follow_job": true,
+                "download_descriptor": false,
+                "operation_id": "P13"
+              }
+            ]
+          },
+          {
+            "name": "followup_terminal",
+            "weight": 3,
+            "roles": [
+              "owner",
+              "admin",
+              "analyst"
+            ],
+            "sizes": [
+              "S",
+              "M",
+              "L"
+            ],
+            "deadline_seconds": 120.0,
+            "size_budgets": {
+              "S": {
+                "deadline_seconds": 5.0,
+                "p95_seconds": 2.0,
+                "p99_seconds": 5.0
+              },
+              "M": {
+                "deadline_seconds": 20.0,
+                "p95_seconds": 10.0,
+                "p99_seconds": 20.0
+              },
+              "L": {
+                "deadline_seconds": 120.0,
+                "p95_seconds": 60.0,
+                "p99_seconds": 120.0
+              }
+            },
+            "expected": "positive",
+            "steps": [
+              {
+                "method": "GET",
+                "path": "/v1/workspaces/{workspace_id}/projects/{project_id}",
+                "statuses": [
+                  200
+                ],
+                "body": null,
+                "headers": {},
+                "assertions": [
+                  {
+                    "pointer": "/project_id",
+                    "check": "equals",
+                    "value": "$project_id"
+                  }
+                ],
+                "captures": {
+                  "project_revision": "/revision"
+                },
+                "follow_job": false,
+                "download_descriptor": false,
+                "operation_id": "P11"
+              },
+              {
+                "method": "POST",
+                "path": "/v1/workspaces/{workspace_id}/results/{result_id}/follow-ups",
+                "statuses": [
+                  202
+                ],
+                "body": {
+                  "schema_version": "product-api/v1-draft",
+                  "selection_kind": "claim",
+                  "selection_id": "$claim_id",
+                  "question": "$action_question"
+                },
+                "headers": {
+                  "if-match": "$project_revision"
+                },
+                "assertions": [
+                  {
+                    "pointer": "/workspace_id",
+                    "check": "equals",
+                    "value": "$workspace_id"
+                  },
+                  {
+                    "pointer": "/operation",
+                    "check": "equals",
+                    "value": "follow_up"
+                  },
+                  {
+                    "pointer": "/result/project_id",
+                    "check": "equals",
+                    "value": "$project_id"
+                  },
+                  {
+                    "pointer": "/result/snapshot_id",
+                    "check": "equals",
+                    "value": "$snapshot_id"
+                  },
+                  {
+                    "pointer": "/result/parent_result_id",
+                    "check": "equals",
+                    "value": "$result_id"
+                  },
+                  {
+                    "pointer": "/result/result_id",
+                    "check": "nonempty",
+                    "value": null
+                  }
+                ],
+                "captures": {},
+                "follow_job": true,
+                "download_descriptor": false,
+                "operation_id": "P19"
+              }
+            ]
+          },
+          {
+            "name": "export_whole_file",
+            "weight": 10,
+            "roles": [
+              "owner",
+              "admin",
+              "analyst",
+              "reviewer",
+              "viewer"
+            ],
+            "sizes": [
+              "S",
+              "M",
+              "L"
+            ],
+            "deadline_seconds": 10.0,
+            "size_budgets": {
+              "S": {
+                "deadline_seconds": 10.0,
+                "p95_seconds": 5.0,
+                "p99_seconds": 10.0
+              },
+              "M": {
+                "deadline_seconds": 10.0,
+                "p95_seconds": 5.0,
+                "p99_seconds": 10.0
+              },
+              "L": {
+                "deadline_seconds": 10.0,
+                "p95_seconds": 5.0,
+                "p99_seconds": 10.0
+              }
+            },
+            "expected": "positive",
+            "steps": [
+              {
+                "method": "POST",
+                "path": "/v1/workspaces/{workspace_id}/results/{result_id}/exports",
+                "statuses": [
+                  201
+                ],
+                "body": {
+                  "format": "json"
+                },
+                "headers": {},
+                "assertions": [
+                  {
+                    "pointer": "/workspace_id",
+                    "check": "equals",
+                    "value": "$workspace_id"
+                  },
+                  {
+                    "pointer": "/project_id",
+                    "check": "equals",
+                    "value": "$project_id"
+                  },
+                  {
+                    "pointer": "/result_id",
+                    "check": "equals",
+                    "value": "$result_id"
+                  }
+                ],
+                "captures": {},
+                "follow_job": false,
+                "download_descriptor": true,
+                "operation_id": "P23"
+              }
+            ]
+          },
+          {
+            "name": "foreign_result_denied",
+            "weight": 2,
+            "roles": [
+              "owner",
+              "admin",
+              "analyst",
+              "reviewer",
+              "viewer"
+            ],
+            "sizes": [
+              "S",
+              "M",
+              "L"
+            ],
+            "deadline_seconds": 0.5,
+            "size_budgets": {
+              "S": {
+                "deadline_seconds": 0.5,
+                "p95_seconds": 0.2,
+                "p99_seconds": 0.5
+              },
+              "M": {
+                "deadline_seconds": 0.5,
+                "p95_seconds": 0.2,
+                "p99_seconds": 0.5
+              },
+              "L": {
+                "deadline_seconds": 0.5,
+                "p95_seconds": 0.2,
+                "p99_seconds": 0.5
+              }
+            },
+            "expected": "deny",
+            "steps": [
+              {
+                "method": "GET",
+                "path": "/v1/workspaces/{foreign_workspace_id}/results/{foreign_result_id}/header",
+                "statuses": [
+                  404
+                ],
+                "body": null,
+                "headers": {},
+                "assertions": [
+                  {
+                    "pointer": "/code",
+                    "check": "equals",
+                    "value": "not_found"
+                  },
+                  {
+                    "pointer": "/type",
+                    "check": "equals",
+                    "value": "urn:aletheia:problem:not-found"
+                  },
+                  {
+                    "pointer": "/title",
+                    "check": "equals",
+                    "value": "Request could not be completed"
+                  },
+                  {
+                    "pointer": "/detail",
+                    "check": "equals",
+                    "value": "The requested resource is unavailable."
+                  }
+                ],
+                "captures": {},
+                "follow_job": false,
+                "download_descriptor": false,
+                "operation_id": "P15"
+              }
+            ]
+          }
+        ],
+        "operation_dispositions": {
+          "P01": "not_run",
+          "P02": "not_run",
+          "P03": "not_run",
+          "P04": "not_run",
+          "P05": "not_run",
+          "P06": "not_run",
+          "P07": "not_run",
+          "P08": "not_run",
+          "P09": "not_run",
+          "P10": "not_run",
+          "P11": "recipe",
+          "P12": "not_run",
+          "P13": "recipe",
+          "P14": "not_run",
+          "P15": "recipe",
+          "P16": "recipe",
+          "P17": "recipe",
+          "P18": "recipe",
+          "P19": "recipe",
+          "P20": "dedicated",
+          "P21": "not_run",
+          "P22": "not_run",
+          "P23": "recipe",
+          "P24": "dedicated",
+          "P25": "not_run",
+          "P26": "not_run",
+          "P27": "not_run",
+          "P28": "not_run",
+          "P29": "not_run",
+          "P30": "not_run",
+          "P31": "not_run",
+          "P32": "not_run",
+          "P33": "not_run",
+          "P34": "not_run",
+          "P35": "not_run",
+          "P36": "not_run",
+          "P37": "not_run",
+          "P38": "not_run"
+        },
+        "scope": "calibration",
+        "cache_state": "unknown",
+        "run_label": "native100"
+      },
+      "active_coverage_samples": 49,
+      "active_coverage_last": {
+        "elapsed_seconds": 48.08826729500015,
+        "phase": "drain",
+        "intended_engaged": 100,
+        "actually_started": 100,
+        "unique_completing": 100,
+        "valid_waiting": 0,
+        "idle": 0,
+        "http_actions_inflight": 2,
+        "pending_queue": 0
+      },
+      "generator": {
+        "sample_count": 49,
+        "sampled_seconds": 48.08771774999968,
+        "cpu_seconds_delta": 3.296709,
+        "mean_cpu_cores": 0.06855615434151108,
+        "rss_peak_kib": 201268,
+        "fd_peak": 51
+      },
+      "jobs_pending_terminal": 0,
+      "postrun_reconciliation": {
+        "schema_version": "k17-mutation-reconciliation/v1",
+        "profile_sha256": "5b934d084c9bff6f4a63c60692fa92e02fdda13421ed815c0521474869727d49",
+        "original_unresolved_mutations": 31,
+        "witnesses_observed": 31,
+        "unobserved_or_unsupported": 0,
+        "original_slo_outcomes_unchanged": true,
+        "scope": "Read-only point-in-time metadata. Absence is a final no-effect conclusion only with independently verified API/worker quiescence. Visible bytes still need full hash verification. Original timeout/503/rejection remains failed in its original deadline denominator.",
+        "quiescence": {
+          "actual_child_processes_exited": true,
+          "process_exit_codes": [
+            -15,
+            0
+          ],
+          "parent_controls_every_SUT_api_worker_in_this_fixture": true
+        },
+        "exports_full_hash_verified": 0,
+        "no_effect_after_quiescence": 31,
+        "remaining_unobserved_or_unsupported": 0
+      },
+      "non_success_strata": [
+        {
+          "operation": "export_whole_file",
+          "size": "L",
+          "outcomes": {
+            "completed": 5,
+            "rejected": 2
+          },
+          "deadline_seconds": 10.0
+        },
+        {
+          "operation": "export_whole_file",
+          "size": "M",
+          "outcomes": {
+            "completed": 12,
+            "rejected": 13
+          },
+          "deadline_seconds": 10.0
+        },
+        {
+          "operation": "export_whole_file",
+          "size": "S",
+          "outcomes": {
+            "completed": 27,
+            "rejected": 16
+          },
+          "deadline_seconds": 10.0
+        },
+        {
+          "operation": "result_header",
+          "size": "M",
+          "outcomes": {
+            "completed": 111,
+            "timeout": 1
+          },
+          "deadline_seconds": 0.5
+        },
+        {
+          "operation": "result_header",
+          "size": "S",
+          "outcomes": {
+            "completed": 175,
+            "timeout": 1
+          },
+          "deadline_seconds": 0.5
+        }
+      ]
+    }
+  },
+  "resource_inventory": {
+    "docker_version": "28.0.4",
+    "docker_cpus": 16,
+    "docker_memory_bytes": 8135196672,
+    "windows_disk_free_bytes": 18979442688
+  },
+  "renewal_witness": {
+    "old_credential_status": 401,
+    "current_credential_status": 200,
+    "cookie_changed": true,
+    "context_unchanged": true,
+    "policy": "Actual rotation_seconds=1,idle_seconds=60,absolute_seconds=120; real elapsed time, no DB timestamp rewrite"
+  },
+  "renewal_counts": {
+    "http_requests": 8,
+    "http_200": 8,
+    "cookie_rotations": 8,
+    "completed": 8
+  },
+  "prototype": {
+    "scope": "Executable contract proposal and measured synthetic files; not the production producer, not seed cardinalities, not a capacity test.",
+    "policy": "metric-window-decimal/v1-proposal",
+    "self_checks_passed": true,
+    "fixtures": [
+      {
+        "size": "S",
+        "source_rows": 1000,
+        "source_bytes": 49036,
+        "source_sha256": "40c70fde50dcbf60744b32c8ab76fe34dc3c37370aa7603109b3b7edd636a463",
+        "claims": 100,
+        "evidence": 100,
+        "nodes": 202,
+        "edges": 300,
+        "json_bytes": 252238,
+        "json_sha256": "41a20e6510da51975f1cd79a8f23a5e0e8997460f1a41e63aeebe9ae67448956",
+        "aggregation_and_encoding_seconds": 0.01709229999960371,
+        "complete_json_within_32mib": true,
+        "primary_or_production_pass": false
+      },
+      {
+        "size": "M",
+        "source_rows": 10000,
+        "source_bytes": 490036,
+        "source_sha256": "cfb33da386109d7015314f3d78293ba288b1c84639c56788da393ad3496a0263",
+        "claims": 1000,
+        "evidence": 1000,
+        "nodes": 2002,
+        "edges": 3000,
+        "json_bytes": 2520603,
+        "json_sha256": "0c3d4119923181ddc06214841c7611630af6f5d1a0a1c58f1591d7b4329aa232",
+        "aggregation_and_encoding_seconds": 0.16616640000029292,
+        "complete_json_within_32mib": true,
+        "primary_or_production_pass": false
+      },
+      {
+        "size": "L",
+        "source_rows": 100000,
+        "source_bytes": 4900036,
+        "source_sha256": "67205b55447c00357743b693a5aa12278d1025570fa7eac4d1de0efd7285a5f4",
+        "claims": 10000,
+        "evidence": 10000,
+        "nodes": 20002,
+        "edges": 30000,
+        "json_bytes": 25258208,
+        "json_sha256": "41d07df00c82bac6e05cc5d5c5f9b3dec98198ce19e326f8cdc717d484c2285b",
+        "aggregation_and_encoding_seconds": 1.6621260000001712,
+        "complete_json_within_32mib": true,
+        "primary_or_production_pass": false
+      }
+    ],
+    "production_capability": false,
+    "primary_campaign_pass": false,
+    "mean_policy": "Exact finite decimal only; recurring mean abstains explicitly. Decimal strings are never calculated from floats.",
+    "rows_hash_policy": "SHA256 of sorted-key compact UTF8 JSON array of complete original CSV row dictionaries; source SHA256 pins original CSV bytes.",
+    "remaining": "Approve claim/source/rounding/export policy; wire producer/parser/canonical storage/projections/worker/consumer/export in one version before primary seeding."
+  },
+  "cost": {
+    "infra_database_storage_bandwidth_generator_idp_hardware": "unpriced",
+    "billable_remote_services_created": false,
+    "cost_per_correct_action": null,
+    "basis": "No approved rates, metered invoice or electricity/hardware allocation supplied. No zero-cost capacity claim."
+  },
+  "driver_entrypoint": {
+    "exit_code": 0,
+    "phase": "logout",
+    "elapsed_seconds": 6.032000000000153,
+    "image_id": "sha256:35ab7a8638b1f3ef7134bfeb87a4bbb6aac0a0101d74857cdaabafee251b8add",
+    "runtime_identity": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529"
+  },
+  "staging_stop": {
+    "utc": "2026-11-15T11:41:49.018342+00:00",
+    "owner": "2c637fdf17c8",
+    "stopped_k17_services": [
+      "pg",
+      "idp",
+      "api0",
+      "api1",
+      "worker0",
+      "worker1",
+      "ingress"
+    ],
+    "k17_staging_volumes_retained_for_replay": true,
+    "original_k14_services_running": [
+      "pg",
+      "idp",
+      "api0",
+      "api1",
+      "worker0",
+      "worker1",
+      "ingress"
+    ]
+  }
+}
