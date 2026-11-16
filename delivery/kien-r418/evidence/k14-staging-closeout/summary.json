@@ -1,0 +1,304 @@
+{
+  "recorded_utc": "2026-11-15T10:13:14.619073+00:00",
+  "staging_project": "aletheia-k14-stg-da2093353a73",
+  "image_id": "sha256:35ab7a8638b1f3ef7134bfeb87a4bbb6aac0a0101d74857cdaabafee251b8add",
+  "head": "fa46dd8cbb2239c6f116456894a2009b45846245",
+  "runtime_identity": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529",
+  "production_source_unchanged": true,
+  "commit": false,
+  "push": false,
+  "previous_evidence_hashes_verified": {
+    "k14-missing-demand": 130,
+    "k14-s-analysis-timeout": 147,
+    "k14-staging": 40
+  },
+  "staging_services": {
+    "pg": {
+      "running": true,
+      "oom": false,
+      "started_at": "2026-11-15T09:44:22.428373851Z"
+    },
+    "idp": {
+      "running": true,
+      "oom": false,
+      "started_at": "2026-11-15T09:44:22.793208494Z"
+    },
+    "api0": {
+      "running": true,
+      "oom": false,
+      "started_at": "2026-11-15T10:06:15.178525594Z"
+    },
+    "api1": {
+      "running": true,
+      "oom": false,
+      "started_at": "2026-11-15T09:47:48.741783878Z"
+    },
+    "worker0": {
+      "running": true,
+      "oom": false,
+      "started_at": "2026-11-15T09:47:46.017565411Z"
+    },
+    "worker1": {
+      "running": true,
+      "oom": false,
+      "started_at": "2026-11-15T09:47:46.939404023Z"
+    },
+    "ingress": {
+      "running": true,
+      "oom": false,
+      "started_at": "2026-11-15T09:47:49.606132577Z"
+    }
+  },
+  "dataset_sha256": "cd0dbc6d89ab61c1355c81a8a6f9a96f76f7dbe119b363192e5ebc4b6b84f229",
+  "isolated_reads": {
+    "qualified_batches": 39,
+    "operations": [
+      "P01",
+      "P03",
+      "P04",
+      "P05",
+      "P11",
+      "P12",
+      "P14",
+      "P15",
+      "P16",
+      "P17",
+      "P18",
+      "P27",
+      "P37"
+    ],
+    "physical_sizes": [
+      "S",
+      "M",
+      "L"
+    ],
+    "completed_selected_samples": 468,
+    "offered_all_attempts": 480,
+    "fixture_invalid_binding": 12
+  },
+  "job_and_export_costs": {
+    "qualified_batches": 15,
+    "planned_batches": 15,
+    "status": "passed_local_targeted",
+    "action_offered": 30,
+    "action_completed": 30,
+    "request_counts": {
+      "P13": 6,
+      "P20": 56,
+      "P11": 6,
+      "P19": 6,
+      "P23": 6,
+      "P24": 6,
+      "P07": 6,
+      "P08": 6,
+      "P26": 12
+    }
+  },
+  "cold_warm": [
+    {
+      "size": "S",
+      "after_restart_first_read_of_result": {
+        "seconds": 0.06922665899992353,
+        "bytes": 1460
+      },
+      "repeat": [
+        {
+          "seconds": 0.08352166500003477,
+          "bytes": 1460
+        },
+        {
+          "seconds": 0.06345471100007671,
+          "bytes": 1460
+        },
+        {
+          "seconds": 0.060277986000073724,
+          "bytes": 1460
+        },
+        {
+          "seconds": 0.05271068199999718,
+          "bytes": 1460
+        },
+        {
+          "seconds": 0.05596612599993023,
+          "bytes": 1460
+        },
+        {
+          "seconds": 0.052691271999947276,
+          "bytes": 1460
+        },
+        {
+          "seconds": 0.07900474300004134,
+          "bytes": 1460
+        },
+        {
+          "seconds": 0.11211703399999351,
+          "bytes": 1460
+        },
+        {
+          "seconds": 0.09090461200003119,
+          "bytes": 1460
+        },
+        {
+          "seconds": 0.07067133999998987,
+          "bytes": 1460
+        }
+      ]
+    },
+    {
+      "size": "M",
+      "after_restart_first_read_of_result": {
+        "seconds": 0.06189563299994916,
+        "bytes": 1469
+      },
+      "repeat": [
+        {
+          "seconds": 0.050822315999994316,
+          "bytes": 1469
+        },
+        {
+          "seconds": 0.06890741200004413,
+          "bytes": 1469
+        },
+        {
+          "seconds": 0.05220126699987304,
+          "bytes": 1469
+        },
+        {
+          "seconds": 0.06095329899994795,
+          "bytes": 1469
+        },
+        {
+          "seconds": 0.058520739999949,
+          "bytes": 1469
+        },
+        {
+          "seconds": 0.05497557099988626,
+          "bytes": 1469
+        },
+        {
+          "seconds": 0.05193834900001093,
+          "bytes": 1469
+        },
+        {
+          "seconds": 0.055429584000194154,
+          "bytes": 1469
+        },
+        {
+          "seconds": 0.051038984000115306,
+          "bytes": 1469
+        },
+        {
+          "seconds": 0.04807290300004752,
+          "bytes": 1469
+        }
+      ]
+    },
+    {
+      "size": "L",
+      "after_restart_first_read_of_result": {
+        "seconds": 0.05198131899987857,
+        "bytes": 1471
+      },
+      "repeat": [
+        {
+          "seconds": 0.07521020499984843,
+          "bytes": 1471
+        },
+        {
+          "seconds": 0.0683348190000288,
+          "bytes": 1471
+        },
+        {
+          "seconds": 0.05003323599999021,
+          "bytes": 1471
+        },
+        {
+          "seconds": 0.07108759400011877,
+          "bytes": 1471
+        },
+        {
+          "seconds": 0.062211990999912814,
+          "bytes": 1471
+        },
+        {
+          "seconds": 0.06076567700006308,
+          "bytes": 1471
+        },
+        {
+          "seconds": 0.07757417099992381,
+          "bytes": 1471
+        },
+        {
+          "seconds": 0.13185064000003877,
+          "bytes": 1471
+        },
+        {
+          "seconds": 0.08956476999992447,
+          "bytes": 1471
+        },
+        {
+          "seconds": 0.055197361000182354,
+          "bytes": 1471
+        }
+      ]
+    }
+  ],
+  "reconnect_waves": [
+    {
+      "wave": 1,
+      "acknowledgements": 12,
+      "unique_jobs": 4,
+      "reconnects": 4,
+      "polls": 7,
+      "quiet_ahead_of_last_noisy_ms": 4005.5560000000005,
+      "longest_from_first_poll_ms": 7424.818336000044
+    },
+    {
+      "wave": 2,
+      "acknowledgements": 12,
+      "unique_jobs": 4,
+      "reconnects": 4,
+      "polls": 7,
+      "quiet_ahead_of_last_noisy_ms": 3794.76,
+      "longest_from_first_poll_ms": 5164.698143999885
+    },
+    {
+      "wave": 3,
+      "acknowledgements": 12,
+      "unique_jobs": 4,
+      "reconnects": 4,
+      "polls": 7,
+      "quiet_ahead_of_last_noisy_ms": 1981.52,
+      "longest_from_first_poll_ms": 6926.783329000045
+    }
+  ],
+  "reconnect_latency": {
+    "background": {
+      "count": 121,
+      "mean_ms": 89.4497679421589,
+      "p95_observed_ms": 138.712354000063,
+      "max_ms": 716.7589350001435
+    },
+    "health": {
+      "count": 121,
+      "mean_ms": 34.35915342976112,
+      "p95_observed_ms": 55.157374000145865,
+      "max_ms": 152.23500400020384
+    },
+    "admin": {
+      "count": 121,
+      "mean_ms": 0.4411573471007757,
+      "p95_observed_ms": 0.70058300002529,
+      "max_ms": 2.0290139998451195
+    }
+  },
+  "generator_fd_peak_at_sample_boundaries": 9,
+  "overall_K14_acceptance": "3/5 formally closed, K14.01 and K14.05 have additional local evidence",
+  "primary_dataset_qualified": false,
+  "full_K14_01_pass": false,
+  "full_K14_05_pass": false,
+  "remaining_external_environment": [
+    "Independent generator host and off-host NIC measurements",
+    "Primary physical data and complete operation mix"
+  ]
+}

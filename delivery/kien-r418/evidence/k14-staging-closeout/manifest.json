@@ -1,0 +1,123 @@
+{
+  "files": {
+    "action-results.csv": {
+      "sha256": "84bafb94c87c8debcf2af67b98e0486bc5a6da63a76e4b454cc6538fbdbfb9ea",
+      "bytes": 29095
+    },
+    "cpu-memory-fd-by-operation.csv": {
+      "sha256": "9994da2c3a9deebd7de73e5943e389200c0d4dfff40fa4470be8713a7e2f0315",
+      "bytes": 103910
+    },
+    "http-requests.csv": {
+      "sha256": "a55c39334a769164d0623d263eca391f7372946a8cadaae922535e3c639ddda7",
+      "bytes": 26179
+    },
+    "KET-QUA-BO-SUNG-K14.01-K14.05.md": {
+      "sha256": "29bdab03567d9492c45d6437d3b0f97189c02dc45202c442dea799837bac706b",
+      "bytes": 6903
+    },
+    "summary.json": {
+      "sha256": "7c289c1f37448bccaf3ff32bba43c9b646edb73578884e7a809b9f368d379f3c",
+      "bytes": 7356
+    },
+    "targeted-01/api0-restarted.json": {
+      "sha256": "6b997cd4076d7e66800f65dc595471fb6142da2cc05a643cfcdd2298e546182f",
+      "bytes": 253
+    },
+    "targeted-01/console.log": {
+      "sha256": "08dc3887ebcb6aabb0a49cd4a3ac80c3c8fc5b77a116f3dcfeadb1d242fb7819",
+      "bytes": 867
+    },
+    "targeted-01/exit.json": {
+      "sha256": "2618b95f1f6be6bfde8537756f85b83845d039001563135b9d59d817446733eb",
+      "bytes": 16
+    },
+    "targeted-01/idp-resource.jsonl": {
+      "sha256": "f93ae9a77447ad3589e6ff86381c5e1e72a212c24a76a883690ad4ef097b4737",
+      "bytes": 10138
+    },
+    "targeted-01/inputs.json": {
+      "sha256": "c2c20e69df3c5a6ea178dad9cf7b261d84cd40983d4c04033f530bd9624d1f4f",
+      "bytes": 1546
+    },
+    "targeted-01/pg-resource.jsonl": {
+      "sha256": "266864594260771d0ff60b148bda5b7e0acd4da50a52055413b1f914a347bc58",
+      "bytes": 10217
+    },
+    "targeted-01/result.json": {
+      "sha256": "d9f9b4836e90409d88a6979acd28e768b436ccade339bbddcebdec314c4ed6c9",
+      "bytes": 120363
+    },
+    "targeted-01/sessions-ready": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "targeted-02/console.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "targeted-02/exit.json": {
+      "sha256": "124fd50cb6d223cdd18fedc166d00af7254199b6e6dedf9be82f71db87af6d01",
+      "bytes": 16
+    },
+    "targeted-02/idp-resource.jsonl": {
+      "sha256": "19166f94da0eb10f41018f96943c1c79ed06c82ec1a74938f0ac47caf1d0427b",
+      "bytes": 33440
+    },
+    "targeted-02/inputs.json": {
+      "sha256": "878e5d048abb35073ec3f67f6123bd8fe84ac11fba7c7a6ebf192bf5e2ef16c8",
+      "bytes": 1546
+    },
+    "targeted-02/pg-resource.jsonl": {
+      "sha256": "480987370f43da08cec5978ceb3ddae9a5315ce898d94a5804bcd776f7f7d102",
+      "bytes": 33809
+    },
+    "targeted-02/result.json": {
+      "sha256": "5c9d2ef0a8bbd4821b1e84ea9ec4820c953fc98a32879cdb717d59e0bd17bb49",
+      "bytes": 814260
+    },
+    "targeted-02/runner-tested.py": {
+      "sha256": "3f7ac54b9aba0b41da76b023be39e1a5a5c760637be428ccb5e33d499f0ff5f0",
+      "bytes": 5009
+    },
+    "targeted-02/verify_remaining-tested.py": {
+      "sha256": "02d43601b53c5aae6972c10553739dabda3a14bf0fa85c14a0a9626385956090",
+      "bytes": 16879
+    },
+    "targeted-03/console.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "targeted-03/exit.json": {
+      "sha256": "124fd50cb6d223cdd18fedc166d00af7254199b6e6dedf9be82f71db87af6d01",
+      "bytes": 16
+    },
+    "targeted-03/idp-resource.jsonl": {
+      "sha256": "96b16ac142f47032063ea3e8ef92e62840b966b717752bb53adda439461b4ed7",
+      "bytes": 39250
+    },
+    "targeted-03/inputs.json": {
+      "sha256": "006c0514d9310eb3ce8182487140a8d6061ead3ed88dc44f3e25de43edfe718c",
+      "bytes": 1546
+    },
+    "targeted-03/pg-resource.jsonl": {
+      "sha256": "bb41445db8ee53592c183c4bfa6ffd45873db4b7c285457b3ca2068595e3004e",
+      "bytes": 39710
+    },
+    "targeted-03/result.json": {
+      "sha256": "813d7b05cc66d73bdcd08eef570f00b5b1398c2f1cd8c6b44cdba9d8a7d54de6",
+      "bytes": 290690
+    },
+    "targeted-03/runner-tested.py": {
+      "sha256": "2802537083400e12dbf39be38864b03ddbbb508c8def64a650fc07b1cc8bc82d",
+      "bytes": 5060
+    },
+    "targeted-03/verify_remaining-tested.py": {
+      "sha256": "777f1e7c13906e40c6ffbd18e9b60e2dacb72ecb2ddb7937fa540cc11bebde2d",
+      "bytes": 18115
+    }
+  },
+  "committed": false,
+  "pushed": false,
+  "full_K14_acceptance": false
+}
