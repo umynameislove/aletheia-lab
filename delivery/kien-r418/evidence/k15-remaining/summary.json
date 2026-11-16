@@ -1,0 +1,294 @@
+{
+  "captured_utc": "2026-11-15T10:37:06.659485+00:00",
+  "head": "fa46dd8cbb2239c6f116456894a2009b45846245",
+  "runtime_identity": "acbe153cee890b3b5c7c1a8d1a36d100f9ba8cdbce6366005b511a9a7dc5a529",
+  "committed": false,
+  "pushed": false,
+  "backend_changed": false,
+  "ui_changed": false,
+  "prior_k14_hashes_verified": {
+    "k14-missing-demand": 130,
+    "k14-s-analysis-timeout": 147,
+    "k14-staging": 40,
+    "k14-staging-closeout": 29
+  },
+  "technical_personal_local_K15_03": "PASS",
+  "technical_personal_local_K15_04": "PASS",
+  "technical_personal_local_K15_total": "4/4",
+  "browser_acceptance_performed": false,
+  "shared_deployment_acceptance_performed": false,
+  "K15_03": [
+    {
+      "case": "membership_committed_before_blocked_replica_authorization",
+      "blocked_on_real_pg_lock": true,
+      "after_commit_ms": 3.407526999581023,
+      "status": 404,
+      "code": "not_found",
+      "bytes": 256,
+      "no_store": true,
+      "no_private_fields": true
+    },
+    {
+      "case": "account_revoke_both_replicas",
+      "outcomes": [
+        {
+          "status": 401,
+          "code": "session_revoked",
+          "bytes": 262,
+          "no_store": true,
+          "no_private_fields": true
+        },
+        {
+          "status": 401,
+          "code": "session_revoked",
+          "bytes": 262,
+          "no_store": true,
+          "no_private_fields": true
+        }
+      ],
+      "elapsed_ms": 48.55115000009391
+    },
+    {
+      "case": "session_revoke_both_replicas",
+      "outcomes": [
+        {
+          "status": 401,
+          "code": "session_revoked",
+          "bytes": 262,
+          "no_store": true,
+          "no_private_fields": true
+        },
+        {
+          "status": 401,
+          "code": "session_revoked",
+          "bytes": 262,
+          "no_store": true,
+          "no_private_fields": true
+        }
+      ],
+      "elapsed_ms": 65.48972600012348
+    },
+    {
+      "case": "other_account_replay",
+      "status": 400,
+      "no_private_fields": true
+    },
+    {
+      "case": "role_change_invalidates_old_cursor_preserves_read_if_allowed",
+      "replay": 400,
+      "fresh": 200,
+      "revision": 1
+    },
+    {
+      "case": "pre_authorized_tls_response_held_across_revoke",
+      "buffered_wire_status": 200,
+      "consumer_applied": false,
+      "request_start_age_ms": 4252.39118699983,
+      "lease_ms": 4000,
+      "held_tls_bytes": 904,
+      "next_replica_denial": {
+        "status": 404,
+        "code": "not_found",
+        "bytes": 256,
+        "no_store": true,
+        "no_private_fields": true
+      },
+      "next_replica_denial_ms": 20.03466899986961
+    }
+  ],
+  "K15_04": {
+    "injected_faults": {
+      "forced_abort": 15,
+      "proxy_idle": 15,
+      "observable_transport_errors": 30
+    },
+    "queued_ledger_verified": 100,
+    "terminal_ledger_verified": 100,
+    "output_hash_verified": 100,
+    "resume_response_status_counts": {
+      "200": 100,
+      "429": 2,
+      "None": 1
+    },
+    "first_request_ms_from_recovery_fault_group": {
+      "count": 30,
+      "min": 503.25237800007017,
+      "mean": 766.2280522333125,
+      "p95_observed": 991.9165659998725,
+      "max": 1000.0394509997932
+    },
+    "http_200_latency_ms": {
+      "count": 100,
+      "min": 16.06786499996815,
+      "mean": 166.407899120004,
+      "p95_observed": 359.6577270000125,
+      "max": 380.94785300017975
+    },
+    "observed_statement_connection_peak": 4,
+    "db_peak_by_application": {
+      "fixture_admin_without_application_name": 2,
+      "k15-api0": 1,
+      "k15-api1": 1
+    },
+    "resource": [
+      {
+        "role": "postgres",
+        "samples": 52,
+        "rss_peak_mib": 288.2421875,
+        "cpu_s": 1.5400000000000005,
+        "cpu_cores_mean": 0.1906828825605556,
+        "fds_before": null,
+        "fds_peak": null,
+        "fds_after": null
+      },
+      {
+        "role": "generator",
+        "samples": 52,
+        "rss_peak_mib": 151.55078125,
+        "cpu_s": 1.63,
+        "cpu_cores_mean": 0.20182668738552306,
+        "fds_before": 19,
+        "fds_peak": 324,
+        "fds_after": 20
+      },
+      {
+        "role": "api0",
+        "samples": 52,
+        "rss_peak_mib": 141.29296875,
+        "cpu_s": 2.0700000000000003,
+        "cpu_cores_mean": 0.25630751097425325,
+        "fds_before": 9,
+        "fds_peak": 67,
+        "fds_after": 12
+      },
+      {
+        "role": "api1",
+        "samples": 52,
+        "rss_peak_mib": 141.4609375,
+        "cpu_s": 1.9900000000000002,
+        "cpu_cores_mean": 0.24640190668539322,
+        "fds_before": 9,
+        "fds_peak": 64,
+        "fds_after": 12
+      }
+    ],
+    "ingress": {
+      "steady": {
+        "accepted": 120,
+        "replica_0": 60,
+        "peak_active": 75,
+        "replica_1": 60,
+        "to_api_bytes": 432155,
+        "to_client_bytes": 553164
+      },
+      "reset": {
+        "accepted": 45,
+        "replica_0": 16,
+        "peak_active": 15,
+        "replica_1": 14,
+        "to_api_bytes": 100719,
+        "to_client_bytes": 131002,
+        "forced_abort": 15,
+        "fault_refused": 15
+      },
+      "idle": {
+        "accepted": 45,
+        "replica_0": 16,
+        "peak_active": 15,
+        "to_api_bytes": 100719,
+        "replica_1": 14,
+        "to_client_bytes": 131002,
+        "idle_timeout": 15,
+        "fault_refused": 15
+      }
+    },
+    "count_legacy_pending_connections_after_drain": 0,
+    "terminal_drain_and_http_verification_seconds": 43.596956210999906
+  },
+  "attempts": [
+    {
+      "trial": 1,
+      "wrapper": {
+        "status": "failed",
+        "image": "sha256:6aed97ec4d6691527a72667ecdac67e4964ddcd6c1e4077aab9d8073a249b797",
+        "committed": false,
+        "pushed": false,
+        "exit_code": 1,
+        "oom": false,
+        "application_cores": 4,
+        "application_ram_bytes": 3221225472,
+        "pg_cores": 1,
+        "pg_ram_bytes": 536870912,
+        "fd_limit": 1024,
+        "inputs_unchanged": true,
+        "elapsed_seconds": 35.78099999999995,
+        "head": "fa46dd8cbb2239c6f116456894a2009b45846245"
+      },
+      "authority_completed": 0,
+      "terminal_jobs": 0
+    },
+    {
+      "trial": 2,
+      "wrapper": {
+        "status": "failed",
+        "image": "sha256:6aed97ec4d6691527a72667ecdac67e4964ddcd6c1e4077aab9d8073a249b797",
+        "committed": false,
+        "pushed": false,
+        "exit_code": 1,
+        "oom": false,
+        "application_cores": 4,
+        "application_ram_bytes": 3221225472,
+        "pg_cores": 1,
+        "pg_ram_bytes": 536870912,
+        "fd_limit": 1024,
+        "inputs_unchanged": true,
+        "elapsed_seconds": 27.907000000000153,
+        "head": "fa46dd8cbb2239c6f116456894a2009b45846245"
+      },
+      "authority_completed": 1,
+      "terminal_jobs": 0
+    },
+    {
+      "trial": 3,
+      "wrapper": {
+        "status": "failed",
+        "image": "sha256:6aed97ec4d6691527a72667ecdac67e4964ddcd6c1e4077aab9d8073a249b797",
+        "committed": false,
+        "pushed": false,
+        "exit_code": 1,
+        "oom": false,
+        "application_cores": 4,
+        "application_ram_bytes": 3221225472,
+        "pg_cores": 1,
+        "pg_ram_bytes": 536870912,
+        "fd_limit": 1024,
+        "inputs_unchanged": true,
+        "elapsed_seconds": 47.797000000000025,
+        "head": "fa46dd8cbb2239c6f116456894a2009b45846245"
+      },
+      "authority_completed": 6,
+      "terminal_jobs": 0
+    },
+    {
+      "trial": 4,
+      "wrapper": {
+        "status": "passed_native_https",
+        "image": "sha256:6aed97ec4d6691527a72667ecdac67e4964ddcd6c1e4077aab9d8073a249b797",
+        "committed": false,
+        "pushed": false,
+        "exit_code": 0,
+        "oom": false,
+        "application_cores": 4,
+        "application_ram_bytes": 3221225472,
+        "pg_cores": 1,
+        "pg_ram_bytes": 536870912,
+        "fd_limit": 1024,
+        "inputs_unchanged": true,
+        "elapsed_seconds": 86.23500000000013,
+        "head": "fa46dd8cbb2239c6f116456894a2009b45846245"
+      },
+      "authority_completed": 0,
+      "terminal_jobs": 100
+    }
+  ]
+}
