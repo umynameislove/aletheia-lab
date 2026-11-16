@@ -1,5 +1,5 @@
 {
-  "status": "kiens_local_technical_pass",
+  "status": "kiens_technical_and_ci_pass",
   "scope": "K03 personal implementation and isolated real managed staging qualification; not shared deployment/joint signoff",
   "baseline_head": "5ac1c54d90ce1ee507e4cdce3b0f8310b49505cf",
   "runtime_release_id": "e04ff2ad03f40f5021453fc356ad25ad2eec22f8f0fac1ab0085a1ba935cf081",
@@ -32,6 +32,30 @@
     "8-hour real-time expiry soak",
     "maximum RPS/50k-user capacity"
   ],
-  "ci": "will be recorded against published SHA in separate CI receipt; no CI pass inferred here",
-  "archive_sha256": "9634bbec1ad5837d0649a335e51b64513f9630b0f6edd291613498d12cb2e0be"
+  "ci": {
+    "status": "passed",
+    "head_sha": "fa46dd8cbb2239c6f116456894a2009b45846245",
+    "successful_checks": 11,
+    "total_checks": 11,
+    "failed": 0,
+    "cancelled": 0,
+    "reruns": 0,
+    "workflow_attempts": 1,
+    "coverage_py311_percent": 88.73,
+    "full_py311_passed": 11462,
+    "full_py311_skipped": 56,
+    "full_py311_warnings": 7,
+    "full_py312_passed": 11462,
+    "full_py312_skipped": 56,
+    "full_py312_warnings": 7,
+    "strict_mypy_source_files_per_interpreter": 403,
+    "tested_tree_matches_head": true,
+    "receipt": "ci-fa46dd8/CI-GITHUB-K03.md",
+    "machine_receipt": "ci-fa46dd8/github-ci-result.json",
+    "new_commit_or_push": false
+  },
+  "archive_sha256": "9634bbec1ad5837d0649a335e51b64513f9630b0f6edd291613498d12cb2e0be",
+  "published_head": "fa46dd8cbb2239c6f116456894a2009b45846245",
+  "last_updated_utc": "2026-11-15T04:56:03.874780+00:00",
+  "last_updated_vietnam": "2026-11-15T11:56:03.874780+07:00"
 }

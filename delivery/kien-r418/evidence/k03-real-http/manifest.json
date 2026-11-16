@@ -20,8 +20,8 @@
     "bytes": 395
   },
   "delivery/kien-r418/evidence/k03-real-http/KET-QUA-K03.md": {
-    "sha256": "2af5dc3181c2f20f4dcbbafece14c4ca8686b2e2d6e05151984ecc5480584677",
-    "bytes": 12127
+    "sha256": "ecc573bd20cbf0733953c0b3482c555083b8a4ffdecafa2f8215a95e39bf8b0a",
+    "bytes": 13378
   },
   "delivery/kien-r418/evidence/k03-real-http/PHUONG-PHAP-K03.md": {
     "sha256": "476e6a6c7e054a2fe48e19abab270885e175af0d8cf7bf4f96bdd5fdfa7d92b4",
@@ -44,8 +44,8 @@
     "bytes": 4452
   },
   "delivery/kien-r418/evidence/k03-real-http/result.json": {
-    "sha256": "e92c858e211d05be1cdbcf1691e4b8e6cf6e2818ec72de7d01f8c8cdbdd5c5cd",
-    "bytes": 2261
+    "sha256": "77e3cba15b291d9a8d3e2267ad28ca223552804b6112445aed12c6abcb442739",
+    "bytes": 3054
   },
   "delivery/kien-r418/evidence/k03-real-http/scenario-results.csv": {
     "sha256": "9d72f2daeb19fa391ed0ffc25ba60d5c9455b8dddb33040a04cf1f50830d5e1d",

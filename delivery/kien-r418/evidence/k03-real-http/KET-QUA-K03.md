@@ -103,8 +103,19 @@ Các lượt lỗi là lịch sử điều tra, không bị đổi nhãn thành 
 - Hai file bằng chứng K09.03 đã sửa từ trước được so SHA và giữ nguyên; không stage/push chúng. Các artifact K07/K09 cũ cũng không thuộc commit này.
 - `scenario-results.csv`: verdict, thời gian và toàn bộ tham số đo từng scenario; `attempts.json`: lịch sử đầy đủ; `result.json`: verdict kỹ thuật và giới hạn; `source.patch`: đúng ba tệp tracked liên quan thay đổi.
 
+## Cập nhật CI — commit fa46dd8
+
+**11/11 kiểm tra SUCCESS ngay lần đầu, 0 failed, 0 cancelled, 0 rerun.** SHA `fa46dd8cbb2239c6f116456894a2009b45846245` trên `product-api`; job cuối xong 11:48:51 ngày 15/11/2026 (giờ Việt Nam).
+
+- Python 3.11 và 3.12: **11.462 passed / 56 skipped / 7 warnings mỗi bản**; coverage Python 3.11 **88,73%**; strict mypy **403 file không lỗi mỗi bản**.
+- Consumer **359/359**, hosted unit **2.985 passed / 13 skipped / 5 deselected**; PostgreSQL/worker **440 passed / 11 skipped**, query probe **4 passed**; hai job Windows đều thành công.
+- CI checkout synthetic merge `f3e2ba9b5f34a9723a71a5749fcec57114998f45`; tree bằng head đã push: `fb3b3ab417ddd3fcd01d6f66439e7231168df55b`. `main` giữ nguyên.
+- [Báo cáo CI chi tiết, thời gian từng job, skip/warning và log gốc](ci-fa46dd8/CI-GITHUB-K03.md). [Kiểm tra trên GitHub](https://github.com/umynameislove/aletheia-lab/pull/193/checks).
+
+Không cộng số test giữa các profile/interpreter. Chỉ cập nhật hồ sơ K03 trên máy; không sửa source/UI/test/config, không chạy lại phần đã pass hoặc tạo commit mới. Trạng thái raw các lượt lỗi giữ nguyên.
+
 ## Giới hạn nghiệm thu
 
 Không nhận thay staging chung/production, việc chọn issuer/assurance/lost-factor của nhóm, toàn bộ BFCache/back-forward/A01–A32, webhook IdP tự động, soak 8 giờ hoặc sức tải 50k. Không đổi các mục phối hợp thành đã nghiệm thu chỉ vì có kết quả kỹ thuật local.
 
-Commit/push chỉ trên `product-api`. Báo cáo này được lập trước commit nên raw result giữ đúng `committed=false/pushed=false` tại thời điểm chạy. CI sau push được ghi theo đúng SHA trong receipt CI riêng; không dùng CI của commit cũ thay cho commit mới.
+Commit/push chỉ trên `product-api`. Báo cáo này được lập trước commit nên raw result giữ đúng `committed=false/pushed=false` tại thời điểm chạy. CI sau push đã xác nhận 11/11 theo đúng SHA trong receipt CI riêng; không dùng CI của commit cũ thay cho commit mới.
