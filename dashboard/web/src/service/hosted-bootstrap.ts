@@ -21,6 +21,7 @@ const TERMINAL = new Set(["succeeded", "failed", "cancelled", "expired"]);
 export function createHostedBootstrap(options: {
   fetch: typeof fetch;
   onClear: () => void;
+  onWorkspaceLost?: (workspace: string) => void;
   now?: () => number;
   tell?: Parameters<typeof createSessionGuard>[0]["tell"];
   idpOrigin?: string;
@@ -49,6 +50,15 @@ export function createHostedBootstrap(options: {
     options.onClear();
     publish({ status, session: null, workspace: null, error, generation: state.generation + 1, opening: null });
   }
+  function dropWorkspace() {
+    const workspace = state.workspace?.workspace_id ?? state.opening;
+    controller.abort(); controller = new AbortController(); checking = null; watchedJob = null; watchedResult = null; jobReadAt = null; selecting++;
+    options.onClear();
+    publish({ workspace: null, generation: state.generation + 1, opening: null,
+      error: new ProductError("permission_denied", "This work is no longer available. Select a workspace to continue.") });
+    client = makeClient();
+    if (workspace) options.onWorkspaceLost?.(workspace);
+  }
   function makeClient() {
     const generation = state.generation;
     // A 2xx GET of the watched job (or its updates) from this generation is a read of that job's own scope.
@@ -64,7 +74,11 @@ export function createHostedBootstrap(options: {
     return createHostedClient({ fetch, session: state.session ?? undefined,
       signal: controller.signal, isCurrent: () => current(generation), idpOrigin: options.idpOrigin,
       // A session/capability answer alone cannot renew a result's authorization lease.
-      onAnswer: (status, code) => { if (status >= 300) guard?.noteResponse(status, code); } });
+      onAnswer: (status, code) => {
+        // Membership revocation ends this scope, not the authenticated session or other tabs' workspaces.
+        if (code === "membership_revoked") dropWorkspace();
+        else if (status >= 300) guard?.noteResponse(status, code);
+      } });
   }
   function requireSession() {
     if (!state.session || !alive) throw new HostedRequestDiscarded();
@@ -102,16 +116,12 @@ export function createHostedBootstrap(options: {
     const probe = createHostedClient({ fetch: options.fetch, session, signal: controller.signal,
       isCurrent: () => current(generation), onAnswer: (status, code) => {
         denied = status === 403 || status === 404;
-        if (status >= 300) guard?.noteResponse(status, code);
+        if (status >= 300 && code !== "membership_revoked") guard?.noteResponse(status, code);
       } });
     try { await read(probe); }
     catch (error) {
       if (!denied || !current(generation)) throw error;
-      controller.abort(); controller = new AbortController(); checking = null; watchedJob = null; watchedResult = null;
-      options.onClear();
-      state = { ...state, workspace: null, generation: state.generation + 1, opening: null,
-        error: new ProductError("permission_denied", "This work is no longer available. Select a workspace to continue.") };
-      client = makeClient(); publish({});
+      dropWorkspace();
     }
   }
   /* The result on screen is confirmed by its own bounded header (Kiên, 13/11). A server without it is never
@@ -151,6 +161,9 @@ export function createHostedBootstrap(options: {
           }
           return { status: "ok", context_id: next.context_id, ...(polled !== null ? { since: polled } : {}) };
         } catch (error) {
+          if (error instanceof HostedRequestDiscarded && state.session && !state.workspace && state.error?.code === "permission_denied") {
+            return { status: "ok", context_id: state.session.context_id };
+          }
           if (error instanceof ProductError && error.code === "session_expired") return { status: "expired" };
           if (error instanceof ProductError && ["session_revoked", "membership_revoked"].includes(error.code)) return { status: "revoked" };
           return { status: "unreachable" };
@@ -223,7 +236,8 @@ export function createHostedBootstrap(options: {
     isCurrent: (generation: number) => current(generation),
     authError(error: ProductError) {
       if (error.code === "session_expired") guard?.noteResponse(401, error.code);
-      else if (["session_revoked", "membership_revoked"].includes(error.code)) clear();
+      else if (error.code === "membership_revoked") dropWorkspace();
+      else if (error.code === "session_revoked") clear();
     },
     async renew() { const generation = state.generation; const next = await client.renew(); if (current(generation)) applySession(next); },
     async logout(all = false) {

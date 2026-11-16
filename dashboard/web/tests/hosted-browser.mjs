@@ -398,6 +398,27 @@ const resultQuery = (result = parentView.result.id, job = analysis.job_id) => ne
   project: parentView.project.id, snapshot: parentView.snapshot.id, result });
 const mutations = () => calls.filter(call => call.method !== "GET" && !call.path.startsWith("/v1/auth/"));
 
+test("a result link pasted in the workspace directory opens its workspace in the same document", async () => {
+  reset(); bindings = "on";
+  await page.open(base);
+  await page.until(`document.body.innerText.includes('Workspace access') && document.body.innerText.includes('Open workspace')`);
+  assert.equal(await page.eval("location.hash"), "");
+  await page.eval("window.sameDocument = true");
+  await page.send("Page.navigate", { url: base + "#/investigation?" + resultQuery() });
+  await page.until(`document.querySelector('.investigation .verdict, .content .verdict')`);
+  assert.equal(await page.eval("window.sameDocument"), true);
+  assert.match(await page.eval("location.hash"), /^#\/investigation\?workspace=a&/);
+  const selected = calls.findIndex(call => call.path === "/v1/workspaces/a/capabilities");
+  const read = calls.findIndex(call => call.path === "/v1/workspaces/a/results/" + parentView.result.id);
+  assert.ok(selected >= 0 && read > selected, "workspace capabilities precede the result read");
+
+  const denied = resultQuery(); denied.set("workspace", "unavailable");
+  await page.send("Page.navigate", { url: base + "#/investigation?" + denied });
+  await page.until(`document.querySelector('[role=alert]') && !document.querySelector('.verdict')`);
+  assert.equal(calls.filter(call => call.path === "/v1/workspaces/unavailable/capabilities").length, 1);
+  assert.equal(calls.some(call => call.path.startsWith("/v1/workspaces/unavailable/results/")), false);
+});
+
 test("Chrome runs the four hosted bindings: ZIP refresh, follow-up, export and logical delete, each on its server CAS", async () => {
   reset(); bindings = "on";
   await page.send("Page.setDownloadBehavior", { behavior: "deny" });

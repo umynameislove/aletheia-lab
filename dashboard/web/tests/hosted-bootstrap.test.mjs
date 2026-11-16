@@ -112,7 +112,7 @@ test("visible private views cover at the hosted confirmation lease even with a c
 test("known revocation clears workspace/session; successful logout broadcasts no private content", async () => {
   let revoked = false;
   const h = system(url => url === "/v1/session" ? json(session()) : url === "/v1/auth/logout"
-    ? json({ logout_url: null }) : revoked ? problem("membership_revoked", 403) : json(caps("w")));
+    ? json({ logout_url: null }) : revoked ? problem("session_revoked", 401) : json(caps("w")));
   await h.boot.start(); await h.boot.selectWorkspace("w"); revoked = true;
   await assert.rejects(h.boot.refreshCapabilities("w"));
   assert.equal(h.boot.snapshot().session, null); assert.equal(h.boot.snapshot().workspace, null);
@@ -129,15 +129,40 @@ test("stopping an unresolved bootstrap prevents its late session from becoming v
   assert.equal(h.boot.snapshot().session, null);
 });
 
-test("the hosted guard rechecks the selected workspace and wipes a revoked membership", async () => {
+test("the hosted guard drops revoked workspace scope while retaining its valid session", async () => {
   let revoked = false;
   const h = system(url => url === "/v1/session" ? json(session())
     : revoked ? problem("membership_revoked", 403) : json(caps("w")));
   await h.boot.start(); await h.boot.selectWorkspace("w");
   const guard = h.boot.guard(); revoked = true;
   await guard.check(true);
-  assert.equal(guard.state(), "revoked");
-  assert.equal(h.boot.snapshot().session, null); assert.equal(h.boot.snapshot().workspace, null);
+  assert.equal(guard.state(), "active");
+  assert.equal(h.boot.snapshot().session.user_id, "actor"); assert.equal(h.boot.snapshot().workspace, null);
+  assert.equal(h.messages.some(message => message.type === "revoked"), false);
+  h.boot.stop();
+});
+
+test("J02 membership loss fences late reads and allows another workspace without signing in again", async () => {
+  let revoked = false, release;
+  const h = system(url => url === "/v1/session" ? json(session())
+    : url.endsWith("/jobs/late") ? new Promise(done => { release = done; })
+    : url.includes("/w/") && revoked ? problem("membership_revoked", 403)
+    : json(caps(url.includes("/other/") ? "other" : "w")));
+  await h.boot.start(); await h.boot.selectWorkspace("w");
+  const generation = h.boot.snapshot().generation;
+  const late = h.boot.client().loadJob("w", "late");
+  const discarded = assert.rejects(late, error => error.name === "HostedRequestDiscarded");
+  revoked = true;
+  await assert.rejects(h.boot.refreshCapabilities("w"));
+  assert.equal(h.boot.isCurrent(generation), false);
+  assert.equal(h.boot.snapshot().status, "ready");
+  assert.equal(h.boot.snapshot().session.user_id, "actor");
+  assert.equal(h.boot.snapshot().workspace, null);
+  assert.equal(h.messages.some(message => message.type === "revoked"), false);
+  release(json({ schema_version: VERSION, workspace_id: "w", job_id: "late", status: "succeeded", progress: null }));
+  await discarded;
+  await h.boot.selectWorkspace("other");
+  assert.equal(h.boot.snapshot().workspace.workspace_id, "other");
   h.boot.stop();
 });
 

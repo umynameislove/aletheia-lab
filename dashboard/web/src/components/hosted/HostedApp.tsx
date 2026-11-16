@@ -34,16 +34,24 @@ function resultLink(hash: string): ResultLink | null {
 }
 
 export function HostedApp() {
+  const [hash, setHash] = useState(location.hash);
   const channel = useRef<ReturnType<typeof sessionChannel> | null>(null);
   const instance = useRef<HostedBootstrap | null>(null);
   if (!instance.current) instance.current = createHostedBootstrap({ fetch: (url, init) => fetch(url, init),
     idpOrigin: import.meta.env.VITE_IDP_ORIGIN,
     tell: message => channel.current?.tell(message),
+    onWorkspaceLost: workspace => {
+      // Retire the denied link without replacing a link to a different workspace already pasted in this tab.
+      if (resultLink(location.hash)?.workspace !== workspace) return;
+      history.replaceState(history.state, "", location.pathname + location.search + "#/workspaces");
+      setHash(location.hash);
+    },
     onClear: () => { wipeAll(); setHostedContext(null); } });
   const boot = instance.current;
   const state = useSyncExternalStore(boot.subscribe, boot.snapshot);
-  const [hash, setHash] = useState(location.hash);
-  const selected = useRef<string | null>(null);
+  const linkWorkspace = resultLink(hash)?.workspace;
+  const linkHash = linkWorkspace ? hash : undefined;
+  const selected = useRef<{ account: string; linkHash?: string } | null>(null);
   useEffect(() => {
     channel.current = sessionChannel(message => boot.guard()?.onPeer(message));
     void boot.start();
@@ -57,12 +65,13 @@ export function HostedApp() {
   }, [boot, state.session, state.generation]);
   useEffect(() => {
     if (state.status !== "ready" || !state.session) { selected.current = null; return; }
-    const key = state.session.user_id + "/" + state.session.context_id;
-    if (selected.current === key) return;
-    selected.current = key;
-    const target = resultLink(location.hash)?.workspace ?? state.session.last_workspace_id;
-    if (target) void boot.selectWorkspace(target);
-  }, [boot, state.status, state.session]);
+    const account = state.session.user_id + "/" + state.session.context_id;
+    const sameAccount = selected.current?.account === account;
+    if (sameAccount && selected.current?.linkHash === linkHash) return;
+    selected.current = { account, linkHash };
+    const target = linkWorkspace ?? (sameAccount ? null : state.session.last_workspace_id);
+    if (target && target !== state.workspace?.workspace_id && target !== state.opening) void boot.selectWorkspace(target);
+  }, [boot, linkHash, linkWorkspace, state.status, state.session, state.workspace?.workspace_id, state.opening]);
   useEffect(() => {
     // Once no one is signed in, nothing of the previous account's scope stays in the address bar (Kiên R4.18):
     // workspace, project, snapshot, result and selection IDs are dropped in place, without a new history entry.
