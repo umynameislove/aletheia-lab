@@ -1,0 +1,10 @@
+{
+  "downloads": [],
+  "resource_type": "XHR",
+  "path": "/v1/workspaces/ws_79e07c15e3964079ad6a044f2203b854/exports/ex_json_p6-result-957ee221f912b7ce9d6ef45173982580564a133a16ebe984329abe22b2f2ab9e_80e0192614d549009a5743959a216b3b/download",
+  "release_error": {
+    "code": -32602,
+    "message": "Invalid InterceptionId."
+  },
+  "clear_ms": 284
+}

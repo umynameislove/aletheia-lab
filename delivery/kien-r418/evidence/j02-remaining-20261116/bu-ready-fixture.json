@@ -1,0 +1,58 @@
+{
+  "prepared_at_utc": "2026-11-16T03:55:17.821Z",
+  "workspace_A": "ws_79e07c15e3964079ad6a044f2203b854",
+  "workspace_B": "ws_a754dc275d52451cb990f472cfd232a6",
+  "actors": [
+    {
+      "index": 0,
+      "username": "j02_2be4f511_0",
+      "user_id": "user_953c458c7d49f18fd9596d28586b5533",
+      "workspace_A": "owner",
+      "active_A": true
+    },
+    {
+      "index": 1,
+      "username": "j02_2be4f511_1",
+      "user_id": "user_dae02c53e17b1f1688faadb249a6548f",
+      "workspace_A": null,
+      "active_A": false
+    },
+    {
+      "index": 2,
+      "username": "j02_2be4f511_2",
+      "user_id": "user_102b291bcab321a9e767f667f64fddc5",
+      "workspace_A": "admin",
+      "active_A": true
+    },
+    {
+      "index": 3,
+      "username": "j02_2be4f511_3",
+      "user_id": "user_a7ce972262d2b1b94accc5d0ab8bdbc2",
+      "workspace_A": "analyst",
+      "active_A": true
+    },
+    {
+      "index": 4,
+      "username": "j02_2be4f511_4",
+      "user_id": "user_ab2be47337296f727ccd12a96d8098e0",
+      "workspace_A": "reviewer",
+      "active_A": true
+    },
+    {
+      "index": 5,
+      "username": "j02_2be4f511_5",
+      "user_id": "user_be84ca8d4f04798f519eef647341b197",
+      "workspace_A": "viewer",
+      "active_A": true
+    },
+    {
+      "index": 6,
+      "username": "j02_2be4f511_6",
+      "user_id": "user_f08dbb6b8439266dbafa866cafaa5f10",
+      "workspace_A": "viewer",
+      "active_A": true
+    }
+  ],
+  "host_ip": "192.168.2.10",
+  "peer_ip": "192.168.2.7"
+}

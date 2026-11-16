@@ -1,0 +1,127 @@
+BÁO CÁO J02 CỦA QUÂN — MacBook trên staging J02 của Kiên, 16/11/2026 (giờ Việt Nam, +07:00)
+
+Môi trường
+- MacBook Pro M1 8 GB, macOS 15.3.2, Chrome 157.0.8103.51, Wi‑Fi, IP 192.168.2.7 → staging 192.168.2.10:18976/18977.
+- Gói J02-Bu-kiem-tra-16-11.zip (SHA-256 9dc6bd39…db2f). Mỗi account một hồ sơ Chrome riêng, mở bằng đúng tham số open-mac.sh.
+  Quân thêm cổng DevTools chỉ nghe trên 127.0.0.1 để ghi trace.
+- Bản UI và backend: bản staging J02 của Kiên (chưa commit/push), gói không kèm manifest.
+- Mỗi account do Quân tự đăng nhập qua IdP. Trace chỉ ghi method/path/status/thời gian, không có cookie, token, mật khẩu hay mã mời.
+  Hai ảnh T03 lúc đầu lộ ô mã mời (xem T03 bên dưới) đã được bôi đen trước khi đóng gói.
+- Workspace A = ws_79e07c15…b854, B = ws_a754dc27…32a6. Mốc ACK là lúc response PATCH/POST của chủ workspace về tới trình duyệt;
+  mốc "mất nội dung" do MutationObserver trên chính tab bị thu hồi ghi lại. Cả hai mốc lấy từ cùng đồng hồ trên MacBook.
+
+Kết quả từng ca
+
+T01 Owner và scope — PASS (1 lượt)
+- 11:17:34. Account 0 (owner A) dán link A trong cùng tab từ màn Workspace access: mở sau 707 ms, 10 claim, mỗi claim 1 nguồn, cả 10 "Backed by evidence".
+  Reload sau 1245 ms, cùng IDs: job_2abb35b0…, project p3-project-8d309749…, snapshot upload-snapshot-d8db7a77…, result p6-result-957ee221…
+  15 lượt gọi API, đều 2xx.
+- Account 1 (owner B, có thêm workspace C "owner race"): capabilities A → 403 permission_denied, result header A → 404 not_found.
+  Dán link A → màn Workspace access với "Refused · permission_denied", không lần nào lóe câu hỏi hay claim của A (MutationObserver 0 lần).
+  Dán link B → mở sau 641 ms, 10 claim.
+- Ghi chú: sau khi bị từ chối, URL vẫn giữ nguyên các ID của A trên thanh địa chỉ (chỉ hiển thị, không lộ nội dung).
+
+T02 Năm role — PASS (5 account, 11:18:49–11:19:43)
+- owner/admin/analyst: allowed_actions = read, review, export, delete, import, analyze. reviewer: read, review, export. viewer: read, export.
+- Cả 5 account đọc A (10 claim) và tải JSON qua UI: POST exports 201 → download 200 → file aletheia-uploaded-project-957ee221.json, có sự kiện download completed.
+- Reviewer/viewer: ô follow-up báo không dùng được; Connect project mở ra câu "Your current workspace access does not permit ZIP imports."
+  và không có ô chọn ZIP.
+- Gửi thẳng request lên server, bỏ qua UI: reviewer và viewer POST /jobs analyze → 404 not_found; POST /jobs preview → 404 not_found.
+  Server có từ chối, nhưng bằng 404 chứ không phải 403 — Kiên xác nhận đây là chủ ý (giấu sự tồn tại) hay cần 403 permission_denied.
+- Ghi chú: ô follow-up của reviewer ghi lý do là "This workspace does not offer it", vì capabilities của role đó không có feature
+  follow_up. Câu đúng phải là "role không được phép". Phía UI sẽ sửa câu chữ.
+
+T03 Onboarding/lời mời — PASS (5 lượt). Không có token nào trong báo cáo.
+- a 11:27: owner tìm j02_2be4f511_5@aletheia.invalid → đúng 1 user (user_be84ca8d…) → tạo lời mời viewer → POST invitations 201.
+  Account 3 (sai account) dán mã → UI hiện "Sign in with the account this invitation was issued to."
+  UI chỉ hiện câu này với đúng cặp 403 invitation_wrong_account.
+- b 11:31: owner thu hồi lời mời (DELETE invitations 200) → account 5 dán cùng mã → "This invitation is unavailable or has already been used."
+  (cặp 404 invitation_unavailable).
+- c 11:32:59: lời mời 60 s, server ghi hết hạn 11:34:04 → account 5 dán lúc 11:34:11 → POST /v1/invitations/accept 410 invitation_expired.
+- d 11:34:37: mời account 6 → 11:36:51 accept 200, account 6 có lại A với role viewer. Dán lại cùng mã lúc 11:38:42 → 404 (đã dùng).
+- Không lượt nào biến 403/404/410 thành thành công.
+- LỖI UI (phía Quân, FL-147): ô Invitation token là input type=password nên Chrome không cho copy, trong khi chữ hướng dẫn bảo copy.
+  Lượt này Quân phải dùng DevTools đổi ô sang text để người thử tự copy. Hai ảnh T03-c và T03-d chụp lúc ô đang ở dạng text,
+  đã bôi đen trước khi gửi; hai mã đó đã hết hạn hoặc đã dùng.
+
+T04 Mất workspace cuối — PASS (1 lượt)
+- Account 5 (chỉ có A) đang xem kết quả A. Owner bấm Remove access (có bước xác nhận):
+  PATCH members/user_be84ca8d… 200, gửi 11:20:15.934, ACK 11:20:16.094.
+- Nội dung A mất lúc 11:20:18.060 = 1966 ms sau ACK (yêu cầu ≤ 5 s).
+- Sau đó: GET /v1/session 200, onboarding=needs_workspace, last_workspace_id=null; danh sách workspace rỗng; capabilities A 403 membership_revoked.
+  UI ở màn Workspace access, không về Sign in. Không có workspace C.
+
+T05 Còn workspace khác — PASS (lượt đo thời gian chạy lại lúc 11:40, sau khi T03-d mời account 6 về lại A)
+- Account 6 (A+B) xem A; owner Remove access: PATCH 200, ACK 11:40:01.811.
+- Nội dung A mất lúc 11:40:03.706 = 1895 ms sau ACK.
+- Session 200, onboarding=ready; danh sách còn B; capabilities A 403 membership_revoked; capabilities B 200 (viewer).
+- Chọn B từ danh sách: mở sau 317 ms, thanh trên "J02 actor 6 · J02 2be4f511 workspace 1", không đăng nhập lại.
+- Lượt đầu (11:20) cũng mất A và giữ session 200, nhưng script lỗi trước khi lưu mốc thời gian nên không tính.
+- LỖI UI (phía Quân, FL-148): ngay sau khi mất A, dán link B vào cùng tab không chuyển sang B (chỉ còn GET session mỗi 3 s);
+  tải lại trang thì UI tự mở B.
+- Cần Kiên xem: account 6 là viewer B nhưng GET results/p6-result-ae41a412… (link B) trả 404, header cũng 404. Owner B mở bình thường.
+  Kiên xác nhận viewer có được đọc kết quả này không.
+
+T06 Đổi ngữ cảnh khi request chậm — PASS (2 lượt). Lỗi được điều khiển, không phải chậm mạng thật.
+- Cách làm: CDP Fetch giữ response thật của các request vào workspace A ở bước response.
+  Account 2 (admin A, viewer B) mở link A; trong lúc A đang chờ thì mở B từ danh sách workspace; sau đó mới thả A.
+- Lượt 1 (11:51, thả nguyên response 200 thật của A): UI ở yên B, không quay về A, không hiện toast, kết quả hay câu hỏi cũ của A,
+  không về Sign in.
+- Lượt 2 (11:52, thay response bằng 503 service_unavailable): UI ở yên B, không hiện lỗi cũ, không về Sign in.
+- Chưa thử ca giữ response thật cho tới khi tới hạn của client (deadline). Kiên đã có bằng chứng riêng cho late refusal.
+
+T07 Job/download đang chờ gặp revoke — PASS (đã báo Kiên trước)
+- A (11:54): account 2 hỏi follow-up trên claim của A → POST follow-ups 202, job_0dbd95f86c69421fa5751ef2dfe74440.
+  698 ms sau: job=running, attempt 1 running, có started_at và heartbeat_at (worker đã nhận job).
+  Owner Remove access: gửi 11:54:55.263, ACK 11:54:55.352 (PATCH 200).
+  Nội dung A trên màn account 2 mất sau 2181 ms. Job kết thúc failed, retryable=false, attempts [[1, failed, authorization]].
+  Không có kết quả mới: project revision 2, current_result_id giữ nguyên p6-result-957ee221…
+  UI không báo thành công; session 200 (account 2 còn B).
+- B (11:55): account 4 bấm tải JSON; response download (200) được giữ lúc 11:55:12.293.
+  Owner Remove access account 4: ACK 11:55:12.532. Thả response lúc 11:55:13.559.
+  Không có sự kiện download, không hiện "Sent to your browser as…". UI về Workspace access với permission_denied; session 200.
+
+T08 Hai tab và đổi account — PASS, kèm 2 điểm cần Kiên xử lý
+- Phần 1 (11:50): hai tab cùng account 3 mở A. Bấm Sign out all sessions ở tab 2 → nội dung tab 1 mất khoảng 0,2 s sau khi bấm,
+  tab 1 về Sign in; GET session 401 session_revoked.
+  Không bắt được response logout-all trong trace, nên thời gian đo từ lúc bấm, không phải từ ACK.
+  Lượt 11:42 trước đó không tính: phiên tự hết hạn (401 session_expired) trước khi kịp bấm.
+- Phần 2 (12:01): trong cùng hồ sơ Chrome, đăng nhập account 1 (không có quyền A). Back×4, Forward×4, reload, mở link A cũ:
+  0 lần lóe nội dung A hoặc tên account 3; link A → capabilities 403 permission_denied; localStorage/sessionStorage rỗng;
+  không có draft, review mark hay toast của account 3; console sạch.
+- Cần Kiên xử lý 1: sau Sign out all sessions (và cả Sign out thường: POST /v1/auth/logout 204, không có logout_url),
+  phiên IdP vẫn còn. Bấm Sign in là vào lại thẳng account 3, không hỏi mật khẩu, nên không đổi được account từ giao diện.
+  Quân phải tự mở trang logout của Keycloak; trang này hỏi "Do you want to log out?" rồi báo "We are sorry… Logout failed",
+  sau đó Sign in mới hiện form đăng nhập.
+- Redirect bất thường trong lịch sử trình duyệt: /#/signed-out?reason=login_failed, logout/logout-confirm của Keycloak.
+
+T09 Back và BFCache — PASS (Chrome; chưa chạy Safari)
+- 11:41:44: kết quả A → /health/ready → Back. pageshow.persisted=false.
+  Chrome không dùng BFCache, lý do: MainResourceHasCacheControlNoStore, JsNetworkRequestReceivedCacheControlNoStoreResource,
+  BrowsingInstanceNotSwapped.
+- Back tải mới trang: màn "Checking your access" che nội dung cho tới khi session, capabilities, result và header đều 200,
+  rồi mới hiện (khoảng 0,6–0,9 s).
+- Không tắt no-store. Chưa thử ca BFCache restore thật trên Mac, vì Chrome không restore khi có no-store.
+
+T10 Mất kết nối và phục hồi — PASS (1 lượt, giả lập Offline của DevTools, không phải tắt IdP)
+- Offline lúc 11:41:51.984, trong 9 s: nội dung bị che sau 2969 ms (≤ 5 s).
+- Online lúc 11:42:01.098: session, capabilities, header đều 200, sau đó mới hiện lại (630 ms).
+- 9 request, 0 request lỗi khi offline (UI không gửi khi mất mạng), 0 mutation, không bị đẩy vòng ra Sign in.
+
+Chốt J02 (Quân tạm hiểu J02.01 = scope/role, .02 = lời mời và mất membership, .03 = đổi ngữ cảnh và việc đang chạy,
+.04 = phiên/tab/IdP/BFCache/mạng; Kiên sửa lại nếu cách chia khác)
+- J02.01 — Đồng ý. Cần Kiên xác nhận reviewer/viewer gọi thẳng analyze/import nhận 404 thay vì 403 là đúng chủ ý.
+- J02.02 — Đồng ý phía server. Phía Quân còn 2 lỗi UI phải sửa: FL-147 (không copy được mã mời), FL-148 (không mở link mới sau
+  khi mất workspace, phải reload). Cần Kiên xác nhận viewer B nhận 404 khi đọc kết quả B.
+- J02.03 — Đồng ý (T06 lỗi điều khiển 2/2, T07 job + download 2/2).
+- J02.04 — Còn vướng:
+  (1) Logout không kết thúc phiên IdP, nên Sign in vào lại đúng account cũ và không đổi được account qua UI;
+      trang logout của Keycloak báo "Logout failed".
+  (2) Phiên hết hạn khoảng 20–30 phút sau khi đăng nhập dù vẫn đang dùng (account 0 lúc 11:24, account 3 lúc 11:42,
+      các account khác tương tự). Kiên xác nhận idle/absolute timeout của bản này.
+  (3) BFCache: Chrome không restore vì no-store. Quân đồng ý giữ no-store; ca restore thật trên Mac chưa có. Safari chưa chạy.
+  Return-to sau khi đăng nhập lại: UI về màn Workspace access (route an toàn), không mở lại link cũ.
+
+Thư mục: TXX.json là trace từng ca, TXX-*.png là ảnh; T03-acct5-net.jsonl, T03-acct6-net.jsonl là mã HTTP của lời mời.
+Ảnh peek-acct0/6 và trace-tu-workspaces-hash.json là ảnh/trace phụ khi dò lỗi.
+Sau buổi này các account 2, 4, 5 không còn quyền A (T04, T07; account 6 bị gỡ khỏi A ở T05) — Kiên thu hồi mật khẩu và phiên thử như kế hoạch.

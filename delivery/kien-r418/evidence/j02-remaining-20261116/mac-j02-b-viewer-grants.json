@@ -1,0 +1,10 @@
+{
+  "membership": {
+    "active": true,
+    "role": "viewer",
+    "revision": 1
+  },
+  "result_exists": 1,
+  "project_grant": null,
+  "source_grant": null
+}

@@ -1,0 +1,129 @@
+{
+  "started_ict": "2026-11-16T12:13:18.175234+07:00",
+  "idp": [
+    {
+      "index": 0,
+      "username": "j02_2be4f511_0",
+      "http": {
+        "disable": 204,
+        "reset_password": 204,
+        "logout_sessions": 204
+      },
+      "disabled": true,
+      "sso_sessions": 0
+    },
+    {
+      "index": 1,
+      "username": "j02_2be4f511_1",
+      "http": {
+        "disable": 204,
+        "reset_password": 204,
+        "logout_sessions": 204
+      },
+      "disabled": true,
+      "sso_sessions": 0
+    },
+    {
+      "index": 2,
+      "username": "j02_2be4f511_2",
+      "http": {
+        "disable": 204,
+        "reset_password": 204,
+        "logout_sessions": 204
+      },
+      "disabled": true,
+      "sso_sessions": 0
+    },
+    {
+      "index": 3,
+      "username": "j02_2be4f511_3",
+      "http": {
+        "disable": 204,
+        "reset_password": 204,
+        "logout_sessions": 204
+      },
+      "disabled": true,
+      "sso_sessions": 0
+    },
+    {
+      "index": 4,
+      "username": "j02_2be4f511_4",
+      "http": {
+        "disable": 204,
+        "reset_password": 204,
+        "logout_sessions": 204
+      },
+      "disabled": true,
+      "sso_sessions": 0
+    },
+    {
+      "index": 5,
+      "username": "j02_2be4f511_5",
+      "http": {
+        "disable": 204,
+        "reset_password": 204,
+        "logout_sessions": 204
+      },
+      "disabled": true,
+      "sso_sessions": 0
+    },
+    {
+      "index": 6,
+      "username": "j02_2be4f511_6",
+      "http": {
+        "disable": 204,
+        "reset_password": 204,
+        "logout_sessions": 204
+      },
+      "disabled": true,
+      "sso_sessions": 0
+    }
+  ],
+  "app": [
+    {
+      "index": 0,
+      "epoch_delta": 1,
+      "active_app_sessions": 0
+    },
+    {
+      "index": 1,
+      "epoch_delta": 1,
+      "active_app_sessions": 0
+    },
+    {
+      "index": 2,
+      "epoch_delta": 1,
+      "active_app_sessions": 0
+    },
+    {
+      "index": 3,
+      "epoch_delta": 1,
+      "active_app_sessions": 0
+    },
+    {
+      "index": 4,
+      "epoch_delta": 1,
+      "active_app_sessions": 0
+    },
+    {
+      "index": 5,
+      "epoch_delta": 1,
+      "active_app_sessions": 0
+    },
+    {
+      "index": 6,
+      "epoch_delta": 1,
+      "active_app_sessions": 0
+    }
+  ],
+  "completed_ict": "2026-11-16T12:13:22.858807+07:00",
+  "post_commit_verification": {
+    "identity_count": 7,
+    "active_app_sessions": 0,
+    "active_workspace_A_account_indices": [
+      0,
+      3
+    ]
+  },
+  "temporary_fixture_secrets_removed": true
+}

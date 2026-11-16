@@ -1,0 +1,49 @@
+{
+  "source": "direct PostgreSQL read-only observer, 0.5 s cadence",
+  "job": {
+    "job_id": "job_0dbd95f86c69421fa5751ef2dfe74440",
+    "state": "failed",
+    "created_at": "2026-11-16T04:54:59.716724+00:00",
+    "terminal_at": "2026-11-16T04:55:01.592991+00:00",
+    "failure_kind": "authorization",
+    "has_output": false,
+    "epoch": 1,
+    "started_at": "2026-11-16T04:54:59.910069+00:00",
+    "heartbeat_at": "2026-11-16T04:54:59.910069+00:00",
+    "finished_at": "2026-11-16T04:55:01.593472+00:00",
+    "outcome": "failed",
+    "attempt_failure_kind": "authorization",
+    "publish_audits": 0
+  },
+  "membership_audit": {
+    "admin": {
+      "action": "member.update",
+      "effect_id": "user_102b291bcab321a9e767f667f64fddc5",
+      "request_id": "req_0d34fa766184460aa453798ae825020a",
+      "revision": 6,
+      "recorded_at": "2026-11-16T04:55:00.223331+00:00"
+    },
+    "reviewer": {
+      "action": "member.update",
+      "effect_id": "user_ab2be47337296f727ccd12a96d8098e0",
+      "request_id": "req_8955f41fff614e57a51dfcd0eb7b14af",
+      "revision": 8,
+      "recorded_at": "2026-11-16T04:55:17.350189+00:00"
+    }
+  },
+  "timeline_ict": {
+    "created": "2026-11-16T11:54:59.716+07:00",
+    "attempt_started": "2026-11-16T11:54:59.910+07:00",
+    "admin_membership_audit": "2026-11-16T11:55:00.223+07:00",
+    "job_terminal": "2026-11-16T11:55:01.592+07:00",
+    "attempt_finished": "2026-11-16T11:55:01.593+07:00",
+    "reviewer_membership_audit": "2026-11-16T11:55:17.350+07:00"
+  },
+  "interval_ms": {
+    "start_to_admin_membership_audit": 313.262,
+    "admin_membership_audit_to_terminal": 1369.66
+  },
+  "followup_server_verdict": "pass",
+  "download_server_membership_revoke": "observed",
+  "browser_receipt": "pending"
+}

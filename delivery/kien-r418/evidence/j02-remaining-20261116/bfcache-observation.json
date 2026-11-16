@@ -1,0 +1,9 @@
+{
+  "actual_persisted_pageshow": false,
+  "not_restored_reasons": [
+    "MainResourceHasCacheControlNoStore",
+    "JsNetworkRequestReceivedCacheControlNoStoreResource",
+    "BrowsingInstanceNotSwapped"
+  ],
+  "private_view_returned_only_after_access_check": true
+}

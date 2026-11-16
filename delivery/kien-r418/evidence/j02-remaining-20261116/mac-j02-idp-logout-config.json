@@ -1,0 +1,8 @@
+{
+  "realm": "k14",
+  "client_id": "k14-staging",
+  "registered_post_logout_redirect_uris": "+",
+  "registration_exact_app_root": false,
+  "single_logout_mode_on_mac_build": "disabled (environment flag absent; runtime defaults to disabled)",
+  "logout_all_response_on_mac_build": "204; SessionMutationApplication local-only"
+}

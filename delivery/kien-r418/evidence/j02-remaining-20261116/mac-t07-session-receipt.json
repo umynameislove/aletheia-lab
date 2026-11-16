@@ -1,0 +1,63 @@
+{
+  "policy": {
+    "idle_seconds": 900,
+    "absolute_seconds": 28800,
+    "rotation_seconds": 300
+  },
+  "sessions": [
+    {
+      "state": "active",
+      "issued_ict": "2026-11-16T11:44:44.091601",
+      "last_seen_ict": "2026-11-16T11:44:44.091601",
+      "idle_expiry_ict": "2026-11-16T11:59:44.091601",
+      "absolute_expiry_ict": "2026-11-16T19:44:44.091601",
+      "generation": 0,
+      "actor": 3
+    },
+    {
+      "state": "active",
+      "issued_ict": "2026-11-16T11:40:59.99593",
+      "last_seen_ict": "2026-11-16T11:40:59.99593",
+      "idle_expiry_ict": "2026-11-16T11:55:59.99593",
+      "absolute_expiry_ict": "2026-11-16T19:40:59.99593",
+      "generation": 0,
+      "actor": 0
+    },
+    {
+      "state": "revoked",
+      "issued_ict": "2026-11-16T11:30:51.056024",
+      "last_seen_ict": "2026-11-16T11:30:51.056024",
+      "idle_expiry_ict": "2026-11-16T11:45:51.056024",
+      "absolute_expiry_ict": "2026-11-16T19:30:51.056024",
+      "generation": 0,
+      "actor": 3
+    },
+    {
+      "state": "active",
+      "issued_ict": "2026-11-16T11:25:24.648586",
+      "last_seen_ict": "2026-11-16T11:25:24.648586",
+      "idle_expiry_ict": "2026-11-16T11:40:24.648586",
+      "absolute_expiry_ict": "2026-11-16T19:25:24.648586",
+      "generation": 0,
+      "actor": 0
+    },
+    {
+      "state": "revoked",
+      "issued_ict": "2026-11-16T11:13:49.152647",
+      "last_seen_ict": "2026-11-16T11:13:49.152647",
+      "idle_expiry_ict": "2026-11-16T11:28:49.152647",
+      "absolute_expiry_ict": "2026-11-16T19:13:49.152647",
+      "generation": 0,
+      "actor": 3
+    },
+    {
+      "state": "active",
+      "issued_ict": "2026-11-16T11:08:25.522649",
+      "last_seen_ict": "2026-11-16T11:08:25.522649",
+      "idle_expiry_ict": "2026-11-16T11:23:25.522649",
+      "absolute_expiry_ict": "2026-11-16T19:08:25.522649",
+      "generation": 0,
+      "actor": 0
+    }
+  ]
+}

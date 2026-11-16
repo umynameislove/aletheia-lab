@@ -1,0 +1,42 @@
+{
+  "run": "2be4f511",
+  "actors": [
+    {
+      "username": "j02_2be4f511_0",
+      "user_id": "user_953c458c7d49f18fd9596d28586b5533",
+      "email": "j02_2be4f511_0@aletheia.invalid"
+    },
+    {
+      "username": "j02_2be4f511_1",
+      "user_id": "user_dae02c53e17b1f1688faadb249a6548f",
+      "email": "j02_2be4f511_1@aletheia.invalid"
+    },
+    {
+      "username": "j02_2be4f511_2",
+      "user_id": "user_102b291bcab321a9e767f667f64fddc5",
+      "email": "j02_2be4f511_2@aletheia.invalid"
+    },
+    {
+      "username": "j02_2be4f511_3",
+      "user_id": "user_a7ce972262d2b1b94accc5d0ab8bdbc2",
+      "email": "j02_2be4f511_3@aletheia.invalid"
+    },
+    {
+      "username": "j02_2be4f511_4",
+      "user_id": "user_ab2be47337296f727ccd12a96d8098e0",
+      "email": "j02_2be4f511_4@aletheia.invalid"
+    },
+    {
+      "username": "j02_2be4f511_5",
+      "user_id": "user_be84ca8d4f04798f519eef647341b197",
+      "email": "j02_2be4f511_5@aletheia.invalid"
+    },
+    {
+      "username": "j02_2be4f511_6",
+      "user_id": "user_f08dbb6b8439266dbafa866cafaa5f10",
+      "email": "j02_2be4f511_6@aletheia.invalid"
+    }
+  ],
+  "schema": "k17_seed_97e97d480c774754bfa46bbc8ff61369",
+  "provisioning": "operator provisioned identities only; workspaces and memberships must be created through authenticated product endpoints"
+}
