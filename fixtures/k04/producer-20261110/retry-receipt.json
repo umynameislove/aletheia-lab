@@ -1,0 +1,8 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "ws_synthetic",
+  "job_id": "job_retry_synthetic",
+  "status": "queued",
+  "request_id": "req_retry_synthetic",
+  "status_url": "/v1/workspaces/ws_synthetic/jobs/job_retry_synthetic"
+}

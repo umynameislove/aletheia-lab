@@ -1,0 +1,18 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "ws_synthetic",
+  "items": [
+    {
+      "schema_version": "product-api/v1-draft",
+      "workspace_id": "ws_synthetic",
+      "invitation_id": "inv_synthetic",
+      "user_id": "user_invited",
+      "display_name": "Invited synthetic user",
+      "role": "viewer",
+      "expires_at": "2026-11-11T00:00:00Z"
+    }
+  ],
+  "next_cursor": null,
+  "total": null,
+  "total_kind": "unknown"
+}

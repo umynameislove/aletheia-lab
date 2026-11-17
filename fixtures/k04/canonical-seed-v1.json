@@ -1,0 +1,401 @@
+{
+  "fixture_only": true,
+  "view": {
+    "schema_version": "p6-product-view/v1",
+    "demo_only": false,
+    "mode": "project_audit",
+    "visibility": "diagnosis",
+    "project": {
+      "id": "p3-project-7e9ae9eb40a1623d5dc63aecf3caf681590fe52f29a942b96e3bc7aee13dce0b",
+      "display_name": "Imported project"
+    },
+    "snapshot": {
+      "id": "p3-snapshot-62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747",
+      "baseline_id": "p3-snapshot-e1d3059653e8d51e286f8bba02323d910d28f9619743225a98dba17629b34f41",
+      "sha256": "62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747",
+      "metric_definitions": [
+        {
+          "metric_name": "loss",
+          "direction": "lower_is_better",
+          "regression_threshold": 0.08
+        }
+      ],
+      "metric_changes": [
+        {
+          "evidence_id": "p3-evidence-2fdb449d60f912387bf3fbc85e9d225323da4da8962bc5afc9897a6d5ff55adb",
+          "metric_name": "loss",
+          "kind": "increased",
+          "before": {
+            "snapshot_id": "p3-snapshot-e1d3059653e8d51e286f8bba02323d910d28f9619743225a98dba17629b34f41",
+            "run_id": "candidate",
+            "step": null,
+            "value": 0.6
+          },
+          "after": {
+            "snapshot_id": "p3-snapshot-62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747",
+            "run_id": "candidate",
+            "step": null,
+            "value": 0.8
+          },
+          "delta": 0.2,
+          "adverse_status": "adverse"
+        }
+      ]
+    },
+    "runtime": {
+      "provider": "deterministic_mock",
+      "model": "p6-deterministic-mock/v1",
+      "external_call": false
+    },
+    "result": {
+      "id": "p6-result-253deb2e1dd53a3118c906ae0bd3821e25f4f7eb4a8a4431ec594971ae31b8e5",
+      "status": "complete",
+      "disposition": "abstain",
+      "causal_status": "unverified",
+      "summary": "A stored project change is visible, but the authorized evidence does not establish one cause.",
+      "denominators": {
+        "independent_families": null,
+        "contexts": 1,
+        "outputs": 1,
+        "claims": 1
+      },
+      "allowed_wording": "The stored evidence records an observed project change.",
+      "forbidden_wording": "One visible project artifact caused the observed change.",
+      "caveat": "Deterministic offline project audit; no causal ground truth or model-quality result."
+    },
+    "conversation": {
+      "id": "p6-conversation-8163d75800876883ec30e180d42904d323c41aa3962a8f2cd93d3be2b7eaca47",
+      "turns": [
+        {
+          "id": "p6-turn-1cb660d40427b7efe29a0a6cd5b5542d9e2ad451f2c74a04125cddad7df7cd22",
+          "snapshot_id": "p3-snapshot-62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747",
+          "result_id": "p6-result-253deb2e1dd53a3118c906ae0bd3821e25f4f7eb4a8a4431ec594971ae31b8e5",
+          "runtime": {
+            "provider": "deterministic_mock",
+            "model": "p6-deterministic-mock/v1",
+            "external_call": false
+          },
+          "question": "Giải thích bằng chứng đã lưu?",
+          "answer": "The change is observed in diagnosis-visible evidence; its cause remains unverified.",
+          "abstained": true,
+          "visible_evidence_ids": [
+            "p3-evidence-2fdb449d60f912387bf3fbc85e9d225323da4da8962bc5afc9897a6d5ff55adb",
+            "p3-evidence-4892c4db5bb81cc597babe0b2f4a6204cad192ade0d144ca60ab78764776c468",
+            "p3-evidence-be2afd05c613dba1c773dc832dd03c6bae63bbb9fd6f46b1a23477d83e4e7632",
+            "p3-evidence-d9cba46b4033a60d3acf19faaca62f5e6ee654e45389ea7e7e12d9c533585ff4",
+            "p3-evidence-f6bcc42556837435ced8d2673ebadc17d399b6e78f0d35376b1860376d56abdf"
+          ],
+          "missing_evidence": [
+            "Counterfactual comparison: not_available"
+          ]
+        }
+      ]
+    },
+    "claims": [
+      {
+        "id": "p6-claim-4dce0d46d3ed2fafd263466c5528b0000ba86bbb138b48d41d2ff8403e8faad8",
+        "turn_id": "p6-turn-1cb660d40427b7efe29a0a6cd5b5542d9e2ad451f2c74a04125cddad7df7cd22",
+        "text": "The stored project evidence records an observed snapshot change.",
+        "claim_type": "evidence_statement",
+        "epistemic_state": "observed",
+        "support": "fully_supported",
+        "citation_ids": [
+          "p3-evidence-2fdb449d60f912387bf3fbc85e9d225323da4da8962bc5afc9897a6d5ff55adb",
+          "p3-evidence-be2afd05c613dba1c773dc832dd03c6bae63bbb9fd6f46b1a23477d83e4e7632",
+          "p3-evidence-d9cba46b4033a60d3acf19faaca62f5e6ee654e45389ea7e7e12d9c533585ff4"
+        ],
+        "counterevidence_ids": [],
+        "missing_evidence": [
+          "Counterfactual comparison: not_available"
+        ],
+        "max_strength": "observation"
+      }
+    ],
+    "evidence": [
+      {
+        "id": "p3-evidence-2fdb449d60f912387bf3fbc85e9d225323da4da8962bc5afc9897a6d5ff55adb",
+        "kind": "metric_observation",
+        "title": "Observed metric change",
+        "text": "The stored evidence records an observed metric change without assigning a cause.",
+        "reproduction_ref": {
+          "record_id": "p3-comparison-b1658d9f2e54f3acb59080681ef55c22ead3bed5e7511d112c1d89f59a316719",
+          "record_kind": "snapshot_comparison"
+        },
+        "source_sha256": "b88e61c688a5bec34fdbfa969b33d52eb3a2d197879181beb58dab62e294fcd3",
+        "visibility": "diagnosis",
+        "redacted": false
+      },
+      {
+        "id": "p3-evidence-4892c4db5bb81cc597babe0b2f4a6204cad192ade0d144ca60ab78764776c468",
+        "kind": "snapshot",
+        "title": "Baseline project snapshot",
+        "text": "A baseline snapshot is bound to this regression evidence generation.",
+        "reproduction_ref": {
+          "record_id": "p3-snapshot-e1d3059653e8d51e286f8bba02323d910d28f9619743225a98dba17629b34f41",
+          "record_kind": "snapshot"
+        },
+        "source_sha256": "e1d3059653e8d51e286f8bba02323d910d28f9619743225a98dba17629b34f41",
+        "visibility": "diagnosis",
+        "redacted": false
+      },
+      {
+        "id": "p3-evidence-be2afd05c613dba1c773dc832dd03c6bae63bbb9fd6f46b1a23477d83e4e7632",
+        "kind": "snapshot_comparison",
+        "title": "Stored snapshot comparison",
+        "text": "The stored comparison records a change between two immutable project snapshots.",
+        "reproduction_ref": {
+          "record_id": "p3-comparison-b1658d9f2e54f3acb59080681ef55c22ead3bed5e7511d112c1d89f59a316719",
+          "record_kind": "snapshot_comparison"
+        },
+        "source_sha256": "b1658d9f2e54f3acb59080681ef55c22ead3bed5e7511d112c1d89f59a316719",
+        "visibility": "diagnosis",
+        "redacted": false
+      },
+      {
+        "id": "p3-evidence-d9cba46b4033a60d3acf19faaca62f5e6ee654e45389ea7e7e12d9c533585ff4",
+        "kind": "regression_candidate",
+        "title": "Regression candidate",
+        "text": "The stored event is a non-causal regression candidate with unverified causal status.",
+        "reproduction_ref": {
+          "record_id": "p3-event-36162d4cdf15e30baf329d6fc9ba239807d02a01441720f3fa4b6d30df727fd2",
+          "record_kind": "regression_event"
+        },
+        "source_sha256": "36162d4cdf15e30baf329d6fc9ba239807d02a01441720f3fa4b6d30df727fd2",
+        "visibility": "diagnosis",
+        "redacted": false
+      },
+      {
+        "id": "p3-evidence-f6bcc42556837435ced8d2673ebadc17d399b6e78f0d35376b1860376d56abdf",
+        "kind": "snapshot",
+        "title": "Observed project snapshot",
+        "text": "The analyzed project snapshot is bound to this regression evidence generation.",
+        "reproduction_ref": {
+          "record_id": "p3-snapshot-62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747",
+          "record_kind": "snapshot"
+        },
+        "source_sha256": "62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747",
+        "visibility": "diagnosis",
+        "redacted": false
+      }
+    ],
+    "graph": {
+      "nodes": [
+        {
+          "id": "p6-node-0d208fb1f6d979df296b3093a29419ae41ba2a7e10067d0a06b3c4613f3c83e9",
+          "kind": "Snapshot",
+          "source_id": "p3-snapshot-62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747",
+          "visibility": "diagnosis"
+        },
+        {
+          "id": "p6-node-0ff9f8d792bdf3e3a1cd59ba6341dc3680b9b9d9cb978b266bc0426eb40812af",
+          "kind": "EvidenceItem",
+          "source_id": "p3-evidence-f6bcc42556837435ced8d2673ebadc17d399b6e78f0d35376b1860376d56abdf",
+          "visibility": "diagnosis"
+        },
+        {
+          "id": "p6-node-18898221662bd47ad4bb1381967df05c308facf12d4306aec4cd53711f933c96",
+          "kind": "Disposition",
+          "source_id": "p6-result-253deb2e1dd53a3118c906ae0bd3821e25f4f7eb4a8a4431ec594971ae31b8e5",
+          "visibility": "diagnosis"
+        },
+        {
+          "id": "p6-node-7b5c5c2530d2313778850e6a25cf706929268ed4cf1bd466ee6274d5753513a5",
+          "kind": "AtomicClaim",
+          "source_id": "p6-claim-4dce0d46d3ed2fafd263466c5528b0000ba86bbb138b48d41d2ff8403e8faad8",
+          "visibility": "diagnosis"
+        },
+        {
+          "id": "p6-node-7c052d6006ef064b354cbf4aa4a3adac5789ce755cfc2c63f3a103b4be734cb6",
+          "kind": "EvidenceItem",
+          "source_id": "p3-evidence-be2afd05c613dba1c773dc832dd03c6bae63bbb9fd6f46b1a23477d83e4e7632",
+          "visibility": "diagnosis"
+        },
+        {
+          "id": "p6-node-8975b54e796c61f0561ef71b84a61d2600a7c25d22cf3f736ea062b0b594f1c7",
+          "kind": "EvidenceItem",
+          "source_id": "p3-evidence-2fdb449d60f912387bf3fbc85e9d225323da4da8962bc5afc9897a6d5ff55adb",
+          "visibility": "diagnosis"
+        },
+        {
+          "id": "p6-node-caff9920305dbe36e441b59fb221a638c6f138ec08169a587c6dca8d4f84bb76",
+          "kind": "EvidenceItem",
+          "source_id": "p3-evidence-d9cba46b4033a60d3acf19faaca62f5e6ee654e45389ea7e7e12d9c533585ff4",
+          "visibility": "diagnosis"
+        },
+        {
+          "id": "p6-node-f04a2850f640d4c35b79752fbd3df9d3398f7253928faabd1a3e8e5787218f04",
+          "kind": "EvidenceItem",
+          "source_id": "p3-evidence-4892c4db5bb81cc597babe0b2f4a6204cad192ade0d144ca60ab78764776c468",
+          "visibility": "diagnosis"
+        }
+      ],
+      "edges": [
+        {
+          "id": "p6-edge-09373e6fe2112cb13739ae7669847c8284d0979f30ab8166564fa0965d9e2306",
+          "kind": "CITES",
+          "source": "p6-node-7b5c5c2530d2313778850e6a25cf706929268ed4cf1bd466ee6274d5753513a5",
+          "target": "p6-node-caff9920305dbe36e441b59fb221a638c6f138ec08169a587c6dca8d4f84bb76",
+          "visibility": "diagnosis"
+        },
+        {
+          "id": "p6-edge-0d9ba8019fd3265b519f25174ecd66bbc40486c3d9bdf13246d913d2e3e80306",
+          "kind": "CITES",
+          "source": "p6-node-7b5c5c2530d2313778850e6a25cf706929268ed4cf1bd466ee6274d5753513a5",
+          "target": "p6-node-8975b54e796c61f0561ef71b84a61d2600a7c25d22cf3f736ea062b0b594f1c7",
+          "visibility": "diagnosis"
+        },
+        {
+          "id": "p6-edge-514dba80a384328ac2194580171ff7801a9f6222930ceda98b74db61dc3789da",
+          "kind": "OBSERVED_IN",
+          "source": "p6-node-0ff9f8d792bdf3e3a1cd59ba6341dc3680b9b9d9cb978b266bc0426eb40812af",
+          "target": "p6-node-0d208fb1f6d979df296b3093a29419ae41ba2a7e10067d0a06b3c4613f3c83e9",
+          "visibility": "diagnosis"
+        },
+        {
+          "id": "p6-edge-5be08efb8fdda3aa6b41e36efd3cda665e564e5c4b4adc0dea063e5e58901dfb",
+          "kind": "OBSERVED_IN",
+          "source": "p6-node-8975b54e796c61f0561ef71b84a61d2600a7c25d22cf3f736ea062b0b594f1c7",
+          "target": "p6-node-0d208fb1f6d979df296b3093a29419ae41ba2a7e10067d0a06b3c4613f3c83e9",
+          "visibility": "diagnosis"
+        },
+        {
+          "id": "p6-edge-b23b93271bdc40ce65375fe02f267807228126aeba39ccb4c3c7fd973669f4fb",
+          "kind": "CITES",
+          "source": "p6-node-7b5c5c2530d2313778850e6a25cf706929268ed4cf1bd466ee6274d5753513a5",
+          "target": "p6-node-7c052d6006ef064b354cbf4aa4a3adac5789ce755cfc2c63f3a103b4be734cb6",
+          "visibility": "diagnosis"
+        },
+        {
+          "id": "p6-edge-dbb054ac2ba00eebe8065699de333ae8b86f1dd85e45b5a4edb7b3d574bac47b",
+          "kind": "ASSIGNED_DISPOSITION",
+          "source": "p6-node-7b5c5c2530d2313778850e6a25cf706929268ed4cf1bd466ee6274d5753513a5",
+          "target": "p6-node-18898221662bd47ad4bb1381967df05c308facf12d4306aec4cd53711f933c96",
+          "visibility": "diagnosis"
+        },
+        {
+          "id": "p6-edge-fdc782eafd1571a9479c5218fb92199a9c1f040178fde09cc5566692b5c061bc",
+          "kind": "OBSERVED_IN",
+          "source": "p6-node-7c052d6006ef064b354cbf4aa4a3adac5789ce755cfc2c63f3a103b4be734cb6",
+          "target": "p6-node-0d208fb1f6d979df296b3093a29419ae41ba2a7e10067d0a06b3c4613f3c83e9",
+          "visibility": "diagnosis"
+        }
+      ]
+    }
+  },
+  "result_record": {
+    "schema_version": "p6-lifecycle-record/v1",
+    "record_id": "p6-result-253deb2e1dd53a3118c906ae0bd3821e25f4f7eb4a8a4431ec594971ae31b8e5",
+    "record_kind": "result",
+    "project_id": "p3-project-7e9ae9eb40a1623d5dc63aecf3caf681590fe52f29a942b96e3bc7aee13dce0b",
+    "snapshot_id": "p3-snapshot-62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747",
+    "parent_result_id": null,
+    "payload_json": "{\"schema_version\":\"p6-result-envelope/v1\",\"view\":{\"claims\":[{\"citation_ids\":[\"p3-evidence-2fdb449d60f912387bf3fbc85e9d225323da4da8962bc5afc9897a6d5ff55adb\",\"p3-evidence-be2afd05c613dba1c773dc832dd03c6bae63bbb9fd6f46b1a23477d83e4e7632\",\"p3-evidence-d9cba46b4033a60d3acf19faaca62f5e6ee654e45389ea7e7e12d9c533585ff4\"],\"claim_type\":\"evidence_statement\",\"counterevidence_ids\":[],\"epistemic_state\":\"observed\",\"id\":\"p6-claim-4dce0d46d3ed2fafd263466c5528b0000ba86bbb138b48d41d2ff8403e8faad8\",\"max_strength\":\"observation\",\"missing_evidence\":[\"Counterfactual comparison: not_available\"],\"support\":\"fully_supported\",\"text\":\"The stored project evidence records an observed snapshot change.\",\"turn_id\":\"p6-turn-1cb660d40427b7efe29a0a6cd5b5542d9e2ad451f2c74a04125cddad7df7cd22\"}],\"conversation\":{\"id\":\"p6-conversation-8163d75800876883ec30e180d42904d323c41aa3962a8f2cd93d3be2b7eaca47\",\"turns\":[{\"abstained\":true,\"answer\":\"The change is observed in diagnosis-visible evidence; its cause remains unverified.\",\"id\":\"p6-turn-1cb660d40427b7efe29a0a6cd5b5542d9e2ad451f2c74a04125cddad7df7cd22\",\"missing_evidence\":[\"Counterfactual comparison: not_available\"],\"question\":\"Giải thích bằng chứng đã lưu?\",\"result_id\":\"p6-result-253deb2e1dd53a3118c906ae0bd3821e25f4f7eb4a8a4431ec594971ae31b8e5\",\"runtime\":{\"external_call\":false,\"model\":\"p6-deterministic-mock/v1\",\"provider\":\"deterministic_mock\"},\"snapshot_id\":\"p3-snapshot-62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747\",\"visible_evidence_ids\":[\"p3-evidence-2fdb449d60f912387bf3fbc85e9d225323da4da8962bc5afc9897a6d5ff55adb\",\"p3-evidence-4892c4db5bb81cc597babe0b2f4a6204cad192ade0d144ca60ab78764776c468\",\"p3-evidence-be2afd05c613dba1c773dc832dd03c6bae63bbb9fd6f46b1a23477d83e4e7632\",\"p3-evidence-d9cba46b4033a60d3acf19faaca62f5e6ee654e45389ea7e7e12d9c533585ff4\",\"p3-evidence-f6bcc42556837435ced8d2673ebadc17d399b6e78f0d35376b1860376d56abdf\"]}]},\"demo_only\":false,\"evidence\":[{\"id\":\"p3-evidence-2fdb449d60f912387bf3fbc85e9d225323da4da8962bc5afc9897a6d5ff55adb\",\"kind\":\"metric_observation\",\"redacted\":false,\"reproduction_ref\":{\"record_id\":\"p3-comparison-b1658d9f2e54f3acb59080681ef55c22ead3bed5e7511d112c1d89f59a316719\",\"record_kind\":\"snapshot_comparison\"},\"source_sha256\":\"b88e61c688a5bec34fdbfa969b33d52eb3a2d197879181beb58dab62e294fcd3\",\"text\":\"The stored evidence records an observed metric change without assigning a cause.\",\"title\":\"Observed metric change\",\"visibility\":\"diagnosis\"},{\"id\":\"p3-evidence-4892c4db5bb81cc597babe0b2f4a6204cad192ade0d144ca60ab78764776c468\",\"kind\":\"snapshot\",\"redacted\":false,\"reproduction_ref\":{\"record_id\":\"p3-snapshot-e1d3059653e8d51e286f8bba02323d910d28f9619743225a98dba17629b34f41\",\"record_kind\":\"snapshot\"},\"source_sha256\":\"e1d3059653e8d51e286f8bba02323d910d28f9619743225a98dba17629b34f41\",\"text\":\"A baseline snapshot is bound to this regression evidence generation.\",\"title\":\"Baseline project snapshot\",\"visibility\":\"diagnosis\"},{\"id\":\"p3-evidence-be2afd05c613dba1c773dc832dd03c6bae63bbb9fd6f46b1a23477d83e4e7632\",\"kind\":\"snapshot_comparison\",\"redacted\":false,\"reproduction_ref\":{\"record_id\":\"p3-comparison-b1658d9f2e54f3acb59080681ef55c22ead3bed5e7511d112c1d89f59a316719\",\"record_kind\":\"snapshot_comparison\"},\"source_sha256\":\"b1658d9f2e54f3acb59080681ef55c22ead3bed5e7511d112c1d89f59a316719\",\"text\":\"The stored comparison records a change between two immutable project snapshots.\",\"title\":\"Stored snapshot comparison\",\"visibility\":\"diagnosis\"},{\"id\":\"p3-evidence-d9cba46b4033a60d3acf19faaca62f5e6ee654e45389ea7e7e12d9c533585ff4\",\"kind\":\"regression_candidate\",\"redacted\":false,\"reproduction_ref\":{\"record_id\":\"p3-event-36162d4cdf15e30baf329d6fc9ba239807d02a01441720f3fa4b6d30df727fd2\",\"record_kind\":\"regression_event\"},\"source_sha256\":\"36162d4cdf15e30baf329d6fc9ba239807d02a01441720f3fa4b6d30df727fd2\",\"text\":\"The stored event is a non-causal regression candidate with unverified causal status.\",\"title\":\"Regression candidate\",\"visibility\":\"diagnosis\"},{\"id\":\"p3-evidence-f6bcc42556837435ced8d2673ebadc17d399b6e78f0d35376b1860376d56abdf\",\"kind\":\"snapshot\",\"redacted\":false,\"reproduction_ref\":{\"record_id\":\"p3-snapshot-62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747\",\"record_kind\":\"snapshot\"},\"source_sha256\":\"62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747\",\"text\":\"The analyzed project snapshot is bound to this regression evidence generation.\",\"title\":\"Observed project snapshot\",\"visibility\":\"diagnosis\"}],\"graph\":{\"edges\":[{\"id\":\"p6-edge-09373e6fe2112cb13739ae7669847c8284d0979f30ab8166564fa0965d9e2306\",\"kind\":\"CITES\",\"source\":\"p6-node-7b5c5c2530d2313778850e6a25cf706929268ed4cf1bd466ee6274d5753513a5\",\"target\":\"p6-node-caff9920305dbe36e441b59fb221a638c6f138ec08169a587c6dca8d4f84bb76\",\"visibility\":\"diagnosis\"},{\"id\":\"p6-edge-0d9ba8019fd3265b519f25174ecd66bbc40486c3d9bdf13246d913d2e3e80306\",\"kind\":\"CITES\",\"source\":\"p6-node-7b5c5c2530d2313778850e6a25cf706929268ed4cf1bd466ee6274d5753513a5\",\"target\":\"p6-node-8975b54e796c61f0561ef71b84a61d2600a7c25d22cf3f736ea062b0b594f1c7\",\"visibility\":\"diagnosis\"},{\"id\":\"p6-edge-514dba80a384328ac2194580171ff7801a9f6222930ceda98b74db61dc3789da\",\"kind\":\"OBSERVED_IN\",\"source\":\"p6-node-0ff9f8d792bdf3e3a1cd59ba6341dc3680b9b9d9cb978b266bc0426eb40812af\",\"target\":\"p6-node-0d208fb1f6d979df296b3093a29419ae41ba2a7e10067d0a06b3c4613f3c83e9\",\"visibility\":\"diagnosis\"},{\"id\":\"p6-edge-5be08efb8fdda3aa6b41e36efd3cda665e564e5c4b4adc0dea063e5e58901dfb\",\"kind\":\"OBSERVED_IN\",\"source\":\"p6-node-8975b54e796c61f0561ef71b84a61d2600a7c25d22cf3f736ea062b0b594f1c7\",\"target\":\"p6-node-0d208fb1f6d979df296b3093a29419ae41ba2a7e10067d0a06b3c4613f3c83e9\",\"visibility\":\"diagnosis\"},{\"id\":\"p6-edge-b23b93271bdc40ce65375fe02f267807228126aeba39ccb4c3c7fd973669f4fb\",\"kind\":\"CITES\",\"source\":\"p6-node-7b5c5c2530d2313778850e6a25cf706929268ed4cf1bd466ee6274d5753513a5\",\"target\":\"p6-node-7c052d6006ef064b354cbf4aa4a3adac5789ce755cfc2c63f3a103b4be734cb6\",\"visibility\":\"diagnosis\"},{\"id\":\"p6-edge-dbb054ac2ba00eebe8065699de333ae8b86f1dd85e45b5a4edb7b3d574bac47b\",\"kind\":\"ASSIGNED_DISPOSITION\",\"source\":\"p6-node-7b5c5c2530d2313778850e6a25cf706929268ed4cf1bd466ee6274d5753513a5\",\"target\":\"p6-node-18898221662bd47ad4bb1381967df05c308facf12d4306aec4cd53711f933c96\",\"visibility\":\"diagnosis\"},{\"id\":\"p6-edge-fdc782eafd1571a9479c5218fb92199a9c1f040178fde09cc5566692b5c061bc\",\"kind\":\"OBSERVED_IN\",\"source\":\"p6-node-7c052d6006ef064b354cbf4aa4a3adac5789ce755cfc2c63f3a103b4be734cb6\",\"target\":\"p6-node-0d208fb1f6d979df296b3093a29419ae41ba2a7e10067d0a06b3c4613f3c83e9\",\"visibility\":\"diagnosis\"}],\"nodes\":[{\"id\":\"p6-node-0d208fb1f6d979df296b3093a29419ae41ba2a7e10067d0a06b3c4613f3c83e9\",\"kind\":\"Snapshot\",\"source_id\":\"p3-snapshot-62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747\",\"visibility\":\"diagnosis\"},{\"id\":\"p6-node-0ff9f8d792bdf3e3a1cd59ba6341dc3680b9b9d9cb978b266bc0426eb40812af\",\"kind\":\"EvidenceItem\",\"source_id\":\"p3-evidence-f6bcc42556837435ced8d2673ebadc17d399b6e78f0d35376b1860376d56abdf\",\"visibility\":\"diagnosis\"},{\"id\":\"p6-node-18898221662bd47ad4bb1381967df05c308facf12d4306aec4cd53711f933c96\",\"kind\":\"Disposition\",\"source_id\":\"p6-result-253deb2e1dd53a3118c906ae0bd3821e25f4f7eb4a8a4431ec594971ae31b8e5\",\"visibility\":\"diagnosis\"},{\"id\":\"p6-node-7b5c5c2530d2313778850e6a25cf706929268ed4cf1bd466ee6274d5753513a5\",\"kind\":\"AtomicClaim\",\"source_id\":\"p6-claim-4dce0d46d3ed2fafd263466c5528b0000ba86bbb138b48d41d2ff8403e8faad8\",\"visibility\":\"diagnosis\"},{\"id\":\"p6-node-7c052d6006ef064b354cbf4aa4a3adac5789ce755cfc2c63f3a103b4be734cb6\",\"kind\":\"EvidenceItem\",\"source_id\":\"p3-evidence-be2afd05c613dba1c773dc832dd03c6bae63bbb9fd6f46b1a23477d83e4e7632\",\"visibility\":\"diagnosis\"},{\"id\":\"p6-node-8975b54e796c61f0561ef71b84a61d2600a7c25d22cf3f736ea062b0b594f1c7\",\"kind\":\"EvidenceItem\",\"source_id\":\"p3-evidence-2fdb449d60f912387bf3fbc85e9d225323da4da8962bc5afc9897a6d5ff55adb\",\"visibility\":\"diagnosis\"},{\"id\":\"p6-node-caff9920305dbe36e441b59fb221a638c6f138ec08169a587c6dca8d4f84bb76\",\"kind\":\"EvidenceItem\",\"source_id\":\"p3-evidence-d9cba46b4033a60d3acf19faaca62f5e6ee654e45389ea7e7e12d9c533585ff4\",\"visibility\":\"diagnosis\"},{\"id\":\"p6-node-f04a2850f640d4c35b79752fbd3df9d3398f7253928faabd1a3e8e5787218f04\",\"kind\":\"EvidenceItem\",\"source_id\":\"p3-evidence-4892c4db5bb81cc597babe0b2f4a6204cad192ade0d144ca60ab78764776c468\",\"visibility\":\"diagnosis\"}]},\"mode\":\"project_audit\",\"project\":{\"display_name\":\"Imported project\",\"id\":\"p3-project-7e9ae9eb40a1623d5dc63aecf3caf681590fe52f29a942b96e3bc7aee13dce0b\"},\"result\":{\"allowed_wording\":\"The stored evidence records an observed project change.\",\"causal_status\":\"unverified\",\"caveat\":\"Deterministic offline project audit; no causal ground truth or model-quality result.\",\"denominators\":{\"claims\":1,\"contexts\":1,\"independent_families\":null,\"outputs\":1},\"disposition\":\"abstain\",\"forbidden_wording\":\"One visible project artifact caused the observed change.\",\"id\":\"p6-result-253deb2e1dd53a3118c906ae0bd3821e25f4f7eb4a8a4431ec594971ae31b8e5\",\"status\":\"complete\",\"summary\":\"A stored project change is visible, but the authorized evidence does not establish one cause.\"},\"runtime\":{\"external_call\":false,\"model\":\"p6-deterministic-mock/v1\",\"provider\":\"deterministic_mock\"},\"schema_version\":\"p6-product-view/v1\",\"snapshot\":{\"baseline_id\":\"p3-snapshot-e1d3059653e8d51e286f8bba02323d910d28f9619743225a98dba17629b34f41\",\"id\":\"p3-snapshot-62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747\",\"metric_changes\":[{\"adverse_status\":\"adverse\",\"after\":{\"run_id\":\"candidate\",\"snapshot_id\":\"p3-snapshot-62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747\",\"step\":null,\"value\":0.8},\"before\":{\"run_id\":\"candidate\",\"snapshot_id\":\"p3-snapshot-e1d3059653e8d51e286f8bba02323d910d28f9619743225a98dba17629b34f41\",\"step\":null,\"value\":0.6},\"delta\":0.2,\"evidence_id\":\"p3-evidence-2fdb449d60f912387bf3fbc85e9d225323da4da8962bc5afc9897a6d5ff55adb\",\"kind\":\"increased\",\"metric_name\":\"loss\"}],\"metric_definitions\":[{\"direction\":\"lower_is_better\",\"metric_name\":\"loss\",\"regression_threshold\":0.08}],\"sha256\":\"62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747\"},\"visibility\":\"diagnosis\"}}"
+  },
+  "snapshot_record": {
+    "schema_version": "project-snapshot/v1",
+    "snapshot_id": "p3-snapshot-62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747",
+    "project_id": "p3-project-7e9ae9eb40a1623d5dc63aecf3caf681590fe52f29a942b96e3bc7aee13dce0b",
+    "source_bundle_id": "p3-bundle-57f9fdf18c3bc65e13c9457dbbc46e953ded1c2f595b82d2ecc16069792f2f4e",
+    "source_bundle_sha256": "4e71dd0de1756972256471bf134a5b7bb6c796aaa6c22b6bf11b65bbe2c228ae",
+    "project_manifest_sha256": "cb38561168c7af999fef7714755db0e9575d053d64cc32b8e7eff58b2d885fe0",
+    "file_collection_sha256": "ac9165078a11b5982ba6b47cc8db154f24c735d491c9f0734dc99f5c45e46961",
+    "git_state_sha256": "0b79e229a684f162b41117fafb0a41f76f2c002dea4cb0656a3e8aeef93596d6",
+    "mapping_configuration_sha256": "ce56eb811304b319eda9e467f67ed18fe9d04e9e41dcda89ca27c1297bcf4ddb",
+    "mapping_result_sha256": "e6ded329821af24f2912b2007536307eec51d8a2d7f85d608e9aaa9d4d781fa0",
+    "baseline_run_id": "baseline",
+    "collectors": [
+      {
+        "role": "file_catalog",
+        "name": "project-file-catalog",
+        "version": "project-file-catalog/1.0.0",
+        "output_sha256": "ac9165078a11b5982ba6b47cc8db154f24c735d491c9f0734dc99f5c45e46961"
+      },
+      {
+        "role": "git_state",
+        "name": "project-git-state",
+        "version": "project-git-state/1.0.0",
+        "output_sha256": "0b79e229a684f162b41117fafb0a41f76f2c002dea4cb0656a3e8aeef93596d6"
+      },
+      {
+        "role": "import",
+        "name": "secure-local-import",
+        "version": "1.0.0",
+        "output_sha256": "cb38561168c7af999fef7714755db0e9575d053d64cc32b8e7eff58b2d885fe0"
+      }
+    ],
+    "items": [
+      {
+        "project_item_id": "p3-item-fda46dac14bd11dd2235c171ba2f08e39f08914fdec798e83f10f812bb03d9d3",
+        "relative_path": "config.json",
+        "source_type": "config",
+        "source_sha256": "f43c89b365f22147e069e5c3fe1d02681aee1ff1c4ca1a0997914aef71c8a99d",
+        "artifact_sha256": "f43c89b365f22147e069e5c3fe1d02681aee1ff1c4ca1a0997914aef71c8a99d",
+        "observation_sha256": "c92bc36eec73cbb0c0b4ef9078a570147beb0ea3f80039d1631cb58a3359b4d9",
+        "visibility": "diagnosis",
+        "redaction_state": "none"
+      },
+      {
+        "project_item_id": "p3-item-71cfc7cb5316ea40ee59daa47328a5f885e900be8e592b2f087b19b060ac3c12",
+        "relative_path": "dataset.csv",
+        "source_type": "dataset",
+        "source_sha256": "cab4f7f04cf72cf79a43b7a8fc0831c62d6b2c55e8cdeb95670baed400e5c4df",
+        "artifact_sha256": "981519180ae28e38559e9f01d20bba1653b868a58a17880c783ce45dc4a6db04",
+        "observation_sha256": "91c34623001e7fc4702b813379e1217f9bb07321ba5e2bc165aca710c94aec30",
+        "visibility": "diagnosis",
+        "redaction_state": "redacted"
+      },
+      {
+        "project_item_id": "p3-item-1d72d85541599160807456d42cabc42a6e79ac380d63f0668105e651fe6ff4fb",
+        "relative_path": "metrics.csv",
+        "source_type": "metrics",
+        "source_sha256": "8bbf037527a267b2172a7a6b76b95baeed6bf7e6d0e6f1f134ef31480df4b45b",
+        "artifact_sha256": "8bbf037527a267b2172a7a6b76b95baeed6bf7e6d0e6f1f134ef31480df4b45b",
+        "observation_sha256": "0cb411717df9cbaa758ebdb87fed9c6556e3031370af1c06a57634e3e2d98a6c",
+        "visibility": "diagnosis",
+        "redaction_state": "none"
+      }
+    ],
+    "metric_observations": [
+      {
+        "observation_id": "p3-metric-2d65cff31837fe191a8d928496bd8b58412db1163866685f1917cc01390704c3",
+        "source_mapping_id": "metric-bcebc851e9d904ed",
+        "project_item_id": "p3-item-1d72d85541599160807456d42cabc42a6e79ac380d63f0668105e651fe6ff4fb",
+        "run_id": "baseline",
+        "metric_name": "loss",
+        "metric_value": 0.5,
+        "step": null,
+        "source_record_index": 0
+      },
+      {
+        "observation_id": "p3-metric-a494378839a5aa375f3ac081bf6e374aedb78a401a26d403cf0fcd98e7f400b9",
+        "source_mapping_id": "metric-bcebc851e9d904ed",
+        "project_item_id": "p3-item-1d72d85541599160807456d42cabc42a6e79ac380d63f0668105e651fe6ff4fb",
+        "run_id": "candidate",
+        "metric_name": "loss",
+        "metric_value": 0.8,
+        "step": null,
+        "source_record_index": 1
+      }
+    ],
+    "captured_at": "2026-11-10T16:05:28.601720Z",
+    "state_sha256": "62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747",
+    "record_sha256": "e40c57bc09b518fe383ca5ae985613a3bccb05d9a7b1ca9e3a30d2c170d40562"
+  },
+  "events": [
+    {
+      "schema_version": "project-regression-event/v1",
+      "event_id": "p3-event-36162d4cdf15e30baf329d6fc9ba239807d02a01441720f3fa4b6d30df727fd2",
+      "project_id": "p3-project-7e9ae9eb40a1623d5dc63aecf3caf681590fe52f29a942b96e3bc7aee13dce0b",
+      "comparison_id": "p3-comparison-b1658d9f2e54f3acb59080681ef55c22ead3bed5e7511d112c1d89f59a316719",
+      "comparison_sha256": "b1658d9f2e54f3acb59080681ef55c22ead3bed5e7511d112c1d89f59a316719",
+      "before_snapshot_id": "p3-snapshot-e1d3059653e8d51e286f8bba02323d910d28f9619743225a98dba17629b34f41",
+      "after_snapshot_id": "p3-snapshot-62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747",
+      "observed_metric_change_ids": [
+        "p3-metric-change-b88e61c688a5bec34fdbfa969b33d52eb3a2d197879181beb58dab62e294fcd3"
+      ],
+      "qualification": "regression_candidate",
+      "causal_status": "unverified",
+      "event_sha256": "36162d4cdf15e30baf329d6fc9ba239807d02a01441720f3fa4b6d30df727fd2"
+    }
+  ]
+}
