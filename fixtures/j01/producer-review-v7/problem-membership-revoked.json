@@ -1,0 +1,9 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "type": "urn:aletheia:problem:membership-revoked",
+  "title": "Workspace access revoked",
+  "status": 403,
+  "code": "membership_revoked",
+  "detail": "Your access to this workspace has ended.",
+  "request_id": "req_synthetic_004"
+}

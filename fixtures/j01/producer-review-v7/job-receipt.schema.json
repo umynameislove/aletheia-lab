@@ -1,0 +1,53 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "product-api/v1-draft",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "workspace_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Workspace Id",
+      "type": "string"
+    },
+    "job_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Job Id",
+      "type": "string"
+    },
+    "status": {
+      "const": "queued",
+      "title": "Status",
+      "type": "string"
+    },
+    "request_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "status_url": {
+      "maxLength": 1024,
+      "minLength": 1,
+      "pattern": "^/v1/workspaces/[A-Za-z0-9][A-Za-z0-9._:-]{0,127}/jobs/[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+      "title": "Status Url",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "workspace_id",
+    "job_id",
+    "status",
+    "request_id",
+    "status_url"
+  ],
+  "title": "JobReceipt",
+  "type": "object"
+}
