@@ -1,0 +1,16 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "actor": {
+    "user_id": "usr_synthetic_001",
+    "display_name": "Synthetic User",
+    "email": "user@example.invalid",
+    "email_verified": true
+  },
+  "session": {
+    "context_id": "ctx_synthetic_001",
+    "expires_at": "2026-11-07T12:00:00Z"
+  },
+  "csrf_token": "synthetic-not-a-credential",
+  "onboarding": "ready",
+  "last_workspace_id": "ws_synthetic_001"
+}
