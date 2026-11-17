@@ -1,0 +1,14 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "ws_synthetic",
+  "items": [
+    {
+      "schema_version": "product-api/v1-draft",
+      "workspace_id": "ws_synthetic",
+      "user_id": "user_synthetic",
+      "role": "analyst",
+      "active": true,
+      "revision": 2
+    }
+  ]
+}
