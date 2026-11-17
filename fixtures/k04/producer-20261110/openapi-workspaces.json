@@ -9470,10 +9470,2607 @@
           }
         }
       }
+    },
+    "/v1/workspaces/{workspace_id}/exports/{export_id}/download": {
+      "get": {
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "in": "path",
+            "name": "export_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "in": "header",
+            "name": "Range",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^bytes=(?:[0-9]{1,20}-[0-9]{0,20}|-[0-9]{1,20})$"
+            },
+            "description": "One byte range only; authorization precedes range validation and all size headers."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Committed scoped response",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "const": "bytes"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[0-9a-f]{64}\"$"
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Attachment filename derives from the verified byte digest."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "text/markdown": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Authorized partial byte response; HEAD returns the same headers without bytes.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "const": "bytes"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[0-9a-f]{64}\"$"
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Attachment filename derives from the verified byte digest."
+              },
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                },
+                "required": true
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "text/markdown": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "416": {
+            "description": "Authorized object range is unavailable.",
+            "headers": {
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                },
+                "required": true
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "in": "path",
+            "name": "export_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "in": "header",
+            "name": "Range",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^bytes=(?:[0-9]{1,20}-[0-9]{0,20}|-[0-9]{1,20})$"
+            },
+            "description": "One byte range only; authorization precedes range validation and all size headers."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Committed scoped response",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "const": "bytes"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[0-9a-f]{64}\"$"
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Attachment filename derives from the verified byte digest."
+              }
+            }
+          },
+          "400": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "401": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "403": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "404": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "405": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "409": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "410": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "412": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "413": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "415": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "422": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "428": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "500": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "503": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "206": {
+            "description": "Authorized partial byte response; HEAD returns the same headers without bytes.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "const": "bytes"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[0-9a-f]{64}\"$"
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Attachment filename derives from the verified byte digest."
+              },
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                },
+                "required": true
+              }
+            }
+          },
+          "416": {
+            "description": "Authorized object range is unavailable.",
+            "headers": {
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                },
+                "required": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspace_id}/jobs": {
+      "post": {
+        "security": [
+          {
+            "SessionCookie": [],
+            "CsrfHeader": [],
+            "CsrfCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{16,128}$"
+            },
+            "description": "Reuse only for the identical operation; retry identity includes its original job."
+          },
+          {
+            "in": "header",
+            "name": "Origin",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Must match the configured application origin."
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Committed scoped response",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Submission"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspace_id}/jobs/{job_id}": {
+      "get": {
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Committed scoped response",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Committed scoped response",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "401": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "403": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "404": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "405": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "409": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "410": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "412": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "413": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "415": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "422": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "428": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "500": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "503": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspace_id}/jobs/{job_id}/output": {
+      "get": {
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Committed scoped response",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobOutput"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Committed scoped response",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "401": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "403": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "404": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "405": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "409": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "410": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "412": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "413": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "415": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "422": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "428": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "500": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          },
+          "503": {
+            "description": "Safe public Problem; no outside-scope metadata."
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspace_id}/jobs/{job_id}/cancel": {
+      "post": {
+        "security": [
+          {
+            "SessionCookie": [],
+            "CsrfHeader": [],
+            "CsrfCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "in": "header",
+            "name": "Origin",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Must match the configured application origin."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Committed scoped response",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmptyAction"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspace_id}/jobs/{job_id}/retry": {
+      "post": {
+        "security": [
+          {
+            "SessionCookie": [],
+            "CsrfHeader": [],
+            "CsrfCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{16,128}$"
+            },
+            "description": "Reuse only for the identical operation; retry identity includes its original job."
+          },
+          {
+            "in": "header",
+            "name": "Origin",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Must match the configured application origin."
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Committed scoped response",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Safe public Problem; no outside-scope metadata.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmptyAction"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
-    "schemas": {},
+    "schemas": {
+      "AcceptInvitation": {
+        "additionalProperties": false,
+        "properties": {
+          "token": {
+            "format": "password",
+            "maxLength": 128,
+            "minLength": 43,
+            "title": "Token",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "AcceptInvitation",
+        "type": "object"
+      },
+      "Annotation": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "product-api/v1-draft",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "workspace_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "project_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "result_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Result Id",
+            "type": "string"
+          },
+          "annotation_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Annotation Id",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 1,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "author_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Author Id",
+            "type": "string"
+          },
+          "body": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Body",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "comment",
+              "approved",
+              "rejected"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "workspace_id",
+          "project_id",
+          "result_id",
+          "annotation_id",
+          "revision",
+          "author_id",
+          "body",
+          "status",
+          "created_at"
+        ],
+        "title": "Annotation",
+        "type": "object"
+      },
+      "AnnotationPage": {
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "else": {
+              "properties": {
+                "total": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "if": {
+              "properties": {
+                "total_kind": {
+                  "const": "unknown"
+                }
+              },
+              "required": [
+                "total_kind"
+              ]
+            },
+            "then": {
+              "properties": {
+                "total": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ],
+        "properties": {
+          "schema_version": {
+            "const": "product-api/v1-draft",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "workspace_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Annotation"
+            },
+            "maxItems": 200,
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total"
+          },
+          "total_kind": {
+            "enum": [
+              "exact",
+              "estimated",
+              "unknown"
+            ],
+            "title": "Total Kind",
+            "type": "string"
+          },
+          "project_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "result_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Result Id",
+            "type": "string"
+          },
+          "annotation_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Annotation Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "workspace_id",
+          "items",
+          "next_cursor",
+          "total",
+          "total_kind",
+          "project_id",
+          "result_id",
+          "annotation_id"
+        ],
+        "title": "AnnotationPage",
+        "type": "object"
+      },
+      "CanonicalRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "product-api/v1-draft",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "workspace_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "project_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "record_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Record Id",
+            "type": "string"
+          },
+          "record_kind": {
+            "enum": [
+              "project_bundle",
+              "snapshot",
+              "snapshot_comparison",
+              "regression_event",
+              "evidence_bundle",
+              "lineage_graph",
+              "project_state",
+              "result",
+              "turn",
+              "deletion"
+            ],
+            "title": "Record Kind",
+            "type": "string"
+          },
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          }
+        },
+        "required": [
+          "schema_version",
+          "workspace_id",
+          "project_id",
+          "record_id",
+          "record_kind",
+          "data"
+        ],
+        "title": "CanonicalRecord",
+        "type": "object"
+      },
+      "ChangeGrant": {
+        "additionalProperties": false,
+        "properties": {
+          "actions": {
+            "items": {
+              "enum": [
+                "read",
+                "write",
+                "review",
+                "export",
+                "delete"
+              ],
+              "type": "string"
+            },
+            "maxItems": 5,
+            "title": "Actions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "actions"
+        ],
+        "title": "ChangeGrant",
+        "type": "object"
+      },
+      "ChangeMember": {
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "anyOf": [
+              {
+                "enum": [
+                  "owner",
+                  "admin",
+                  "analyst",
+                  "reviewer",
+                  "viewer"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Role"
+          },
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Active"
+          }
+        },
+        "title": "ChangeMember",
+        "type": "object"
+      },
+      "ProductClaim": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "turn_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Turn Id",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "claim_type": {
+            "enum": [
+              "evidence_statement",
+              "cause_assertion",
+              "uncertainty_statement",
+              "recommended_action",
+              "other"
+            ],
+            "title": "Claim Type",
+            "type": "string"
+          },
+          "epistemic_state": {
+            "enum": [
+              "observed",
+              "hypothesis",
+              "abstained"
+            ],
+            "title": "Epistemic State",
+            "type": "string"
+          },
+          "support": {
+            "enum": [
+              "fully_supported",
+              "partially_supported",
+              "unsupported",
+              "not_estimated",
+              "technical_failure",
+              "redacted"
+            ],
+            "title": "Support",
+            "type": "string"
+          },
+          "citation_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Citation Ids",
+            "type": "array"
+          },
+          "counterevidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Counterevidence Ids",
+            "type": "array"
+          },
+          "missing_evidence": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Evidence",
+            "type": "array"
+          },
+          "max_strength": {
+            "enum": [
+              "observation",
+              "bounded_hypothesis",
+              "abstain"
+            ],
+            "title": "Max Strength",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "turn_id",
+          "text",
+          "claim_type",
+          "epistemic_state",
+          "support",
+          "citation_ids",
+          "counterevidence_ids",
+          "missing_evidence",
+          "max_strength"
+        ],
+        "title": "ProductClaim",
+        "type": "object"
+      },
+      "ClaimPage": {
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "else": {
+              "properties": {
+                "total": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "if": {
+              "properties": {
+                "total_kind": {
+                  "const": "unknown"
+                }
+              },
+              "required": [
+                "total_kind"
+              ]
+            },
+            "then": {
+              "properties": {
+                "total": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ],
+        "properties": {
+          "schema_version": {
+            "const": "product-api/v1-draft",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "workspace_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProductClaim"
+            },
+            "maxItems": 200,
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total"
+          },
+          "total_kind": {
+            "enum": [
+              "exact",
+              "estimated",
+              "unknown"
+            ],
+            "title": "Total Kind",
+            "type": "string"
+          },
+          "project_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "result_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Result Id",
+            "type": "string"
+          },
+          "snapshot_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Snapshot Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "workspace_id",
+          "items",
+          "next_cursor",
+          "total",
+          "total_kind",
+          "project_id",
+          "result_id",
+          "snapshot_id"
+        ],
+        "title": "ClaimPage",
+        "type": "object"
+      },
+      "CreateInvitation": {
+        "additionalProperties": false,
+        "properties": {
+          "user_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "User Id",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "admin",
+              "analyst",
+              "reviewer",
+              "viewer"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "expires_in_seconds": {
+            "default": 86400,
+            "maximum": 604800,
+            "minimum": 60,
+            "title": "Expires In Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "user_id",
+          "role"
+        ],
+        "title": "CreateInvitation",
+        "type": "object"
+      },
+      "CreateWorkspace": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "CreateWorkspace",
+        "type": "object"
+      },
+      "DeletedProject": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "product-api/v1-draft",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "workspace_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "project_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 1,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "tombstone_id": {
+            "pattern": "^p6-deletion-[0-9a-f]{64}$",
+            "title": "Tombstone Id",
+            "type": "string"
+          },
+          "status": {
+            "const": "tombstoned",
+            "title": "Status",
+            "type": "string"
+          },
+          "retention": {
+            "const": "retained",
+            "title": "Retention",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "workspace_id",
+          "project_id",
+          "revision",
+          "tombstone_id",
+          "status",
+          "retention"
+        ],
+        "title": "DeletedProject",
+        "type": "object"
+      },
+      "Empty": {
+        "additionalProperties": false,
+        "properties": {},
+        "title": "Empty",
+        "type": "object"
+      },
+      "EmptyAction": {
+        "additionalProperties": false,
+        "properties": {},
+        "title": "EmptyAction",
+        "type": "object"
+      },
+      "ProductEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Kind",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "reproduction_ref": {
+            "$ref": "#/components/schemas/ProductReproductionRef"
+          },
+          "source_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Source Sha256",
+            "type": "string"
+          },
+          "visibility": {
+            "const": "diagnosis",
+            "title": "Visibility",
+            "type": "string"
+          },
+          "redacted": {
+            "const": false,
+            "title": "Redacted",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "text",
+          "reproduction_ref",
+          "source_sha256",
+          "visibility",
+          "redacted"
+        ],
+        "title": "ProductEvidence",
+        "type": "object"
+      },
+      "ProductReproductionRef": {
+        "additionalProperties": false,
+        "properties": {
+          "record_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Record Id",
+            "type": "string"
+          },
+          "record_kind": {
+            "enum": [
+              "snapshot",
+              "snapshot_comparison",
+              "regression_event"
+            ],
+            "title": "Record Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "record_id",
+          "record_kind"
+        ],
+        "title": "ProductReproductionRef",
+        "type": "object"
+      },
+      "EvidenceView": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "product-api/v1-draft",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "workspace_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "project_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "result_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Result Id",
+            "type": "string"
+          },
+          "evidence_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Evidence Id",
+            "type": "string"
+          },
+          "claim_id": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Claim Id"
+          },
+          "relation": {
+            "anyOf": [
+              {
+                "enum": [
+                  "citation",
+                  "counterevidence"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Relation"
+          },
+          "evidence": {
+            "$ref": "#/components/schemas/ProductEvidence"
+          }
+        },
+        "required": [
+          "schema_version",
+          "workspace_id",
+          "project_id",
+          "result_id",
+          "evidence_id",
+          "evidence"
+        ],
+        "title": "EvidenceView",
+        "type": "object"
+      }
+    },
     "securitySchemes": {}
   }
 }
