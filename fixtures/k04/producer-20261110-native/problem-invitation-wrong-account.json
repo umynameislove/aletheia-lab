@@ -1,0 +1,9 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "type": "urn:aletheia:problem:invitation_wrong_account",
+  "title": "Request could not be completed",
+  "status": 403,
+  "code": "invitation_wrong_account",
+  "detail": "The request could not be completed.",
+  "request_id": "req_synthetic"
+}
