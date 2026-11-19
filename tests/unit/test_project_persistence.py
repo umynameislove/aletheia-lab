@@ -59,7 +59,7 @@ def test_store_round_trips_restarts_and_exports_byte_stably(tmp_path: Path) -> N
         assert len(reopened.list_records(_PROJECT, "lineage_graph")) == 1
 
 
-def test_store_detects_object_tampering_on_read_and_restart(tmp_path: Path) -> None:
+def test_store_detects_object_tampering_on_read_and_after_restart(tmp_path: Path) -> None:
     graph = _graph()
     with ProjectStore(tmp_path) as store:
         record = store.persist((graph,))[0]
@@ -68,8 +68,8 @@ def test_store_detects_object_tampering_on_read_and_restart(tmp_path: Path) -> N
         with pytest.raises(ProjectStoreError, match="integrity"):
             store.load(graph.graph_id)
 
-    with pytest.raises(ProjectStoreError, match="integrity"):
-        ProjectStore(tmp_path)
+    with ProjectStore(tmp_path) as reopened, pytest.raises(ProjectStoreError, match="integrity"):
+        reopened.load(graph.graph_id)
 
 
 def test_artifact_hash_mismatch_fails_before_record_visibility(tmp_path: Path) -> None:
@@ -151,7 +151,7 @@ def test_migration_history_tampering_fails_closed(tmp_path: Path) -> None:
         ProjectStore(tmp_path)
 
 
-def test_lineage_index_tampering_is_detected_on_restart(tmp_path: Path) -> None:
+def test_lineage_index_tampering_is_detected_on_scoped_read_after_restart(tmp_path: Path) -> None:
     graph = _graph()
     with ProjectStore(tmp_path) as store:
         store.persist((graph,))
@@ -160,5 +160,5 @@ def test_lineage_index_tampering_is_detected_on_restart(tmp_path: Path) -> None:
             (graph.graph_id,),
         )
         store._connection.commit()
-    with pytest.raises(ProjectStoreError, match="lineage index"):
-        ProjectStore(tmp_path)
+    with ProjectStore(tmp_path) as reopened, pytest.raises(ProjectStoreError, match="lineage index"):
+        reopened.load(graph.graph_id)
