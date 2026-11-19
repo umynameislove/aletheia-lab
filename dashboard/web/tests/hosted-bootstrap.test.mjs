@@ -363,3 +363,70 @@ test("W8 no longer watching a result (after a delete) stops its reads", async ()
   assert.equal(h.boot.snapshot().workspace.workspace_id, "w");
   h.boot.stop();
 });
+
+/* J01.04: fanout. One check is one read of the scope on screen; session and capabilities are read in full at most every 30 s. */
+const count = (h, from) => {
+  const by = {}; for (const call of h.calls.slice(from)) { const key = call.url === "/v1/session" ? "session" : call.url.endsWith("/capabilities") ? "capabilities" : call.url.endsWith("/header") ? "header" : "other"; by[key] = (by[key] ?? 0) + 1; }
+  return by;
+};
+
+test("W13 with a result on screen a check is one header read; session and capabilities are read again only every 30 s", async () => {
+  const h = await watching({ "catalog.paged_read": true }, () => json(header()));
+  const guard = h.boot.guard();
+  await guard.check(false); // the first check after start reads everything once
+  const from = h.calls.length;
+  // 30 s of checks every 3 s: ten checks
+  for (let t = 3_000; t < 30_000; t += 3_000) { h.clock(t); await guard.check(false); assert.equal(guard.state(), "active"); }
+  assert.deepEqual(count(h, from), { header: 9 });
+  h.clock(30_000); await guard.check(false);
+  assert.deepEqual(count(h, from), { header: 10, session: 1, capabilities: 1 });
+  h.boot.stop();
+});
+
+test("W14 the one read still sees a change within one check: a lost membership drops the workspace, a revoked or expired session ends access", async () => {
+  for (const [code, status, expect] of [["membership_revoked", 403, "active"], ["session_revoked", 401, "revoked"], ["session_expired", 401, "expired"]]) {
+    let refuse = false;
+    const h = await watching({ "catalog.paged_read": true }, () => refuse ? problem(code, status) : json(header()));
+    const guard = h.boot.guard();
+    await guard.check(false); h.clock(3_000); await guard.check(false);
+    refuse = true; const from = h.calls.length;
+    h.clock(6_000); await guard.check(false);
+    assert.equal(guard.state(), expect, code);
+    assert.deepEqual(count(h, from), { header: 1 }, `${code}: no session or capabilities read was needed to see it`);
+    if (expect !== "expired") assert.equal(h.boot.snapshot().workspace, null, `${code}: nothing of the scope stays`);
+    if (code === "membership_revoked") {
+      assert.equal(h.boot.snapshot().session.user_id, "actor", "the session itself is kept (J02)");
+      assert.equal(h.boot.snapshot().error.code, "permission_denied");
+      assert.equal(h.messages.some(message => message.type === "revoked"), false, "other tabs are not signed out");
+    }
+    h.boot.stop();
+  }
+});
+
+test("W15 with only the workspace open, a check reads its capabilities alone; a lost membership there drops the workspace", async () => {
+  let revoked = false;
+  const h = system(url => url === "/v1/session" ? json(session()) : revoked ? problem("membership_revoked", 403) : json(caps("w")));
+  await h.boot.start(); await h.boot.selectWorkspace("w");
+  const guard = h.boot.guard();
+  await guard.check(false);
+  const from = h.calls.length;
+  h.clock(3_000); await guard.check(false); h.clock(6_000); await guard.check(false);
+  assert.deepEqual(count(h, from), { capabilities: 2 });
+  revoked = true; const before = h.calls.length; h.clock(9_000); await guard.check(false);
+  assert.deepEqual(count(h, before), { capabilities: 1 }, "seen by that one read");
+  assert.equal(guard.state(), "active", "the session is kept (J02)");
+  assert.equal(h.boot.snapshot().workspace, null);
+  assert.equal(h.boot.snapshot().session.user_id, "actor");
+  h.boot.stop();
+});
+
+test("W16 a tab coming back after 30 s or more reads session and capabilities again before anything is shown", async () => {
+  const h = await watching({ "catalog.paged_read": true }, () => json(header()));
+  const guard = h.boot.guard();
+  await guard.check(false);
+  const from = h.calls.length;
+  h.clock(45_000); await guard.onVisible(45_000);
+  assert.deepEqual(count(h, from), { session: 1, capabilities: 1, header: 1 });
+  assert.equal(guard.state(), "active");
+  h.boot.stop();
+});

@@ -16,6 +16,12 @@ export interface HostedBoot {
 
 /** The hosted authorization lease: nothing private stays shown longer than this after the request that confirmed it was sent. */
 const LEASE_MS = 4_000;
+/* J01.04: what one check reads. Every read in a workspace is refused at once (401 session_expired/revoked,
+   403 membership_revoked) when access ends, so a single read of the scope on screen (the result's header, a job
+   being awaited, else the workspace's capabilities) confirms the session, the membership and that object
+   together. Session and capabilities are read again in full at most this often, for what only they carry:
+   a new CSRF token, a changed role or features, another account. Revocation still shows within one check. */
+const FULL_CHECK_MS = 30_000;
 const TERMINAL = new Set(["succeeded", "failed", "cancelled", "expired"]);
 
 export function createHostedBootstrap(options: {
@@ -38,6 +44,8 @@ export function createHostedBootstrap(options: {
   let jobReadAt: { job: string; at: number } | null = null;
   /** when this guard's previous check was sent */
   let lastAsked = -Infinity;
+  /** when this guard's previous check that read session and capabilities was sent */
+  let lastFull = -Infinity;
   let selecting = 0;
   const listeners = new Set<() => void>();
   const publish = (patch: Partial<HostedBoot>) => {
@@ -131,16 +139,17 @@ export function createHostedBootstrap(options: {
     throw new ProductError("feature_unavailable", "Access to this result cannot be confirmed here.");
   }
   function installGuard(session: HostedSession) {
-    lastAsked = -Infinity;
+    lastAsked = -Infinity; lastFull = -Infinity;
     guard = createSessionGuard({ contextId: session.context_id, now, tell: options.tell, authorizationLeaseMs: LEASE_MS,
       onWipe: () => clear(),
       check: async (): Promise<SessionAnswer> => {
         const asked = now(), previous = lastAsked;
         lastAsked = asked;
         try {
-          const next = await refreshSession();
           const workspace = state.workspace?.workspace_id;
-          if (workspace) await refreshCapabilities(workspace);
+          const full = !workspace || asked - lastFull >= FULL_CHECK_MS;
+          const next = full ? await refreshSession() : requireSession();
+          if (full && workspace) await refreshCapabilities(workspace);
           const job = watchedJob, shown = watchedResult, caps = state.workspace;
           // A job this tab is already polling was read by that polling: its newest read counts, from when it was sent.
           // Only a read made since the previous check is new: reusing an older one would date this confirmation back
@@ -158,7 +167,11 @@ export function createHostedBootstrap(options: {
             const failed = settled.find(outcome => outcome.status === "rejected");
             // once a denial has dropped the workspace, nothing of the old scope is on screen to confirm
             if (failed && current(generation)) throw failed.reason;
+          } else if (!full && workspace) {
+            // nothing else of the workspace is on screen: the workspace itself is the scope to read
+            await refreshCapabilities(workspace);
           }
+          if (full) lastFull = asked;
           return { status: "ok", context_id: next.context_id, ...(polled !== null ? { since: polled } : {}) };
         } catch (error) {
           if (error instanceof HostedRequestDiscarded && state.session && !state.workspace && state.error?.code === "permission_denied") {

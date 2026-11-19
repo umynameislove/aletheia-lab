@@ -290,3 +290,18 @@ test("K3 under a lease a successful API answer is not a confirmation: when it wa
   clock.t += 100; guard.onTick(true);
   assert.equal(guard.state(), "confirming");
 });
+
+test("K1 under a lease the next check starts before the lease runs out, so a steady tab is never covered (staging fix, J01)", async () => {
+  let clock = 0;
+  const guard = createSessionGuard({ check: async () => ({ status: "ok", context_id: "c" }), contextId: "c", now: () => clock,
+    random: () => 1, onWipe() {}, authorizationLeaseMs: 4_000 });
+  // a slow answer: sent at 0, answered at 900 ms, so the lease from it ends at 4 000
+  const slow = guard.check(false); clock = 900; await slow;
+  // the check must be due early enough for another check of the same duration, with room for timer jitter
+  let due = null;
+  for (let t = 900; t <= 4_000; t += 50) { clock = t; if (guard.due(true)) { due = t; break; } }
+  assert.ok(due !== null && due <= 4_000 - 900 - 750 + 50, `due at ${due}`);
+  clock = due; const next = guard.check(false); clock = due + 900; await next;
+  guard.onTick(true);
+  assert.equal(guard.state(), "active", "never covered while answers keep coming");
+});
