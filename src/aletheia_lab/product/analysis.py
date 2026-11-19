@@ -1,4 +1,4 @@
-"""Deterministic offline ProductView construction from diagnosis-visible evidence."""
+"""Deterministic offline AnyProductView construction from diagnosis-visible evidence."""
 
 from __future__ import annotations
 
@@ -22,18 +22,27 @@ from aletheia_lab.product.observations import build_product_observation
 from aletheia_lab.product.projection import build_product_graph_projection
 from aletheia_lab.product.questions import checked_product_question
 from aletheia_lab.product.results import persist_product_result
-from aletheia_lab.product.view import COUNTERFACTUAL_NOT_AVAILABLE, ProductView
+from aletheia_lab.product.view import (
+    COUNTERFACTUAL_NOT_AVAILABLE,
+    AnyProductView,
+    parse_product_view_json,
+)
 from aletheia_lab.project.identity import canonical_project_sha256
 from aletheia_lab.project.lineage import ProjectLineageGraph
-from aletheia_lab.project.mapping import MetricObservation, ProjectMappingConfiguration
+from aletheia_lab.project.mapping import (
+    AnyMappingConfiguration,
+    AnyMetricObservation,
+    MetricDefinitionV2,
+    MetricObservationV2,
+)
 from aletheia_lab.project.persistence import ProjectStore
 from aletheia_lab.project.regression import (
+    AnyProjectMetricChange,
+    AnySnapshotComparison,
     EvidenceRole,
-    ProjectMetricChange,
     ProjectRegressionEvent,
-    ProjectSnapshotComparison,
 )
-from aletheia_lab.project.snapshots import ProjectSnapshot
+from aletheia_lab.project.snapshots import AnyProjectSnapshot
 
 _PENDING_RESULT_ID: Final[str] = "p6-result-" + "0" * 64
 _SOURCE_INTEGRITY_MESSAGE: Final[str] = "Stored project evidence failed its integrity check."
@@ -76,7 +85,7 @@ def build_product_analysis(
     project_id: str,
     snapshot_id: str,
     question: str,
-) -> ProductView:
+) -> AnyProductView:
     """Build an unpersisted deterministic view without network or hidden evidence."""
 
     checked_question = checked_product_question(question)
@@ -144,7 +153,7 @@ def build_product_analysis(
         "external_call": False,
     }
     payload = {
-        "schema_version": "p6-product-view/v1",
+        "schema_version": "p6-product-view/v2" if configuration.schema_version.endswith("/v2") else "p6-product-view/v1",
         "demo_only": False,
         "mode": "project_audit",
         "visibility": "diagnosis",
@@ -223,7 +232,7 @@ def build_product_analysis(
         ).graph.model_dump(mode="json"),
     }
     try:
-        view = ProductView.model_validate_json(
+        view = parse_product_view_json(
             json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
         )
     except (TypeError, ValueError):
@@ -242,9 +251,9 @@ def _load_analysis_sources(
     comparison_id: str,
     event_id: str,
 ) -> tuple[
-    ProjectSnapshot,
-    ProjectSnapshotComparison,
-    ProjectMappingConfiguration,
+    AnyProjectSnapshot,
+    AnySnapshotComparison,
+    AnyMappingConfiguration,
     ProjectLineageGraph,
 ]:
     try:
@@ -261,12 +270,12 @@ def _load_analysis_sources(
             lineage = store.load(lineage_id) if isinstance(lineage_id, str) else None
         if (
             configuration is None
-            or not isinstance(baseline, ProjectSnapshot)
+            or not isinstance(baseline, AnyProjectSnapshot)
             or baseline.project_id != project_id
-            or not isinstance(snapshot, ProjectSnapshot)
+            or not isinstance(snapshot, AnyProjectSnapshot)
             or snapshot.project_id != project_id
             or snapshot.mapping_configuration_sha256 != configuration.mapping_sha256
-            or not isinstance(comparison, ProjectSnapshotComparison)
+            or not isinstance(comparison, AnySnapshotComparison)
             or comparison.project_id != project_id
             or comparison.before_snapshot_id != baseline_id
             or comparison.after_snapshot_id != snapshot_id
@@ -346,8 +355,8 @@ def _product_evidence(
 
 def _product_metrics(
     projection: ProductEvidenceProjection,
-    comparison: ProjectSnapshotComparison,
-    configuration: ProjectMappingConfiguration,
+    comparison: AnySnapshotComparison,
+    configuration: AnyMappingConfiguration,
 ) -> tuple[tuple[dict[str, object], ...], tuple[dict[str, object], ...]]:
     evidence_by_change = {
         item.source_id: item.evidence_id
@@ -357,11 +366,12 @@ def _product_metrics(
     if set(evidence_by_change) != {change.metric_change_id for change in comparison.metric_changes}:
         raise ProductError("store_integrity_error", _SOURCE_INTEGRITY_MESSAGE)
     adverse_ids = set(adverse_metric_change_ids(comparison, configuration.metric_definitions))
-    definitions = tuple(
+    definitions: tuple[dict[str, object], ...] = tuple(
         {
             "metric_name": value.metric_name,
             "direction": value.direction,
             "regression_threshold": _json_number(value.regression_threshold),
+            **({"unit": value.unit} if isinstance(value, MetricDefinitionV2) else {}),
         }
         for value in configuration.metric_definitions
     )
@@ -379,7 +389,7 @@ def _product_metrics(
 
 
 def _product_metric_change(
-    change: ProjectMetricChange,
+    change: AnyProjectMetricChange,
     *,
     evidence_id: str,
     before_snapshot_id: str,
@@ -407,7 +417,7 @@ def _product_metric_change(
 
 
 def _product_metric_observation(
-    observation: MetricObservation | None,
+    observation: AnyMetricObservation | None,
     snapshot_id: str,
 ) -> dict[str, object] | None:
     if observation is None:
@@ -417,10 +427,12 @@ def _product_metric_observation(
         "run_id": observation.run_id,
         "step": observation.step,
         "value": _json_number(observation.metric_value),
+        **({"class_label": observation.class_label, "unit": observation.unit, "unit_origin": observation.unit_origin}
+           if isinstance(observation, MetricObservationV2) else {}),
     }
 
 
-def _metric_delta(change: ProjectMetricChange) -> float:
+def _metric_delta(change: AnyProjectMetricChange) -> float:
     if change.before is None or change.after is None:
         raise ProductError("store_integrity_error", _SOURCE_INTEGRITY_MESSAGE)
     delta = float(
@@ -446,7 +458,7 @@ __all__ = ["analyze_product_mock"]
 
 def analyze_product_mock(
     store_root: Path, project_id: str, snapshot_id: str, question: str
-) -> ProductView:
+) -> AnyProductView:
     """Persist the existing deterministic demonstration view."""
     return persist_product_result(
         store_root, build_product_analysis(store_root, project_id, snapshot_id, question)

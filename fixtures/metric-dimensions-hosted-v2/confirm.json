@@ -1,0 +1,57 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "mapping": {
+    "schema_version": "project-mapping-request/v2",
+    "target": {
+      "mapping_id": "target-99d1dd9255481559",
+      "project_item_id": "p3-item-99d1dd9255481559fc73dd9ac23dd869895ce3340dd0c16894c7c59200699832",
+      "target_field": "target",
+      "identifier_field": "id"
+    },
+    "metric_sources": [
+      {
+        "mapping_id": "metric-69cd683c3b37e297",
+        "project_item_id": "p3-item-69cd683c3b37e297b9774546fa25c3178184dadcd652f3b65b79bb7ade025c8d",
+        "format": "csv",
+        "records_path": [],
+        "metric_name_field": "name",
+        "metric_value_field": "value",
+        "run_id_field": "run",
+        "step_field": null,
+        "class_field": "class",
+        "unit_field": "unit"
+      }
+    ],
+    "runs": [
+      {
+        "run_id": "lần-0",
+        "config_item_ids": []
+      },
+      {
+        "run_id": "lần-1",
+        "config_item_ids": []
+      },
+      {
+        "run_id": "lần-2",
+        "config_item_ids": []
+      },
+      {
+        "run_id": "lần-3",
+        "config_item_ids": []
+      },
+      {
+        "run_id": "lần-4",
+        "config_item_ids": []
+      }
+    ],
+    "baseline_run_id": "lần-0",
+    "metric_definitions": [
+      {
+        "metric_name": "độ_chính_xác",
+        "direction": "higher_is_better",
+        "regression_threshold": 0.08,
+        "unit": "%"
+      }
+    ]
+  }
+}

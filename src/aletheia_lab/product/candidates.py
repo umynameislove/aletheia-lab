@@ -6,6 +6,7 @@ import csv
 import io
 import json
 import re
+import unicodedata
 from collections.abc import Iterable
 from typing import Final, Literal, Self, TypeAlias
 
@@ -14,7 +15,12 @@ from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 from aletheia_lab.project.collectors import DatasetMetadata
 from aletheia_lab.project.contracts import ProjectItem
 from aletheia_lab.project.importer import ProjectImportArtifact
-from aletheia_lab.project.mapping import ProjectMappingConfiguration
+from aletheia_lab.project.mapping import (
+    _IGNORABLE_IDENTIFIER_CHARACTERS,
+    AnyMappingConfiguration,
+    MetricSourceMappingV2,
+    _identifier,
+)
 
 UnavailableReason: TypeAlias = Literal[
     "sensitive_fields_withheld",
@@ -22,7 +28,6 @@ UnavailableReason: TypeAlias = Literal[
     "unreadable_source",
 ]
 
-_IDENTIFIER: Final[re.Pattern[str]] = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:@+-]{0,127}$")
 _SENSITIVE_LABEL: Final[re.Pattern[str]] = re.compile(
     r"(?i)(?:^|[^a-z0-9])(?:ssn|social[_ -]?security|e-?mail|phone|password|passwd|"
     r"secret|token|api[_ -]?key|private[_ -]?key|credential)(?:$|[^a-z0-9])"
@@ -99,7 +104,7 @@ class MetricSourceCandidate(CandidateBase):
     ) -> tuple[str, ...]:
         if (
             len(values) != len(set(values))
-            or any(_IDENTIFIER.fullmatch(value) is None for value in values)
+            or any(not _is_identifier(value) for value in values)
             or any(_contains_sensitive_text(value) for value in values)
         ):
             raise ValueError("metric-name candidates must be unique safe identifiers")
@@ -153,7 +158,17 @@ def _mapping_id(kind: Literal["target", "metric", "config"], item: ProjectItem) 
 
 
 def _contains_sensitive_text(value: str) -> bool:
-    return bool(_SENSITIVE_LABEL.search(value) or _EMAIL.search(value) or _PHONE.search(value))
+    checked = "".join(character for character in value
+                      if character not in _IGNORABLE_IDENTIFIER_CHARACTERS and unicodedata.category(character) != "Cf")
+    return bool(_SENSITIVE_LABEL.search(checked) or _EMAIL.search(checked) or _PHONE.search(checked))
+
+
+def _is_identifier(value: str) -> bool:
+    try:
+        _identifier(value, label="mapping candidate")
+    except ValueError:
+        return False
+    return True
 
 
 def _eligible_field_names(values: Iterable[object]) -> tuple[tuple[str, ...], bool]:
@@ -165,7 +180,7 @@ def _eligible_field_names(values: Iterable[object]) -> tuple[tuple[str, ...], bo
         if _contains_sensitive_text(value):
             sensitive = True
             continue
-        if _IDENTIFIER.fullmatch(value) is not None and value not in names:
+        if _is_identifier(value) and value not in names:
             names.append(value)
     return tuple(names), sensitive
 
@@ -296,7 +311,7 @@ def _run_values(
         value = record.get(field)
         if (
             not isinstance(value, str)
-            or _IDENTIFIER.fullmatch(value) is None
+            or not _is_identifier(value)
             or _contains_sensitive_text(value)
         ):
             return ()
@@ -315,10 +330,12 @@ def _metric_name_values(
     values: set[str] = set()
     for record in records:
         value = record.get(field)
-        if not isinstance(value, str) or _IDENTIFIER.fullmatch(value) is None:
+        if not isinstance(value, str):
             return (), False
         if _contains_sensitive_text(value):
             return (), True
+        if not _is_identifier(value):
+            return (), False
         values.add(value)
     return tuple(sorted(values)), False
 
@@ -464,7 +481,7 @@ def build_mapping_candidates(
 
 
 def confirm_mapping_is_eligible(
-    configuration: ProjectMappingConfiguration,
+    configuration: AnyMappingConfiguration,
     candidates: MappingCandidates,
 ) -> bool:
     """Fail closed when a confirm request routes around preview eligibility."""
@@ -492,6 +509,8 @@ def confirm_mapping_is_eligible(
             mapping.metric_value_field,
             mapping.run_id_field,
             *(() if mapping.step_field is None else (mapping.step_field,)),
+            *(() if not isinstance(mapping, MetricSourceMappingV2) or mapping.class_field is None else (mapping.class_field,)),
+            *(() if not isinstance(mapping, MetricSourceMappingV2) or mapping.unit_field is None else (mapping.unit_field,)),
         )
         if any(value not in candidate.field_names for value in selected_fields):
             return False
