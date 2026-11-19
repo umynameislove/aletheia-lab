@@ -9,17 +9,22 @@
    IME on macOS can emit decomposed marks), so a correct question is never refused for its encoding.
    What it sends is then the exact string the service keys on. */
 
+/** Outside hosted, the limit locked with the service owner. A hosted workspace publishes its own (questionLimit). */
 export const QUESTION_MAX = 2000;
 const CONTROL = /[\u0000-\u001F\u007F-\u009F]/;
+
+/** The one question limit of a hosted workspace (J01.02): what its capabilities publish, in Unicode code points,
+    for a first question and a follow-up alike. Nothing is inferred from older examples or from the other flow. */
+export const questionLimit = (caps: { question_chars: number }): number => caps.question_chars;
 
 /** What the UI sends: trimmed and NFC. Nothing else is changed. */
 export const canonicalQuestion = (typed: string) => typed.trim().normalize("NFC");
 
-/** Why the service would refuse this exact string, or null if it would accept it. */
-export function questionProblem(q: unknown): string | null {
+/** Why the service would refuse this exact string, or null if it would accept it. `max` counts code points. */
+export function questionProblem(q: unknown, max: number = QUESTION_MAX): string | null {
   if (typeof q !== "string" || q.length === 0) return "Write a question to ask.";
   if (q !== q.trim()) return "The question starts or ends with whitespace.";
-  if ([...q].length > QUESTION_MAX) return `Keep the question to ${QUESTION_MAX} characters.`;
+  if ([...q].length > max) return `Keep the question to ${max} characters.`;
   if (CONTROL.test(q)) return "Remove line breaks, tabs and other control characters.";
   if (q !== q.normalize("NFC")) return "The question is not in Unicode NFC.";
   return null;

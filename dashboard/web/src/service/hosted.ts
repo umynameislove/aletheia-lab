@@ -182,6 +182,8 @@ export interface HostedCapabilities {
   job_poll_min_ms: number;
 }
 
+export { questionLimit } from "./question.ts";
+
 const strList = (x: unknown, max: number): x is string[] => Array.isArray(x) && x.length <= max && x.every(v => text(v, 256));
 const positive = (x: unknown): x is number => isInt(x) && x > 0;
 

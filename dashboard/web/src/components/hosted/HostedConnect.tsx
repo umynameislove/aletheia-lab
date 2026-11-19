@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { createHostedClient, HostedAnalysisResult, HostedPreview, HostedSource, HostedSubmission, HostedUploadResume, OutputExpectation } from "../../service/hosted-client";
 import { HostedRequestDiscarded } from "../../service/hosted-client";
-import type { HostedCapabilities, HostedSession, JobReceipt } from "../../service/hosted";
+import { questionLimit, type HostedCapabilities, type HostedSession, type JobReceipt } from "../../service/hosted";
 import { ProductError } from "../../service/port";
 import { declaredRuns } from "../../service/transitions";
 import { checks, confirmPayload, defaultMapping, MetricDefinitions, Picker, type Mapping } from "../Connect";
@@ -51,7 +51,7 @@ function ConnectForm(props: Props) {
   const current = () => alive.current && latest.current.isCurrent();
   const canImport = caps.workspace_id === workspaceId && caps.allowed_actions.includes("import") && caps.supported_source_types.includes("zip_bundle");
   const canAnalyze = caps.allowed_actions.includes("analyze");
-  const questionLimit = Math.min(2000, caps.question_chars);
+  const questionMax = questionLimit(caps);
   const locked = !!busy || pending.current !== null;
   const C = preview?.mapping_candidates;
   const target = C?.targets.find(item => item.project_item_id === mapping?.target);
@@ -218,8 +218,8 @@ function ConnectForm(props: Props) {
   function analyze() {
     if (!current() || running.current || pending.current || !snapshot || !canAnalyze) return;
     const text = question.trim();
-    if (!text || [...text].length > questionLimit) {
-      setFailure(new ProductError("invalid_question", `Enter a question of 1 to ${questionLimit} characters.`));
+    if (!text || [...text].length > questionMax) {
+      setFailure(new ProductError("invalid_question", `Enter a question of 1 to ${questionMax} characters.`));
       document.getElementById("hosted-first-question")?.focus();
       return;
     }
@@ -324,7 +324,7 @@ function ConnectForm(props: Props) {
       {snapshot && <section className="panel"><p>Snapshot saved: <code className="mono-s">{snapshot}</code></p>
         {canAnalyze ? <><label className="fld-label" htmlFor="hosted-first-question">Your question</label>
           <textarea id="hosted-first-question" className="input" rows={3} value={question} disabled={locked} aria-describedby="hosted-question-limit" onChange={event => setQuestion(event.target.value)} />
-          <p className="fld-note" id="hosted-question-limit">{[...question].length} / {questionLimit} characters</p>
+          <p className="fld-note" id="hosted-question-limit">{[...question].length} / {questionMax} characters</p>
           <button type="button" className="btn btn--primary" disabled={locked} onClick={analyze}>Analyze saved snapshot</button>
         </> : <p role="status">Your current access does not permit analysis.</p>}
       </section>}

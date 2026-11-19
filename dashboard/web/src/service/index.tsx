@@ -13,6 +13,7 @@ import { createSessionGuard, sessionChannel, type SessionAnswer, type SessionGua
 import { onWipe, wipeAll } from "./wipe";
 import { isProductError, ProductError, type ProductPort } from "./port";
 import { resultTransitions } from "./transitions";
+import { QUESTION_MAX, questionLimit } from "./question";
 import { useStore } from "../store";
 
 /* The app talks to the backend only through this port. The build picks it once:
@@ -31,6 +32,8 @@ export const port: ProductPort = hostedMode ? hostedPort! : demoPort ?? checkedP
 /** Why a hosted refresh, follow-up, export or delete is not offered now: the workspace's feature flag and
     the role's allowed actions decide, not the build. Always null outside hosted. */
 export const hostedOff = (binding: HostedBinding): string | null => hostedPort ? hostedPort.bindingOff(binding) : null;
+/** The question limit the composer enforces: a hosted workspace's published one, else the locked default. */
+export const questionMax = (): number => { const caps = hostedPort?.capabilities(); return caps ? questionLimit(caps) : QUESTION_MAX; };
 export const capabilities = hostedMode ? {
   deployment_mode: "hosted" as const,
   schema_version: "product-api/v1-draft",

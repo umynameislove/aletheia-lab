@@ -9,7 +9,8 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createHostedClient, HostedRequestDiscarded } from "../src/service/hosted-client.ts";
 import { bindingOff, createHostedPort } from "../src/service/hosted-port.ts";
-import { readProblem, BINDING_PROBLEM_STATUS } from "../src/service/hosted.ts";
+import { questionLimit, readProblem, BINDING_PROBLEM_STATUS } from "../src/service/hosted.ts";
+import { questionProblem } from "../src/service/question.ts";
 import { isTombstone } from "../src/service/port.ts";
 
 const VERSION = "product-api/v1-draft", WS = "a";
@@ -643,4 +644,32 @@ test("R7 jobs.conflict_v1: a refresh that met a newer project is a stale refresh
   const posts = calls.filter(call => call.url.endsWith("/refresh"));
   assert.deepEqual(posts.map(call => call.headers["If-Match"]), ['"3"', '"5"']);
   assert.notEqual(posts[0].headers["Idempotency-Key"], posts[1].headers["Idempotency-Key"]);
+});
+
+test("Q1 one question limit (J01.02): a first question and a follow-up both take exactly caps.question_chars and refuse one more", async () => {
+  // counted in code points, so a character outside the BMP counts once in both flows
+  for (const limit of [2000, 4000, 4001]) {
+    const at = "𝔸".repeat(limit), over = at + "𝔸";
+    assert.equal(questionLimit(caps({ question_chars: limit })), limit);
+    assert.equal(questionProblem(at, limit), null);
+    assert.match(questionProblem(over, limit), new RegExp(`Keep the question to ${limit} characters`));
+    // first question: the analyze submission
+    const analyze = server({ [`POST ${B}/jobs`]: [json(receipt("job_a"), 202)] });
+    const client = createHostedClient({ session, isCurrent: () => true, fetch: analyze.fetch });
+    const c = caps({ question_chars: limit });
+    assert.equal((await client.submitJob(WS, c, { operation: "analyze", snapshot_id: SNAPSHOT, question: at }, "synthetic_request_q1")).job_id, "job_a");
+    assert.throws(() => client.submitJob(WS, c, { operation: "analyze", snapshot_id: SNAPSHOT, question: over }, "synthetic_request_q2"), { code: "invalid_request" });
+    assert.equal(analyze.calls.length, 1, "the refused first question sent nothing");
+    // follow-up: the port refuses before anything is sent, the client refuses as well, and the limit itself is sent
+    const follow = setup(followRoutes(), { over: { question_chars: limit } });
+    await assert.rejects(follow.port.follow_up(RESULT, "claim", CLAIM, over), { code: "invalid_question" });
+    assert.deepEqual(follow.calls, []);
+    assert.throws(() => client.submitFollowUp(WS, c, RESULT, { kind: "claim", id: CLAIM }, over, 3, "synthetic_request_q3"), { code: "invalid_request" });
+    await follow.port.follow_up(RESULT, "claim", CLAIM, at);
+    const post = follow.calls.find(call => call.url.endsWith("/follow-ups"));
+    assert.equal([...JSON.parse(post.body).question].length, limit);
+  }
+  // outside hosted the locked default stays
+  assert.equal(questionProblem("x".repeat(2000)), null);
+  assert.ok(questionProblem("x".repeat(2001)));
 });

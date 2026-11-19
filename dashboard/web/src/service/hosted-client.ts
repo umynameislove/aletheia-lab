@@ -2,7 +2,7 @@
 import type { MappingCandidates, ProductView } from "../types.ts";
 import { checkProductView } from "./contract.ts";
 import {
-  PRODUCT_API_VERSIONS, isInstant, readCapabilities, readJob, readJobReceipt, readPage, readProblem, readSession,
+  PRODUCT_API_VERSIONS, isInstant, questionLimit, readCapabilities, readJob, readJobReceipt, readPage, readProblem, readSession,
   type HostedCapabilities, type HostedJob, type HostedSession,
 } from "./hosted.ts";
 import { HostedRequestDiscarded, ProductError, type ReportFormat } from "./port.ts";
@@ -489,7 +489,7 @@ export function createHostedClient(options: HostedClientOptions) {
       if (submission.operation === "analyze") {
         input(Object.keys(submission).sort().join() === "operation,question,snapshot_id" && id(submission.snapshot_id)
           && typeof submission.question === "string" && submission.question.trim() === submission.question
-          && submission.question.length > 0 && [...submission.question].length <= Math.min(2000, caps.question_chars));
+          && submission.question.length > 0 && [...submission.question].length <= questionLimit(caps));
       } else {
         input((submission.operation === "preview" || submission.operation === "confirm") && id(submission.source_id)
           && Object.keys(submission).sort().join() === (submission.operation === "preview" ? "operation,source_id"
@@ -608,7 +608,7 @@ export function createHostedClient(options: HostedClientOptions) {
       capability(workspace, caps, "analyze");
       input(id(parentResultId) && obj(selection) && (selection.kind === "claim" || selection.kind === "node") && id(selection.id)
         && typeof question === "string" && question.trim() === question && question.length > 0
-        && [...question].length <= Math.min(4000, caps.question_chars) && revision(expectedRevision));
+        && [...question].length <= questionLimit(caps) && revision(expectedRevision));
       return request(`${base(workspace)}/results/${parentResultId}/follow-ups`, "POST", (value, status) => {
         need(status === 202); return readJobReceipt(value, workspace);
       }, JSON.stringify({ schema_version: "product-api/v1-draft", selection_kind: selection.kind, selection_id: selection.id, question }),

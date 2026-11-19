@@ -9,7 +9,7 @@
    A replacement ZIP is the same intent only when its SHA-256 matches; other bytes start a new upload. */
 import type { ProductView } from "../types.ts";
 import type { createHostedClient, HostedUploadResume } from "./hosted-client.ts";
-import type { HostedCapabilities, HostedSession } from "./hosted.ts";
+import { questionLimit, type HostedCapabilities, type HostedSession } from "./hosted.ts";
 import { HostedRequestDiscarded, ProductError, type ProductPort, type RefreshResult, type TombstoneReceipt } from "./port.ts";
 
 export interface HostedPortContext {
@@ -315,7 +315,7 @@ export function createHostedPort(): HostedProductPort {
         throw new ProductError("selection_not_available", "Select a claim or node of the open result.");
       }
       if (typeof question !== "string" || question.trim() !== question || !question
-        || [...question].length > Math.min(4000, context.caps.question_chars)) {
+        || [...question].length > questionLimit(context.caps)) {
         throw new ProductError("invalid_question", "Write a question within this workspace's limit.");
       }
       const projectId = parent.project.id, snapshotId = parent.snapshot.id;

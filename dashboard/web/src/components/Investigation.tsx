@@ -4,9 +4,9 @@ import type { Claim, GraphNode, ProductView, Turn } from "../types";
 import { counterfactualStatus, evidenceRequests, observedInSnapshot, projectView } from "../data/view";
 import { ADVERSE_WORDS, definitionWords, formatNumber, formatSigned, metricDimensions } from "../data/format";
 import { pageOf, pageOfIndex } from "../data/paging";
-import { hostedMode, hostedOff, port, scoped, useResultSwitch, useView } from "../service";
+import { hostedMode, hostedOff, port, questionMax, scoped, useResultSwitch, useView } from "../service";
 import { onWipe } from "../service/wipe";
-import { canonicalQuestion, QUESTION_MAX, questionProblem } from "../service/question";
+import { canonicalQuestion, questionProblem } from "../service/question";
 import type { SelectionKind } from "../service/port";
 import { reviewOf, useRoute, useStore } from "../store";
 import { plain, TERM } from "../vocab";
@@ -364,7 +364,8 @@ function Composer({ v, selection, onDone }: { v: ProductView; selection: Selecti
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<Refusal>(null);
   const question = canonicalQuestion(text);
-  const problem = question ? questionProblem(question) : null;
+  const max = questionMax();
+  const problem = question ? questionProblem(question, max) : null;
   const length = [...question].length;
   // in Live, the service's demo_view is a sample that was never stored, so nothing can follow up on it
   const sample = port.kind === "live" && v.demo_only;
@@ -373,7 +374,7 @@ function Composer({ v, selection, onDone }: { v: ProductView; selection: Selecti
   const can = !followOff && !sample && !!selection && !!question && !problem && !busy;
   // the placeholder said what to select, but it is gone once something is typed, and the scope chip is hidden on a phone
   const unscoped = !sample && !selection && !!question;
-  const note = !!(err || problem || unscoped) || length > QUESTION_MAX - 200;
+  const note = !!(err || problem || unscoped) || length > max - 200;
 
   function ask() {
     if (followOff || busy || sample || !selection || !question) return;
@@ -414,7 +415,7 @@ function Composer({ v, selection, onDone }: { v: ProductView; selection: Selecti
               <Mark tone={problem ? "no" : "partial"} />
               {problem ? <span>{problem}</span>
                 : unscoped ? <span>Select a claim or node first.</span>
-                : <span>{length} of {QUESTION_MAX} characters.</span>}
+                : <span>{length} of {max} characters.</span>}
             </div>
           )}</div>
           {err && <div className="composer-err"><RefusalNote refusal={err} compact /></div>}
