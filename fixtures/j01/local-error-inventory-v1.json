@@ -1,0 +1,587 @@
+{
+  "codes": {
+    "analysis_too_large": [
+      {
+        "line": 73,
+        "path": "src/aletheia_lab/product/metric_analysis.py"
+      },
+      {
+        "line": 117,
+        "path": "src/aletheia_lab/product/metric_analysis.py"
+      }
+    ],
+    "backend_unavailable": [
+      {
+        "line": 119,
+        "path": "src/aletheia_lab/dashboard/bridge.py"
+      }
+    ],
+    "confirm_failed": [
+      {
+        "line": 300,
+        "path": "src/aletheia_lab/product/imports.py"
+      }
+    ],
+    "demo_integrity_error": [
+      {
+        "line": 22,
+        "path": "src/aletheia_lab/product/demo.py"
+      }
+    ],
+    "evidence_not_available": [
+      {
+        "line": 293,
+        "path": "src/aletheia_lab/product/analysis.py"
+      },
+      {
+        "line": 301,
+        "path": "src/aletheia_lab/product/analysis.py"
+      },
+      {
+        "line": 48,
+        "path": "src/aletheia_lab/product/evidence_store.py"
+      },
+      {
+        "line": 88,
+        "path": "src/aletheia_lab/product/evidence_store.py"
+      }
+    ],
+    "evidence_projection_invalid": [
+      {
+        "line": 292,
+        "path": "src/aletheia_lab/product/evidence.py"
+      }
+    ],
+    "evidence_reference_invalid": [
+      {
+        "line": 297,
+        "path": "src/aletheia_lab/product/evidence.py"
+      },
+      {
+        "line": 317,
+        "path": "src/aletheia_lab/product/evidence.py"
+      }
+    ],
+    "forbidden": [
+      {
+        "line": 122,
+        "path": "src/aletheia_lab/dashboard/bridge.py"
+      }
+    ],
+    "graph_projection_invalid": [
+      {
+        "line": 152,
+        "path": "src/aletheia_lab/product/projection.py"
+      }
+    ],
+    "invalid_id": [
+      {
+        "line": 30,
+        "path": "src/aletheia_lab/product/evidence_store.py"
+      },
+      {
+        "line": 291,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      },
+      {
+        "line": 293,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      },
+      {
+        "line": 299,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      },
+      {
+        "line": 635,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      }
+    ],
+    "invalid_question": [
+      {
+        "line": 42,
+        "path": "src/aletheia_lab/product/questions.py"
+      }
+    ],
+    "invalid_request": [
+      {
+        "line": 23,
+        "path": "src/aletheia_lab/product/reports.py"
+      },
+      {
+        "line": 116,
+        "path": "src/aletheia_lab/dashboard/bridge.py"
+      },
+      {
+        "line": 117,
+        "path": "src/aletheia_lab/dashboard/bridge.py"
+      }
+    ],
+    "invalid_selection_kind": [
+      {
+        "line": 60,
+        "path": "src/aletheia_lab/product/follow_up.py"
+      }
+    ],
+    "mapping_invalid": [
+      {
+        "line": 334,
+        "path": "src/aletheia_lab/product/imports.py"
+      },
+      {
+        "line": 345,
+        "path": "src/aletheia_lab/product/imports.py"
+      },
+      {
+        "line": 110,
+        "path": "src/aletheia_lab/product/mapping.py"
+      },
+      {
+        "line": 175,
+        "path": "src/aletheia_lab/product/mapping.py"
+      },
+      {
+        "line": 182,
+        "path": "src/aletheia_lab/product/mapping.py"
+      },
+      {
+        "line": 185,
+        "path": "src/aletheia_lab/product/mapping.py"
+      },
+      {
+        "line": 398,
+        "path": "src/aletheia_lab/product/refresh.py"
+      }
+    ],
+    "not_found": [
+      {
+        "line": 246,
+        "path": "src/aletheia_lab/dashboard/bridge.py"
+      }
+    ],
+    "preview_already_confirmed": [
+      {
+        "line": 275,
+        "path": "src/aletheia_lab/product/imports.py"
+      },
+      {
+        "line": 416,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      }
+    ],
+    "preview_blocked": [
+      {
+        "line": 289,
+        "path": "src/aletheia_lab/product/imports.py"
+      }
+    ],
+    "preview_expired": [
+      {
+        "line": 302,
+        "path": "src/aletheia_lab/product/imports.py"
+      }
+    ],
+    "preview_stale": [
+      {
+        "line": 316,
+        "path": "src/aletheia_lab/product/imports.py"
+      },
+      {
+        "line": 324,
+        "path": "src/aletheia_lab/product/imports.py"
+      },
+      {
+        "line": 352,
+        "path": "src/aletheia_lab/product/imports.py"
+      }
+    ],
+    "project_already_imported": [
+      {
+        "line": 423,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      }
+    ],
+    "record_not_found": [
+      {
+        "line": 391,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 374,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      },
+      {
+        "line": 612,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      },
+      {
+        "line": 663,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      },
+      {
+        "line": 688,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      },
+      {
+        "line": 695,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      },
+      {
+        "line": 697,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      }
+    ],
+    "refresh_failed": [
+      {
+        "line": 502,
+        "path": "src/aletheia_lab/product/refresh.py"
+      },
+      {
+        "line": 426,
+        "path": "src/aletheia_lab/product/refresh.py"
+      }
+    ],
+    "refresh_source_unavailable": [
+      {
+        "line": 527,
+        "path": "src/aletheia_lab/product/refresh.py"
+      }
+    ],
+    "refresh_stale": [
+      {
+        "line": 357,
+        "path": "src/aletheia_lab/product/refresh.py"
+      },
+      {
+        "line": 380,
+        "path": "src/aletheia_lab/product/refresh.py"
+      },
+      {
+        "line": 405,
+        "path": "src/aletheia_lab/product/refresh.py"
+      }
+    ],
+    "result_integrity_error": [
+      {
+        "line": 116,
+        "path": "src/aletheia_lab/product/results.py"
+      }
+    ],
+    "result_invalid": [
+      {
+        "line": 430,
+        "path": "src/aletheia_lab/product/analysis.py"
+      },
+      {
+        "line": 230,
+        "path": "src/aletheia_lab/product/analysis.py"
+      },
+      {
+        "line": 234,
+        "path": "src/aletheia_lab/product/follow_up.py"
+      },
+      {
+        "line": 232,
+        "path": "src/aletheia_lab/product/follow_up.py"
+      },
+      {
+        "line": 55,
+        "path": "src/aletheia_lab/product/results.py"
+      }
+    ],
+    "result_parent_invalid": [
+      {
+        "line": 87,
+        "path": "src/aletheia_lab/product/results.py"
+      },
+      {
+        "line": 96,
+        "path": "src/aletheia_lab/product/results.py"
+      },
+      {
+        "line": 102,
+        "path": "src/aletheia_lab/product/results.py"
+      }
+    ],
+    "selection_not_available": [
+      {
+        "line": 62,
+        "path": "src/aletheia_lab/product/follow_up.py"
+      },
+      {
+        "line": 75,
+        "path": "src/aletheia_lab/product/follow_up.py"
+      },
+      {
+        "line": 95,
+        "path": "src/aletheia_lab/product/follow_up.py"
+      },
+      {
+        "line": 137,
+        "path": "src/aletheia_lab/product/follow_up.py"
+      },
+      {
+        "line": 106,
+        "path": "src/aletheia_lab/product/follow_up.py"
+      }
+    ],
+    "service_failure": [
+      {
+        "line": 118,
+        "path": "src/aletheia_lab/dashboard/bridge.py"
+      }
+    ],
+    "store_integrity_error": [
+      {
+        "line": 358,
+        "path": "src/aletheia_lab/product/analysis.py"
+      },
+      {
+        "line": 391,
+        "path": "src/aletheia_lab/product/analysis.py"
+      },
+      {
+        "line": 425,
+        "path": "src/aletheia_lab/product/analysis.py"
+      },
+      {
+        "line": 287,
+        "path": "src/aletheia_lab/product/analysis.py"
+      },
+      {
+        "line": 62,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 73,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 84,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 110,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 120,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 123,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 129,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 135,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 171,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 194,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 218,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 221,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 236,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 257,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 301,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 317,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 365,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 421,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 60,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 82,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 133,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 153,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 331,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 415,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 458,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 191,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 446,
+        "path": "src/aletheia_lab/product/deletion.py"
+      },
+      {
+        "line": 95,
+        "path": "src/aletheia_lab/product/evidence_store.py"
+      },
+      {
+        "line": 225,
+        "path": "src/aletheia_lab/product/imports.py"
+      },
+      {
+        "line": 285,
+        "path": "src/aletheia_lab/product/imports.py"
+      },
+      {
+        "line": 291,
+        "path": "src/aletheia_lab/product/imports.py"
+      },
+      {
+        "line": 373,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      },
+      {
+        "line": 345,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      },
+      {
+        "line": 562,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      },
+      {
+        "line": 591,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      },
+      {
+        "line": 620,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      },
+      {
+        "line": 665,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      },
+      {
+        "line": 691,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      },
+      {
+        "line": 693,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      },
+      {
+        "line": 560,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      },
+      {
+        "line": 655,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      },
+      {
+        "line": 659,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      },
+      {
+        "line": 102,
+        "path": "src/aletheia_lab/product/lifecycle_schema.py"
+      },
+      {
+        "line": 132,
+        "path": "src/aletheia_lab/product/lifecycle_schema.py"
+      },
+      {
+        "line": 32,
+        "path": "src/aletheia_lab/product/metric_analysis.py"
+      },
+      {
+        "line": 61,
+        "path": "src/aletheia_lab/product/metric_analysis.py"
+      },
+      {
+        "line": 63,
+        "path": "src/aletheia_lab/product/observations.py"
+      },
+      {
+        "line": 85,
+        "path": "src/aletheia_lab/product/observations.py"
+      },
+      {
+        "line": 246,
+        "path": "src/aletheia_lab/product/refresh.py"
+      },
+      {
+        "line": 259,
+        "path": "src/aletheia_lab/product/refresh.py"
+      },
+      {
+        "line": 270,
+        "path": "src/aletheia_lab/product/refresh.py"
+      }
+    ],
+    "store_unavailable": [
+      {
+        "line": 449,
+        "path": "src/aletheia_lab/product/lifecycle.py"
+      },
+      {
+        "line": 57,
+        "path": "src/aletheia_lab/product/service.py"
+      }
+    ]
+  },
+  "hosted_http_status": null,
+  "limitations": "Dynamic/indirect calls and other packages are not fully resolved; review before use.",
+  "scope": "literal ProductError and BridgeError calls in local product and dashboard only",
+  "unresolved_calls": [
+    {
+      "line": 168,
+      "path": "src/aletheia_lab/product/imports.py"
+    },
+    {
+      "line": 427,
+      "path": "src/aletheia_lab/product/imports.py"
+    },
+    {
+      "line": 523,
+      "path": "src/aletheia_lab/product/refresh.py"
+    },
+    {
+      "line": 142,
+      "path": "src/aletheia_lab/dashboard/bridge.py"
+    }
+  ]
+}

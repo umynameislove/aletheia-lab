@@ -89,6 +89,21 @@ def test_matrix_python_versions(test_job: Mapping[str, object]) -> None:
     )
 
 
+def test_full_suite_has_the_hosted_database_in_its_coverage_process(
+    test_job: Mapping[str, object],
+) -> None:
+    hosted = yaml.safe_load((_ROOT / ".github/workflows/hosted.yml").read_text(encoding="utf-8"))
+    backend = hosted["jobs"]["backend"]
+    services = _string_mapping(test_job.get("services"), label="test services")
+    assert services["postgres"] == backend["services"]["postgres"]
+    environment = _string_mapping(test_job.get("env"), label="test environment")
+    assert environment["K02_TEST_HTTPS"] == "1"
+    for task in range(2, 19):
+        assert environment[f"K{task:02d}_TEST_DATABASE_URL"] == (
+            backend["env"]["K02_TEST_DATABASE_URL"]
+        )
+
+
 def test_setup_python_uses_matrix_variable(test_job: Mapping[str, object]) -> None:
     """setup-python in the matrix job must use ${{ matrix.python-version }},
     not a hard-coded version string."""
