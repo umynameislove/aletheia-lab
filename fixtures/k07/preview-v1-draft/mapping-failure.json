@@ -1,0 +1,12 @@
+{
+  "schema_version": "hosted-upload-error/v1",
+  "code": "mapping_invalid",
+  "issues": [
+    {
+      "code": "metric_missing",
+      "field": "metric_sources[0].metric_name",
+      "candidate_id": null,
+      "record_index": 2
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "type": "urn:aletheia:problem:preview-expired",
+  "title": "Request could not be completed",
+  "status": 410,
+  "code": "preview_expired",
+  "detail": "The preview has expired. Create a new preview.",
+  "request_id": "req_synthetic_k07"
+}

@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
-import csv
-import io
-import json
 import math
 import re
-from typing import Annotated, Final, Literal, TypeVar
+from typing import Annotated, Final, Generic, Literal, Self, TypeAlias, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, field_validator, model_validator
 
 from aletheia_lab.project.collectors import ProjectFileCollection
-from aletheia_lab.project.contracts import ProjectBundle, ProjectItem, build_project_bundle
+from aletheia_lab.project.contracts import ProjectBundle, build_project_bundle
 from aletheia_lab.project.identity import (
     PROJECT_BUNDLE_ID_PATTERN,
     PROJECT_ID_PATTERN,
@@ -22,6 +19,32 @@ from aletheia_lab.project.identity import (
     normalize_text,
 )
 from aletheia_lab.project.importer import ProjectImportArtifact
+from aletheia_lab.project.mapping_identifiers import (
+    _IGNORABLE_IDENTIFIER_CHARACTERS as _IGNORABLE_IDENTIFIER_CHARACTERS,
+)
+from aletheia_lab.project.mapping_identifiers import mapping_identifier
+from aletheia_lab.project.mapping_identifiers import metric_label as metric_label
+
+from .mapping_observations import (
+    ProjectMappingError as ProjectMappingError,
+)
+from .mapping_observations import (
+    _finite_number as _finite_number,
+)
+from .mapping_observations import (
+    _metric_observations,
+)
+from .mapping_observations import (
+    _metric_records as _metric_records,
+)
+from .mapping_observations import (
+    _record_value as _record_value,
+)
+from .mapping_observations import (
+    _step_number as _step_number,
+)
+
+_identifier = mapping_identifier
 
 MAPPING_SCHEMA_VERSION: Final[Literal["project-mapping-configuration/v1"]] = (
     "project-mapping-configuration/v1"
@@ -29,7 +52,6 @@ MAPPING_SCHEMA_VERSION: Final[Literal["project-mapping-configuration/v1"]] = (
 MAPPING_RESULT_SCHEMA_VERSION: Final[Literal["project-mapping-result/v1"]] = (
     "project-mapping-result/v1"
 )
-_IDENTIFIER_PATTERN: Final[str] = r"^[A-Za-z0-9][A-Za-z0-9._:@+-]{0,127}$"
 Sha256 = Annotated[str, Field(pattern=SHA256_PATTERN)]
 _ModelT = TypeVar("_ModelT", bound=BaseModel)
 
@@ -66,23 +88,12 @@ _ISSUE_MESSAGES: Final[dict[MappingIssueCode, str]] = {
 }
 
 
-class ProjectMappingError(ValueError):
-    """Raised when a valid mapping result is required but unavailable."""
-
-
 class _StrictFrozenModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True, revalidate_instances="always")
 
 
 def _checked(model: _ModelT) -> _ModelT:
     return type(model).model_validate(model.model_dump(mode="python", warnings=False))
-
-
-def _identifier(value: str, *, label: str) -> str:
-    normalize_text(value, label=label, max_length=128)
-    if re.fullmatch(_IDENTIFIER_PATTERN, value) is None:
-        raise ValueError(f"{label} must be a portable identifier")
-    return value
 
 
 class DatasetTargetMapping(_StrictFrozenModel):
@@ -103,7 +114,7 @@ class DatasetTargetMapping(_StrictFrozenModel):
         return self
 
 
-class MetricSourceMapping(_StrictFrozenModel):
+class _MetricSourceMappingBase(_StrictFrozenModel):
     mapping_id: str
     project_item_id: str = Field(pattern=PROJECT_ITEM_ID_PATTERN)
     format: Literal["csv", "json"]
@@ -131,13 +142,38 @@ class MetricSourceMapping(_StrictFrozenModel):
         return normalized
 
     @model_validator(mode="after")
-    def _fields_are_distinct(self) -> MetricSourceMapping:
+    def _fields_are_distinct(self) -> Self:
         fields = (self.metric_name_field, self.metric_value_field, self.run_id_field)
         if len(fields) != len(set(fields)):
             raise ValueError("metric name, value and run fields must be distinct")
         if self.step_field is not None and self.step_field in fields:
             raise ValueError("metric step field must be distinct")
         return self
+
+
+class MetricSourceMapping(_MetricSourceMappingBase):
+    pass
+
+
+class MetricSourceMappingV2(_MetricSourceMappingBase):
+    class_field: str | None = None
+    unit_field: str | None = None
+
+    @field_validator("class_field", "unit_field")
+    @classmethod
+    def _optional_field(cls, value: str | None, info: object) -> str | None:
+        return None if value is None else _identifier(value, label=str(getattr(info, "field_name", "metric field")))
+
+    @model_validator(mode="after")
+    def _dimension_fields_are_distinct(self) -> Self:
+        selected = [value for value in (self.metric_name_field, self.metric_value_field, self.run_id_field,
+                    self.step_field, self.class_field, self.unit_field) if value is not None]
+        if len(selected) != len(set(selected)):
+            raise ValueError("metric dimension fields must be distinct")
+        return self
+
+
+AnyMetricSourceMapping: TypeAlias = MetricSourceMapping | MetricSourceMappingV2
 
 
 class RunMapping(_StrictFrozenModel):
@@ -159,7 +195,7 @@ class RunMapping(_StrictFrozenModel):
         return tuple(sorted(values))
 
 
-class MetricDefinition(_StrictFrozenModel):
+class _MetricDefinitionBase(_StrictFrozenModel):
     metric_name: str
     direction: Literal["higher_is_better", "lower_is_better"]
     regression_threshold: float = Field(ge=0)
@@ -177,19 +213,38 @@ class MetricDefinition(_StrictFrozenModel):
         return 0.0 if value == 0.0 else value
 
 
+class MetricDefinition(_MetricDefinitionBase):
+    pass
+
+
+class MetricDefinitionV2(_MetricDefinitionBase):
+    unit: str | None
+
+    @field_validator("unit")
+    @classmethod
+    def _unit_label(cls, value: str | None) -> str | None:
+        return None if value is None else metric_label(value, label="metric unit", max_length=64)
+
+
+AnyMetricDefinition: TypeAlias = MetricDefinition | MetricDefinitionV2
+_SourceT = TypeVar("_SourceT", MetricSourceMapping, MetricSourceMappingV2)
+_DefinitionT = TypeVar("_DefinitionT", MetricDefinition, MetricDefinitionV2)
+
+
 def _configuration_payload(
     *,
     project_id: str,
     project_bundle_id: str,
     file_collection_sha256: str,
     target: DatasetTargetMapping,
-    metric_sources: tuple[MetricSourceMapping, ...],
+    metric_sources: tuple[AnyMetricSourceMapping, ...],
     runs: tuple[RunMapping, ...],
     baseline_run_id: str,
-    metric_definitions: tuple[MetricDefinition, ...] = (),
+    metric_definitions: tuple[AnyMetricDefinition, ...] = (),
+    schema_version: str = MAPPING_SCHEMA_VERSION,
 ) -> dict[str, object]:
     payload: dict[str, object] = {
-        "schema_version": MAPPING_SCHEMA_VERSION,
+        "schema_version": schema_version,
         "project_id": project_id,
         "project_bundle_id": project_bundle_id,
         "file_collection_sha256": file_collection_sha256,
@@ -205,23 +260,23 @@ def _configuration_payload(
     return payload
 
 
-class ProjectMappingConfiguration(_StrictFrozenModel):
-    schema_version: Literal["project-mapping-configuration/v1"] = MAPPING_SCHEMA_VERSION
+class _MappingConfigurationBase(_StrictFrozenModel, Generic[_SourceT, _DefinitionT]):
+    schema_version: str
     project_id: str = Field(pattern=PROJECT_ID_PATTERN)
     project_bundle_id: str = Field(pattern=PROJECT_BUNDLE_ID_PATTERN)
     file_collection_sha256: Sha256
     target: DatasetTargetMapping
-    metric_sources: tuple[MetricSourceMapping, ...]
+    metric_sources: tuple[_SourceT, ...]
     runs: tuple[RunMapping, ...]
     baseline_run_id: str
-    metric_definitions: tuple[MetricDefinition, ...] = ()
+    metric_definitions: tuple[_DefinitionT, ...] = ()
     mapping_sha256: Sha256
 
     @field_validator("metric_sources")
     @classmethod
     def _canonical_metrics(
-        cls, values: tuple[MetricSourceMapping, ...]
-    ) -> tuple[MetricSourceMapping, ...]:
+        cls, values: tuple[_SourceT, ...]
+    ) -> tuple[_SourceT, ...]:
         ids = tuple(value.mapping_id for value in values)
         items = tuple(value.project_item_id for value in values)
         if not values or len(ids) != len(set(ids)) or len(items) != len(set(items)):
@@ -240,8 +295,8 @@ class ProjectMappingConfiguration(_StrictFrozenModel):
     @classmethod
     def _canonical_definitions(
         cls,
-        values: tuple[MetricDefinition, ...],
-    ) -> tuple[MetricDefinition, ...]:
+        values: tuple[_DefinitionT, ...],
+    ) -> tuple[_DefinitionT, ...]:
         names = tuple(value.metric_name for value in values)
         if len(names) != len(set(names)):
             raise ValueError("metric definitions must have unique names")
@@ -253,7 +308,7 @@ class ProjectMappingConfiguration(_StrictFrozenModel):
         return _identifier(value, label="baseline_run_id")
 
     @model_validator(mode="after")
-    def _digest_reconciles(self) -> ProjectMappingConfiguration:
+    def _digest_reconciles(self) -> Self:
         payload = _configuration_payload(
             project_id=self.project_id,
             project_bundle_id=self.project_bundle_id,
@@ -263,10 +318,28 @@ class ProjectMappingConfiguration(_StrictFrozenModel):
             runs=self.runs,
             baseline_run_id=self.baseline_run_id,
             metric_definitions=self.metric_definitions,
+            schema_version=self.schema_version,
         )
         if self.mapping_sha256 != canonical_project_sha256(payload):
             raise ValueError("mapping_sha256 does not match mapping configuration")
         return self
+
+
+class ProjectMappingConfiguration(_MappingConfigurationBase[MetricSourceMapping, MetricDefinition]):
+    schema_version: Literal["project-mapping-configuration/v1"] = MAPPING_SCHEMA_VERSION
+
+
+class ProjectMappingConfigurationV2(_MappingConfigurationBase[MetricSourceMappingV2, MetricDefinitionV2]):
+    schema_version: Literal["project-mapping-configuration/v2"] = "project-mapping-configuration/v2"
+
+
+AnyMappingConfiguration: TypeAlias = ProjectMappingConfiguration | ProjectMappingConfigurationV2
+_CONFIGURATION_ADAPTER = TypeAdapter(Annotated[AnyMappingConfiguration, Field(discriminator="schema_version")])
+
+
+def parse_mapping_configuration(value: object) -> AnyMappingConfiguration:
+    return (_CONFIGURATION_ADAPTER.validate_json(value) if isinstance(value, str | bytes)
+            else _CONFIGURATION_ADAPTER.validate_python(value))
 
 
 def build_project_mapping_configuration(
@@ -275,11 +348,12 @@ def build_project_mapping_configuration(
     project_bundle_id: str,
     file_collection_sha256: str,
     target: DatasetTargetMapping,
-    metric_sources: tuple[MetricSourceMapping, ...],
+    metric_sources: tuple[AnyMetricSourceMapping, ...],
     runs: tuple[RunMapping, ...],
     baseline_run_id: str,
-    metric_definitions: tuple[MetricDefinition, ...] = (),
-) -> ProjectMappingConfiguration:
+    metric_definitions: tuple[AnyMetricDefinition, ...] = (),
+    schema_version: Literal["project-mapping-configuration/v1", "project-mapping-configuration/v2"] = MAPPING_SCHEMA_VERSION,
+) -> AnyMappingConfiguration:
     sorted_metrics = tuple(sorted(metric_sources, key=lambda value: value.mapping_id))
     sorted_runs = tuple(sorted(runs, key=lambda value: value.run_id))
     sorted_definitions = tuple(
@@ -294,8 +368,10 @@ def build_project_mapping_configuration(
         runs=sorted_runs,
         baseline_run_id=baseline_run_id,
         metric_definitions=sorted_definitions,
+        schema_version=schema_version,
     )
-    return ProjectMappingConfiguration(
+    model = ProjectMappingConfigurationV2 if schema_version.endswith("/v2") else ProjectMappingConfiguration
+    return model.model_validate(dict(
         project_id=project_id,
         project_bundle_id=project_bundle_id,
         file_collection_sha256=file_collection_sha256,
@@ -305,7 +381,7 @@ def build_project_mapping_configuration(
         baseline_run_id=baseline_run_id,
         metric_definitions=sorted_definitions,
         mapping_sha256=canonical_project_sha256(payload),
-    )
+    ))
 
 
 class MappingValidationIssue(_StrictFrozenModel):
@@ -351,7 +427,7 @@ class MappingCandidateDecision(_StrictFrozenModel):
         return self
 
 
-class MetricObservation(_StrictFrozenModel):
+class _MetricObservationBase(_StrictFrozenModel):
     observation_id: str = Field(pattern=r"^p3-metric-[0-9a-f]{64}$")
     source_mapping_id: str
     project_item_id: str = Field(pattern=PROJECT_ITEM_ID_PATTERN)
@@ -367,7 +443,7 @@ class MetricObservation(_StrictFrozenModel):
         return _identifier(value, label=str(getattr(info, "field_name", "metric identity")))
 
     @model_validator(mode="after")
-    def _value_is_finite(self) -> MetricObservation:
+    def _value_is_finite(self) -> Self:
         if not math.isfinite(self.metric_value):
             raise ValueError("metric_value must be finite")
         payload = self.model_dump(mode="json", exclude={"observation_id"})
@@ -376,19 +452,56 @@ class MetricObservation(_StrictFrozenModel):
         return self
 
 
-class ProjectMappingResult(_StrictFrozenModel):
-    schema_version: Literal["project-mapping-result/v1"] = MAPPING_RESULT_SCHEMA_VERSION
+class MetricObservation(_MetricObservationBase):
+    pass
+
+
+class MetricObservationV2(_MetricObservationBase):
+    class_label: str | None
+    unit: str | None
+    unit_origin: Literal["source", "declared", "unknown"]
+
+    @field_validator("class_label", "unit")
+    @classmethod
+    def _dimension_label(cls, value: str | None, info: object) -> str | None:
+        name = str(getattr(info, "field_name", "metric label"))
+        return None if value is None else metric_label(value, label=name, max_length=64 if name == "unit" else 128)
+
+    @model_validator(mode="after")
+    def _unit_origin_matches(self) -> Self:
+        if (self.unit is None) != (self.unit_origin == "unknown"):
+            raise ValueError("metric unit origin must preserve known or unknown unit state")
+        return self
+
+
+AnyMetricObservation: TypeAlias = MetricObservation | MetricObservationV2
+MetricIdentity: TypeAlias = tuple[str, str, str | None, str | None, int | None]
+_ObservationT = TypeVar("_ObservationT", MetricObservation, MetricObservationV2)
+
+
+def metric_identity(value: AnyMetricObservation) -> MetricIdentity:
+    return (value.run_id, value.metric_name, getattr(value, "class_label", None),
+            getattr(value, "unit", None), value.step)
+
+
+def metric_sort_key(value: AnyMetricObservation) -> tuple[str, str, str, str, int]:
+    identity = metric_identity(value)
+    return identity[0], identity[1], identity[2] or "", identity[3] or "", -1 if value.step is None else value.step
+
+
+class _MappingResultBase(_StrictFrozenModel, Generic[_ObservationT]):
+    schema_version: str
     status: Literal["valid", "blocked"]
     project_id: str = Field(pattern=PROJECT_ID_PATTERN)
     project_bundle_id: str = Field(pattern=PROJECT_BUNDLE_ID_PATTERN)
     mapping_sha256: Sha256
     decisions: tuple[MappingCandidateDecision, ...]
     issues: tuple[MappingValidationIssue, ...]
-    metric_observations: tuple[MetricObservation, ...]
+    metric_observations: tuple[_ObservationT, ...]
     result_sha256: Sha256
 
     @model_validator(mode="after")
-    def _result_reconciles(self) -> ProjectMappingResult:
+    def _result_reconciles(self) -> Self:
         candidate_ids = tuple(value.candidate_id for value in self.decisions)
         if len(candidate_ids) != len(set(candidate_ids)):
             raise ValueError("mapping decisions must reconcile unique candidates")
@@ -406,6 +519,59 @@ class ProjectMappingResult(_StrictFrozenModel):
         return self
 
 
+class ProjectMappingResult(_MappingResultBase[MetricObservation]):
+    schema_version: Literal["project-mapping-result/v1"] = MAPPING_RESULT_SCHEMA_VERSION
+
+
+class ProjectMappingResultV2(_MappingResultBase[MetricObservationV2]):
+    schema_version: Literal["project-mapping-result/v2"] = "project-mapping-result/v2"
+
+    @model_validator(mode="after")
+    def _units_are_consistent(self) -> Self:
+        validate_metric_units(self.metric_observations)
+        return self
+
+
+AnyMappingResult: TypeAlias = ProjectMappingResult | ProjectMappingResultV2
+_RESULT_ADAPTER = TypeAdapter(Annotated[AnyMappingResult, Field(discriminator="schema_version")])
+
+
+def parse_mapping_result(value: object) -> AnyMappingResult:
+    return (_RESULT_ADAPTER.validate_json(value) if isinstance(value, str | bytes)
+            else _RESULT_ADAPTER.validate_python(value))
+
+
+def validate_metric_units(observations: tuple[AnyMetricObservation, ...]) -> None:
+    units: dict[str, str | None] = {}
+    for observation in observations:
+        unit = getattr(observation, "unit", None)
+        if observation.metric_name in units and units[observation.metric_name] != unit:
+            raise ProjectMappingError("one metric cannot contain incompatible units")
+        units[observation.metric_name] = unit
+
+
+def validate_mapping_dimensions(configuration: AnyMappingConfiguration, result: AnyMappingResult) -> None:
+    version2 = isinstance(configuration, ProjectMappingConfigurationV2)
+    if version2 != isinstance(result, ProjectMappingResultV2):
+        raise ProjectMappingError("mapping configuration and result versions differ")
+    if not version2 or not isinstance(configuration, ProjectMappingConfigurationV2):
+        return
+    sources = {value.mapping_id: value for value in configuration.metric_sources}
+    definitions = {value.metric_name: value for value in configuration.metric_definitions}
+    for observation in result.metric_observations:
+        if not isinstance(observation, MetricObservationV2):
+            raise ProjectMappingError("v2 mapping requires v2 metric observations")
+        source = sources.get(observation.source_mapping_id)
+        definition = definitions.get(observation.metric_name)
+        if (source is None or definition is None or source.project_item_id != observation.project_item_id
+                or observation.unit != definition.unit
+                or (source.class_field is None) != (observation.class_label is None)):
+            raise ProjectMappingError("mapping metric dimensions do not reconcile")
+        expected = "unknown" if definition.unit is None else "source" if source.unit_field is not None else "declared"
+        if observation.unit_origin != expected:
+            raise ProjectMappingError("mapping metric unit provenance does not reconcile")
+
+
 def _issue(code: MappingIssueCode, candidate_id: str, subject: object) -> MappingValidationIssue:
     return MappingValidationIssue(
         code=code,
@@ -415,109 +581,12 @@ def _issue(code: MappingIssueCode, candidate_id: str, subject: object) -> Mappin
     )
 
 
-def _record_value(record: dict[str, object], field: str) -> object:
-    if field not in record:
-        raise KeyError(field)
-    return record[field]
-
-
-def _metric_records(mapping: MetricSourceMapping, content: bytes) -> list[dict[str, object]]:
-    try:
-        text = content.decode("utf-8", errors="strict")
-        if mapping.format == "csv":
-            parsed = list(csv.DictReader(io.StringIO(text, newline=""), strict=True))
-            return [dict(record) for record in parsed]
-        payload: object = json.loads(text)
-        for component in mapping.records_path:
-            if not isinstance(payload, dict) or component not in payload:
-                raise ValueError("records path is absent")
-            payload = payload[component]
-        if not isinstance(payload, list) or any(not isinstance(record, dict) for record in payload):
-            raise ValueError("metric records must be a list of objects")
-        return [dict(record) for record in payload]
-    except (UnicodeDecodeError, csv.Error, json.JSONDecodeError, ValueError) as exc:
-        raise ProjectMappingError("metric payload invalid") from exc
-
-
-def _finite_number(value: object) -> float:
-    if isinstance(value, bool):
-        raise ProjectMappingError("metric value invalid")
-    try:
-        number = float(value) if isinstance(value, str | int | float) else math.nan
-    except ValueError as exc:
-        raise ProjectMappingError("metric value invalid") from exc
-    if not math.isfinite(number):
-        raise ProjectMappingError("metric value invalid")
-    return 0.0 if number == 0.0 else number
-
-
-def _step_number(value: object) -> int:
-    if isinstance(value, bool):
-        raise ProjectMappingError("metric step invalid")
-    if isinstance(value, int):
-        step = value
-    elif (isinstance(value, str) and re.fullmatch(r"\d+", value) is not None) or (
-        isinstance(value, float) and value.is_integer()
-    ):
-        step = int(value)
-    else:
-        raise ProjectMappingError("metric step invalid")
-    if step < 0:
-        raise ProjectMappingError("metric step invalid")
-    return step
-
-
-def _metric_observations(
-    mapping: MetricSourceMapping, item: ProjectItem, artifact: ProjectImportArtifact
-) -> tuple[MetricObservation, ...]:
-    observations: list[MetricObservation] = []
-    for index, record in enumerate(_metric_records(mapping, artifact.content)):
-        try:
-            raw_name = _record_value(record, mapping.metric_name_field)
-            raw_run = _record_value(record, mapping.run_id_field)
-            raw_value = _record_value(record, mapping.metric_value_field)
-            raw_step = None if mapping.step_field is None else _record_value(record, mapping.step_field)
-        except KeyError as exc:
-            raise ProjectMappingError("metric field missing") from exc
-        try:
-            if not isinstance(raw_name, str) or not isinstance(raw_run, str):
-                raise TypeError("metric identity fields must be strings")
-            name = _identifier(raw_name, label="metric_name")
-            run_id = _identifier(raw_run, label="run_id")
-        except (TypeError, ValueError) as exc:
-            raise ProjectMappingError("metric identity invalid") from exc
-        value = _finite_number(raw_value)
-        step = None if raw_step is None else _step_number(raw_step)
-        provisional = {
-            "source_mapping_id": mapping.mapping_id,
-            "project_item_id": item.project_item_id,
-            "run_id": run_id,
-            "metric_name": name,
-            "metric_value": value,
-            "step": step,
-            "source_record_index": index,
-        }
-        observations.append(
-            MetricObservation(
-                observation_id=f"p3-metric-{canonical_project_sha256(provisional)}",
-                source_mapping_id=mapping.mapping_id,
-                project_item_id=item.project_item_id,
-                run_id=run_id,
-                metric_name=name,
-                metric_value=value,
-                step=step,
-                source_record_index=index,
-            )
-        )
-    return tuple(observations)
-
-
 def validate_project_mapping(
     bundle: ProjectBundle,
     artifacts: tuple[ProjectImportArtifact, ...],
     collection: ProjectFileCollection,
-    configuration: ProjectMappingConfiguration,
-) -> ProjectMappingResult:
+    configuration: AnyMappingConfiguration,
+) -> AnyMappingResult:
     """Validate all candidates, reconcile their disposition, and fail closed."""
 
     checked_bundle = _checked(bundle)
@@ -588,7 +657,7 @@ def validate_project_mapping(
         if checked_config.target.identifier_field not in columns:
             reject("unknown_field", target_candidate, checked_config.target.identifier_field)
 
-    extracted: list[MetricObservation] = []
+    extracted: list[AnyMetricObservation] = []
     for metric in checked_config.metric_sources:
         candidate = f"metric:{metric.mapping_id}"
         item = items.get(metric.project_item_id)
@@ -604,7 +673,7 @@ def validate_project_mapping(
             reject("wrong_item_type", candidate, suffix)
             continue
         try:
-            current = _metric_observations(metric, item, source_artifact)
+            current = _metric_observations(metric, item, source_artifact, checked_config.metric_definitions)
         except ProjectMappingError as exc:
             code: MappingIssueCode = (
                 "metric_value_invalid" if "value" in str(exc) or "record" in str(exc) else "metric_payload_invalid"
@@ -617,14 +686,16 @@ def validate_project_mapping(
         extracted.extend(current)
 
     declared_runs = {value.run_id: value for value in checked_config.runs}
-    identities: set[tuple[str, str, int | None]] = set()
+    identities: set[tuple[object, ...]] = set()
     counts = {run_id: 0 for run_id in declared_runs}
     for metric_observation in extracted:
-        identity = (
+        identity: tuple[object, ...] = (
             metric_observation.run_id,
             metric_observation.metric_name,
             metric_observation.step,
         )
+        if isinstance(metric_observation, MetricObservationV2):
+            identity = metric_identity(metric_observation)
         candidate = f"metric:{metric_observation.source_mapping_id}"
         if identity in identities:
             reject("metric_identity_duplicate", candidate, identity)
@@ -663,15 +734,11 @@ def validate_project_mapping(
     final_observations = () if blocked else tuple(
         sorted(
             extracted,
-            key=lambda value: (
-                value.run_id,
-                value.metric_name,
-                -1 if value.step is None else value.step,
-            ),
+            key=metric_sort_key,
         )
     )
     provisional = {
-        "schema_version": MAPPING_RESULT_SCHEMA_VERSION,
+        "schema_version": "project-mapping-result/v2" if isinstance(checked_config, ProjectMappingConfigurationV2) else MAPPING_RESULT_SCHEMA_VERSION,
         "status": "blocked" if blocked else "valid",
         "project_id": checked_bundle.project_id,
         "project_bundle_id": checked_bundle.project_bundle_id,
@@ -680,7 +747,8 @@ def validate_project_mapping(
         "issues": [value.model_dump(mode="json") for value in sorted_issues],
         "metric_observations": [value.model_dump(mode="json") for value in final_observations],
     }
-    return ProjectMappingResult(
+    result_model = ProjectMappingResultV2 if isinstance(checked_config, ProjectMappingConfigurationV2) else ProjectMappingResult
+    return result_model.model_validate(dict(
         status="blocked" if blocked else "valid",
         project_id=checked_bundle.project_id,
         project_bundle_id=checked_bundle.project_bundle_id,
@@ -689,19 +757,20 @@ def validate_project_mapping(
         issues=sorted_issues,
         metric_observations=final_observations,
         result_sha256=canonical_project_sha256(provisional),
-    )
+    ))
 
 
 def bind_project_mapping(
     bundle: ProjectBundle,
-    configuration: ProjectMappingConfiguration,
-    result: ProjectMappingResult,
+    configuration: AnyMappingConfiguration,
+    result: AnyMappingResult,
 ) -> ProjectBundle:
     """Bind a validated configuration into a new immutable ProjectBundle identity."""
 
     checked_bundle = _checked(bundle)
     checked_config = _checked(configuration)
     checked_result = _checked(result)
+    validate_mapping_dimensions(checked_config, checked_result)
     if (
         checked_result.status != "valid"
         or checked_result.project_bundle_id != checked_bundle.project_bundle_id

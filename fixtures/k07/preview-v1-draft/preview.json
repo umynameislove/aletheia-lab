@@ -1,0 +1,25 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "preview_id": "prev_11111111111111111111111111111111",
+  "workspace_id": "ws_synthetic",
+  "source_id": "src_synthetic",
+  "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "source_state_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "mapping_candidates": {
+    "runs": [],
+    "metric_sources": [],
+    "unresolved": [
+      "target_run"
+    ]
+  },
+  "excluded_metrics": [
+    {
+      "project_item_id": "item_synthetic",
+      "metric_name": "\u0111\u1ed9 ch\u00ednh x\u00e1c",
+      "reason": "unsupported_metric_identifier",
+      "source_record_index": 0
+    }
+  ],
+  "excluded_metrics_total": 1,
+  "expires_at": "2030-01-01T00:00:00Z"
+}
