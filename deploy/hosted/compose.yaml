@@ -1,0 +1,55 @@
+# Explicit staging template. Requires reviewed config, existing DB schema/roles,
+# mounted credentials and TLS. Does not provision accounts, migrate or publish.
+name: aletheia-hosted-k13-k18
+x-runtime: &runtime
+  image: ${ALETHEIA_IMAGE:?Set the immutable image digest or locally verified RC tag}
+  user: "10001:10001"
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  pids_limit: 192
+  init: true
+  restart: "no"
+  stop_grace_period: 45s
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=268435456,mode=1777
+  volumes:
+    - ${ALETHEIA_CONFIG_DIR:?Absolute config folder required}:/run/config:ro
+    - objects:/var/lib/aletheia
+  logging:
+    driver: json-file
+    options: {max-size: "10m", max-file: "3"}
+services:
+  api:
+    <<: *runtime
+    command: [api]
+    cpus: 2.0
+    mem_limit: 2g
+    ports: ["127.0.0.1:${ALETHEIA_HTTPS_PORT:-18766}:18766"]
+    secrets: [database_api, csrf_secret, admission_secret, login_proof_key, tls_cert, tls_key]
+    healthcheck:
+      test: [CMD, /opt/venv/bin/python, -m, aletheia_lab.hosted.container_health]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+  worker:
+    <<: *runtime
+    command: [worker]
+    cpus: 2.0
+    mem_limit: 2g
+    secrets: [database_worker]
+secrets:
+  database_api:
+    file: ${ALETHEIA_SECRET_DIR:?Absolute private secret folder required}/database_api
+    name: aletheia_database_api
+  database_worker:
+    file: ${ALETHEIA_SECRET_DIR}/database_worker
+    name: aletheia_database_worker
+  csrf_secret: {file: "${ALETHEIA_SECRET_DIR}/csrf_secret"}
+  admission_secret: {file: "${ALETHEIA_SECRET_DIR}/admission_secret"}
+  login_proof_key: {file: "${ALETHEIA_SECRET_DIR}/login_proof_key"}
+  tls_cert: {file: "${ALETHEIA_SECRET_DIR}/tls_cert"}
+  tls_key: {file: "${ALETHEIA_SECRET_DIR}/tls_key"}
+volumes:
+  objects:
