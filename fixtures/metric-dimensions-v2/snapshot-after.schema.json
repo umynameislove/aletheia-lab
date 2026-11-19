@@ -1,0 +1,326 @@
+{
+  "$defs": {
+    "MetricObservationV2": {
+      "additionalProperties": false,
+      "properties": {
+        "class_label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Class Label"
+        },
+        "metric_name": {
+          "title": "Metric Name",
+          "type": "string"
+        },
+        "metric_value": {
+          "title": "Metric Value",
+          "type": "number"
+        },
+        "observation_id": {
+          "pattern": "^p3-metric-[0-9a-f]{64}$",
+          "title": "Observation Id",
+          "type": "string"
+        },
+        "project_item_id": {
+          "pattern": "^p3-item-[0-9a-f]{64}$",
+          "title": "Project Item Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "source_mapping_id": {
+          "title": "Source Mapping Id",
+          "type": "string"
+        },
+        "source_record_index": {
+          "minimum": 0,
+          "title": "Source Record Index",
+          "type": "integer"
+        },
+        "step": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Step"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Unit"
+        },
+        "unit_origin": {
+          "enum": [
+            "source",
+            "declared",
+            "unknown"
+          ],
+          "title": "Unit Origin",
+          "type": "string"
+        }
+      },
+      "required": [
+        "observation_id",
+        "source_mapping_id",
+        "project_item_id",
+        "run_id",
+        "metric_name",
+        "metric_value",
+        "source_record_index",
+        "class_label",
+        "unit",
+        "unit_origin"
+      ],
+      "title": "MetricObservationV2",
+      "type": "object"
+    },
+    "ProjectSnapshotItem": {
+      "additionalProperties": false,
+      "description": "Payload-free item state retained in a snapshot.",
+      "properties": {
+        "artifact_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Artifact Sha256",
+          "type": "string"
+        },
+        "observation_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Observation Sha256",
+          "type": "string"
+        },
+        "project_item_id": {
+          "pattern": "^p3-item-[0-9a-f]{64}$",
+          "title": "Project Item Id",
+          "type": "string"
+        },
+        "redaction_state": {
+          "enum": [
+            "none",
+            "redacted",
+            "withheld"
+          ],
+          "title": "Redaction State",
+          "type": "string"
+        },
+        "relative_path": {
+          "title": "Relative Path",
+          "type": "string"
+        },
+        "source_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Source Sha256",
+          "type": "string"
+        },
+        "source_type": {
+          "enum": [
+            "dataset",
+            "metrics",
+            "log",
+            "config",
+            "git",
+            "artifact",
+            "other"
+          ],
+          "title": "Source Type",
+          "type": "string"
+        },
+        "visibility": {
+          "enum": [
+            "local_only",
+            "diagnosis",
+            "outbound"
+          ],
+          "title": "Visibility",
+          "type": "string"
+        }
+      },
+      "required": [
+        "project_item_id",
+        "relative_path",
+        "source_type",
+        "source_sha256",
+        "artifact_sha256",
+        "observation_sha256",
+        "visibility",
+        "redaction_state"
+      ],
+      "title": "ProjectSnapshotItem",
+      "type": "object"
+    },
+    "SnapshotCollectorBinding": {
+      "additionalProperties": false,
+      "description": "One exact collector implementation and its bounded output digest.",
+      "properties": {
+        "name": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "output_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Output Sha256",
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "import",
+            "file_catalog",
+            "git_state"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "role",
+        "name",
+        "version",
+        "output_sha256"
+      ],
+      "title": "SnapshotCollectorBinding",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "baseline_run_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Baseline Run Id",
+      "type": "string"
+    },
+    "captured_at": {
+      "title": "Captured At",
+      "type": "string"
+    },
+    "collectors": {
+      "items": {
+        "$ref": "#/$defs/SnapshotCollectorBinding"
+      },
+      "title": "Collectors",
+      "type": "array"
+    },
+    "file_collection_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "File Collection Sha256",
+      "type": "string"
+    },
+    "git_state_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Git State Sha256",
+      "type": "string"
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/ProjectSnapshotItem"
+      },
+      "title": "Items",
+      "type": "array"
+    },
+    "mapping_configuration_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Mapping Configuration Sha256",
+      "type": "string"
+    },
+    "mapping_result_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Mapping Result Sha256",
+      "type": "string"
+    },
+    "metric_observations": {
+      "items": {
+        "$ref": "#/$defs/MetricObservationV2"
+      },
+      "title": "Metric Observations",
+      "type": "array"
+    },
+    "project_id": {
+      "pattern": "^p3-project-[0-9a-f]{64}$",
+      "title": "Project Id",
+      "type": "string"
+    },
+    "project_manifest_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Project Manifest Sha256",
+      "type": "string"
+    },
+    "record_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Record Sha256",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "project-snapshot/v2",
+      "default": "project-snapshot/v2",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "snapshot_id": {
+      "pattern": "^p3-snapshot-[0-9a-f]{64}$",
+      "title": "Snapshot Id",
+      "type": "string"
+    },
+    "source_bundle_id": {
+      "pattern": "^p3-bundle-[0-9a-f]{64}$",
+      "title": "Source Bundle Id",
+      "type": "string"
+    },
+    "source_bundle_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Bundle Sha256",
+      "type": "string"
+    },
+    "state_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "State Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "snapshot_id",
+    "project_id",
+    "source_bundle_id",
+    "source_bundle_sha256",
+    "project_manifest_sha256",
+    "file_collection_sha256",
+    "git_state_sha256",
+    "mapping_configuration_sha256",
+    "mapping_result_sha256",
+    "baseline_run_id",
+    "collectors",
+    "items",
+    "metric_observations",
+    "captured_at",
+    "state_sha256",
+    "record_sha256"
+  ],
+  "title": "ProjectSnapshotV2",
+  "type": "object"
+}

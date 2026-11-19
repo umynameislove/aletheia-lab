@@ -1,0 +1,190 @@
+{
+  "baseline_run_id": "lần-0",
+  "captured_at": "2026-11-11T08:38:03.835320Z",
+  "collectors": [
+    {
+      "name": "project-file-catalog",
+      "output_sha256": "b474ca3289d91d795502126917cf257b26e90eecf7e148e5a45efe5cc531e6e4",
+      "role": "file_catalog",
+      "version": "project-file-catalog/1.0.0"
+    },
+    {
+      "name": "project-git-state",
+      "output_sha256": "304b1c637da81f2f8fa8f33e7f6dafa19bd79c034951539c4106e9c8c03f5a37",
+      "role": "git_state",
+      "version": "project-git-state/1.0.0"
+    },
+    {
+      "name": "secure-local-import",
+      "output_sha256": "61e78a722af317e08f608d4da9611666b0172e64bc39945c39c3d13999ca02ea",
+      "role": "import",
+      "version": "1.0.0"
+    }
+  ],
+  "file_collection_sha256": "b474ca3289d91d795502126917cf257b26e90eecf7e148e5a45efe5cc531e6e4",
+  "git_state_sha256": "304b1c637da81f2f8fa8f33e7f6dafa19bd79c034951539c4106e9c8c03f5a37",
+  "items": [
+    {
+      "artifact_sha256": "981519180ae28e38559e9f01d20bba1653b868a58a17880c783ce45dc4a6db04",
+      "observation_sha256": "fa88f0ae3ad936f670d82e586170eb0aced529b8cd47cb4d9e1119bd5844b739",
+      "project_item_id": "p3-item-9b9a43b8d2d54620b652f1741a47a8e1cac7db89fea733d66dc8074eb35216fe",
+      "redaction_state": "redacted",
+      "relative_path": "dataset.csv",
+      "source_sha256": "cab4f7f04cf72cf79a43b7a8fc0831c62d6b2c55e8cdeb95670baed400e5c4df",
+      "source_type": "dataset",
+      "visibility": "diagnosis"
+    },
+    {
+      "artifact_sha256": "df96ab376653c824e060b749f2e127d889396acaf95193fb272270c878987694",
+      "observation_sha256": "5919d29888f6ddd64e8b5b7ec6213326ab5ac35837a2ee95c63e381c3244bf25",
+      "project_item_id": "p3-item-5e2b67ec2c196212ac9d80bf414ea52e6fe76fbbf9f01ef8f1e710694195b39a",
+      "redaction_state": "none",
+      "relative_path": "metrics.csv",
+      "source_sha256": "df96ab376653c824e060b749f2e127d889396acaf95193fb272270c878987694",
+      "source_type": "metrics",
+      "visibility": "diagnosis"
+    }
+  ],
+  "mapping_configuration_sha256": "e46a52e2a3874c1669ddf3d4fd26e39177b233f2dcb7a37f2fd353eda383273d",
+  "mapping_result_sha256": "9653e6f11b5955b8cbe7f4687034daa085c9f574b92d82ae8f40462890b215e6",
+  "metric_observations": [
+    {
+      "class_label": "dương tính",
+      "metric_name": "f1",
+      "metric_value": 0.8,
+      "observation_id": "p3-metric-d077412635a46c229066eb387dcde4e921b73ea65d6856fbaf7f2ae0a31e8795",
+      "project_item_id": "p3-item-5e2b67ec2c196212ac9d80bf414ea52e6fe76fbbf9f01ef8f1e710694195b39a",
+      "run_id": "lần-0",
+      "source_mapping_id": "metric-5e2b67ec2c196212",
+      "source_record_index": 1,
+      "step": 1,
+      "unit": "%",
+      "unit_origin": "source"
+    },
+    {
+      "class_label": "âm tính",
+      "metric_name": "f1",
+      "metric_value": 0.8,
+      "observation_id": "p3-metric-2138b822d492da846d3d36b6fa9b502080ec1616cf254dca429dd018481e4955",
+      "project_item_id": "p3-item-5e2b67ec2c196212ac9d80bf414ea52e6fe76fbbf9f01ef8f1e710694195b39a",
+      "run_id": "lần-0",
+      "source_mapping_id": "metric-5e2b67ec2c196212",
+      "source_record_index": 0,
+      "step": 1,
+      "unit": "%",
+      "unit_origin": "source"
+    },
+    {
+      "class_label": "dương tính",
+      "metric_name": "f1",
+      "metric_value": 0.8,
+      "observation_id": "p3-metric-f507fb6a98e40719b6d86e67ba3fbfe5411c2f364e9c033e06588ba04e5854fa",
+      "project_item_id": "p3-item-5e2b67ec2c196212ac9d80bf414ea52e6fe76fbbf9f01ef8f1e710694195b39a",
+      "run_id": "lần-1",
+      "source_mapping_id": "metric-5e2b67ec2c196212",
+      "source_record_index": 3,
+      "step": 1,
+      "unit": "%",
+      "unit_origin": "source"
+    },
+    {
+      "class_label": "âm tính",
+      "metric_name": "f1",
+      "metric_value": 0.8,
+      "observation_id": "p3-metric-c8a8e210f46221a53dda239d462757537850b95a3362dce6c76d63b5b7fa0867",
+      "project_item_id": "p3-item-5e2b67ec2c196212ac9d80bf414ea52e6fe76fbbf9f01ef8f1e710694195b39a",
+      "run_id": "lần-1",
+      "source_mapping_id": "metric-5e2b67ec2c196212",
+      "source_record_index": 2,
+      "step": 1,
+      "unit": "%",
+      "unit_origin": "source"
+    },
+    {
+      "class_label": "dương tính",
+      "metric_name": "f1",
+      "metric_value": 0.8,
+      "observation_id": "p3-metric-2bb260047b2a8bb76dfab8b2f95270e20f403e31fb8ee269b464228a967126f3",
+      "project_item_id": "p3-item-5e2b67ec2c196212ac9d80bf414ea52e6fe76fbbf9f01ef8f1e710694195b39a",
+      "run_id": "lần-2",
+      "source_mapping_id": "metric-5e2b67ec2c196212",
+      "source_record_index": 5,
+      "step": 1,
+      "unit": "%",
+      "unit_origin": "source"
+    },
+    {
+      "class_label": "âm tính",
+      "metric_name": "f1",
+      "metric_value": 0.8,
+      "observation_id": "p3-metric-68a15d29f0ec4da8be0ad1bd4a3ff96ab671351ae3b55d69c9732826b7c3f79d",
+      "project_item_id": "p3-item-5e2b67ec2c196212ac9d80bf414ea52e6fe76fbbf9f01ef8f1e710694195b39a",
+      "run_id": "lần-2",
+      "source_mapping_id": "metric-5e2b67ec2c196212",
+      "source_record_index": 4,
+      "step": 1,
+      "unit": "%",
+      "unit_origin": "source"
+    },
+    {
+      "class_label": "dương tính",
+      "metric_name": "f1",
+      "metric_value": 0.8,
+      "observation_id": "p3-metric-271d54cec165b5ff5b21cb110fbdd581b136d01875571c680bccbe88c68b85c4",
+      "project_item_id": "p3-item-5e2b67ec2c196212ac9d80bf414ea52e6fe76fbbf9f01ef8f1e710694195b39a",
+      "run_id": "lần-3",
+      "source_mapping_id": "metric-5e2b67ec2c196212",
+      "source_record_index": 7,
+      "step": 1,
+      "unit": "%",
+      "unit_origin": "source"
+    },
+    {
+      "class_label": "âm tính",
+      "metric_name": "f1",
+      "metric_value": 0.8,
+      "observation_id": "p3-metric-c03942506d4b4aa0a3f7662f39c18758a25e1d45ccb2f380d5ed21cf26d87866",
+      "project_item_id": "p3-item-5e2b67ec2c196212ac9d80bf414ea52e6fe76fbbf9f01ef8f1e710694195b39a",
+      "run_id": "lần-3",
+      "source_mapping_id": "metric-5e2b67ec2c196212",
+      "source_record_index": 6,
+      "step": 1,
+      "unit": "%",
+      "unit_origin": "source"
+    },
+    {
+      "class_label": "dương tính",
+      "metric_name": "f1",
+      "metric_value": 0.8,
+      "observation_id": "p3-metric-1ebf7dfb3d4fd657aa3407259a107d3059ac09ca17345c7b3702885562a3cdd6",
+      "project_item_id": "p3-item-5e2b67ec2c196212ac9d80bf414ea52e6fe76fbbf9f01ef8f1e710694195b39a",
+      "run_id": "lần-4",
+      "source_mapping_id": "metric-5e2b67ec2c196212",
+      "source_record_index": 9,
+      "step": 1,
+      "unit": "%",
+      "unit_origin": "source"
+    },
+    {
+      "class_label": "âm tính",
+      "metric_name": "f1",
+      "metric_value": 0.8,
+      "observation_id": "p3-metric-f0a8f22c7272791ec21c36e468877214a1eb753d6e2f2bde4cc545a13177305e",
+      "project_item_id": "p3-item-5e2b67ec2c196212ac9d80bf414ea52e6fe76fbbf9f01ef8f1e710694195b39a",
+      "run_id": "lần-4",
+      "source_mapping_id": "metric-5e2b67ec2c196212",
+      "source_record_index": 8,
+      "step": 1,
+      "unit": "%",
+      "unit_origin": "source"
+    }
+  ],
+  "project_id": "p3-project-2817da272a769d4738a65f33fdc4bfd50cecfe96c691845710d09a3d9e4123ed",
+  "project_manifest_sha256": "61e78a722af317e08f608d4da9611666b0172e64bc39945c39c3d13999ca02ea",
+  "record_sha256": "66ae58a2fe2b8b244ee3ea74c98d9c7e97cd86a719985335588c76a8a9f8c0f0",
+  "schema_version": "project-snapshot/v2",
+  "snapshot_id": "p3-snapshot-7e60f4074eb6f035ea5a8f9a2248548bcc5a312233ed91444bb19301dfde8563",
+  "source_bundle_id": "p3-bundle-3c45721f3c3e2323fa954d072702419f14e96d4a5100de8405fc05ef3b3a09e4",
+  "source_bundle_sha256": "11c83c354ac9d07e5e45c18dc06efc0fa0fd9b9824dbba0fcbc17ab2ec0913ab",
+  "state_sha256": "7e60f4074eb6f035ea5a8f9a2248548bcc5a312233ed91444bb19301dfde8563"
+}
