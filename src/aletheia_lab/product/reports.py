@@ -3,12 +3,19 @@
 from __future__ import annotations
 
 import json
+import re
 import textwrap
+import unicodedata
 from collections.abc import Iterable
 from typing import Final
 
 from aletheia_lab.product.boundary import ProductError
-from aletheia_lab.product.view import ProductMetricObservation, ProductView
+from aletheia_lab.product.view import (
+    AnyProductMetricObservation,
+    AnyProductView,
+    ProductMetricDefinitionV2,
+    ProductMetricObservationV2,
+)
 
 _SUPPORTED_FORMATS: Final[frozenset[str]] = frozenset({"json", "markdown", "pdf"})
 _UNSUPPORTED_FORMAT_MESSAGE: Final[str] = "The requested report format is not supported."
@@ -16,7 +23,7 @@ _PDF_LINES_PER_PAGE: Final[int] = 55
 _PDF_LINE_WIDTH: Final[int] = 86
 
 
-def render_product_report(view: ProductView, report_format: str) -> bytes:
+def render_product_report(view: AnyProductView, report_format: str) -> bytes:
     """Render one already-authorized immutable view without external I/O."""
 
     if report_format not in _SUPPORTED_FORMATS:
@@ -26,10 +33,10 @@ def render_product_report(view: ProductView, report_format: str) -> bytes:
     markdown = _markdown_report(view)
     if report_format == "markdown":
         return markdown.encode("utf-8")
-    return _pdf_report(markdown)
+    return _pdf_report(markdown, literal_code_spans=view.schema_version == "p6-product-view/v2")
 
 
-def _canonical_json(view: ProductView) -> bytes:
+def _canonical_json(view: AnyProductView) -> bytes:
     return json.dumps(
         view.model_dump(mode="json"),
         ensure_ascii=False,
@@ -39,7 +46,7 @@ def _canonical_json(view: ProductView) -> bytes:
     ).encode("utf-8")
 
 
-def _markdown_report(view: ProductView) -> str:
+def _markdown_report(view: AnyProductView) -> str:
     lines = [
         "# Aletheia Lab Product Report",
         "",
@@ -87,6 +94,7 @@ def _markdown_report(view: ProductView) -> str:
                 "- "
                 f"{_code(definition.metric_name)}; direction={_code(definition.direction)}; "
                 f"regression_threshold={_scalar(definition.regression_threshold)}"
+                + (f"; unit={_dimension(definition.unit)}" if isinstance(definition, ProductMetricDefinitionV2) else "")
             )
     else:
         lines.append("- None.")
@@ -116,7 +124,7 @@ def _markdown_report(view: ProductView) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
-def _append_turns(lines: list[str], view: ProductView) -> None:
+def _append_turns(lines: list[str], view: AnyProductView) -> None:
     lines.extend(["## Conversation", "", f"- Conversation ID: {_code(view.conversation.id)}", ""])
     for turn in view.conversation.turns:
         lines.extend(
@@ -138,7 +146,7 @@ def _append_turns(lines: list[str], view: ProductView) -> None:
         )
 
 
-def _append_claims(lines: list[str], view: ProductView) -> None:
+def _append_claims(lines: list[str], view: AnyProductView) -> None:
     lines.extend(["## Claims", ""])
     if not view.claims:
         lines.extend(["- None; this result contains no diagnosis claim.", ""])
@@ -162,7 +170,7 @@ def _append_claims(lines: list[str], view: ProductView) -> None:
         )
 
 
-def _append_evidence(lines: list[str], view: ProductView) -> None:
+def _append_evidence(lines: list[str], view: AnyProductView) -> None:
     lines.extend(["## Visible evidence", ""])
     if not view.evidence:
         lines.extend(["- None.", ""])
@@ -185,7 +193,7 @@ def _append_evidence(lines: list[str], view: ProductView) -> None:
         )
 
 
-def _append_graph(lines: list[str], view: ProductView) -> None:
+def _append_graph(lines: list[str], view: AnyProductView) -> None:
     lines.extend(["## Graph and lineage references", "", "### Nodes", ""])
     for node in view.graph.nodes:
         lines.append(
@@ -202,7 +210,7 @@ def _append_graph(lines: list[str], view: ProductView) -> None:
     lines.append("")
 
 
-def _append_limitations(lines: list[str], view: ProductView) -> None:
+def _append_limitations(lines: list[str], view: AnyProductView) -> None:
     limitations = [view.result.caveat]
     limitations.extend(
         missing for turn in view.conversation.turns for missing in turn.missing_evidence
@@ -214,14 +222,18 @@ def _append_limitations(lines: list[str], view: ProductView) -> None:
     lines.append("")
 
 
-def _observation(value: ProductMetricObservation | None) -> str:
+def _observation(value: AnyProductMetricObservation | None) -> str:
     if value is None:
         return "`null`"
     step = _not_estimated(value.step)
-    return (
+    result = (
         f"snapshot_id={_code(value.snapshot_id)}; run_id={_code(value.run_id)}; "
         f"step={step}; value={_scalar(value.value)}"
     )
+    if isinstance(value, ProductMetricObservationV2):
+        result += (f"; class={_dimension(value.class_label)}; unit={_dimension(value.unit)}; "
+                   f"unit_origin={_code(value.unit_origin)}")
+    return result
 
 
 def _not_estimated(value: object | None) -> str:
@@ -249,7 +261,15 @@ def _values(values: Iterable[str]) -> str:
 
 
 def _code(value: str) -> str:
-    return f"`{value}`"
+    return _dimension(value)
+
+
+def _dimension(value: str | None) -> str:
+    if value is None:
+        return "`null`"
+    delimiter = "`" * (max((len(run) for run in re.findall(r"`+", value)), default=0) + 1)
+    padding = " " if value.startswith("`") or value.endswith("`") else ""
+    return delimiter + padding + value + padding + delimiter
 
 
 def _text(value: str) -> str:
@@ -259,22 +279,22 @@ def _text(value: str) -> str:
     return compact
 
 
-def _pdf_report(markdown: str) -> bytes:
-    lines = _pdf_lines(markdown)
+def _pdf_report(markdown: str, *, literal_code_spans: bool = False) -> bytes:
+    lines = _pdf_lines(markdown, literal_code_spans=literal_code_spans)
     pages = _paginate_pdf_lines(lines)
     return _build_pdf(pages)
 
 
-def _pdf_lines(markdown: str) -> tuple[str, ...]:
+def _pdf_lines(markdown: str, *, literal_code_spans: bool = False) -> tuple[str, ...]:
     rendered: list[str] = []
     for source_line in markdown.splitlines():
         plain = source_line
         if plain.startswith("#"):
             plain = plain.lstrip("#").strip().upper()
-        plain = plain.replace("`", "")
-        ascii_line = plain.encode("ascii", "backslashreplace").decode("ascii")
+        plain = _pdf_inline(plain)
+        plain = unicodedata.normalize("NFC", plain)
         wrapped = textwrap.wrap(
-            ascii_line,
+            plain,
             width=_PDF_LINE_WIDTH,
             replace_whitespace=False,
             drop_whitespace=False,
@@ -283,6 +303,32 @@ def _pdf_lines(markdown: str) -> tuple[str, ...]:
         )
         rendered.extend(line.rstrip() for line in wrapped or [""])
     return tuple(rendered)
+
+
+def _pdf_inline(value: str) -> str:
+    """Decode only our own escaped text and literal code spans, never HTML or URLs."""
+    result: list[str] = []
+    index = 0
+    while index < len(value):
+        if value[index] == "\\" and index + 1 < len(value) and value[index + 1] in "\\`*[]<>|":
+            result.append(value[index + 1])
+            index += 2
+            continue
+        if value[index] == "`":
+            end = index + 1
+            while end < len(value) and value[end] == "`":
+                end += 1
+            closing = re.search(r"(?<!`)" + re.escape(value[index:end]) + r"(?!`)", value[end:])
+            if closing is not None:
+                text = value[end:end + closing.start()]
+                if text.startswith(" ") and text.endswith(" ") and text.strip(" "):
+                    text = text[1:-1]
+                result.append(text)
+                index = end + closing.end()
+                continue
+        result.append(value[index])
+        index += 1
+    return "".join(result)
 
 
 def _paginate_pdf_lines(lines: tuple[str, ...]) -> tuple[tuple[str, ...], ...]:
@@ -309,89 +355,6 @@ def _paginate_pdf_lines(lines: tuple[str, ...]) -> tuple[tuple[str, ...], ...]:
 
 
 def _build_pdf(pages: tuple[tuple[str, ...], ...]) -> bytes:
-    objects: dict[int, bytes] = {
-        1: b"<< /Type /Catalog /Pages 2 0 R >>",
-        3: b"<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>",
-    }
-    page_ids = tuple(4 + index * 2 for index in range(len(pages)))
-    kids = b" ".join(f"{page_id} 0 R".encode("ascii") for page_id in page_ids)
-    objects[2] = (
-        b"<< /Type /Pages /Kids [" + kids + b"] /Count " + str(len(pages)).encode() + b" >>"
-    )
-    for index, lines in enumerate(pages):
-        page_id = page_ids[index]
-        content_id = page_id + 1
-        stream = _pdf_content_stream(lines, page_number=index + 1, page_count=len(pages))
-        objects[page_id] = (
-            b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] "
-            b"/Resources << /Font << /F1 3 0 R >> >> /Contents "
-            + f"{content_id} 0 R".encode("ascii")
-            + b" >>"
-        )
-        objects[content_id] = (
-            b"<< /Length "
-            + str(len(stream)).encode("ascii")
-            + b" >>\nstream\n"
-            + stream
-            + b"\nendstream"
-        )
-    return _serialize_pdf(objects)
+    from .pdf import render_text_pdf
 
-
-def _pdf_content_stream(
-    lines: tuple[str, ...],
-    *,
-    page_number: int,
-    page_count: int,
-) -> bytes:
-    commands = [
-        b"BT",
-        b"/F1 8 Tf",
-        b"54 812 Td",
-        b"(Aletheia Lab Product Report) Tj",
-        b"ET",
-        b"BT",
-        b"/F1 9 Tf",
-        b"12 TL",
-        b"54 788 Td",
-    ]
-    for line in lines:
-        escaped = line.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
-        commands.extend((f"({escaped}) Tj".encode("ascii"), b"T*"))
-    commands.extend(
-        (
-            b"ET",
-            b"BT",
-            b"/F1 8 Tf",
-            b"260 30 Td",
-            f"(Page {page_number} of {page_count}) Tj".encode("ascii"),
-            b"ET",
-        )
-    )
-    return b"\n".join(commands)
-
-
-def _serialize_pdf(objects: dict[int, bytes]) -> bytes:
-    output = bytearray(b"%PDF-1.4\n% deterministic product report\n")
-    offsets = [0] * (max(objects) + 1)
-    for object_id in range(1, len(offsets)):
-        offsets[object_id] = len(output)
-        output.extend(f"{object_id} 0 obj\n".encode("ascii"))
-        output.extend(objects[object_id])
-        output.extend(b"\nendobj\n")
-    xref_offset = len(output)
-    output.extend(f"xref\n0 {len(offsets)}\n".encode("ascii"))
-    output.extend(b"0000000000 65535 f \n")
-    for offset in offsets[1:]:
-        output.extend(f"{offset:010d} 00000 n \n".encode("ascii"))
-    output.extend(
-        b"trailer\n<< /Size "
-        + str(len(offsets)).encode("ascii")
-        + b" /Root 1 0 R >>\nstartxref\n"
-        + str(xref_offset).encode("ascii")
-        + b"\n%%EOF\n"
-    )
-    return bytes(output)
-
-
-__all__ = ["render_product_report"]
+    return render_text_pdf(pages)
