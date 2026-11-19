@@ -1,0 +1,12 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "ws_synthetic",
+  "project_id": "p3-project-7e9ae9eb40a1623d5dc63aecf3caf681590fe52f29a942b96e3bc7aee13dce0b",
+  "result_id": "p6-result-253deb2e1dd53a3118c906ae0bd3821e25f4f7eb4a8a4431ec594971ae31b8e5",
+  "export_id": "ex_markdown_p6-result-253deb2e1dd53a3118c906ae0bd3821e25f4f7eb4a8a4431ec594971ae31b8e5",
+  "format": "markdown",
+  "byte_size": 10399,
+  "sha256": "4b57ff322f851d279e0ec9aaddf57ce2b5c34e47e56314164b1b9df52fbe6044",
+  "download_url": "/v1/workspaces/ws_synthetic/exports/ex_markdown_p6-result-253deb2e1dd53a3118c906ae0bd3821e25f4f7eb4a8a4431ec594971ae31b8e5/download",
+  "expires_at": null
+}

@@ -1,0 +1,77 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "ws_synthetic",
+  "items": [
+    {
+      "id": "p3-evidence-2fdb449d60f912387bf3fbc85e9d225323da4da8962bc5afc9897a6d5ff55adb",
+      "kind": "metric_observation",
+      "title": "Observed metric change",
+      "text": "The stored evidence records an observed metric change without assigning a cause.",
+      "reproduction_ref": {
+        "record_id": "p3-comparison-b1658d9f2e54f3acb59080681ef55c22ead3bed5e7511d112c1d89f59a316719",
+        "record_kind": "snapshot_comparison"
+      },
+      "source_sha256": "b88e61c688a5bec34fdbfa969b33d52eb3a2d197879181beb58dab62e294fcd3",
+      "visibility": "diagnosis",
+      "redacted": false
+    },
+    {
+      "id": "p3-evidence-4892c4db5bb81cc597babe0b2f4a6204cad192ade0d144ca60ab78764776c468",
+      "kind": "snapshot",
+      "title": "Baseline project snapshot",
+      "text": "A baseline snapshot is bound to this regression evidence generation.",
+      "reproduction_ref": {
+        "record_id": "p3-snapshot-e1d3059653e8d51e286f8bba02323d910d28f9619743225a98dba17629b34f41",
+        "record_kind": "snapshot"
+      },
+      "source_sha256": "e1d3059653e8d51e286f8bba02323d910d28f9619743225a98dba17629b34f41",
+      "visibility": "diagnosis",
+      "redacted": false
+    },
+    {
+      "id": "p3-evidence-be2afd05c613dba1c773dc832dd03c6bae63bbb9fd6f46b1a23477d83e4e7632",
+      "kind": "snapshot_comparison",
+      "title": "Stored snapshot comparison",
+      "text": "The stored comparison records a change between two immutable project snapshots.",
+      "reproduction_ref": {
+        "record_id": "p3-comparison-b1658d9f2e54f3acb59080681ef55c22ead3bed5e7511d112c1d89f59a316719",
+        "record_kind": "snapshot_comparison"
+      },
+      "source_sha256": "b1658d9f2e54f3acb59080681ef55c22ead3bed5e7511d112c1d89f59a316719",
+      "visibility": "diagnosis",
+      "redacted": false
+    },
+    {
+      "id": "p3-evidence-d9cba46b4033a60d3acf19faaca62f5e6ee654e45389ea7e7e12d9c533585ff4",
+      "kind": "regression_candidate",
+      "title": "Regression candidate",
+      "text": "The stored event is a non-causal regression candidate with unverified causal status.",
+      "reproduction_ref": {
+        "record_id": "p3-event-36162d4cdf15e30baf329d6fc9ba239807d02a01441720f3fa4b6d30df727fd2",
+        "record_kind": "regression_event"
+      },
+      "source_sha256": "36162d4cdf15e30baf329d6fc9ba239807d02a01441720f3fa4b6d30df727fd2",
+      "visibility": "diagnosis",
+      "redacted": false
+    },
+    {
+      "id": "p3-evidence-f6bcc42556837435ced8d2673ebadc17d399b6e78f0d35376b1860376d56abdf",
+      "kind": "snapshot",
+      "title": "Observed project snapshot",
+      "text": "The analyzed project snapshot is bound to this regression evidence generation.",
+      "reproduction_ref": {
+        "record_id": "p3-snapshot-62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747",
+        "record_kind": "snapshot"
+      },
+      "source_sha256": "62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747",
+      "visibility": "diagnosis",
+      "redacted": false
+    }
+  ],
+  "next_cursor": null,
+  "total": 5,
+  "total_kind": "exact",
+  "project_id": "p3-project-7e9ae9eb40a1623d5dc63aecf3caf681590fe52f29a942b96e3bc7aee13dce0b",
+  "result_id": "p6-result-253deb2e1dd53a3118c906ae0bd3821e25f4f7eb4a8a4431ec594971ae31b8e5",
+  "snapshot_id": "p3-snapshot-62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747"
+}

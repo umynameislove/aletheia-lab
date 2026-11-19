@@ -11,10 +11,14 @@
     "dev:live": "vite --mode live --host 127.0.0.1 --port 5274",
     "build": "tsc -b && vite build",
     "build:live": "tsc -b && vite build --mode live",
+    "build:hosted": "tsc -b && vite build --mode hosted",
     "bench:build": "tsc -b && vite build --mode bench",
     "bench:serve": "vite preview --mode bench --outDir dist-bench --host 127.0.0.1 --port 5275",
+    "budget": "node scripts/bundle-budget.mjs",
     "preview": "vite preview --host 127.0.0.1 --port 5274",
-    "test": "node --disable-warning=ExperimentalWarning --test tests/contract.test.mjs tests/product-view.test.mjs tests/port.test.mjs tests/live.test.mjs tests/lineage.test.mjs tests/a11y.test.mjs"
+    "test": "node --disable-warning=ExperimentalWarning --experimental-strip-types --test tests/*.test.mjs",
+    "e2e": "node --test tests/e2e/*.e2e.mjs",
+    "e2e:hosted": "npm run build:hosted && node --test tests/hosted-browser.mjs"
   },
   "dependencies": {
     "@fontsource/ibm-plex-sans": "^5.3.0",

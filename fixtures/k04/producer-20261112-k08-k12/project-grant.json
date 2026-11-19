@@ -1,0 +1,11 @@
+{
+  "actions": [
+    "read",
+    "export"
+  ],
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "ws_synthetic",
+  "project_id": "p3-project-7e9ae9eb40a1623d5dc63aecf3caf681590fe52f29a942b96e3bc7aee13dce0b",
+  "user_id": "user_synthetic",
+  "revision": 1
+}
