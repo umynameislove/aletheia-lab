@@ -1,0 +1,9 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "type": "urn:aletheia:problem:upload-part-invalid",
+  "title": "Request could not be completed",
+  "status": 422,
+  "code": "upload_part_invalid",
+  "detail": "The upload part length does not match the manifest.",
+  "request_id": "req_synthetic_k07"
+}

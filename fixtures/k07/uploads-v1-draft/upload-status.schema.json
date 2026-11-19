@@ -1,0 +1,105 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "product-api/v1-draft",
+      "default": "product-api/v1-draft",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "workspace_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Workspace Id",
+      "type": "string"
+    },
+    "upload_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Upload Id",
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "active",
+        "ready",
+        "cancelled",
+        "expired"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "byte_size": {
+      "maximum": 209715200,
+      "minimum": 1,
+      "title": "Byte Size",
+      "type": "integer"
+    },
+    "sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Sha256",
+      "type": "string"
+    },
+    "expires_at": {
+      "format": "date-time",
+      "title": "Expires At",
+      "type": "string"
+    },
+    "received_bytes": {
+      "maximum": 209715200,
+      "minimum": 0,
+      "title": "Received Bytes",
+      "type": "integer"
+    },
+    "received_parts": {
+      "items": {
+        "maximum": 512,
+        "minimum": 1,
+        "type": "integer"
+      },
+      "maxItems": 512,
+      "title": "Received Parts",
+      "type": "array"
+    },
+    "missing_parts": {
+      "items": {
+        "maximum": 512,
+        "minimum": 1,
+        "type": "integer"
+      },
+      "maxItems": 512,
+      "title": "Missing Parts",
+      "type": "array"
+    },
+    "source_id": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source Id"
+    }
+  },
+  "required": [
+    "workspace_id",
+    "upload_id",
+    "state",
+    "byte_size",
+    "sha256",
+    "expires_at",
+    "received_bytes",
+    "received_parts",
+    "missing_parts"
+  ],
+  "title": "UploadStatus",
+  "type": "object"
+}
