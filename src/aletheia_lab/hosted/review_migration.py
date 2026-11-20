@@ -13,7 +13,17 @@ from .project_policy_migration import ProjectPolicyMigrationRejected, _context, 
 ReviewMigrationRejected = ProjectPolicyMigrationRejected
 
 
-async def _signature(conn: Connection) -> str:
+_BODY_CHECK = ("j01_annotations", "j01_annotations_body_check", "c")
+_BODY_CHECK_NESTED = "CHECK ((((length(body) >= 1) AND (length(body) <= 4000)) AND (length(btrim(body)) > 0)))"
+_BODY_CHECK_FLAT = "CHECK (((length(body) >= 1) AND (length(body) <= 4000) AND (length(btrim(body)) > 0)))"
+_BODY_CHECK_EQUIVALENTS = {_BODY_CHECK_NESTED: _BODY_CHECK_FLAT, _BODY_CHECK_FLAT: _BODY_CHECK_NESTED}
+
+
+def _digest(value: object) -> str:
+    return content_hasher(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+async def _signatures(conn: Connection, **binding: object) -> tuple[str, ...]:
     queries = (
         "SELECT c.relname,a.attnum,a.attname,format_type(a.atttypid,a.atttypmod),a.attnotnull,"
         "pg_get_expr(d.adbin,d.adrelid),c.relkind,c.relrowsecurity,c.relforcerowsecurity "
@@ -33,11 +43,26 @@ async def _signature(conn: Connection) -> str:
         "FROM pg_index i JOIN pg_class c ON c.oid=i.indrelid WHERE i.indrelid IN "
         "('j01_annotations'::regclass,'k04_review_migrations'::regclass) ORDER BY c.relname,pg_get_indexdef(i.indexrelid)",
     )
-    return content_hasher(
-        json.dumps(
-            [await _rows(conn, query) for query in queries], sort_keys=True, separators=(",", ":")
-        ).encode()
-    ).hexdigest()
+    structure = [await _rows(conn, query) for query in queries]
+    signatures = [_digest(structure)]
+    # A logical PostgreSQL dump/restore can flatten this conjunction. Keep the
+    # recorded signature and compare the exact equivalent rendering of this one
+    # validated check. Every other catalog field is still part of the comparison.
+    constraints = structure[1]
+    for index, row in enumerate(constraints):
+        if row[:3] == _BODY_CHECK and row[4] is True and isinstance(row[3], str):
+            equivalent = _BODY_CHECK_EQUIVALENTS.get(row[3])
+            if equivalent is not None:
+                constraints[index] = (*row[:3], equivalent, row[4])
+                signatures.append(_digest(structure))
+            break
+    if binding:
+        return tuple(_digest({"structure": signature, **binding}) for signature in signatures)
+    return tuple(signatures)
+
+
+async def _signature(conn: Connection) -> str:
+    return (await _signatures(conn))[0]
 
 
 _REVISIONS = ("review_schema.sql", "review_native_schema.sql", "review_retention_schema.sql")
@@ -67,14 +92,6 @@ def _valid_history(rows: list[tuple[object, ...]], count: int) -> bool:
     )
 
 
-async def _latest_signature(conn: Connection, prefix: tuple[object, ...]) -> str:
-    # Preserve V1's installed signature and bind it into V2, so later history edits fail closed.
-    value = {"structure": await _signature(conn), "v1": prefix}
-    return content_hasher(
-        json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
-
-
 async def _retention_ready(conn: Connection, schema: str | None) -> bool:
     exists = await (await conn.execute("SELECT to_regclass('k13_deletions')")).fetchone()
     if exists is None or exists[0] is None:
@@ -92,13 +109,6 @@ async def _retention_ready(conn: Connection, schema: str | None) -> bool:
     return True
 
 
-async def _retention_signature(conn: Connection, prefix: list[tuple[object, ...]]) -> str:
-    value = {"structure": await _signature(conn), "history": prefix}
-    return content_hasher(
-        json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
-
-
 async def verify(conn: Connection, schema: str | None = None) -> bool:
     """Verify V2 legacy or V3 owner-only retention, without changing old checksums."""
     await _context(conn, schema)
@@ -109,8 +119,8 @@ async def verify(conn: Connection, schema: str | None = None) -> bool:
         conn, "SELECT version,checksum,signature FROM k04_review_migrations ORDER BY version"
     )
     if await _retention_ready(conn, schema):
-        return _valid_history(rows, 3) and rows[2][2] == await _retention_signature(conn, rows[:2])
-    return _valid_history(rows, 2) and rows[1][2] == await _latest_signature(conn, rows[0])
+        return _valid_history(rows, 3) and rows[2][2] in await _signatures(conn, history=rows[:2])
+    return _valid_history(rows, 2) and rows[1][2] in await _signatures(conn, v1=rows[0])
 
 
 async def migrate(conn: Connection, schema: str) -> str:
@@ -156,23 +166,23 @@ async def migrate(conn: Connection, schema: str) -> str:
     )
     retention = await _retention_ready(conn, schema)
     if _valid_history(rows, 3):
-        if not retention or rows[2][2] != await _retention_signature(conn, rows[:2]):
+        if not retention or rows[2][2] not in await _signatures(conn, history=rows[:2]):
             raise ReviewMigrationRejected()
         return "unchanged"
     if _valid_history(rows, 2):
-        if rows[1][2] != await _latest_signature(conn, rows[0]):
+        if rows[1][2] not in await _signatures(conn, v1=rows[0]):
             raise ReviewMigrationRejected()
         if not retention:
             return "unchanged"
     else:
-        if not _valid_history(rows, 1) or rows[0][2] != await _signature(conn):
+        if not _valid_history(rows, 1) or rows[0][2] not in await _signatures(conn):
             raise ReviewMigrationRejected()
         # Never rewrite V1 or adopt a ledger whose full V1 structure has drifted.
         ddl = Path(__file__).with_name(_REVISIONS[1]).read_bytes()
         await conn.execute(ddl.decode("utf-8"))
         await conn.execute(
             "INSERT INTO k04_review_migrations(version,checksum,signature) VALUES(2,%s,%s)",
-            (content_hasher(ddl).hexdigest(), await _latest_signature(conn, rows[0])),
+            (content_hasher(ddl).hexdigest(), (await _signatures(conn, v1=rows[0]))[0]),
         )
         rows = await _rows(
             conn, "SELECT version,checksum,signature FROM k04_review_migrations ORDER BY version"
@@ -182,6 +192,6 @@ async def migrate(conn: Connection, schema: str) -> str:
         await conn.execute(ddl.decode("utf-8"))
         await conn.execute(
             "INSERT INTO k04_review_migrations(version,checksum,signature) VALUES(3,%s,%s)",
-            (content_hasher(ddl).hexdigest(), await _retention_signature(conn, rows[:2])),
+            (content_hasher(ddl).hexdigest(), (await _signatures(conn, history=rows[:2]))[0]),
         )
     return "created" if created else "upgraded"
