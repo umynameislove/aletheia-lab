@@ -1,0 +1,283 @@
+{
+  "snapshot": {
+    "schema_version": "hosted-upload-snapshot/v1",
+    "snapshot_id": "upload-snapshot-ec2e27695150b2687af67de84ac7072482d7afd2f0c81d817378f4cb99ad2087",
+    "workspace_id": "ws_native_synthetic",
+    "source_id": "src_native_synthetic",
+    "source_sha256": "17500eb41180b560029fdae81b154e3a75e520714ca575400c9860b53ccd4776",
+    "git_provenance": "not_supplied",
+    "mapping": {
+      "schema_version": "project-mapping-configuration/v1",
+      "project_id": "p3-project-4b54b67842924903430fcc8d32cd93368b5fb18bd1080e05fbfca1c11accfce4",
+      "project_bundle_id": "p3-bundle-ce1a87d35832d17474a1d7e5475e8dd31cbe00957b3671fc089759857b587411",
+      "file_collection_sha256": "7ff3e06cd88321d85891fef7c0164080f5740c5286fe78d22a070839b2fc82e5",
+      "target": {
+        "mapping_id": "target-100a43db11d32a59",
+        "project_item_id": "p3-item-100a43db11d32a59b965b43a8ef5858ad94aec8e5255b335425cbb2ba904947f",
+        "target_field": "target",
+        "identifier_field": "id"
+      },
+      "metric_sources": [
+        {
+          "mapping_id": "metric-abba53c77441ce1f",
+          "project_item_id": "p3-item-abba53c77441ce1f83e5dae76244d819373946f35a63b95aefd00eb131f4eb32",
+          "format": "csv",
+          "records_path": [],
+          "metric_name_field": "name",
+          "metric_value_field": "value",
+          "run_id_field": "run",
+          "step_field": null
+        }
+      ],
+      "runs": [
+        {
+          "run_id": "baseline",
+          "config_item_ids": []
+        },
+        {
+          "run_id": "candidate",
+          "config_item_ids": [
+            "p3-item-03b8b73b19a5a6db2349dbc9b0c5bdbb6d4d14f7dd3599248d78274679057d8c"
+          ]
+        }
+      ],
+      "baseline_run_id": "baseline",
+      "metric_definitions": [
+        {
+          "metric_name": "loss",
+          "direction": "lower_is_better",
+          "regression_threshold": 0.08
+        }
+      ],
+      "mapping_sha256": "7b2d7bbad8c00a176a7c02a9cef395f8c34ab236f25aa5577024e99d8c3cb694"
+    },
+    "mapping_result": {
+      "schema_version": "project-mapping-result/v1",
+      "status": "valid",
+      "project_id": "p3-project-4b54b67842924903430fcc8d32cd93368b5fb18bd1080e05fbfca1c11accfce4",
+      "project_bundle_id": "p3-bundle-ce1a87d35832d17474a1d7e5475e8dd31cbe00957b3671fc089759857b587411",
+      "mapping_sha256": "7b2d7bbad8c00a176a7c02a9cef395f8c34ab236f25aa5577024e99d8c3cb694",
+      "decisions": [
+        {
+          "candidate_id": "configuration",
+          "status": "accepted",
+          "issue_codes": []
+        },
+        {
+          "candidate_id": "target:target-100a43db11d32a59",
+          "status": "accepted",
+          "issue_codes": []
+        },
+        {
+          "candidate_id": "metric:metric-abba53c77441ce1f",
+          "status": "accepted",
+          "issue_codes": []
+        },
+        {
+          "candidate_id": "run:baseline",
+          "status": "accepted",
+          "issue_codes": []
+        },
+        {
+          "candidate_id": "run:candidate",
+          "status": "accepted",
+          "issue_codes": []
+        },
+        {
+          "candidate_id": "baseline",
+          "status": "accepted",
+          "issue_codes": []
+        }
+      ],
+      "issues": [],
+      "metric_observations": [
+        {
+          "observation_id": "p3-metric-c74e5a3e53ac15cacebf33db79fa0f94b3e57955566d5b31667e95009624a477",
+          "source_mapping_id": "metric-abba53c77441ce1f",
+          "project_item_id": "p3-item-abba53c77441ce1f83e5dae76244d819373946f35a63b95aefd00eb131f4eb32",
+          "run_id": "baseline",
+          "metric_name": "loss",
+          "metric_value": 0.5,
+          "step": null,
+          "source_record_index": 0
+        },
+        {
+          "observation_id": "p3-metric-ca5f0b70e8b04521c476c70377bd7ec26298a1b9b20de103a7fd63f868bf168f",
+          "source_mapping_id": "metric-abba53c77441ce1f",
+          "project_item_id": "p3-item-abba53c77441ce1f83e5dae76244d819373946f35a63b95aefd00eb131f4eb32",
+          "run_id": "candidate",
+          "metric_name": "loss",
+          "metric_value": 0.6,
+          "step": null,
+          "source_record_index": 1
+        }
+      ],
+      "result_sha256": "88c283d785094d170de952de16e8a944cbd17df6e80c552f4f8fc3efb98ae3ea"
+    },
+    "captured_at": "2026-11-10T00:00:00Z",
+    "record_sha256": "6b6b6a55fcc88e60f6489c1772e4d5a21318cb81afb473a6e4add7836cf7ae63"
+  },
+  "result": {
+    "schema_version": "hosted-upload-result/v1",
+    "workspace_id": "ws_native_synthetic",
+    "project_id": "p3-project-4b54b67842924903430fcc8d32cd93368b5fb18bd1080e05fbfca1c11accfce4",
+    "snapshot_id": "upload-snapshot-ec2e27695150b2687af67de84ac7072482d7afd2f0c81d817378f4cb99ad2087",
+    "parent_result_id": null,
+    "view": {
+      "schema_version": "p6-product-view/v1",
+      "demo_only": false,
+      "mode": "project_audit",
+      "visibility": "diagnosis",
+      "project": {
+        "id": "p3-project-4b54b67842924903430fcc8d32cd93368b5fb18bd1080e05fbfca1c11accfce4",
+        "display_name": "Uploaded project"
+      },
+      "snapshot": {
+        "id": "upload-snapshot-ec2e27695150b2687af67de84ac7072482d7afd2f0c81d817378f4cb99ad2087",
+        "baseline_id": "upload-snapshot-ec2e27695150b2687af67de84ac7072482d7afd2f0c81d817378f4cb99ad2087",
+        "sha256": "ec2e27695150b2687af67de84ac7072482d7afd2f0c81d817378f4cb99ad2087",
+        "metric_definitions": [
+          {
+            "metric_name": "loss",
+            "direction": "lower_is_better",
+            "regression_threshold": 0.08
+          }
+        ],
+        "metric_changes": []
+      },
+      "runtime": {
+        "provider": "local_evidence",
+        "model": "upload-snapshot-observation/v1",
+        "external_call": false
+      },
+      "result": {
+        "id": "p6-result-d4b80bca780329043fc030106af5b1fac1566c5377158968c1c54de00df9e1eb",
+        "status": "complete",
+        "disposition": "abstain",
+        "causal_status": "unverified",
+        "summary": "The authorized upload produced an immutable mapped project snapshot.",
+        "denominators": {
+          "independent_families": null,
+          "contexts": 1,
+          "outputs": 1,
+          "claims": 1
+        },
+        "allowed_wording": "The authorized upload produced an immutable mapped project snapshot.",
+        "forbidden_wording": "The visible project artifacts establish a verified cause.",
+        "caveat": "Initial upload observation; no snapshot comparison or verified cause."
+      },
+      "conversation": {
+        "id": "p6-conversation-d4b80bca780329043fc030106af5b1fac1566c5377158968c1c54de00df9e1eb",
+        "turns": [
+          {
+            "id": "p6-turn-d4b80bca780329043fc030106af5b1fac1566c5377158968c1c54de00df9e1eb",
+            "snapshot_id": "upload-snapshot-ec2e27695150b2687af67de84ac7072482d7afd2f0c81d817378f4cb99ad2087",
+            "result_id": "p6-result-d4b80bca780329043fc030106af5b1fac1566c5377158968c1c54de00df9e1eb",
+            "runtime": {
+              "provider": "local_evidence",
+              "model": "upload-snapshot-observation/v1",
+              "external_call": false
+            },
+            "question": "What is observed?",
+            "answer": "The authorized upload produced an immutable mapped project snapshot. Its cause remains unverified.",
+            "abstained": true,
+            "visible_evidence_ids": [
+              "p6-evidence-d687f12b380dbb8b07c4dfbf06128eafc4acb5b815e5508cbccc7570c9c65613"
+            ],
+            "missing_evidence": [
+              "No prior snapshot comparison is available for this initial upload.",
+              "Independent causal verification is not available.",
+              "Counterfactual comparison: not_available"
+            ]
+          }
+        ]
+      },
+      "claims": [
+        {
+          "id": "p6-claim-d4b80bca780329043fc030106af5b1fac1566c5377158968c1c54de00df9e1eb",
+          "turn_id": "p6-turn-d4b80bca780329043fc030106af5b1fac1566c5377158968c1c54de00df9e1eb",
+          "text": "The authorized upload produced an immutable mapped project snapshot.",
+          "claim_type": "evidence_statement",
+          "epistemic_state": "observed",
+          "support": "fully_supported",
+          "citation_ids": [
+            "p6-evidence-d687f12b380dbb8b07c4dfbf06128eafc4acb5b815e5508cbccc7570c9c65613"
+          ],
+          "counterevidence_ids": [],
+          "missing_evidence": [
+            "No prior snapshot comparison is available for this initial upload.",
+            "Independent causal verification is not available.",
+            "Counterfactual comparison: not_available"
+          ],
+          "max_strength": "observation"
+        }
+      ],
+      "evidence": [
+        {
+          "id": "p6-evidence-d687f12b380dbb8b07c4dfbf06128eafc4acb5b815e5508cbccc7570c9c65613",
+          "kind": "snapshot",
+          "title": "Uploaded project snapshot",
+          "text": "The authorized upload produced an immutable mapped project snapshot.",
+          "reproduction_ref": {
+            "record_id": "upload-snapshot-ec2e27695150b2687af67de84ac7072482d7afd2f0c81d817378f4cb99ad2087",
+            "record_kind": "snapshot"
+          },
+          "source_sha256": "17500eb41180b560029fdae81b154e3a75e520714ca575400c9860b53ccd4776",
+          "visibility": "diagnosis",
+          "redacted": false
+        }
+      ],
+      "graph": {
+        "nodes": [
+          {
+            "id": "p6-node-3c04c6039b9dfb22041175cf1648911cd93e4aa40623b09e893051c3438cb728",
+            "kind": "Snapshot",
+            "source_id": "upload-snapshot-ec2e27695150b2687af67de84ac7072482d7afd2f0c81d817378f4cb99ad2087",
+            "visibility": "diagnosis"
+          },
+          {
+            "id": "p6-node-655565d3000843685233cd9511af25a5b2e3da412752a842cf0d45ee394e8e02",
+            "kind": "Disposition",
+            "source_id": "p6-result-d4b80bca780329043fc030106af5b1fac1566c5377158968c1c54de00df9e1eb",
+            "visibility": "diagnosis"
+          },
+          {
+            "id": "p6-node-79f6dd516c645e0106c8e333b0a2bcfc03d7d5792f4ddf0673223d955f347e1b",
+            "kind": "EvidenceItem",
+            "source_id": "p6-evidence-d687f12b380dbb8b07c4dfbf06128eafc4acb5b815e5508cbccc7570c9c65613",
+            "visibility": "diagnosis"
+          },
+          {
+            "id": "p6-node-95d0a0d93e71eaa5f97ab05823470b708905071c617714aaeab34a9fc70d73ea",
+            "kind": "AtomicClaim",
+            "source_id": "p6-claim-d4b80bca780329043fc030106af5b1fac1566c5377158968c1c54de00df9e1eb",
+            "visibility": "diagnosis"
+          }
+        ],
+        "edges": [
+          {
+            "id": "p6-edge-106e37c36ac945bdbfc21d49471833b575dd23ef9acabfa154009310371bb2ba",
+            "kind": "ASSIGNED_DISPOSITION",
+            "source": "p6-node-95d0a0d93e71eaa5f97ab05823470b708905071c617714aaeab34a9fc70d73ea",
+            "target": "p6-node-655565d3000843685233cd9511af25a5b2e3da412752a842cf0d45ee394e8e02",
+            "visibility": "diagnosis"
+          },
+          {
+            "id": "p6-edge-1deea5cea6782e53581c5da1bc33a61f42db8f21210a2dbb1a632d009e0c1e02",
+            "kind": "OBSERVED_IN",
+            "source": "p6-node-79f6dd516c645e0106c8e333b0a2bcfc03d7d5792f4ddf0673223d955f347e1b",
+            "target": "p6-node-3c04c6039b9dfb22041175cf1648911cd93e4aa40623b09e893051c3438cb728",
+            "visibility": "diagnosis"
+          },
+          {
+            "id": "p6-edge-63dfb6464d383060226a65a2fc6f8b4b20c8ef5a9e0a167d8587c3d4b0465084",
+            "kind": "CITES",
+            "source": "p6-node-95d0a0d93e71eaa5f97ab05823470b708905071c617714aaeab34a9fc70d73ea",
+            "target": "p6-node-79f6dd516c645e0106c8e333b0a2bcfc03d7d5792f4ddf0673223d955f347e1b",
+            "visibility": "diagnosis"
+          }
+        ]
+      }
+    }
+  }
+}

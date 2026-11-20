@@ -1,0 +1,39 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "ws_synthetic",
+  "project_id": "p3-project-7e9ae9eb40a1623d5dc63aecf3caf681590fe52f29a942b96e3bc7aee13dce0b",
+  "result_id": "p6-result-253deb2e1dd53a3118c906ae0bd3821e25f4f7eb4a8a4431ec594971ae31b8e5",
+  "snapshot_id": "p3-snapshot-62cd1577b1d5aaedababa0ab99c6f7d9addd52e4001f9c677f945adf394c3747",
+  "view_schema_version": "p6-product-view/v1",
+  "project": {
+    "id": "p3-project-7e9ae9eb40a1623d5dc63aecf3caf681590fe52f29a942b96e3bc7aee13dce0b",
+    "display_name": "Imported project"
+  },
+  "runtime": {
+    "provider": "deterministic_mock",
+    "model": "p6-deterministic-mock/v1",
+    "external_call": false
+  },
+  "result": {
+    "id": "p6-result-253deb2e1dd53a3118c906ae0bd3821e25f4f7eb4a8a4431ec594971ae31b8e5",
+    "status": "complete",
+    "disposition": "abstain",
+    "causal_status": "unverified",
+    "summary": "A stored project change is visible, but the authorized evidence does not establish one cause.",
+    "denominators": {
+      "independent_families": null,
+      "contexts": 1,
+      "outputs": 1,
+      "claims": 1
+    },
+    "allowed_wording": "The stored evidence records an observed project change.",
+    "forbidden_wording": "One visible project artifact caused the observed change.",
+    "caveat": "Deterministic offline project audit; no causal ground truth or model-quality result."
+  },
+  "conversation_id": "p6-conversation-8163d75800876883ec30e180d42904d323c41aa3962a8f2cd93d3be2b7eaca47",
+  "turn_count": 1,
+  "claim_count": 1,
+  "evidence_count": 5,
+  "node_count": 8,
+  "edge_count": 7
+}

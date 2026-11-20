@@ -28,7 +28,7 @@ def checked_product_question(question: str) -> str:
         not isinstance(question, str)
         or not question
         or question != question.strip()
-        or len(question) > 2000
+        or len(question) > 4000
         or unicodedata.normalize("NFC", question) != question
         or any(
             ord(character) < 32 or ord(character) == 127 or 0xD800 <= ord(character) <= 0xDFFF

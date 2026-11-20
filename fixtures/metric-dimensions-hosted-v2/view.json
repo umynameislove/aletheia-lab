@@ -1,0 +1,157 @@
+{
+  "schema_version": "p6-product-view/v2",
+  "demo_only": false,
+  "mode": "project_audit",
+  "visibility": "diagnosis",
+  "project": {
+    "id": "p3-project-8d30974979d3ed40cd431a04c510ea910843f7a1fae377e2b22193855a452da6",
+    "display_name": "Uploaded project"
+  },
+  "snapshot": {
+    "id": "upload-snapshot-d57c64e40c7902b60a37c3d38156d5bd28bda8e3b4187b976961b9ff2c2f1519",
+    "baseline_id": "upload-snapshot-d57c64e40c7902b60a37c3d38156d5bd28bda8e3b4187b976961b9ff2c2f1519",
+    "sha256": "d57c64e40c7902b60a37c3d38156d5bd28bda8e3b4187b976961b9ff2c2f1519",
+    "metric_definitions": [
+      {
+        "metric_name": "độ_chính_xác",
+        "direction": "higher_is_better",
+        "regression_threshold": 0.08,
+        "unit": "%"
+      }
+    ],
+    "metric_changes": []
+  },
+  "runtime": {
+    "provider": "local_evidence",
+    "model": "upload-snapshot-observation/v1",
+    "external_call": false
+  },
+  "result": {
+    "id": "p6-result-b4d9e1c1e47792c8f72433e08668ca41c39aa657ee0d0aef1d54380ce61393aa",
+    "status": "complete",
+    "disposition": "abstain",
+    "causal_status": "unverified",
+    "summary": "The authorized upload produced an immutable mapped project snapshot.",
+    "denominators": {
+      "independent_families": null,
+      "contexts": 1,
+      "outputs": 1,
+      "claims": 1
+    },
+    "allowed_wording": "The authorized upload produced an immutable mapped project snapshot.",
+    "forbidden_wording": "The visible project artifacts establish a verified cause.",
+    "caveat": "Initial upload observation; no snapshot comparison or verified cause."
+  },
+  "conversation": {
+    "id": "p6-conversation-b4d9e1c1e47792c8f72433e08668ca41c39aa657ee0d0aef1d54380ce61393aa",
+    "turns": [
+      {
+        "id": "p6-turn-b4d9e1c1e47792c8f72433e08668ca41c39aa657ee0d0aef1d54380ce61393aa",
+        "snapshot_id": "upload-snapshot-d57c64e40c7902b60a37c3d38156d5bd28bda8e3b4187b976961b9ff2c2f1519",
+        "result_id": "p6-result-b4d9e1c1e47792c8f72433e08668ca41c39aa657ee0d0aef1d54380ce61393aa",
+        "runtime": {
+          "provider": "local_evidence",
+          "model": "upload-snapshot-observation/v1",
+          "external_call": false
+        },
+        "question": "What is known from this uploaded snapshot?",
+        "answer": "The authorized upload produced an immutable mapped project snapshot. Its cause remains unverified.",
+        "abstained": true,
+        "visible_evidence_ids": [
+          "p6-evidence-4d5de3243dbdf353bb13ac06b2887fbb8ea6cdaa52c84cb2c60bf0a53c6625fd"
+        ],
+        "missing_evidence": [
+          "No prior snapshot comparison is available for this initial upload.",
+          "Independent causal verification is not available.",
+          "Counterfactual comparison: not_available"
+        ]
+      }
+    ]
+  },
+  "claims": [
+    {
+      "id": "p6-claim-b4d9e1c1e47792c8f72433e08668ca41c39aa657ee0d0aef1d54380ce61393aa",
+      "turn_id": "p6-turn-b4d9e1c1e47792c8f72433e08668ca41c39aa657ee0d0aef1d54380ce61393aa",
+      "text": "The authorized upload produced an immutable mapped project snapshot.",
+      "claim_type": "evidence_statement",
+      "epistemic_state": "observed",
+      "support": "fully_supported",
+      "citation_ids": [
+        "p6-evidence-4d5de3243dbdf353bb13ac06b2887fbb8ea6cdaa52c84cb2c60bf0a53c6625fd"
+      ],
+      "counterevidence_ids": [],
+      "missing_evidence": [
+        "No prior snapshot comparison is available for this initial upload.",
+        "Independent causal verification is not available.",
+        "Counterfactual comparison: not_available"
+      ],
+      "max_strength": "observation"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "p6-evidence-4d5de3243dbdf353bb13ac06b2887fbb8ea6cdaa52c84cb2c60bf0a53c6625fd",
+      "kind": "snapshot",
+      "title": "Uploaded project snapshot",
+      "text": "The authorized upload produced an immutable mapped project snapshot.",
+      "reproduction_ref": {
+        "record_id": "upload-snapshot-d57c64e40c7902b60a37c3d38156d5bd28bda8e3b4187b976961b9ff2c2f1519",
+        "record_kind": "snapshot"
+      },
+      "source_sha256": "bc8328265b884be112c6f782d928969f77368f97f41d0dac53b8fa203dac3981",
+      "visibility": "diagnosis",
+      "redacted": false
+    }
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "id": "p6-node-329c60ccb06a7b91cf760dd34bbb4605d5a3a75bbeb28526cb0eb90c4203cdf9",
+        "kind": "Snapshot",
+        "source_id": "upload-snapshot-d57c64e40c7902b60a37c3d38156d5bd28bda8e3b4187b976961b9ff2c2f1519",
+        "visibility": "diagnosis"
+      },
+      {
+        "id": "p6-node-7a20bd1326652f335c9944afa91fe4d23d6f426ee6736e107ff287ccf6f4329f",
+        "kind": "Disposition",
+        "source_id": "p6-result-b4d9e1c1e47792c8f72433e08668ca41c39aa657ee0d0aef1d54380ce61393aa",
+        "visibility": "diagnosis"
+      },
+      {
+        "id": "p6-node-821cbbf8c6f7437e55624e6013b0713711eba933aacbe0a3f4573a89f4ccdc1b",
+        "kind": "EvidenceItem",
+        "source_id": "p6-evidence-4d5de3243dbdf353bb13ac06b2887fbb8ea6cdaa52c84cb2c60bf0a53c6625fd",
+        "visibility": "diagnosis"
+      },
+      {
+        "id": "p6-node-a3d3e0472e64c064ea70faa6a5b007a666224833a4a2909098d122b783f2678f",
+        "kind": "AtomicClaim",
+        "source_id": "p6-claim-b4d9e1c1e47792c8f72433e08668ca41c39aa657ee0d0aef1d54380ce61393aa",
+        "visibility": "diagnosis"
+      }
+    ],
+    "edges": [
+      {
+        "id": "p6-edge-4a3dfbc9d1b9d5702c24250cd90206406c249fd3de01306ee91259bbe3bbb2aa",
+        "kind": "ASSIGNED_DISPOSITION",
+        "source": "p6-node-a3d3e0472e64c064ea70faa6a5b007a666224833a4a2909098d122b783f2678f",
+        "target": "p6-node-7a20bd1326652f335c9944afa91fe4d23d6f426ee6736e107ff287ccf6f4329f",
+        "visibility": "diagnosis"
+      },
+      {
+        "id": "p6-edge-4dc833110b89f47758ec25b4fb482d0b5223f5790757e446c0fa16974670fc18",
+        "kind": "CITES",
+        "source": "p6-node-a3d3e0472e64c064ea70faa6a5b007a666224833a4a2909098d122b783f2678f",
+        "target": "p6-node-821cbbf8c6f7437e55624e6013b0713711eba933aacbe0a3f4573a89f4ccdc1b",
+        "visibility": "diagnosis"
+      },
+      {
+        "id": "p6-edge-dfd946f6acccb5d02f2db1c00e0eabe60f27e189a77e41392e939859441b2495",
+        "kind": "OBSERVED_IN",
+        "source": "p6-node-821cbbf8c6f7437e55624e6013b0713711eba933aacbe0a3f4573a89f4ccdc1b",
+        "target": "p6-node-329c60ccb06a7b91cf760dd34bbb4605d5a3a75bbeb28526cb0eb90c4203cdf9",
+        "visibility": "diagnosis"
+      }
+    ]
+  }
+}

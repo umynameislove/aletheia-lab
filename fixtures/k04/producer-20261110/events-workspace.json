@@ -1,0 +1,19 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "ws_synthetic",
+  "items": [
+    {
+      "record_id": "p3-event-36162d4cdf15e30baf329d6fc9ba239807d02a01441720f3fa4b6d30df727fd2",
+      "project_id": "p3-project-7e9ae9eb40a1623d5dc63aecf3caf681590fe52f29a942b96e3bc7aee13dce0b",
+      "record_type": "regression_event",
+      "schema_version": "project-regression-event/v1",
+      "canonical_sha256": "05b9d98f44743e88c6a357113f1d4a093c7aa1e66ff55c82917e3826d30d4781",
+      "snapshot_id": null,
+      "parent_result_id": null
+    }
+  ],
+  "next_cursor": null,
+  "total": null,
+  "total_kind": "unknown",
+  "project_id": null
+}

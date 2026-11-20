@@ -15,7 +15,6 @@ import re
 import stat
 import unicodedata
 from dataclasses import dataclass, field
-from datetime import datetime
 from pathlib import Path
 from typing import Final, Literal, NoReturn, cast
 
@@ -52,6 +51,9 @@ from aletheia_lab.project.import_content import (
     secret_occurrences,
     source_modified_at,
 )
+from aletheia_lab.project.import_content import (
+    _canonical_ingested_at as _canonical_ingested_at,
+)
 from aletheia_lab.project.import_policy import (
     ProjectDecisionReason,
     ProjectImportDecision,
@@ -60,6 +62,25 @@ from aletheia_lab.project.import_policy import (
     ProjectIssueCode,
     ProjectValidationIssue,
     build_project_import_preview,
+)
+
+from .import_filesystem import (
+    _contained as _contained,
+)
+from .import_filesystem import (
+    _directory_entry_names as _directory_entry_names,
+)
+from .import_filesystem import (
+    _directory_signature as _directory_signature,
+)
+from .import_filesystem import (
+    _is_reparse_point as _is_reparse_point,
+)
+from .import_filesystem import (
+    _scan_directory as _scan_directory,
+)
+from .import_filesystem import (
+    _stat_signature as _stat_signature,
 )
 
 ProjectImportStatus = Literal["imported", "imported_with_restrictions", "blocked"]
@@ -83,6 +104,7 @@ class GrantedProjectRoot:
     project_id: str
     _path: Path = field(repr=False)
     _canonical_identity: str = field(repr=False)
+    _logical_identity: str | None = field(repr=False)
     _device: int = field(repr=False)
     _inode: int = field(repr=False)
 
@@ -94,13 +116,15 @@ class GrantedProjectRoot:
         canonical_identity: str,
         device: int,
         inode: int,
+        logical_identity: str | None = None,
     ) -> GrantedProjectRoot:
         instance = object.__new__(cls)
-        fingerprint = granted_root_fingerprint(canonical_identity)
+        fingerprint = granted_root_fingerprint(logical_identity or canonical_identity)
         object.__setattr__(instance, "root_fingerprint", fingerprint)
         object.__setattr__(instance, "project_id", project_id_for_root(fingerprint))
         object.__setattr__(instance, "_path", path)
         object.__setattr__(instance, "_canonical_identity", canonical_identity)
+        object.__setattr__(instance, "_logical_identity", logical_identity)
         object.__setattr__(instance, "_device", device)
         object.__setattr__(instance, "_inode", inode)
         return instance
@@ -299,10 +323,6 @@ def _raise_root_issue(code: ProjectIssueCode, root: str | Path) -> NoReturn:
     raise ProjectImportBoundaryError(_issue(code, subject=os.fspath(root)))
 
 
-def _is_reparse_point(stat_result: os.stat_result) -> bool:
-    file_attributes = int(getattr(stat_result, "st_file_attributes", 0))
-    reparse_flag = int(getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0))
-    return bool(reparse_flag and file_attributes & reparse_flag)
 
 
 def _canonical_root_identity(path: Path) -> str:
@@ -342,37 +362,33 @@ def grant_project_root(root: str | Path) -> GrantedProjectRoot:
     )
 
 
-def _stat_signature(value: os.stat_result) -> tuple[int, int, int, int, int]:
-    return (
-        int(value.st_dev),
-        int(value.st_ino),
-        int(value.st_mode),
-        int(value.st_size),
-        int(value.st_mtime_ns),
+def grant_immutable_project_root(root: str | Path, *, source_sha256: str,
+                                 identity_source_sha256: str | None = None) -> GrantedProjectRoot:
+    """Bind an authorized materialized upload to bytes, retaining physical checks.
+
+    Only trusted hosted adapters supply the digest after verifying the archive.
+    Refresh identity comes from the original server-pinned source digest.
+    This does not authorize a path or replace the ordinary local folder grant.
+    """
+    if re.fullmatch(SHA256_PATTERN, source_sha256) is None:
+        raise ValueError("immutable source requires a lowercase SHA-256 digest")
+    identity = source_sha256 if identity_source_sha256 is None else identity_source_sha256
+    if re.fullmatch(SHA256_PATTERN, identity) is None:
+        raise ValueError("immutable project identity requires a lowercase SHA-256 digest")
+    grant = grant_project_root(root)
+    return GrantedProjectRoot._validated(
+        path=grant._path, canonical_identity=grant._canonical_identity,
+        device=grant._device, inode=grant._inode,
+        logical_identity="hosted-upload-source/v1:" + identity,
     )
 
 
-def _directory_signature(value: os.stat_result) -> tuple[int, int, int, int]:
-    return (
-        int(value.st_dev),
-        int(value.st_ino),
-        int(value.st_mode),
-        int(value.st_mtime_ns),
-    )
 
 
-def _directory_entry_names(entries: list[os.DirEntry[str]]) -> tuple[bytes, ...]:
-    """Return a lossless, ordering-independent directory membership snapshot."""
-
-    return tuple(sorted(os.fsencode(entry.name) for entry in entries))
 
 
-def _scan_directory(directory: Path) -> tuple[list[os.DirEntry[str]], tuple[bytes, ...]]:
-    """Enumerate one directory without following or inspecting its children."""
 
-    with os.scandir(directory) as iterator:
-        entries = list(iterator)
-    return entries, _directory_entry_names(entries)
+
 
 
 def _grant_is_current(grant: GrantedProjectRoot) -> bool:
@@ -388,18 +404,11 @@ def _grant_is_current(grant: GrantedProjectRoot) -> bool:
         and int(inspected.st_dev) == grant._device
         and int(inspected.st_ino) == grant._inode
         and identity == grant._canonical_identity
-        and granted_root_fingerprint(identity) == grant.root_fingerprint
+        and granted_root_fingerprint(grant._logical_identity or identity) == grant.root_fingerprint
         and project_id_for_root(grant.root_fingerprint) == grant.project_id
     )
 
 
-def _contained(root: Path, candidate: Path) -> bool:
-    try:
-        root_text = os.path.normcase(os.path.realpath(os.fspath(root)))
-        candidate_text = os.path.normcase(os.path.realpath(os.fspath(candidate)))
-        return os.path.commonpath((root_text, candidate_text)) == root_text
-    except (OSError, ValueError):
-        return False
 
 
 def _decision_without_content(
@@ -939,23 +948,6 @@ def _report_sha256(
             "artifact_ids": [artifact.reference.artifact_id for artifact in artifacts],
         }
     )
-
-
-def _canonical_ingested_at(value: str) -> str:
-    normalize_text(value, label="ingested_at", max_length=32)
-    if (
-        re.fullmatch(
-            r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z",
-            value,
-        )
-        is None
-    ):
-        raise ValueError("ingested_at must be a canonical UTC timestamp ending in Z")
-    try:
-        datetime.fromisoformat(value[:-1] + "+00:00")
-    except ValueError as exc:
-        raise ValueError("ingested_at must be a valid UTC timestamp") from exc
-    return value
 
 
 def _blocked_result(

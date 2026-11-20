@@ -1,0 +1,42 @@
+# K-03 DRAFT policy, loaded separately from the existing K-02 runtime config.
+# No issuer/client/DB settings are duplicated here. No secrets belong in TOML.
+# Fill literal frontend destinations after review with Quan. Empty values
+# intentionally fail validation; they are not working deployment defaults.
+default_return_to = ""
+return_to_paths = []
+
+# Proposed budgets for review, not measured capacity or accepted session policy.
+idle_seconds = 900
+absolute_seconds = 28800
+rotation_seconds = 300
+login_transaction_seconds = 300
+clock_skew_seconds = 30
+idp_timeout_seconds = 3.0
+# Per-worker bounds; shared PostgreSQL admission is configured below.
+idp_maximum_inflight = 2
+idp_initial_backoff_seconds = 1.0
+idp_maximum_backoff_seconds = 30.0
+maximum_callback_query_bytes = 8192
+
+# Callback uses Authorization Code + PKCE S256, query-mode GET, Secure/Lax cookie.
+# First slice requires HTTPS even for a real local browser test.
+# True requires authorization-response issuer support at the selected IdP.
+require_response_issuer = true
+require_verified_email = true
+# Set only after the issuer owner defines and verifies this exact assurance class.
+# A request hint, auth_time or amr labels alone do not prove MFA.
+# required_acr = "urn:operator-approved:assurance-class"
+id_token_algorithms = ["RS256"]
+
+# VARIABLE name only. Supply a strong stable secret to each API process through
+# the operator's secret channel; never put the value here or in chat output.
+csrf_secret_env = "ALETHEIA_HOSTED_CSRF_SECRET"
+
+# Required by ManagedRuntime: operator-approved deployment+issuer namespace and
+# a dedicated stable shared HMAC key. Blank namespace intentionally fails.
+admission_namespace = ""
+admission_secret_env = "ALETHEIA_HOSTED_ADMISSION_SECRET"
+# Per-operation fixed-window proposals, not measured deployment capacity.
+admission_global_attempts = 600
+admission_subject_attempts = 30
+admission_window_seconds = 60

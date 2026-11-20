@@ -1,0 +1,9 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "ws_synthetic",
+  "workspace_name": "Workspace tổng hợp",
+  "membership": {
+    "role": "owner",
+    "revision": 1
+  }
+}

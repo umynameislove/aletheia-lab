@@ -1,0 +1,125 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "ws_native_synthetic",
+  "project_id": "p3-project-4b54b67842924903430fcc8d32cd93368b5fb18bd1080e05fbfca1c11accfce4",
+  "record_id": "upload-snapshot-ec2e27695150b2687af67de84ac7072482d7afd2f0c81d817378f4cb99ad2087",
+  "record_kind": "upload_snapshot",
+  "data": {
+    "schema_version": "hosted-upload-snapshot/v1",
+    "snapshot_id": "upload-snapshot-ec2e27695150b2687af67de84ac7072482d7afd2f0c81d817378f4cb99ad2087",
+    "workspace_id": "ws_native_synthetic",
+    "source_id": "src_native_synthetic",
+    "source_sha256": "17500eb41180b560029fdae81b154e3a75e520714ca575400c9860b53ccd4776",
+    "git_provenance": "not_supplied",
+    "mapping": {
+      "schema_version": "project-mapping-configuration/v1",
+      "project_id": "p3-project-4b54b67842924903430fcc8d32cd93368b5fb18bd1080e05fbfca1c11accfce4",
+      "project_bundle_id": "p3-bundle-ce1a87d35832d17474a1d7e5475e8dd31cbe00957b3671fc089759857b587411",
+      "file_collection_sha256": "7ff3e06cd88321d85891fef7c0164080f5740c5286fe78d22a070839b2fc82e5",
+      "target": {
+        "mapping_id": "target-100a43db11d32a59",
+        "project_item_id": "p3-item-100a43db11d32a59b965b43a8ef5858ad94aec8e5255b335425cbb2ba904947f",
+        "target_field": "target",
+        "identifier_field": "id"
+      },
+      "metric_sources": [
+        {
+          "mapping_id": "metric-abba53c77441ce1f",
+          "project_item_id": "p3-item-abba53c77441ce1f83e5dae76244d819373946f35a63b95aefd00eb131f4eb32",
+          "format": "csv",
+          "records_path": [],
+          "metric_name_field": "name",
+          "metric_value_field": "value",
+          "run_id_field": "run",
+          "step_field": null
+        }
+      ],
+      "runs": [
+        {
+          "run_id": "baseline",
+          "config_item_ids": []
+        },
+        {
+          "run_id": "candidate",
+          "config_item_ids": [
+            "p3-item-03b8b73b19a5a6db2349dbc9b0c5bdbb6d4d14f7dd3599248d78274679057d8c"
+          ]
+        }
+      ],
+      "baseline_run_id": "baseline",
+      "metric_definitions": [
+        {
+          "metric_name": "loss",
+          "direction": "lower_is_better",
+          "regression_threshold": 0.08
+        }
+      ],
+      "mapping_sha256": "7b2d7bbad8c00a176a7c02a9cef395f8c34ab236f25aa5577024e99d8c3cb694"
+    },
+    "mapping_result": {
+      "schema_version": "project-mapping-result/v1",
+      "status": "valid",
+      "project_id": "p3-project-4b54b67842924903430fcc8d32cd93368b5fb18bd1080e05fbfca1c11accfce4",
+      "project_bundle_id": "p3-bundle-ce1a87d35832d17474a1d7e5475e8dd31cbe00957b3671fc089759857b587411",
+      "mapping_sha256": "7b2d7bbad8c00a176a7c02a9cef395f8c34ab236f25aa5577024e99d8c3cb694",
+      "decisions": [
+        {
+          "candidate_id": "configuration",
+          "status": "accepted",
+          "issue_codes": []
+        },
+        {
+          "candidate_id": "target:target-100a43db11d32a59",
+          "status": "accepted",
+          "issue_codes": []
+        },
+        {
+          "candidate_id": "metric:metric-abba53c77441ce1f",
+          "status": "accepted",
+          "issue_codes": []
+        },
+        {
+          "candidate_id": "run:baseline",
+          "status": "accepted",
+          "issue_codes": []
+        },
+        {
+          "candidate_id": "run:candidate",
+          "status": "accepted",
+          "issue_codes": []
+        },
+        {
+          "candidate_id": "baseline",
+          "status": "accepted",
+          "issue_codes": []
+        }
+      ],
+      "issues": [],
+      "metric_observations": [
+        {
+          "observation_id": "p3-metric-c74e5a3e53ac15cacebf33db79fa0f94b3e57955566d5b31667e95009624a477",
+          "source_mapping_id": "metric-abba53c77441ce1f",
+          "project_item_id": "p3-item-abba53c77441ce1f83e5dae76244d819373946f35a63b95aefd00eb131f4eb32",
+          "run_id": "baseline",
+          "metric_name": "loss",
+          "metric_value": 0.5,
+          "step": null,
+          "source_record_index": 0
+        },
+        {
+          "observation_id": "p3-metric-ca5f0b70e8b04521c476c70377bd7ec26298a1b9b20de103a7fd63f868bf168f",
+          "source_mapping_id": "metric-abba53c77441ce1f",
+          "project_item_id": "p3-item-abba53c77441ce1f83e5dae76244d819373946f35a63b95aefd00eb131f4eb32",
+          "run_id": "candidate",
+          "metric_name": "loss",
+          "metric_value": 0.6,
+          "step": null,
+          "source_record_index": 1
+        }
+      ],
+      "result_sha256": "88c283d785094d170de952de16e8a944cbd17df6e80c552f4f8fc3efb98ae3ea"
+    },
+    "captured_at": "2026-11-10T00:00:00Z",
+    "record_sha256": "6b6b6a55fcc88e60f6489c1772e4d5a21318cb81afb473a6e4add7836cf7ae63"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "type": "urn:aletheia:problem:job_state_conflict",
+  "title": "Request could not be completed",
+  "status": 409,
+  "code": "job_state_conflict",
+  "detail": "The request could not be completed.",
+  "request_id": "req_synthetic"
+}

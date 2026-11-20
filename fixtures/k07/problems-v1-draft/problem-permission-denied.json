@@ -1,0 +1,9 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "type": "urn:aletheia:problem:permission-denied",
+  "title": "Request could not be completed",
+  "status": 403,
+  "code": "permission_denied",
+  "detail": "The operation is not permitted.",
+  "request_id": "req_synthetic_k07"
+}

@@ -47,7 +47,7 @@ from aletheia_lab.project.importer import (
 )
 from aletheia_lab.project.lineage import ProjectLineageGraph, build_regression_lineage
 from aletheia_lab.project.mapping import (
-    ProjectMappingConfiguration,
+    AnyMappingConfiguration,
     bind_project_mapping,
     validate_project_mapping,
 )
@@ -56,11 +56,17 @@ from aletheia_lab.project.regression import (
     ProjectEvidenceBundle,
     ProjectRegressionEvent,
     ProjectSnapshotComparison,
+    ProjectSnapshotComparisonV2,
     build_project_regression_event,
     build_project_regression_evidence,
     compare_project_snapshots,
 )
-from aletheia_lab.project.snapshots import ProjectSnapshot, build_project_snapshot
+from aletheia_lab.project.snapshots import (
+    AnyProjectSnapshot,
+    ProjectSnapshot,
+    ProjectSnapshotV2,
+    build_project_snapshot,
+)
 
 _STORE_INTEGRITY_MESSAGE: Final[str] = "Stored product state failed its integrity check."
 _REFRESH_FAILED_MESSAGE: Final[str] = "The project could not be refreshed safely."
@@ -80,7 +86,7 @@ class _StoredProjectState:
     source_state_sha256: str
     project_bundle_id: str
     snapshot_id: str
-    mapping: ProjectMappingConfiguration
+    mapping: AnyMappingConfiguration
     previous_snapshot_id: str | None
     comparison_id: str | None
     event_id: str | None
@@ -240,7 +246,7 @@ def _stored_project_state(record: ProductLifecycleRecord) -> _StoredProjectState
 def _load_immutable_state(
     store_root: Path,
     record: ProductLifecycleRecord,
-) -> tuple[_StoredProjectState, ProjectBundle, ProjectSnapshot]:
+) -> tuple[_StoredProjectState, ProjectBundle, AnyProjectSnapshot]:
     state = _stored_project_state(record)
     if state is None or record.project_id is None:
         raise ProductError("store_integrity_error", _STORE_INTEGRITY_MESSAGE)
@@ -259,7 +265,7 @@ def _load_immutable_state(
         raise ProductError("store_integrity_error", _STORE_INTEGRITY_MESSAGE)
     if (
         not isinstance(bundle, ProjectBundle)
-        or not isinstance(snapshot, ProjectSnapshot)
+        or not isinstance(snapshot, ProjectSnapshot | ProjectSnapshotV2)
         or bundle.project_id != record.project_id
         or snapshot.project_id != record.project_id
         or snapshot.snapshot_id != state.snapshot_id
@@ -281,8 +287,8 @@ def _reconcile_refresh_generation(
     previous = store.load(state.previous_snapshot_id)
     comparison = store.load(state.comparison_id)
     if (
-        not isinstance(previous, ProjectSnapshot)
-        or not isinstance(comparison, ProjectSnapshotComparison)
+        not isinstance(previous, ProjectSnapshot | ProjectSnapshotV2)
+        or not isinstance(comparison, ProjectSnapshotComparison | ProjectSnapshotComparisonV2)
         or previous.project_id != project_id
         or comparison.project_id != project_id
         or comparison.status != "changed"
@@ -363,7 +369,7 @@ def _changed_refresh(
     record: ProductLifecycleRecord,
     state: _StoredProjectState,
     before_bundle: ProjectBundle,
-    before_snapshot: ProjectSnapshot,
+    before_snapshot: AnyProjectSnapshot,
     *,
     source_state_sha256: str,
     preview: ProjectImportPreview,

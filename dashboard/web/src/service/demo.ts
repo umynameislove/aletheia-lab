@@ -23,7 +23,7 @@
 
 import type { Claim, ConfirmMapping, GraphNode, MetricSourceCandidate, PreviewImportResult, ProductView, Turn } from "../types.ts";
 import { ProductError } from "./port.ts";
-import type { ConfirmResult, DeleteReceipt, ProductPort, RefreshResult, ReportFormat, SelectionKind } from "./port.ts";
+import type { ConfirmResult, LocalDeleteReceipt, ProductPort, RefreshResult, ReportFormat, SelectionKind } from "./port.ts";
 import { reportMarkdown } from "./report.ts";
 import { COUNTERFACTUAL_MARKER } from "./markers.ts";
 import { questionProblem } from "./question.ts";
@@ -61,7 +61,7 @@ export interface DemoFixtures {
 interface ProjectState {
   snapshots: string[];
   deleted: boolean;
-  receipt: DeleteReceipt | null;
+  receipt: LocalDeleteReceipt | null;
 }
 
 const clone = <T>(x: T): T => structuredClone(x);
@@ -96,7 +96,7 @@ export class DemoProductPort implements ProductPort {
     this.reset();
   }
 
-  /** Demo control only — not one of the nine methods. Puts the session back to the packaged state. */
+  /** Demo control only — not one of the ten methods. Puts the session back to the packaged state. */
   reset(): void {
     const v = this.#fx.view;
     this.#results = new Map([[v.result.id, clone(v)]]);
@@ -374,7 +374,7 @@ export class DemoProductPort implements ProductPort {
   }
 
   /* ------------------------------------------------------------------- 9 */
-  async delete_project(project_id: string): Promise<DeleteReceipt> {
+  async delete_project(project_id: string): Promise<LocalDeleteReceipt> {
     const p = this.#projects.get(project_id);
     if (!p) throw new ProductError(CODES.notFound, "No such project.");
     if (p.deleted && p.receipt) return clone(p.receipt); // idempotent
@@ -390,7 +390,7 @@ export class DemoProductPort implements ProductPort {
       v.graph.edges.forEach(x => owned.add(`edge:${x.id}`));
       this.#results.delete(id);
     }
-    const receipt: DeleteReceipt = { project_id, status: STATUS.deleted, deleted_count: owned.size, retained_shared_count: 0 };
+    const receipt: LocalDeleteReceipt = { project_id, status: STATUS.deleted, deleted_count: owned.size, retained_shared_count: 0 };
     p.deleted = true;
     p.receipt = receipt;
     return clone(receipt);

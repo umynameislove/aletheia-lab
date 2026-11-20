@@ -18,11 +18,11 @@ from aletheia_lab.project.identity import (
     normalize_text,
 )
 from aletheia_lab.project.regression import (
+    AnySnapshotComparison,
     ProjectEvidenceBundle,
     ProjectRegressionEvent,
-    ProjectSnapshotComparison,
 )
-from aletheia_lab.project.snapshots import ProjectSnapshot
+from aletheia_lab.project.snapshots import AnyProjectSnapshot
 
 LINEAGE_NODE_SCHEMA_VERSION: Final[Literal["project-lineage-node/v1"]] = (
     "project-lineage-node/v1"
@@ -471,9 +471,9 @@ def project_lineage_table(
 
 
 def build_regression_lineage(
-    before: ProjectSnapshot,
-    after: ProjectSnapshot,
-    comparison: ProjectSnapshotComparison,
+    before: AnyProjectSnapshot,
+    after: AnyProjectSnapshot,
+    comparison: AnySnapshotComparison,
     event: ProjectRegressionEvent,
     evidence: ProjectEvidenceBundle,
 ) -> ProjectLineageGraph:

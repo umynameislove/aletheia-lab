@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { LANE_KINDS, lineageLayout } from "../src/data/lineage.ts";
+import { LANE_KINDS, lineageLayout, ZOOM_MAX, ZOOM_MIN, ZOOM_STEPS, zoomKey, zoomStep } from "../src/data/lineage.ts";
 import { shuffled, syntheticGraph } from "../src/data/syntheticGraph.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -58,4 +58,32 @@ test("G5 graph and claim table agree on the shared fixture", () => {
   assert.ok(evidence.every(n => known.has(n.source_id)), "every evidence node is a listed evidence item");
   assert.equal(l.unplaced, 0);
   assert.deepEqual(LANE_KINDS, ["Snapshot", "EvidenceItem", "AtomicClaim", "Disposition"]);
+});
+
+test("G6 zoom moves one step at a time, stops at both ends, and 0 resets to 100%", () => {
+  assert.deepEqual([...ZOOM_STEPS], [0.8, 1, 1.25, 1.5, 2]);
+  // 0.8 of a ~30 px node keeps it at the 24 px minimum target size (WCAG 2.5.8)
+  assert.ok(ZOOM_MIN * 30 >= 24);
+  const walk = (from, by, n) => { let z = from; const seen = []; for (let i = 0; i < n; i++) seen.push(z = zoomStep(z, by)); return seen; };
+  assert.deepEqual(walk(1, 1, 6), [1.25, 1.5, 2, 2, 2, 2]);
+  assert.deepEqual(walk(1, -1, 3), [0.8, 0.8, 0.8]);
+  assert.equal(zoomStep(ZOOM_MAX, 1), ZOOM_MAX);
+  assert.equal(zoomStep(ZOOM_MIN, -1), ZOOM_MIN);
+  for (const z of ZOOM_STEPS) assert.equal(zoomStep(z, 0), 1);
+  // a level between steps goes to the nearest step on that side; nonsense resets
+  assert.equal(zoomStep(1.1, 1), 1.25);
+  assert.equal(zoomStep(1.1, -1), 1);
+  assert.equal(zoomStep(5, 1), ZOOM_MAX);
+  assert.equal(zoomStep(0.1, -1), ZOOM_MIN);
+  assert.equal(zoomStep(Number.NaN, 1), 1);
+});
+
+test("G7 + - 0 zoom the drawing; with Ctrl, Cmd or Alt they stay the browser's page zoom", () => {
+  const k = (key, mods = {}) => zoomKey({ key, ctrlKey: false, metaKey: false, altKey: false, ...mods });
+  assert.deepEqual(["+", "=", "-", "0"].map(x => k(x)), [1, 1, -1, 0]);
+  for (const mod of ["ctrlKey", "metaKey", "altKey"]) {
+    for (const key of ["+", "=", "-", "0"]) assert.equal(k(key, { [mod]: true }), null, `${mod} ${key}`);
+  }
+  // the arrow keys belong to the investigation's claim list, and other keys are not taken
+  for (const key of ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "j", "k", "x", "e", "/", "?", "1", "_"]) assert.equal(k(key), null, key);
 });

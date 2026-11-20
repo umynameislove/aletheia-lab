@@ -1,0 +1,7 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "mapping": {
+    "runs": [],
+    "baseline_run_id": "baseline"
+  }
+}

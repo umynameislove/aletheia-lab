@@ -1,0 +1,9 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "type": "urn:aletheia:problem:source-changed",
+  "title": "Request could not be completed",
+  "status": 409,
+  "code": "source_changed",
+  "detail": "The source changed. Create a new preview.",
+  "request_id": "req_synthetic_k07"
+}

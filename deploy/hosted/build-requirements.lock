@@ -1,0 +1,8 @@
+# Two build tools plus the pinned wheel dependency; official non-yanked wheel hashes.
+# Linux image build remains a separate gate. wheel>=0.46.2 fixes CVE-2026-24049.
+packaging==26.3 \
+    --hash=sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c
+setuptools==84.2.1 \
+    --hash=sha256:ca140b45d5325a9478f880e351484f62fef15f336462e449ca0c03c873d589c2
+wheel==0.46.2 \
+    --hash=sha256:33ae60725d69eaa249bc1982e739943c23b34b58d51f1cb6253453773aca6e65

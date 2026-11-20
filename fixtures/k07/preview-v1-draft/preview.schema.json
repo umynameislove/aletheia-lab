@@ -1,0 +1,123 @@
+{
+  "$defs": {
+    "ExcludedMetric": {
+      "additionalProperties": false,
+      "properties": {
+        "project_item_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Project Item Id",
+          "type": "string"
+        },
+        "metric_name": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Metric Name",
+          "type": "string"
+        },
+        "reason": {
+          "const": "unsupported_metric_identifier",
+          "title": "Reason",
+          "type": "string"
+        },
+        "source_record_index": {
+          "minimum": 0,
+          "title": "Source Record Index",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "project_item_id",
+        "metric_name",
+        "reason",
+        "source_record_index"
+      ],
+      "title": "ExcludedMetric",
+      "type": "object"
+    },
+    "JsonValue": {}
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "product-api/v1-draft",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "preview_id": {
+      "pattern": "^prev_[0-9a-f]{32}$",
+      "title": "Preview Id",
+      "type": "string"
+    },
+    "workspace_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Workspace Id",
+      "type": "string"
+    },
+    "source_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Source Id",
+      "type": "string"
+    },
+    "source_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Sha256",
+      "type": "string"
+    },
+    "source_state_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source State Sha256",
+      "type": "string"
+    },
+    "mapping_candidates": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Mapping Candidates",
+      "type": "object"
+    },
+    "excluded_metrics": {
+      "items": {
+        "$ref": "#/$defs/ExcludedMetric"
+      },
+      "maxItems": 1000,
+      "title": "Excluded Metrics",
+      "type": "array"
+    },
+    "excluded_metrics_total": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Excluded Metrics Total"
+    },
+    "expires_at": {
+      "format": "date-time",
+      "title": "Expires At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "preview_id",
+    "workspace_id",
+    "source_id",
+    "source_sha256",
+    "source_state_sha256",
+    "mapping_candidates",
+    "excluded_metrics",
+    "expires_at"
+  ],
+  "title": "PreviewImport",
+  "type": "object"
+}

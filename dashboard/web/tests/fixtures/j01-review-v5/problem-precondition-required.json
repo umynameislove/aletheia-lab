@@ -1,0 +1,9 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "type": "urn:aletheia:problem:precondition-required",
+  "title": "Request could not be completed",
+  "status": 428,
+  "code": "precondition_required",
+  "detail": "The request could not be completed.",
+  "request_id": "req_synthetic_001"
+}

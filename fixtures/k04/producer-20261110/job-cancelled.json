@@ -1,0 +1,7 @@
+{
+  "schema_version": "product-api/v1-draft",
+  "workspace_id": "ws_synthetic",
+  "job_id": "job_synthetic",
+  "status": "cancelled",
+  "progress": null
+}
