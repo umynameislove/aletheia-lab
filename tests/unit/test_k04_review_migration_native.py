@@ -33,12 +33,38 @@ def test_unknown_forged_or_incomplete_history_is_not_a_valid_prefix(change):
     assert not migration._valid_history(rows, 2)
 
 
-def test_latest_signature_binds_preserved_v1_history_and_current_structure(monkeypatch):
-    async def structure(_conn):
-        return "c" * 64
+def test_signatures_bind_preserved_v1_history_and_current_structure(monkeypatch):
+    installed_check = (
+        "CHECK ((((length(body) >= 1) AND (length(body) <= 4000)) AND (length(btrim(body)) > 0)))"
+    )
+    restored_check = (
+        "CHECK (((length(body) >= 1) AND (length(body) <= 4000) AND (length(btrim(body)) > 0)))"
+    )
+    body_check = installed_check
+    validated = True
 
-    monkeypatch.setattr(migration, "_signature", structure)
+    async def catalog_rows(_conn, query):
+        if "FROM pg_constraint" in query:
+            return [("j01_annotations", "j01_annotations_body_check", "c", body_check, validated)]
+        return []
+
+    monkeypatch.setattr(migration, "_rows", catalog_rows)
     first = (1, migration._checksums()[0], "a" * 64)
-    before = asyncio.run(migration._latest_signature(None, first))
-    assert before == asyncio.run(migration._latest_signature(None, first))
-    assert before != asyncio.run(migration._latest_signature(None, (1, first[1], "b" * 64)))
+    installed, restored = asyncio.run(migration._signatures(None, v1=first))
+    assert installed != restored
+    assert asyncio.run(migration._signatures(None, v1=first)) == (installed, restored)
+
+    body_check = restored_check
+    assert asyncio.run(migration._signatures(None, v1=first)) == (restored, installed)
+    original_signatures = {installed, restored}
+    changed_history = (1, first[1], "b" * 64)
+    assert original_signatures.isdisjoint(
+        asyncio.run(migration._signatures(None, v1=changed_history))
+    )
+
+    validated = False
+    assert original_signatures.isdisjoint(asyncio.run(migration._signatures(None, v1=first)))
+
+    validated = True
+    body_check = restored_check.replace("4000", "3999")
+    assert original_signatures.isdisjoint(asyncio.run(migration._signatures(None, v1=first)))
