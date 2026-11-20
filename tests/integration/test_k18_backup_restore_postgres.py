@@ -25,6 +25,7 @@ from aletheia_lab.hosted.recovery_checkpoint import apply_checkpoint, capture_ch
 from aletheia_lab.hosted.recovery_points import RecoveryRejected, capture_bundle, restore_bundle
 from aletheia_lab.hosted.retention import PostgresRetention
 from aletheia_lab.hosted.review_migration import migrate as migrate_reviews
+from aletheia_lab.hosted.review_migration import verify as verify_reviews
 
 pytestmark = [pytest.mark.integration, pytest.mark.skipif(
     not os.environ.get('K18_TEST_DATABASE_URL') or not os.environ.get('K18_TEST_PG_BIN'),
@@ -50,6 +51,9 @@ def test_real_restore_preserves_immutable_payload_and_applies_later_delete_and_r
                     async with case.pool.connection() as conn:
                         schema = (await (await conn.execute('SELECT current_schema()')).fetchone())[0]
                         await migrate_reviews(conn, schema)
+                        review_ledger = await (await conn.execute(
+                            "SELECT version,checksum,signature FROM k04_review_migrations ORDER BY version"
+                        )).fetchall()
                     _, record = await _initial(case)
                     old_bytes = case.initial.model_dump_json()
                     retention = PostgresRetention(case.pool, case.catalog)
@@ -83,6 +87,11 @@ def test_real_restore_preserves_immutable_payload_and_applies_later_delete_and_r
                         catalog = PostgresCatalog(pool, PostgresObjects(pool, FilesystemObjectStore(tmp_path / 'restored-objects')))
                         async with pool.connection() as conn:
                             assert await verify(conn, schema)
+                            assert await verify_reviews(conn, schema)
+                            assert await migrate_reviews(conn, schema) == "unchanged"
+                            assert await (await conn.execute(
+                                "SELECT version,checksum,signature FROM k04_review_migrations ORDER BY version"
+                            )).fetchall() == review_ledger
                         saved = await catalog.read_record(credential_digest=case.a, workspace_id='a',
                             project_id=record.project_id, record_id=record.record_id)
                         assert saved.model_dump_json() == old_bytes
@@ -95,6 +104,13 @@ def test_real_restore_preserves_immutable_payload_and_applies_later_delete_and_r
                             assert state == (receipt['tombstone_id'],)
                             assert await (await conn.execute("SELECT active FROM j01_memberships WHERE workspace_id='a' AND user_id='owner_b'")).fetchone() == (False,)
                             assert await (await conn.execute("SELECT count(*) FROM j01_sessions WHERE state='active'")).fetchone() == (0,)
+                            # Actual predicate changes still fail closed after a valid restore.
+                            await conn.execute(
+                                "ALTER TABLE j01_annotations DROP CONSTRAINT j01_annotations_body_check, "
+                                "ADD CONSTRAINT j01_annotations_body_check "
+                                "CHECK (length(body) BETWEEN 1 AND 3999 AND length(btrim(body)) > 0)"
+                            )
+                            assert not await verify_reviews(conn, schema)
                         with pytest.raises(AuthorizationDenied):
                             await catalog.read_record(credential_digest=case.a, workspace_id='a',
                                 project_id=record.project_id, record_id=record.record_id)

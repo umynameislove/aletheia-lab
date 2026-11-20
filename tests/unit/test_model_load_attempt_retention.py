@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import threading
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import FIRST_EXCEPTION, ThreadPoolExecutor, wait
 from dataclasses import replace
 
 import pytest
@@ -20,6 +20,7 @@ from aletheia_lab.evaluation.model_load_contract import (
 
 A, B = "a" * 64, "b" * 64
 CONTRACT = LoadContract("pin_at_acceptance", (A, B))
+_WORKER_WATCHDOG_SECONDS = 60
 
 
 @pytest.fixture
@@ -281,21 +282,23 @@ def test_two_worker_threads_share_root_without_crossing_attempts(store_factory, 
     root, first, second = (Scope("request", index) for index in range(3))
     store.register((root, first, second), (root, first, second))
     parent = complete(store, root)
-    reached_selection = threading.Barrier(3, timeout=5)
+    reached_selection = threading.Barrier(3, timeout=_WORKER_WATCHDOG_SECONDS)
     allow_loads = threading.Event()
 
     def producer(scope, digest):
         chosen = selected(scope, parent=parent)
         store.submit(root.request, chosen)
         reached_selection.wait()
-        if not allow_loads.wait(5):
-            raise TimeoutError("test did not release producer")
+        allow_loads.wait()  # The observer releases both producers in its finally block.
         store.submit(root.request, Record("entry", scope, "load", digest, chosen.selection))
         store.submit(root.request, Record("close", scope, "closure", load_count=1))
         store.settle(scope)
 
     with ThreadPoolExecutor(max_workers=2) as executor:
-        futures = [executor.submit(producer, first, A), executor.submit(producer, second, B)]
+        futures = {
+            executor.submit(producer, scope, digest): scope.attempt
+            for scope, digest in ((first, A), (second, B))
+        }
         try:
             reached_selection.wait()
             for scope in (first, second):
@@ -304,8 +307,12 @@ def test_two_worker_threads_share_root_without_crossing_attempts(store_factory, 
                 store.drain(root.request)
         finally:
             allow_loads.set()
-        for future in futures:
-            future.result(timeout=5)
+        # Full-sync SQLite commits and scheduling can delay either producer.
+        # Use one watchdog for the phase and surface real producer errors.
+        done, pending = wait(futures, timeout=_WORKER_WATCHDOG_SECONDS, return_when=FIRST_EXCEPTION)
+        for future in done:
+            future.result()
+        assert not pending, f"Producers did not finish after load release: {sorted(futures[future] for future in pending)}"
     assert receipt_checker(store.snapshot(CONTRACT, first)).verdict == "compliant"
     assert receipt_checker(store.snapshot(CONTRACT, second)).verdict == "violation"
     assert receipt_checker(store.snapshot(CONTRACT, root)).verdict == "compliant"
