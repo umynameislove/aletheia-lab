@@ -12,6 +12,7 @@ from uuid import uuid4
 
 import psycopg
 import pytest
+from coverage import Coverage
 from psycopg import sql
 from psycopg.conninfo import make_conninfo
 from psycopg_pool import AsyncConnectionPool
@@ -80,6 +81,12 @@ async def _target():
     ({"S": 20, "M": 40, "L": 60}, 2),
 ], ids=["physical", "small"])
 def test_window_catalog_pilot_verifies_native_multi_generation_results(tmp_path, source_rows, results_per_generation):
+    # The physical fixture builds two 100,000-row generations. Coverage traces
+    # the native validators and hashing loops, so bound that run separately.
+    maximum_seconds = (
+        1_800 if source_rows["L"] == 100_000 and Coverage.current() is not None else 720
+    )
+
     async def scenario():
         plan = SeedPlan(namespace="k17_windowsizing", projects_per_workspace=2, generations=2,
                         results_per_generation=results_per_generation, analysis_model=WINDOW_OBSERVATION_MODEL,
@@ -88,7 +95,7 @@ def test_window_catalog_pilot_verifies_native_multi_generation_results(tmp_path,
         secret = SecretStr("synthetic-k17-csrf-signing-key-not-production")
         async with _target() as (pool, schema):
             manifest = await seed_native(pool, schema=schema, output=output, plan=plan, csrf_secret=secret,
-                                         limits=SeedLimits(700 * 1024**2, 230000, 30, maximum_seconds=720))
+                                         limits=SeedLimits(700 * 1024**2, 230000, 30, maximum_seconds=maximum_seconds))
             assert manifest["logical_counts"] == {
                 "principals": 20, "workspaces": 2, "projects": 4, "snapshots": 8, "results": plan.results,
                 "sources": 8, "projections": plan.results, "upload_projections": 8,
