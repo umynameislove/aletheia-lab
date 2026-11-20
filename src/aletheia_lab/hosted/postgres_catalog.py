@@ -11,6 +11,7 @@ from typing import TypeAlias, cast
 from pydantic import SecretStr
 
 from aletheia_lab.hosted_auth.postgres_sessions import Connection, Cursor, Pool
+from aletheia_lab.hosted_contract.workspaces import CatalogSort
 from aletheia_lab.product.lifecycle import ProductLifecycleRecord
 from aletheia_lab.product.results import _view_from_record
 from aletheia_lab.project.contracts import ProjectBundle
@@ -35,6 +36,7 @@ from .native_upload_records import (
     UploadResultRecordV2,
     native_metadata,
     native_parents,
+    parse_native_snapshot_record,
     parse_upload_result_record,
 )
 from .object_store import ObjectDescriptor, ObjectIntegrityError
@@ -46,7 +48,7 @@ from .upload_comparison import (
     comparison_metadata,
     comparison_parents,
 )
-from .upload_snapshot import UploadSnapshot, UploadSnapshotV2, parse_upload_snapshot
+from .upload_snapshot import UploadSnapshot, UploadSnapshotV2
 
 CatalogModel: TypeAlias = Model | NativeUploadModel | UploadGenerationComparison
 KINDS = frozenset(_MODEL_BY_TYPE) | {"preview", "project_state", "result", "turn", "deletion", "upload_snapshot", "upload_result"}
@@ -91,6 +93,7 @@ class CatalogCursor:
     membership_revision: int
     after: str
     search: str | None = None
+    sort: CatalogSort = "id_asc"
 
 
 @dataclass(frozen=True)
@@ -167,6 +170,15 @@ def _index(row: tuple[object, ...]) -> RecordIndex:
                        cast(str | None, row[8]) if len(row) == 9 else None)
 
 
+def _catalog_order(column: str, after: str, sort: CatalogSort) -> tuple[str, tuple[str, ...], str]:
+    # The caller supplies a fixed SQL column. Request data is always a bind parameter.
+    if sort == "id_asc":
+        return f"AND {column}>%s ", (after,), "ASC"
+    if sort == "id_desc":
+        return (f"AND {column}<%s ", (after,), "DESC") if after else ("", (), "DESC")
+    raise ValueError("Unknown catalog order.")
+
+
 def _limit(value: int) -> int:
     if type(value) is not int or not 1 <= value <= 100:
         raise ValueError("page size must be between 1 and 100")
@@ -220,35 +232,52 @@ class PostgresCatalog:
         return auth
 
     async def list_projects(self, *, credential_digest: SecretStr, workspace_id: str,
-                            after: str = "", limit: int = 50, search: str | None = None) -> tuple[tuple[str, int], ...]:
+                            after: str = "", limit: int = 50, search: str | None = None,
+                            sort: CatalogSort = "id_asc") -> tuple[tuple[str, int], ...]:
+        from psycopg import sql
+
         _limit(limit)
         search = _search(search)
+        keyset, position, direction = _catalog_order("p.project_id", after, sort)
         async with self.pool.connection() as conn:
             auth = await self.policy.authorize(conn, credential_digest.get_secret_value(), workspace_id, "read")
             if await _indexed_profile(conn):
-                base = ('SELECT p.project_id,p.revision FROM k05_projects p {join} WHERE p.workspace_id=%s '
-                    'AND p.project_id>%s AND (%s::text IS NULL OR p.project_id=%s) '
-                    'AND NOT EXISTS (SELECT 1 FROM k05_records d WHERE d.workspace_id=p.workspace_id '
-                    "AND d.project_id=p.project_id AND d.record_type='deletion') {access} ORDER BY p.project_id LIMIT %s")
-                common: tuple[object, ...] = (workspace_id, after, search, search)
+                base = sql.SQL(
+                    "SELECT p.project_id,p.revision FROM k05_projects p {join} WHERE p.workspace_id=%s "
+                    "{keyset}AND (%s::text IS NULL OR p.project_id=%s) "
+                    "AND NOT EXISTS (SELECT 1 FROM k05_records d WHERE d.workspace_id=p.workspace_id "
+                    "AND d.project_id=p.project_id AND d.record_type='deletion') {access} "
+                    "ORDER BY p.project_id {direction} LIMIT %s"
+                )
+                order = {"keyset": sql.SQL(keyset), "direction": sql.SQL(direction)}
+                common: tuple[object, ...] = (workspace_id, *position, search, search)
                 if auth.role in ('owner', 'admin'):
-                    query, params = base.format(join='', access=''), common + (limit,)
+                    query = base.format(join=sql.SQL(""), access=sql.SQL(""), **order)
+                    params = common + (limit,)
                 else:
-                    owned = base.format(join='', access='AND p.creator_id=%s')
-                    granted = base.format(join='JOIN j01_project_grants g ON g.workspace_id=p.workspace_id '
-                        'AND g.project_id=p.project_id', access="AND g.user_id=%s AND 'read'=ANY(g.actions) AND p.creator_id<>%s")
-                    query = 'SELECT project_id,revision FROM ((' + owned + ') UNION ALL (' + granted + ')) v ORDER BY project_id LIMIT %s'
+                    owned = base.format(join=sql.SQL(""), access=sql.SQL("AND p.creator_id=%s"), **order)
+                    granted = base.format(
+                        join=sql.SQL("JOIN j01_project_grants g ON g.workspace_id=p.workspace_id "
+                                     "AND g.project_id=p.project_id"),
+                        access=sql.SQL("AND g.user_id=%s AND 'read'=ANY(g.actions) AND p.creator_id<>%s"),
+                        **order,
+                    )
+                    query = sql.SQL(
+                        "SELECT project_id,revision FROM (({}) UNION ALL ({})) v ORDER BY project_id {} LIMIT %s"
+                    ).format(owned, granted, order["direction"])
                     params = common + (auth.user_id, limit) + common + (auth.user_id, auth.user_id, limit) + (limit,)
-                return cast(tuple[tuple[str, int], ...], tuple(await _all(await conn.execute(query, params))))
+                return cast(tuple[tuple[str, int], ...], tuple(await _all(await conn.execute(query.as_string(), params))))
             cursor = await conn.execute(
-                "SELECT project_id,revision FROM k05_projects WHERE workspace_id=%s AND project_id>%s "
-                "AND (%s::text IS NULL OR project_id=%s) "
-                "AND (%s OR creator_id=%s OR EXISTS (SELECT 1 FROM j01_project_grants g "
-                "WHERE g.workspace_id=k05_projects.workspace_id AND g.project_id=k05_projects.project_id "
-                "AND g.user_id=%s AND 'read'=ANY(g.actions))) AND NOT EXISTS (SELECT 1 FROM k05_records d "
-                "WHERE d.workspace_id=k05_projects.workspace_id AND d.project_id=k05_projects.project_id "
-                "AND d.record_type='deletion') ORDER BY project_id LIMIT %s",
-                (workspace_id, after, search, search, auth.role in ("owner", "admin"), auth.user_id, auth.user_id, limit),
+                sql.SQL(
+                    "SELECT p.project_id,p.revision FROM k05_projects p WHERE p.workspace_id=%s "
+                    "{keyset}AND (%s::text IS NULL OR p.project_id=%s) "
+                    "AND (%s OR p.creator_id=%s OR EXISTS (SELECT 1 FROM j01_project_grants g "
+                    "WHERE g.workspace_id=p.workspace_id AND g.project_id=p.project_id "
+                    "AND g.user_id=%s AND 'read'=ANY(g.actions))) AND NOT EXISTS (SELECT 1 FROM k05_records d "
+                    "WHERE d.workspace_id=p.workspace_id AND d.project_id=p.project_id "
+                    "AND d.record_type='deletion') ORDER BY p.project_id {direction} LIMIT %s"
+                ).format(keyset=sql.SQL(keyset), direction=sql.SQL(direction)).as_string(),
+                (workspace_id, *position, search, search, auth.role in ("owner", "admin"), auth.user_id, auth.user_id, limit),
             )
             return cast(tuple[tuple[str, int], ...], tuple(await _all(cursor)))
 
@@ -282,7 +311,7 @@ class PostgresCatalog:
     async def list_records(self, *, credential_digest: SecretStr, workspace_id: str,
                            project_id: str, record_type: str, snapshot_id: str | None = None,
                            cursor: CatalogCursor | None = None, limit: int = 50,
-                           search: str | None = None) -> RecordPage:
+                           search: str | None = None, sort: CatalogSort = "id_asc") -> RecordPage:
         _limit(limit)
         search = _search(search)
         if record_type not in KINDS or record_type == "preview":
@@ -293,16 +322,17 @@ class PostgresCatalog:
             if cursor is not None:
                 if not isinstance(cursor, CatalogCursor) or (
                     cursor.workspace_id, cursor.project_id, cursor.record_type, cursor.snapshot_id,
-                    cursor.user_id, cursor.membership_revision, cursor.search,
-                ) != (workspace_id, project_id, record_type, snapshot_id, auth.user_id, auth.revision, search):
+                    cursor.user_id, cursor.membership_revision, cursor.search, cursor.sort,
+                ) != (workspace_id, project_id, record_type, snapshot_id, auth.user_id, auth.revision, search, sort):
                     raise ValueError("cursor does not match the current authorized query")
                 after = cursor.after
+            keyset, position, direction = _catalog_order("r.record_id", after, sort)
             query = (
                 "SELECT r.record_id,r.project_id,r.record_type,r.schema_version,r.canonical_sha256,"
                 "r.object_sha256,r.snapshot_id,r.parent_result_id,r.source_id FROM k05_records r "
-                "WHERE r.workspace_id=%s AND r.project_id=%s AND r.record_type=ANY(%s) AND r.record_id>%s "
+                "WHERE r.workspace_id=%s AND r.project_id=%s AND r.record_type=ANY(%s) " + keyset
             )
-            params: tuple[object, ...] = (workspace_id, project_id, _record_types(record_type), after)
+            params: tuple[object, ...] = (workspace_id, project_id, _record_types(record_type), *position)
             if snapshot_id is not None:
                 query += "AND r.snapshot_id=%s "
                 params += (snapshot_id,)
@@ -311,22 +341,23 @@ class PostgresCatalog:
                 params += (search, search)
             source_filter, source_params = record_source_filter(auth)
             query += "AND " + source_filter + " "
-            rows = await _all(await conn.execute(query + "ORDER BY r.record_id LIMIT %s", params + source_params + (limit + 1,)))
+            rows = await _all(await conn.execute(query + f"ORDER BY r.record_id {direction} LIMIT %s", params + source_params + (limit + 1,)))
         records = tuple(_index(row) for row in rows[:limit])
         continuation = None
         if len(rows) > limit:
             continuation = CatalogCursor(workspace_id, project_id, record_type, snapshot_id,
-                                         auth.user_id, auth.revision, records[-1].record_id, search)
+                                         auth.user_id, auth.revision, records[-1].record_id, search, sort)
         return RecordPage(records, continuation)
 
     async def list_workspace_records(self, *, credential_digest: SecretStr, workspace_id: str,
                                      kind: str = "result", after: str = "", limit: int = 50,
-                                     search: str | None = None) -> RecordPage:
+                                     search: str | None = None, sort: CatalogSort = "id_asc") -> RecordPage:
         """Internal keyset: the HTTP owner binds/signs after with actor and query."""
         _limit(limit)
         search = _search(search)
         if kind not in KINDS or kind == "preview" or not isinstance(after, str) or len(after) > 128:
             raise ValueError("bounded confirmed-record query required")
+        keyset, position, direction = _catalog_order("r.record_id", after, sort)
         async with self.pool.connection() as conn:
             auth = await self.policy.authorize(conn, credential_digest.get_secret_value(), workspace_id, "read")
             indexed = await _indexed_profile(conn)
@@ -336,13 +367,13 @@ class PostgresCatalog:
                 "r.object_sha256,r.snapshot_id,r.parent_result_id,r.source_id FROM k05_records r "
                 "JOIN k05_projects p ON p.workspace_id=r.workspace_id AND p.project_id=r.project_id "
                 + visible +
-                "WHERE r.workspace_id=%s AND r.record_type=ANY(%s) AND r.record_id>%s "
+                "WHERE r.workspace_id=%s AND r.record_type=ANY(%s) " + keyset
                 + ("" if indexed else "AND (%s OR p.creator_id=%s OR EXISTS (SELECT 1 FROM j01_project_grants g "
                 "WHERE g.workspace_id=p.workspace_id AND g.project_id=p.project_id AND g.user_id=%s "
                 "AND 'read'=ANY(g.actions))) ") + "AND NOT EXISTS (SELECT 1 FROM k05_records d "
                 "WHERE d.workspace_id=p.workspace_id AND d.project_id=p.project_id AND d.record_type='deletion') "
             )
-            params: tuple[object, ...] = visible_params + (workspace_id, _record_types(kind), after)
+            params: tuple[object, ...] = visible_params + (workspace_id, _record_types(kind), *position)
             if not indexed:
                 params += (auth.role in ("owner", "admin"), auth.user_id, auth.user_id)
             if search is not None:
@@ -350,12 +381,12 @@ class PostgresCatalog:
                 params += (search, search)
             source_filter, source_params = record_source_filter(auth)
             query += "AND " + source_filter + " "
-            rows = await _all(await conn.execute(query + "ORDER BY r.record_id LIMIT %s", params + source_params + (limit + 1,)))
+            rows = await _all(await conn.execute(query + f"ORDER BY r.record_id {direction} LIMIT %s", params + source_params + (limit + 1,)))
         records = tuple(_index(row) for row in rows[:limit])
         continuation = None
         if len(rows) > limit:
             continuation = CatalogCursor(workspace_id, "", kind, None, auth.user_id, auth.revision,
-                                         records[-1].record_id, search)
+                                         records[-1].record_id, search, sort)
         return RecordPage(records, continuation)
 
     async def read_record(self, *, credential_digest: SecretStr, workspace_id: str,
@@ -467,9 +498,13 @@ async def _verify_projections(conn: Connection, workspace_id: str, index: Record
         if artifacts != expected_artifacts:
             raise CatalogIntegrityError()
 def _decode_native_record(index: RecordIndex, payload: bytes) -> NativeUploadModel:
-    native: NativeUploadModel = (parse_upload_snapshot(payload) if index.record_type == "upload_snapshot"
-                                 else parse_upload_result_record(payload))
-    kind, identity, project, schema, actual = native_metadata(native)
+    native: NativeUploadModel
+    if index.record_type == "upload_snapshot":
+        native, metadata = parse_native_snapshot_record(payload)
+    else:
+        native = parse_upload_result_record(payload)
+        metadata = native_metadata(native)
+    kind, identity, project, schema, actual = metadata
     snapshot = native.snapshot_id if isinstance(native, (UploadResultRecord, UploadResultRecordV2)) else None
     parent = native.parent_result_id if isinstance(native, (UploadResultRecord, UploadResultRecordV2)) else None
     source = native.source_id if isinstance(native, (UploadSnapshot, UploadSnapshotV2)) else None

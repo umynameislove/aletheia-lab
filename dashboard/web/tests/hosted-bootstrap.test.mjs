@@ -138,6 +138,7 @@ test("the hosted guard drops revoked workspace scope while retaining its valid s
   await guard.check(true);
   assert.equal(guard.state(), "active");
   assert.equal(h.boot.snapshot().session.user_id, "actor"); assert.equal(h.boot.snapshot().workspace, null);
+  assert.equal(h.boot.snapshot().error.code, "membership_revoked");
   assert.equal(h.messages.some(message => message.type === "revoked"), false);
   h.boot.stop();
 });
@@ -396,7 +397,7 @@ test("W14 the one read still sees a change within one check: a lost membership d
     if (expect !== "expired") assert.equal(h.boot.snapshot().workspace, null, `${code}: nothing of the scope stays`);
     if (code === "membership_revoked") {
       assert.equal(h.boot.snapshot().session.user_id, "actor", "the session itself is kept (J02)");
-      assert.equal(h.boot.snapshot().error.code, "permission_denied");
+      assert.equal(h.boot.snapshot().error.code, "membership_revoked");
       assert.equal(h.messages.some(message => message.type === "revoked"), false, "other tabs are not signed out");
     }
     h.boot.stop();

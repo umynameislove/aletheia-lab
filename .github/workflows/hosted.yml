@@ -79,13 +79,15 @@ jobs:
           result = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
           assert result["source_stable"] is True, "Producer source changed during export"
           PY
-      - name: Build dashboard modes and enforce existing live budgets
+      - name: Build dashboard modes and check each bundle budget
         working-directory: dashboard/web
         run: |
           npm run build
+          npm run budget
           npm run build:live
           npm run budget
           npm run build:hosted
+          npm run budget
 
   # PR/push retain the PostgreSQL gate. A manual default run qualifies only
   # contracts and never creates this container; opt in explicitly when allowed.

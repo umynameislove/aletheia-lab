@@ -20,15 +20,16 @@ import { useStore } from "../store";
    `--mode live` → LiveProductPort over the local bridge to ProductService; otherwise the
    offline DemoProductPort over the shared fixtures. A Live failure is shown, never swapped for demo. */
 // the condition is resolved at build time, so a Live bundle carries neither the demo port nor its fixtures
+const liveMode = import.meta.env.MODE === "live";
 export const hostedMode = import.meta.env.MODE === "hosted";
 export const hostedPort = hostedMode ? createHostedPort() : null;
-export const demoPort = import.meta.env.MODE === "live" || hostedMode ? null : new DemoProductPort({ view: viewJson as ProductView, preview: PREVIEW });
-const livePort = demoPort || hostedMode ? null : new LiveProductPort({
+export const demoPort = liveMode || hostedMode ? null : new DemoProductPort({ view: viewJson as ProductView, preview: PREVIEW });
+const livePort = liveMode ? new LiveProductPort({
   fetch: (url, init) => fetch(url, init),
   onAnswer: (status, code) => sessionGuard?.noteResponse(status, code),
-});
-// hostedMode is a build constant: the hosted build drops the live-only contract wrapper entirely
-export const port: ProductPort = hostedMode ? hostedPort! : demoPort ?? checkedPort(livePort!);
+}) : null;
+// Select by build mode so the demo and hosted builds can drop the live-only transport and validator.
+export const port: ProductPort = hostedMode ? hostedPort! : liveMode ? checkedPort(livePort!) : demoPort!;
 /** Why a hosted refresh, follow-up, export or delete is not offered now: the workspace's feature flag and
     the role's allowed actions decide, not the build. Always null outside hosted. */
 export const hostedOff = (binding: HostedBinding): string | null => hostedPort ? hostedPort.bindingOff(binding) : null;

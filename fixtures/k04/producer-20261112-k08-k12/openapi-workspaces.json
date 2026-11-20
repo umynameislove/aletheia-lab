@@ -3349,6 +3349,20 @@
               "maxLength": 128
             },
             "description": "Literal identifier search; SQL wildcard characters have no wildcard meaning."
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "id_asc",
+                "id_desc"
+              ],
+              "default": "id_asc"
+            },
+            "description": "Order by the unique project or record identifier. Cursor binds the order."
           }
         ],
         "responses": {
@@ -3570,6 +3584,20 @@
               "maxLength": 128
             },
             "description": "Literal identifier search; SQL wildcard characters have no wildcard meaning."
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "id_asc",
+                "id_desc"
+              ],
+              "default": "id_asc"
+            },
+            "description": "Order by the unique project or record identifier. Cursor binds the order."
           }
         ],
         "responses": {
@@ -4237,6 +4265,20 @@
           },
           {
             "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "id_asc",
+                "id_desc"
+              ],
+              "default": "id_asc"
+            },
+            "description": "Order by the unique project or record identifier. Cursor binds the order."
+          },
+          {
+            "in": "query",
             "name": "snapshot_id",
             "required": false,
             "schema": {
@@ -4479,6 +4521,20 @@
               "maxLength": 128
             },
             "description": "Literal identifier search; SQL wildcard characters have no wildcard meaning."
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "id_asc",
+                "id_desc"
+              ],
+              "default": "id_asc"
+            },
+            "description": "Order by the unique project or record identifier. Cursor binds the order."
           },
           {
             "in": "query",
@@ -4943,6 +4999,20 @@
           },
           {
             "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "id_asc",
+                "id_desc"
+              ],
+              "default": "id_asc"
+            },
+            "description": "Order by the unique project or record identifier. Cursor binds the order."
+          },
+          {
+            "in": "query",
             "name": "kind",
             "required": true,
             "schema": {
@@ -5208,6 +5278,20 @@
               "maxLength": 128
             },
             "description": "Literal identifier search; SQL wildcard characters have no wildcard meaning."
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "id_asc",
+                "id_desc"
+              ],
+              "default": "id_asc"
+            },
+            "description": "Order by the unique project or record identifier. Cursor binds the order."
           },
           {
             "in": "query",
@@ -6266,6 +6350,20 @@
           },
           {
             "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "id_asc",
+                "id_desc"
+              ],
+              "default": "id_asc"
+            },
+            "description": "Order by the unique project or record identifier. Cursor binds the order."
+          },
+          {
+            "in": "query",
             "name": "snapshot_id",
             "required": false,
             "schema": {
@@ -6511,6 +6609,20 @@
               "maxLength": 128
             },
             "description": "Literal identifier search; SQL wildcard characters have no wildcard meaning."
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "id_asc",
+                "id_desc"
+              ],
+              "default": "id_asc"
+            },
+            "description": "Order by the unique project or record identifier. Cursor binds the order."
           },
           {
             "in": "query",
@@ -8666,6 +8778,20 @@
           },
           {
             "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "id_asc",
+                "id_desc"
+              ],
+              "default": "id_asc"
+            },
+            "description": "Order by the unique project or record identifier. Cursor binds the order."
+          },
+          {
+            "in": "query",
             "name": "snapshot_id",
             "required": false,
             "schema": {
@@ -8912,6 +9038,20 @@
               "maxLength": 128
             },
             "description": "Literal identifier search; SQL wildcard characters have no wildcard meaning."
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "id_asc",
+                "id_desc"
+              ],
+              "default": "id_asc"
+            },
+            "description": "Order by the unique project or record identifier. Cursor binds the order."
           },
           {
             "in": "query",

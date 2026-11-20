@@ -12,6 +12,7 @@ from aletheia_lab.product.results import _view_from_record
 
 from .action_audit import record_action
 from .application import VERSION
+from .async_work import run_blocking
 from .authorization import AuthorizationDenied, PostgresAuthorization
 from .native_upload_records import (
     UploadResultRecord,
@@ -54,6 +55,11 @@ class PostgresReviews:
             await self._policy.authorize_record(conn, auth, workspace, project, result, action)
         record = await self._catalog.read_record(credential_digest=digest, workspace_id=workspace,
                                                  project_id=project, record_id=result)
+        await run_blocking(self._check_result, record, workspace, project, result)
+        return project
+
+    @staticmethod
+    def _check_result(record: object, workspace: str, project: str, result: str) -> None:
         if isinstance(record, (UploadResultRecord, UploadResultRecordV2)):
             record = parse_upload_result_record(record.model_dump(mode="python"))
             if (record.workspace_id, record.project_id, record.record_id) != (workspace, project, result):
@@ -64,7 +70,6 @@ class PostgresReviews:
             _view_from_record(record)
         else:
             raise AuthorizationDenied()
-        return project
 
     async def _current(self, conn: Connection, digest: SecretStr, workspace: str, project: str,
                        result: str, action: str) -> str:

@@ -105,6 +105,11 @@ async def _scenario(tmp_path, *, path=None, method="GET", query=b"", body=None,
             return {"schema_version": "product-api/v1-draft", "workspace_id": output_scope, "items": [],
                     "next_cursor": None, "total": None, "total_kind": "unknown"}
 
+        async def result_project(self, *args, **kwargs):
+            access()
+            effects.append(("result_project", args))
+            return PROJECT
+
         async def result(self, *args, **kwargs):
             access()
             effects.append(("result", args))
@@ -270,7 +275,7 @@ def test_current_scoped_read_routes_are_real_dispatches_and_deny_safely(tmp_path
     assert Problem.model_validate_json(messages[1]["body"]).code == "not_found"
 
 
-@pytest.mark.parametrize("query", [b"project_id=p&project_id=other", b"actor_id=evil", b"cursor=", b"limit=201", b"limit=01", b"kind=%GG"])
+@pytest.mark.parametrize("query", [b"project_id=p&project_id=other", b"actor_id=evil", b"cursor=", b"limit=201", b"limit=01", b"kind=%GG", b"sort=created_at", b"sort=id_asc&sort=id_desc"])
 def test_bad_queries_never_reach_catalog(tmp_path, query):
     messages, effects, _, _, _ = scenario(tmp_path, query=query)
     assert messages[0]["status"] == 400 and not effects
@@ -334,6 +339,9 @@ def test_mutation_csrf_cas_and_actor_spoof_prevent_effects(tmp_path, path, body)
     messages, effects, _, _, failure = scenario(tmp_path, path=path, method="PUT", body=body, headers=((b"if-match", b'"0"'),))
     assert failure is None and messages[0]["status"] == 200
     assert any(name in ("set_grant", "review_put") for name, _ in effects)
+    if "/annotations/" in path:
+        assert "result" not in [name for name, _ in effects]
+        assert [name for name, _ in effects].count("result_project") == 1
     value = json.loads(messages[1]["body"])
     assert dict(messages[0]["headers"])[b"etag"] == f'"{value["revision"]}"'.encode()
 

@@ -20,6 +20,7 @@ from aletheia_lab.hosted_contract.workspaces import (
     Annotation,
     AnnotationPage,
     CanonicalRecord,
+    CatalogSort,
     ChangeGrant,
     ClaimPage,
     DeletedProject,
@@ -136,6 +137,13 @@ def _limit(query: dict[str, str]) -> int:
     if re.fullmatch(r"[1-9][0-9]{0,2}", value) is None or int(value) > 100:
         raise RequestRejected(400, "invalid_request", "The page limit is invalid.")
     return int(value)
+
+
+def _sort(query: Mapping[str, str]) -> CatalogSort:
+    value = query.get("sort", "id_asc")
+    if value not in ("id_asc", "id_desc"):
+        raise RequestRejected(400, "invalid_request", "Select id_asc or id_desc for catalog ordering.")
+    return cast(CatalogSort, value)
 
 
 def _identifier(query: dict[str, str], field: str, *, required: bool = False) -> str | None:
@@ -481,9 +489,9 @@ class CatalogApplication:
             _query(scope, set())
             return await self._grant(scope, receive, digest, workspace, cast(str, project), user, headers)
         if project is None:
-            query = _query(scope, {"limit", "cursor", "search"})
+            query = _query(scope, {"limit", "cursor", "search", "sort"})
             value = await self._access.projects(digest, workspace, session.context_id,
-                limit=_limit(query), cursor=query.get("cursor"), search=_identifier(query, "search"))
+                limit=_limit(query), cursor=query.get("cursor"), search=_identifier(query, "search"), sort=_sort(query))
             if value.get("workspace_id") != workspace:
                 raise ValueError("Project page scope mismatch.")
             return self._json(ProjectPage, value)
@@ -493,29 +501,29 @@ class CatalogApplication:
         if record is not None or group is None:
             _query(scope, set())
             return await self._record(digest, workspace, project, record, "snapshot" if group == "/snapshots" else None)
-        query = _query(scope, {"limit", "cursor", "kind", "snapshot_id", "search"})
+        query = _query(scope, {"limit", "cursor", "kind", "snapshot_id", "search", "sort"})
         kind = "snapshot" if group == "/snapshots" else query.get("kind")
         if kind not in KINDS or kind == "preview" or (group == "/snapshots" and "kind" in query):
             raise RequestRejected(400, "invalid_request", "A confirmed record kind is required.")
         value = await self._access.records(digest, workspace, project, session.context_id, kind=kind,
             snapshot_id=_identifier(query, "snapshot_id"), limit=_limit(query), cursor=query.get("cursor"),
-            search=_identifier(query, "search"))
+            search=_identifier(query, "search"), sort=_sort(query))
         return self._record_page(value, digest, workspace, project)
 
     async def _result_page(self, scope: Mapping[str, object], digest: SecretStr, session: SessionRecord,
                            workspace: str, events: bool) -> _Delivery:
-        query = _query(scope, {"project_id", "snapshot_id", "limit", "cursor", "search"})
+        query = _query(scope, {"project_id", "snapshot_id", "limit", "cursor", "search", "sort"})
         project = _identifier(query, "project_id")
         if project is None:
             if "snapshot_id" in query:
                 raise RequestRejected(400, "invalid_request", "Snapshot filters require a project scope.")
             value = await self._access.workspace_records(digest, workspace, session.context_id,
                 kind="regression_event" if events else "result", limit=_limit(query),
-                cursor=query.get("cursor"), search=_identifier(query, "search"))
+                cursor=query.get("cursor"), search=_identifier(query, "search"), sort=_sort(query))
             return self._record_page(value, digest, workspace, None)
         value = await self._access.records(digest, workspace, project, session.context_id,
             kind="regression_event" if events else "result", snapshot_id=_identifier(query, "snapshot_id"),
-            limit=_limit(query), cursor=query.get("cursor"), search=_identifier(query, "search"))
+            limit=_limit(query), cursor=query.get("cursor"), search=_identifier(query, "search"), sort=_sort(query))
         return self._record_page(value, digest, workspace, project)
 
     async def _result_dispatch(self, scope: Mapping[str, object], receive: Receive, digest: SecretStr,
@@ -648,7 +656,7 @@ class CatalogApplication:
 
     async def _annotation(self, scope: Mapping[str, object], receive: Receive, digest: SecretStr, session: SessionRecord,
                           workspace: str, result: str, annotation: str, headers: Sequence[tuple[bytes, bytes]]) -> _Delivery:
-        project, _ = await self._result(digest, workspace, result)
+        project = await self._access.result_project(digest, workspace, result)
         check = self._access.checkpoint(digest, workspace, project, record_id=result)
         if scope.get("method") == "PUT":
             _query(scope, set())
@@ -662,6 +670,8 @@ class CatalogApplication:
             if (value.workspace_id, value.project_id, value.result_id, value.annotation_id, value.author_id) != (
                     workspace, project, result, annotation, session.actor.user_id):
                 raise ValueError("Annotation response scope mismatch.")
+            if (value.revision, value.body, value.status) != (revision + 1, request.body, request.status):
+                raise ValueError("Annotation response does not match the saved revision.")
             return self._json(Annotation, value, checkpoint=check)
         query = _query(scope, {"limit", "cursor"})
         limit = _limit(query)

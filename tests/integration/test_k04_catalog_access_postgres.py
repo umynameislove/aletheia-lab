@@ -37,6 +37,19 @@ def test_signed_project_record_and_workspace_pages_bind_actor_context_query_and_
                 assert cursor and projects["total"] is None and projects["total_kind"] == "unknown"
                 more = await access.projects(_credential("owner"), "wa", "ctx_owner", limit=1, cursor=cursor)
                 assert more["items"] and more["items"][0] != projects["items"][0]
+                expected = await access.projects(_credential("owner"), "wa", "ctx_owner")
+                desc = await access.projects(_credential("owner"), "wa", "ctx_owner", limit=1, sort="id_desc")
+                descending = list(desc["items"])
+                page = desc
+                while page["next_cursor"]:
+                    page = await access.projects(_credential("owner"), "wa", "ctx_owner", limit=1,
+                                                 sort="id_desc", cursor=page["next_cursor"])
+                    descending.extend(page["items"])
+                    assert len(descending) <= len(expected["items"])
+                assert descending == list(reversed(expected["items"]))
+                with pytest.raises(CursorInvalid):
+                    await access.projects(_credential("owner"), "wa", "ctx_owner", limit=1,
+                                          sort="id_asc", cursor=desc["next_cursor"])
                 for user, workspace, context, kwargs in (
                     ("viewer", "wa", "ctx_viewer", {"limit": 1}),
                     ("other", "wb", "ctx_other", {"limit": 1}),

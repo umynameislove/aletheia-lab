@@ -58,12 +58,12 @@ export function createHostedBootstrap(options: {
     options.onClear();
     publish({ status, session: null, workspace: null, error, generation: state.generation + 1, opening: null });
   }
-  function dropWorkspace() {
+  function dropWorkspace(code: "membership_revoked" | "permission_denied" = "permission_denied") {
     const workspace = state.workspace?.workspace_id ?? state.opening;
     controller.abort(); controller = new AbortController(); checking = null; watchedJob = null; watchedResult = null; jobReadAt = null; selecting++;
     options.onClear();
     publish({ workspace: null, generation: state.generation + 1, opening: null,
-      error: new ProductError("permission_denied", "This work is no longer available. Select a workspace to continue.") });
+      error: new ProductError(code, "This work is no longer available. Select a workspace to continue.") });
     client = makeClient();
     if (workspace) options.onWorkspaceLost?.(workspace);
   }
@@ -84,7 +84,7 @@ export function createHostedBootstrap(options: {
       // A session/capability answer alone cannot renew a result's authorization lease.
       onAnswer: (status, code) => {
         // Membership revocation ends this scope, not the authenticated session or other tabs' workspaces.
-        if (code === "membership_revoked") dropWorkspace();
+        if (code === "membership_revoked") dropWorkspace(code);
         else if (status >= 300) guard?.noteResponse(status, code);
       } });
   }
@@ -120,16 +120,16 @@ export function createHostedBootstrap(options: {
   }
   /* One read in this scope. 403/404 means the scope is gone: everything held for it is dropped. */
   async function scoped(session: HostedSession, generation: number, read: (probe: ReturnType<typeof createHostedClient>) => Promise<unknown>) {
-    let denied = false;
+    let denial: "membership_revoked" | "permission_denied" | undefined;
     const probe = createHostedClient({ fetch: options.fetch, session, signal: controller.signal,
       isCurrent: () => current(generation), onAnswer: (status, code) => {
-        denied = status === 403 || status === 404;
+        if (status === 403 || status === 404) denial = code === "membership_revoked" ? code : "permission_denied";
         if (status >= 300 && code !== "membership_revoked") guard?.noteResponse(status, code);
       } });
     try { await read(probe); }
     catch (error) {
-      if (!denied || !current(generation)) throw error;
-      dropWorkspace();
+      if (!denial || !current(generation)) throw error;
+      dropWorkspace(denial);
     }
   }
   /* The result on screen is confirmed by its own bounded header (Kiên, 13/11). A server without it is never
@@ -174,7 +174,8 @@ export function createHostedBootstrap(options: {
           if (full) lastFull = asked;
           return { status: "ok", context_id: next.context_id, ...(polled !== null ? { since: polled } : {}) };
         } catch (error) {
-          if (error instanceof HostedRequestDiscarded && state.session && !state.workspace && state.error?.code === "permission_denied") {
+          if (error instanceof HostedRequestDiscarded && state.session && !state.workspace
+            && (state.error?.code === "permission_denied" || state.error?.code === "membership_revoked")) {
             return { status: "ok", context_id: state.session.context_id };
           }
           if (error instanceof ProductError && error.code === "session_expired") return { status: "expired" };
@@ -249,7 +250,7 @@ export function createHostedBootstrap(options: {
     isCurrent: (generation: number) => current(generation),
     authError(error: ProductError) {
       if (error.code === "session_expired") guard?.noteResponse(401, error.code);
-      else if (error.code === "membership_revoked") dropWorkspace();
+      else if (error.code === "membership_revoked") dropWorkspace(error.code);
       else if (error.code === "session_revoked") clear();
     },
     async renew() { const generation = state.generation; const next = await client.renew(); if (current(generation)) applySession(next); },

@@ -224,6 +224,9 @@ class ProjectSummary(_Model):
     revision: int = Field(ge=0)
 
 
+CatalogSort = Literal["id_asc", "id_desc"]
+
+
 class ProjectPage(Page[ProjectSummary]):
     pass
 

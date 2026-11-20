@@ -53,6 +53,6 @@ class JobAttemptPage(BaseModel):
             raise ValueError("Attempt epochs must be unique and increasing.")
         if any(item.finished_at is None for item in self.items[:-1]):
             raise ValueError("Only the latest attempt may be active.")
-        if (self.conflict is not None) != bool(self.items and self.items[-1].failure_kind == 'conflict'):
+        if self.conflict is not None and not (self.items and self.items[-1].failure_kind == 'conflict'):
             raise ValueError("Conflict metadata requires a terminal conflict attempt.")
         return self

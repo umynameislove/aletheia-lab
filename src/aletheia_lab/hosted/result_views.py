@@ -201,39 +201,43 @@ class ResultViews:
 
     async def manifest(self, digest: SecretStr, workspace: str, result: str) -> ResultProjection:
         async with self.catalog.pool.connection() as conn:
-            auth = await self.catalog.policy.authorize(conn, digest.get_secret_value(), workspace, 'read')
-            record = await (await conn.execute('SELECT project_id,canonical_sha256,snapshot_id FROM k05_records '
-                "WHERE workspace_id=%s AND record_id=%s AND record_type IN ('result','upload_result')",
-                (workspace, result))).fetchone()
-            if record is None or not isinstance(record[0], str):
-                raise AuthorizationDenied()
-            await self.catalog.policy.authorize_record(conn, auth, workspace, record[0], result, 'read')
-            if not await projection_installed(conn) or not await verified_extension(conn):
-                raise ProjectionUnavailable()
-            row = await (await conn.execute('SELECT project_id,snapshot_id,canonical_sha256,projection_sha256,'
-                'claim_count,evidence_count,node_count,edge_count,header_sha256 FROM k10_result_views WHERE workspace_id=%s '
-                'AND result_id=%s AND projection_version=%s', (workspace, result, PROJECTION_VERSION))).fetchone()
-            if row is None:
-                raise ProjectionUnavailable()
-            if (len(row) != 9 or row[:3] != (record[0], record[2], record[1])
-                    or not all(isinstance(value, str) for value in row[:4])
-                    or not all(type(value) is int and value >= 0 for value in row[4:8]) or not isinstance(row[8], str)):
-                raise CatalogIntegrityError()
-            return ResultProjection(cast(str, row[0]), result, cast(str, row[1]), cast(str, row[2]),
-                cast(str, row[3]), *cast(tuple[int, int, int, int], row[4:8]), row[8])
+            return await self._manifest(conn, digest, workspace, result)
 
-    async def header(self, digest: SecretStr, workspace: str, manifest: ResultProjection) -> dict[str, object]:
-        await self.manifest(digest, workspace, manifest.result_id)
+    async def _manifest(self, conn: Connection, digest: SecretStr, workspace: str,
+                        result: str) -> ResultProjection:
+        auth = await self.catalog.policy.authorize(conn, digest.get_secret_value(), workspace, 'read')
+        record = await (await conn.execute('SELECT project_id,canonical_sha256,snapshot_id FROM k05_records '
+            "WHERE workspace_id=%s AND record_id=%s AND record_type IN ('result','upload_result')",
+            (workspace, result))).fetchone()
+        if record is None or not isinstance(record[0], str):
+            raise AuthorizationDenied()
+        await self.catalog.policy.authorize_record(conn, auth, workspace, record[0], result, 'read')
+        if not await projection_installed(conn) or not await verified_extension(conn):
+            raise ProjectionUnavailable()
+        row = await (await conn.execute('SELECT project_id,snapshot_id,canonical_sha256,projection_sha256,'
+            'claim_count,evidence_count,node_count,edge_count,header_sha256 FROM k10_result_views WHERE workspace_id=%s '
+            'AND result_id=%s AND projection_version=%s', (workspace, result, PROJECTION_VERSION))).fetchone()
+        if row is None:
+            raise ProjectionUnavailable()
+        if (len(row) != 9 or row[:3] != (record[0], record[2], record[1])
+                or not all(isinstance(value, str) for value in row[:4])
+                or not all(type(value) is int and value >= 0 for value in row[4:8]) or not isinstance(row[8], str)):
+            raise CatalogIntegrityError()
+        return ResultProjection(cast(str, row[0]), result, cast(str, row[1]), cast(str, row[2]),
+            cast(str, row[3]), *cast(tuple[int, int, int, int], row[4:8]), row[8])
+
+    async def header(self, digest: SecretStr, workspace: str, result: str) -> tuple[ResultProjection, dict[str, object]]:
         async with self.catalog.pool.connection() as conn:
+            manifest = await self._manifest(conn, digest, workspace, result)
             row = await (await conn.execute('SELECT header,header_sha256 FROM k10_result_views WHERE workspace_id=%s '
-                'AND result_id=%s AND projection_version=%s', (workspace, manifest.result_id, PROJECTION_VERSION))).fetchone()
+                'AND result_id=%s AND projection_version=%s', (workspace, result, PROJECTION_VERSION))).fetchone()
         if (row is None or len(row) != 2 or not isinstance(row[0], str) or row[1] != manifest.header_sha256
                 or content_hasher(row[0].encode()).hexdigest() != manifest.header_sha256):
             raise CatalogIntegrityError()
         value = json.loads(row[0])
         if not isinstance(value, dict):
             raise CatalogIntegrityError()
-        return value
+        return manifest, value
 
     async def page(self, digest: SecretStr, workspace: str, manifest: ResultProjection, *, kind: Kind,
                    after: str = '', limit: int = 50, search: str | None = None) -> tuple[tuple[Item, ...], str | None]:
@@ -269,10 +273,10 @@ class ResultViews:
         items = tuple(selected)
         return items, items[-1].id if len(rows) > len(items) else None
 
-    async def evidence(self, digest: SecretStr, workspace: str, manifest: ResultProjection,
-                       identity: str, claim_id: str | None) -> tuple[ProductEvidence, str | None]:
-        await self.manifest(digest, workspace, manifest.result_id)
+    async def evidence(self, digest: SecretStr, workspace: str, result: str,
+                       identity: str, claim_id: str | None) -> tuple[ResultProjection, ProductEvidence, str | None]:
         async with self.catalog.pool.connection() as conn:
+            manifest = await self._manifest(conn, digest, workspace, result)
             row = await (await conn.execute('SELECT item_id,payload,sha256 FROM k10_result_items '
                 "WHERE workspace_id=%s AND result_id=%s AND projection_version=%s AND kind='evidence' AND item_id=%s",
                 (workspace, manifest.result_id, PROJECTION_VERSION, identity))).fetchone()
@@ -286,7 +290,7 @@ class ResultViews:
                 if link is None or link[0] not in ('citation', 'counterevidence'):
                     raise AuthorizationDenied()
                 relation = link[0]
-        return cast(ProductEvidence, _item('evidence', row)), relation
+        return manifest, cast(ProductEvidence, _item('evidence', row)), relation
 
     async def _node_graph(self, workspace: str, manifest: ResultProjection,
                           items: tuple[object, ...], after: str,

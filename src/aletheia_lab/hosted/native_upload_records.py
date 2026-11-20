@@ -144,17 +144,25 @@ def result_view(record: CanonicalResultRecord) -> AnyProductView:
     raise TypeError('A typed canonical result is required')
 
 
+def _snapshot_metadata(snapshot: AnyUploadSnapshot) -> tuple[str, str, str, str, str]:
+    return ('upload_snapshot', snapshot.snapshot_id, snapshot.mapping.project_id,
+            snapshot.schema_version, canonical_project_sha256(snapshot.model_dump(mode='json')))
+
+
+def parse_native_snapshot_record(payload: bytes) -> tuple[AnyUploadSnapshot, tuple[str, str, str, str, str]]:
+    """Validate stored snapshot JSON once, then derive the catalog identity."""
+    snapshot = parse_upload_snapshot(payload)
+    return snapshot, _snapshot_metadata(snapshot)
+
+
 def native_metadata(model: NativeUploadModel) -> tuple[str, str, str, str, str]:
     if isinstance(model, UPLOAD_SNAPSHOT_TYPES):
-        checked: NativeUploadModel = parse_upload_snapshot(model.model_dump(mode='python'))
-        kind, identity, project = 'upload_snapshot', model.snapshot_id, model.mapping.project_id
-    elif isinstance(model, UPLOAD_RESULT_TYPES):
-        checked = parse_upload_result_record(model.model_dump(mode='python'))
-        kind, identity, project = 'upload_result', model.record_id, model.project_id
-    else:
+        return _snapshot_metadata(parse_upload_snapshot(model.model_dump(mode='python')))
+    if not isinstance(model, UPLOAD_RESULT_TYPES):
         raise TypeError('A typed native upload model is required')
-    return kind, identity, project, checked.schema_version, canonical_project_sha256(checked.model_dump(mode='json'))
-
+    checked = parse_upload_result_record(model.model_dump(mode='python'))
+    return ('upload_result', model.record_id, model.project_id,
+            checked.schema_version, canonical_project_sha256(checked.model_dump(mode='json')))
 
 def native_parents(model: NativeUploadModel) -> tuple[tuple[str, str], ...]:
     if isinstance(model, UPLOAD_SNAPSHOT_TYPES):

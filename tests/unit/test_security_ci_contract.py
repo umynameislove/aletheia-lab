@@ -306,9 +306,11 @@ def test_dashboard_job_checks_locked_dependencies_current_producers_and_all_buil
         ["npm", "--prefix", "dashboard/web", "ci", "--ignore-scripts"],
         ["npm", "test"],
         ["npm", "run", "build"],
+        ["npm", "run", "budget"],
         ["npm", "run", "build:live"],
         ["npm", "run", "budget"],
         ["npm", "run", "build:hosted"],
+        ["npm", "run", "budget"],
     ]
     consumer = next(step for step in job["steps"] if step.get("run") == "npm test")
     assert consumer["env"] == {

@@ -102,6 +102,10 @@ def _queries(path: str, model: type[BaseModel] | str) -> list[dict[str, object]]
     if model in (wire.ProjectPage, wire.RecordPage):
         result.append(_parameter("search", {"type": "string", "minLength": 1, "maxLength": 128},
                                   description="Literal identifier search; SQL wildcard characters have no wildcard meaning."))
+    if model in (wire.ProjectPage, wire.RecordPage):
+        result.append(_parameter("sort", {"type": "string", "enum": list(get_args(wire.CatalogSort)),
+                                          "default": "id_asc"},
+                                 description="Order by the unique project or record identifier. Cursor binds the order."))
     if model in (wire.ClaimPage, wire.EvidencePage):
         result.append(_parameter('search', {'type': 'string', 'minLength': 1, 'maxLength': 128},
             description='PostgreSQL simple word search, not substring/semantic search. Cursor binds the current query and projection version.'))

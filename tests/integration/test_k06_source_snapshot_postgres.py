@@ -67,13 +67,27 @@ async def _persisted(case):
             "(SELECT count(*) FROM k06_action_audit),(SELECT count(*) FROM j01_jobs WHERE state='succeeded')")).fetchone()
 
 
-def test_linked_snapshot_requires_canonical_reader_and_exact_first_capture_projection(tmp_path):
+def test_linked_snapshot_requires_canonical_reader_and_exact_first_capture_projection(tmp_path, monkeypatch):
     async def scenario():
         async with _case(tmp_path) as case:
             await _initial(case)
             await _projection(case, canonical=True)
             sources = _sources(case)
+            from aletheia_lab.hosted.upload_snapshot import parse_upload_snapshot
+
+            decoded = []
+
+            def decode(value):
+                decoded.append(True)
+                return parse_upload_snapshot(value)
+
+            monkeypatch.setattr("aletheia_lab.hosted.postgres_sources.parse_upload_snapshot", decode)
             assert await _snapshot(sources, case) == case.snapshot
+            assert decoded == []
+            async with case.pool.connection() as conn:
+                await conn.execute("UPDATE j01_upload_snapshots SET payload=payload-'git_provenance'")
+            assert await _snapshot(sources, case) == case.snapshot
+            assert decoded == [True]
             with pytest.raises(TimeoutError):
                 await _snapshot(_sources(case, linked=False), case)
             later = build_upload_snapshot(workspace_id="a", source_id=case.snapshot.source_id,

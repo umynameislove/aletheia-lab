@@ -57,7 +57,7 @@
   },
   "canonical_seed_sha256": "a6862e94edb835bbc60a39927977fb65644428c6eaf669029764fcc330d960bd",
   "producer_sources": {
-    "workspaces.py": "840885d58de7755fe792f1de5cfba7a7245025b2040275fa51d5efa9102aaf5a",
+    "workspaces.py": "de5e58d09700a58cb66aff558c2e9d8b3e5e4e22d82b088eb5eaca21a8d71f8c",
     "job_page.py": "b27d9ef342be8d273de3188c46a8694348febfb7a322f9e6fe646403108b046c"
   },
   "local_error_codes": {

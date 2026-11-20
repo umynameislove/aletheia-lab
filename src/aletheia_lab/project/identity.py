@@ -57,6 +57,9 @@ def _fail(message: str) -> NoReturn:
 def _unicode_scalar_text(value: str, *, label: str) -> str:
     """Reject lone surrogates that cannot be represented as canonical UTF-8."""
 
+    # Built-in ASCII text is already NFC and always encodes as UTF-8.
+    if type(value) is str and value.isascii():
+        return value
     normalized = unicodedata.normalize("NFC", value)
     try:
         normalized.encode("utf-8", errors="strict")

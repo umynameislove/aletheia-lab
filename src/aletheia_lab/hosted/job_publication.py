@@ -299,9 +299,14 @@ def _checked_projection(payload: str, claim: JobClaim, snapshot: AnyUploadSnapsh
     return projected
 async def _enlist_snapshot_projection(conn: Connection, first: AnyUploadSnapshot,
                                       encoded_snapshot: str) -> None:
-    await conn.execute("INSERT INTO j01_upload_snapshots(snapshot_id,workspace_id,source_id,payload,canonical_record_id) "
-        "VALUES(%s,%s,%s,%s::jsonb,%s) ON CONFLICT(snapshot_id) DO NOTHING",
-        (first.snapshot_id, first.workspace_id, first.source_id, encoded_snapshot, first.snapshot_id))
+    inserted = await (await conn.execute(
+        "INSERT INTO j01_upload_snapshots(snapshot_id,workspace_id,source_id,payload,canonical_record_id) "
+        "VALUES(%s,%s,%s,%s::jsonb,%s) ON CONFLICT(snapshot_id) DO NOTHING RETURNING snapshot_id",
+        (first.snapshot_id, first.workspace_id, first.source_id, encoded_snapshot, first.snapshot_id))).fetchone()
+    if inserted is not None:
+        # A fresh row already has the scoped payload and canonical pointer. Avoid
+        # sending the full snapshot back to PostgreSQL for checks of older rows.
+        return
     await conn.execute("UPDATE j01_upload_snapshots SET canonical_record_id=%s WHERE snapshot_id=%s "
         "AND workspace_id=%s AND source_id=%s AND canonical_record_id IS NULL AND payload=%s::jsonb",
         (first.snapshot_id, first.snapshot_id, first.workspace_id, first.source_id, encoded_snapshot))

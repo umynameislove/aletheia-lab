@@ -9,6 +9,7 @@ from pydantic import SecretStr
 
 from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_auth.postgres_sessions import _digest
+from aletheia_lab.hosted_contract.workspaces import CatalogSort
 from aletheia_lab.product.lifecycle import ProductLifecycleRecord
 from aletheia_lab.product.results import _view_from_record
 from aletheia_lab.product.view import AnyProductView, parse_product_view
@@ -113,16 +114,20 @@ class CatalogAccess:
                 raise CursorInvalid()
 
     async def projects(self, digest: SecretStr, workspace: str, context: str, *, limit: int = 50,
-                       cursor: str | None = None, search: str | None = None) -> dict[str, object]:
-        binding = await self._binding(digest, workspace, context, {"limit": limit, "search": search})
+                       cursor: str | None = None, search: str | None = None,
+                       sort: CatalogSort = "id_asc") -> dict[str, object]:
+        query: dict[str, object] = {"limit": limit, "search": search}
+        if sort != "id_asc":
+            query["sort"] = sort
+        binding = await self._binding(digest, workspace, context, query)
         value = self._after(cursor, "projects", binding)
         if value and (set(value) != {"after"} or not isinstance(value["after"], str)):
             raise CursorInvalid()
         after = cast(str, value.get("after", ""))
         rows = await self.catalog.list_projects(credential_digest=digest, workspace_id=workspace,
-                                                after=after, limit=limit, search=search)
+                                                after=after, limit=limit, search=search, sort=sort)
         more = rows and len(rows) == limit and bool(await self.catalog.list_projects(
-            credential_digest=digest, workspace_id=workspace, after=rows[-1][0], limit=1, search=search))
+            credential_digest=digest, workspace_id=workspace, after=rows[-1][0], limit=1, search=search, sort=sort))
         items: list[object] = [{"project_id": row[0], "revision": row[1]} for row in rows]
         await self._unchanged(digest, workspace, context, binding)
         return self._page(workspace, items, purpose="projects", binding=binding,
@@ -130,22 +135,25 @@ class CatalogAccess:
 
     async def records(self, digest: SecretStr, workspace: str, project: str, context: str, *,
                       kind: str, snapshot_id: str | None = None, limit: int = 50,
-                      cursor: str | None = None, search: str | None = None) -> dict[str, object]:
+                      cursor: str | None = None, search: str | None = None,
+                      sort: CatalogSort = "id_asc") -> dict[str, object]:
         if kind not in KINDS or kind == "preview":
             raise ValueError("A confirmed record kind is required.")
-        binding = await self._binding(digest, workspace, context,
-            {"project_id": project, "kind": kind, "snapshot_id": snapshot_id, "limit": limit,
-             "search": search}, project=project)
+        query: dict[str, object] = {"project_id": project, "kind": kind,
+                                    "snapshot_id": snapshot_id, "limit": limit, "search": search}
+        if sort != "id_asc":
+            query["sort"] = sort
+        binding = await self._binding(digest, workspace, context, query, project=project)
         value = self._after(cursor, "records", binding)
         continuation = None
         if value:
             if set(value) != {"after"} or not isinstance(value["after"], str):
                 raise CursorInvalid()
             continuation = CatalogCursor(workspace, project, kind, snapshot_id,
-                cast(str, binding["user_id"]), cast(int, binding["membership_revision"]), value["after"], search)
+                cast(str, binding["user_id"]), cast(int, binding["membership_revision"]), value["after"], search, sort)
         page = await self.catalog.list_records(credential_digest=digest, workspace_id=workspace,
             project_id=project, record_type=kind, snapshot_id=snapshot_id, cursor=continuation, limit=limit,
-            search=search)
+            search=search, sort=sort)
         items = [asdict(record) for record in page.records]
         # Storage object digests are not public download handles.
         for item in items:
@@ -157,14 +165,16 @@ class CatalogAccess:
 
     async def workspace_records(self, digest: SecretStr, workspace: str, context: str, *,
                                 kind: str = "result", limit: int = 50, cursor: str | None = None,
-                                search: str | None = None) -> dict[str, object]:
-        binding = await self._binding(digest, workspace, context,
-                                      {"kind": kind, "limit": limit, "search": search})
+                                search: str | None = None, sort: CatalogSort = "id_asc") -> dict[str, object]:
+        query: dict[str, object] = {"kind": kind, "limit": limit, "search": search}
+        if sort != "id_asc":
+            query["sort"] = sort
+        binding = await self._binding(digest, workspace, context, query)
         value = self._after(cursor, "workspace-records", binding)
         if value and (set(value) != {"after"} or not isinstance(value["after"], str)):
             raise CursorInvalid()
         page = await self.catalog.list_workspace_records(credential_digest=digest, workspace_id=workspace,
-            kind=kind, after=cast(str, value.get("after", "")), limit=limit, search=search)
+            kind=kind, after=cast(str, value.get("after", "")), limit=limit, search=search, sort=sort)
         items = [asdict(record) for record in page.records]
         for item in items:
             del item["object_sha256"]
@@ -202,14 +212,12 @@ class CatalogAccess:
 
     async def result_evidence(self, digest: SecretStr, workspace: str, result: str,
                               evidence: str, claim: str | None) -> dict[str, object]:
-        manifest = await self.views.manifest(digest, workspace, result)
-        item, relation = await self.views.evidence(digest, workspace, manifest, evidence, claim)
+        manifest, item, relation = await self.views.evidence(digest, workspace, result, evidence, claim)
         return {'schema_version': VERSION, 'workspace_id': workspace, 'project_id': manifest.project_id,
                 'result_id': result, 'evidence_id': evidence, 'claim_id': claim, 'relation': relation, 'evidence': item}
 
     async def result_header(self, digest: SecretStr, workspace: str, result: str) -> dict[str, object]:
-        manifest = await self.views.manifest(digest, workspace, result)
-        header = await self.views.header(digest, workspace, manifest)
+        manifest, header = await self.views.header(digest, workspace, result)
         return {**header, 'schema_version': VERSION, 'workspace_id': workspace, 'project_id': manifest.project_id,
             'result_id': result, 'snapshot_id': manifest.snapshot_id, 'claim_count': manifest.claim_count,
             'evidence_count': manifest.evidence_count, 'node_count': manifest.node_count, 'edge_count': manifest.edge_count}
@@ -244,14 +252,7 @@ class CatalogAccess:
 
     async def result(self, digest: SecretStr, workspace: str, result_id: str, *,
                      maximum_bytes: int | None = None) -> tuple[str, AnyProductView]:
-        async with self.catalog.pool.connection() as conn:
-            auth = await self.catalog.policy.authorize(conn, _digest(digest), workspace, "read")
-            row = await (await conn.execute("SELECT project_id FROM k05_records WHERE workspace_id=%s "
-                "AND record_id=%s AND record_type IN ('result','upload_result')", (workspace, result_id))).fetchone()
-            if row is None or not isinstance(row[0], str):
-                raise AuthorizationDenied()
-            project = row[0]
-            await self.catalog.policy.authorize_project(conn, auth, workspace, project, "read")
+        project = await self._resolve_result_project(digest, workspace, result_id, "read", record_scope=False)
         options = {} if maximum_bytes is None else {'maximum_bytes': maximum_bytes}
         record = await self.catalog.read_record(credential_digest=digest, workspace_id=workspace,
                                                project_id=project, record_id=result_id, **options)
@@ -271,7 +272,7 @@ class CatalogAccess:
                             key_hash: str | None = None) -> StoredExport:
         # Only scalar scope/key metadata may wait; loading a full view before
         # admission would retain one large private payload for every waiter.
-        project = await self._export_project(digest, workspace, result_id)
+        project = await self.result_project(digest, workspace, result_id, action='export')
         existing = await self.exports.find(digest, workspace, project, result_id, report_format, key_hash)
         if existing is not None:
             return existing
@@ -293,17 +294,26 @@ class CatalogAccess:
         finally:
             _EXPORT_SLOTS.release()
 
-    async def _export_project(self, digest: SecretStr, workspace: str, result_id: str) -> str:
+    async def result_project(self, digest: SecretStr, workspace: str, result_id: str, *,
+                             action: Literal["read", "export"] = "read") -> str:
+        """Resolve current result scope without reading the full object."""
+        return await self._resolve_result_project(digest, workspace, result_id, action)
+
+    async def _resolve_result_project(self, digest: SecretStr, workspace: str, result_id: str,
+                                      action: Literal["read", "export"], *, record_scope: bool = True) -> str:
         async with self.catalog.pool.connection() as conn:
-            auth = await self.catalog.policy.authorize(conn, _digest(digest), workspace, 'export')
+            auth = await self.catalog.policy.authorize(conn, _digest(digest), workspace, action)
             row = await (await conn.execute('SELECT project_id FROM k05_records WHERE workspace_id=%s '
                 "AND record_id=%s AND record_type IN ('result','upload_result')", (workspace, result_id))).fetchone()
             if row is None or not isinstance(row[0], str):
                 raise AuthorizationDenied()
             project = row[0]
-            kind = await self.catalog.policy.authorize_record(conn, auth, workspace, project, result_id, 'export')
-            if kind not in ('result', 'upload_result'):
-                raise AuthorizationDenied()
+            if record_scope:
+                kind = await self.catalog.policy.authorize_record(conn, auth, workspace, project, result_id, action)
+                if kind not in ('result', 'upload_result'):
+                    raise AuthorizationDenied()
+            else:
+                await self.catalog.policy.authorize_project(conn, auth, workspace, project, action)
             return project
 
     async def download_export(self, digest: SecretStr, workspace: str, export_id: str) -> tuple[StoredExport, bytes]:

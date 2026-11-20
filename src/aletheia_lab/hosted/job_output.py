@@ -37,9 +37,13 @@ async def output(self: PostgresJobs, *, credential_digest: SecretStr, workspace_
     digest = _digest(credential_digest)
     async with self._pool.connection() as conn:
         await self._access._access(conn, digest, workspace_id, action="read")
-        row = await (await conn.execute("SELECT operation,request,result,to_jsonb(j01_jobs)->>'canonical_result_id' "
-            "FROM j01_jobs WHERE job_id=%s "
-            "AND workspace_id=%s AND state='succeeded'", (job_id, workspace_id))).fetchone()
+        # Pre-catalog schemas resolve the pointer to the outer NULL. On
+        # migrated schemas the unqualified name resolves to the job column.
+        row = await (await conn.execute(
+            "SELECT job.* FROM (VALUES (NULL::text)) AS legacy(canonical_result_id) "
+            "CROSS JOIN LATERAL (SELECT operation,request,result,canonical_result_id "
+            "FROM j01_jobs WHERE job_id=%s AND workspace_id=%s AND state='succeeded') AS job",
+            (job_id, workspace_id))).fetchone()
         if row is None or not isinstance(row[0], str) or not isinstance(row[1], dict):
             raise SourceNotFound()
         await self._authorize(conn, digest, workspace_id, row[0], row[1], reading=True)

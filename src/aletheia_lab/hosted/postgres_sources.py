@@ -248,58 +248,97 @@ class PostgresSources:
     async def snapshot(self, *, credential_digest: SecretStr, workspace_id: str, snapshot_id: str) -> AnyUploadSnapshot:
         from .postgres_catalog import CatalogIntegrityError
 
-        digest = _digest(credential_digest)
+        source_id, canonical_id, legacy_payload, project_id, source = await self._snapshot_pointer(
+            _digest(credential_digest), workspace_id, snapshot_id)
+        # Decode/hash only after releasing the connection. Linked snapshots are
+        # independently validated by the catalog reader, including object bytes.
+        if canonical_id is None:
+            if not isinstance(legacy_payload, str):
+                raise CatalogIntegrityError()
+            result = await run_blocking(parse_upload_snapshot, legacy_payload)
+            canonical_json = None
+        else:
+            if canonical_id != snapshot_id or not isinstance(project_id, str):
+                raise CatalogIntegrityError()
+            if self._catalog is None:
+                raise TimeoutError("Canonical snapshot storage is unavailable.")
+            canonical = await self._catalog.read_record(credential_digest=credential_digest,
+                workspace_id=workspace_id, project_id=project_id, record_id=snapshot_id)
+            if not isinstance(canonical, (UploadSnapshot, UploadSnapshotV2)):
+                raise CatalogIntegrityError()
+            result = canonical
+            canonical_json = await run_blocking(result.model_dump_json)
+        if ((result.workspace_id, result.snapshot_id, result.source_id) != (workspace_id, snapshot_id, source_id)
+                or source != (result.source_sha256,)):
+            raise CatalogIntegrityError()
+        await self._verify_snapshot_pointer(credential_digest, result, canonical_id, canonical_json, project_id)
+        return result
+
+    async def _snapshot_pointer(self, digest: str, workspace_id: str, snapshot_id: str
+                                ) -> tuple[str, object, object, object, tuple[object, ...] | None]:
+        from .postgres_catalog import CatalogIntegrityError
+
         async with self._pool.connection() as conn:
             auth = await self._access(conn, digest, workspace_id, action="read")
-            row = await (await conn.execute("SELECT source_id,payload::text,"
-                "to_jsonb(j01_upload_snapshots)->>'canonical_record_id' FROM j01_upload_snapshots "
-                "WHERE snapshot_id=%s AND workspace_id=%s", (snapshot_id, workspace_id))).fetchone()
+            # The outer NULL also supports pre-catalog snapshot rows.
+            row = await (await conn.execute(
+                "SELECT snapshot.* FROM (VALUES (NULL::text)) AS legacy(canonical_record_id) "
+                "CROSS JOIN LATERAL (SELECT source_id,canonical_record_id,"
+                "CASE WHEN canonical_record_id IS NULL THEN payload::text END,"
+                "payload#>>'{mapping,project_id}' FROM j01_upload_snapshots "
+                "WHERE snapshot_id=%s AND workspace_id=%s) AS snapshot",
+                (snapshot_id, workspace_id))).fetchone()
             if row is None or not isinstance(row[0], str):
                 raise SourceNotFound()
-            await self._authorization.authorize_source(conn, auth, workspace_id, row[0], "read")
+            source_id, canonical_id, legacy_payload, project_id = row
+            await self._authorization.authorize_source(conn, auth, workspace_id, source_id, "read")
             source = await (await conn.execute("SELECT sha256 FROM j01_sources WHERE source_id=%s AND workspace_id=%s",
-                                               (row[0], workspace_id))).fetchone()
-            if len(row) != 3 or not isinstance(row[1], str) or row[2] is not None and not isinstance(row[2], str):
-                raise CatalogIntegrityError()
-            if row[2] is None:
+                                               (source_id, workspace_id))).fetchone()
+            if canonical_id is None:
                 relation = await (await conn.execute("SELECT to_regclass('k05_records')")).fetchone()
                 if relation is not None and relation[0] is not None:
                     shadow = await (await conn.execute("SELECT 1 FROM k05_records WHERE workspace_id=%s AND record_id=%s",
                                                        (workspace_id, snapshot_id))).fetchone()
                     if shadow is not None:
                         raise CatalogIntegrityError()
-        # Decode/hash canonical or legacy bytes only after releasing the read connection.
-        result = await run_blocking(parse_upload_snapshot, row[1])
-        if ((result.workspace_id, result.snapshot_id, result.source_id) != (workspace_id, snapshot_id, row[0])
-                or source != (result.source_sha256,)):
-            raise CatalogIntegrityError()
-        canonical_id = row[2]
-        result = await self._canonical_snapshot(credential_digest, result, canonical_id)
-        async with self._pool.connection() as conn:
-            auth = await self._access(conn, digest, workspace_id, action="read")
-            await self._authorization.authorize_source(conn, auth, workspace_id, result.source_id, "read")
-            current = await (await conn.execute("SELECT source_id,to_jsonb(j01_upload_snapshots)->>'canonical_record_id' "
-                "FROM j01_upload_snapshots WHERE snapshot_id=%s AND workspace_id=%s", (snapshot_id, workspace_id))).fetchone()
-            if current != (result.source_id, canonical_id):
-                raise SourceNotFound()
-        return result
+        return source_id, canonical_id, legacy_payload, project_id, source
 
-    async def _canonical_snapshot(self, credential_digest: SecretStr, result: AnyUploadSnapshot,
-                                  canonical_id: str | None) -> AnyUploadSnapshot:
+    async def _verify_snapshot_pointer(self, credential_digest: SecretStr, result: AnyUploadSnapshot,
+                                       canonical_id: object, canonical_json: str | None, project_id: object) -> None:
         from .postgres_catalog import CatalogIntegrityError
 
-        if canonical_id is None:
-            return result
-        if self._catalog is None:
-            raise TimeoutError("Canonical snapshot storage is unavailable.")
-        if canonical_id != result.snapshot_id:
-            raise CatalogIntegrityError()
-        canonical = await self._catalog.read_record(credential_digest=credential_digest,
-            workspace_id=result.workspace_id, project_id=result.mapping.project_id, record_id=canonical_id)
-        if (not isinstance(canonical, (UploadSnapshot, UploadSnapshotV2))
-                or not await run_blocking(lambda: canonical == result)):
-            raise CatalogIntegrityError()
-        return canonical
+        digest = _digest(credential_digest)
+        workspace_id, snapshot_id, source_id = result.workspace_id, result.snapshot_id, result.source_id
+        async with self._pool.connection() as conn:
+            auth = await self._access(conn, digest, workspace_id, action="read")
+            await self._authorization.authorize_source(conn, auth, workspace_id, source_id, "read")
+            # Exact PG JSON text keeps the numeric representation, including
+            # integer vs fractional values. Older semantically equal encodings
+            # take the original strict validation path outside the connection.
+            current = await (await conn.execute(
+                "SELECT snapshot.* FROM (VALUES (NULL::text)) AS legacy(canonical_record_id) "
+                "CROSS JOIN LATERAL (SELECT source_id,canonical_record_id,CASE "
+                "WHEN canonical_record_id IS NOT NULL AND payload::text <> %s::jsonb::text "
+                "THEN payload::text END FROM j01_upload_snapshots "
+                "WHERE snapshot_id=%s AND workspace_id=%s) AS snapshot",
+                (canonical_json, snapshot_id, workspace_id))).fetchone()
+        if current is None or current[:2] != (source_id, canonical_id):
+            raise SourceNotFound()
+        if isinstance(current[2], str):
+            if not await run_blocking(lambda: parse_upload_snapshot(current[2]) == result):
+                raise CatalogIntegrityError()
+            # Recheck revocation occurring while the legacy encoding is decoded.
+            async with self._pool.connection() as conn:
+                auth = await self._access(conn, digest, workspace_id, action="read")
+                await self._authorization.authorize_source(conn, auth, workspace_id, source_id, "read")
+                if self._catalog is None or not isinstance(project_id, str):
+                    raise CatalogIntegrityError()
+                await self._catalog._access(conn, credential_digest, workspace_id, project_id, snapshot_id)
+                if await (await conn.execute(
+                    "SELECT 1 FROM j01_upload_snapshots WHERE snapshot_id=%s AND workspace_id=%s "
+                    "AND source_id=%s AND canonical_record_id=%s AND payload::text=%s",
+                    (snapshot_id, workspace_id, source_id, canonical_id, current[2]))).fetchone() is None:
+                    raise SourceNotFound()
 
     async def is_upload_ready(self) -> bool:
         from .upload_staging_migration import verify

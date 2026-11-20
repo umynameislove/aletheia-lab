@@ -306,23 +306,25 @@ def test_snapshot_decode_runs_off_loop_without_pool_and_rechecks_revoke_after_th
 
     from test_k06_source_snapshot_postgres import CountedPool
 
+    from aletheia_lab.hosted.postgres_catalog import PostgresCatalog, decode_record
     from aletheia_lab.hosted.postgres_sources import PostgresSources
-    from aletheia_lab.hosted.upload_snapshot import parse_upload_snapshot
 
     async def scenario():
         async with _case(tmp_path) as case:
             await _pipeline(case)
             counted = CountedPool(case.pool)
+            catalog = PostgresCatalog(counted, case.catalog.objects, policy=case.catalog.policy)
             sources = PostgresSources(counted, maximum_upload_bytes=10000, maximum_expanded_bytes=20000,
-                                      maximum_entries=10, catalog=case.catalog)
+                                      maximum_entries=10, catalog=catalog)
             main_thread = threading.get_ident()
             entered, release = threading.Event(), threading.Event()
-            def decode(value):
+            def decode(index, payload):
+                assert index.record_id == case.snapshot.snapshot_id
                 assert threading.get_ident() != main_thread and counted.active == 0
                 entered.set()
                 assert release.wait(5)
-                return parse_upload_snapshot(value)
-            monkeypatch.setattr('aletheia_lab.hosted.postgres_sources.parse_upload_snapshot', decode)
+                return decode_record(index, payload)
+            monkeypatch.setattr('aletheia_lab.hosted.postgres_catalog.decode_record', decode)
             task = asyncio.create_task(sources.snapshot(credential_digest=case.a, workspace_id='a',
                                                         snapshot_id=case.snapshot.snapshot_id))
             try:

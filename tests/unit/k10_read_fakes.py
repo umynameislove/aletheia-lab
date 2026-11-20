@@ -29,8 +29,8 @@ class MemoryViews:
         values = [value for value in values if value.id > after]
         return tuple(values[:limit]), values[limit - 1].id if len(values) > limit else None
 
-    async def evidence(self, digest, workspace, manifest, identity, claim_id):
-        await self.manifest(digest, workspace, manifest.result_id)
+    async def evidence(self, digest, workspace, result, identity, claim_id):
+        manifest = await self.manifest(digest, workspace, result)
         view = self.get_view()
         item = next((value for value in view.evidence if value.id == identity), None)
         if item is None:
@@ -41,12 +41,12 @@ class MemoryViews:
             if claim is None or identity not in (*claim.citation_ids, *claim.counterevidence_ids):
                 raise AuthorizationDenied()
             relation = 'citation' if identity in claim.citation_ids else 'counterevidence'
-        return item, relation
+        return manifest, item, relation
 
     async def graph(self, digest, workspace, manifest, *, phase, after, limit):
         await self.manifest(digest, workspace, manifest.result_id)
         return _graph_page(self.get_view().graph, phase, after, limit)
 
-    async def header(self, digest, workspace, manifest):
-        await self.manifest(digest, workspace, manifest.result_id)
-        return json.loads(prepare_projection(self.get_view(), 'a' * 64).header)
+    async def header(self, digest, workspace, result):
+        manifest = await self.manifest(digest, workspace, result)
+        return manifest, json.loads(prepare_projection(self.get_view(), 'a' * 64).header)

@@ -235,8 +235,10 @@ class PostgresJobs:
                 items.append({key: item[0][key] for key in ('epoch', 'started_at', 'heartbeat_at',
                     'lease_until', 'finished_at', 'outcome', 'failure_kind')})
             conflict = None
-            if items and items[-1]['failure_kind'] == 'conflict':
-                project = row[1].get('project_id')
+            project = row[1].get('project_id')
+            # An initial confirm is source-bound. It can conflict with an existing
+            # project without the request naming an authorized project revision.
+            if items and items[-1]['failure_kind'] == 'conflict' and isinstance(project, str):
                 current = await (await conn.execute('SELECT revision FROM k05_projects '
                     'WHERE workspace_id=%s AND project_id=%s', (workspace_id, project))).fetchone()
                 if current is None:

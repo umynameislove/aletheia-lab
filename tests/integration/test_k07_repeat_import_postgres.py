@@ -77,6 +77,12 @@ def test_identical_zip_new_source_reuses_authorized_snapshot_without_revision_ch
             assert changed_claim is not None and changed_claim.job_id == receipt_changed.job_id
             with pytest.raises(WorkspaceConflict):
                 await jobs.complete_snapshot(claim=changed_claim, lease_digest=changed_lease, snapshot=changed)
+            assert await jobs.fail(claim=changed_claim, lease_digest=changed_lease, failure_kind='conflict')
+            history = await jobs.attempts(credential_digest=case.a, workspace_id='a', job_id=receipt_changed.job_id)
+            assert [(item.outcome, item.failure_kind) for item in history.items] == [('failed', 'conflict')]
+            assert history.conflict is None
+            with pytest.raises(SourceNotFound):
+                await jobs.attempts(credential_digest=case.b, workspace_id='b', job_id=receipt_changed.job_id)
             async with case.pool.connection() as conn:
                 assert await (await conn.execute('SELECT revision FROM k05_projects WHERE project_id=%s',
                     (case.initial.project_id,))).fetchone() == (2,)

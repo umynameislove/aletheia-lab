@@ -89,7 +89,16 @@ def test_sql_pages_search_evidence_membership_and_graph_are_lossless_without_obj
 
             monkeypatch.setattr(catalog.objects, 'read', forbidden)
             assert await access.paged_ready()
+            manifests = []
+            load = access.views._manifest
+
+            async def observe(conn, digest, workspace, result):
+                manifests.append(result)
+                return await load(conn, digest, workspace, result)
+
+            monkeypatch.setattr(access.views, '_manifest', observe)
             header = ResultHeader.model_validate(await access.result_header(_credential('viewer'), 'wa', record.record_id))
+            assert manifests == [record.record_id]
             assert header.result == view.result and header.project == view.project and header.runtime == view.runtime
             assert header.evidence_count == len(view.evidence) and header.turn_count == len(view.conversation.turns)
             assert 'snapshot' not in header.model_dump() and 'claims' not in header.model_dump()
@@ -107,7 +116,9 @@ def test_sql_pages_search_evidence_membership_and_graph_are_lossless_without_obj
                 kind='evidence', search='vietnamesetoken', limit=100)
             assert len(searched['items']) == 100 and searched['next_cursor'] and searched['total_kind'] == 'unknown'
             selected = view.claims[0]
+            manifests.clear()
             linked = await access.result_evidence(_credential('viewer'), 'wa', record.record_id, selected.citation_ids[0], selected.id)
+            assert manifests == [record.record_id]
             assert linked['relation'] == 'citation' and linked['project_id'] == project
             with pytest.raises(AuthorizationDenied):
                 await access.result_evidence(_credential('viewer'), 'wa', record.record_id, view.evidence[-1].id, selected.id)

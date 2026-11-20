@@ -180,6 +180,18 @@ def test_native_canonical_http_lists_aliases_result_children_and_real_child_expo
                 second = await client.get(base + "/results", params={"limit": 1, "cursor": first.json()["next_cursor"]}, headers=headers)
                 assert second.status_code == 200 and second.json()["next_cursor"] is None
                 items = first.json()["items"] + second.json()["items"]
+                reverse_first = await client.get(base + "/results", params={"limit": 1, "sort": "id_desc"}, headers=headers)
+                assert reverse_first.status_code == 200 and reverse_first.json()["items"] == items[1:]
+                reverse_cursor = reverse_first.json()["next_cursor"]
+                reverse_second = await client.get(base + "/results",
+                    params={"limit": 1, "sort": "id_desc", "cursor": reverse_cursor}, headers=headers)
+                assert reverse_second.status_code == 200
+                assert reverse_second.json()["items"] == items[:1] and reverse_second.json()["next_cursor"] is None
+                wrong_order = await client.get(base + "/results", params={"limit": 1, "cursor": reverse_cursor}, headers=headers)
+                assert wrong_order.status_code == 400 and wrong_order.json()["code"] == "cursor_invalid"
+                scope_page = await client.get(base + "/results",
+                    params={"project_id": case.initial.project_id, "sort": "id_desc"}, headers=headers)
+                assert scope_page.status_code == 200 and scope_page.json()["items"] == items[::-1]
                 assert {item["record_id"] for item in items} == {case.initial.record_id, case.child.record_id}
                 assert all(item["record_type"] == "upload_result" and "object_sha256" not in item and "source_id" not in item for item in items)
                 grouped = await client.get(project + "/records", params={"kind": "result", "snapshot_id": case.snapshot.snapshot_id}, headers=headers)

@@ -153,7 +153,7 @@ def test_attempt_page_rejects_duplicate_epochs_false_terminal_and_time_travel():
 
 @pytest.mark.parametrize('change', [{}, {'current_revision': -1}, {'current_revision': True},
                                    {'project_id': 'other-project'}])
-def test_conflict_attempt_requires_safe_current_project_metadata(change):
+def test_conflict_attempt_validates_current_project_metadata_when_present(change):
     now = datetime.now(UTC).isoformat()
     item = dict(epoch=1, started_at=now, heartbeat_at=now, lease_until=None,
                 finished_at=now, outcome='failed', failure_kind='conflict')
@@ -166,8 +166,9 @@ def test_conflict_attempt_requires_safe_current_project_metadata(change):
             JobAttemptPage.model_validate_json(json.dumps(page))
     else:
         assert JobAttemptPage.model_validate_json(json.dumps(page)).conflict.current_revision == 3
+        assert JobAttemptPage.model_validate_json(json.dumps(dict(page, conflict=None))).conflict is None
         with pytest.raises(ValidationError):
-            JobAttemptPage.model_validate_json(json.dumps(dict(page, conflict=None)))
+            JobAttemptPage.model_validate_json(json.dumps(dict(page, items=[dict(item, failure_kind='permanent')])))
         with pytest.raises(ValidationError):
             JobAttemptPage.model_validate_json(json.dumps(dict(page, items=[dict(item, outcome='succeeded')])))
 
