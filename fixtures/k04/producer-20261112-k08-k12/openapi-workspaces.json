@@ -12865,6 +12865,33 @@
         "title": "ProductEvidence",
         "type": "object"
       },
+      "ProductHistoricalState": {
+        "additionalProperties": false,
+        "properties": {
+          "namespace": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+            "title": "Namespace",
+            "type": "string"
+          },
+          "generation": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+            "title": "Generation",
+            "type": "string"
+          },
+          "state_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "State Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "namespace",
+          "generation",
+          "state_sha256"
+        ],
+        "title": "ProductHistoricalState",
+        "type": "object"
+      },
       "ProductHistoricalStateEvidence": {
         "additionalProperties": false,
         "description": "Scoped projection of a receipt and its separately supplied contract.",
@@ -13020,33 +13047,6 @@
           "reason"
         ],
         "title": "ProductHistoricalStateEvidence",
-        "type": "object"
-      },
-      "ProductHistoricalState": {
-        "additionalProperties": false,
-        "properties": {
-          "namespace": {
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
-            "title": "Namespace",
-            "type": "string"
-          },
-          "generation": {
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
-            "title": "Generation",
-            "type": "string"
-          },
-          "state_sha256": {
-            "pattern": "^[0-9a-f]{64}$",
-            "title": "State Sha256",
-            "type": "string"
-          }
-        },
-        "required": [
-          "namespace",
-          "generation",
-          "state_sha256"
-        ],
-        "title": "ProductHistoricalState",
         "type": "object"
       },
       "ProductReproductionRef": {
