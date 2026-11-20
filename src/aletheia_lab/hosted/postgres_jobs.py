@@ -12,12 +12,17 @@ from pydantic import SecretStr
 from aletheia_lab.hosted_auth.postgres_sessions import Connection, Pool, _digest
 from aletheia_lab.hosted_contract.job_attempts import JobAttemptPage
 from aletheia_lab.hosted_contract.job_page import Job, JobReceipt
+from aletheia_lab.hosted_contract.project_analysis import AnalysisBackend
 from aletheia_lab.hosted_contract.project_operations import FollowUpRequest
 from aletheia_lab.product.follow_up import (
     resolve_product_follow_up_selection,
 )
 from aletheia_lab.product.lifecycle import ProductLifecycleRecord
-from aletheia_lab.product.view import AnyProductView, parse_product_view_json
+from aletheia_lab.product.view import (
+    HISTORICAL_STATE_MODEL,
+    AnyProductView,
+    parse_product_view_json,
+)
 
 from . import job_admission, job_output, job_publication
 from .action_audit import current_request_id, record_action
@@ -42,9 +47,10 @@ from .upload_snapshot import (
 from .workspace_management import _revision
 
 AnalysisModel = Literal["upload-snapshot-observation/v1", "upload-snapshot-metric-observation/v2",
-                        "upload-snapshot-windowed-metric-observation/v3"]
-_ANALYSIS_MODELS = ("upload-snapshot-observation/v1", "upload-snapshot-metric-observation/v2",
-                    "upload-snapshot-windowed-metric-observation/v3")
+                        "upload-snapshot-windowed-metric-observation/v3", "historical-state-evidence/v1"]
+_DEFAULT_ANALYSIS_MODELS = ("upload-snapshot-observation/v1", "upload-snapshot-metric-observation/v2",
+                            "upload-snapshot-windowed-metric-observation/v3")
+_ANALYSIS_MODELS = (*_DEFAULT_ANALYSIS_MODELS, HISTORICAL_STATE_MODEL)
 
 Operation = Literal["preview", "confirm", "analyze", "follow_up", "refresh"]
 _AVAILABLE = "(state='queued' OR (state='running' AND lease_until<clock_timestamp()))"
@@ -72,7 +78,7 @@ class PostgresJobs:
         if type(execution) is not bool:
             raise ValueError('Explicit job execution profile required.')
         self._pool, self._access, self._audit = pool, access, audit
-        if analysis_model not in _ANALYSIS_MODELS:
+        if analysis_model not in _DEFAULT_ANALYSIS_MODELS:
             raise ValueError("A supported analysis model is required.")
         self.analysis_model = analysis_model
         self.execution = execution
@@ -108,11 +114,13 @@ class PostgresJobs:
         return await refresh_parent(self, claim=claim)
 
     async def enqueue_analysis(self, *, credential_digest: SecretStr, workspace_id: str, project_id: str,
-                               snapshot_id: str, question: str, request_key: SecretStr) -> JobReceipt:
+                               snapshot_id: str, question: str, request_key: SecretStr,
+                               backend: AnalysisBackend = "local_evidence") -> JobReceipt:
         from .project_job_operations import enqueue_analysis
 
         return await enqueue_analysis(self, credential_digest=credential_digest, workspace_id=workspace_id,
-            project_id=project_id, snapshot_id=snapshot_id, question=question, request_key=request_key)
+            project_id=project_id, snapshot_id=snapshot_id, question=question, request_key=request_key,
+            backend=backend)
 
     async def complete_refresh(self, *, claim: JobClaim, lease_digest: SecretStr, snapshot: AnyUploadSnapshot) -> bool:
         return await self._complete_canonical_snapshot(claim=claim, lease_digest=lease_digest, snapshot=snapshot)
@@ -406,7 +414,8 @@ class PostgresJobs:
             return auth
         if operation == "analyze" and (
                 set(request) not in ({"snapshot_id", "question"}, {"snapshot_id", "question", "analysis_model"})
-                or request.get("analysis_model", _ANALYSIS_MODELS[0]) not in _ANALYSIS_MODELS):
+                or request.get("analysis_model", _ANALYSIS_MODELS[0]) not in _ANALYSIS_MODELS
+                or request.get("analysis_model") == HISTORICAL_STATE_MODEL and self._canonical is None):
             raise SourceNotFound()
         action = "read" if reading else operation
         auth = await self._access._access(conn, digest, workspace_id, action=action)

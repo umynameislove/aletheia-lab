@@ -36,6 +36,7 @@ export interface HostedProductPort extends ProductPort {
   bindingOff(binding: HostedBinding): string | null;
   /** Uploads the replacement ZIP for a refresh with the current uploader; the server's source ID comes back. */
   uploadReplacement(project_id: string, file: Blob, signal?: AbortSignal): Promise<{ source_id: string }>;
+  analyzeHistoricalState(projectId: string, snapshotId: string, question: string): Promise<ProductView>;
 }
 
 /* Feature names and actions as the producer's capabilities set them (hosted/upload_runtime.py, 2026-11-11). */
@@ -166,6 +167,40 @@ export function createHostedPort(): HostedProductPort {
     currentView = view;
     selected?.onShown?.({ resultId: view.result.id, projectId: view.project.id, snapshotId: view.snapshot.id });
   };
+  const analyze = async (projectId: string, snapshotId: string, question: string, historicalState = false) => {
+    const { context, check, wait } = fence();
+    if (!id(projectId) || !id(snapshotId)) throw badRequest("Select a valid project and snapshot.");
+    const name = "historical-state-analysis";
+    const held = historicalState ? intent(name, JSON.stringify([projectId, snapshotId, question])) : undefined;
+    const settle = () => { if (held && intents.get(name) === held) intents.delete(name); };
+    const submit = () => wait(context.client.submitJob(context.workspace, context.caps,
+      { operation: "analyze", snapshot_id: snapshotId, question, ...(historicalState ? { historical_state_project_id: projectId } : {}) },
+      held?.key ?? newKey()));
+    const jobId = held?.job ?? accepted(context, await (held ? mutate([name], null, submit) : submit()));
+    if (held) held.job = jobId;
+    latestJob = jobId;
+    const job = await wait(context.client.pollJob(context.workspace, jobId, context.caps,
+      context.caps.features?.["analysis.metric_windows_v3"] ? { timeoutMs: 300_000 } : undefined));
+    if (job.workspace_id !== context.workspace || job.job_id !== jobId) throw outOfScope();
+    if (job.status !== "succeeded") {
+      settle();
+      throw new ProductError("analysis_failed", "The hosted analysis job did not complete.");
+    }
+    const answer = await wait(context.client.loadOutput(context.workspace, jobId,
+      { operation: "analyze", projectId, snapshotId, ...(historicalState ? { historicalState: true } : {}) }));
+    if (answer.workspace_id !== context.workspace || answer.job_id !== jobId || answer.operation !== "analyze") throw outOfScope();
+    if ("kind" in answer.result) {
+      if (historicalState) throw outOfScope();
+      const r = answer.result;
+      check();
+      const query = new URLSearchParams({ workspace: context.workspace, job: jobId,
+        project: r.project_id, snapshot: r.snapshot_id, result: r.result_id, paged: "1" });
+      location.hash = "#/investigation?" + query;
+      throw new ProductError("response_too_large", "Opening the result in the paged reader.");
+    }
+    const view = storedView(context, answer.result, { project: projectId, snapshot: snapshotId });
+    check(); settle(); remember(view, jobId); return view;
+  };
   return {
     kind: "live",
     clearContext,
@@ -225,31 +260,8 @@ export function createHostedPort(): HostedProductPort {
       const view = storedView(context, answer.result, { result: resultId, project: pointer.project, snapshot: pointer.snapshot });
       check(); remember(view, job); latestJob = job; return view;
     },
-    analyze_observations: async (projectId, snapshotId, question) => {
-      const { context, check, wait } = fence();
-      if (!id(projectId) || !id(snapshotId)) throw new ProductError("invalid_request", "Select a valid project and snapshot.");
-      const receipt = await wait(context.client.submitJob(context.workspace, context.caps,
-        { operation: "analyze", snapshot_id: snapshotId, question }, newKey()));
-      if (receipt.workspace_id !== context.workspace || !id(receipt.job_id)) throw outOfScope();
-      latestJob = receipt.job_id;
-      const job = await wait(context.client.pollJob(context.workspace, receipt.job_id, context.caps,
-        context.caps.features?.["analysis.metric_windows_v3"] ? { timeoutMs: 300_000 } : undefined));
-      if (job.workspace_id !== context.workspace || job.job_id !== receipt.job_id) throw outOfScope();
-      if (job.status !== "succeeded") throw new ProductError("analysis_failed", "The hosted analysis job did not complete.");
-      const answer = await wait(context.client.loadOutput(context.workspace, receipt.job_id,
-        { operation: "analyze", projectId, snapshotId }));
-      if (answer.workspace_id !== context.workspace || answer.job_id !== receipt.job_id || answer.operation !== "analyze") throw outOfScope();
-      if ("kind" in answer.result) {
-        const r = answer.result;
-        check();
-        const query = new URLSearchParams({ workspace: context.workspace, job: receipt.job_id,
-          project: r.project_id, snapshot: r.snapshot_id, result: r.result_id, paged: "1" });
-        location.hash = "#/investigation?" + query;
-        throw new ProductError("response_too_large", "Opening the result in the paged reader.");
-      }
-      const view = storedView(context, answer.result, { project: projectId, snapshot: snapshotId });
-      check(); remember(view, receipt.job_id); return view;
-    },
+    analyze_observations: (projectId, snapshotId, question) => analyze(projectId, snapshotId, question),
+    analyzeHistoricalState: (projectId, snapshotId, question) => analyze(projectId, snapshotId, question, true),
     uploadReplacement: async (projectId, file, signal) => {
       const { context, check, wait } = fence();
       gate(context, "refresh");
@@ -301,7 +313,8 @@ export function createHostedPort(): HostedProductPort {
       intents.delete(name); intents.delete(upload);
       revisions.set(projectId, result.revision);
       const outcome: RefreshResult = { project_id: result.project_id, snapshot_id: result.snapshot_id, status: result.status,
-        previous_snapshot_id: result.previous_snapshot_id, revision: result.revision };
+        previous_snapshot_id: result.previous_snapshot_id, revision: result.revision,
+        ...(result.historical_state_available === true ? { historical_state_available: true } : {}) };
       return outcome;
     },
     follow_up: async (resultId, selectionKind, selectionId, question) => {

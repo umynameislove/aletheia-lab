@@ -53,4 +53,5 @@ export const claimsCiting = (v: ProductView, evidenceId: string): Claim[] => v.c
 
 /** A reference someone can paste into a review: what it is, which record, which bytes. No path, no credential. */
 export const referenceText = (e: Evidence): string =>
-  `${e.title} — ${e.reproduction_ref.record_kind} ${e.reproduction_ref.record_id} — sha256 ${e.source_sha256}`;
+  `${e.title} — ${e.reproduction_ref.record_kind} ${e.reproduction_ref.record_id} — sha256 ${e.source_sha256}`
+  + (e.historical_state ? ` — receipt sha256 ${e.historical_state.receipt_sha256}` : "");

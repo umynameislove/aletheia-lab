@@ -70,6 +70,26 @@ def test_job_output_schema_checks_both_analysis_versions_and_legacy_contract(exp
     assert spec["components"]["schemas"]["JobOutput"] == export_k04_contract.document()["components"]["schemas"]["JobOutput"]
 
 
+def test_job_output_schema_checks_optional_historical_state_affordances(exported_contract):
+    _, (spec, _, examples, _) = exported_contract
+    shape = spec["paths"]["/v1/workspaces/{workspace_id}/jobs/{job_id}/output"]["get"][
+        "responses"]["200"]["content"]["application/json"]["schema"]
+    validator = Draft202012Validator({**shape, "components": spec["components"]})
+    refresh = copy.deepcopy(next(v for _, v in examples if v.get("operation") == "refresh"))
+    assert validator.is_valid(refresh)
+    refresh["result"]["historical_state_available"] = True
+    assert validator.is_valid(refresh)
+    refresh["result"]["historical_state_available"] = False
+    assert not validator.is_valid(refresh)
+
+    confirm = {**refresh, "operation": "confirm", "result": {"snapshot_id": refresh["result"]["snapshot_id"]}}
+    assert validator.is_valid(confirm)
+    confirm["result"]["historical_state_project_id"] = refresh["result"]["project_id"]
+    assert validator.is_valid(confirm)
+    confirm["result"]["historical_state_project_id"] = "not-a-project"
+    assert not validator.is_valid(confirm)
+
+
 def test_exporter_itself_is_in_the_stable_source_boundary(exported_contract):
     namespace, _ = exported_contract
     inputs = namespace["sources"](ROOT)

@@ -9,6 +9,7 @@ from aletheia_lab.product.projection import build_product_graph
 from aletheia_lab.product.questions import checked_product_question
 from aletheia_lab.product.view import (
     COUNTERFACTUAL_NOT_AVAILABLE,
+    HISTORICAL_STATE_MODEL,
     AnyProductView,
     ProductClaim,
     ProductConversation,
@@ -39,7 +40,7 @@ MAX_OBSERVATION_SERIES = 64
 
 def analysis_identity(workspace: str, snapshot_id: str, question: str, model: str) -> dict[str, str]:
     identity = {'workspace': workspace, 'snapshot': snapshot_id, 'question': question}
-    if model in (METRIC_OBSERVATION_MODEL, WINDOW_OBSERVATION_MODEL):
+    if model in (METRIC_OBSERVATION_MODEL, WINDOW_OBSERVATION_MODEL, HISTORICAL_STATE_MODEL):
         identity['analysis_model'] = model
     elif model != INITIAL_OBSERVATION_MODEL:
         raise ValueError('Unsupported native observation version.')
@@ -57,6 +58,10 @@ def analyze_upload(snapshot: AnyUploadSnapshot, question: str, model: str) -> An
         from .window_observations import analyze_metric_windows
 
         return analyze_metric_windows(snapshot, question)
+    if model == HISTORICAL_STATE_MODEL:
+        from .historical_state_analysis import analyze_historical_state
+
+        return analyze_historical_state(snapshot, question)
     raise ValueError('Unsupported native observation version.')
 
 

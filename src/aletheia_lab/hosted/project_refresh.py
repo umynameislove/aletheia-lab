@@ -194,11 +194,19 @@ async def prepare_refresh(operations: UploadOperations, parents: RefreshParents,
         raise SourceNotFound()
     value = (await run_blocking(decode_json_model, raw, _RefreshOutput,
              maximum_bytes=MAX_UPLOAD_OUTPUT_BYTES)).root
+    return await _bind_refresh_output(operations, value, parent, source_id, new)
+
+
+async def _bind_refresh_output(operations: UploadOperations, value: AnyPreparedRefresh,
+                               parent: AnyUploadSnapshot, source_id: str, payload: bytes) -> AnyPreparedRefresh:
     snapshot = value.snapshot
     if (value.parent_snapshot_id != parent.snapshot_id or snapshot.workspace_id != parent.workspace_id
             or snapshot.mapping.project_id != parent.mapping.project_id
             or (value.status == "unchanged" and snapshot != parent)
-            or (value.status == "new_snapshot" and (snapshot.source_id != source_id
-                or snapshot.source_sha256 != content_hasher(new).hexdigest()))):
+            or (value.status == "new_snapshot" and (snapshot.historical_state is not None or snapshot.source_id != source_id
+                or snapshot.source_sha256 != content_hasher(payload).hexdigest()))):
         raise ValueError("Invalid worker refresh scope.")
+    if value.status == "new_snapshot":
+        bound = await operations._attach_historical_state(snapshot)
+        return _prepared(bound, status="new_snapshot", parent_snapshot_id=parent.snapshot_id)
     return value

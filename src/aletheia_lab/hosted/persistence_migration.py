@@ -19,7 +19,11 @@ from typing import Final, TypeAlias
 from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_auth.postgres_sessions import Connection
 
-from .job_analysis_version import ANALYSIS_VERSION_DDL, WINDOW_ANALYSIS_VERSION_DDL
+from .job_analysis_version import (
+    ANALYSIS_VERSION_DDL,
+    HISTORICAL_STATE_ANALYSIS_VERSION_DDL,
+    WINDOW_ANALYSIS_VERSION_DDL,
+)
 from .job_execution_schema import JOB_CONFLICT_DDL, JOB_EXECUTION_DDL
 from .job_updates_schema import JOB_UPDATES_DDL
 from .read_indexes import ReadIndexesRejected, install_if_possible, verified_extension
@@ -525,7 +529,7 @@ _LEDGER = "k05_persistence_migrations"
 _LEDGER_DDL = """CREATE TABLE k05_persistence_migrations (
  version integer PRIMARY KEY CHECK(version>0),checksum text NOT NULL CHECK(checksum~'^[0-9a-f]{64}$'),
  signature text NOT NULL CHECK(signature~'^[0-9a-f]{64}$'),applied_at timestamptz NOT NULL DEFAULT clock_timestamp());"""
-MIGRATIONS = (BASE_DDL, CATALOG_DDL, JOB_DDL, WORKSPACE_INDEX_DDL, NATIVE_DDL, FOLLOW_UP_DDL, LOGIN_CLOCK_DDL, QUESTION_LIMIT_DDL, RUNTIME_OPERATIONS_DDL, DURABLE_EXPORT_DDL, PDF_EXPORT_DDL, JOB_EXECUTION_DDL, READ_PROJECTION_DDL, ANALYSIS_VERSION_DDL, RETENTION_DDL, JOB_UPDATES_DDL, JOB_CONFLICT_DDL, WINDOW_ANALYSIS_VERSION_DDL)
+MIGRATIONS = (BASE_DDL, CATALOG_DDL, JOB_DDL, WORKSPACE_INDEX_DDL, NATIVE_DDL, FOLLOW_UP_DDL, LOGIN_CLOCK_DDL, QUESTION_LIMIT_DDL, RUNTIME_OPERATIONS_DDL, DURABLE_EXPORT_DDL, PDF_EXPORT_DDL, JOB_EXECUTION_DDL, READ_PROJECTION_DDL, ANALYSIS_VERSION_DDL, RETENTION_DDL, JOB_UPDATES_DDL, JOB_CONFLICT_DDL, WINDOW_ANALYSIS_VERSION_DDL, HISTORICAL_STATE_ANALYSIS_VERSION_DDL)
 _ADDED_TABLES = ((10, ("k02_exports",)), (12, ("k09_job_attempts", "k09_queue_turns")),
                  (13, READ_PROJECTION_TABLES), (15, RETENTION_TABLES))
 

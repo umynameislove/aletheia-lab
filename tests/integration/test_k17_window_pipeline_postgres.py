@@ -152,28 +152,32 @@ def test_real_tls_window_model_jobs_paging_and_whole_exports(tmp_path):
     _exercise(tmp_path, windowed=True)
 
 
-def test_window_model_schema_upgrade_retains_installed_checksums():
+@pytest.mark.parametrize(("previous_version", "target_version"), [(17, 18), (18, 19)])
+def test_analysis_model_schema_upgrade_retains_installed_checksums(previous_version, target_version):
     async def scenario():
-        previous = core.MIGRATIONS[:-1]
-        assert len(previous) == 17
+        previous = core.MIGRATIONS[:previous_version]
+        target = core.MIGRATIONS[:target_version]
+        assert len(target) == target_version
         with patch.object(core, "MIGRATIONS", previous):
             manager = _target()
             pool, schema = await manager.__aenter__()
         try:
-            async with pool.connection() as conn:
-                ledger_sql = "SELECT version,checksum,signature FROM k05_persistence_migrations ORDER BY version"
-                before = await (await conn.execute(ledger_sql)).fetchall()
-                assert len(before) == 17 and not await core.verify(conn, schema)
-                assert await core.migrate(conn, schema) == "upgraded"
-                assert await core.verify(conn, schema)
-                assert await core.migrate(conn, schema) == "unchanged"
-                after = await (await conn.execute(ledger_sql)).fetchall()
-                assert after[:17] == before and after[-1][0] == 18
+            with patch.object(core, "MIGRATIONS", target):
+                async with pool.connection() as conn:
+                    ledger_sql = "SELECT version,checksum,signature FROM k05_persistence_migrations ORDER BY version"
+                    before = await (await conn.execute(ledger_sql)).fetchall()
+                    assert len(before) == previous_version and not await core.verify(conn, schema)
+                    assert await core.migrate(conn, schema) == "upgraded"
+                    assert await core.verify(conn, schema)
+                    assert await core.migrate(conn, schema) == "unchanged"
+                    after = await (await conn.execute(ledger_sql)).fetchall()
+                    assert after[:previous_version] == before and after[-1][0] == target_version
         finally:
             await manager.__aexit__(None, None, None)
         if evidence := os.environ.get("K17_EVIDENCE_DIR"):
-            (Path(evidence) / "migration-17-to-18.json").write_text(json.dumps({
-                "from": 17, "to": 18, "unchanged_prefix": True, "migration_replay": "unchanged", "ledger": after,
+            (Path(evidence) / f"migration-{previous_version}-to-{target_version}.json").write_text(json.dumps({
+                "from": previous_version, "to": target_version, "unchanged_prefix": True,
+                "migration_replay": "unchanged", "ledger": after,
             }, indent=2) + "\n")
 
     asyncio.run(scenario())

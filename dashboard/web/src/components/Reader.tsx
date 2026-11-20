@@ -179,6 +179,7 @@ function SourceBody({ v, evidence: ev, relation, hasClaim }: { v: ProductView; e
   const r = relation === "absent" ? null : RELATION[relation];
   const metric = v.snapshot.metric_changes.find(c => c.evidence_id === ev.id);
   const definition = metric ? v.snapshot.metric_definitions.find(d => d.metric_name === metric.metric_name) : undefined;
+  const historicalState = ev.historical_state;
   return (
     <section className="insp-sec" aria-label="Source being read">
       {hasClaim && r ? (
@@ -194,7 +195,18 @@ function SourceBody({ v, evidence: ev, relation, hasClaim }: { v: ProductView; e
       {ev.redacted && (
         <div className="notice notice--warn"><Mark tone="partial" /><div><b>Part of this source is withheld</b>What is shown is everything you can see of it. The rest was not replaced or summarised.</div></div>
       )}
-      <blockquote className="src-text">{ev.text}</blockquote>
+      {historicalState ? (
+        <section aria-label="Historical state evidence">
+          <dl className="kv">
+            <dt>Contract verdict</dt><dd>{historicalState.verdict}</dd>
+            <dt>Execution mode</dt><dd>{historicalState.execution_mode === "fresh" ? "Fresh producer run" : "Recorded replay"}</dd>
+            <dt>Observed state</dt><dd>{historicalState.observed_state ? `${historicalState.observed_state.namespace} / ${historicalState.observed_state.generation}` : "Unavailable"}</dd>
+            <dt>Allowed state</dt><dd>{historicalState.allowed_state ? `${historicalState.allowed_state.namespace} / ${historicalState.allowed_state.generation}` : "Unavailable"}</dd>
+            {historicalState.output && <><dt>Captured output</dt><dd>{JSON.stringify(historicalState.output)}</dd></>}
+          </dl>
+          <p className="src-text">{historicalState.reason}</p>
+        </section>
+      ) : <blockquote className="src-text">{ev.text}</blockquote>}
 
       {metric && (
         <TableScroll label="Metric change" className="src-metric">
@@ -225,7 +237,20 @@ function SourceBody({ v, evidence: ev, relation, hasClaim }: { v: ProductView; e
           <dt>Evidence ID</dt><dd>{ev.id}</dd>
           <dt>Kind</dt><dd>{ev.kind}</dd>
           <dt>Record</dt><dd>{ev.reproduction_ref.record_kind} · {ev.reproduction_ref.record_id}</dd>
-          <dt>SHA-256</dt><dd>{ev.source_sha256}</dd>
+          <dt>{historicalState ? "Source SHA-256" : "SHA-256"}</dt><dd>{ev.source_sha256}</dd>
+          {historicalState && <>
+            <dt>Operation ID</dt><dd>{historicalState.operation_id}</dd>
+            <dt>Request ID</dt><dd>{historicalState.request_id}</dd>
+            <dt>Consumer</dt><dd>{historicalState.consumer_id}</dd>
+            <dt>Producer version</dt><dd>{historicalState.producer_version}</dd>
+            <dt>Source receipt SHA-256</dt><dd>{historicalState.source_receipt_sha256}</dd>
+            <dt>Receipt SHA-256</dt><dd>{historicalState.receipt_sha256}</dd>
+            {historicalState.contract_sha256 && <><dt>Contract SHA-256</dt><dd>{historicalState.contract_sha256}</dd></>}
+            {historicalState.graph_sha256 && <><dt>Graph SHA-256</dt><dd>{historicalState.graph_sha256}</dd></>}
+            {historicalState.observed_state && <><dt>Observed state SHA-256</dt><dd>{historicalState.observed_state.state_sha256}</dd></>}
+            {historicalState.allowed_state && <><dt>Allowed state SHA-256</dt><dd>{historicalState.allowed_state.state_sha256}</dd></>}
+            {historicalState.current_alias && <><dt>Current alias</dt><dd>{historicalState.current_alias}</dd></>}
+          </>}
           <dt>Visibility</dt><dd>{ev.visibility}</dd>
           <dt>Redacted</dt><dd>{String(ev.redacted)}</dd>
           {/* the numbers above follow the reader's locale; these are the service's own, to copy as they are */}

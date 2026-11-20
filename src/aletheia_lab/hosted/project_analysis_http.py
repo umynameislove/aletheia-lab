@@ -9,7 +9,7 @@ from pydantic import SecretStr
 
 from aletheia_lab.hosted_auth.csrf import CsrfTokens
 from aletheia_lab.hosted_contract.job_page import JobReceipt
-from aletheia_lab.hosted_contract.project_analysis import AnalysisRequest
+from aletheia_lab.hosted_contract.project_analysis import AnalysisBackend, AnalysisRequest
 
 from .application import Send, _Response, _validated
 from .composition import Application
@@ -31,7 +31,7 @@ _ANALYSES = re.compile(r"/v1/workspaces/([A-Za-z0-9][A-Za-z0-9._:-]{0,127})/proj
 class AnalysisJobs(Jobs, Protocol):
     async def enqueue_analysis(self, *, credential_digest: SecretStr, workspace_id: str,
                                project_id: str, snapshot_id: str, question: str,
-                               request_key: SecretStr) -> JobReceipt: ...
+                               request_key: SecretStr, backend: AnalysisBackend = "local_evidence") -> JobReceipt: ...
 
 
 class ProjectAnalysisApplication(JobApplication):
@@ -67,7 +67,7 @@ class ProjectAnalysisApplication(JobApplication):
                                     maximum_depth=self._runtime.api.maximum_json_depth)
         receipt = _validated(await self._analysis_jobs.enqueue_analysis(credential_digest=digest,
             workspace_id=match[1], project_id=match[2], snapshot_id=request.snapshot_id,
-            question=request.question, request_key=key), JobReceipt)
+            question=request.question, request_key=key, backend=request.backend), JobReceipt)
         if receipt.workspace_id != match[1]:
             raise ValueError("Invalid project analysis receipt scope.")
         if await self._clock() is not True:

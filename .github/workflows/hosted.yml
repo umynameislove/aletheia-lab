@@ -65,6 +65,7 @@ jobs:
           tests/unit/test_k11_*.py tests/unit/test_k12_*.py
           tests/unit/test_k13_*.py tests/unit/test_k14_*.py tests/unit/test_k15_*.py
           tests/unit/test_k16_*.py tests/unit/test_k17_*.py tests/unit/test_k18_*.py
+          tests/unit/test_historical_state_*.py
       - name: Export and check unified hosted producer OpenAPI
         if: ${{ !cancelled() }}
         run: |

@@ -71,12 +71,13 @@ class _Admission:
     implicit_analysis: bool
 
     def replay(self, row: tuple[object, ...]) -> JobReceipt:
-        from .postgres_jobs import _ANALYSIS_MODELS
+        from .postgres_jobs import _DEFAULT_ANALYSIS_MODELS
 
         if self.implicit_analysis:
             stored = row[3]
             if (not isinstance(stored, dict)
-                    or stored.get('analysis_model', _ANALYSIS_MODELS[0]) not in _ANALYSIS_MODELS
+                    or stored.get('analysis_model', _DEFAULT_ANALYSIS_MODELS[0])
+                    not in _DEFAULT_ANALYSIS_MODELS
                     or {key: value for key, value in stored.items() if key != 'analysis_model'} !=
                        {key: value for key, value in self.request.items() if key != 'analysis_model'}):
                 raise SourceConflict()

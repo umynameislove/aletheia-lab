@@ -5,9 +5,19 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable
 from decimal import Decimal
-from typing import Annotated, Final, Generic, Literal, Self, TypeAlias, TypeVar
+from typing import Annotated, Final, Generic, Literal, Self, TypeAlias, TypeVar, cast
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    FiniteFloat,
+    SerializerFunctionWrapHandler,
+    TypeAdapter,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
 
 from aletheia_lab.product.questions import (
     COUNTERFACTUAL_NOT_AVAILABLE as COUNTERFACTUAL_NOT_AVAILABLE,
@@ -17,6 +27,7 @@ from aletheia_lab.project.identity import SHA256_PATTERN
 from aletheia_lab.project.mapping import _identifier
 
 PRODUCT_VIEW_SCHEMA_VERSION: Final[Literal["p6-product-view/v1"]] = "p6-product-view/v1"
+HISTORICAL_STATE_MODEL: Final[Literal["historical-state-evidence/v1"]] = "historical-state-evidence/v1"
 
 ProductVisibility: TypeAlias = Literal["diagnosis"]
 ProductMode: TypeAlias = Literal["project_audit"]
@@ -398,6 +409,35 @@ class ProductReproductionRef(_StrictFrozenModel):
     record_kind: Literal["snapshot", "snapshot_comparison", "regression_event"]
 
 
+_PRODUCER_TOKEN: Final[str] = r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+
+
+class ProductHistoricalState(_StrictFrozenModel):
+    namespace: str = Field(pattern=_PRODUCER_TOKEN)
+    generation: str = Field(pattern=_PRODUCER_TOKEN)
+    state_sha256: str = Field(pattern=SHA256_PATTERN)
+
+
+class ProductHistoricalStateEvidence(_StrictFrozenModel):
+    """Scoped projection of a receipt and its separately supplied contract."""
+
+    operation_id: str = Field(pattern=_PRODUCER_TOKEN)
+    request_id: str = Field(pattern=_PRODUCER_TOKEN)
+    consumer_id: str = Field(pattern=_PRODUCER_TOKEN)
+    execution_mode: Literal["fresh", "replay"]
+    producer_version: str = Field(pattern=_PRODUCER_TOKEN)
+    source_receipt_sha256: str = Field(pattern=SHA256_PATTERN)
+    receipt_sha256: str = Field(pattern=SHA256_PATTERN)
+    contract_sha256: str | None = Field(pattern=SHA256_PATTERN)
+    graph_sha256: str | None = Field(pattern=SHA256_PATTERN)
+    observed_state: ProductHistoricalState | None
+    allowed_state: ProductHistoricalState | None
+    output: tuple[FiniteFloat, FiniteFloat] | None
+    current_alias: str | None = Field(pattern=_PRODUCER_TOKEN)
+    verdict: Literal["allowed", "denied", "unknown", "underdefined", "unsupported"]
+    reason: str = Field(min_length=1, max_length=500)
+
+
 class ProductEvidence(_StrictFrozenModel):
     id: str = Field(pattern=_ID_PATTERN)
     kind: str = Field(pattern=r"^[a-z][a-z0-9_]{0,63}$")
@@ -407,14 +447,25 @@ class ProductEvidence(_StrictFrozenModel):
     source_sha256: str = Field(pattern=SHA256_PATTERN)
     visibility: ProductVisibility
     redacted: Literal[False]
+    historical_state: ProductHistoricalStateEvidence | None = None
+
+    @model_serializer(mode="wrap")
+    def _omit_absent_historical_state(self, serialize: SerializerFunctionWrapHandler) -> dict[str, object]:
+        data = cast(dict[str, object], serialize(self))
+        if self.historical_state is None:
+            data.pop("historical_state", None)
+        return data
 
     @model_validator(mode="after")
     def _reproduction_ref_reconciles(self) -> Self:
+        if (self.kind == "historical_state") != (self.historical_state is not None):
+            raise ValueError("Historical state provenance requires a typed evidence item")
         expected = {
             "snapshot": "snapshot",
             "snapshot_comparison": "snapshot_comparison",
             "metric_observation": "snapshot_comparison",
             "regression_candidate": "regression_event",
+            "historical_state": "snapshot",
         }.get(self.kind)
         if expected is not None and self.reproduction_ref.record_kind != expected:
             raise ValueError("product evidence reproduction record kind does not match evidence")
@@ -478,6 +529,11 @@ class _ProductViewBase(_StrictFrozenModel, Generic[_SnapshotT]):
     @model_validator(mode="after")
     def _references_reconcile(self) -> Self:
         evidence_ids = self._evidence_ids()
+        historical_state_items = tuple(item for item in self.evidence if item.historical_state is not None)
+        if (bool(historical_state_items) != (self.runtime.model == HISTORICAL_STATE_MODEL) or any(
+            item.reproduction_ref.record_id != self.snapshot.id for item in historical_state_items
+        )):
+            raise ValueError("Historical state evidence does not match the result snapshot and runtime")
         turn_ids = self._turn_ids(evidence_ids)
         claim_ids = self._claim_ids(turn_ids, evidence_ids)
         self._graph_sources_reconcile(evidence_ids, claim_ids)

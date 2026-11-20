@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowRight, FolderInput, LayoutList } from "lucide-react";
 import { AFTER_DELETE, hostedMode, hostedOff, linked, port, useResultSwitch, useView } from "../service";
 import { openedProject, type OpenedProject } from "../service/opened";
+import type { RefreshResult } from "../service/port";
 import { FirstQuestion, openProject, RefreshButton, RefreshStatus, RefusalNote, useRefresh } from "./Ask";
 import { LateWorkList } from "./Late";
 import { useRoute, useStore } from "../store";
@@ -63,8 +64,12 @@ export function Start() {
 function Continue({ opened }: { opened: OpenedProject }) {
   const { go, hrefFor } = useRoute();
   const { showResult } = useResultSwitch();
-  const [snap, setSnap] = useState(opened);
-  const refresh = useRefresh(snap.project_id, r => { openProject(r); setSnap({ project_id: r.project_id, snapshot_id: r.snapshot_id }); });
+  const [snap, setSnap] = useState<OpenedProject & Pick<RefreshResult, "historical_state_available">>(opened);
+  const refresh = useRefresh(snap.project_id, r => {
+    // A hosted result link keeps the workspace open while the next snapshot is ready for a question.
+    if (!hostedMode) openProject(r);
+    setSnap(r);
+  });
   const refreshOff = hostedOff("refresh");
   return (
     <section className="panel">

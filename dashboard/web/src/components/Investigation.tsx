@@ -212,7 +212,7 @@ export function Investigation() {
               {changes.length > 3 && <a className="link-btn" href={hrefFor("project")}>{changes.length - 3} more in the project overview</a>}
             </section>
           )}
-          {changes.length === 0 && <p className="foot-note">No metric change is recorded for this snapshot.</p>}
+          {changes.length === 0 && !v.evidence.some(e => e.historical_state) && <p className="foot-note">No metric change is recorded for this snapshot.</p>}
 
           {needed.length > 0 && (
             <div className="needed"><span className="eyebrow">Still needed to answer this</span>

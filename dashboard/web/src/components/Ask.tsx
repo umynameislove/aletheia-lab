@@ -4,7 +4,7 @@ import { hostedMode, hostedPort, isProductError, linked, linkIds, port, scoped }
 import { remedyFor } from "../service/errors";
 import { keptOnArrival, rememberProject } from "../service/opened";
 import { canonicalQuestion, QUESTION_MAX, questionProblem } from "../service/question";
-import type { ConfirmResult, RefreshResult } from "../service/port";
+import type { RefreshResult } from "../service/port";
 import type { ConfirmMapping, ProductView } from "../types";
 import { Id, Mark } from "./primitives";
 
@@ -23,23 +23,26 @@ export const confirmAndKeep = (preview_id: string, mapping: ConfirmMapping) =>
    (analyze_observations); the demo keeps its scripted answer (analyze_mock). Either returns the new
    project's own view, so the screens never fall back to the packaged demo. */
 /** `bare` drops the panel frame, for use inside another panel. */
-export function FirstQuestion({ result, onAnalyzed, bare = false }: { result: Pick<ConfirmResult, "project_id" | "snapshot_id">; onAnalyzed: (v: ProductView) => void; bare?: boolean }) {
+export function FirstQuestion({ result, onAnalyzed, bare = false }: { result: Pick<RefreshResult, "project_id" | "snapshot_id" | "historical_state_available">; onAnalyzed: (v: ProductView) => void; bare?: boolean }) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<Refusal>(null);
   const noteId = useId();
   const q = canonicalQuestion(text);
   const problem = q ? questionProblem(q) : null;
-  const ask = () => {
+  const historicalStateAvailable = result.historical_state_available === true && hostedPort?.capabilities()?.allowed_actions.includes("analyze");
+  const ask = (historicalState = false) => {
     if (!q || problem || busy) return;
+    const analyze = historicalState ? historicalStateAvailable && hostedPort?.analyzeHistoricalState
+      : port.kind === "live" ? port.analyze_observations : port.analyze_mock;
+    if (!analyze) return;
     setBusy(true); setRefusal(null);
-    const analyze = port.kind === "live" ? port.analyze_observations : port.analyze_mock;
     return scoped("analyze", () => analyze.call(port, result.project_id, result.snapshot_id, q), {
       done: onAnalyzed,
       fail: e => setRefusal(refusalOf(e)),
       late: view => ({ project_id: view.project.id, snapshot_id: view.snapshot.id, result_id: view.result.id, question: q }),
       always: () => setBusy(false),
-      key: `analyze:${result.snapshot_id}:${q}`,
+      key: `analyze:${historicalState ? "historical-state:" : ""}${result.snapshot_id}:${q}`,
       label: q,
     });
   };
@@ -53,6 +56,8 @@ export function FirstQuestion({ result, onAnalyzed, bare = false }: { result: Pi
           aria-invalid={!!problem} aria-describedby={note ? noteId : undefined} />
         <button className="btn btn--primary" disabled={!q || !!problem} aria-disabled={busy || undefined} aria-busy={busy} onClick={() => void ask()}>{busy ? "Asking…" : "Ask"}<ArrowRight size={14} aria-hidden="true" /></button>
       </div>
+      {historicalStateAvailable && <button className="btn" disabled={!q || !!problem} aria-disabled={busy || undefined}
+        onClick={() => void ask(true)}>Check state authorization</button>}
       {/* the status is always in the page, so the first note is read too; only its text changes */}
       <p className="fld-error" id={noteId} role="status">{note && <><Mark tone={problem ? "no" : "partial"} />{problem ?? `${[...q].length} of ${QUESTION_MAX} characters.`}</>}</p>
       <RefusalNote refusal={refusal} />
@@ -63,7 +68,8 @@ export function FirstQuestion({ result, onAnalyzed, bare = false }: { result: Pi
     <section className="panel" style={{ marginTop: "var(--s5)" }}>
       <div className="sec-head"><span className="eyebrow">Ask the first question</span></div>
       <p className="fld-note" style={{ marginBottom: "var(--s3)" }}>
-        {hostedMode ? "Worked out by this workspace's analysis service from the project's stored metrics."
+        {historicalStateAvailable ? "Choose metrics or check the historical state receipt saved with this snapshot."
+          : hostedMode ? "Worked out by this workspace's analysis service from the project's stored metrics."
           : <>{port.kind === "live" ? "Worked out from your stored metrics, no model." : "Scripted answer, no model."} Nothing leaves this computer.</>}
       </p>
       {form}

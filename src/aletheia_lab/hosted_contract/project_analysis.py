@@ -1,4 +1,4 @@
-"""Project-scoped analysis inputs use the existing local-evidence backend."""
+"""Project-scoped analysis inputs select a supported evidence backend."""
 from __future__ import annotations
 
 from typing import Annotated, Literal
@@ -9,6 +9,8 @@ from aletheia_lab.product.questions import checked_product_question
 
 from .session_capabilities import Version
 
+AnalysisBackend = Literal["local_evidence", "historical_state"]
+
 
 class AnalysisRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True, frozen=True, hide_input_in_errors=True)
@@ -16,7 +18,7 @@ class AnalysisRequest(BaseModel):
     schema_version: Version
     snapshot_id: Annotated[str, Field(pattern=r"^(?:p3-snapshot|upload-snapshot)-[0-9a-f]{64}$")]
     question: Annotated[str, Field(min_length=1, max_length=4000)]
-    backend: Literal["local_evidence"] = "local_evidence"
+    backend: AnalysisBackend = "local_evidence"
 
     @field_validator("question")
     @classmethod

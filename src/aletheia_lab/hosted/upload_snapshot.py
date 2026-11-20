@@ -9,7 +9,16 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Annotated, Generic, Literal, Self, TypeAlias, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SerializerFunctionWrapHandler,
+    TypeAdapter,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
 
 from aletheia_lab.hosted_contract.session_capabilities import Identifier
 from aletheia_lab.project.identity import canonical_project_sha256
@@ -23,6 +32,8 @@ from aletheia_lab.project.mapping import (
     metric_identity,
     validate_mapping_dimensions,
 )
+
+from .historical_state_evidence import HistoricalStateInput
 
 _MappingT = TypeVar('_MappingT', ProjectMappingConfiguration, ProjectMappingConfigurationV2)
 _ResultT = TypeVar('_ResultT', ProjectMappingResult, ProjectMappingResultV2)
@@ -41,6 +52,14 @@ class _UploadSnapshotBase(BaseModel, Generic[_MappingT, _ResultT]):
     mapping_result: _ResultT
     captured_at: datetime
     record_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    historical_state: HistoricalStateInput | None = None
+
+    @model_serializer(mode="wrap")
+    def _serialize(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
+        payload: dict[str, object] = handler(self)
+        if self.historical_state is None:
+            payload.pop("historical_state", None)
+        return payload
 
     @field_validator("captured_at")
     @classmethod
@@ -102,13 +121,15 @@ def parse_upload_snapshot(value: object) -> AnyUploadSnapshot:
 
 def build_upload_snapshot(*, workspace_id: str, source_id: str, source_sha256: str,
                           mapping: AnyMappingConfiguration, mapping_result: AnyMappingResult,
-                          captured_at: datetime) -> AnyUploadSnapshot:
+                          captured_at: datetime, historical_state: HistoricalStateInput | None = None) -> AnyUploadSnapshot:
     model = UploadSnapshotV2 if isinstance(mapping, ProjectMappingConfigurationV2) else UploadSnapshot
     state = {"schema_version": model.model_fields['schema_version'].default, "workspace_id": workspace_id,
              "source_id": source_id, "source_sha256": source_sha256, "git_provenance": "not_supplied",
              "mapping": mapping.model_dump(mode="json"), "mapping_result": mapping_result.model_dump(mode="json")}
+    if historical_state is not None:
+        state["historical_state"] = historical_state.model_dump(mode="json")
     snapshot_id = "upload-snapshot-" + canonical_project_sha256(state)
     record = {**state, "snapshot_id": snapshot_id,
               "captured_at": TypeAdapter(datetime).dump_python(captured_at, mode="json")}
     return parse_upload_snapshot({**record, "mapping": mapping, "mapping_result": mapping_result,
-        "captured_at": captured_at, "record_sha256": canonical_project_sha256(record)})
+        "captured_at": captured_at, "historical_state": historical_state, "record_sha256": canonical_project_sha256(record)})

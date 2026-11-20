@@ -1,0 +1,63 @@
+{
+  "schema_version": "historical-state-fixture/v1",
+  "contract": {
+    "schema_version": "historical-state-contract/v1",
+    "consumer_id": "scoped-two-slice-reader",
+    "allowed_state": {
+      "namespace": "left",
+      "generation": "59cede2af8ff435ca1785d09e90ecaa1",
+      "state_sha256": "123a27f7e822b45332856ef2dd9b808faec7b92ac1bd34ab42e3118930d35371"
+    }
+  },
+  "cases": {
+    "held-A-denied": {
+      "schema_version": "historical-state-receipt/v1",
+      "operation_id": "op/held-A-denied",
+      "request_id": "shared-external-rid",
+      "consumer_id": "scoped-two-slice-reader",
+      "execution_mode": "replay",
+      "producer_version": "close03-structural-main-02",
+      "source_receipt_sha256": "6218157c3c9644139c5e5c61ee4ae8e3a0d715d09cb84f47ea2791998aa1cffc",
+      "observation": {
+        "namespace": "left",
+        "generation": "d8a689c765644e6a96af64b0f94eb94e",
+        "state_sha256": "f6053c988d33fa7c884d275df71f6077859bc3ac96c30f08453246e3369fc5cc"
+      },
+      "output": [
+        4.0,
+        3.0
+      ],
+      "graph_sha256": "cbf1f69a637f95b6289fcb3ba1d181ca5aa0a1089b0f633648d75cb2014c1e38",
+      "current_alias": "B"
+    },
+    "B-authorized": {
+      "schema_version": "historical-state-receipt/v1",
+      "operation_id": "op/B-authorized",
+      "request_id": "shared-external-rid",
+      "consumer_id": "scoped-two-slice-reader",
+      "execution_mode": "replay",
+      "producer_version": "close03-structural-main-02",
+      "source_receipt_sha256": "ba7f29bc25bbb6bb739f05e4871621ab85f02b57eb176932e0240c8145f2c248",
+      "observation": {
+        "namespace": "left",
+        "generation": "59cede2af8ff435ca1785d09e90ecaa1",
+        "state_sha256": "123a27f7e822b45332856ef2dd9b808faec7b92ac1bd34ab42e3118930d35371"
+      },
+      "output": [
+        4.0,
+        3.0
+      ],
+      "graph_sha256": "cbf1f69a637f95b6289fcb3ba1d181ca5aa0a1089b0f633648d75cb2014c1e38",
+      "current_alias": "B"
+    }
+  },
+  "source_sha256": {
+    "independent_verification": "8fa34f4fc92b4490d52fc5c6b98e6aa6d37e07c9966be3283155f397b64ed6d5",
+    "raw.json": "04a71761744195bb01da5bc639b99a67e26299190021fae3888f5a40ffc90655",
+    "native-events.jsonl": "219c264074428c5710739e784e2a55117b01389f96078490300f4ddd92686b1d",
+    "bundles/A/model.onnx": "cbf1f69a637f95b6289fcb3ba1d181ca5aa0a1089b0f633648d75cb2014c1e38",
+    "bundles/A/weights.bin": "fb6dd5b5e4ba09d33d906cfa1e5b75d9e71ab968079275987f53d03bc0fce0ef",
+    "bundles/B/model.onnx": "cbf1f69a637f95b6289fcb3ba1d181ca5aa0a1089b0f633648d75cb2014c1e38",
+    "bundles/B/weights.bin": "c5e664c19699cdf0a6c1d114a2abab668f67ad4aee8779066c6367f37ce6709c"
+  }
+}

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from pydantic import RootModel
 
@@ -34,6 +34,9 @@ from .upload_operations import Sources, UploadOperations, Worker
 from .upload_snapshot import UploadSnapshotV2
 from .worker_limits import MAX_OUTPUT_BYTES
 
+if TYPE_CHECKING:
+    from .historical_state_registration import HistoricalStateInputs
+
 
 class _CanonicalWorkerResult(RootModel[CanonicalResultRecord]):
     pass
@@ -45,8 +48,9 @@ class FollowUpParents(RefreshParents, Protocol):
 
 class CanonicalProjectOperations(UploadOperations):
     def __init__(self, sources: Sources, worker: Worker, project_jobs: FollowUpParents, *,
-                 leases: PreviewLeases | None = None, private_root: Path | None = None) -> None:
-        super().__init__(sources, worker, leases=leases, private_root=private_root)
+                 leases: PreviewLeases | None = None, private_root: Path | None = None,
+                 historical_state_inputs: HistoricalStateInputs | None = None) -> None:
+        super().__init__(sources, worker, leases=leases, private_root=private_root, historical_state_inputs=historical_state_inputs)
         self._project_jobs = project_jobs
 
     async def prepare_refresh(self, claim: JobClaim) -> AnyPreparedRefresh:

@@ -1,6 +1,6 @@
 /* Same-origin hosted transport. Session/CSRF values live only in this caller-owned context. */
 import type { MappingCandidates, ProductView } from "../types.ts";
-import { checkProductView } from "./contract.ts";
+import { checkProductView, HISTORICAL_STATE_MODEL } from "./contract.ts";
 import {
   PRODUCT_API_VERSIONS, isInstant, questionLimit, readCapabilities, readJob, readJobReceipt, readPage, readProblem, readSession,
   type HostedCapabilities, type HostedJob, type HostedSession,
@@ -20,7 +20,7 @@ export interface HostedClientOptions {
 export type HostedSubmission =
   | { operation: "preview"; source_id: string }
   | { operation: "confirm"; source_id: string; mapping: Record<string, unknown>; preview_id?: string }
-  | { operation: "analyze"; snapshot_id: string; question: string };
+  | { operation: "analyze"; snapshot_id: string; question: string; historical_state_project_id?: string };
 export interface HostedSource { workspace_id: string; source_id: string; sha256: string }
 export interface HostedJobUpdate { revision: number; disposition: "snapshot" | "unchanged" | "resync"; cursor: string;
   poll_after_ms: number | null; valid_for_ms: number; job: HostedJob | null }
@@ -39,12 +39,13 @@ interface UploadManifest {
 export type OutputExpectation =
   | { operation: "preview"; sourceSha256: string; leaseSourceId?: string }
   | { operation: "confirm" }
-  | { operation: "analyze"; snapshotId: string; projectId?: string }
+  | { operation: "analyze"; snapshotId: string; projectId?: string; historicalState?: true }
   | { operation: "refresh"; projectId: string }
   | { operation: "follow_up"; projectId: string; parentResultId: string; snapshotId: string };
 /** RefreshResult: the old snapshot is never changed; unchanged means the same snapshot ID. */
 export interface HostedRefreshResult {
   project_id: string; status: "unchanged" | "new_snapshot"; previous_snapshot_id: string; snapshot_id: string; revision: number;
+  historical_state_available?: true;
 }
 /** FollowUpResult is a summary. The child view is read separately from GET results/{result_id}. */
 export interface HostedFollowUpResult { project_id: string; result_id: string; parent_result_id: string; snapshot_id: string; revision: number }
@@ -98,7 +99,7 @@ export interface HostedAnalysisReference { kind: "result_reference"; result_id: 
 export type HostedAnalysisResult = ProductView | HostedAnalysisReference;
 export type HostedOutput = { workspace_id: string; job_id: string } & (
   | { operation: "preview"; result: HostedPreview }
-  | { operation: "confirm"; result: { snapshot_id: string } }
+  | { operation: "confirm"; result: { snapshot_id: string; historical_state_project_id?: string } }
   | { operation: "analyze"; result: HostedAnalysisResult }
   | { operation: "refresh"; result: HostedRefreshResult }
   | { operation: "follow_up"; result: HostedFollowUpResult }
@@ -112,6 +113,23 @@ const id = (x: unknown): x is string => typeof x === "string" && /^[A-Za-z0-9][A
 const hash = (x: unknown): x is string => typeof x === "string" && /^[0-9a-f]{64}$/.test(x);
 const strings = (x: unknown): x is string[] => Array.isArray(x) && x.every(v => typeof v === "string");
 const matches = (pattern: RegExp, x: unknown): x is string => typeof x === "string" && pattern.test(x);
+const HISTORICAL_STATE_VERDICTS = new Set(["allowed", "denied", "unknown", "underdefined", "unsupported"]);
+const PRODUCER_TOKEN = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/;
+const historicalStateState = (x: unknown) => x === null || obj(x) && matches(PRODUCER_TOKEN, x.namespace)
+  && matches(PRODUCER_TOKEN, x.generation) && hash(x.state_sha256);
+
+function checkHistoricalStateEvidence(x: unknown) {
+  need(obj(x) && typeof x.verdict === "string" && HISTORICAL_STATE_VERDICTS.has(x.verdict)
+    && typeof x.reason === "string" && x.reason.length > 0 && x.reason.length <= 500
+    && matches(PRODUCER_TOKEN, x.operation_id) && matches(PRODUCER_TOKEN, x.request_id) && matches(PRODUCER_TOKEN, x.consumer_id)
+    && (x.execution_mode === "fresh" || x.execution_mode === "replay") && matches(PRODUCER_TOKEN, x.producer_version)
+    && hash(x.source_receipt_sha256) && hash(x.receipt_sha256)
+    && (x.contract_sha256 === null || hash(x.contract_sha256)) && (x.graph_sha256 === null || hash(x.graph_sha256))
+    && historicalStateState(x.observed_state) && historicalStateState(x.allowed_state)
+    && (x.current_alias === null || matches(PRODUCER_TOKEN, x.current_alias))
+    && (x.output === null || Array.isArray(x.output) && x.output.length === 2 && x.output.every(Number.isFinite)));
+}
+const checkHostedView = (value: unknown) => checkProductView(value, checkHistoricalStateEvidence);
 /** A PROJECT revision, the CAS value; a membership revision is never one. */
 const revision = (x: unknown): x is number => Number.isSafeInteger(x) && (x as number) >= 0;
 const PROJECT = /^p3-project-[0-9a-f]{64}$/, UPLOAD_SNAPSHOT = /^upload-snapshot-[0-9a-f]{64}$/;
@@ -454,7 +472,7 @@ export function createHostedClient(options: HostedClientOptions) {
 
   return {
     /** ProductView check, for the hosted port: carried here so the main chunk need not load the contract. */
-    checkView: checkProductView,
+    checkView: checkHostedView,
     loginUrl: () => "/v1/auth/start",
     loadSession: () => request("/v1/session", "GET", (value, status) => { need(status === 200); return readSession(value); }),
     loadCaps: (workspace: string) => {
@@ -486,8 +504,10 @@ export function createHostedClient(options: HostedClientOptions) {
       input(obj(submission));
       capability(workspace, caps, submission.operation === "analyze" ? "analyze" : "import");
       const leased = caps.features?.["sources.preview_lease"] === true && submission.operation !== "analyze";
+      const historicalState = submission.operation === "analyze" && submission.historical_state_project_id !== undefined;
       if (submission.operation === "analyze") {
-        input(Object.keys(submission).sort().join() === "operation,question,snapshot_id" && id(submission.snapshot_id)
+        input(Object.keys(submission).sort().join() === (historicalState ? "historical_state_project_id,operation,question,snapshot_id" : "operation,question,snapshot_id")
+          && (historicalState ? matches(PROJECT, submission.historical_state_project_id) && matches(UPLOAD_SNAPSHOT, submission.snapshot_id) : id(submission.snapshot_id))
           && typeof submission.question === "string" && submission.question.trim() === submission.question
           && submission.question.length > 0 && [...submission.question].length <= questionLimit(caps));
       } else {
@@ -498,10 +518,13 @@ export function createHostedClient(options: HostedClientOptions) {
             && !Object.keys(submission.mapping).some(name => name.startsWith("_"))
             && (!leased || typeof submission.preview_id === "string" && /^prev_[0-9a-f]{32}$/.test(submission.preview_id))));
       }
-      const payload = !leased ? submission : submission.operation === "preview"
+      const payload = historicalState
+        ? { schema_version: "product-api/v1-draft", snapshot_id: submission.snapshot_id, question: submission.question, backend: "historical_state" }
+        : !leased ? submission : submission.operation === "preview"
         ? { schema_version: "product-api/v1-draft", source_id: submission.source_id }
         : { schema_version: "product-api/v1-draft", mapping: (submission as Extract<HostedSubmission, { operation: "confirm" }>).mapping };
-      const route = !leased ? base(workspace) + "/jobs" : submission.operation === "preview"
+      const route = historicalState ? base(workspace) + "/projects/" + submission.historical_state_project_id + "/analyses"
+        : !leased ? base(workspace) + "/jobs" : submission.operation === "preview"
         ? base(workspace) + "/imports/preview"
         : base(workspace) + "/imports/" + (submission as Extract<HostedSubmission, { operation: "confirm" }>).preview_id + "/confirm";
       let body: string;
@@ -518,24 +541,30 @@ export function createHostedClient(options: HostedClientOptions) {
         : expected.operation === "refresh" ? id(expected.projectId)
         : expected.operation === "follow_up" ? id(expected.projectId) && id(expected.parentResultId) && id(expected.snapshotId)
         : expected.operation === "confirm" || (expected.operation === "analyze" && id(expected.snapshotId)
-          && (expected.projectId === undefined || id(expected.projectId))));
+          && (expected.projectId === undefined || id(expected.projectId))
+          && (!expected.historicalState || matches(PROJECT, expected.projectId) && matches(UPLOAD_SNAPSHOT, expected.snapshotId))));
       return request(`${base(workspace)}/jobs/${jobId}/output`, "GET", (value, status): HostedOutput => {
         need(status === 200); const x = envelope(value, workspace);
         if (x.job_id !== jobId || x.operation !== expected.operation) throw new ProductError("response_out_of_scope", "The service answered about another job.");
         const scope = { workspace_id: workspace, job_id: jobId };
         if (expected.operation === "preview") return { ...scope, operation: "preview", result: preview(x.result, expected.sourceSha256, workspace, expected.leaseSourceId) };
         if (expected.operation === "confirm") {
-          need(obj(x.result) && typeof x.result.snapshot_id === "string" && /^upload-snapshot-[0-9a-f]{64}$/.test(x.result.snapshot_id));
-          return { ...scope, operation: "confirm", result: { snapshot_id: x.result.snapshot_id } };
+          const r = x.result;
+          need(obj(r) && matches(UPLOAD_SNAPSHOT, r.snapshot_id)
+            && (r.historical_state_project_id === undefined || matches(PROJECT, r.historical_state_project_id)));
+          return { ...scope, operation: "confirm", result: { snapshot_id: r.snapshot_id,
+            ...(r.historical_state_project_id === undefined ? {} : { historical_state_project_id: r.historical_state_project_id }) } };
         }
         if (expected.operation === "refresh") {
           const r = x.result;
           need(obj(r) && matches(PROJECT, r.project_id) && (r.status === "unchanged" || r.status === "new_snapshot")
             && matches(UPLOAD_SNAPSHOT, r.previous_snapshot_id) && matches(UPLOAD_SNAPSHOT, r.snapshot_id) && revision(r.revision)
-            && (r.status === "unchanged") === (r.snapshot_id === r.previous_snapshot_id));
+            && (r.status === "unchanged") === (r.snapshot_id === r.previous_snapshot_id)
+            && (r.historical_state_available === undefined || r.historical_state_available === true));
           if (r.project_id !== expected.projectId) throw outOfScope("project");
           return { ...scope, operation: "refresh", result: { project_id: r.project_id, status: r.status as HostedRefreshResult["status"],
-            previous_snapshot_id: r.previous_snapshot_id, snapshot_id: r.snapshot_id, revision: r.revision } };
+            previous_snapshot_id: r.previous_snapshot_id, snapshot_id: r.snapshot_id, revision: r.revision,
+            ...(r.historical_state_available === true ? { historical_state_available: true } : {}) } };
         }
         if (expected.operation === "follow_up") {
           const r = x.result;
@@ -549,6 +578,7 @@ export function createHostedClient(options: HostedClientOptions) {
         }
         if (obj(x.result) && x.result.kind === "result_reference") {
           const r = x.result;
+          if (expected.historicalState) throw outOfScope("analysis mode");
           need(matches(PROJECT, r.project_id) && matches(RESULT, r.result_id) && matches(UPLOAD_SNAPSHOT, r.snapshot_id));
           if (r.snapshot_id !== expected.snapshotId || (expected.projectId !== undefined && r.project_id !== expected.projectId)) {
             throw outOfScope("snapshot or project");
@@ -556,10 +586,11 @@ export function createHostedClient(options: HostedClientOptions) {
           return { ...scope, operation: "analyze", result: { kind: "result_reference", result_id: r.result_id,
             project_id: r.project_id, snapshot_id: r.snapshot_id } };
         }
-        const view = checkProductView(x.result);
+        const view = checkHostedView(x.result);
         if (view.demo_only || view.snapshot.id !== expected.snapshotId || (expected.projectId !== undefined && view.project.id !== expected.projectId)) {
           throw new ProductError("response_out_of_scope", "The analysis belongs to another snapshot or project.");
         }
+        if ((view.runtime.model === HISTORICAL_STATE_MODEL) !== (expected.historicalState === true)) throw outOfScope("analysis mode");
         return { ...scope, operation: "analyze", result: view };
       }, undefined, undefined, undefined, extraSignal, undefined,
       { timeoutOverrideMs: windowed && expected.operation === "confirm" ? 65_000 : undefined });
@@ -778,7 +809,7 @@ export function createHostedClient(options: HostedClientOptions) {
       return request(`${base(workspace)}/results/${resultId}`, "GET", (value, status): ProductView => {
         need(status === 200); const x = envelope(value, workspace);
         if (x.result_id !== resultId || x.project_id !== expected.projectId) throw outOfScope("result or project");
-        const view = checkProductView(x.view);
+        const view = checkHostedView(x.view);
         if (view.demo_only || view.result.id !== resultId || view.project.id !== expected.projectId
           || (expected.snapshotId !== undefined && view.snapshot.id !== expected.snapshotId)) throw outOfScope("result, project or snapshot");
         return view;

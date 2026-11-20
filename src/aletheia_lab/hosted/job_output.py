@@ -60,11 +60,8 @@ async def output(self: PostgresJobs, *, credential_digest: SecretStr, workspace_
         result = await self._refresh_output(credential_digest=credential_digest, workspace_id=workspace_id,
                                             request=request, result=result)
     if operation == "confirm":
-        snapshot_id = result.get('snapshot_id')
-        if not isinstance(snapshot_id, str):
-            raise CatalogIntegrityError()
-        await self._access.snapshot(credential_digest=credential_digest, workspace_id=workspace_id,
-                                    snapshot_id=snapshot_id)
+        result = await _confirm_output(self, credential_digest=credential_digest, workspace_id=workspace_id,
+                                       result=result)
     if linked is not None:
         if project is None:
             raise SourceNotFound()
@@ -72,6 +69,19 @@ async def output(self: PostgresJobs, *, credential_digest: SecretStr, workspace_
             operation=operation, request=request, result=result, linked=linked, project=project)
     return {"schema_version": "product-api/v1-draft", "workspace_id": workspace_id,
             "job_id": job_id, "operation": operation, "result": result}
+
+
+async def _confirm_output(self: PostgresJobs, *, credential_digest: SecretStr, workspace_id: str,
+                          result: dict[str, object]) -> dict[str, object]:
+    snapshot_id = result.get("snapshot_id")
+    if not isinstance(snapshot_id, str) or "historical_state_project_id" in result:
+        raise CatalogIntegrityError()
+    snapshot = await self._access.snapshot(
+        credential_digest=credential_digest, workspace_id=workspace_id, snapshot_id=snapshot_id,
+    )
+    if snapshot.historical_state is None:
+        return result
+    return {**result, "historical_state_project_id": snapshot.mapping.project_id}
 
 
 async def _canonical_output(self: PostgresJobs, *, credential_digest: SecretStr, workspace_id: str, operation: str,
@@ -140,7 +150,7 @@ async def _refresh_output(self: PostgresJobs, *, credential_digest: SecretStr, w
         raise TimeoutError("Canonical refresh storage is unavailable.")
     summary = RefreshResult.model_validate(result, strict=True)
     revision = _revision(request.get("expected_revision"))
-    if (summary.project_id != request.get("project_id")
+    if (summary.historical_state_available is not None or summary.project_id != request.get("project_id")
             or summary.previous_snapshot_id != request.get("parent_snapshot_id")
             or summary.revision != revision + (summary.status == "new_snapshot")):
         raise CatalogIntegrityError()
@@ -160,7 +170,10 @@ async def _refresh_output(self: PostgresJobs, *, credential_digest: SecretStr, w
         if (saved is None or saved[0] != summary.snapshot_id or not isinstance(saved[1], str)
                 or parse_upload_snapshot(saved[1]) != record or source != (record.source_sha256,)):
             raise CatalogIntegrityError()
-    return summary.model_dump(mode="json")
+    output = summary.model_dump(mode="json")
+    if record.historical_state is not None:
+        output["historical_state_available"] = True
+    return output
 
 async def _linked_project(conn: Connection, workspace_id: str, linked: object) -> tuple[str, str]:
     if not isinstance(linked, str):

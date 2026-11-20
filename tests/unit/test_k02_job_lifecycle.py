@@ -85,17 +85,20 @@ def _refresh_result(snapshot, *, changed):
             "previous_snapshot_id": parent, "status": "new_snapshot" if changed else "unchanged", "revision": 4 if changed else 3}
 
 
-@pytest.mark.parametrize("changed", [False, True])
-def test_refresh_http_output_returns_only_typed_canonical_metadata(tmp_path, changed):
+@pytest.mark.parametrize("changed, historical_state", [(False, False), (True, False), (True, True)])
+def test_refresh_http_output_returns_only_typed_canonical_metadata(tmp_path, changed, historical_state):
     snapshot, _ = upload_case(tmp_path)
     app, jobs, headers = _system(tmp_path)
     jobs.result.update(operation="refresh", result=_refresh_result(snapshot, changed=changed))
+    if historical_state:
+        jobs.result["result"]["historical_state_available"] = True
     status, response_headers, body = _request(app, headers, path=PATH + "/job_boundary/output")
     assert status == 200 and json.loads(body) == jobs.result and response_headers[b"cache-control"] == b"no-store"
 
 
 @pytest.mark.parametrize("patch", [{"private": PRIVATE}, {"revision": True}, {"project_id": "invalid"},
-    {"snapshot_id": "../../private"}, {"previous_snapshot_id": "invalid"}, {"status": "unknown"}])
+    {"snapshot_id": "../../private"}, {"previous_snapshot_id": "invalid"}, {"status": "unknown"},
+    {"historical_state_available": False}])
 def test_refresh_http_rejects_corrupt_metadata_without_reflecting_it(tmp_path, patch):
     snapshot, _ = upload_case(tmp_path)
     app, jobs, headers = _system(tmp_path)
@@ -123,7 +126,8 @@ class RefreshPool:
 
 
 @pytest.mark.parametrize("patch", [{}, {"project_id": "p3-project-" + "f" * 64},
-                                  {"revision": 99}, {"previous_snapshot_id": "upload-snapshot-" + "f" * 64}])
+                                  {"revision": 99}, {"previous_snapshot_id": "upload-snapshot-" + "f" * 64},
+                                  {"historical_state_available": True}])
 def test_refresh_repository_output_verifies_canonical_snapshot_revision_and_parent(tmp_path, patch):
     async def run():
         snapshot, _ = upload_case(tmp_path)

@@ -17,14 +17,15 @@ from pydantic import BaseModel, ConfigDict, Field, RootModel, SecretStr
 from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_contract.imports import PreviewImport
 from aletheia_lab.product.questions import checked_product_question
-from aletheia_lab.product.view import AnyProductView
+from aletheia_lab.product.view import HISTORICAL_STATE_MODEL, AnyProductView
 
 from .async_work import run_blocking
+from .historical_state_registration import HistoricalStateInputs
 from .postgres_sources import SourceNotFound
 from .preview_leases import PreviewLeases
 from .request_boundary import decode_json_model
 from .upload_project import _native_path, _plain_directory
-from .upload_snapshot import AnyUploadSnapshot
+from .upload_snapshot import AnyUploadSnapshot, build_upload_snapshot
 from .worker_limits import MAX_INPUT_BYTES, MAX_OUTPUT_BYTES, MAX_UPLOAD_OUTPUT_BYTES
 
 
@@ -59,9 +60,10 @@ class UploadOperations:
     """Re-read authorized bytes around worker calls and never trust worker scope."""
 
     def __init__(self, sources: Sources, worker: Worker, *, leases: PreviewLeases | None = None,
-                 private_root: Path | None = None) -> None:
+                 private_root: Path | None = None, historical_state_inputs: HistoricalStateInputs | None = None) -> None:
         self._sources, self._worker = sources, worker
         self._leases, self._private_root = leases, private_root
+        self._historical_state_inputs = dict(historical_state_inputs or {})
 
     def _worker_input_limit(self) -> int:
         value = getattr(self._worker, 'maximum_payload_bytes', MAX_INPUT_BYTES)
@@ -147,7 +149,7 @@ class UploadOperations:
         payload: dict[str, object] = {"operation": "analyze", "question": question}
         if analysis_model != 'upload-snapshot-observation/v1':
             if analysis_model not in ('upload-snapshot-metric-observation/v2',
-                                      'upload-snapshot-windowed-metric-observation/v3'):
+                                      'upload-snapshot-windowed-metric-observation/v3', HISTORICAL_STATE_MODEL):
                 raise ValueError('Unsupported analysis version.')
             payload['analysis_model'] = analysis_model
         def encode() -> bytes:
@@ -222,7 +224,7 @@ class UploadOperations:
                                         expected_source_state_sha256=None if preview is None else preview.source_state_sha256)
         snapshot = (await run_blocking(decode_json_model, raw, _UploadSnapshotOutput,
                     maximum_bytes=MAX_UPLOAD_OUTPUT_BYTES)).root
-        if (snapshot.workspace_id != workspace_id or snapshot.source_id != source_id
+        if (snapshot.workspace_id != workspace_id or snapshot.source_id != source_id or snapshot.historical_state is not None
                 or snapshot.source_sha256 != content_hasher(data).hexdigest()):
             raise ValueError("Worker source scope mismatch")
         if preview is not None:
@@ -232,4 +234,12 @@ class UploadOperations:
                 source_id=source_id, preview_id=preview_id)
             if current.source_sha256 != snapshot.source_sha256 or current != preview:
                 raise SourceNotFound()
-        return snapshot
+        return await self._attach_historical_state(snapshot)
+
+    async def _attach_historical_state(self, snapshot: AnyUploadSnapshot) -> AnyUploadSnapshot:
+        historical_state = self._historical_state_inputs.get((snapshot.workspace_id, snapshot.mapping.project_id, snapshot.source_sha256))
+        if historical_state is None:
+            return snapshot
+        return await run_blocking(build_upload_snapshot, workspace_id=snapshot.workspace_id, source_id=snapshot.source_id,
+            source_sha256=snapshot.source_sha256, mapping=snapshot.mapping, mapping_result=snapshot.mapping_result,
+            captured_at=snapshot.captured_at, historical_state=historical_state)
