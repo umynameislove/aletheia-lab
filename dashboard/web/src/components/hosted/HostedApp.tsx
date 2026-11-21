@@ -33,8 +33,54 @@ function resultLink(hash: string): ResultLink | null {
     ? { ...result as unknown as ResultLink, ...(query.get("paged") === "1" ? { paged: true } : {}) } : null;
 }
 
+const SIGN_IN_BOOKMARK = "aletheia.sign-in-bookmark";
+const BOOKMARK_LIFETIME_MS = 300_000;
+function bookmark(hash: string): string | null {
+  if (hash.length > 2048 || !hash.startsWith("#/investigation?") || !resultLink(hash)) return null;
+  const query = new URLSearchParams(hash.slice("#/investigation?".length));
+  const fields = ["workspace", "job", "project", "snapshot", "result", "paged", "claim", "evidence", "node", "turn", "review"];
+  const kept = new URLSearchParams();
+  for (const key of fields) {
+    const value = query.get(key);
+    if (query.getAll(key).length === 1 && id(value)) kept.set(key, value);
+  }
+  return "#/investigation?" + kept;
+}
+function forgetBookmark() {
+  try { sessionStorage.removeItem(SIGN_IN_BOOKMARK); } catch { /* Storage can be unavailable. */ }
+}
+function takeBookmark(): string | null {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(SIGN_IN_BOOKMARK) ?? "null");
+    const now = Date.now();
+    return typeof value?.hash === "string" && Number.isFinite(value.expires)
+      && value.expires > now && value.expires <= now + BOOKMARK_LIFETIME_MS ? bookmark(value.hash) : null;
+  } catch { return null; }
+  finally { forgetBookmark(); }
+}
+
+async function openAuthorizedBookmark(boot: HostedBootstrap, target: string, session: NonNullable<HostedBoot["session"]>,
+  setHash: (hash: string) => void) {
+  const destination = resultLink(target);
+  if (!destination) return;
+  const from = location.hash;
+  await boot.selectWorkspace(destination.workspace);
+  const opened = boot.snapshot(), caps = opened.workspace;
+  if (opened.session?.user_id !== session.user_id || opened.session.context_id !== session.context_id
+    || caps?.workspace_id !== destination.workspace || caps.features?.["catalog.paged_read"] !== true) return;
+  await boot.client().loadResultHeader(destination.workspace, caps, {
+    projectId: destination.project, snapshotId: destination.snapshot, resultId: destination.result,
+  });
+  if (!boot.isCurrent(opened.generation) || location.hash !== from) return;
+  history.replaceState(history.state, "", location.pathname + location.search + target);
+  setHash(location.hash);
+}
+
 export function HostedApp() {
   const [hash, setHash] = useState(location.hash);
+  const incomingBookmark = useRef(bookmark(location.hash));
+  const checkedBookmark = useRef(false);
+  const openingBookmark = useRef(false);
   const channel = useRef<ReturnType<typeof sessionChannel> | null>(null);
   const instance = useRef<HostedBootstrap | null>(null);
   if (!instance.current) instance.current = createHostedBootstrap({ fetch: (url, init) => fetch(url, init),
@@ -65,6 +111,19 @@ export function HostedApp() {
   }, [boot, state.session, state.generation]);
   useEffect(() => {
     if (state.status !== "ready" || !state.session) { selected.current = null; return; }
+    if (!checkedBookmark.current) {
+      checkedBookmark.current = true;
+      incomingBookmark.current = null;
+      const target = takeBookmark();
+      if (target && !linkWorkspace) {
+        openingBookmark.current = true;
+        void openAuthorizedBookmark(boot, target, state.session, setHash)
+          .catch(() => { /* An inaccessible bookmark stays closed. */ })
+          .finally(() => { openingBookmark.current = false; });
+        return;
+      }
+    }
+    if (openingBookmark.current) return;
     const account = state.session.user_id + "/" + state.session.context_id;
     const sameAccount = selected.current?.account === account;
     if (sameAccount && selected.current?.linkHash === linkHash) return;
@@ -77,6 +136,7 @@ export function HostedApp() {
     // workspace, project, snapshot, result and selection IDs are dropped in place, without a new history entry.
     // Only a sign-out reason survives. Earlier history entries keep their own addresses; opening one asks again.
     if (state.status !== "signed_out") return;
+    forgetBookmark();
     const query = new URLSearchParams(location.hash.split("?")[1] ?? "");
     if ([...query.keys()].every(key => key === "reason")) return;
     history.replaceState(history.state, "", location.pathname + location.search + "#/workspaces");
@@ -88,7 +148,13 @@ export function HostedApp() {
     return <main className="page" id="main"><div className="page-inner"><h1>Sign in to Aletheia</h1>
       <p>{reason ?? "Use your workspace account. Your password and verification codes stay with your identity provider."}</p>
       {state.error && <RefusalNote refusal={{ code: state.error.code, message: state.error.safe_message }} />}
-      <div className="actions"><a className="btn btn--primary" href="/v1/auth/start">Sign in</a>
+      <div className="actions"><a className="btn btn--primary" href="/v1/auth/start" onClick={event => {
+        const target = incomingBookmark.current;
+        if (!target || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+        try {
+          sessionStorage.setItem(SIGN_IN_BOOKMARK, JSON.stringify({ hash: target, expires: Date.now() + BOOKMARK_LIFETIME_MS }));
+        } catch { /* Sign-in remains available without tab storage. */ }
+      }}>Sign in</a>
         <button className="btn" onClick={() => { void boot.start(); }}>Check session again</button></div>
     </div></main>;
   }
@@ -136,7 +202,7 @@ function Workspace({ boot, state, hash }: { boot: HostedBootstrap; state: Hosted
         // a workspace still being opened shows nothing of it yet, and its lists are read once it is open
         : state.opening ? opening
         : <WorkspaceManager session={session} workspace={caps} canCreateWorkspace={session.can_create_workspace}
-          fetch={(url, init) => fetch(url, init)} signal={boot.signal()} isCurrent={current}
+          fetch={boot.fetchForSession(state.generation)} signal={boot.signal()} isCurrent={current}
           onSessionRefresh={() => boot.refreshSession().then(() => {})} onCapabilitiesRefresh={boot.refreshCapabilities}
           onWorkspaceSelected={workspace => { void boot.selectWorkspace(workspace); go("workspaces"); }} onAuthError={boot.authError} />}</Suspense></ScreenBoundary>
   </>;

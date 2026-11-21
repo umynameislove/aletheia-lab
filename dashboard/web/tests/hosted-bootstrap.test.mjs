@@ -90,6 +90,32 @@ test("session refreshes deduplicate and another account cannot inherit private s
   h.boot.stop();
 });
 
+for (const scenario of ["renewed", "renew denied", "fresh read denied"]) {
+  test(`a read crossing cookie rotation checks the current session once (${scenario})`, async () => {
+    const renewal = Promise.withResolvers();
+    const expired = () => problem("session_revoked", 401);
+    let sessionReads = 0;
+    const h = system(url => {
+      if (url === "/v1/auth/renew") return renewal.promise;
+      sessionReads++;
+      if (sessionReads === 2 || (sessionReads === 3 && scenario === "fresh read denied")) return expired();
+      return json(session());
+    });
+    await h.boot.start();
+    const accepted = Promise.allSettled([h.boot.renew(), h.boot.renew()]);
+    const checked = h.boot.guard().check(true);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(h.boot.snapshot().status, "ready");
+    renewal.resolve(scenario === "renew denied" ? expired() : json(session()));
+    await accepted;
+    await checked;
+    assert.equal(h.calls.filter(call => call.url === "/v1/auth/renew").length, 1);
+    assert.equal(sessionReads, scenario === "renew denied" ? 2 : 3);
+    assert.equal(h.boot.snapshot().status, scenario === "renewed" ? "ready" : "signed_out");
+    h.boot.stop();
+  });
+}
+
 test("a changed membership fences the result and reloads only current capabilities", async () => {
   let revision = 1;
   const h = system(url => json(url === "/v1/session" ? session() : { ...caps("w"), membership: { role: "analyst", revision } }));
