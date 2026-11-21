@@ -57,8 +57,7 @@ from .cursors import CursorExpired, CursorInvalid
 from .durable_exports import EXPORT_HANDLE, StoredExport
 from .edge import EdgeGuard
 from .native_upload_records import (
-    UploadResultRecord,
-    UploadResultRecordV2,
+    NativeUploadModel,
     native_metadata,
     parse_upload_result_record,
 )
@@ -80,7 +79,7 @@ from .retention import PostgresRetention
 from .review_repository import PostgresReviews
 from .settings import RuntimeSettings
 from .upload_comparison import UploadGenerationComparison, comparison_metadata
-from .upload_snapshot import UploadSnapshot, UploadSnapshotV2, parse_upload_snapshot
+from .upload_snapshot import UPLOAD_SNAPSHOT_TYPES, parse_upload_snapshot
 from .worker_limits import MAX_OUTPUT_BYTES
 from .workspace_http import WorkspaceApplication
 from .workspace_management import WorkspaceConflict, WorkspaceDenied
@@ -413,8 +412,8 @@ class CatalogApplication:
                 project_id=project, record_id=record, maximum_bytes=self._runtime.api.maximum_response_bytes))
         actual_kind: str
         parent: str | None
-        if isinstance(model, (UploadSnapshot, UploadSnapshotV2, UploadResultRecord, UploadResultRecordV2)):
-            native = (parse_upload_snapshot(model.model_dump(mode="python")) if isinstance(model, (UploadSnapshot, UploadSnapshotV2))
+        if isinstance(model, NativeUploadModel):
+            native = (parse_upload_snapshot(model.model_dump(mode="python")) if isinstance(model, UPLOAD_SNAPSHOT_TYPES)
                       else parse_upload_result_record(model.model_dump(mode="python")))
             if native.workspace_id != workspace:
                 raise ValueError("Native record workspace scope mismatch.")

@@ -18,7 +18,7 @@ from aletheia_lab.project.identity import (
 
 from .authorization import Authorization
 from .postgres_sources import SourceConflict, SourceNotFound
-from .upload_snapshot import AnyUploadSnapshot, UploadSnapshot, UploadSnapshotV2
+from .upload_snapshot import UPLOAD_SNAPSHOT_TYPES, AnyUploadSnapshot, HistoricalStateUploadSnapshot
 from .workspace_management import WorkspaceConflict, _revision
 
 if TYPE_CHECKING:
@@ -106,7 +106,7 @@ async def refresh_parent(jobs: PostgresJobs, *, claim: JobClaim) -> tuple[AnyUpl
             raise WorkspaceConflict()
     record = await jobs._catalog.read_record(credential_digest=claim.credential_digest, workspace_id=claim.workspace_id,
         project_id=cast(str, request["project_id"]), record_id=cast(str, request["parent_snapshot_id"]))
-    if not isinstance(record, (UploadSnapshot, UploadSnapshotV2)):
+    if not isinstance(record, UPLOAD_SNAPSHOT_TYPES):
         raise SourceNotFound()
     return record, cast(str, request["origin_source_sha256"])
 
@@ -130,7 +130,7 @@ async def enqueue_analysis(jobs: PostgresJobs, *, credential_digest: SecretStr, 
         # Queue admission rechecks current source/project authorization again.
         snapshot = await jobs._access.snapshot(credential_digest=credential_digest,
             workspace_id=workspace_id, snapshot_id=snapshot_id)
-        if snapshot.mapping.project_id != project_id or snapshot.historical_state is None:
+        if snapshot.mapping.project_id != project_id or not isinstance(snapshot, HistoricalStateUploadSnapshot):
             raise SourceNotFound()
         request["analysis_model"] = HISTORICAL_STATE_MODEL
     return await jobs.enqueue(credential_digest=credential_digest, workspace_id=workspace_id, operation="analyze",

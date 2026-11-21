@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import json
 from io import BytesIO
+from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 from pypdf import PdfReader
 from test_k07_dimensions_v2 import snapshot_v2
 
@@ -16,18 +18,33 @@ from aletheia_lab.hosted.historical_state_evidence import (
     HistoricalStateReceipt,
 )
 from aletheia_lab.hosted.native_upload_records import (
+    UploadResultRecord,
+    UploadResultRecordV2,
     build_initial_upload_result,
     parse_upload_result_record,
 )
 from aletheia_lab.hosted.upload_analysis import HISTORICAL_STATE_MODEL, analyze_upload
-from aletheia_lab.hosted.upload_snapshot import build_upload_snapshot
+from aletheia_lab.hosted.upload_snapshot import (
+    HistoricalStateUploadSnapshot,
+    build_upload_snapshot,
+    parse_upload_snapshot,
+)
 from aletheia_lab.product.reports import render_product_report
-from aletheia_lab.product.view import parse_product_view
+from aletheia_lab.product.view import (
+    ProductHistoricalStateEvidenceItem,
+    ProductView,
+    ProductViewV2,
+    parse_product_view,
+)
 
 _QUESTION = "Did the operation use the state permitted by the original contract?"
 _STATE_A = HistoricalState(namespace="left", generation="A", state_sha256="a" * 64)
 _STATE_B = HistoricalState(namespace="left", generation="B", state_sha256="b" * 64)
 _CONSUMER = "scoped-two-slice-reader"
+_LEGACY_SNAPSHOT = (
+    Path(__file__).resolve().parents[2]
+    / "fixtures/k04/producer-20261110-native/native-snapshot-record.json"
+)
 
 
 def _historical_state_snapshot(snapshot, actual, permitted, *, alias="B", consumer=_CONSUMER):
@@ -60,7 +77,7 @@ def test_canonical_projection_keeps_decision_and_provenance(tmp_path, actual, pe
     record = build_initial_upload_result(snapshot, _QUESTION, view)
     restored = parse_upload_result_record(record.model_dump_json()).view
     evidence, = restored.evidence
-    assert evidence.historical_state is not None
+    assert isinstance(evidence, ProductHistoricalStateEvidenceItem)
     assert evidence.historical_state.verdict == verdict
     assert evidence.historical_state.output == (4.0, 3.0)
     assert evidence.historical_state.operation_id == "historical/operation"
@@ -70,6 +87,28 @@ def test_canonical_projection_keeps_decision_and_provenance(tmp_path, actual, pe
     assert restored.claims[0].citation_ids == (evidence.id,)
     assert restored.result.status == "complete"
     assert restored.conversation.turns[0].abstained == (verdict not in {"allowed", "denied"})
+
+
+def test_legacy_mapping_keeps_metric_format_and_uses_typed_historical_format():
+    record = json.loads(_LEGACY_SNAPSHOT.read_bytes())
+    base = parse_upload_snapshot(json.dumps(record["data"]))
+    snapshot = _historical_state_snapshot(base, _STATE_A, _STATE_B)
+    assert isinstance(snapshot, HistoricalStateUploadSnapshot)
+    assert snapshot.mapping == base.mapping and snapshot.mapping_result == base.mapping_result
+    assert parse_upload_snapshot(snapshot.model_dump_json()) == snapshot
+
+    historical = analyze_upload(snapshot, _QUESTION, HISTORICAL_STATE_MODEL)
+    assert isinstance(historical, ProductViewV2)
+    assert all(definition.unit is None for definition in historical.snapshot.metric_definitions)
+    assert isinstance(build_initial_upload_result(snapshot, _QUESTION, historical), UploadResultRecordV2)
+
+    metric = analyze_upload(snapshot, _QUESTION, "upload-snapshot-observation/v1")
+    assert isinstance(metric, ProductView)
+    assert isinstance(build_initial_upload_result(snapshot, _QUESTION, metric), UploadResultRecord)
+    malformed_view = metric.model_dump(mode="python")
+    malformed_view["evidence"][0]["historical_state"] = historical.evidence[0].model_dump()["historical_state"]
+    with pytest.raises(ValidationError, match="extra_forbidden"):
+        ProductView.model_validate(malformed_view)
 
 
 def test_alias_leaves_decision_unchanged_and_worker_drift_is_rejected(tmp_path):

@@ -48,7 +48,7 @@ from .upload_comparison import (
     comparison_metadata,
     comparison_parents,
 )
-from .upload_snapshot import UploadSnapshot, UploadSnapshotV2
+from .upload_snapshot import UPLOAD_SNAPSHOT_TYPES
 
 CatalogModel: TypeAlias = Model | NativeUploadModel | UploadGenerationComparison
 KINDS = frozenset(_MODEL_BY_TYPE) | {"preview", "project_state", "result", "turn", "deletion", "upload_snapshot", "upload_result"}
@@ -105,13 +105,13 @@ class RecordPage:
 def canonical_metadata(model: CatalogModel) -> tuple[str, str, str | None, str, str]:
     if isinstance(model, UploadGenerationComparison):
         return comparison_metadata(model)
-    return native_metadata(model) if isinstance(model, (UploadSnapshot, UploadSnapshotV2, UploadResultRecord, UploadResultRecordV2)) else model_metadata(model)
+    return native_metadata(model) if isinstance(model, NativeUploadModel) else model_metadata(model)
 
 
 def canonical_parents(model: CatalogModel) -> tuple[tuple[str, str], ...]:
     if isinstance(model, UploadGenerationComparison):
         return comparison_parents(model)
-    return native_parents(model) if isinstance(model, (UploadSnapshot, UploadSnapshotV2, UploadResultRecord, UploadResultRecordV2)) else record_parents(model)
+    return native_parents(model) if isinstance(model, NativeUploadModel) else record_parents(model)
 
 
 def decode_record(index: RecordIndex, payload: bytes) -> CatalogModel:
@@ -468,7 +468,7 @@ async def scrub_catalog(pool: Pool, objects: PostgresObjects, workspace_id: str,
 
 
 async def _verify_projections(conn: Connection, workspace_id: str, index: RecordIndex, model: CatalogModel) -> None:
-    if isinstance(model, (UploadSnapshot, UploadSnapshotV2, UploadResultRecord, UploadResultRecordV2, UploadGenerationComparison)) and model.workspace_id != workspace_id:
+    if isinstance(model, (NativeUploadModel, UploadGenerationComparison)) and model.workspace_id != workspace_id:
         raise CatalogIntegrityError()
     expected = canonical_parents(model)
     links = await _all(await conn.execute(
@@ -478,7 +478,7 @@ async def _verify_projections(conn: Connection, workspace_id: str, index: Record
     ))
     if tuple(links) != expected:
         raise CatalogIntegrityError()
-    if isinstance(model, (UploadSnapshot, UploadSnapshotV2)):
+    if isinstance(model, UPLOAD_SNAPSHOT_TYPES):
         source = await (await conn.execute(
             "SELECT r.source_id,s.sha256 FROM k05_records r JOIN j01_sources s "
             "ON s.workspace_id=r.workspace_id AND s.source_id=r.source_id "
@@ -507,7 +507,7 @@ def _decode_native_record(index: RecordIndex, payload: bytes) -> NativeUploadMod
     kind, identity, project, schema, actual = metadata
     snapshot = native.snapshot_id if isinstance(native, (UploadResultRecord, UploadResultRecordV2)) else None
     parent = native.parent_result_id if isinstance(native, (UploadResultRecord, UploadResultRecordV2)) else None
-    source = native.source_id if isinstance(native, (UploadSnapshot, UploadSnapshotV2)) else None
+    source = native.source_id if isinstance(native, UPLOAD_SNAPSHOT_TYPES) else None
     if (kind, identity, project, schema, actual, snapshot, parent, source) != (
         index.record_type, index.record_id, index.project_id, index.schema_version,
         index.canonical_sha256, index.snapshot_id, index.parent_result_id, index.source_id,

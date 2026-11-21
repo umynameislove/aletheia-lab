@@ -122,10 +122,16 @@ separate evidence.
 
 Apply persistence migration 19 to a verified v18 schema before enabling this
 backend. The migration extends the job CHECK constraint for the new analysis
-model. Existing metric jobs, snapshots and results use their original formats.
+model. On a registered source, the admitted receipt is part of the
+`hosted-upload-snapshot/v3` identity. The snapshot retains the original mapping
+and its metric dimensions. The historical result uses
+`hosted-upload-result/v2` and `p6-product-view/v2`, with a typed
+`historical_state` evidence item. Legacy mappings use an unknown unit in
+that historical view. Metric results keep the format selected by their mapping.
 Drain v18 workers before migration. Their readiness check requires the v18
 ledger, so a rollback to v18 also requires a verified v18 data recovery point.
 
-An earlier development build of migration 19 has a different checksum. Use
-a fresh schema for disposable fixtures. Retained data from such a build
-requires a separately verified upgrade or recovery from its own backup.
+Use a fresh schema for disposable fixtures from pre-release builds. Earlier
+builds used a different migration 19 checksum or stored historical receipts
+under the metric snapshot schema. Retained data from those builds requires a
+separately verified upgrade or recovery from its own backup.

@@ -5,17 +5,15 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable
 from decimal import Decimal
-from typing import Annotated, Final, Generic, Literal, Self, TypeAlias, TypeVar, cast
+from typing import Annotated, Final, Generic, Literal, Self, TypeAlias, TypeVar
 
 from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
     FiniteFloat,
-    SerializerFunctionWrapHandler,
     TypeAdapter,
     field_validator,
-    model_serializer,
     model_validator,
 )
 
@@ -447,18 +445,10 @@ class ProductEvidence(_StrictFrozenModel):
     source_sha256: str = Field(pattern=SHA256_PATTERN)
     visibility: ProductVisibility
     redacted: Literal[False]
-    historical_state: ProductHistoricalStateEvidence | None = None
-
-    @model_serializer(mode="wrap")
-    def _omit_absent_historical_state(self, serialize: SerializerFunctionWrapHandler) -> dict[str, object]:
-        data = cast(dict[str, object], serialize(self))
-        if self.historical_state is None:
-            data.pop("historical_state", None)
-        return data
 
     @model_validator(mode="after")
     def _reproduction_ref_reconciles(self) -> Self:
-        if (self.kind == "historical_state") != (self.historical_state is not None):
+        if self.kind == "historical_state" and not isinstance(self, ProductHistoricalStateEvidenceItem):
             raise ValueError("Historical state provenance requires a typed evidence item")
         expected = {
             "snapshot": "snapshot",
@@ -470,6 +460,14 @@ class ProductEvidence(_StrictFrozenModel):
         if expected is not None and self.reproduction_ref.record_kind != expected:
             raise ValueError("product evidence reproduction record kind does not match evidence")
         return self
+
+
+class ProductHistoricalStateEvidenceItem(ProductEvidence):
+    kind: Literal["historical_state"]
+    historical_state: ProductHistoricalStateEvidence
+
+
+AnyProductEvidence: TypeAlias = ProductHistoricalStateEvidenceItem | ProductEvidence
 
 
 class ProductGraphNode(_StrictFrozenModel):
@@ -529,7 +527,7 @@ class _ProductViewBase(_StrictFrozenModel, Generic[_SnapshotT]):
     @model_validator(mode="after")
     def _references_reconcile(self) -> Self:
         evidence_ids = self._evidence_ids()
-        historical_state_items = tuple(item for item in self.evidence if item.historical_state is not None)
+        historical_state_items = tuple(item for item in self.evidence if isinstance(item, ProductHistoricalStateEvidenceItem))
         if (bool(historical_state_items) != (self.runtime.model == HISTORICAL_STATE_MODEL) or any(
             item.reproduction_ref.record_id != self.snapshot.id for item in historical_state_items
         )):
@@ -692,9 +690,10 @@ class ProductView(_ProductViewBase[ProductSnapshot]):
 
 
 class ProductViewV2(_ProductViewBase[ProductSnapshotV2]):
-    """A product projection retaining explicit metric class and unit semantics."""
+    """A product projection with metric dimensions and typed historical evidence."""
 
     schema_version: Literal["p6-product-view/v2"] = "p6-product-view/v2"
+    evidence: tuple[AnyProductEvidence, ...]
 
 
 AnyProductView: TypeAlias = ProductView | ProductViewV2

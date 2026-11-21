@@ -22,8 +22,8 @@ from .postgres_sources import PostgresSources, SourceNotFound
 from .result_views import ProjectionUnavailable, ResultViews
 from .upload_analysis import WINDOW_OBSERVATION_MODEL, analysis_identity
 from .upload_snapshot import (
-    UploadSnapshot,
-    UploadSnapshotV2,
+    UPLOAD_SNAPSHOT_TYPES,
+    HistoricalStateUploadSnapshot,
     parse_upload_snapshot,
 )
 from .workspace_management import _revision
@@ -79,7 +79,7 @@ async def _confirm_output(self: PostgresJobs, *, credential_digest: SecretStr, w
     snapshot = await self._access.snapshot(
         credential_digest=credential_digest, workspace_id=workspace_id, snapshot_id=snapshot_id,
     )
-    if snapshot.historical_state is None:
+    if not isinstance(snapshot, HistoricalStateUploadSnapshot):
         return result
     return {**result, "historical_state_project_id": snapshot.mapping.project_id}
 
@@ -156,7 +156,7 @@ async def _refresh_output(self: PostgresJobs, *, credential_digest: SecretStr, w
         raise CatalogIntegrityError()
     record = await self._read_catalog.read_record(credential_digest=credential_digest, workspace_id=workspace_id,
         project_id=summary.project_id, record_id=summary.snapshot_id)
-    if (not isinstance(record, (UploadSnapshot, UploadSnapshotV2)) or record.workspace_id != workspace_id
+    if (not isinstance(record, UPLOAD_SNAPSHOT_TYPES) or record.workspace_id != workspace_id
             or record.mapping.project_id != summary.project_id or record.snapshot_id != summary.snapshot_id
             or summary.status == "new_snapshot" and record.source_id != request.get("source_id")):
         raise CatalogIntegrityError()
@@ -171,7 +171,7 @@ async def _refresh_output(self: PostgresJobs, *, credential_digest: SecretStr, w
                 or parse_upload_snapshot(saved[1]) != record or source != (record.source_sha256,)):
             raise CatalogIntegrityError()
     output = summary.model_dump(mode="json")
-    if record.historical_state is not None:
+    if isinstance(record, HistoricalStateUploadSnapshot):
         output["historical_state_available"] = True
     return output
 

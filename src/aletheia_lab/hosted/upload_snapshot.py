@@ -9,16 +9,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Annotated, Generic, Literal, Self, TypeAlias, TypeVar
 
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    Field,
-    SerializerFunctionWrapHandler,
-    TypeAdapter,
-    field_validator,
-    model_serializer,
-    model_validator,
-)
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, field_validator, model_validator
 
 from aletheia_lab.hosted_contract.session_capabilities import Identifier
 from aletheia_lab.project.identity import canonical_project_sha256
@@ -35,8 +26,8 @@ from aletheia_lab.project.mapping import (
 
 from .historical_state_evidence import HistoricalStateInput
 
-_MappingT = TypeVar('_MappingT', ProjectMappingConfiguration, ProjectMappingConfigurationV2)
-_ResultT = TypeVar('_ResultT', ProjectMappingResult, ProjectMappingResultV2)
+_MappingT = TypeVar('_MappingT', bound=AnyMappingConfiguration)
+_ResultT = TypeVar('_ResultT', bound=AnyMappingResult)
 
 
 class _UploadSnapshotBase(BaseModel, Generic[_MappingT, _ResultT]):
@@ -52,14 +43,6 @@ class _UploadSnapshotBase(BaseModel, Generic[_MappingT, _ResultT]):
     mapping_result: _ResultT
     captured_at: datetime
     record_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
-    historical_state: HistoricalStateInput | None = None
-
-    @model_serializer(mode="wrap")
-    def _serialize(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
-        payload: dict[str, object] = handler(self)
-        if self.historical_state is None:
-            payload.pop("historical_state", None)
-        return payload
 
     @field_validator("captured_at")
     @classmethod
@@ -109,8 +92,17 @@ class UploadSnapshotV2(_UploadSnapshotBase[ProjectMappingConfigurationV2, Projec
     schema_version: Literal['hosted-upload-snapshot/v2'] = 'hosted-upload-snapshot/v2'
 
 
-AnyUploadSnapshot: TypeAlias = UploadSnapshot | UploadSnapshotV2
-UPLOAD_SNAPSHOT_TYPES = (UploadSnapshot, UploadSnapshotV2)
+class HistoricalStateUploadSnapshot(_UploadSnapshotBase[AnyMappingConfiguration, AnyMappingResult]):
+    """An upload snapshot with evidence independently registered by the server."""
+
+    schema_version: Literal['hosted-upload-snapshot/v3'] = 'hosted-upload-snapshot/v3'
+    mapping: Annotated[AnyMappingConfiguration, Field(discriminator='schema_version')]
+    mapping_result: Annotated[AnyMappingResult, Field(discriminator='schema_version')]
+    historical_state: HistoricalStateInput
+
+
+AnyUploadSnapshot: TypeAlias = UploadSnapshot | UploadSnapshotV2 | HistoricalStateUploadSnapshot
+UPLOAD_SNAPSHOT_TYPES = (UploadSnapshot, UploadSnapshotV2, HistoricalStateUploadSnapshot)
 _SNAPSHOT_ADAPTER = TypeAdapter(Annotated[AnyUploadSnapshot, Field(discriminator='schema_version')])
 
 
@@ -122,7 +114,13 @@ def parse_upload_snapshot(value: object) -> AnyUploadSnapshot:
 def build_upload_snapshot(*, workspace_id: str, source_id: str, source_sha256: str,
                           mapping: AnyMappingConfiguration, mapping_result: AnyMappingResult,
                           captured_at: datetime, historical_state: HistoricalStateInput | None = None) -> AnyUploadSnapshot:
-    model = UploadSnapshotV2 if isinstance(mapping, ProjectMappingConfigurationV2) else UploadSnapshot
+    model: type[AnyUploadSnapshot]
+    extra: dict[str, HistoricalStateInput] = {}
+    if historical_state is not None:
+        model = HistoricalStateUploadSnapshot
+        extra["historical_state"] = historical_state
+    else:
+        model = UploadSnapshotV2 if isinstance(mapping, ProjectMappingConfigurationV2) else UploadSnapshot
     state = {"schema_version": model.model_fields['schema_version'].default, "workspace_id": workspace_id,
              "source_id": source_id, "source_sha256": source_sha256, "git_provenance": "not_supplied",
              "mapping": mapping.model_dump(mode="json"), "mapping_result": mapping_result.model_dump(mode="json")}
@@ -132,4 +130,4 @@ def build_upload_snapshot(*, workspace_id: str, source_id: str, source_sha256: s
     record = {**state, "snapshot_id": snapshot_id,
               "captured_at": TypeAdapter(datetime).dump_python(captured_at, mode="json")}
     return parse_upload_snapshot({**record, "mapping": mapping, "mapping_result": mapping_result,
-        "captured_at": captured_at, "historical_state": historical_state, "record_sha256": canonical_project_sha256(record)})
+        "captured_at": captured_at, "record_sha256": canonical_project_sha256(record), **extra})

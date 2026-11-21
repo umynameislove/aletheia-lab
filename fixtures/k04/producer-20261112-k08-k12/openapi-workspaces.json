@@ -12839,17 +12839,6 @@
             "const": false,
             "title": "Redacted",
             "type": "boolean"
-          },
-          "historical_state": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ProductHistoricalStateEvidence"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null
           }
         },
         "required": [
@@ -13049,6 +13038,67 @@
         "title": "ProductHistoricalStateEvidence",
         "type": "object"
       },
+      "ProductHistoricalStateEvidenceItem": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "historical_state",
+            "title": "Kind",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "reproduction_ref": {
+            "$ref": "#/components/schemas/ProductReproductionRef"
+          },
+          "source_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Source Sha256",
+            "type": "string"
+          },
+          "visibility": {
+            "const": "diagnosis",
+            "title": "Visibility",
+            "type": "string"
+          },
+          "redacted": {
+            "const": false,
+            "title": "Redacted",
+            "type": "boolean"
+          },
+          "historical_state": {
+            "$ref": "#/components/schemas/ProductHistoricalStateEvidence"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "text",
+          "reproduction_ref",
+          "source_sha256",
+          "visibility",
+          "redacted",
+          "historical_state"
+        ],
+        "title": "ProductHistoricalStateEvidenceItem",
+        "type": "object"
+      },
       "ProductReproductionRef": {
         "additionalProperties": false,
         "properties": {
@@ -13120,7 +13170,14 @@
           },
           "items": {
             "items": {
-              "$ref": "#/components/schemas/ProductEvidence"
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProductHistoricalStateEvidenceItem"
+                },
+                {
+                  "$ref": "#/components/schemas/ProductEvidence"
+                }
+              ]
             },
             "maxItems": 200,
             "title": "Items",
@@ -13264,7 +13321,15 @@
             "title": "Relation"
           },
           "evidence": {
-            "$ref": "#/components/schemas/ProductEvidence"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProductHistoricalStateEvidenceItem"
+              },
+              {
+                "$ref": "#/components/schemas/ProductEvidence"
+              }
+            ],
+            "title": "Evidence"
           }
         },
         "required": [
@@ -15916,7 +15981,7 @@
       },
       "ProductViewV2": {
         "additionalProperties": false,
-        "description": "A product projection retaining explicit metric class and unit semantics.",
+        "description": "A product projection with metric dimensions and typed historical evidence.",
         "properties": {
           "schema_version": {
             "const": "p6-product-view/v2",
@@ -15962,7 +16027,14 @@
           },
           "evidence": {
             "items": {
-              "$ref": "#/components/schemas/ProductEvidence"
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProductHistoricalStateEvidenceItem"
+                },
+                {
+                  "$ref": "#/components/schemas/ProductEvidence"
+                }
+              ]
             },
             "title": "Evidence",
             "type": "array"

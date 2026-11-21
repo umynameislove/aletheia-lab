@@ -17,7 +17,11 @@ from aletheia_lab.hosted.historical_state_evidence import HistoricalStateInput
 from aletheia_lab.hosted.postgres_jobs import JobClaim
 from aletheia_lab.hosted.postgres_sources import SourceNotFound
 from aletheia_lab.hosted.project_operations import CanonicalProjectOperations
-from aletheia_lab.hosted.project_refresh import PreparedRefresh, refresh_uploaded_project
+from aletheia_lab.hosted.project_refresh import (
+    PreparedHistoricalRefresh,
+    PreparedRefresh,
+    refresh_uploaded_project,
+)
 from aletheia_lab.hosted.source_bundle import SourceRejected
 from aletheia_lab.hosted.upload_project import UploadProject
 from aletheia_lab.hosted.upload_snapshot import build_upload_snapshot
@@ -157,9 +161,9 @@ def _orchestration(case, failure, *, historical_state=None):
                 other = build_upload_snapshot(workspace_id=workspace, source_id="src_refresh",
                     source_sha256=value.snapshot.source_sha256, mapping=value.snapshot.mapping,
                     mapping_result=value.snapshot.mapping_result, captured_at=CAPTURED, historical_state=historical_state)
-                value = PreparedRefresh(status="new_snapshot", parent_snapshot_id=case.parent.snapshot_id,
-                                        snapshot=other)
-                return value.model_dump_json().encode()
+                model = PreparedHistoricalRefresh if failure == "worker_historical_state" else PreparedRefresh
+                return model(status="new_snapshot", parent_snapshot_id=case.parent.snapshot_id,
+                             snapshot=other).model_dump_json().encode()
             return value.model_dump_json().encode()
 
     registrations = None
@@ -202,8 +206,14 @@ def test_changed_refresh_binds_registered_evidence_only(refresh_case, worker_sup
             asyncio.run(operations.prepare_refresh(claim))
     else:
         result = asyncio.run(operations.prepare_refresh(claim))
+        assert isinstance(result, PreparedHistoricalRefresh)
         assert result.status == "new_snapshot"
         assert result.snapshot.historical_state == historical_state
         assert result.snapshot.mapping.project_id == case.parent.mapping.project_id
         assert result.snapshot.snapshot_id != case.parent.snapshot_id
+        new = _zip("0.9")
+        unchanged = _refresh(case, new, parent=result.snapshot, before=new)
+        assert isinstance(unchanged, PreparedHistoricalRefresh)
+        assert unchanged.status == "unchanged"
+        assert unchanged.snapshot.model_dump_json() == result.snapshot.model_dump_json()
     assert case.parent.model_dump_json() == old

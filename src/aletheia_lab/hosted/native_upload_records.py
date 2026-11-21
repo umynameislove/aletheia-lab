@@ -34,7 +34,6 @@ from .upload_analysis import (
 from .upload_snapshot import (
     UPLOAD_SNAPSHOT_TYPES,
     AnyUploadSnapshot,
-    UploadSnapshotV2,
     parse_upload_snapshot,
 )
 
@@ -111,7 +110,7 @@ def build_initial_upload_result(snapshot: AnyUploadSnapshot, question: str, view
     view = parse_product_view(view.model_dump(mode='python'))
     if view != analyze_upload(snapshot, question, view.runtime.model):
         raise ValueError('Initial upload result differs from the verified snapshot projection')
-    model = UploadResultRecordV2 if isinstance(snapshot, UploadSnapshotV2) else UploadResultRecord
+    model = UploadResultRecordV2 if isinstance(view, ProductViewV2) else UploadResultRecord
     return parse_upload_result_record({'schema_version': model.model_fields['schema_version'].default,
         'workspace_id': snapshot.workspace_id, 'project_id': snapshot.mapping.project_id,
         'snapshot_id': snapshot.snapshot_id, 'view': view})

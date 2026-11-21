@@ -25,7 +25,7 @@ from .postgres_sources import SourceNotFound
 from .preview_leases import PreviewLeases
 from .request_boundary import decode_json_model
 from .upload_project import _native_path, _plain_directory
-from .upload_snapshot import AnyUploadSnapshot, build_upload_snapshot
+from .upload_snapshot import AnyUploadSnapshot, HistoricalStateUploadSnapshot, build_upload_snapshot
 from .worker_limits import MAX_INPUT_BYTES, MAX_OUTPUT_BYTES, MAX_UPLOAD_OUTPUT_BYTES
 
 
@@ -224,7 +224,7 @@ class UploadOperations:
                                         expected_source_state_sha256=None if preview is None else preview.source_state_sha256)
         snapshot = (await run_blocking(decode_json_model, raw, _UploadSnapshotOutput,
                     maximum_bytes=MAX_UPLOAD_OUTPUT_BYTES)).root
-        if (snapshot.workspace_id != workspace_id or snapshot.source_id != source_id or snapshot.historical_state is not None
+        if (snapshot.workspace_id != workspace_id or snapshot.source_id != source_id or isinstance(snapshot, HistoricalStateUploadSnapshot)
                 or snapshot.source_sha256 != content_hasher(data).hexdigest()):
             raise ValueError("Worker source scope mismatch")
         if preview is not None:

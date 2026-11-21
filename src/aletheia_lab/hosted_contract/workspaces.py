@@ -16,8 +16,8 @@ from pydantic import (
 )
 
 from aletheia_lab.product.view import (
+    AnyProductEvidence,
     ProductClaim,
-    ProductEvidence,
     ProductGraph,
     ProductProject,
     ProductResult,
@@ -315,7 +315,7 @@ class ClaimPage(Page[ProductClaim]):
     snapshot_id: Identifier
 
 
-class EvidencePage(Page[ProductEvidence]):
+class EvidencePage(Page[AnyProductEvidence]):
     project_id: Identifier
     result_id: Identifier
     snapshot_id: Identifier
@@ -329,7 +329,7 @@ class EvidenceView(_Model):
     evidence_id: Identifier
     claim_id: Identifier | None = None
     relation: Literal["citation", "counterevidence"] | None = None
-    evidence: ProductEvidence
+    evidence: AnyProductEvidence
 
     @model_validator(mode="after")
     def _scope(self) -> Self:

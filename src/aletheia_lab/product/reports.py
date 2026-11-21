@@ -15,6 +15,7 @@ from aletheia_lab.product.view import (
     AnyProductView,
     ProductHistoricalState,
     ProductHistoricalStateEvidence,
+    ProductHistoricalStateEvidenceItem,
     ProductMetricDefinitionV2,
     ProductMetricObservationV2,
 )
@@ -193,7 +194,7 @@ def _append_evidence(lines: list[str], view: AnyProductView) -> None:
                 "",
             ]
         )
-        if evidence.historical_state is not None:
+        if isinstance(evidence, ProductHistoricalStateEvidenceItem):
             _append_historical_state(lines, evidence.historical_state)
 
 

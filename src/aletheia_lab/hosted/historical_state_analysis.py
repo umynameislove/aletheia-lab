@@ -6,29 +6,26 @@ from aletheia_lab.product.projection import build_product_graph
 from aletheia_lab.product.questions import checked_product_question
 from aletheia_lab.product.view import (
     HISTORICAL_STATE_MODEL,
-    AnyProductView,
     ProductClaim,
     ProductConversation,
     ProductDenominators,
-    ProductEvidence,
     ProductHistoricalState,
     ProductHistoricalStateEvidence,
+    ProductHistoricalStateEvidenceItem,
     ProductProject,
     ProductReproductionRef,
     ProductResult,
     ProductRuntime,
-    ProductSnapshot,
     ProductSnapshotV2,
     ProductTurn,
-    ProductView,
     ProductViewV2,
-    parse_product_view,
 )
 from aletheia_lab.project.identity import canonical_project_sha256
+from aletheia_lab.project.mapping import MetricDefinitionV2
 
 from .historical_state_evidence import HistoricalState, evaluate_historical_state
 from .upload_analysis import analysis_identity
-from .upload_snapshot import AnyUploadSnapshot, UploadSnapshotV2, parse_upload_snapshot
+from .upload_snapshot import AnyUploadSnapshot, HistoricalStateUploadSnapshot, parse_upload_snapshot
 
 
 def _state(state: HistoricalState | None) -> ProductHistoricalState | None:
@@ -39,13 +36,13 @@ def _state(state: HistoricalState | None) -> ProductHistoricalState | None:
     )
 
 
-def analyze_historical_state(snapshot: AnyUploadSnapshot, question: str) -> AnyProductView:
+def analyze_historical_state(snapshot: AnyUploadSnapshot, question: str) -> ProductViewV2:
     snapshot = parse_upload_snapshot(snapshot.model_dump(mode="python"))
     question = checked_product_question(question)
-    evidence_input = snapshot.historical_state
-    if evidence_input is None:
+    if not isinstance(snapshot, HistoricalStateUploadSnapshot):
         raise ValueError("Historical state evidence is unavailable for this snapshot.")
 
+    evidence_input = snapshot.historical_state
     receipt, contract = evidence_input.receipt, evidence_input.contract
     decision = evaluate_historical_state(evidence_input)
     identity = analysis_identity(snapshot.workspace_id, snapshot.snapshot_id, question, HISTORICAL_STATE_MODEL)
@@ -59,7 +56,7 @@ def analyze_historical_state(snapshot: AnyUploadSnapshot, question: str) -> AnyP
     unresolved = decision.verdict not in {"allowed", "denied"}
     missing = (decision.reason,) if unresolved else ()
     summary = f"The historical state decision is {decision.verdict}. {decision.reason}"
-    evidence = ProductEvidence(
+    evidence = ProductHistoricalStateEvidenceItem(
         id=evidence_id, kind="historical_state", title="Observed model state",
         text=(
             f"Operation {receipt.operation_id}, request {receipt.request_id}, consumer {receipt.consumer_id}. "
@@ -86,17 +83,16 @@ def analyze_historical_state(snapshot: AnyUploadSnapshot, question: str) -> AnyP
         citation_ids=(evidence_id,), counterevidence_ids=(), missing_evidence=missing,
         max_strength="abstain" if unresolved else "observation",
     )
-    native_v2 = isinstance(snapshot, UploadSnapshotV2)
-    view_model = ProductViewV2 if native_v2 else ProductView
-    snapshot_model = ProductSnapshotV2 if native_v2 else ProductSnapshot
-    projected_snapshot = snapshot_model.model_validate({
+    projected_snapshot = ProductSnapshotV2.model_validate({
         "id": snapshot.snapshot_id, "baseline_id": snapshot.snapshot_id,
         "sha256": snapshot.snapshot_id.removeprefix("upload-snapshot-"),
-        "metric_definitions": tuple(item.model_dump(mode="python") for item in snapshot.mapping.metric_definitions),
+        "metric_definitions": tuple(
+            {**item.model_dump(mode="python"), "unit": item.unit if isinstance(item, MetricDefinitionV2) else None}
+            for item in snapshot.mapping.metric_definitions
+        ),
         "metric_changes": (),
     })
-    return parse_product_view(dict(
-        schema_version=view_model.model_fields["schema_version"].default,
+    return ProductViewV2(
         demo_only=False, mode="project_audit", visibility="diagnosis",
         project=ProductProject(id=snapshot.mapping.project_id, display_name="Uploaded project"),
         snapshot=projected_snapshot, runtime=runtime,
@@ -118,4 +114,4 @@ def analyze_historical_state(snapshot: AnyUploadSnapshot, question: str) -> AnyP
             claim_citations={claim_id: (evidence_id,)}, disposition_id=result_id,
             result_scope_id=turn_id, observed_evidence_ids=(evidence_id,),
         ),
-    ))
+    )

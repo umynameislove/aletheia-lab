@@ -328,9 +328,10 @@ async def _journey(client, jobs, operations, headers, case, name, raw, evidence,
         headers=key("confirm"), json={"schema_version": API_VERSION, "mapping": _demo_mapping(preview)})
     stored = await _complete(client, jobs, operations, ack, "confirm", headers)
     async with case.pool.connection() as conn:
-        row = await (await conn.execute("SELECT project_id FROM k05_records WHERE workspace_id='a' AND record_id=%s",
+        row = await (await conn.execute("SELECT project_id,schema_version FROM k05_records WHERE workspace_id='a' AND record_id=%s",
                                         (stored["snapshot_id"],))).fetchone()
-    project = row[0]
+    project, snapshot_version = row
+    assert snapshot_version == ("hosted-upload-snapshot/v3" if evidence else "hosted-upload-snapshot/v1")
     if registered_project:
         assert project == registered_project
     endpoint = f"{scope}/projects/{project}/analyses"
@@ -338,6 +339,7 @@ async def _journey(client, jobs, operations, headers, case, name, raw, evidence,
                "backend": "historical_state" if evidence else "local_evidence"}
     ack = await _request(client, "POST", endpoint, 202, headers=key("analyze"), json=command)
     view = await _complete(client, jobs, operations, ack, "analyze", headers)
+    assert view["schema_version"] == ("p6-product-view/v2" if evidence else "p6-product-view/v1")
     again = await _request(client, "POST", endpoint, 202, headers=key("analyze"), json=command)
     assert again["job_id"] == ack["job_id"]
     assert await _request(client, "GET", ack["status_url"] + "/output", 200, headers=headers) == {
@@ -352,6 +354,7 @@ async def _journey(client, jobs, operations, headers, case, name, raw, evidence,
         SecretStr(("synthetic-historical-state-session-a").ljust(43, "t"))), workspace_id="a",
         project_id=project, record_id=view["result"]["id"])
     assert record.view.model_dump(mode="json") == view
+    assert record.schema_version == ("hosted-upload-result/v2" if evidence else "hosted-upload-result/v1")
     async with case.pool.connection() as conn:
         publications = await (await conn.execute("SELECT count(*) FROM k06_action_audit "
             "WHERE action='job.publish' AND effect_id=%s", (view["result"]["id"],))).fetchone()
@@ -375,6 +378,8 @@ async def _journey(client, jobs, operations, headers, case, name, raw, evidence,
         assert citation["source_sha256"] == source["sha256"]
         assert citation["reproduction_ref"]["record_id"] == stored["snapshot_id"]
         assert detail["evidence"] == citation
+        page = await _request(client, "GET", f"{scope}/results/{view['result']['id']}/evidence", 200, headers=headers)
+        assert page["items"] == [citation]
         assert citation["historical_state"]["receipt_sha256"] == canonical_project_sha256(
             evidence.receipt.model_dump(mode="json"))
         assert citation["historical_state"]["observed_state"] == (

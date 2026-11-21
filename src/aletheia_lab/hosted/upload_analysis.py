@@ -27,9 +27,13 @@ from aletheia_lab.product.view import (
     parse_product_view,
 )
 from aletheia_lab.project.identity import canonical_project_sha256
-from aletheia_lab.project.mapping import MetricObservation, MetricObservationV2
+from aletheia_lab.project.mapping import (
+    MetricObservation,
+    MetricObservationV2,
+    ProjectMappingConfigurationV2,
+)
 
-from .upload_snapshot import AnyUploadSnapshot, UploadSnapshotV2, parse_upload_snapshot
+from .upload_snapshot import AnyUploadSnapshot, parse_upload_snapshot
 
 INITIAL_OBSERVATION_MODEL = 'upload-snapshot-observation/v1'
 METRIC_OBSERVATION_MODEL = 'upload-snapshot-metric-observation/v2'
@@ -90,12 +94,13 @@ def _initial_view(snapshot: AnyUploadSnapshot, question: str) -> AnyProductView:
     claim = ProductClaim(id=claim_id, turn_id=turn_id, text=text, claim_type="evidence_statement",
         epistemic_state="observed", support="fully_supported", citation_ids=(evidence_id,), counterevidence_ids=(),
         missing_evidence=missing, max_strength="observation")
-    model = ProductViewV2 if isinstance(snapshot, UploadSnapshotV2) else ProductView
+    version2 = isinstance(snapshot.mapping, ProjectMappingConfigurationV2)
+    model = ProductViewV2 if version2 else ProductView
     snapshot_data = dict(id=snapshot.snapshot_id, baseline_id=snapshot.snapshot_id,
         sha256=snapshot.snapshot_id.removeprefix('upload-snapshot-'),
         metric_definitions=tuple(item.model_dump(mode='python') for item in snapshot.mapping.metric_definitions),
         metric_changes=())
-    projected_snapshot = (ProductSnapshotV2.model_validate(snapshot_data) if isinstance(snapshot, UploadSnapshotV2)
+    projected_snapshot = (ProductSnapshotV2.model_validate(snapshot_data) if version2
                           else ProductSnapshot.model_validate(snapshot_data))
     return parse_product_view(dict(schema_version=model.model_fields['schema_version'].default,
         demo_only=False, mode="project_audit", visibility="diagnosis",
@@ -172,12 +177,13 @@ def analyze_upload_metrics(snapshot: AnyUploadSnapshot, question: str) -> AnyPro
             missing_evidence=missing, max_strength='observation'))
     total = len(snapshot.mapping_result.metric_observations)
     summary = f'Observed {total} validated metric values in {len(groups)} mapped series.'
-    model = ProductViewV2 if isinstance(snapshot, UploadSnapshotV2) else ProductView
+    version2 = isinstance(snapshot.mapping, ProjectMappingConfigurationV2)
+    model = ProductViewV2 if version2 else ProductView
     snapshot_data = dict(id=snapshot.snapshot_id, baseline_id=snapshot.snapshot_id,
         sha256=snapshot.snapshot_id.removeprefix('upload-snapshot-'),
         metric_definitions=tuple(item.model_dump(mode='python') for item in snapshot.mapping.metric_definitions),
         metric_changes=())
-    projected = (ProductSnapshotV2.model_validate(snapshot_data) if isinstance(snapshot, UploadSnapshotV2)
+    projected = (ProductSnapshotV2.model_validate(snapshot_data) if version2
                  else ProductSnapshot.model_validate(snapshot_data))
     ids = tuple(item.id for item in evidence)
     return parse_product_view(dict(schema_version=model.model_fields['schema_version'].default,

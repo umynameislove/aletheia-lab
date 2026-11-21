@@ -21,9 +21,8 @@ from .resource_admission import SOURCE_COMPLETION_BYTES_PER_PROCESS, ByteAdmissi
 from .source_bundle import SourceEntry, SourceRejected, inspect_source_bundle
 from .transactions import run_transaction
 from .upload_snapshot import (
+    UPLOAD_SNAPSHOT_TYPES,
     AnyUploadSnapshot,
-    UploadSnapshot,
-    UploadSnapshotV2,
     parse_upload_snapshot,
 )
 from .upload_staging import (
@@ -264,7 +263,7 @@ class PostgresSources:
                 raise TimeoutError("Canonical snapshot storage is unavailable.")
             canonical = await self._catalog.read_record(credential_digest=credential_digest,
                 workspace_id=workspace_id, project_id=project_id, record_id=snapshot_id)
-            if not isinstance(canonical, (UploadSnapshot, UploadSnapshotV2)):
+            if not isinstance(canonical, UPLOAD_SNAPSHOT_TYPES):
                 raise CatalogIntegrityError()
             result = canonical
             canonical_json = await run_blocking(result.model_dump_json)
