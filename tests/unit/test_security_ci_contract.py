@@ -343,9 +343,9 @@ def test_manual_contract_job_is_independent_of_runtime_services() -> None:
     command = _commands(integration["run"])[0]
     paths = {path.relative_to(_ROOT).as_posix() for pattern in command if pattern.startswith("tests/integration/")
         for path in _ROOT.glob(pattern)}
-    required = {path.relative_to(_ROOT).as_posix() for task in range(2, 19)
+    required = {path.relative_to(_ROOT).as_posix() for task in (*range(2, 19), 20, 21)
         for path in (_ROOT / 'tests/integration').glob(f'test_k{task:02}_*.py')}
-    assert paths == required and paths, "Hosted PostgreSQL CI must cover every current K02–K18 integration module."
+    assert paths == required and paths, "Hosted PostgreSQL CI must cover the existing integration modules and claim review."
     assert any('-m integration tests/unit/test_k05_query_probe.py' in str(step.get("run", "")) for step in backend["steps"])
     for step in contracts["steps"]:
         assert "docker" not in str(step.get("run", "")).lower()

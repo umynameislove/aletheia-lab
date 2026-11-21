@@ -37,6 +37,8 @@ export function createHostedBootstrap(options: {
   let alive = true, controller = new AbortController(), guard: SessionGuard | null = null;
   let client: ReturnType<typeof createHostedClient>;
   let checking: Promise<HostedSession> | null = null;
+  let renewing: Promise<void> | null = null;
+  let renewed = 0;
   let watchedJob: string | null = null;
   /** the result on screen: its own read must still be allowed, not just the session, workspace or a job */
   let watchedResult: HostedResultScope | null = null;
@@ -54,7 +56,7 @@ export function createHostedBootstrap(options: {
   };
   const current = (generation: number) => alive && generation === state.generation && !controller.signal.aborted;
   function clear(status: HostedBoot["status"] = "signed_out", error: ProductError | null = null) {
-    controller.abort(); controller = new AbortController(); checking = null; guard = null; watchedJob = null; watchedResult = null; jobReadAt = null; selecting++;
+    controller.abort(); controller = new AbortController(); checking = null; renewing = null; guard = null; watchedJob = null; watchedResult = null; jobReadAt = null; selecting++;
     options.onClear();
     publish({ status, session: null, workspace: null, error, generation: state.generation + 1, opening: null });
   }
@@ -67,11 +69,25 @@ export function createHostedBootstrap(options: {
     client = makeClient();
     if (workspace) options.onWorkspaceLost?.(workspace);
   }
+  function fetchForSession(generation: number): typeof options.fetch {
+    return async (url, init) => {
+      const version = renewed;
+      const response = await options.fetch(url, init);
+      if (response.status !== 401 || (init?.method ?? "GET") !== "GET" || !current(generation)) return response;
+      // A read sent across this tab's successful cookie rotation may have used the retired cookie.
+      // Confirm it once with the current cookie. A real denial still goes through the session guard.
+      try { await renewing; } catch { return response; }
+      if (renewed === version || !current(generation) || init?.signal?.aborted) return response;
+      void response.body?.cancel().catch(() => undefined);
+      return options.fetch(url, init);
+    };
+  }
   function makeClient() {
     const generation = state.generation;
+    const request = fetchForSession(generation);
     // A 2xx GET of the watched job (or its updates) from this generation is a read of that job's own scope.
     const fetch: typeof options.fetch = async (url, init) => {
-      const at = now(), response = await options.fetch(url, init);
+      const at = now(), response = await request(url, init);
       const job = watchedJob, workspace = state.workspace?.workspace_id;
       if (response.ok && (init?.method ?? "GET") === "GET" && job && workspace && current(generation)
         && (String(url) === `/v1/workspaces/${workspace}/jobs/${job}` || String(url).startsWith(`/v1/workspaces/${workspace}/jobs/${job}/updates`))) {
@@ -121,7 +137,7 @@ export function createHostedBootstrap(options: {
   /* One read in this scope. 403/404 means the scope is gone: everything held for it is dropped. */
   async function scoped(session: HostedSession, generation: number, read: (probe: ReturnType<typeof createHostedClient>) => Promise<unknown>) {
     let denial: "membership_revoked" | "permission_denied" | undefined;
-    const probe = createHostedClient({ fetch: options.fetch, session, signal: controller.signal,
+    const probe = createHostedClient({ fetch: fetchForSession(generation), session, signal: controller.signal,
       isCurrent: () => current(generation), onAnswer: (status, code) => {
         if (status === 403 || status === 404) denial = code === "membership_revoked" ? code : "permission_denied";
         if (status >= 300 && code !== "membership_revoked") guard?.noteResponse(status, code);
@@ -232,10 +248,22 @@ export function createHostedBootstrap(options: {
       client = makeClient();
     }
   }
+  async function renew() {
+    if (renewing) return renewing;
+    const generation = state.generation;
+    const request = client.renew().then(next => {
+      if (!current(generation)) throw new HostedRequestDiscarded();
+      applySession(next);
+      renewed++;
+    });
+    renewing = request;
+    try { await request; }
+    finally { if (renewing === request) renewing = null; }
+  }
   return {
     snapshot: () => state,
     subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; },
-    start, refreshSession, selectWorkspace, refreshCapabilities,
+    start, refreshSession, selectWorkspace, refreshCapabilities, fetchForSession,
     guard: () => guard,
     watchJob: (job: string | null) => { watchedJob = job; },
     watchResult: (scope: HostedResultScope | null) => {
@@ -253,7 +281,7 @@ export function createHostedBootstrap(options: {
       else if (error.code === "membership_revoked") dropWorkspace(error.code);
       else if (error.code === "session_revoked") clear();
     },
-    async renew() { const generation = state.generation; const next = await client.renew(); if (current(generation)) applySession(next); },
+    renew,
     async logout(all = false) {
       const generation = state.generation;
       const destination = all ? await client.logoutAll() : await client.logout();

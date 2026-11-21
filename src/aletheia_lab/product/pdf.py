@@ -19,7 +19,7 @@ def pdf_available() -> bool:
             and files("aletheia_lab.product").joinpath("fonts/NotoSansMono-Regular.ttf").is_file())
 
 
-def render_text_pdf(pages: tuple[tuple[str, ...], ...]) -> bytes:
+def render_text_pdf(pages: tuple[tuple[str, ...], ...], *, title: str = "Aletheia Lab Product Report") -> bytes:
     if not pdf_available():
         raise ProductError("feature_unavailable", "PDF rendering requires the PDF installation extra.")
     from reportlab.pdfbase import pdfmetrics  # type: ignore[import-untyped]
@@ -38,12 +38,12 @@ def render_text_pdf(pages: tuple[tuple[str, ...], ...]) -> bytes:
     output = io.BytesIO()
     canvas = Canvas(output, pagesize=(595, 842), pageCompression=1, invariant=1,
                     pdfVersion=(1, 4), initialFontName=_FONT)
-    canvas.setTitle("Aletheia Lab Product Report")
+    canvas.setTitle(title)
     canvas.setAuthor("Aletheia Lab")
     for number, lines in enumerate(pages, 1):
         canvas.setFillColorRGB(0.16, 0.22, 0.29)
         canvas.setFont(_FONT, 8)
-        canvas.drawString(54, 812, "Aletheia Lab Product Report")
+        canvas.drawString(54, 812, title)
         text = canvas.beginText(54, 788)
         text.setFont(_FONT, 9)
         text.setLeading(12)

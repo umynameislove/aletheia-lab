@@ -10,8 +10,9 @@ from typing import Literal, cast
 from pydantic import SecretStr
 
 from aletheia_lab.hosted_auth.postgres_sessions import Connection, Pool, _digest
+from aletheia_lab.hosted_contract.claim_review import CLAIM_REVIEW_BINDING_ADAPTER
 from aletheia_lab.hosted_contract.job_attempts import JobAttemptPage
-from aletheia_lab.hosted_contract.job_page import Job, JobReceipt
+from aletheia_lab.hosted_contract.job_page import JOB_OPERATIONS, Job, JobOperation, JobReceipt
 from aletheia_lab.hosted_contract.project_analysis import AnalysisBackend
 from aletheia_lab.hosted_contract.project_operations import FollowUpRequest
 from aletheia_lab.product.follow_up import (
@@ -24,11 +25,12 @@ from aletheia_lab.product.view import (
     parse_product_view_json,
 )
 
-from . import job_admission, job_output, job_publication
+from . import claim_review_jobs, job_admission, job_output, job_publication
 from .action_audit import current_request_id, record_action
 from .authorization import Authorization, AuthorizationDenied
 from .canonical_results import CanonicalResults
-from .job_execution import QueuePolicy, execution_profile
+from .claim_provider_plan import ClaimProviderPlan
+from .job_execution import QueuePolicy, base_job_schema_ready, execution_profile
 from .job_lifecycle import CLAIM_BUDGET, DEADLINE, PUBLICATION_BUDGET, expire_job, public_job
 from .native_upload_records import (
     CanonicalResultRecord,
@@ -39,6 +41,7 @@ from .native_upload_records import (
 )
 from .postgres_catalog import PostgresCatalog
 from .postgres_sources import PostgresSources, SourceConflict, SourceNotFound
+from .project_job_operations import authorize_follow_up, authorize_refresh
 from .transactions import run_transaction
 from .upload_snapshot import (
     AnyUploadSnapshot,
@@ -52,7 +55,7 @@ _DEFAULT_ANALYSIS_MODELS = ("upload-snapshot-observation/v1", "upload-snapshot-m
                             "upload-snapshot-windowed-metric-observation/v3")
 _ANALYSIS_MODELS = (*_DEFAULT_ANALYSIS_MODELS, HISTORICAL_STATE_MODEL)
 
-Operation = Literal["preview", "confirm", "analyze", "follow_up", "refresh"]
+Operation = JobOperation
 _AVAILABLE = "(state='queued' OR (state='running' AND lease_until<clock_timestamp()))"
 
 
@@ -74,13 +77,16 @@ class PostgresJobs:
     def __init__(self, pool: Pool, access: PostgresSources, *, audit: bool = False,
                  catalog: PostgresCatalog | None = None, execution: bool = False,
                  queue_policy: QueuePolicy | None = None,
-                 analysis_model: AnalysisModel = "upload-snapshot-observation/v1") -> None:
+                 analysis_model: AnalysisModel = "upload-snapshot-observation/v1",
+                 claim_provider_plan: ClaimProviderPlan | None = None,
+                 claim_provider_key: SecretStr | None = None) -> None:
         if type(execution) is not bool:
             raise ValueError('Explicit job execution profile required.')
         self._pool, self._access, self._audit = pool, access, audit
         if analysis_model not in _DEFAULT_ANALYSIS_MODELS:
             raise ValueError("A supported analysis model is required.")
         self.analysis_model = analysis_model
+        self.claim_provider_plan, self.claim_provider_key = claim_provider_plan, claim_provider_key
         self.execution = execution
         self.queue_policy = QueuePolicy() if queue_policy is None else queue_policy
         self._read_catalog = catalog
@@ -121,6 +127,9 @@ class PostgresJobs:
         return await enqueue_analysis(self, credential_digest=credential_digest, workspace_id=workspace_id,
             project_id=project_id, snapshot_id=snapshot_id, question=question, request_key=request_key,
             backend=backend)
+
+    enqueue_claim_review = claim_review_jobs.enqueue_claim_review
+    read_claim_review = claim_review_jobs.read_claim_review
 
     async def complete_refresh(self, *, claim: JobClaim, lease_digest: SecretStr, snapshot: AnyUploadSnapshot) -> bool:
         return await self._complete_canonical_snapshot(claim=claim, lease_digest=lease_digest, snapshot=snapshot)
@@ -190,25 +199,21 @@ class PostgresJobs:
                               record: CanonicalResultRecord) -> bool:
         return await job_publication.complete_result(self, claim=claim, lease_digest=lease_digest, record=record)
 
-    async def is_ready(self) -> bool:
+    async def _base_ready(self) -> bool:
         try:
             async with self._pool.connection() as conn:
-                await conn.execute("SELECT job_id,workspace_id,creator_id,credential_digest,operation,"
-                    "key_hash,request_hash,request,request_id,state,lease_digest,lease_until,result,created_at "
-                    "FROM j01_jobs LIMIT 0")
-                await conn.execute("SELECT source_id,workspace_id,creator_id,request_key_hash,sha256,"
-                    "payload,manifest,created_at FROM j01_sources LIMIT 0")
-                await conn.execute("SELECT snapshot_id,workspace_id,source_id,payload "
-                    "FROM j01_upload_snapshots LIMIT 0")
-                await conn.execute("SELECT workspace_id,source_id,user_id,actions,revision FROM j01_source_grants LIMIT 0")
-                await conn.execute("SELECT version,checksum,applied_at FROM k04_workspace_migrations LIMIT 0")
-                constraint = await (await conn.execute("SELECT convalidated FROM pg_constraint WHERE "
-                    "conrelid='j01_upload_snapshots'::regclass AND conname='j01_snapshots_source_scope'")).fetchone()
-                if constraint != (True,):
-                    return False
-            return not self.execution or await self.execution_ready()
+                return await base_job_schema_ready(conn)
         except Exception:
             return False
+
+    async def is_ready(self) -> bool:
+        return await self._base_ready() and (not self.execution or await self.execution_ready())
+
+    async def capability_readiness(self) -> tuple[bool, bool]:
+        """Return idempotency and execution from one current execution probe."""
+        base = await self._base_ready()
+        execution = await self.execution_ready()
+        return (base and execution, execution)
 
     async def execution_ready(self) -> bool:
         if not self.execution:
@@ -217,9 +222,9 @@ class PostgresJobs:
             async with self._pool.connection() as conn:
                 if not await execution_profile(conn):
                     return False
-                await conn.execute('SELECT failure_kind,available_at,attempt_count,deadline_at FROM j01_jobs LIMIT 0')
-                await conn.execute('SELECT epoch,heartbeat_at,outcome FROM k09_job_attempts LIMIT 0')
-                await conn.execute('SELECT workspace_id,operation,last_claim_at FROM k09_queue_turns LIMIT 0')
+                await conn.execute('SELECT j.failure_kind,j.available_at,j.attempt_count,j.deadline_at,'
+                    'a.epoch,a.heartbeat_at,a.outcome,t.workspace_id,t.operation,t.last_claim_at '
+                    'FROM j01_jobs j CROSS JOIN k09_job_attempts a CROSS JOIN k09_queue_turns t LIMIT 0')
             return True
         except Exception:
             return False
@@ -324,10 +329,9 @@ class PostgresJobs:
             return False
         try:
             async with self._pool.connection() as conn:
-                await conn.execute("SELECT canonical_project_id,parent_result_id,canonical_result_id FROM j01_jobs LIMIT 0")
-                await conn.execute("SELECT source_id FROM k05_records LIMIT 0")
-                await conn.execute("SELECT provenance_kind FROM k05_projects LIMIT 0")
-                await conn.execute("SELECT canonical_record_id FROM j01_upload_snapshots LIMIT 0")
+                await conn.execute("SELECT j.canonical_project_id,j.parent_result_id,j.canonical_result_id,"
+                    "r.source_id,p.provenance_kind,s.canonical_record_id FROM j01_jobs j "
+                    "CROSS JOIN k05_records r CROSS JOIN k05_projects p CROSS JOIN j01_upload_snapshots s LIMIT 0")
                 expected = {"k05_job_operation_v6": ("c", True), "k05_job_request_shape_v6": ("c", True),
                     "k05_follow_up_parent_scope": ("f", True), "k05_job_canonical_result_scope": ("f", True),
                     "k05_upload_snapshot_canonical_scope": ("f", True)}
@@ -396,22 +400,13 @@ class PostgresJobs:
 
     async def _authorize(self, conn: Connection, digest: str, workspace_id: str, operation: str,
                          request: dict[str, object], *, reading: bool = False) -> Authorization:
+        if operation == "review_claim":
+            return await claim_review_jobs.authorize_claim_review(
+                self, conn, digest, workspace_id, CLAIM_REVIEW_BINDING_ADAPTER.validate_python(request), reading=reading)
         if operation == "refresh":
-            from .project_job_operations import authorize_refresh
-
             return await authorize_refresh(self, conn, digest, workspace_id, request, reading=reading)
         if operation == "follow_up":
-            if self._canonical is None:
-                raise TimeoutError("Canonical project storage is unavailable.")
-            action = "read" if reading else "analyze"
-            auth = await self._access._access(conn, digest, workspace_id, action=action)
-            project, parent = request.get("project_id"), request.get("parent_result_id")
-            if not isinstance(project, str) or not isinstance(parent, str):
-                raise SourceNotFound()
-            kind = await self._access._authorization.authorize_record(conn, auth, workspace_id, project, parent, action)
-            if kind not in ("result", "upload_result"):
-                raise SourceNotFound()
-            return auth
+            return await authorize_follow_up(self, conn, digest, workspace_id, request, reading=reading)
         if operation == "analyze" and (
                 set(request) not in ({"snapshot_id", "question"}, {"snapshot_id", "question", "analysis_model"})
                 or request.get("analysis_model", _ANALYSIS_MODELS[0]) not in _ANALYSIS_MODELS
@@ -567,7 +562,7 @@ class PostgresJobs:
         lease = _digest(lease_digest)
         if type(lease_seconds) is not int or not 1 <= lease_seconds <= 300:
             raise ValueError("invalid lease")
-        if not operations or any(value not in ("preview", "confirm", "analyze", "follow_up", "refresh") for value in operations):
+        if not operations or any(value not in JOB_OPERATIONS for value in operations):
             raise ValueError("invalid operations")
         tried: list[str] = []
 
@@ -678,6 +673,8 @@ class PostgresJobs:
                                          request, SecretStr(cast(str, digest)))
 
     async def complete(self, *, claim: JobClaim, lease_digest: SecretStr, result: dict[str, object]) -> bool:
+        if claim.operation == "review_claim":
+            raise ValueError("Claim reviews require verified receipt publication.")
         lease, digest = _digest(lease_digest), _digest(claim.credential_digest)
         request_payload = json.dumps(claim.request, ensure_ascii=True, allow_nan=False, sort_keys=True, separators=(",", ":"))
         request = json.loads(request_payload)

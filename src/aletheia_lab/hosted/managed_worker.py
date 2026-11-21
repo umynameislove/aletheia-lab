@@ -11,6 +11,8 @@ from contextlib import AsyncExitStack
 from functools import partial
 from pathlib import Path
 
+from pydantic import SecretStr
+
 from aletheia_lab.hosted_auth.clock_guard import probe_clock
 from aletheia_lab.hosted_auth.postgres_sessions import Pool
 from aletheia_lab.hosted_auth.settings import AuthPolicy, load_auth_policy
@@ -18,6 +20,8 @@ from aletheia_lab.hosted_auth.worker_sessions import WorkerPostgresSources as Po
 
 from .action_audit import is_ready as audit_is_ready
 from .action_audit_migration import verify as verify_action_audit
+from .claim_provider_attempts import drain_provider_attempts
+from .claim_provider_plan import load_claim_provider_plan
 from .import_failures import ImportFailures
 from .object_store import FilesystemObjectStore
 from .observability import configure_process_observability, process_telemetry
@@ -82,6 +86,13 @@ async def run_worker(environment: Mapping[str, str], stop: asyncio.Event) -> Non
     policy = load_auth_policy(Path(environment["ALETHEIA_HOSTED_AUTH_POLICY"]))
     policy.require_runtime(settings)
     registration = settings.worker.historical_state
+    provider_config = settings.worker.claim_provider
+    claim_provider_plan = (None if provider_config is None else load_claim_provider_plan(
+        provider_config.manifest_path, provider_config.manifest_sha256,
+    ))
+    provider_key = environment.get("ALETHEIA_HOSTED_CLAIM_PROVIDER_KEY") if claim_provider_plan is not None else None
+    if claim_provider_plan is not None and not provider_key:
+        raise RuntimeError("The approved claim provider credential is unavailable.")
     historical_state_inputs = None
     if registration is not None:
         from .historical_state_registration import load_historical_state_inputs
@@ -93,6 +104,7 @@ async def run_worker(environment: Mapping[str, str], stop: asyncio.Event) -> Non
     worker_type = _supervisor_type()
     async with AsyncExitStack() as stack:
         pool = await stack.enter_async_context(postgres_pool(settings, environment, role="worker"))
+        stack.push_async_callback(drain_provider_attempts, settings.worker.shutdown_grace_seconds)
         process_telemetry().bind_pool(pool)
         process_telemetry().watch_loop(asyncio.get_running_loop())
         async with asyncio.timeout(settings.api.startup_timeout_seconds):
@@ -104,6 +116,9 @@ async def run_worker(environment: Mapping[str, str], stop: asyncio.Event) -> Non
                 maximum_expanded_bytes=512 * 1024 * 1024, maximum_entries=100000,
                 audit=audit_enabled, catalog=catalog)
             jobs = PostgresJobs(pool, sources, audit=audit_enabled, catalog=catalog, execution=True)
+            if claim_provider_plan is not None and provider_key is not None:
+                jobs.claim_provider_plan = claim_provider_plan
+                jobs.claim_provider_key = SecretStr(provider_key)
             leases = PreviewLeases(sources)
             leased_imports = await upload_profile(sources, leases)
             canonical_ready = catalog is not None and await jobs.follow_up_ready()
@@ -140,23 +155,46 @@ async def run_worker(environment: Mapping[str, str], stop: asyncio.Event) -> Non
             await asyncio.gather(task, stopping, return_exceptions=True)
 
 
+async def _worker_dependencies_ready(pool: Pool, jobs: PostgresJobs, *,
+                                     audit_enabled: bool, canonical_ready: bool) -> bool:
+    if audit_enabled and not await audit_is_ready(pool):
+        return False
+    if canonical_ready and not await jobs.follow_up_ready():
+        return False
+    return await jobs.execution_ready()
+
+
 async def _worker_clock(settings: RuntimeSettings, policy: AuthPolicy, pool: Pool,
                         sources: PostgresSources, leases: PreviewLeases, leased_imports: bool,
                         audit_enabled: bool, canonical_ready: bool, jobs: PostgresJobs) -> bool:
-    try:
-        async with asyncio.timeout(min(2, settings.api.backend_timeout_seconds)):
-            if await upload_profile(sources, leases) != leased_imports:
+    bound = min(2, settings.api.backend_timeout_seconds)
+    loop = asyncio.get_running_loop()
+    for _ in range(2):
+        expires = loop.time() + bound
+        deadline = asyncio.timeout_at(expires)
+        try:
+            async with deadline:
+                if await upload_profile(sources, leases) != leased_imports:
+                    return False
+                if loop.time() >= expires:
+                    continue
+                if not await _worker_dependencies_ready(pool, jobs,
+                        audit_enabled=audit_enabled, canonical_ready=canonical_ready):
+                    return False
+                clock_ready = await probe_clock(pool, max_skew_seconds=policy.clock_skew_seconds,
+                                               timeout_seconds=bound)
+                if clock_ready is not True:
+                    return False
+                if loop.time() < expires:
+                    return True
+        except TimeoutError:
+            # An expired outer check has no timely observation. Retry the
+            # full check once; explicit readiness failures and skew stay false.
+            if not deadline.expired():
                 return False
-            if audit_enabled and not await audit_is_ready(pool):
-                return False
-            if canonical_ready and not await jobs.follow_up_ready():
-                return False
-            if not await jobs.execution_ready():
-                return False
-            return await probe_clock(pool, max_skew_seconds=policy.clock_skew_seconds,
-                                     timeout_seconds=min(2, settings.api.backend_timeout_seconds))
-    except Exception:
-        return False
+        except Exception:
+            return False
+    return False
 
 
 def main() -> int:

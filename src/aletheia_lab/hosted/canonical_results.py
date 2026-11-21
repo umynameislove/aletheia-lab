@@ -24,7 +24,7 @@ from .native_upload_records import (
     NativeUploadModel,
     UploadResultRecord,
     UploadResultRecordV2,
-    build_initial_upload_result,
+    _bind_initial_upload_result,
     native_metadata,
     native_parents,
     parse_upload_result_record,
@@ -198,7 +198,7 @@ class CanonicalResults:
             if (workspace_id != snapshot.workspace_id or record.workspace_id != workspace_id
                     or record.parent_result_id is not None
                     or not record.view.conversation.turns
-                    or record != build_initial_upload_result(snapshot, record.view.conversation.turns[0].question, record.view)):
+                    or record != _bind_initial_upload_result(snapshot, record.view.conversation.turns[0].question, record.view)):
                 raise ValueError
         except (ValueError, TypeError, AttributeError):
             raise CanonicalResultRejected() from None

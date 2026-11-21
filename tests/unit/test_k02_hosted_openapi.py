@@ -90,6 +90,47 @@ def test_job_output_schema_checks_optional_historical_state_affordances(exported
     assert not validator.is_valid(confirm)
 
 
+def test_claim_review_routes_and_job_output_have_typed_schemas(exported_contract):
+    _, (spec, _, examples, _) = exported_contract
+    route = "/v1/workspaces/{workspace_id}/results/{result_id}/claims/{claim_id}/reviews"
+    post = spec["paths"][route]["post"]
+    read = spec["paths"][route + "/{review_id}"]["get"]
+    assert post["requestBody"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/ClaimReviewRequest",
+    }
+    assert post["responses"]["202"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/JobReceipt",
+    }
+    receipt_schema = {"oneOf": [
+        {"$ref": "#/components/schemas/ClaimReviewReceipt"},
+        {"$ref": "#/components/schemas/ProviderClaimReviewReceipt"},
+    ]}
+    assert read["responses"]["200"]["content"]["application/json"]["schema"] == receipt_schema
+    export = spec["paths"][route + "/{review_id}/export"]["get"]
+    response = export["responses"]["200"]
+    assert set(response["content"]) == {"application/json", "text/markdown", "application/pdf"}
+    assert response["content"]["application/json"]["schema"] == receipt_schema
+    assert {"Content-Disposition", "ETag", "X-Aletheia-Receipt-Sha256"} <= set(response["headers"])
+    assert any(p["name"] == "format" and p["required"] for p in export["parameters"])
+    assert {"SessionCookie", "CsrfHeader", "CsrfCookie"} == set(post["security"][0])
+    assert {"SessionCookie"} == set(read["security"][0])
+    assert {"SessionCookie"} == set(export["security"][0])
+    assert any(p["name"] == "Idempotency-Key" and p["required"] for p in post["parameters"])
+    result = copy.deepcopy(next(v for _, v in examples if v.get("operation") == "review_claim"))
+    shape = spec["paths"]["/v1/workspaces/{workspace_id}/jobs/{job_id}/output"]["get"][
+        "responses"]["200"]["content"]["application/json"]["schema"]
+    validator = Draft202012Validator({**shape, "components": spec["components"]})
+    assert validator.is_valid(result)
+    result["result"]["binding"]["claim_sha256"] = "wrong"
+    assert not validator.is_valid(result)
+    provider = copy.deepcopy(next(
+        v for _, v in examples if v.get("operation") == "review_claim" and v["result"]["mode"] == "provider"
+    ))
+    assert validator.is_valid(provider)
+    del provider["result"]["attempt"]["request_sha256"]
+    assert not validator.is_valid(provider)
+
+
 def test_exporter_itself_is_in_the_stable_source_boundary(exported_contract):
     namespace, _ = exported_contract
     inputs = namespace["sources"](ROOT)

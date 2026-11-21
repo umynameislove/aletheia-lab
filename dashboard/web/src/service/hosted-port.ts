@@ -8,6 +8,7 @@
    failed read reconciles with what the server may already have done instead of starting something new.
    A replacement ZIP is the same intent only when its SHA-256 matches; other bytes start a new upload. */
 import type { ProductView } from "../types.ts";
+import type { ClaimReviewScope, ReviewMode, ReviewVerdict } from "./claim-review.ts";
 import type { createHostedClient, HostedUploadResume } from "./hosted-client.ts";
 import { questionLimit, type HostedCapabilities, type HostedSession } from "./hosted.ts";
 import { HostedRequestDiscarded, ProductError, type ProductPort, type RefreshResult, type TombstoneReceipt } from "./port.ts";
@@ -37,6 +38,7 @@ export interface HostedProductPort extends ProductPort {
   /** Uploads the replacement ZIP for a refresh with the current uploader; the server's source ID comes back. */
   uploadReplacement(project_id: string, file: Blob, signal?: AbortSignal): Promise<{ source_id: string }>;
   analyzeHistoricalState(projectId: string, snapshotId: string, question: string): Promise<ProductView>;
+  submitClaimReview(scope: ClaimReviewScope, verdict: ReviewVerdict, mode: ReviewMode, signal?: AbortSignal): Promise<string>;
 }
 
 /* Feature names and actions as the producer's capabilities set them (hosted/upload_runtime.py, 2026-11-11). */
@@ -262,6 +264,20 @@ export function createHostedPort(): HostedProductPort {
     },
     analyze_observations: (projectId, snapshotId, question) => analyze(projectId, snapshotId, question),
     analyzeHistoricalState: (projectId, snapshotId, question) => analyze(projectId, snapshotId, question, true),
+    submitClaimReview: async (scope, verdict, mode, signal) => {
+      const { context, wait } = fence();
+      if (!currentView || currentView.project.id !== scope.projectId || currentView.snapshot.id !== scope.snapshotId
+        || currentView.result.id !== scope.resultId || !currentView.claims.some(claim => claim.id === scope.claimId)) {
+        throw outOfScope();
+      }
+      const name = `review:${scope.resultId}:${scope.claimId}:${mode}:${verdict}`;
+      const held = intent(name, scope.snapshotId);
+      const receipt = await mutate([name], null, () => wait(
+        context.client.submitClaimReview(context.workspace, context.caps, scope, verdict, mode, held.key, signal)));
+      const job = accepted(context, receipt);
+      intents.delete(name);
+      return job;
+    },
     uploadReplacement: async (projectId, file, signal) => {
       const { context, check, wait } = fence();
       gate(context, "refresh");

@@ -44,6 +44,9 @@ export function useRoute() {
      address the app corrected and is sent forward again, so it can never leave. */
   const setQ = useCallback((patch: Record<string, string | null | undefined>, opts?: { replace?: boolean }) => {
     const cur = readHash();
+    if (import.meta.env.MODE === "hosted" && !("review" in patch)
+      && (("claim" in patch && patch.claim !== cur.q.get("claim"))
+        || ("result" in patch && patch.result !== cur.q.get("result")))) cur.q.delete("review");
     Object.entries(patch).forEach(([k, v]) => (v == null || v === "") ? cur.q.delete(k) : cur.q.set(k, v));
     const qs = cur.q.toString();
     const next = "#/" + cur.name + (qs ? "?" + qs : "");

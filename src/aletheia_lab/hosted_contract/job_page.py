@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Generic, Literal, Self, TypeVar
+from typing import Generic, Literal, Self, TypeVar, get_args
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
 from .session_capabilities import Identifier, Version
 
 Item = TypeVar("Item")
-JobOperation = Literal["preview", "confirm", "analyze", "follow_up", "refresh"]
+JobOperation = Literal["preview", "confirm", "analyze", "follow_up", "refresh", "review_claim"]
+JOB_OPERATIONS: tuple[JobOperation, ...] = get_args(JobOperation)
 JobState = Literal["queued", "running", "cancel_requested", "succeeded", "failed", "cancelled", "expired"]
 
 

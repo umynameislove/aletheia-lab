@@ -11,6 +11,7 @@ from aletheia_lab.product.pdf import pdf_available
 from .observability import timed_stage
 from .request_boundary import RequestRejected
 from .windows_worker import _call_on_loop, _wait_finished
+from .worker_limits import MAX_REVIEW_RECEIPT_BYTES
 from .worker_supervisor import ReportFormat, ReportWorkerSupervisor, WorkerRejected
 
 
@@ -27,19 +28,31 @@ class ReportRenderer:
             self._thread = threading.Thread(target=self._loop.run_forever, name="aletheia-report-worker", daemon=True)
             self._thread.start()
 
-    async def render(self, report_format: ReportFormat, payload: bytes) -> bytes:
+    async def render(self, report_format: ReportFormat, payload: bytes, *, claim_review: bool = False) -> bytes:
         with timed_stage("report_render"):
-            return await self._render(report_format, payload)
+            return await self._render(report_format, payload, claim_review=claim_review)
 
-    async def _render(self, report_format: ReportFormat, payload: bytes) -> bytes:
+    async def _render(self, report_format: ReportFormat, payload: bytes, *, claim_review: bool) -> bytes:
         if self._closed:
             raise TimeoutError("Report worker is temporarily unavailable.")
+        if claim_review and report_format == "json":
+            # This format returns the canonical receipt bytes unchanged.
+            # Keep the worker slot available for reports that need rendering.
+            from .claim_review_reports import render_claim_review_report
+
+            if len(payload) > MAX_REVIEW_RECEIPT_BYTES:
+                raise WorkerRejected("worker_failed")
+            try:
+                return render_claim_review_report(payload, report_format)
+            except ValueError:
+                raise WorkerRejected("worker_failed") from None
         if report_format == "pdf" and not pdf_available():
             raise RequestRejected(503, "service_unavailable", "PDF rendering is currently unavailable.")
         try:
             if self._loop is None:
-                return await self._worker.render(report_format, payload)
-            return await _call_on_loop(self._loop, lambda: self._worker.render(report_format, payload))
+                return await self._worker.render(report_format, payload, claim_review=claim_review)
+            return await _call_on_loop(self._loop,
+                lambda: self._worker.render(report_format, payload, claim_review=claim_review))
         except WorkerRejected as error:
             if str(error) == "worker_pdf_unsupported_text":
                 raise RequestRejected(400, "invalid_request", "Some report characters are outside the PDF font. Use JSON or Markdown.") from None

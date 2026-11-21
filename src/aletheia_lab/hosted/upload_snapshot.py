@@ -6,13 +6,23 @@ before the repository atomically publishes this envelope in the workspace.
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
+from hashlib import sha256
 from typing import Annotated, Generic, Literal, Self, TypeAlias, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    TypeAdapter,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 from aletheia_lab.hosted_contract.session_capabilities import Identifier
-from aletheia_lab.project.identity import canonical_project_sha256
+from aletheia_lab.project.identity import canonical_project_json
 from aletheia_lab.project.mapping import (
     AnyMappingConfiguration,
     AnyMappingResult,
@@ -28,6 +38,32 @@ from .historical_state_evidence import HistoricalStateInput
 
 _MappingT = TypeVar('_MappingT', bound=AnyMappingConfiguration)
 _ResultT = TypeVar('_ResultT', bound=AnyMappingResult)
+_CAPTURE_FIELDS = frozenset({"snapshot_id", "captured_at"})
+
+
+@dataclass
+class _CatalogDigest:
+    sha256: str = ""
+
+
+def _canonical_fields(payload: dict[str, object]) -> dict[str, bytes]:
+    # The envelope has fixed ASCII field names. Reuse the same P3 encoder for
+    # each member, including normalization inside mapping facts and evidence.
+    return {key: canonical_project_json({key: value})[1:-1].encode("utf-8")
+            for key, value in payload.items()}
+
+
+def _digest_fields(fields: dict[str, bytes], *, exclude: frozenset[str] = frozenset()) -> str:
+    hashed = sha256(b"{")
+    separator = b""
+    for key in sorted(fields):
+        if key in exclude:
+            continue
+        hashed.update(separator)
+        hashed.update(fields[key])
+        separator = b","
+    hashed.update(b"}")
+    return hashed.hexdigest()
 
 
 class _UploadSnapshotBase(BaseModel, Generic[_MappingT, _ResultT]):
@@ -55,7 +91,7 @@ class _UploadSnapshotBase(BaseModel, Generic[_MappingT, _ResultT]):
         return self.model_dump(mode="json", exclude={"snapshot_id", "captured_at", "record_sha256"})
 
     @model_validator(mode="after")
-    def _reconciles(self) -> Self:
+    def _reconciles(self, info: ValidationInfo) -> Self:
         mapping, result = self.mapping, self.mapping_result
         if (isinstance(mapping, ProjectMappingConfigurationV2) != isinstance(result, ProjectMappingResultV2)
                 or result.status != "valid" or result.project_id != mapping.project_id
@@ -76,11 +112,14 @@ class _UploadSnapshotBase(BaseModel, Generic[_MappingT, _ResultT]):
             validate_mapping_dimensions(mapping, result)
         if mapping.baseline_run_id not in {row.run_id for row in result.metric_observations}:
             raise ValueError("baseline has no observation")
-        if self.snapshot_id != "upload-snapshot-" + canonical_project_sha256(self.state_payload()):
+        fields = _canonical_fields(self.model_dump(mode="json", exclude={"record_sha256"}))
+        if self.snapshot_id != "upload-snapshot-" + _digest_fields(fields, exclude=_CAPTURE_FIELDS):
             raise ValueError("snapshot identity mismatch")
-        record = self.model_dump(mode="json", exclude={"record_sha256"})
-        if self.record_sha256 != canonical_project_sha256(record):
+        if self.record_sha256 != _digest_fields(fields):
             raise ValueError("snapshot record hash mismatch")
+        if isinstance(info.context, _CatalogDigest):
+            fields.update(_canonical_fields({"record_sha256": self.record_sha256}))
+            info.context.sha256 = _digest_fields(fields)
         return self
 
 
@@ -111,6 +150,14 @@ def parse_upload_snapshot(value: object) -> AnyUploadSnapshot:
             else _SNAPSHOT_ADAPTER.validate_python(value))
 
 
+def validated_upload_snapshot(value: object) -> tuple[AnyUploadSnapshot, str]:
+    """Return the catalog digest from the same validation of the snapshot."""
+    digest = _CatalogDigest()
+    snapshot = (_SNAPSHOT_ADAPTER.validate_json(value, context=digest) if isinstance(value, str | bytes)
+                else _SNAPSHOT_ADAPTER.validate_python(value, context=digest))
+    return snapshot, digest.sha256
+
+
 def build_upload_snapshot(*, workspace_id: str, source_id: str, source_sha256: str,
                           mapping: AnyMappingConfiguration, mapping_result: AnyMappingResult,
                           captured_at: datetime, historical_state: HistoricalStateInput | None = None) -> AnyUploadSnapshot:
@@ -126,8 +173,11 @@ def build_upload_snapshot(*, workspace_id: str, source_id: str, source_sha256: s
              "mapping": mapping.model_dump(mode="json"), "mapping_result": mapping_result.model_dump(mode="json")}
     if historical_state is not None:
         state["historical_state"] = historical_state.model_dump(mode="json")
-    snapshot_id = "upload-snapshot-" + canonical_project_sha256(state)
-    record = {**state, "snapshot_id": snapshot_id,
-              "captured_at": TypeAdapter(datetime).dump_python(captured_at, mode="json")}
-    return parse_upload_snapshot({**record, "mapping": mapping, "mapping_result": mapping_result,
-        "captured_at": captured_at, "record_sha256": canonical_project_sha256(record), **extra})
+    fields = _canonical_fields(state)
+    snapshot_id = "upload-snapshot-" + _digest_fields(fields)
+    fields.update(_canonical_fields({"snapshot_id": snapshot_id,
+        "captured_at": TypeAdapter(datetime).dump_python(captured_at, mode="json")}))
+    record_sha256 = _digest_fields(fields)
+    del fields
+    return parse_upload_snapshot({**state, "snapshot_id": snapshot_id, "mapping": mapping,
+        "mapping_result": mapping_result, "captured_at": captured_at, "record_sha256": record_sha256, **extra})

@@ -31,6 +31,7 @@ from .upload_snapshot import (
     UPLOAD_SNAPSHOT_TYPES,
     AnyUploadSnapshot,
     parse_upload_snapshot,
+    validated_upload_snapshot,
 )
 from .workspace_management import _revision
 
@@ -108,7 +109,6 @@ async def complete_result(self: PostgresJobs, *, claim: JobClaim, lease_digest: 
 async def _complete_canonical_snapshot(self: PostgresJobs, *, claim: JobClaim, lease_digest: SecretStr,
                                         snapshot: AnyUploadSnapshot) -> bool:
 
-    from .postgres_catalog import CatalogIntegrityError
     from .upload_publication import (
         PreparedUploadSnapshot,
         SnapshotAlreadyPublished,
@@ -122,24 +122,17 @@ async def _complete_canonical_snapshot(self: PostgresJobs, *, claim: JobClaim, l
     request_payload = json.dumps(claim.request, ensure_ascii=True, allow_nan=False,
                                  sort_keys=True, separators=(",", ":"))
     request = json.loads(request_payload)
-    snapshot = await run_blocking(lambda: parse_upload_snapshot(snapshot.model_dump(mode="python")))
+    verified = await run_blocking(lambda: validated_upload_snapshot(snapshot.model_dump(mode="python")))
+    snapshot, _ = verified
     parent = await _snapshot_parent(self, claim, request, snapshot)
     snapshot = await _reuse_confirm_snapshot(self, claim, digest, request, snapshot, catalog)
-    async with self._pool.connection() as conn:
-        await self._authorize(conn, digest, claim.workspace_id, claim.operation, request)
-        source = await (await conn.execute("SELECT sha256 FROM j01_sources WHERE workspace_id=%s AND source_id=%s",
-            (claim.workspace_id, snapshot.source_id))).fetchone()
-        if source != (snapshot.source_sha256,):
-            raise SourceNotFound()
-        projection = await (await conn.execute("SELECT source_id,payload::text,canonical_record_id FROM j01_upload_snapshots "
-            "WHERE snapshot_id=%s AND workspace_id=%s", (snapshot.snapshot_id, claim.workspace_id))).fetchone()
-        canonical_exists = await (await conn.execute("SELECT 1 FROM k05_records WHERE workspace_id=%s AND record_id=%s",
-            (claim.workspace_id, snapshot.snapshot_id))).fetchone()
-    existing = await _existing_snapshot(claim, snapshot, catalog, projection, canonical_exists)
+    existing = await _read_existing_snapshot(self, claim, digest, request, snapshot, catalog)
     publication = UploadPublication(catalog.objects)
     # Bound preparation separately; every database publication keeps its 5s transaction budget.
     async with asyncio.timeout(30):
-        prepared = await publication.prepare_snapshot(snapshot, existing=existing,
+        if snapshot is not verified[0]:
+            verified = await run_blocking(lambda: validated_upload_snapshot(snapshot.model_dump(mode="python")))
+        prepared = await publication._prepare_validated_snapshot(verified, existing=existing,
             parent=parent if claim.operation == "refresh" and self.execution else None)
         for attempt in range(2):
             first_json = await run_blocking(prepared.snapshot.model_dump_json)
@@ -188,7 +181,7 @@ async def _complete_canonical_snapshot(self: PostgresJobs, *, claim: JobClaim, l
                     record_id=error.snapshot_id)
                 if not isinstance(reconciled, UPLOAD_SNAPSHOT_TYPES):
                     raise CatalogIntegrityError() from None
-                prepared = await publication.prepare_snapshot(snapshot, existing=reconciled,
+                prepared = await publication._prepare_validated_snapshot(verified, existing=reconciled,
                     parent=parent if claim.operation == "refresh" and self.execution else None)
     raise TimeoutError("Canonical snapshot publication timed out.")
 
@@ -260,30 +253,35 @@ async def _reuse_confirm_snapshot(self: PostgresJobs, claim: JobClaim, digest: s
                     snapshot = original
     return snapshot
 
-async def _existing_snapshot(claim: JobClaim, snapshot: AnyUploadSnapshot, catalog: PostgresCatalog,
-                             projection: tuple[object, ...] | None,
-                             canonical_exists: tuple[object, ...] | None) -> AnyUploadSnapshot | None:
-    existing: AnyUploadSnapshot | None = None
+async def _read_existing_snapshot(self: PostgresJobs, claim: JobClaim, digest: str,
+                                  request: dict[str, object], snapshot: AnyUploadSnapshot,
+                                  catalog: PostgresCatalog) -> AnyUploadSnapshot | None:
+    async with self._pool.connection() as conn:
+        await self._authorize(conn, digest, claim.workspace_id, claim.operation, request)
+        source = await (await conn.execute("SELECT sha256 FROM j01_sources WHERE workspace_id=%s AND source_id=%s",
+            (claim.workspace_id, snapshot.source_id))).fetchone()
+        if source != (snapshot.source_sha256,):
+            raise SourceNotFound()
+        projection = await (await conn.execute("SELECT source_id,payload::text,canonical_record_id FROM j01_upload_snapshots "
+            "WHERE snapshot_id=%s AND workspace_id=%s", (snapshot.snapshot_id, claim.workspace_id))).fetchone()
+        canonical_exists = await (await conn.execute("SELECT 1 FROM k05_records WHERE workspace_id=%s AND record_id=%s",
+            (claim.workspace_id, snapshot.snapshot_id))).fetchone()
+
     if projection is not None:
         if projection[0] != snapshot.source_id or not isinstance(projection[1], str):
             raise CatalogIntegrityError()
         if projection[2] is None and canonical_exists is None:
-            existing = await run_blocking(_checked_projection, projection[1], claim, snapshot)
-        else:
-            if projection[2] is not None and projection[2] != snapshot.snapshot_id:
-                raise CatalogIntegrityError()
-            canonical = await catalog.read_record(credential_digest=claim.credential_digest,
-                workspace_id=claim.workspace_id, project_id=snapshot.mapping.project_id, record_id=snapshot.snapshot_id)
-            if not isinstance(canonical, UPLOAD_SNAPSHOT_TYPES):
-                raise CatalogIntegrityError()
-            existing = canonical
-    elif canonical_exists is not None:
-        canonical = await catalog.read_record(credential_digest=claim.credential_digest,
-            workspace_id=claim.workspace_id, project_id=snapshot.mapping.project_id, record_id=snapshot.snapshot_id)
-        if not isinstance(canonical, UPLOAD_SNAPSHOT_TYPES):
+            return await run_blocking(_checked_projection, projection[1], claim, snapshot)
+        if projection[2] is not None and projection[2] != snapshot.snapshot_id:
             raise CatalogIntegrityError()
-        existing = canonical
-    return existing
+    elif canonical_exists is None:
+        return None
+
+    canonical = await catalog.read_record(credential_digest=claim.credential_digest,
+        workspace_id=claim.workspace_id, project_id=snapshot.mapping.project_id, record_id=snapshot.snapshot_id)
+    if not isinstance(canonical, UPLOAD_SNAPSHOT_TYPES):
+        raise CatalogIntegrityError()
+    return canonical
 
 
 

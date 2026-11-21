@@ -43,6 +43,11 @@ def _decimal_text(value: Decimal) -> str:
 
 def analyze_metric_windows(snapshot: AnyUploadSnapshot, question: str) -> AnyProductView:
     snapshot = parse_upload_snapshot(snapshot.model_dump(mode="python"))
+    return _analyze_validated_metric_windows(snapshot, question)
+
+
+def _analyze_validated_metric_windows(snapshot: AnyUploadSnapshot, question: str) -> AnyProductView:
+    """Project a snapshot already strictly validated by the current operation."""
     question = checked_product_question(question)
     observations = snapshot.mapping_result.metric_observations
     if not 0 < len(observations) <= MAX_WINDOW_OBSERVATIONS:

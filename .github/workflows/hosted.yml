@@ -66,6 +66,8 @@ jobs:
           tests/unit/test_k13_*.py tests/unit/test_k14_*.py tests/unit/test_k15_*.py
           tests/unit/test_k16_*.py tests/unit/test_k17_*.py tests/unit/test_k18_*.py
           tests/unit/test_historical_state_*.py
+          tests/unit/test_hosted_claim_review.py
+          tests/unit/test_hosted_claim_review_provider.py
           tests/unit/test_metric_v1_schema_compatibility.py
       - name: Export and check unified hosted producer OpenAPI
         if: ${{ !cancelled() }}
@@ -144,6 +146,7 @@ jobs:
         run: >-
           python -m pytest -v --durations=20
           tests/integration/test_k0[2-9]_*.py tests/integration/test_k1[0-8]_*.py
+          tests/integration/test_k2[01]_*.py
       - name: Test PostgreSQL query-probe integration cases
         env:
           K05_TEST_DATABASE_URL: ${{ env.K02_TEST_DATABASE_URL }}

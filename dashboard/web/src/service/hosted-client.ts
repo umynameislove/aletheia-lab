@@ -1,5 +1,9 @@
 /* Same-origin hosted transport. Session/CSRF values live only in this caller-owned context. */
 import type { MappingCandidates, ProductView } from "../types.ts";
+import {
+  PROVIDER_REVIEW_FEATURE, REVIEW_FEATURE, REVIEW_ID, readClaimReviewReceipt,
+  type ClaimReviewScope, type ReviewMode, type ReviewVerdict,
+} from "./claim-review.ts";
 import { checkProductView, HISTORICAL_STATE_MODEL } from "./contract.ts";
 import {
   PRODUCT_API_VERSIONS, isInstant, questionLimit, readCapabilities, readJob, readJobReceipt, readPage, readProblem, readSession,
@@ -267,7 +271,7 @@ export function createHostedClient(options: HostedClientOptions) {
 
   /* `ifMatch` is a project revision sent as a quoted CAS precondition. `raw` reads a successful body as
      bytes of exactly one media type, bounded by its own maximum; failures are still Problem JSON. */
-  async function request<T>(path: string, method: "GET" | "POST" | "PUT" | "DELETE", decode: (value: unknown, status: number) => T,
+  async function request<T>(path: string, method: "GET" | "POST" | "PUT" | "DELETE", decode: (value: unknown, status: number, headers: Headers) => T,
                             body?: BodyInit, contentType?: string, requestKey?: string,
                             extraSignal?: AbortSignal, budget = timeout,
                             extra: { ifMatch?: number; raw?: { media: string; maximum: number };
@@ -360,7 +364,7 @@ export function createHostedClient(options: HostedClientOptions) {
         throw failure ?? invalid();
       }
       let decoded: T;
-      try { decoded = decode(value, response.status); }
+      try { decoded = decode(value, response.status, response.headers); }
       catch (error) { if (mutation) throw unknownOutcome(); throw error; }
       active();
       onAnswer?.(response.status, null);
@@ -389,6 +393,15 @@ export function createHostedClient(options: HostedClientOptions) {
     return request(`${base(workspace)}/jobs/${jobId}`, "GET", (value, status) => {
       need(status === 200); return readJob(value, workspace, jobId);
     }, undefined, undefined, undefined, extraSignal, budget);
+  };
+  const reviewPath = (workspace: string, scope: ClaimReviewScope) => {
+    input(matches(RESULT, scope.resultId) && matches(PROJECT, scope.projectId)
+      && matches(SNAPSHOT, scope.snapshotId) && id(scope.claimId));
+    return `${base(workspace)}/results/${scope.resultId}/claims/${scope.claimId}/reviews`;
+  };
+  const reviewResource = (workspace: string, scope: ClaimReviewScope, reviewId: string) => {
+    input(matches(REVIEW_ID, reviewId));
+    return `${reviewPath(workspace, scope)}/${reviewId}`;
   };
   /* K15 JobUpdate: current state coalesced, not an event log. `unchanged` carries no job; the caller keeps
      the one it holds. A pending update names when to ask again; a terminal one says null. */
@@ -535,6 +548,48 @@ export function createHostedClient(options: HostedClientOptions) {
       }, body, "application/json", key(requestKey), extraSignal);
     },
     loadJob,
+    submitClaimReview: (workspace: string, caps: HostedCapabilities, scope: ClaimReviewScope,
+                        assertedVerdict: ReviewVerdict, mode: ReviewMode, requestKey: string, extraSignal?: AbortSignal) => {
+      capability(workspace, caps, "review");
+      feature(workspace, caps, REVIEW_FEATURE);
+      input((assertedVerdict === "allowed" || assertedVerdict === "denied") && (mode === "local_check" || mode === "provider"));
+      if (mode === "provider") feature(workspace, caps, PROVIDER_REVIEW_FEATURE);
+      return request(reviewPath(workspace, scope), "POST", (value, status) => {
+        need(status === 202); const receipt = readJobReceipt(value, workspace);
+        need(matches(REVIEW_ID, receipt.job_id));
+        return receipt;
+      }, JSON.stringify({ schema_version: PRODUCT_API_VERSIONS[0], asserted_verdict: assertedVerdict, mode }),
+      "application/json", requestKey, extraSignal);
+    },
+    loadClaimReview: (workspace: string, caps: HostedCapabilities, scope: ClaimReviewScope,
+                      reviewId: string, extraSignal?: AbortSignal) => {
+      capability(workspace, caps, "read"); feature(workspace, caps, REVIEW_FEATURE);
+      return request(reviewResource(workspace, scope, reviewId), "GET", (value, status) => {
+        need(status === 200);
+        return readClaimReviewReceipt(value, workspace, scope, reviewId);
+      }, undefined, undefined, undefined, extraSignal);
+    },
+    downloadClaimReview: async (workspace: string, caps: HostedCapabilities, scope: ClaimReviewScope,
+                                reviewId: string, format: ReportFormat, extraSignal?: AbortSignal) => {
+      capability(workspace, caps, "export"); feature(workspace, caps, REVIEW_FEATURE);
+      input(exportFormat(format) && caps.supported_export_formats.includes(format));
+      const media = EXPORT_MEDIA[format];
+      const endpoint = reviewResource(workspace, scope, reviewId) + "/export?" + new URLSearchParams({ format });
+      const { bytes, expected, receiptSha256 } = await request(endpoint, "GET", (value, status, headers) => {
+        const etag = headers.get("etag"), receiptDigest = headers.get("x-aletheia-receipt-sha256");
+        need(status === 200 && value instanceof Uint8Array && etag !== null && /^"[0-9a-f]{64}"$/.test(etag)
+          && hash(receiptDigest));
+        const expected = etag.slice(1, -1);
+        need(format !== "json" || expected === receiptDigest);
+        return { bytes: value as Uint8Array<ArrayBuffer>, expected, receiptSha256: receiptDigest };
+      }, undefined, undefined, undefined, extraSignal, undefined, { raw: { media, maximum: 262_144 } });
+      if (!globalThis.crypto?.subtle) throw new ProductError("feature_unavailable", "Secure file hashing is unavailable in this browser.");
+      const digest = await crypto.subtle.digest("SHA-256", bytes); check(false, extraSignal);
+      need(Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("") === expected);
+      if (format === "json") readClaimReviewReceipt(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)),
+        workspace, scope, reviewId);
+      return { bytes, filename: `aletheia-review-${receiptSha256.slice(0, 16)}.${format === "markdown" ? "md" : format}`, media };
+    },
     loadOutput: (workspace: string, jobId: string, expected: OutputExpectation, extraSignal?: AbortSignal, windowed = false) => {
       authenticated(); input(id(jobId));
       input(expected.operation === "preview" ? hash(expected.sourceSha256) && (expected.leaseSourceId === undefined || id(expected.leaseSourceId))

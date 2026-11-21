@@ -39,6 +39,7 @@ from aletheia_lab.hosted.preview_migration import migrate as migrate_previews
 from aletheia_lab.hosted.project_access import PostgresProjectAccess
 from aletheia_lab.hosted.project_analysis_http import ProjectAnalysisApplication
 from aletheia_lab.hosted.project_http import ProjectOperationsApplication
+from aletheia_lab.hosted.project_mutations import PostgresProjectMutations
 from aletheia_lab.hosted.project_operations import CanonicalProjectOperations
 from aletheia_lab.hosted.report_renderer import ReportRenderer
 from aletheia_lab.hosted.request_boundary import BodyLimits
@@ -250,7 +251,8 @@ def test_historical_state_ordinary_handoff_https_and_durable_scope(tmp_path):
     _run(run())
 
 
-async def _exercise_pipeline(case, root, payloads, registrations, expected_projects):
+@asynccontextmanager
+async def _running_pipeline(case, root, registrations, *, extra_application=None):
     tokens = CsrfTokens(SecretStr("synthetic-historical-state-csrf-" + "s" * 43))
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
@@ -290,8 +292,12 @@ async def _exercise_pipeline(case, root, payloads, registrations, expected_proje
         renderer = ReportRenderer()
         access = CatalogAccess(case.catalog, ScopedCursors(SecretStr("synthetic-historical-state-cursor-" + "c" * 43)), renderer)
         app = CatalogApplication(fallback, access, PostgresProjectAccess(case.pool),
-            PostgresReviews(case.pool, case.catalog), sessions, tokens, settings, body_limits=limits, clock_check=clock)
+            PostgresReviews(case.pool, case.catalog), sessions, tokens, settings, body_limits=limits, clock_check=clock,
+            project_mutations=PostgresProjectMutations(case.pool, case.catalog, audit=True))
         app = JobApplication(app, jobs, sessions, tokens, settings, body_limits=limits, clock_check=clock)
+        if extra_application is not None:
+            app = extra_application(app, jobs, sessions, tokens, settings, body_limits=limits,
+                                    clock_check=clock, renderer=renderer)
         app = ProjectAnalysisApplication(app, jobs, sessions, tokens, settings, body_limits=limits, clock_check=clock)
         app = ProjectOperationsApplication(app, jobs, sessions, tokens, settings, body_limits=limits, clock_check=clock)
         app = ImportApplication(app, LeasedJobs(jobs, leases, None), sessions, tokens, settings,
@@ -299,18 +305,23 @@ async def _exercise_pipeline(case, root, payloads, registrations, expected_proje
         app = SourceUploadApplication(app, case.sources, sessions, tokens, settings, body_limits=limits, clock_check=clock)
         try:
             async with _https(app, sock, root) as client:
-                results = {}
-                for name, raw, evidence, expected in payloads:
-                    results[name] = await _journey(client, jobs, operations, headers["a"], case, name,
-                                                   raw, evidence, expected, expected_projects.get(name))
-                follow = await _follow_up(client, jobs, operations, case, headers["a"], results["authorized"])
-                fences = await _check_fences(client, jobs, operations, case, headers, results)
-                witness = {"cases": {name: entry[3] for name, entry in results.items()},
-                           "follow_up": follow, "fences": fences}
-                (root / "historical-state-product-witness.json").write_text(json.dumps(witness, indent=2) + "\n")
+                yield client, jobs, operations, headers
         finally:
             await renderer.aclose()
             await worker.aclose()
+
+
+async def _exercise_pipeline(case, root, payloads, registrations, expected_projects):
+    async with _running_pipeline(case, root, registrations) as (client, jobs, operations, headers):
+        results = {}
+        for name, raw, evidence, expected in payloads:
+            results[name] = await _journey(client, jobs, operations, headers["a"], case, name,
+                                           raw, evidence, expected, expected_projects.get(name))
+        follow = await _follow_up(client, jobs, operations, case, headers["a"], results["authorized"])
+        fences = await _check_fences(client, jobs, operations, case, headers, results)
+        witness = {"cases": {name: entry[3] for name, entry in results.items()},
+                   "follow_up": follow, "fences": fences}
+        (root / "historical-state-product-witness.json").write_text(json.dumps(witness, indent=2) + "\n")
 
 
 async def _journey(client, jobs, operations, headers, case, name, raw, evidence, expected, registered_project):

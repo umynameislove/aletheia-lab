@@ -92,6 +92,7 @@ class _Response:
     body: bytes
     content_type: bytes = b"application/json"
     allow: bytes | None = None
+    extra_headers: tuple[tuple[bytes, bytes], ...] = ()
 
 
 def _validated(value: Model, model: type[Model]) -> Model:

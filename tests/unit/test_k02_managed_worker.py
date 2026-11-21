@@ -6,6 +6,7 @@ import subprocess
 import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
+from time import sleep
 from types import SimpleNamespace
 
 import pytest
@@ -302,6 +303,59 @@ def test_enabled_dependencies_are_rechecked_during_scheduler(worker_case, monkey
     monkeypatch.setattr(managed_worker, "run_upload_scheduler", scheduler)
     asyncio.run(managed_worker.run_worker(case.environment, asyncio.Event()))
     assert case.events[-2:] == [("worker_close",), ("pool_close",)]
+
+
+@pytest.mark.parametrize(("checks", "clock_checks", "expected"), [
+    (("deadline", "ready"), [True], True),
+    (("deadline", "deadline"), [], False),
+    (("deadline", "absent"), [], False),
+    (("absent",), [], False),
+    (("inner_timeout",), [], False),
+    (("late", "ready"), [True], True),
+    (("late", "late"), [], False),
+    (("late_clock", "ready"), [True, True], True),
+    (("late_clock", "late_clock"), [True, True], False),
+    (("deadline_clock", "ready"), [True], True),
+    (("deadline_clock", "deadline_clock"), [], False),
+    (("skew",), [False], False),
+])
+def test_worker_clock_retries_only_an_expired_check(monkeypatch, checks, clock_checks, expected):
+    seen = []
+    readings = []
+
+    async def profile(*_args):
+        state = checks[len(seen)]
+        seen.append(state)
+        if state == "deadline":
+            await asyncio.Event().wait()
+        if state == "inner_timeout":
+            raise TimeoutError("dependency")
+        if state == "late":
+            sleep(0.02)  # Complete before the event loop can run the queued timeout callback.
+        return state != "absent"
+
+    async def execution_ready():
+        return True
+
+    async def clock(*_args, **_options):
+        if seen[-1] == "late_clock":
+            sleep(0.02)
+        if seen[-1] == "deadline_clock":
+            await asyncio.Event().wait()
+        valid = seen[-1] != "skew"
+        readings.append(valid)
+        return valid
+
+    monkeypatch.setattr(managed_worker, "upload_profile", profile)
+    monkeypatch.setattr(managed_worker, "probe_clock", clock)
+    settings = SimpleNamespace(api=SimpleNamespace(backend_timeout_seconds=0.01))
+    jobs = SimpleNamespace(execution_ready=execution_ready)
+    policy = AuthPolicy(default_return_to="/app", return_to_paths=("/app",))
+    actual = asyncio.run(managed_worker._worker_clock(settings, policy, None, None, None,
+        True, False, False, jobs))
+    assert actual is expected
+    assert tuple(seen) == checks
+    assert readings == clock_checks
 
 
 @pytest.mark.parametrize("value", ["private-invalid-mode", "enabled"])

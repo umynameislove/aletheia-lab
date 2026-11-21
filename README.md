@@ -46,7 +46,7 @@ On macOS or Linux, run this from the repository root with Python 3.11+ and Git.
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install -e .
+.venv/bin/python -m pip install -e '.[pdf]'
 demo_dir=$(mktemp -d)
 .venv/bin/aletheia product-demo "$demo_dir"
 ```

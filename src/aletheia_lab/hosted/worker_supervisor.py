@@ -76,7 +76,7 @@ class ReportWorkerSupervisor:
             pass
         raise WorkerRejected("worker_input_too_large")
 
-    async def render(self, report_format: ReportFormat, payload: bytes) -> bytes:
+    async def render(self, report_format: ReportFormat, payload: bytes, *, claim_review: bool = False) -> bytes:
         loop = asyncio.get_running_loop()
         if self._loop is not None and self._loop is not loop:
             raise WorkerRejected("worker_wrong_event_loop")
@@ -89,7 +89,10 @@ class ReportWorkerSupervisor:
         if self._slots.locked():
             raise WorkerRejected("worker_busy")
         await self._slots.acquire()
-        task = loop.create_task(self._execute(report_format, payload))
+        task = loop.create_task(
+            self._execute(report_format, payload, claim_review=True) if claim_review
+            else self._execute(report_format, payload)
+        )
         self._tasks.add(task)
         task.add_done_callback(self._finished)
         try:
@@ -117,11 +120,12 @@ class ReportWorkerSupervisor:
         if process is not None:
             await self._terminate(process)
 
-    async def _execute(self, report_format: ReportFormat, payload: bytes) -> bytes:
+    async def _execute(self, report_format: ReportFormat, payload: bytes, *, claim_review: bool = False) -> bytes:
         module, argument = self._command(report_format)
-        large_report = module == "aletheia_lab.hosted.worker" and len(payload) > MAX_INPUT_BYTES
+        large_report = not claim_review and module == "aletheia_lab.hosted.worker" and len(payload) > MAX_INPUT_BYTES
         if large_report:
             argument += "-windowed-v3"
+        argument = f"claim-review-{report_format}" if claim_review else argument
         spawn = asyncio.create_task(asyncio.create_subprocess_exec(
             str(self._python), "-B", "-m", module, argument,
             stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,

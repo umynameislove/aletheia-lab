@@ -6,7 +6,7 @@ import { reportFilename } from "./data/format.ts";
    (PRODUCT_CONTRACT §2). The reviewer's own pass is local to this machine, so the UI adds it
    as a separate layer next to the service's bytes, never inside them. */
 
-function download(name: string, bytes: BlobPart, mime: string) {
+export function download(name: string, bytes: BlobPart, mime: string) {
   const blob = new Blob([bytes], { type: mime });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);

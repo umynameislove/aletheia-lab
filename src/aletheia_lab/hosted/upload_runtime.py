@@ -27,6 +27,7 @@ from .application import AccessDenied
 from .authorization import role_allows
 from .catalog_access import CatalogAccess
 from .catalog_http import CatalogApplication
+from .claim_review_http import ClaimReviewApplication
 from .clock_guarded_backend import ClockGuardedBackend
 from .composition import Application, ProcessApplication
 from .import_failures import ImportFailures
@@ -108,11 +109,14 @@ class UploadReadBackend(ReadOnlyHostedBackend):
 
     async def _job_features(self, role: str, features: dict[str, bool]) -> None:
         if self._jobs is not None:
-            features["jobs.idempotency"] = await self._jobs.is_ready()
+            execution = getattr(self._jobs, 'execution', False) is True
+            if execution:
+                features["jobs.idempotency"], features["jobs.execution_v1"] = await self._jobs.capability_readiness()
+            else:
+                features["jobs.idempotency"] = await self._jobs.is_ready()
             controls = await self._jobs.controls_ready() and role_allows(role, "analyze")
             features.update({"jobs.cancel": controls, "jobs.retry": controls})
-            if getattr(self._jobs, 'execution', False) is True:
-                features['jobs.execution_v1'] = await self._jobs.execution_ready()
+            if execution:
                 features['comparisons.upload_v1'] = features['jobs.execution_v1'] and self._catalog_available
                 conflict_ready = getattr(self._jobs, 'conflicts_ready', None)
                 features['jobs.conflict_v1'] = conflict_ready is not None and await conflict_ready()
@@ -137,6 +141,12 @@ class UploadReadBackend(ReadOnlyHostedBackend):
             features["projects.follow_up"] = (self._jobs is not None and await self._jobs.follow_up_ready()
                                               and role_allows(role, "analyze"))
             features["projects.refresh"] = features["projects.follow_up"]
+            features["reviews.claim_evidence"] = True
+            plan = getattr(self._jobs, "claim_provider_plan", None)
+            features["reviews.claim_evidence_provider"] = (
+                plan is not None and role_allows(role, "review") and plan.available(workspace_id)
+                and plan.actor_id == session.actor.user_id
+            )
         if self._resumable_uploads:
             features.update({'sources.resumable': role_allows(role, 'import'),
                              'sources.preview_lease': role_allows(role, 'import'), 'sources.connector': False})
@@ -247,6 +257,9 @@ def compose_upload_runtime(*, settings: RuntimeSettings, sessions: ServerSession
                 body_limits=json_limits, clock_check=clock_check)
             app = ProjectOperationsApplication(app, jobs, sessions, tokens, settings,
                 body_limits=json_limits, clock_check=clock_check)
+            app = ClaimReviewApplication(app, jobs, sessions, tokens, settings,
+                body_limits=json_limits, clock_check=clock_check,
+                renderer=catalog_access.renderer if catalog_access is not None else None)
         return AuthAdmissionApplication(app, admission, subject_key=admission_subject_key,
                                          timeout_seconds=api.backend_timeout_seconds)
 

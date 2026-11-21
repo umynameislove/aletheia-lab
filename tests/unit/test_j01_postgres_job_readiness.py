@@ -46,15 +46,21 @@ class SchemaPool:
             if self.cancel_table == 'pg_constraint':
                 raise asyncio.CancelledError()
             return self
-        projection, relation = query.removeprefix('SELECT ').split(' FROM ')
-        table, limit = relation.split(' ', 1)
-        assert limit == 'LIMIT 0'
-        columns = set(projection.split(','))
-        self.projections[table] = columns
-        if table == self.cancel_table:
-            raise asyncio.CancelledError()
-        if table not in self.schema or not columns <= self.schema[table]:
-            raise RuntimeError('synthetic missing schema')
+        projection, relations = query.removeprefix('SELECT ').split(' FROM ')
+        assert relations.endswith(' LIMIT 0')
+        tables = {}
+        for relation in relations.removesuffix(' LIMIT 0').split(' CROSS JOIN '):
+            table, alias = relation.split()
+            tables[alias] = table
+            self.projections[table] = set()
+        for projected in projection.split(','):
+            alias, column = projected.split('.')
+            self.projections[tables[alias]].add(column)
+        for table in tables.values():
+            if table == self.cancel_table:
+                raise asyncio.CancelledError()
+            if table not in self.schema or not self.projections[table] <= self.schema[table]:
+                raise RuntimeError('synthetic missing schema')
         return self
 
     async def fetchone(self):

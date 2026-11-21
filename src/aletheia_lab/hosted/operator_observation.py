@@ -12,10 +12,11 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from aletheia_lab.hosted_contract.job_page import JOB_OPERATIONS
+
 from .persistence_migration import migration_schema
 
 _ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}")
-_OPERATIONS = ("preview", "confirm", "analyze", "follow_up", "refresh")
 _STATES = ("queued", "running", "cancel_requested")
 
 
@@ -43,7 +44,7 @@ async def operator_snapshot(conn: Any, schema: str, *, maximum_jobs: int = 100) 
         raise ValueError("Bounded operator sample required.")
     await _boundary(conn, schema)
     samples: list[dict[str, Any]] = []
-    for operation in _OPERATIONS:
+    for operation in JOB_OPERATIONS:
         for state in _STATES:
             rows = await (
                 await conn.execute(

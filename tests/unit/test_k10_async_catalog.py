@@ -123,7 +123,8 @@ def test_native_validation_recompute_and_parent_metadata_run_off_loop_before_asy
         return checked
 
     monkeypatch.setattr(results, 'parse_upload_snapshot', off_loop('validate_snapshot', results.parse_upload_snapshot))
-    monkeypatch.setattr(results, 'build_initial_upload_result', off_loop('recompute', results.build_initial_upload_result))
+    monkeypatch.setattr(results, '_bind_initial_upload_result',
+                        off_loop('recompute', results._bind_initial_upload_result))
     monkeypatch.setattr(store, 'describe', off_loop('metadata', describe))
 
     class Objects:
