@@ -33,13 +33,11 @@ export function LineagePanel({ v, selectedClaim, selectedEvidence, selectedNode,
   const [whole, setWhole] = useState(false);
   const path = useMemo(() => (large && selectedClaim && !whole ? claimPath(v.graph.nodes, v.graph.edges, selectedClaim) : null), [large, selectedClaim, whole, v.graph]);
   const nodes = path?.nodes ?? v.graph.nodes;
-  const edges = path?.edges ?? v.graph.edges;
-  const layout = useMemo(() => lineageLayout(nodes, edges), [nodes, edges]);
   const historicalStateIds = useMemo(() => new Set(v.evidence.filter(e => e.historical_state).map(e => e.id)), [v.evidence]);
 
-  // a dangling edge or a reused node ID means the projection is not trustworthy: draw nothing
-  // rather than a partial graph. The claim list stays complete without it.
+  // Validate the complete projection even while viewing a claim path.
   const full = useMemo(() => lineageLayout(v.graph.nodes, v.graph.edges), [v.graph]);
+  const layout = useMemo(() => path ? lineageLayout(path.nodes, path.edges) : full, [path, full]);
   if (full.dangling.length || full.duplicates.length) {
     return (
       <Absent title="Lineage not drawn" code={full.dangling.length ? `dangling edge ${full.dangling[0]}` : `duplicate node ${full.duplicates[0]}`}>
