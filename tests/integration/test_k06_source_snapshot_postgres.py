@@ -222,3 +222,40 @@ def test_revoke_after_object_read_commits_without_waiting_for_snapshot_delivery(
                 await asyncio.wait_for(task, 5)
             assert counted.active == 0
     _run(scenario())
+
+
+def test_linked_snapshot_rechecks_project_access_after_serialization(tmp_path, monkeypatch):
+    from aletheia_lab.hosted.async_work import run_blocking
+
+    async def scenario():
+        async with _case(tmp_path) as case:
+            await _initial(case)
+            await _projection(case, canonical=True)
+            project = case.snapshot.mapping.project_id
+            async with case.pool.connection() as conn:
+                await conn.execute("UPDATE j01_memberships SET role='analyst',revision=revision+1 "
+                                   "WHERE workspace_id='a' AND user_id='owner_b'")
+                await conn.execute("INSERT INTO j01_project_grants(workspace_id,project_id,user_id,actions) "
+                                   "VALUES('a',%s,'owner_b',ARRAY['read'])", (project,))
+                await conn.execute("INSERT INTO j01_source_grants(workspace_id,source_id,user_id,actions) "
+                                   "VALUES('a',%s,'owner_b',ARRAY['read'])", (case.snapshot.source_id,))
+            sources = _sources(case)
+
+            async def read():
+                return await sources.snapshot(credential_digest=case.b, workspace_id="a",
+                                              snapshot_id=case.snapshot.snapshot_id)
+
+            assert await read() == case.snapshot
+
+            async def serialize_and_revoke(call, *args, **kwargs):
+                value = await run_blocking(call, *args, **kwargs)
+                async with case.pool.connection() as conn:
+                    await conn.execute("DELETE FROM j01_project_grants WHERE workspace_id='a' "
+                                       "AND project_id=%s AND user_id='owner_b'", (project,))
+                return value
+
+            monkeypatch.setattr("aletheia_lab.hosted.postgres_sources.run_blocking", serialize_and_revoke)
+            with pytest.raises(AuthorizationDenied):
+                await read()
+            assert await _snapshot(sources, case) == case.snapshot
+    _run(scenario())

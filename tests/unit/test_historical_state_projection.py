@@ -21,6 +21,7 @@ from aletheia_lab.hosted.native_upload_records import (
     UploadResultRecord,
     UploadResultRecordV2,
     build_initial_upload_result,
+    parse_native_snapshot_record,
     parse_upload_result_record,
 )
 from aletheia_lab.hosted.upload_analysis import HISTORICAL_STATE_MODEL, analyze_upload
@@ -36,6 +37,7 @@ from aletheia_lab.product.view import (
     ProductViewV2,
     parse_product_view,
 )
+from aletheia_lab.project.identity import canonical_project_sha256
 
 _QUESTION = "Did the operation use the state permitted by the original contract?"
 _STATE_A = HistoricalState(namespace="left", generation="A", state_sha256="a" * 64)
@@ -61,6 +63,35 @@ def _historical_state_snapshot(snapshot, actual, permitted, *, alias="B", consum
         mapping=snapshot.mapping, mapping_result=snapshot.mapping_result, captured_at=snapshot.captured_at,
         historical_state=evidence,
     )
+
+
+def test_all_snapshot_formats_retain_the_original_digest_domain(tmp_path):
+    legacy = parse_upload_snapshot(json.dumps(json.loads(_LEGACY_SNAPSHOT.read_bytes())["data"]))
+    _, v2, _, _ = snapshot_v2(tmp_path)
+    v3 = _historical_state_snapshot(v2, _STATE_A, _STATE_B)
+    for snapshot in (legacy, v2, v3):
+        value = snapshot.model_dump(mode="json")
+        reference = canonical_project_sha256(value)
+        assert snapshot.snapshot_id == "upload-snapshot-" + canonical_project_sha256(snapshot.state_payload())
+        assert snapshot.record_sha256 == canonical_project_sha256(
+            {key: item for key, item in value.items() if key != "record_sha256"})
+
+        # Legacy inputs may omit the default and JSON key order need not be canonical.
+        del value["git_provenance"]
+        reordered = json.dumps(dict(reversed(tuple(value.items())))).encode()
+        restored, metadata = parse_native_snapshot_record(reordered)
+        assert restored == snapshot
+        assert metadata == (
+            "upload_snapshot", snapshot.snapshot_id, snapshot.mapping.project_id, snapshot.schema_version, reference)
+        for changed in ({"snapshot_id": "upload-snapshot-" + "0" * 64}, {"record_sha256": "0" * 64}):
+            with pytest.raises(ValidationError):
+                parse_native_snapshot_record(json.dumps({**value, **changed}).encode())
+
+    invalid = v2.model_dump(mode="json")
+    for scalar in (float("nan"), float("inf"), -0.0):
+        invalid["mapping_result"]["metric_observations"][0]["metric_value"] = scalar
+        with pytest.raises(ValidationError):
+            parse_native_snapshot_record(json.dumps(invalid).encode())
 
 
 @pytest.mark.parametrize(("actual", "permitted", "consumer", "verdict"), [

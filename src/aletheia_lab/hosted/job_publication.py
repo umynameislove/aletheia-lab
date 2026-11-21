@@ -31,6 +31,7 @@ from .upload_snapshot import (
     UPLOAD_SNAPSHOT_TYPES,
     AnyUploadSnapshot,
     parse_upload_snapshot,
+    validated_upload_snapshot,
 )
 from .workspace_management import _revision
 
@@ -122,7 +123,8 @@ async def _complete_canonical_snapshot(self: PostgresJobs, *, claim: JobClaim, l
     request_payload = json.dumps(claim.request, ensure_ascii=True, allow_nan=False,
                                  sort_keys=True, separators=(",", ":"))
     request = json.loads(request_payload)
-    snapshot = await run_blocking(lambda: parse_upload_snapshot(snapshot.model_dump(mode="python")))
+    verified = await run_blocking(lambda: validated_upload_snapshot(snapshot.model_dump(mode="python")))
+    snapshot, _ = verified
     parent = await _snapshot_parent(self, claim, request, snapshot)
     snapshot = await _reuse_confirm_snapshot(self, claim, digest, request, snapshot, catalog)
     async with self._pool.connection() as conn:
@@ -139,7 +141,9 @@ async def _complete_canonical_snapshot(self: PostgresJobs, *, claim: JobClaim, l
     publication = UploadPublication(catalog.objects)
     # Bound preparation separately; every database publication keeps its 5s transaction budget.
     async with asyncio.timeout(30):
-        prepared = await publication.prepare_snapshot(snapshot, existing=existing,
+        if snapshot is not verified[0]:
+            verified = await run_blocking(lambda: validated_upload_snapshot(snapshot.model_dump(mode="python")))
+        prepared = await publication._prepare_validated_snapshot(verified, existing=existing,
             parent=parent if claim.operation == "refresh" and self.execution else None)
         for attempt in range(2):
             first_json = await run_blocking(prepared.snapshot.model_dump_json)
@@ -188,7 +192,7 @@ async def _complete_canonical_snapshot(self: PostgresJobs, *, claim: JobClaim, l
                     record_id=error.snapshot_id)
                 if not isinstance(reconciled, UPLOAD_SNAPSHOT_TYPES):
                     raise CatalogIntegrityError() from None
-                prepared = await publication.prepare_snapshot(snapshot, existing=reconciled,
+                prepared = await publication._prepare_validated_snapshot(verified, existing=reconciled,
                     parent=parent if claim.operation == "refresh" and self.execution else None)
     raise TimeoutError("Canonical snapshot publication timed out.")
 

@@ -35,6 +35,7 @@ from .upload_snapshot import (
     UPLOAD_SNAPSHOT_TYPES,
     AnyUploadSnapshot,
     parse_upload_snapshot,
+    validated_upload_snapshot,
 )
 
 _RESULT = r'^p6-result-[0-9a-f]{64}$'
@@ -107,8 +108,21 @@ def parse_upload_result_record(value: object) -> AnyUploadResultRecord:
 def build_initial_upload_result(snapshot: AnyUploadSnapshot, question: str, view: AnyProductView) -> AnyUploadResultRecord:
     """Verify the existing exact projection before any database connection is held."""
     snapshot = parse_upload_snapshot(snapshot.model_dump(mode='python'))
+    return _bind_initial_upload_result(snapshot, question, view)
+
+
+def _bind_initial_upload_result(snapshot: AnyUploadSnapshot, question: str, view: AnyProductView) -> AnyUploadResultRecord:
+    """Recompute the expected projection against a strictly validated snapshot."""
+    from .upload_analysis import WINDOW_OBSERVATION_MODEL
+
     view = parse_product_view(view.model_dump(mode='python'))
-    if view != analyze_upload(snapshot, question, view.runtime.model):
+    if view.runtime.model == WINDOW_OBSERVATION_MODEL:
+        from .window_observations import _analyze_validated_metric_windows
+
+        expected = _analyze_validated_metric_windows(snapshot, question)
+    else:
+        expected = analyze_upload(snapshot, question, view.runtime.model)
+    if view != expected:
         raise ValueError('Initial upload result differs from the verified snapshot projection')
     model = UploadResultRecordV2 if isinstance(view, ProductViewV2) else UploadResultRecord
     return parse_upload_result_record({'schema_version': model.model_fields['schema_version'].default,
@@ -143,20 +157,21 @@ def result_view(record: CanonicalResultRecord) -> AnyProductView:
     raise TypeError('A typed canonical result is required')
 
 
-def _snapshot_metadata(snapshot: AnyUploadSnapshot) -> tuple[str, str, str, str, str]:
+def _snapshot_metadata(snapshot: AnyUploadSnapshot, digest: str) -> tuple[str, str, str, str, str]:
     return ('upload_snapshot', snapshot.snapshot_id, snapshot.mapping.project_id,
-            snapshot.schema_version, canonical_project_sha256(snapshot.model_dump(mode='json')))
+            snapshot.schema_version, digest)
 
 
 def parse_native_snapshot_record(payload: bytes) -> tuple[AnyUploadSnapshot, tuple[str, str, str, str, str]]:
     """Validate stored snapshot JSON once, then derive the catalog identity."""
-    snapshot = parse_upload_snapshot(payload)
-    return snapshot, _snapshot_metadata(snapshot)
+    snapshot, digest = validated_upload_snapshot(payload)
+    return snapshot, _snapshot_metadata(snapshot, digest)
 
 
 def native_metadata(model: NativeUploadModel) -> tuple[str, str, str, str, str]:
     if isinstance(model, UPLOAD_SNAPSHOT_TYPES):
-        return _snapshot_metadata(parse_upload_snapshot(model.model_dump(mode='python')))
+        snapshot, digest = validated_upload_snapshot(model.model_dump(mode='python'))
+        return _snapshot_metadata(snapshot, digest)
     if not isinstance(model, UPLOAD_RESULT_TYPES):
         raise TypeError('A typed native upload model is required')
     checked = parse_upload_result_record(model.model_dump(mode='python'))

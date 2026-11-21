@@ -127,9 +127,17 @@ def _execute(request: WorkerInput, root: Path) -> dict[str, object]:
                 or request.source_path is not None or request.captured_at is not None or request.mapping is not None
                 or request.workspace_id is not None or request.source_id is not None):
             raise ValueError("invalid analysis fields")
-        from .upload_analysis import INITIAL_OBSERVATION_MODEL, analyze_upload
+        from .upload_analysis import (
+            INITIAL_OBSERVATION_MODEL,
+            WINDOW_OBSERVATION_MODEL,
+            analyze_upload,
+        )
 
         snapshot = parse_upload_snapshot(json.dumps(request.snapshot))
+        if request.analysis_model == WINDOW_OBSERVATION_MODEL:
+            from .window_observations import _analyze_validated_metric_windows
+
+            return _analyze_validated_metric_windows(snapshot, request.question).model_dump(mode="json")
         return analyze_upload(snapshot, request.question,
                               request.analysis_model or INITIAL_OBSERVATION_MODEL).model_dump(mode="json")
     if "analysis_model" in request.model_fields_set:

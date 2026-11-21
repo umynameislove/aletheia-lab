@@ -10,7 +10,6 @@ from dataclasses import dataclass
 from typing import Literal, cast
 
 from aletheia_lab.hosted_auth.postgres_sessions import Connection
-from aletheia_lab.project.identity import canonical_project_sha256
 from aletheia_lab.project.persistence import _json_bytes
 
 from .async_work import run_blocking
@@ -23,7 +22,7 @@ from .upload_comparison import (
     comparison_metadata,
     comparison_parents,
 )
-from .upload_snapshot import AnyUploadSnapshot, parse_upload_snapshot
+from .upload_snapshot import AnyUploadSnapshot, validated_upload_snapshot
 from .workspace_management import WorkspaceConflict, _revision
 
 
@@ -59,16 +58,17 @@ class UploadPublication:
 
     @staticmethod
     def _payloads(snapshot: AnyUploadSnapshot, existing: AnyUploadSnapshot | None,
-                  parent: AnyUploadSnapshot | None) -> tuple[AnyUploadSnapshot, tuple[str, str, str, str, str], bytes,
+                  parent: AnyUploadSnapshot | None, catalog_digest: str
+                  ) -> tuple[AnyUploadSnapshot, tuple[str, str, str, str, str], bytes,
                       UploadGenerationComparison | None, bytes | None, str | None]:
-        snapshot = parse_upload_snapshot(snapshot.model_dump(mode="python"))
+        parent_hash = None
         if parent is not None:
-            parent = parse_upload_snapshot(parent.model_dump(mode='python'))
+            parent, parent_hash = validated_upload_snapshot(parent.model_dump(mode='python'))
         if parent is not None and (parent.workspace_id != snapshot.workspace_id
                                    or parent.mapping.project_id != snapshot.mapping.project_id):
             raise ValueError('Comparison parent belongs to another project.')
         if existing is not None:
-            existing = parse_upload_snapshot(existing.model_dump(mode="python"))
+            existing, catalog_digest = validated_upload_snapshot(existing.model_dump(mode="python"))
             if existing.snapshot_id != snapshot.snapshot_id or existing.state_payload() != snapshot.state_payload():
                 raise CatalogIntegrityError()
             # State identity excludes capture time: retain the first canonical audit bytes.
@@ -77,16 +77,24 @@ class UploadPublication:
                       if parent is not None and parent.snapshot_id != snapshot.snapshot_id else None)
         payload = snapshot.model_dump(mode='json')
         metadata = ('upload_snapshot', snapshot.snapshot_id, snapshot.mapping.project_id,
-                    snapshot.schema_version, canonical_project_sha256(payload))
+                    snapshot.schema_version, catalog_digest)
         return (snapshot, metadata, _json_bytes(payload), comparison,
             None if comparison is None else _json_bytes(comparison.model_dump(mode='json')),
-            None if parent is None else canonical_project_sha256(parent.model_dump(mode='json')))
+            parent_hash)
 
     async def prepare_snapshot(self, snapshot: AnyUploadSnapshot, *,
                                existing: AnyUploadSnapshot | None = None,
                                parent: AnyUploadSnapshot | None = None) -> PreparedUploadSnapshot:
+        verified = await run_blocking(lambda: validated_upload_snapshot(snapshot.model_dump(mode="python")))
+        return await self._prepare_validated_snapshot(verified, existing=existing, parent=parent)
+
+    async def _prepare_validated_snapshot(self, verified: tuple[AnyUploadSnapshot, str], *,
+                                          existing: AnyUploadSnapshot | None,
+                                          parent: AnyUploadSnapshot | None) -> PreparedUploadSnapshot:
+        """Stage the exact model and digest validated within this publication."""
+        snapshot, digest = verified
         snapshot, metadata, payload, comparison, compared, parent_hash = await run_blocking(
-            self._payloads, snapshot, existing, parent)
+            self._payloads, snapshot, existing, parent, digest)
         staged = await self.objects.stage(snapshot.workspace_id, payload,
             media_type='application/json', schema_version=snapshot.schema_version)
         staged_comparison = None

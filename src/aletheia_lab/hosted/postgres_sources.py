@@ -310,6 +310,10 @@ class PostgresSources:
         workspace_id, snapshot_id, source_id = result.workspace_id, result.snapshot_id, result.source_id
         async with self._pool.connection() as conn:
             auth = await self._access(conn, digest, workspace_id, action="read")
+            if canonical_id is not None:
+                if self._catalog is None or not isinstance(project_id, str):
+                    raise CatalogIntegrityError()
+                await self._catalog._access(conn, credential_digest, workspace_id, project_id, snapshot_id)
             await self._authorization.authorize_source(conn, auth, workspace_id, source_id, "read")
             # Exact PG JSON text keeps the numeric representation, including
             # integer vs fractional values. Older semantically equal encodings
@@ -329,10 +333,10 @@ class PostgresSources:
             # Recheck revocation occurring while the legacy encoding is decoded.
             async with self._pool.connection() as conn:
                 auth = await self._access(conn, digest, workspace_id, action="read")
-                await self._authorization.authorize_source(conn, auth, workspace_id, source_id, "read")
                 if self._catalog is None or not isinstance(project_id, str):
                     raise CatalogIntegrityError()
                 await self._catalog._access(conn, credential_digest, workspace_id, project_id, snapshot_id)
+                await self._authorization.authorize_source(conn, auth, workspace_id, source_id, "read")
                 if await (await conn.execute(
                     "SELECT 1 FROM j01_upload_snapshots WHERE snapshot_id=%s AND workspace_id=%s "
                     "AND source_id=%s AND canonical_record_id=%s AND payload::text=%s",
