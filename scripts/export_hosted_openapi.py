@@ -49,6 +49,7 @@ def document(repo: Path) -> tuple[dict, dict, list[tuple[object, object]], list[
         ClaimReviewJobOutput,
         ClaimReviewReceipt,
         ClaimReviewRequest,
+        ProviderClaimReviewReceipt,
     )
     from aletheia_lab.hosted_contract.deletions import DeletionStatus
     from aletheia_lab.hosted_contract.imports import ConfirmImport, PreviewImport, PreviewRequest
@@ -308,10 +309,27 @@ def document(repo: Path) -> tuple[dict, dict, list[tuple[object, object]], list[
     review_handler = "hosted.claim_review_http.ClaimReviewApplication"
     review_condition = "follow_up_available=True; current canonical catalog and claim review authority required"
     add(review, "post", model(ClaimReviewRequest), model(JobReceipt), "202", review_handler, review_condition,
-        keyed=True, description="Queue a local check of an asserted verdict against saved claim evidence.")
-    add(review + "/{review_id}", "get", None, model(ClaimReviewReceipt), "200", review_handler,
+        keyed=True, description="Queue an evidence check. Provider mode requires an exact approved one-call plan.")
+    review_receipt_schema = {"oneOf": [model(ClaimReviewReceipt), model(ProviderClaimReviewReceipt)]}
+    add(review + "/{review_id}", "get", None, review_receipt_schema, "200", review_handler,
         "follow_up_available=True; current result and claim read authority required",
         description="Read a retained immutable receipt. The review ID is the job ID from admission.")
+    review_export = add(review + "/{review_id}/export", "get", None, review_receipt_schema, "200",
+        review_handler, "follow_up_available=True; current result and source export authority required",
+        description="Download a report for the exact retained review ID.")
+    review_export["parameters"].append(parameter(
+        "format", {"type": "string", "enum": ["json", "markdown", "pdf"]}, required=True,
+    ))
+    review_export_response = review_export["responses"]["200"]
+    review_export_response["content"].update({
+        "text/markdown": {"schema": {"type": "string"}},
+        "application/pdf": {"schema": {"type": "string", "format": "binary"}},
+    })
+    review_export_response["headers"].update({
+        "Content-Disposition": {"schema": {"type": "string"}},
+        "ETag": {"schema": {"type": "string", "pattern": '^"[0-9a-f]{64}"$'}},
+        "X-Aletheia-Receipt-Sha256": {"schema": {"type": "string", "pattern": "^[0-9a-f]{64}$"}},
+    })
     for method in ("get", "head"):
         old = copy.deepcopy(spec["paths"][project][method])
         op = add(project, method, None, model(ProjectDetails), "200", "hosted.runtime_management_http.RuntimeManagementApplication",
@@ -357,10 +375,28 @@ def document(repo: Path) -> tuple[dict, dict, list[tuple[object, object]], list[
         },
         "mode": "local_check", "usage": "not_incurred",
     }
+    provider_receipt = {
+        **review_receipt, "schema_version": "claim-evidence-review/v2", "mode": "provider",
+        "binding": {**review_receipt["binding"], "provider_plan_sha256": "8" * 64},
+        "usage": "settled",
+        "attempt": {
+            "attempt_id": "9" * 32, "request_sha256": "a" * 64, "model": "gpt-6-luna",
+            "dispatched_at": "2026-11-21T00:00:00Z", "received_at": "2026-11-21T00:00:01Z",
+            "deadline_at": "2026-11-21T00:00:30Z", "held_microusd": 320,
+            "outcome": {
+                "status": "completed", "provider_request_id": "req_synthetic",
+                "input_tokens": 320, "output_tokens": 28,
+                "provider_decision": "approve_in_scope", "agrees_with_host": True,
+            },
+        },
+    }
     synthetic.extend([
         (ClaimReviewRequest, {"schema_version": k04.VERSION, "asserted_verdict": "allowed"}),
+        (ClaimReviewRequest, {"schema_version": k04.VERSION, "asserted_verdict": "allowed", "mode": "provider"}),
         (ClaimReviewReceipt, review_receipt),
+        (ProviderClaimReviewReceipt, provider_receipt),
         (ClaimReviewJobOutput, {**envelope, "operation": "review_claim", "result": review_receipt}),
+        (ClaimReviewJobOutput, {**envelope, "operation": "review_claim", "result": provider_receipt}),
         (JobOutput[RefreshResult], {**envelope, "operation": "refresh", "result": {
             "project_id": "p3-project-" + "a" * 64, "previous_snapshot_id": "upload-snapshot-" + "b" * 64,
             "snapshot_id": "upload-snapshot-" + "c" * 64, "revision": 2, "status": "new_snapshot"}}),

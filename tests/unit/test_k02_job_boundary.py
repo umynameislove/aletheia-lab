@@ -87,7 +87,7 @@ def _system(tmp_path, *, maximum_depth=64):
     return app, jobs, headers
 
 
-def _request(app, headers, *, method="GET", path=PATH + "/job_boundary", body=b""):
+def _request(app, headers, *, method="GET", path=PATH + "/job_boundary", body=b"", query=b""):
     async def run():
         messages = []
         sent = False
@@ -102,7 +102,7 @@ def _request(app, headers, *, method="GET", path=PATH + "/job_boundary", body=b"
             messages.append(message)
 
         await app({"type": "http", "scheme": "https", "path": path, "method": method,
-                   "headers": headers}, receive, send)
+                   "headers": headers, "query_string": query}, receive, send)
         return messages[0]["status"], dict(messages[0]["headers"]), messages[1]["body"]
 
     return asyncio.run(run())

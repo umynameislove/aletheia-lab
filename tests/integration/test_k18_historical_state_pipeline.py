@@ -296,7 +296,8 @@ async def _running_pipeline(case, root, registrations, *, extra_application=None
             project_mutations=PostgresProjectMutations(case.pool, case.catalog, audit=True))
         app = JobApplication(app, jobs, sessions, tokens, settings, body_limits=limits, clock_check=clock)
         if extra_application is not None:
-            app = extra_application(app, jobs, sessions, tokens, settings, body_limits=limits, clock_check=clock)
+            app = extra_application(app, jobs, sessions, tokens, settings, body_limits=limits,
+                                    clock_check=clock, renderer=renderer)
         app = ProjectAnalysisApplication(app, jobs, sessions, tokens, settings, body_limits=limits, clock_check=clock)
         app = ProjectOperationsApplication(app, jobs, sessions, tokens, settings, body_limits=limits, clock_check=clock)
         app = ImportApplication(app, LeasedJobs(jobs, leases, None), sessions, tokens, settings,

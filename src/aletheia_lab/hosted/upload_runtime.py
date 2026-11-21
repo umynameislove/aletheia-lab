@@ -138,6 +138,12 @@ class UploadReadBackend(ReadOnlyHostedBackend):
             features["projects.follow_up"] = (self._jobs is not None and await self._jobs.follow_up_ready()
                                               and role_allows(role, "analyze"))
             features["projects.refresh"] = features["projects.follow_up"]
+            features["reviews.claim_evidence"] = True
+            plan = getattr(self._jobs, "claim_provider_plan", None)
+            features["reviews.claim_evidence_provider"] = (
+                plan is not None and role_allows(role, "review") and plan.available(workspace_id)
+                and plan.actor_id == session.actor.user_id
+            )
         if self._resumable_uploads:
             features.update({'sources.resumable': role_allows(role, 'import'),
                              'sources.preview_lease': role_allows(role, 'import'), 'sources.connector': False})
@@ -249,7 +255,8 @@ def compose_upload_runtime(*, settings: RuntimeSettings, sessions: ServerSession
             app = ProjectOperationsApplication(app, jobs, sessions, tokens, settings,
                 body_limits=json_limits, clock_check=clock_check)
             app = ClaimReviewApplication(app, jobs, sessions, tokens, settings,
-                body_limits=json_limits, clock_check=clock_check)
+                body_limits=json_limits, clock_check=clock_check,
+                renderer=catalog_access.renderer if catalog_access is not None else None)
         return AuthAdmissionApplication(app, admission, subject_key=admission_subject_key,
                                          timeout_seconds=api.backend_timeout_seconds)
 

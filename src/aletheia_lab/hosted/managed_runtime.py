@@ -171,8 +171,16 @@ class ManagedRuntime:
         workspaces = PostgresWorkspaceAccess(pool, sessions)
         sources = PostgresSources(pool, maximum_upload_bytes=200*1024*1024,
                                    maximum_expanded_bytes=512*1024*1024, maximum_entries=100000, audit=audit_enabled, catalog=catalog)
+        from .claim_provider_plan import load_claim_provider_plan
+
+        provider_config = settings.worker.claim_provider
+        review_plan = (None if provider_config is None else load_claim_provider_plan(
+            provider_config.manifest_path, provider_config.manifest_sha256,
+        ))
         jobs = PostgresJobs(pool, sources, audit=audit_enabled, catalog=catalog,
                             execution=True, analysis_model=settings.api.analysis_model)
+        if review_plan is not None:
+            jobs.claim_provider_plan = review_plan
         job_updates = PostgresJobUpdates(jobs, cursors)
         preview_leases = PreviewLeases(sources)
         async with asyncio.timeout(settings.api.startup_timeout_seconds):

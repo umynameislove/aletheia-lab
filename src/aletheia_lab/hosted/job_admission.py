@@ -183,9 +183,9 @@ def _validated_request(request: dict[str, object], operation: Operation, analysi
     from .postgres_jobs import _ANALYSIS_MODELS
 
     if operation == "review_claim":
-        from aletheia_lab.hosted_contract.claim_review import ClaimReviewBinding
+        from aletheia_lab.hosted_contract.claim_review import CLAIM_REVIEW_BINDING_ADAPTER
 
-        return ClaimReviewBinding.model_validate(request).model_dump(mode="json")
+        return CLAIM_REVIEW_BINDING_ADAPTER.validate_python(request).model_dump(mode="json")
     if operation == "refresh":
         from .project_job_operations import validate_refresh
 

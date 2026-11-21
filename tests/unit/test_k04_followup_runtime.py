@@ -59,6 +59,7 @@ def test_default_or_incomplete_followup_profile_has_no_capability_hint_or_port_p
 def test_followup_mount_is_explicit_and_uses_same_raw_queue_in_both_upload_profiles(tmp_path, monkeypatch, enabled, resumable):
     calls = []
     review_calls = []
+    renderer = object()
 
     def passthrough(fallback, *args, **kwargs):
         return fallback
@@ -68,7 +69,7 @@ def test_followup_mount_is_explicit_and_uses_same_raw_queue_in_both_upload_profi
         return fallback
 
     def claim_review(fallback, jobs, *args, **kwargs):
-        review_calls.append(jobs)
+        review_calls.append((jobs, kwargs["renderer"]))
         return fallback
 
     for name in ("CallbackApplication", "LoginStartApplication", "LogoutApplication", "SessionMutationApplication",
@@ -87,10 +88,10 @@ def test_followup_mount_is_explicit_and_uses_same_raw_queue_in_both_upload_profi
         tokens=object(), coordinator=object(), auth_policy=AuthPolicy(default_return_to="/app", return_to_paths=("/app",)),
         limits=_backend()[0]._limits,
         clock_check=AsyncMock(return_value=True), admission=object(), admission_subject_key=SecretStr("s" * 43),
-        catalog_access=object(), project_access=object(), reviews=object(), project_mutations=object(),
+        catalog_access=SimpleNamespace(renderer=renderer), project_access=object(), reviews=object(), project_mutations=object(),
         resumable_uploads=resumable, follow_up_available=enabled, runtime_management=object())
     assert calls == ([raw_jobs] if enabled else [])
-    assert review_calls == ([raw_jobs] if enabled else [])
+    assert review_calls == ([(raw_jobs, renderer)] if enabled else [])
 
 
 def test_followup_mount_rejects_missing_catalog_profile(tmp_path):

@@ -101,11 +101,20 @@ def test_claim_review_routes_and_job_output_have_typed_schemas(exported_contract
     assert post["responses"]["202"]["content"]["application/json"]["schema"] == {
         "$ref": "#/components/schemas/JobReceipt",
     }
-    assert read["responses"]["200"]["content"]["application/json"]["schema"] == {
-        "$ref": "#/components/schemas/ClaimReviewReceipt",
-    }
+    receipt_schema = {"oneOf": [
+        {"$ref": "#/components/schemas/ClaimReviewReceipt"},
+        {"$ref": "#/components/schemas/ProviderClaimReviewReceipt"},
+    ]}
+    assert read["responses"]["200"]["content"]["application/json"]["schema"] == receipt_schema
+    export = spec["paths"][route + "/{review_id}/export"]["get"]
+    response = export["responses"]["200"]
+    assert set(response["content"]) == {"application/json", "text/markdown", "application/pdf"}
+    assert response["content"]["application/json"]["schema"] == receipt_schema
+    assert {"Content-Disposition", "ETag", "X-Aletheia-Receipt-Sha256"} <= set(response["headers"])
+    assert any(p["name"] == "format" and p["required"] for p in export["parameters"])
     assert {"SessionCookie", "CsrfHeader", "CsrfCookie"} == set(post["security"][0])
     assert {"SessionCookie"} == set(read["security"][0])
+    assert {"SessionCookie"} == set(export["security"][0])
     assert any(p["name"] == "Idempotency-Key" and p["required"] for p in post["parameters"])
     result = copy.deepcopy(next(v for _, v in examples if v.get("operation") == "review_claim"))
     shape = spec["paths"]["/v1/workspaces/{workspace_id}/jobs/{job_id}/output"]["get"][
@@ -114,6 +123,12 @@ def test_claim_review_routes_and_job_output_have_typed_schemas(exported_contract
     assert validator.is_valid(result)
     result["result"]["binding"]["claim_sha256"] = "wrong"
     assert not validator.is_valid(result)
+    provider = copy.deepcopy(next(
+        v for _, v in examples if v.get("operation") == "review_claim" and v["result"]["mode"] == "provider"
+    ))
+    assert validator.is_valid(provider)
+    del provider["result"]["attempt"]["request_sha256"]
+    assert not validator.is_valid(provider)
 
 
 def test_exporter_itself_is_in_the_stable_source_boundary(exported_contract):

@@ -123,11 +123,20 @@ async def _run_claim(jobs: PostgresJobs, operations: UploadOperations, claim: ob
     if not isinstance(claim, JobClaim):
         raise ValueError("invalid job claim")
     if claim.operation == "review_claim":
-        from .claim_review_jobs import complete_claim_review, prepare_claim_review
+        from .claim_review_jobs import (
+            complete_claim_review,
+            dispatch_provider_review,
+            prepare_claim_review,
+        )
 
         if not isinstance(operations, CanonicalProjectOperations):
             raise ValueError("canonical claim review is unavailable")
-        receipt = await prepare_claim_review(jobs, claim)
+        receipt = None
+        if "provider_plan_sha256" in claim.request:
+            await _require_clock(clock_check)
+            await dispatch_provider_review(jobs, claim, lease)
+        else:
+            receipt = await prepare_claim_review(jobs, claim)
         await _require_clock(clock_check)
         return await complete_claim_review(jobs, claim=claim, lease_digest=lease, receipt=receipt)
     if claim.operation == "refresh":

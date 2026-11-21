@@ -147,13 +147,20 @@ async def grant_runtime(conn: Connection, schema: str, role: str, *, profile: Li
         selected += ("k20_claim_reviews",)
         inserts = _API_INSERT
     else:
-        inserts = {**_PUBLICATION_INSERT, "k20_claim_reviews": (
-            "workspace_id", "job_id", "project_id", "result_id", "claim_id", "object_sha256", "binding",
-        )}
+        selected += ("k21_claim_provider_attempts",)
+        inserts = {
+            **_PUBLICATION_INSERT,
+            "k20_claim_reviews": ("workspace_id", "job_id", "project_id", "result_id", "claim_id",
+                                  "object_sha256", "binding"),
+            "k21_claim_provider_attempts": ("workspace_id", "plan_sha256", "job_id", "attempt_id", "request_sha256",
+                                           "model", "held_microusd", "deadline_at"),
+        }
     if audit:
         inserts = {**inserts, "k06_action_audit": ("audit_id", "request_id", "operation_id", "actor_id",
             "workspace_id", "action", "effect_id", "revision", "job_id", "parent_id", "subject_id")}
-    updates = _API_UPDATE if profile == "api" else {**_LOCK_UPDATE, "j01_jobs": _JOB_UPDATE}
+    updates = _API_UPDATE if profile == "api" else {
+        **_LOCK_UPDATE, "j01_jobs": _JOB_UPDATE, "k21_claim_provider_attempts": ("received_at", "outcome"),
+    }
     known = sorted(set(selected) | set(inserts) | set(updates))
     relations = await _installed_relations(conn, schema, known, cast(str, owner[0]))
     ddl = await (await conn.execute("SELECT has_schema_privilege(%s,n.oid,'CREATE'),"

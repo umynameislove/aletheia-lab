@@ -145,6 +145,15 @@ def test_actual_runtime_logins_scope_mutations_binding_privileges_and_pool_reuse
                 owner_name = (await (await conn.execute("SELECT current_user")).fetchone())[0]
                 await grant_runtime(conn, schema, api_role, profile="api")
                 await grant_runtime(conn, schema, worker_role, profile="worker")
+                privileges = await (await conn.execute(
+                    "SELECT has_table_privilege(%s,'k21_claim_provider_attempts','SELECT'),"
+                    "has_any_column_privilege(%s,'k21_claim_provider_attempts','INSERT'),"
+                    "has_column_privilege(%s,'k21_claim_provider_attempts','outcome','UPDATE'),"
+                    "has_column_privilege(%s,'k21_claim_provider_attempts','held_microusd','UPDATE'),"
+                    "has_table_privilege(%s,'k21_claim_provider_attempts','DELETE')",
+                    (api_role, api_role, worker_role, worker_role, worker_role),
+                )).fetchone()
+                assert privileges == (False, False, True, False, False)
                 with pytest.raises(RuntimePrivilegesRejected):
                     await grant_runtime(conn, schema, owner_name, profile="api")
                 with pytest.raises(RuntimePrivilegesRejected):

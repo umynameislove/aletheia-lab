@@ -10,7 +10,7 @@ from typing import Literal, cast
 from pydantic import SecretStr
 
 from aletheia_lab.hosted_auth.postgres_sessions import Connection, Pool, _digest
-from aletheia_lab.hosted_contract.claim_review import ClaimReviewBinding
+from aletheia_lab.hosted_contract.claim_review import CLAIM_REVIEW_BINDING_ADAPTER
 from aletheia_lab.hosted_contract.job_attempts import JobAttemptPage
 from aletheia_lab.hosted_contract.job_page import JOB_OPERATIONS, Job, JobOperation, JobReceipt
 from aletheia_lab.hosted_contract.project_analysis import AnalysisBackend
@@ -29,6 +29,7 @@ from . import claim_review_jobs, job_admission, job_output, job_publication
 from .action_audit import current_request_id, record_action
 from .authorization import Authorization, AuthorizationDenied
 from .canonical_results import CanonicalResults
+from .claim_provider_plan import ClaimProviderPlan
 from .job_execution import QueuePolicy, execution_profile
 from .job_lifecycle import CLAIM_BUDGET, DEADLINE, PUBLICATION_BUDGET, expire_job, public_job
 from .native_upload_records import (
@@ -40,6 +41,7 @@ from .native_upload_records import (
 )
 from .postgres_catalog import PostgresCatalog
 from .postgres_sources import PostgresSources, SourceConflict, SourceNotFound
+from .project_job_operations import authorize_follow_up, authorize_refresh
 from .transactions import run_transaction
 from .upload_snapshot import (
     AnyUploadSnapshot,
@@ -75,13 +77,16 @@ class PostgresJobs:
     def __init__(self, pool: Pool, access: PostgresSources, *, audit: bool = False,
                  catalog: PostgresCatalog | None = None, execution: bool = False,
                  queue_policy: QueuePolicy | None = None,
-                 analysis_model: AnalysisModel = "upload-snapshot-observation/v1") -> None:
+                 analysis_model: AnalysisModel = "upload-snapshot-observation/v1",
+                 claim_provider_plan: ClaimProviderPlan | None = None,
+                 claim_provider_key: SecretStr | None = None) -> None:
         if type(execution) is not bool:
             raise ValueError('Explicit job execution profile required.')
         self._pool, self._access, self._audit = pool, access, audit
         if analysis_model not in _DEFAULT_ANALYSIS_MODELS:
             raise ValueError("A supported analysis model is required.")
         self.analysis_model = analysis_model
+        self.claim_provider_plan, self.claim_provider_key = claim_provider_plan, claim_provider_key
         self.execution = execution
         self.queue_policy = QueuePolicy() if queue_policy is None else queue_policy
         self._read_catalog = catalog
@@ -402,14 +407,10 @@ class PostgresJobs:
                          request: dict[str, object], *, reading: bool = False) -> Authorization:
         if operation == "review_claim":
             return await claim_review_jobs.authorize_claim_review(
-                self, conn, digest, workspace_id, ClaimReviewBinding.model_validate(request), reading=reading)
+                self, conn, digest, workspace_id, CLAIM_REVIEW_BINDING_ADAPTER.validate_python(request), reading=reading)
         if operation == "refresh":
-            from .project_job_operations import authorize_refresh
-
             return await authorize_refresh(self, conn, digest, workspace_id, request, reading=reading)
         if operation == "follow_up":
-            from .project_job_operations import authorize_follow_up
-
             return await authorize_follow_up(self, conn, digest, workspace_id, request, reading=reading)
         if operation == "analyze" and (
                 set(request) not in ({"snapshot_id", "question"}, {"snapshot_id", "question", "analysis_model"})

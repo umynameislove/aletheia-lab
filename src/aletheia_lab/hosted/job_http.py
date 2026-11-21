@@ -131,6 +131,7 @@ class JobApplication:
                    (b"x-request-id", request_id.encode())]
         if response.allow is not None:
             headers.append((b"allow", response.allow))
+        headers.extend(response.extra_headers)
         if response.status in (429, 503):
             headers.append((b"retry-after", b"1"))
         if response.status == 200 and str(scope.get('path', '')).endswith('/updates'):
@@ -316,7 +317,7 @@ class JobApplication:
         elif value["operation"] == "refresh":
             value["result"] = RefreshResult.model_validate(value["result"], strict=True).model_dump(mode="json")
         elif value["operation"] == "analyze":
-            if value["result"].get("kind") == "result_reference":
+            if envelope.result.get("kind") == "result_reference":
                 value["result"] = AnalysisResultReference.model_validate(value["result"], strict=True).model_dump(mode="json")
             else:
                 view = parse_product_view_json(json.dumps(value["result"], allow_nan=False))

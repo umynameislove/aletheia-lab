@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import os
 import secrets
@@ -10,6 +11,7 @@ from uuid import uuid4
 
 import pytest
 from pydantic import SecretStr
+from pypdf import PdfReader
 from test_k05_native_results_postgres import _case, _run
 from test_k06_canonical_snapshot_postgres import _setup
 from test_k18_historical_state_pipeline import (
@@ -157,6 +159,7 @@ async def _check_scope_and_publication(client, jobs, case, users, views, witness
     await sources.set_source_grant(**grant, source_id=witness["source_id"], actions=["read", "review"], expected_revision=0)
     archived = f"{endpoint}/{original['job_id']}"
     assert await _request(client, "GET", archived, 200, headers=users["b"]) == original
+    await _request(client, "GET", f"{archived}/export?format=json", 404, headers=users["b"])
     ack = await _issue(client, held, users["b"], "denied", "revoke-before-publication")
     lease = SecretStr(uuid4().hex * 2)
     claim = await jobs.claim(lease_digest=lease, lease_seconds=120, operations=(_MODE,))
@@ -206,6 +209,24 @@ async def _check_tool_outcomes(client, jobs, operations, case, user, view, witne
     return checked
 
 
+async def _check_downloads(client, archive, headers, case, object_sha, receipt):
+    expected_receipt = case.objects.store.path(object_sha).read_bytes()
+    for fmt in ("json", "markdown", "pdf"):
+        reply = await client.get(f"{archive}/export?format={fmt}", headers=headers)
+        assert reply.status_code == 200, "Claim review download failed."
+        assert reply.headers["x-aletheia-receipt-sha256"] == object_sha
+        assert reply.headers["etag"] == f'"{hashlib.sha256(reply.content).hexdigest()}"'
+        if fmt == "json":
+            assert reply.content == expected_receipt and reply.json() == receipt
+        else:
+            text = (reply.text if fmt == "markdown" else
+                    "\n".join(page.extract_text() for page in PdfReader(io.BytesIO(reply.content)).pages))
+            normalized = "".join(text.split())
+            assert object_sha in normalized and receipt["binding"]["result_id"] in normalized
+            assert receipt["finding"]["decision"] in text
+            assert receipt["finding"]["evidence_ids"][0] in normalized
+
+
 def test_claim_review_preserves_original_assertion_scope_and_outlives_job(tmp_path, monkeypatch):
     async def run():
         payloads = [(name, _zip(index), evidence, verdict)
@@ -230,6 +251,10 @@ def test_claim_review_preserves_original_assertion_scope_and_outlives_job(tmp_pa
                         client, jobs, operations, users["a"], case, name, raw, evidence, verdict, projects.get(name),
                     )
             async with case.pool.connection() as conn:
+                with monkeypatch.context() as older:
+                    older.setattr(persistence_migration, "MIGRATIONS", persistence_migration.MIGRATIONS[:20])
+                    assert await persistence_migration.migrate(conn, schema) == "upgraded"
+                    assert await persistence_migration.verify(conn, schema)
                 assert await persistence_migration.migrate(conn, schema) == "upgraded"
                 assert await persistence_migration.verify(conn, schema)
             reviews = {}
@@ -286,6 +311,7 @@ def test_claim_review_preserves_original_assertion_scope_and_outlives_job(tmp_pa
                 await _request(client, "GET", ack["status_url"] + "/output", 404, headers=users["a"])
                 archive = f"{_path(views['held'])}/{ack['job_id']}"
                 assert await _request(client, "GET", archive, 200, headers=users["a"]) == result
+                await _check_downloads(client, archive, users["a"], case, original_sha256, result)
                 await _request(client, "GET", archive, 404, headers=users["b"])
                 project = witness["project_id"]
                 async with case.pool.connection() as conn:
@@ -296,12 +322,13 @@ def test_claim_review_preserves_original_assertion_scope_and_outlives_job(tmp_pa
                     headers={**users["a"], "if-match": f'"{revision}"'}, json={})
                 assert (deleted["status"], deleted["retention"]) == ("tombstoned", "retained")
                 await _request(client, "GET", archive, 404, headers=users["a"])
+                await _request(client, "GET", f"{archive}/export?format=json", 404, headers=users["a"])
                 assert case.objects.store.path(original_sha256).exists()
                 lawful = reviews["lawful"][1]
                 other_path = f"{_path(views['authorized'])}/{lawful['job_id']}"
                 assert await _request(client, "GET", other_path, 200, headers=users["a"]) == lawful
                 (tmp_path / "claim-review-witness.json").write_text(json.dumps({
-                    "schema_upgrade": "19 to 20",
+                    "schema_upgrade": [19, 20, len(persistence_migration.MIGRATIONS)],
                     "reviews": {label: {"receipt": outcome, "object_sha256": digest}
                                 for label, (_, outcome, digest) in reviews.items()},
                     "same_id_after_restart": ack["job_id"],

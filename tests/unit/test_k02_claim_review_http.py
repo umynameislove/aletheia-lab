@@ -50,24 +50,24 @@ def _case(tmp_path):
     return app, jobs, headers
 
 
-@pytest.mark.parametrize("verdict", ["allowed", "denied"])
-def test_submit_claim_review_binds_typed_assertion_and_route_scope(tmp_path, verdict):
+@pytest.mark.parametrize(("verdict", "mode"), [("allowed", "local_check"), ("denied", "provider")])
+def test_submit_claim_review_binds_typed_assertion_and_route_scope(tmp_path, verdict, mode):
     app, jobs, headers = _case(tmp_path)
     status, response_headers, raw = _request(app, headers, method="POST", path=ROUTE,
-                                             body=json.dumps({**BODY, "asserted_verdict": verdict}).encode())
+                                             body=json.dumps({**BODY, "asserted_verdict": verdict, "mode": mode}).encode())
     assert status == 202 and json.loads(raw) == jobs.receipt.model_dump(mode="json")
     assert response_headers[b"cache-control"] == b"no-store"
     supplied = jobs.enqueue_claim_review.await_args.kwargs
     assert supplied.pop("request_key").get_secret_value() == "synthetic-request-key-0001"
     assert isinstance(supplied.pop("credential_digest"), SecretStr)
     assert supplied == {"workspace_id": WORKSPACE, "result_id": RESULT, "claim_id": CLAIM,
-                        "asserted_verdict": verdict}
+                        "asserted_verdict": verdict, "mode": mode}
 
 
 @pytest.mark.parametrize("body", [
     {"schema_version": VERSION}, {"schema_version": VERSION, "asserted_verdict": "unknown"},
     {"schema_version": PRIVATE, "asserted_verdict": "denied"}, {**BODY, "claim_id": PRIVATE},
-    {**BODY, "mode": "provider"}, {**BODY, "candidate_sha256": PRIVATE},
+    {**BODY, "mode": "unregistered"}, {**BODY, "candidate_sha256": PRIVATE},
 ])
 def test_invalid_claim_review_payload_is_rejected_before_job_admission(tmp_path, body):
     app, jobs, headers = _case(tmp_path)
@@ -102,7 +102,8 @@ def test_retained_read_uses_current_authority_and_exact_route_scope(tmp_path):
     assert ClaimReviewReceipt.model_validate_json(raw) == receipt
     values = jobs.read_claim_review.await_args.kwargs
     assert isinstance(values.pop("credential_digest"), SecretStr)
-    assert values == {"workspace_id": WORKSPACE, "result_id": RESULT, "claim_id": CLAIM, "review_id": REVIEW}
+    assert values == {"workspace_id": WORKSPACE, "result_id": RESULT, "claim_id": CLAIM, "review_id": REVIEW,
+                      "action": "read"}
 
     jobs.read_claim_review.side_effect = AuthorizationDenied()
     status, _, raw = _request(app, headers, path=f"{ROUTE}/{REVIEW}")

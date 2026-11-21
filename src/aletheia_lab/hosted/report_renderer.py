@@ -27,19 +27,20 @@ class ReportRenderer:
             self._thread = threading.Thread(target=self._loop.run_forever, name="aletheia-report-worker", daemon=True)
             self._thread.start()
 
-    async def render(self, report_format: ReportFormat, payload: bytes) -> bytes:
+    async def render(self, report_format: ReportFormat, payload: bytes, *, claim_review: bool = False) -> bytes:
         with timed_stage("report_render"):
-            return await self._render(report_format, payload)
+            return await self._render(report_format, payload, claim_review=claim_review)
 
-    async def _render(self, report_format: ReportFormat, payload: bytes) -> bytes:
+    async def _render(self, report_format: ReportFormat, payload: bytes, *, claim_review: bool) -> bytes:
         if self._closed:
             raise TimeoutError("Report worker is temporarily unavailable.")
         if report_format == "pdf" and not pdf_available():
             raise RequestRejected(503, "service_unavailable", "PDF rendering is currently unavailable.")
         try:
             if self._loop is None:
-                return await self._worker.render(report_format, payload)
-            return await _call_on_loop(self._loop, lambda: self._worker.render(report_format, payload))
+                return await self._worker.render(report_format, payload, claim_review=claim_review)
+            return await _call_on_loop(self._loop,
+                lambda: self._worker.render(report_format, payload, claim_review=claim_review))
         except WorkerRejected as error:
             if str(error) == "worker_pdf_unsupported_text":
                 raise RequestRejected(400, "invalid_request", "Some report characters are outside the PDF font. Use JSON or Markdown.") from None

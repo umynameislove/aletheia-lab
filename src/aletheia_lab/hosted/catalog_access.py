@@ -34,7 +34,8 @@ _EXPORT_SLOTS = ProcessSlots(EXPORT_ACTIVE_PER_PROCESS, EXPORT_WAITERS_PER_PROCE
 
 
 class Renderer(Protocol):
-    async def render(self, report_format: Literal["json", "markdown", "pdf"], payload: bytes) -> bytes: ...
+    async def render(self, report_format: Literal["json", "markdown", "pdf"], payload: bytes, *,
+                     claim_review: bool = False) -> bytes: ...
 
 
 class CatalogAccess:

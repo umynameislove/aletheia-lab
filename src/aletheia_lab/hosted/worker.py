@@ -1,4 +1,4 @@
-"""One-shot report worker over trusted, already-authorized ProductView bytes.
+"""One-shot report worker over trusted, already-authorized report inputs.
 
 Run as a separate process under a future job supervisor; this does not receive
 HTTP requests, select filesystem paths, authenticate callers or acknowledge a
@@ -26,9 +26,29 @@ from aletheia_lab.product.view import AnyProductView
 from .request_boundary import RequestRejected, decode_json_model
 from .worker_limits import MAX_INPUT_BYTES, MAX_OUTPUT_BYTES
 
+_REVIEW_LIMIT = 64 * 1024
+
 
 class _ReportView(RootModel[Annotated[AnyProductView, Field(discriminator="schema_version")]]):
     pass
+
+
+def _render(source: BinaryIO, report_format: str, *, windowed: bool, claim_review: bool) -> bytes:
+    if claim_review:
+        from .claim_review_reports import render_claim_review_report
+
+        raw = source.read(_REVIEW_LIMIT + 1)
+        if len(raw) > _REVIEW_LIMIT:
+            raise ValueError("Claim review report input exceeds its byte limit.")
+        return render_claim_review_report(raw, report_format)
+    limit = MAX_OUTPUT_BYTES if windowed else MAX_INPUT_BYTES
+    view = decode_json_model(source.read(limit + 1), _ReportView, maximum_bytes=limit).root
+    if windowed:
+        from .upload_analysis import WINDOW_OBSERVATION_MODEL
+
+        if view.runtime.model != WINDOW_OBSERVATION_MODEL:
+            raise ValueError("Window report requires its pinned model.")
+    return render_product_report(view, report_format)
 
 
 def main(
@@ -45,19 +65,14 @@ def main(
     windowed = len(args) == 1 and args[0].endswith("-windowed-v3")
     if windowed:
         args = [args[0].removesuffix("-windowed-v3")]
+    claim_review = len(args) == 1 and args[0].startswith("claim-review-") and not windowed
+    if claim_review:
+        args = [args[0].removeprefix("claim-review-")]
     if args not in (["json"], ["markdown"], ["pdf"]):
         print("worker_invalid_format", file=errors)
         return 2
     try:
-        limit = MAX_OUTPUT_BYTES if windowed else MAX_INPUT_BYTES
-        raw = source.read(limit + 1)
-        view = decode_json_model(raw, _ReportView, maximum_bytes=limit).root
-        if windowed:
-            from .upload_analysis import WINDOW_OBSERVATION_MODEL
-
-            if view.runtime.model != WINDOW_OBSERVATION_MODEL:
-                raise ValueError("Window report requires its pinned model.")
-        result = render_product_report(view, args[0])
+        result = _render(source, args[0], windowed=windowed, claim_review=claim_review)
         if len(result) > MAX_OUTPUT_BYTES:
             print("worker_output_too_large", file=errors)
             return 2
