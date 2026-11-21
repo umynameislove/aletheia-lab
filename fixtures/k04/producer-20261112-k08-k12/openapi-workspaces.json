@@ -14044,7 +14044,8 @@
                   "confirm",
                   "analyze",
                   "follow_up",
-                  "refresh"
+                  "refresh",
+                  "review_claim"
                 ],
                 "type": "string"
               },
@@ -16431,7 +16432,8 @@
               "confirm",
               "analyze",
               "follow_up",
-              "refresh"
+              "refresh",
+              "review_claim"
             ],
             "title": "Operation",
             "type": "string"

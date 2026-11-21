@@ -45,6 +45,11 @@ def document(repo: Path) -> tuple[dict, dict, list[tuple[object, object]], list[
     from aletheia_lab.hosted.upload_staging_http import _Empty as UploadEmpty
     from aletheia_lab.hosted_auth.logout_http import _EmptyBody as LogoutEmpty
     from aletheia_lab.hosted_auth.session_http import _EmptyBody as SessionEmpty
+    from aletheia_lab.hosted_contract.claim_review import (
+        ClaimReviewJobOutput,
+        ClaimReviewReceipt,
+        ClaimReviewRequest,
+    )
     from aletheia_lab.hosted_contract.deletions import DeletionStatus
     from aletheia_lab.hosted_contract.imports import ConfirmImport, PreviewImport, PreviewRequest
     from aletheia_lab.hosted_contract.job_attempts import JobAttemptPage
@@ -118,7 +123,7 @@ def document(repo: Path) -> tuple[dict, dict, list[tuple[object, object]], list[
         strict_ids = {}
         if handler.endswith(("ProjectRefreshApplication", "ProjectAnalysisApplication", "RuntimeManagementApplication")):
             strict_ids["project_id"] = "^p3-project-[0-9a-f]{64}$"
-        if handler.endswith("ProjectOperationsApplication"):
+        if handler.endswith(("ProjectOperationsApplication", "ClaimReviewApplication")):
             strict_ids["result_id"] = "^p6-result-[0-9a-f]{64}$"
         if handler.endswith("ImportApplication"):
             strict_ids["preview_id"] = "^prev_[0-9a-f]{32}$"
@@ -220,6 +225,7 @@ def document(repo: Path) -> tuple[dict, dict, list[tuple[object, object]], list[
         }}}}},
         "refresh": model(JobOutput[RefreshResult], "RefreshJobOutput"),
         "follow_up": model(FollowUpJobOutput),
+        "review_claim": model(ClaimReviewJobOutput),
         "analyze": model(JobOutput[AnyProductView | AnalysisResultReference], "AnalysisJobOutput"),
     }
     # The handler's discriminated parser requires the tag, despite model defaults.
@@ -232,7 +238,7 @@ def document(repo: Path) -> tuple[dict, dict, list[tuple[object, object]], list[
             {"if": {"properties": {"operation": {"const": operation}}}, "then": shape}
             for operation, shape in job_outputs.items())]}
     output["description"] = (
-        "Current job envelope with concrete refresh/follow-up summary and analysis v1/v2 results. "
+        "Current job envelope with concrete refresh, follow-up, analysis, and claim review results. "
         "Preview and confirm retain the generic result boundary. Confirm can include the project ID for registered historical state evidence. "
         "A follow-up summary requires a separate GET result to obtain ResultView.view.")
 
@@ -298,6 +304,14 @@ def document(repo: Path) -> tuple[dict, dict, list[tuple[object, object]], list[
             "follow_up_available=True; canonical project job extensions ready", cas=cas, keyed=True)
     add(k04.RESULT + "/follow-ups", "post", model(FollowUpRequest), model(JobReceipt), "202",
         "hosted.project_http.ProjectOperationsApplication", "follow_up_available=True; canonical result parent required", cas=True, keyed=True)
+    review = k04.RESULT + "/claims/{claim_id}/reviews"
+    review_handler = "hosted.claim_review_http.ClaimReviewApplication"
+    review_condition = "follow_up_available=True; current canonical catalog and claim review authority required"
+    add(review, "post", model(ClaimReviewRequest), model(JobReceipt), "202", review_handler, review_condition,
+        keyed=True, description="Queue a local check of an asserted verdict against saved claim evidence.")
+    add(review + "/{review_id}", "get", None, model(ClaimReviewReceipt), "200", review_handler,
+        "follow_up_available=True; current result and claim read authority required",
+        description="Read a retained immutable receipt. The review ID is the job ID from admission.")
     for method in ("get", "head"):
         old = copy.deepcopy(spec["paths"][project][method])
         op = add(project, method, None, model(ProjectDetails), "200", "hosted.runtime_management_http.RuntimeManagementApplication",
@@ -324,7 +338,29 @@ def document(repo: Path) -> tuple[dict, dict, list[tuple[object, object]], list[
                                     "question": "What is observed?"})]
     envelope = {"schema_version": k04.VERSION, "workspace_id": "ws_synthetic",
                 "job_id": "job_synthetic"}
+    review_receipt = {
+        "schema_version": "claim-evidence-review/v1", "job_id": envelope["job_id"],
+        "binding": {
+            "workspace_id": envelope["workspace_id"], "project_id": "p3-project-" + "a" * 64,
+            "source_id": "src_synthetic", "source_sha256": "a" * 64,
+            "snapshot_id": "upload-snapshot-" + "b" * 64, "result_id": "p6-result-" + "c" * 64,
+            "claim_id": "p6-claim-" + "d" * 64,
+            "result_sha256": "1" * 64, "claim_sha256": "2" * 64, "evidence_sha256": "3" * 64,
+            "receipt_sha256": "4" * 64, "contract_sha256": "5" * 64,
+            "asserted_verdict": "allowed", "policy": "historical-state-authorization/v1",
+            "candidate_sha256": "6" * 64,
+        },
+        "finding": {
+            "decision": "approve_in_scope", "reason": "The recorded state matches the asserted verdict.",
+            "evidence_ids": ["p6-evidence-" + "e" * 64], "execution_mode": "replay",
+            "observed_state_sha256": "7" * 64, "receipt_sha256": "4" * 64, "contract_sha256": "5" * 64,
+        },
+        "mode": "local_check", "usage": "not_incurred",
+    }
     synthetic.extend([
+        (ClaimReviewRequest, {"schema_version": k04.VERSION, "asserted_verdict": "allowed"}),
+        (ClaimReviewReceipt, review_receipt),
+        (ClaimReviewJobOutput, {**envelope, "operation": "review_claim", "result": review_receipt}),
         (JobOutput[RefreshResult], {**envelope, "operation": "refresh", "result": {
             "project_id": "p3-project-" + "a" * 64, "previous_snapshot_id": "upload-snapshot-" + "b" * 64,
             "snapshot_id": "upload-snapshot-" + "c" * 64, "revision": 2, "status": "new_snapshot"}}),

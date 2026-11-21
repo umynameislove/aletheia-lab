@@ -54,6 +54,10 @@ async def output(self: PostgresJobs, *, credential_digest: SecretStr, workspace_
         project = None
         if linked is not None:
             linked, project = await _linked_project(conn, workspace_id, linked)
+    if operation == "review_claim":
+        from .claim_review_jobs import read_job_claim_review
+
+        result = await read_job_claim_review(self, credential_digest, workspace_id, job_id, request, result, linked)
     if operation == "refresh":
         if linked is not None:
             raise CatalogIntegrityError()

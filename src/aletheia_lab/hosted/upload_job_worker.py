@@ -9,6 +9,7 @@ from collections.abc import Awaitable, Callable
 from pydantic import SecretStr
 
 from aletheia_lab.hosted.content_hashing import content_hasher
+from aletheia_lab.hosted_contract.job_page import JOB_OPERATIONS
 
 from .authorization import AuthorizationDenied
 from .import_errors import MappingInvalid
@@ -26,7 +27,7 @@ async def run_one_upload_job(jobs: PostgresJobs, operations: UploadOperations, *
     if clock_check is not None and await clock_check() is not True:
         raise TimeoutError("clock unavailable")
     lease = SecretStr(content_hasher(secrets.token_bytes(32)).hexdigest())
-    supported: tuple[Operation, ...] = ("preview", "confirm", "analyze", "follow_up", "refresh") if isinstance(
+    supported: tuple[Operation, ...] = JOB_OPERATIONS if isinstance(
         operations, CanonicalProjectOperations) else ("preview", "confirm", "analyze")
     claim = await jobs.claim(lease_digest=lease, lease_seconds=lease_seconds, operations=supported)
     if claim is None:
@@ -110,30 +111,40 @@ async def _guard_claim_unobserved(jobs: PostgresJobs, operations: UploadOperatio
         await _finish_compute(task)
 
 
+async def _require_clock(clock_check: Callable[[], Awaitable[bool]] | None) -> None:
+    if clock_check is not None and await clock_check() is not True:
+        raise TimeoutError("clock unavailable")
+
+
 async def _run_claim(jobs: PostgresJobs, operations: UploadOperations, claim: object, lease: SecretStr,
                      clock_check: Callable[[], Awaitable[bool]] | None = None) -> bool:
     from .postgres_jobs import JobClaim
 
     if not isinstance(claim, JobClaim):
         raise ValueError("invalid job claim")
+    if claim.operation == "review_claim":
+        from .claim_review_jobs import complete_claim_review, prepare_claim_review
+
+        if not isinstance(operations, CanonicalProjectOperations):
+            raise ValueError("canonical claim review is unavailable")
+        receipt = await prepare_claim_review(jobs, claim)
+        await _require_clock(clock_check)
+        return await complete_claim_review(jobs, claim=claim, lease_digest=lease, receipt=receipt)
     if claim.operation == "refresh":
         if not isinstance(operations, CanonicalProjectOperations):
             raise ValueError("canonical refresh is unavailable")
         refreshed = await operations.prepare_refresh(claim)
-        if clock_check is not None and await clock_check() is not True:
-            raise TimeoutError("clock unavailable")
+        await _require_clock(clock_check)
         return await jobs.complete_refresh(claim=claim, lease_digest=lease, snapshot=refreshed.snapshot)
     if claim.operation == "follow_up":
         if not isinstance(operations, CanonicalProjectOperations):
             raise ValueError("canonical follow-up is unavailable")
         record = await operations.prepare_follow_up(claim)
-        if clock_check is not None and await clock_check() is not True:
-            raise TimeoutError("clock unavailable")
+        await _require_clock(clock_check)
         return await jobs.complete_result(claim=claim, lease_digest=lease, record=record)
     if claim.operation == "analyze" and isinstance(operations, CanonicalProjectOperations):
         record = await operations.prepare_initial_analysis(claim)
-        if clock_check is not None and await clock_check() is not True:
-            raise TimeoutError("clock unavailable")
+        await _require_clock(clock_check)
         return await jobs.complete_result(claim=claim, lease_digest=lease, record=record)
     return await _run_upload_claim(jobs, operations, claim, lease, clock_check)
 

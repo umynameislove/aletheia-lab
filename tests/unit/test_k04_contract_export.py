@@ -207,12 +207,14 @@ def test_historical_native_package_still_validates_and_preserves_legacy_fields(e
             assert value["truncated"] is False
 
 
-def test_common_job_output_component_is_the_maintained_five_operation_envelope(exported):
+def test_common_job_output_component_matches_the_additive_job_operation_envelope(exported):
     path, document, inventory = exported
     model = JobOutput[dict[str, object]]
     schema = document["components"]["schemas"]["JobOutput"]
     assert schema == model.model_json_schema(ref_template="#/components/schemas/{model}")
-    assert schema["properties"]["operation"]["enum"] == ["preview", "confirm", "analyze", "follow_up", "refresh"]
+    assert schema["properties"]["operation"]["enum"] == [
+        "preview", "confirm", "analyze", "follow_up", "refresh", "review_claim",
+    ]
     assert inventory["producer_sources"]["job_page.py"] == hashlib.sha256(
         (ROOT / "src/aletheia_lab/hosted_contract/job_page.py").read_bytes()).hexdigest()
     payload = json.loads((path / "job-output.json").read_text(encoding="utf-8"))

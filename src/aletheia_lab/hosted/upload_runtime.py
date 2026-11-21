@@ -27,6 +27,7 @@ from .application import AccessDenied
 from .authorization import role_allows
 from .catalog_access import CatalogAccess
 from .catalog_http import CatalogApplication
+from .claim_review_http import ClaimReviewApplication
 from .clock_guarded_backend import ClockGuardedBackend
 from .composition import Application, ProcessApplication
 from .import_failures import ImportFailures
@@ -246,6 +247,8 @@ def compose_upload_runtime(*, settings: RuntimeSettings, sessions: ServerSession
             app = ProjectAnalysisApplication(app, jobs, sessions, tokens, settings,
                 body_limits=json_limits, clock_check=clock_check)
             app = ProjectOperationsApplication(app, jobs, sessions, tokens, settings,
+                body_limits=json_limits, clock_check=clock_check)
+            app = ClaimReviewApplication(app, jobs, sessions, tokens, settings,
                 body_limits=json_limits, clock_check=clock_check)
         return AuthAdmissionApplication(app, admission, subject_key=admission_subject_key,
                                          timeout_seconds=api.backend_timeout_seconds)

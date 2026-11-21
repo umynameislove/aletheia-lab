@@ -58,7 +58,7 @@
   "canonical_seed_sha256": "a6862e94edb835bbc60a39927977fb65644428c6eaf669029764fcc330d960bd",
   "producer_sources": {
     "workspaces.py": "bd4a25c10b01ecea4c3b6b467f7d7168f2edd34c99363eee042dff779746fc2c",
-    "job_page.py": "b27d9ef342be8d273de3188c46a8694348febfb7a322f9e6fe646403108b046c"
+    "job_page.py": "f8ed0a87ef6f5dca15acabf685673e0c3529277963a4b991ccb880557bbf9ec9"
   },
   "local_error_codes": {
     "invitation_expired": 410,

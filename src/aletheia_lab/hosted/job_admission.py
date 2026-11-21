@@ -30,9 +30,11 @@ async def enqueue(self: PostgresJobs, *, credential_digest: SecretStr, workspace
                   request_key: SecretStr, request: dict[str, object],
                   retry_of_job_id: str | None = None) -> JobReceipt:
 
+    from aletheia_lab.hosted_contract.job_page import JOB_OPERATIONS
+
     digest = _digest(credential_digest)
     implicit_analysis = operation == "analyze" and "analysis_model" not in request and retry_of_job_id is None
-    if operation not in ("preview", "confirm", "analyze", "follow_up", "refresh") or not isinstance(request_key, SecretStr):
+    if operation not in JOB_OPERATIONS or not isinstance(request_key, SecretStr):
         raise ValueError("invalid job")
     key = request_key.get_secret_value()
     if not 16 <= len(key) <= 128:
@@ -180,6 +182,10 @@ def _validated_request(request: dict[str, object], operation: Operation, analysi
                        retry_of_job_id: str | None) -> dict[str, object]:
     from .postgres_jobs import _ANALYSIS_MODELS
 
+    if operation == "review_claim":
+        from aletheia_lab.hosted_contract.claim_review import ClaimReviewBinding
+
+        return ClaimReviewBinding.model_validate(request).model_dump(mode="json")
     if operation == "refresh":
         from .project_job_operations import validate_refresh
 

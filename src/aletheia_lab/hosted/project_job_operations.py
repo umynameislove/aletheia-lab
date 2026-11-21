@@ -27,6 +27,21 @@ if TYPE_CHECKING:
 _REQUEST_FIELDS = {"project_id", "parent_snapshot_id", "expected_revision", "source_id", "origin_source_sha256"}
 
 
+async def authorize_follow_up(jobs: PostgresJobs, conn: Connection, digest: str, workspace: str,
+                              request: dict[str, object], *, reading: bool) -> Authorization:
+    if jobs._canonical is None:
+        raise TimeoutError("Canonical project storage is unavailable.")
+    action = "read" if reading else "analyze"
+    auth = await jobs._access._access(conn, digest, workspace, action=action)
+    project, parent = request.get("project_id"), request.get("parent_result_id")
+    if not isinstance(project, str) or not isinstance(parent, str):
+        raise SourceNotFound()
+    kind = await jobs._access._authorization.authorize_record(conn, auth, workspace, project, parent, action)
+    if kind not in ("result", "upload_result"):
+        raise SourceNotFound()
+    return auth
+
+
 def validate_refresh(request: dict[str, object]) -> None:
     if set(request) != _REQUEST_FIELDS:
         raise ValueError("Invalid refresh request.")

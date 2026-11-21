@@ -10,8 +10,9 @@ from typing import Literal, cast
 from pydantic import SecretStr
 
 from aletheia_lab.hosted_auth.postgres_sessions import Connection, Pool, _digest
+from aletheia_lab.hosted_contract.claim_review import ClaimReviewBinding
 from aletheia_lab.hosted_contract.job_attempts import JobAttemptPage
-from aletheia_lab.hosted_contract.job_page import Job, JobReceipt
+from aletheia_lab.hosted_contract.job_page import JOB_OPERATIONS, Job, JobOperation, JobReceipt
 from aletheia_lab.hosted_contract.project_analysis import AnalysisBackend
 from aletheia_lab.hosted_contract.project_operations import FollowUpRequest
 from aletheia_lab.product.follow_up import (
@@ -24,7 +25,7 @@ from aletheia_lab.product.view import (
     parse_product_view_json,
 )
 
-from . import job_admission, job_output, job_publication
+from . import claim_review_jobs, job_admission, job_output, job_publication
 from .action_audit import current_request_id, record_action
 from .authorization import Authorization, AuthorizationDenied
 from .canonical_results import CanonicalResults
@@ -52,7 +53,7 @@ _DEFAULT_ANALYSIS_MODELS = ("upload-snapshot-observation/v1", "upload-snapshot-m
                             "upload-snapshot-windowed-metric-observation/v3")
 _ANALYSIS_MODELS = (*_DEFAULT_ANALYSIS_MODELS, HISTORICAL_STATE_MODEL)
 
-Operation = Literal["preview", "confirm", "analyze", "follow_up", "refresh"]
+Operation = JobOperation
 _AVAILABLE = "(state='queued' OR (state='running' AND lease_until<clock_timestamp()))"
 
 
@@ -121,6 +122,9 @@ class PostgresJobs:
         return await enqueue_analysis(self, credential_digest=credential_digest, workspace_id=workspace_id,
             project_id=project_id, snapshot_id=snapshot_id, question=question, request_key=request_key,
             backend=backend)
+
+    enqueue_claim_review = claim_review_jobs.enqueue_claim_review
+    read_claim_review = claim_review_jobs.read_claim_review
 
     async def complete_refresh(self, *, claim: JobClaim, lease_digest: SecretStr, snapshot: AnyUploadSnapshot) -> bool:
         return await self._complete_canonical_snapshot(claim=claim, lease_digest=lease_digest, snapshot=snapshot)
@@ -396,22 +400,17 @@ class PostgresJobs:
 
     async def _authorize(self, conn: Connection, digest: str, workspace_id: str, operation: str,
                          request: dict[str, object], *, reading: bool = False) -> Authorization:
+        if operation == "review_claim":
+            return await claim_review_jobs.authorize_claim_review(
+                self, conn, digest, workspace_id, ClaimReviewBinding.model_validate(request), reading=reading)
         if operation == "refresh":
             from .project_job_operations import authorize_refresh
 
             return await authorize_refresh(self, conn, digest, workspace_id, request, reading=reading)
         if operation == "follow_up":
-            if self._canonical is None:
-                raise TimeoutError("Canonical project storage is unavailable.")
-            action = "read" if reading else "analyze"
-            auth = await self._access._access(conn, digest, workspace_id, action=action)
-            project, parent = request.get("project_id"), request.get("parent_result_id")
-            if not isinstance(project, str) or not isinstance(parent, str):
-                raise SourceNotFound()
-            kind = await self._access._authorization.authorize_record(conn, auth, workspace_id, project, parent, action)
-            if kind not in ("result", "upload_result"):
-                raise SourceNotFound()
-            return auth
+            from .project_job_operations import authorize_follow_up
+
+            return await authorize_follow_up(self, conn, digest, workspace_id, request, reading=reading)
         if operation == "analyze" and (
                 set(request) not in ({"snapshot_id", "question"}, {"snapshot_id", "question", "analysis_model"})
                 or request.get("analysis_model", _ANALYSIS_MODELS[0]) not in _ANALYSIS_MODELS
@@ -567,7 +566,7 @@ class PostgresJobs:
         lease = _digest(lease_digest)
         if type(lease_seconds) is not int or not 1 <= lease_seconds <= 300:
             raise ValueError("invalid lease")
-        if not operations or any(value not in ("preview", "confirm", "analyze", "follow_up", "refresh") for value in operations):
+        if not operations or any(value not in JOB_OPERATIONS for value in operations):
             raise ValueError("invalid operations")
         tried: list[str] = []
 
@@ -678,6 +677,8 @@ class PostgresJobs:
                                          request, SecretStr(cast(str, digest)))
 
     async def complete(self, *, claim: JobClaim, lease_digest: SecretStr, result: dict[str, object]) -> bool:
+        if claim.operation == "review_claim":
+            raise ValueError("Claim reviews require verified receipt publication.")
         lease, digest = _digest(lease_digest), _digest(claim.credential_digest)
         request_payload = json.dumps(claim.request, ensure_ascii=True, allow_nan=False, sort_keys=True, separators=(",", ":"))
         request = json.loads(request_payload)

@@ -20,6 +20,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, TextIO
 from uuid import uuid4
 
+from aletheia_lab.hosted_contract.job_page import JOB_OPERATIONS
+
 from .application import Send
 from .request_boundary import Receive
 
@@ -31,7 +33,7 @@ _RELEASE = re.compile(r"[0-9a-f]{64}")
 _LOG = logging.getLogger("aletheia.telemetry")
 _JOB: ContextVar[str | None] = ContextVar("observed_job_id", default=None)
 _STAGES = frozenset(("database_transaction", "blocking_execution", "report_render"))
-_OPERATIONS = frozenset(("preview", "confirm", "analyze", "follow_up", "refresh"))
+_OPERATIONS = frozenset(JOB_OPERATIONS)
 _METHODS = frozenset(("GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"))
 _ROUTES = frozenset(
     (
