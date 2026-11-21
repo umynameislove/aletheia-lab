@@ -30,7 +30,7 @@ from .action_audit import current_request_id, record_action
 from .authorization import Authorization, AuthorizationDenied
 from .canonical_results import CanonicalResults
 from .claim_provider_plan import ClaimProviderPlan
-from .job_execution import QueuePolicy, execution_profile
+from .job_execution import QueuePolicy, base_job_schema_ready, execution_profile
 from .job_lifecycle import CLAIM_BUDGET, DEADLINE, PUBLICATION_BUDGET, expire_job, public_job
 from .native_upload_records import (
     CanonicalResultRecord,
@@ -202,17 +202,7 @@ class PostgresJobs:
     async def _base_ready(self) -> bool:
         try:
             async with self._pool.connection() as conn:
-                await conn.execute(
-                    "SELECT j.job_id,j.workspace_id,j.creator_id,j.credential_digest,j.operation,j.key_hash,"
-                    "j.request_hash,j.request,j.request_id,j.state,j.lease_digest,j.lease_until,j.result,j.created_at,"
-                    "s.source_id,s.workspace_id,s.creator_id,s.request_key_hash,s.sha256,s.payload,s.manifest,s.created_at,"
-                    "u.snapshot_id,u.workspace_id,u.source_id,u.payload,g.workspace_id,g.source_id,g.user_id,g.actions,"
-                    "g.revision,m.version,m.checksum,m.applied_at FROM j01_jobs j CROSS JOIN j01_sources s "
-                    "CROSS JOIN j01_upload_snapshots u CROSS JOIN j01_source_grants g "
-                    "CROSS JOIN k04_workspace_migrations m LIMIT 0")
-                constraint = await (await conn.execute("SELECT convalidated FROM pg_constraint WHERE "
-                    "conrelid='j01_upload_snapshots'::regclass AND conname='j01_snapshots_source_scope'")).fetchone()
-            return constraint == (True,)
+                return await base_job_schema_ready(conn)
         except Exception:
             return False
 

@@ -155,6 +155,15 @@ async def run_worker(environment: Mapping[str, str], stop: asyncio.Event) -> Non
             await asyncio.gather(task, stopping, return_exceptions=True)
 
 
+async def _worker_dependencies_ready(pool: Pool, jobs: PostgresJobs, *,
+                                     audit_enabled: bool, canonical_ready: bool) -> bool:
+    if audit_enabled and not await audit_is_ready(pool):
+        return False
+    if canonical_ready and not await jobs.follow_up_ready():
+        return False
+    return await jobs.execution_ready()
+
+
 async def _worker_clock(settings: RuntimeSettings, policy: AuthPolicy, pool: Pool,
                         sources: PostgresSources, leases: PreviewLeases, leased_imports: bool,
                         audit_enabled: bool, canonical_ready: bool, jobs: PostgresJobs) -> bool:
@@ -169,11 +178,8 @@ async def _worker_clock(settings: RuntimeSettings, policy: AuthPolicy, pool: Poo
                     return False
                 if loop.time() >= expires:
                     continue
-                if audit_enabled and not await audit_is_ready(pool):
-                    return False
-                if canonical_ready and not await jobs.follow_up_ready():
-                    return False
-                if not await jobs.execution_ready():
+                if not await _worker_dependencies_ready(pool, jobs,
+                        audit_enabled=audit_enabled, canonical_ready=canonical_ready):
                     return False
                 clock_ready = await probe_clock(pool, max_skew_seconds=policy.clock_skew_seconds,
                                                timeout_seconds=bound)
