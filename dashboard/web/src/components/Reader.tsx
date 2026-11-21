@@ -10,6 +10,8 @@ import { Id, Mark, TableScroll, tabKeys, Term } from "./primitives";
 
 const LineagePanel = lazy(() => import("./Lineage").then(m => ({ default: m.LineagePanel })));
 const TimelinePanel = lazy(() => import("./Lineage").then(m => ({ default: m.TimelinePanel })));
+const ClaimEvidenceReview = import.meta.env.MODE === "hosted"
+  ? lazy(() => import("./hosted/ClaimEvidenceReview").then(m => ({ default: m.ClaimEvidenceReview }))) : null;
 
 export type Panel = "source" | "lineage" | "timeline";
 
@@ -140,6 +142,11 @@ export function ClaimAndSource({ v, turn, claim, evidenceId, onEvidence, inline 
           <section className="insp-sec"><div className="absent"><h3><Mark hollow />This claim cites no source</h3><p>It stands without cited evidence. That is a limit of the claim, not an error.</p></div></section>
         )}
       {claim && <Review claim={claim} />}
+      {ClaimEvidenceReview && claim && !v.demo_only && <Suspense fallback={null}>
+        <ClaimEvidenceReview key={`${v.result.id}/${claim.id}`}
+          scope={{ projectId: v.project.id, snapshotId: v.snapshot.id, resultId: v.result.id, claimId: claim.id }}
+          onEvidence={onEvidence} />
+      </Suspense>}
       {claim && <MoreAboutClaim claim={claim} turn={turn} caveat={v.result.caveat} />}
     </>
   );

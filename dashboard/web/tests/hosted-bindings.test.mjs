@@ -62,6 +62,109 @@ function setup(routes, { over = {}, isCurrent = () => true, view = PARENT } = {}
 }
 const B = `/v1/workspaces/${WS}`;
 
+const REVIEW = "job_" + "a".repeat(32);
+const REVIEW_SCOPE = { projectId: PROJECT, snapshotId: SNAPSHOT, resultId: RESULT, claimId: CLAIM };
+const REVIEW_PATH = `${B}/results/${RESULT}/claims/${CLAIM}/reviews`;
+const REVIEW_CAPS = { features: { ...FEATURES, "reviews.claim_evidence": true }, supported_export_formats: ["json", "markdown", "pdf"] };
+const reviewReceipt = () => ({
+  schema_version: "claim-evidence-review/v1", job_id: REVIEW,
+  binding: {
+    workspace_id: WS, project_id: PROJECT, snapshot_id: SNAPSHOT, result_id: RESULT, claim_id: CLAIM,
+    source_id: "src_synthetic", source_sha256: "a".repeat(64), result_sha256: "b".repeat(64), claim_sha256: "c".repeat(64),
+    evidence_sha256: "d".repeat(64), receipt_sha256: "e".repeat(64), contract_sha256: "f".repeat(64),
+    asserted_verdict: "denied", policy: "historical-state-authorization/v1", candidate_sha256: "1".repeat(64),
+  },
+  finding: {
+    decision: "approve_in_scope", reason: "The recorded state supports the assertion.",
+    evidence_ids: [PARENT.evidence[0].id], observed_state_sha256: "2".repeat(64),
+    receipt_sha256: "e".repeat(64), contract_sha256: "f".repeat(64), execution_mode: "replay",
+  },
+  mode: "local_check", usage: "not_incurred",
+});
+
+test("claim review uses exact scoped CSRF submission and reconciles a lost accept using the same key", async () => {
+  const { port, calls } = setup({
+    [`POST ${REVIEW_PATH}`]: [() => { throw new TypeError("lost receipt"); }, json(receipt(REVIEW), 202)],
+  }, { over: REVIEW_CAPS });
+  await assert.rejects(port.submitClaimReview(REVIEW_SCOPE, "denied", "local_check"), { code: "outcome_unknown" });
+  assert.equal(await port.submitClaimReview(REVIEW_SCOPE, "denied", "local_check"), REVIEW);
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].headers["Idempotency-Key"], calls[1].headers["Idempotency-Key"]);
+  assert.equal(calls[0].headers["X-CSRF-Token"], session.csrf_token);
+  assert.equal(calls[0].body, calls[1].body);
+  assert.deepEqual(JSON.parse(calls[0].body), { schema_version: VERSION, asserted_verdict: "denied", mode: "local_check" });
+  await assert.rejects(port.submitClaimReview({ ...REVIEW_SCOPE, claimId: "outside" }, "denied", "local_check"), { code: "response_out_of_scope" });
+  await assert.rejects(port.submitClaimReview(REVIEW_SCOPE, "denied", "provider"), { code: "feature_unavailable" });
+  assert.equal(calls.length, 2);
+});
+
+test("provider review needs the advertised opt-in and exposes its distinct verified outcome", async () => {
+  const provider = reviewReceipt();
+  provider.binding.provider_plan_sha256 = "3".repeat(64);
+  Object.assign(provider, { schema_version: "claim-evidence-review/v2", mode: "provider", usage: "settled" });
+  provider.attempt = { attempt_id: "e".repeat(32), request_sha256: "4".repeat(64), model: "provider-model",
+    dispatched_at: "2026-11-21T10:00:00Z", deadline_at: "2026-11-21T10:01:00Z", received_at: "2026-11-21T10:00:05Z",
+    held_microusd: 1000, outcome: { status: "completed", provider_request_id: "provider-request", input_tokens: 30,
+      output_tokens: 12, provider_decision: "revise", agrees_with_host: false } };
+  const corrupt = structuredClone(provider);
+  corrupt.attempt.outcome.agrees_with_host = true;
+  const { port, calls } = setup({
+    [`POST ${REVIEW_PATH}`]: [json(receipt(REVIEW), 202)],
+    [`GET ${REVIEW_PATH}/${REVIEW}`]: [json(provider), json(corrupt)],
+  }, { over: { ...REVIEW_CAPS, features: { ...REVIEW_CAPS.features, "reviews.claim_evidence_provider": true } } });
+  const { client, caps } = port.context();
+  assert.equal(await port.submitClaimReview(REVIEW_SCOPE, "denied", "provider"), REVIEW);
+  assert.equal(JSON.parse(calls[0].body).mode, "provider");
+  const loaded = await client.loadClaimReview(WS, caps, REVIEW_SCOPE, REVIEW);
+  assert.equal(loaded.finding.decision, "approve_in_scope");
+  assert.equal(loaded.attempt.outcome.provider_decision, "revise");
+  await assert.rejects(client.loadClaimReview(WS, caps, REVIEW_SCOPE, REVIEW), { code: "response_invalid" });
+});
+
+test("retained claim receipt reads preserve review ID and reject rebound or revoked results", async () => {
+  const original = reviewReceipt(), wrongClaim = structuredClone(original);
+  wrongClaim.binding.claim_id = "another-claim";
+  const { port, calls } = setup({
+    [`GET ${REVIEW_PATH}/${REVIEW}`]: [json(original), json(wrongClaim), problem("not_found", 404)],
+  }, { over: REVIEW_CAPS });
+  const { client, caps } = port.context();
+  assert.deepEqual(await client.loadClaimReview(WS, caps, REVIEW_SCOPE, REVIEW), original);
+  await assert.rejects(client.loadClaimReview(WS, caps, REVIEW_SCOPE, REVIEW), { code: "response_out_of_scope" });
+  await assert.rejects(client.loadClaimReview(WS, caps, REVIEW_SCOPE, REVIEW), { code: "not_found" });
+  for (const call of calls) {
+    assert.equal(call.headers["X-CSRF-Token"], undefined);
+    assert.equal(call.headers["Idempotency-Key"], undefined);
+  }
+});
+
+test("all review exports read exact typed and hashed bytes from the retained review path", async () => {
+  const rawJSON = JSON.stringify(reviewReceipt()), receiptDigest = sha(rawJSON);
+  const payload = { json: [rawJSON, "application/json"], markdown: ["# Scoped review\n", "text/markdown; charset=utf-8"],
+    pdf: ["%PDF-1.4\n", "application/pdf"] };
+  const { port, calls } = setup({
+    [`GET ${REVIEW_PATH}/${REVIEW}/export`]: [(url) => {
+      const selected = new URL(url, "https://example.invalid").searchParams.get("format");
+      const [bytes, media] = payload[selected];
+      return new Response(bytes, { headers: { "content-type": media, etag: `"${sha(bytes)}"`,
+        "x-aletheia-receipt-sha256": receiptDigest } });
+    }],
+  }, { over: REVIEW_CAPS });
+  const { client, caps } = port.context();
+  for (const format of ["json", "markdown", "pdf"]) {
+    const downloaded = await client.downloadClaimReview(WS, caps, REVIEW_SCOPE, REVIEW, format);
+    assert.equal(new TextDecoder().decode(downloaded.bytes), payload[format][0]);
+    assert.equal(downloaded.filename, `aletheia-review-${receiptDigest.slice(0, 16)}.${format === "markdown" ? "md" : format}`);
+  }
+  assert.equal(calls.length, 3);
+  const deniedFormat = { ...caps, supported_export_formats: ["json"] };
+  await assert.rejects(client.downloadClaimReview(WS, deniedFormat, REVIEW_SCOPE, REVIEW, "pdf"), { code: "invalid_request" });
+  const tampered = setup({ [`GET ${REVIEW_PATH}/${REVIEW}/export`]: [
+    new Response("changed", { headers: { "content-type": "application/pdf", etag: `"${"1".repeat(64)}"`,
+      "x-aletheia-receipt-sha256": receiptDigest } }),
+  ] }, { over: REVIEW_CAPS }).port.context();
+  await assert.rejects(tampered.client.downloadClaimReview(WS, tampered.caps, REVIEW_SCOPE, REVIEW, "pdf"), { code: "response_invalid" });
+});
+
 function historicalStateView() {
   const view = structuredClone(PARENT);
   view.runtime = { provider: "local_evidence", model: "historical-state-evidence/v1", external_call: false };

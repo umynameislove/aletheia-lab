@@ -134,6 +134,7 @@ export function linkIds(ids: { project?: string; snapshot?: string; result?: str
   // another project is another scope: its selection, page and filter do not carry over
   const leaving = q.get("project");
   if (ids.project && leaving && ids.project !== leaving) for (const k of SCREEN_PARAMS) q.delete(k);
+  if (hostedMode && ids.result !== undefined && ids.result !== q.get("result")) q.delete("review");
   if (hostedMode && hostedPort?.latestJobId()) q.set("job", hostedPort.latestJobId()!);
   for (const [k, v] of Object.entries(ids)) {
     if (v === undefined) continue;
