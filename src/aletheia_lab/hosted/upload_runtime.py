@@ -109,11 +109,14 @@ class UploadReadBackend(ReadOnlyHostedBackend):
 
     async def _job_features(self, role: str, features: dict[str, bool]) -> None:
         if self._jobs is not None:
-            features["jobs.idempotency"] = await self._jobs.is_ready()
+            execution = getattr(self._jobs, 'execution', False) is True
+            if execution:
+                features["jobs.idempotency"], features["jobs.execution_v1"] = await self._jobs.capability_readiness()
+            else:
+                features["jobs.idempotency"] = await self._jobs.is_ready()
             controls = await self._jobs.controls_ready() and role_allows(role, "analyze")
             features.update({"jobs.cancel": controls, "jobs.retry": controls})
-            if getattr(self._jobs, 'execution', False) is True:
-                features['jobs.execution_v1'] = await self._jobs.execution_ready()
+            if execution:
                 features['comparisons.upload_v1'] = features['jobs.execution_v1'] and self._catalog_available
                 conflict_ready = getattr(self._jobs, 'conflicts_ready', None)
                 features['jobs.conflict_v1'] = conflict_ready is not None and await conflict_ready()

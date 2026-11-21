@@ -199,25 +199,31 @@ class PostgresJobs:
                               record: CanonicalResultRecord) -> bool:
         return await job_publication.complete_result(self, claim=claim, lease_digest=lease_digest, record=record)
 
-    async def is_ready(self) -> bool:
+    async def _base_ready(self) -> bool:
         try:
             async with self._pool.connection() as conn:
-                await conn.execute("SELECT job_id,workspace_id,creator_id,credential_digest,operation,"
-                    "key_hash,request_hash,request,request_id,state,lease_digest,lease_until,result,created_at "
-                    "FROM j01_jobs LIMIT 0")
-                await conn.execute("SELECT source_id,workspace_id,creator_id,request_key_hash,sha256,"
-                    "payload,manifest,created_at FROM j01_sources LIMIT 0")
-                await conn.execute("SELECT snapshot_id,workspace_id,source_id,payload "
-                    "FROM j01_upload_snapshots LIMIT 0")
-                await conn.execute("SELECT workspace_id,source_id,user_id,actions,revision FROM j01_source_grants LIMIT 0")
-                await conn.execute("SELECT version,checksum,applied_at FROM k04_workspace_migrations LIMIT 0")
+                await conn.execute(
+                    "SELECT j.job_id,j.workspace_id,j.creator_id,j.credential_digest,j.operation,j.key_hash,"
+                    "j.request_hash,j.request,j.request_id,j.state,j.lease_digest,j.lease_until,j.result,j.created_at,"
+                    "s.source_id,s.workspace_id,s.creator_id,s.request_key_hash,s.sha256,s.payload,s.manifest,s.created_at,"
+                    "u.snapshot_id,u.workspace_id,u.source_id,u.payload,g.workspace_id,g.source_id,g.user_id,g.actions,"
+                    "g.revision,m.version,m.checksum,m.applied_at FROM j01_jobs j CROSS JOIN j01_sources s "
+                    "CROSS JOIN j01_upload_snapshots u CROSS JOIN j01_source_grants g "
+                    "CROSS JOIN k04_workspace_migrations m LIMIT 0")
                 constraint = await (await conn.execute("SELECT convalidated FROM pg_constraint WHERE "
                     "conrelid='j01_upload_snapshots'::regclass AND conname='j01_snapshots_source_scope'")).fetchone()
-                if constraint != (True,):
-                    return False
-            return not self.execution or await self.execution_ready()
+            return constraint == (True,)
         except Exception:
             return False
+
+    async def is_ready(self) -> bool:
+        return await self._base_ready() and (not self.execution or await self.execution_ready())
+
+    async def capability_readiness(self) -> tuple[bool, bool]:
+        """Return idempotency and execution from one current execution probe."""
+        base = await self._base_ready()
+        execution = await self.execution_ready()
+        return (base and execution, execution)
 
     async def execution_ready(self) -> bool:
         if not self.execution:
@@ -226,9 +232,9 @@ class PostgresJobs:
             async with self._pool.connection() as conn:
                 if not await execution_profile(conn):
                     return False
-                await conn.execute('SELECT failure_kind,available_at,attempt_count,deadline_at FROM j01_jobs LIMIT 0')
-                await conn.execute('SELECT epoch,heartbeat_at,outcome FROM k09_job_attempts LIMIT 0')
-                await conn.execute('SELECT workspace_id,operation,last_claim_at FROM k09_queue_turns LIMIT 0')
+                await conn.execute('SELECT j.failure_kind,j.available_at,j.attempt_count,j.deadline_at,'
+                    'a.epoch,a.heartbeat_at,a.outcome,t.workspace_id,t.operation,t.last_claim_at '
+                    'FROM j01_jobs j CROSS JOIN k09_job_attempts a CROSS JOIN k09_queue_turns t LIMIT 0')
             return True
         except Exception:
             return False
@@ -333,10 +339,9 @@ class PostgresJobs:
             return False
         try:
             async with self._pool.connection() as conn:
-                await conn.execute("SELECT canonical_project_id,parent_result_id,canonical_result_id FROM j01_jobs LIMIT 0")
-                await conn.execute("SELECT source_id FROM k05_records LIMIT 0")
-                await conn.execute("SELECT provenance_kind FROM k05_projects LIMIT 0")
-                await conn.execute("SELECT canonical_record_id FROM j01_upload_snapshots LIMIT 0")
+                await conn.execute("SELECT j.canonical_project_id,j.parent_result_id,j.canonical_result_id,"
+                    "r.source_id,p.provenance_kind,s.canonical_record_id FROM j01_jobs j "
+                    "CROSS JOIN k05_records r CROSS JOIN k05_projects p CROSS JOIN j01_upload_snapshots s LIMIT 0")
                 expected = {"k05_job_operation_v6": ("c", True), "k05_job_request_shape_v6": ("c", True),
                     "k05_follow_up_parent_scope": ("f", True), "k05_job_canonical_result_scope": ("f", True),
                     "k05_upload_snapshot_canonical_scope": ("f", True)}

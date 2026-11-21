@@ -88,6 +88,7 @@ def test_ack_process_loss_lease_takeover_stale_fence_and_after_commit_replay(tmp
         async with _case(tmp_path) as case:
             jobs = await _jobs(case)
             assert await jobs.is_ready() and await jobs.execution_ready()
+            assert await jobs.capability_readiness() == (True, True)
             receipt = await _admit(jobs, case, operation='confirm')
             assert (await _status(jobs, case, receipt)).status == 'queued'
             assert (await _history(jobs, case, receipt)).items == []
@@ -442,6 +443,7 @@ def test_current_api_worker_roles_can_use_attempt_triggers_without_history_rewri
                     jobs[profile] = PostgresJobs(pool, sources, execution=True, audit=True)
                     assert await jobs[profile].execution_ready()
                 api, worker = jobs['api'], jobs['worker']
+                assert await api.capability_readiness() == (True, True)
                 receipt = await _admit(api, case)
                 lease = SecretStr('c' * 64)
                 claim = await worker.claim(lease_digest=lease, lease_seconds=30)

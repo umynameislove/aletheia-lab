@@ -158,20 +158,37 @@ async def run_worker(environment: Mapping[str, str], stop: asyncio.Event) -> Non
 async def _worker_clock(settings: RuntimeSettings, policy: AuthPolicy, pool: Pool,
                         sources: PostgresSources, leases: PreviewLeases, leased_imports: bool,
                         audit_enabled: bool, canonical_ready: bool, jobs: PostgresJobs) -> bool:
-    try:
-        async with asyncio.timeout(min(2, settings.api.backend_timeout_seconds)):
-            if await upload_profile(sources, leases) != leased_imports:
+    bound = min(2, settings.api.backend_timeout_seconds)
+    loop = asyncio.get_running_loop()
+    for _ in range(2):
+        expires = loop.time() + bound
+        deadline = asyncio.timeout_at(expires)
+        try:
+            async with deadline:
+                if await upload_profile(sources, leases) != leased_imports:
+                    return False
+                if loop.time() >= expires:
+                    continue
+                if audit_enabled and not await audit_is_ready(pool):
+                    return False
+                if canonical_ready and not await jobs.follow_up_ready():
+                    return False
+                if not await jobs.execution_ready():
+                    return False
+                clock_ready = await probe_clock(pool, max_skew_seconds=policy.clock_skew_seconds,
+                                               timeout_seconds=bound)
+                if clock_ready is not True:
+                    return False
+                if loop.time() < expires:
+                    return True
+        except TimeoutError:
+            # An expired outer check has no timely observation. Retry the
+            # full check once; explicit readiness failures and skew stay false.
+            if not deadline.expired():
                 return False
-            if audit_enabled and not await audit_is_ready(pool):
-                return False
-            if canonical_ready and not await jobs.follow_up_ready():
-                return False
-            if not await jobs.execution_ready():
-                return False
-            return await probe_clock(pool, max_skew_seconds=policy.clock_skew_seconds,
-                                     timeout_seconds=min(2, settings.api.backend_timeout_seconds))
-    except Exception:
-        return False
+        except Exception:
+            return False
+    return False
 
 
 def main() -> int:
