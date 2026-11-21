@@ -11,6 +11,7 @@ from aletheia_lab.product.pdf import pdf_available
 from .observability import timed_stage
 from .request_boundary import RequestRejected
 from .windows_worker import _call_on_loop, _wait_finished
+from .worker_limits import MAX_REVIEW_RECEIPT_BYTES
 from .worker_supervisor import ReportFormat, ReportWorkerSupervisor, WorkerRejected
 
 
@@ -34,6 +35,17 @@ class ReportRenderer:
     async def _render(self, report_format: ReportFormat, payload: bytes, *, claim_review: bool) -> bytes:
         if self._closed:
             raise TimeoutError("Report worker is temporarily unavailable.")
+        if claim_review and report_format == "json":
+            # This format returns the canonical receipt bytes unchanged.
+            # Keep the worker slot available for reports that need rendering.
+            from .claim_review_reports import render_claim_review_report
+
+            if len(payload) > MAX_REVIEW_RECEIPT_BYTES:
+                raise WorkerRejected("worker_failed")
+            try:
+                return render_claim_review_report(payload, report_format)
+            except ValueError:
+                raise WorkerRejected("worker_failed") from None
         if report_format == "pdf" and not pdf_available():
             raise RequestRejected(503, "service_unavailable", "PDF rendering is currently unavailable.")
         try:

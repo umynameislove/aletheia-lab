@@ -27,6 +27,20 @@ ROOT = Path(__file__).resolve().parents[2]
 VIETNAMESE = "Dự án kiểm chứng tiếng Việt: dữ liệu, bằng chứng, kết quả"
 
 
+def test_report_import_leaves_local_store_facade_lazy():
+    check = """
+import sys
+import aletheia_lab.hosted.worker
+import aletheia_lab.product as product
+assert "aletheia_lab.product.service" not in sys.modules
+assert "ProductService" in dir(product)
+from aletheia_lab.product import ProductService
+from aletheia_lab.product.service import ProductService as implementation
+assert ProductService is implementation and product.ProductService is implementation
+"""
+    subprocess.run([sys.executable, "-B", "-c", check], check=True, timeout=20)
+
+
 @pytest.mark.parametrize("normalization", ["NFC", "NFD"])
 def test_real_unicode_pdf_embeds_font_and_copyable_vietnamese_with_v2_parity(normalization):
     payload = _view().model_dump(mode="json")

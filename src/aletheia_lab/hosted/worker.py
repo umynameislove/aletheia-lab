@@ -24,9 +24,7 @@ from aletheia_lab.product.reports import render_product_report
 from aletheia_lab.product.view import AnyProductView
 
 from .request_boundary import RequestRejected, decode_json_model
-from .worker_limits import MAX_INPUT_BYTES, MAX_OUTPUT_BYTES
-
-_REVIEW_LIMIT = 64 * 1024
+from .worker_limits import MAX_INPUT_BYTES, MAX_OUTPUT_BYTES, MAX_REVIEW_RECEIPT_BYTES
 
 
 class _ReportView(RootModel[Annotated[AnyProductView, Field(discriminator="schema_version")]]):
@@ -37,8 +35,8 @@ def _render(source: BinaryIO, report_format: str, *, windowed: bool, claim_revie
     if claim_review:
         from .claim_review_reports import render_claim_review_report
 
-        raw = source.read(_REVIEW_LIMIT + 1)
-        if len(raw) > _REVIEW_LIMIT:
+        raw = source.read(MAX_REVIEW_RECEIPT_BYTES + 1)
+        if len(raw) > MAX_REVIEW_RECEIPT_BYTES:
             raise ValueError("Claim review report input exceeds its byte limit.")
         return render_claim_review_report(raw, report_format)
     limit = MAX_OUTPUT_BYTES if windowed else MAX_INPUT_BYTES

@@ -1,6 +1,7 @@
 """Claim-review downloads preserve the exact receipt and recheck authorization."""
 from __future__ import annotations
 
+import asyncio
 import io
 import json
 from datetime import UTC, datetime, timedelta
@@ -15,6 +16,9 @@ from test_k02_job_boundary import _request
 
 from aletheia_lab.hosted.authorization import AuthorizationDenied
 from aletheia_lab.hosted.claim_review_reports import render_claim_review_report
+from aletheia_lab.hosted.report_renderer import ReportRenderer
+from aletheia_lab.hosted.worker_limits import MAX_REVIEW_RECEIPT_BYTES
+from aletheia_lab.hosted.worker_supervisor import WorkerRejected
 from aletheia_lab.hosted_contract.claim_review import (
     ClaimReviewProviderAttempt,
     ClaimReviewProviderResult,
@@ -54,6 +58,25 @@ def _app(tmp_path, receipt):
     renderer = AsyncMock(side_effect=render)
     app._review_renderer = SimpleNamespace(render=renderer)
     return app, jobs, headers, renderer
+
+
+def test_claim_review_json_preserves_bytes_without_occupying_renderer_slot(monkeypatch):
+    async def scenario():
+        renderer = ReportRenderer()
+        worker = AsyncMock(side_effect=AssertionError("JSON receipt requires no report child"))
+        monkeypatch.setattr(renderer._worker, "render", worker)
+        try:
+            for receipt in (_receipt(), _provider_receipt()):
+                canonical = _json_bytes(receipt.model_dump(mode="json"))
+                assert await renderer.render("json", canonical, claim_review=True) == canonical
+            for invalid in (b"{}", canonical + b" ", b" " * (MAX_REVIEW_RECEIPT_BYTES + 1)):
+                with pytest.raises(WorkerRejected, match="worker_failed"):
+                    await renderer.render("json", invalid, claim_review=True)
+            worker.assert_not_awaited()
+        finally:
+            await renderer.aclose()
+
+    asyncio.run(scenario())
 
 
 @pytest.mark.parametrize(("report_format", "extension", "media_type"), [
