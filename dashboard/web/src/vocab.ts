@@ -25,6 +25,7 @@ export const TERM: Record<string, [plain: string, gloss: string]> = {
   "upload-snapshot-observation/v1": ["Snapshot record", "records that the upload was stored; no metric analysis"],
   "upload-snapshot-metric-observation/v2": ["Metric observation summary", "every mapped row counted per run, metric, class and unit; no sampling, no cause"],
   "upload-snapshot-windowed-metric-observation/v3": ["Metric window summary", "minimum, maximum and mean of consecutive mapped values in the same series"],
+  "historical-state-evidence/v1": ["Historical state authorization", "scope and state from a saved producer receipt, evaluated against the original contract"],
   deterministic_mock: ["Scripted answer, no model", "a fixed local answer, not a model result"],
   not_estimated: ["Not counted", "null, not 0"],
   // claim_type — closed enum (K08)

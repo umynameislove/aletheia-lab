@@ -112,6 +112,11 @@ class ApiSettings(_Settings):
         return self
 
 
+class HistoricalStateSettings(_Settings):
+    manifest_path: Annotated[str, Field(min_length=1, max_length=4096)]
+    manifest_sha256: Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
+
+
 class WorkerSettings(_Settings):
     """Planned separate processes; no worker is started by these settings."""
 
@@ -119,6 +124,7 @@ class WorkerSettings(_Settings):
     database_pool_size: Positive = 2
     job_slots_per_process: Positive = 1
     shutdown_grace_seconds: Positive = 30
+    historical_state: HistoricalStateSettings | None = None
 
 
 class IdentitySettings(_Settings):

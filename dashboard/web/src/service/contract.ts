@@ -13,6 +13,7 @@ import { ProductError, type ConfirmResult, type LocalDeleteReceipt, type Product
 import { isMetricLabel } from "../data/metric.ts";
 
 export const PRODUCT_VIEW_SCHEMA = "p6-product-view/v1";
+export const HISTORICAL_STATE_MODEL = "historical-state-evidence/v1";
 
 const UNSUPPORTED = () => new ProductError("schema_unsupported", "This version of the app cannot read that answer from the service.");
 const MALFORMED = (where: string) => new ProductError("response_invalid", `The service sent an answer this app cannot trust (${where}).`);
@@ -29,6 +30,7 @@ const nullableNum = (x: unknown) => x === null || isNum(x);
 // closed sets the screens turn into words: a value outside them must not be read as the nearest one
 const DIRECTIONS = new Set(["higher_is_better", "lower_is_better"]);
 const ADVERSE = new Set(["adverse", "not_adverse", "not_applicable"]);
+const digest = (x: unknown) => isStr(x) && /^[0-9a-f]{64}$/.test(x);
 
 function need(ok: boolean, where: string): asserts ok {
   if (!ok) throw MALFORMED(where);
@@ -36,7 +38,7 @@ function need(ok: boolean, where: string): asserts ok {
 
 const uniqueIds = (rows: { id: string }[]) => new Set(rows.map(r => r.id)).size === rows.length;
 
-function checkRuntime(x: unknown, where: string) {
+function checkRuntime(x: unknown, where: string): asserts x is Obj {
   need(isObj(x) && isStr(x.provider) && isStr(x.model) && isBool(x.external_call), where);
 }
 
@@ -50,7 +52,7 @@ function checkObservation(x: unknown, metadata: boolean, unit: string | null | u
 }
 
 /** version → shape → references. Throws; returns the same object it was given. */
-export function checkProductView(x: unknown): ProductView {
+export function checkProductView(x: unknown, checkHistoricalStateEvidence?: (evidence: unknown) => void): ProductView {
   need(isObj(x), "view");
   if (x.schema_version !== PRODUCT_VIEW_SCHEMA && x.schema_version !== "p6-product-view/v2") throw UNSUPPORTED();
   const metadata = x.schema_version === "p6-product-view/v2";
@@ -97,10 +99,21 @@ export function checkProductView(x: unknown): ProductView {
 
   need(Array.isArray(x.evidence), "evidence");
   const evidence = x.evidence as { id: string }[];
+  let historicalState = false;
   for (const e of evidence as unknown[]) {
     need(isObj(e) && isStr(e.id) && isStr(e.kind) && isStr(e.title) && isStr(e.text) && isStr(e.source_sha256) && isStr(e.visibility) && isBool(e.redacted), "evidence item");
     need(isObj(e.reproduction_ref) && isStr(e.reproduction_ref.record_id) && isStr(e.reproduction_ref.record_kind), "evidence reference");
+    need((e.kind === "historical_state") === (e.historical_state != null), "Historical state evidence kind");
+    if (e.kind === "historical_state") {
+      need(checkHistoricalStateEvidence !== undefined && e.reproduction_ref.record_kind === "snapshot" && e.reproduction_ref.record_id === snapshot.id
+        && !e.redacted && digest(e.source_sha256), "Historical state snapshot scope");
+      checkHistoricalStateEvidence(e.historical_state);
+      historicalState = true;
+    }
   }
+  need(historicalState === (x.runtime.model === HISTORICAL_STATE_MODEL)
+    && (!historicalState || !x.demo_only && x.runtime.provider === "local_evidence" && x.runtime.external_call === false),
+  "Historical state runtime");
   need(uniqueIds(evidence), "evidence ids");
 
   need(Array.isArray(x.claims), "claims");

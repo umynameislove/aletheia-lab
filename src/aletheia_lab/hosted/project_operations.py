@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from pydantic import RootModel
 
@@ -13,7 +13,7 @@ from aletheia_lab.product.follow_up import resolve_product_follow_up_selection
 from aletheia_lab.product.lifecycle import ProductLifecycleRecord
 from aletheia_lab.product.questions import checked_product_question
 from aletheia_lab.product.results import _validate_derived_result
-from aletheia_lab.product.view import AnyProductView
+from aletheia_lab.product.view import AnyProductView, ProductViewV2
 
 from .application import VERSION
 from .async_work import run_blocking
@@ -23,6 +23,7 @@ from .native_upload_records import (
     UploadResultRecord,
     UploadResultRecordV2,
     build_initial_upload_result,
+    parse_upload_result_record,
     result_view,
 )
 from .postgres_jobs import JobClaim
@@ -31,8 +32,10 @@ from .project_refresh import AnyPreparedRefresh, RefreshParents, prepare_refresh
 from .request_boundary import decode_json_model
 from .upload_analysis import WINDOW_OBSERVATION_MODEL
 from .upload_operations import Sources, UploadOperations, Worker
-from .upload_snapshot import UploadSnapshotV2
 from .worker_limits import MAX_OUTPUT_BYTES
+
+if TYPE_CHECKING:
+    from .historical_state_registration import HistoricalStateInputs
 
 
 class _CanonicalWorkerResult(RootModel[CanonicalResultRecord]):
@@ -45,8 +48,9 @@ class FollowUpParents(RefreshParents, Protocol):
 
 class CanonicalProjectOperations(UploadOperations):
     def __init__(self, sources: Sources, worker: Worker, project_jobs: FollowUpParents, *,
-                 leases: PreviewLeases | None = None, private_root: Path | None = None) -> None:
-        super().__init__(sources, worker, leases=leases, private_root=private_root)
+                 leases: PreviewLeases | None = None, private_root: Path | None = None,
+                 historical_state_inputs: HistoricalStateInputs | None = None) -> None:
+        super().__init__(sources, worker, leases=leases, private_root=private_root, historical_state_inputs=historical_state_inputs)
         self._project_jobs = project_jobs
 
     async def prepare_refresh(self, claim: JobClaim) -> AnyPreparedRefresh:
@@ -64,10 +68,13 @@ class CanonicalProjectOperations(UploadOperations):
             view = await self._analyze_snapshot(snapshot, question, WINDOW_OBSERVATION_MODEL)
             if view.runtime.model != WINDOW_OBSERVATION_MODEL:
                 raise ValueError("Worker analysis model mismatch")
-            record_type = UploadResultRecordV2 if isinstance(snapshot, UploadSnapshotV2) else UploadResultRecord
+            record_type = UploadResultRecordV2 if isinstance(view, ProductViewV2) else UploadResultRecord
             # The durable publisher rereads the snapshot and independently recomputes the full result.
-            return await run_blocking(record_type, workspace_id=claim.workspace_id,
-                project_id=snapshot.mapping.project_id, snapshot_id=snapshot_id, view=view)
+            return await run_blocking(parse_upload_result_record, {
+                "schema_version": record_type.model_fields["schema_version"].default,
+                "workspace_id": claim.workspace_id, "project_id": snapshot.mapping.project_id,
+                "snapshot_id": snapshot_id, "view": view,
+            })
         view = await self.analyze(credential_digest=claim.credential_digest, workspace_id=claim.workspace_id,
                                   snapshot_id=snapshot_id, question=question,
                                   analysis_model=str(claim.request.get('analysis_model', 'upload-snapshot-observation/v1')))

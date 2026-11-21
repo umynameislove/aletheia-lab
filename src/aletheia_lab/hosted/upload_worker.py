@@ -42,7 +42,7 @@ class WorkerInput(BaseModel):
     snapshot: dict[str, object] | None = None
     question: str | None = None
     analysis_model: Literal['upload-snapshot-observation/v1', 'upload-snapshot-metric-observation/v2',
-                            'upload-snapshot-windowed-metric-observation/v3'] | None = None
+                            'upload-snapshot-windowed-metric-observation/v3', 'historical-state-evidence/v1'] | None = None
     parent: dict[str, object] | None = None
     selection_kind: Literal["claim", "node"] | None = None
     selection_id: str | None = None

@@ -67,6 +67,7 @@ def document(repo: Path) -> tuple[dict, dict, list[tuple[object, object]], list[
     from aletheia_lab.hosted_contract.uploads import MAX_PART_BYTES, UploadManifest, UploadStatus
     from aletheia_lab.hosted_contract.workspaces import EvidencePage, ResultHeader
     from aletheia_lab.product.view import AnyProductView
+    from aletheia_lab.project.identity import PROJECT_ID_PATTERN
 
     spec = k04.document()
     spec["info"] = {"title": "Aletheia current hosted producer API", "version": k04.VERSION,
@@ -211,8 +212,12 @@ def document(repo: Path) -> tuple[dict, dict, list[tuple[object, object]], list[
                 parameters.append(parameter('search', {'type': 'string', 'minLength': 1, 'maxLength': 128},
                     description='Simple full-text query in the authorized immutable SQL projection; bound into the cursor.'))
 
-    # These are the concrete branches validated by JobApplication._read_output.
+    # The preview/confirm envelope keeps the generic result boundary.
     job_outputs = {
+        "confirm": {"properties": {"result": {"properties": {"historical_state_project_id": {
+            "type": "string", "pattern": PROJECT_ID_PATTERN,
+            "description": "Project ID for historical state analysis when the authorized snapshot has registered evidence.",
+        }}}}},
         "refresh": model(JobOutput[RefreshResult], "RefreshJobOutput"),
         "follow_up": model(FollowUpJobOutput),
         "analyze": model(JobOutput[AnyProductView | AnalysisResultReference], "AnalysisJobOutput"),
@@ -228,7 +233,7 @@ def document(repo: Path) -> tuple[dict, dict, list[tuple[object, object]], list[
             for operation, shape in job_outputs.items())]}
     output["description"] = (
         "Current job envelope with concrete refresh/follow-up summary and analysis v1/v2 results. "
-        "Preview/confirm retain the generic result boundary of this handler. "
+        "Preview and confirm retain the generic result boundary. Confirm can include the project ID for registered historical state evidence. "
         "A follow-up summary requires a separate GET result to obtain ResultView.view.")
 
     for path, value in (("/v1/session", Session), (prefix + "/capabilities", Capabilities)):

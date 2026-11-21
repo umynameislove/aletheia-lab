@@ -12854,6 +12854,251 @@
         "title": "ProductEvidence",
         "type": "object"
       },
+      "ProductHistoricalState": {
+        "additionalProperties": false,
+        "properties": {
+          "namespace": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+            "title": "Namespace",
+            "type": "string"
+          },
+          "generation": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+            "title": "Generation",
+            "type": "string"
+          },
+          "state_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "State Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "namespace",
+          "generation",
+          "state_sha256"
+        ],
+        "title": "ProductHistoricalState",
+        "type": "object"
+      },
+      "ProductHistoricalStateEvidence": {
+        "additionalProperties": false,
+        "description": "Scoped projection of a receipt and its separately supplied contract.",
+        "properties": {
+          "operation_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+            "title": "Operation Id",
+            "type": "string"
+          },
+          "request_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+            "title": "Request Id",
+            "type": "string"
+          },
+          "consumer_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+            "title": "Consumer Id",
+            "type": "string"
+          },
+          "execution_mode": {
+            "enum": [
+              "fresh",
+              "replay"
+            ],
+            "title": "Execution Mode",
+            "type": "string"
+          },
+          "producer_version": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+            "title": "Producer Version",
+            "type": "string"
+          },
+          "source_receipt_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Source Receipt Sha256",
+            "type": "string"
+          },
+          "receipt_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Receipt Sha256",
+            "type": "string"
+          },
+          "contract_sha256": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract Sha256"
+          },
+          "graph_sha256": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Graph Sha256"
+          },
+          "observed_state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProductHistoricalState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "allowed_state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProductHistoricalState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "output": {
+            "anyOf": [
+              {
+                "maxItems": 2,
+                "minItems": 2,
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output"
+          },
+          "current_alias": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Alias"
+          },
+          "verdict": {
+            "enum": [
+              "allowed",
+              "denied",
+              "unknown",
+              "underdefined",
+              "unsupported"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation_id",
+          "request_id",
+          "consumer_id",
+          "execution_mode",
+          "producer_version",
+          "source_receipt_sha256",
+          "receipt_sha256",
+          "contract_sha256",
+          "graph_sha256",
+          "observed_state",
+          "allowed_state",
+          "output",
+          "current_alias",
+          "verdict",
+          "reason"
+        ],
+        "title": "ProductHistoricalStateEvidence",
+        "type": "object"
+      },
+      "ProductHistoricalStateEvidenceItem": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "historical_state",
+            "title": "Kind",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "reproduction_ref": {
+            "$ref": "#/components/schemas/ProductReproductionRef"
+          },
+          "source_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Source Sha256",
+            "type": "string"
+          },
+          "visibility": {
+            "const": "diagnosis",
+            "title": "Visibility",
+            "type": "string"
+          },
+          "redacted": {
+            "const": false,
+            "title": "Redacted",
+            "type": "boolean"
+          },
+          "historical_state": {
+            "$ref": "#/components/schemas/ProductHistoricalStateEvidence"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "text",
+          "reproduction_ref",
+          "source_sha256",
+          "visibility",
+          "redacted",
+          "historical_state"
+        ],
+        "title": "ProductHistoricalStateEvidenceItem",
+        "type": "object"
+      },
       "ProductReproductionRef": {
         "additionalProperties": false,
         "properties": {
@@ -12925,7 +13170,14 @@
           },
           "items": {
             "items": {
-              "$ref": "#/components/schemas/ProductEvidence"
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProductHistoricalStateEvidenceItem"
+                },
+                {
+                  "$ref": "#/components/schemas/ProductEvidence"
+                }
+              ]
             },
             "maxItems": 200,
             "title": "Items",
@@ -13069,7 +13321,15 @@
             "title": "Relation"
           },
           "evidence": {
-            "$ref": "#/components/schemas/ProductEvidence"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProductHistoricalStateEvidenceItem"
+              },
+              {
+                "$ref": "#/components/schemas/ProductEvidence"
+              }
+            ],
+            "title": "Evidence"
           }
         },
         "required": [
@@ -15721,7 +15981,7 @@
       },
       "ProductViewV2": {
         "additionalProperties": false,
-        "description": "A product projection retaining explicit metric class and unit semantics.",
+        "description": "A product projection with metric dimensions and typed historical evidence.",
         "properties": {
           "schema_version": {
             "const": "p6-product-view/v2",
@@ -15767,7 +16027,14 @@
           },
           "evidence": {
             "items": {
-              "$ref": "#/components/schemas/ProductEvidence"
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProductHistoricalStateEvidenceItem"
+                },
+                {
+                  "$ref": "#/components/schemas/ProductEvidence"
+                }
+              ]
             },
             "title": "Evidence",
             "type": "array"

@@ -37,13 +37,17 @@ def _case(tmp_path, *, error=None):
     return analysis, headers, calls
 
 
-@pytest.mark.parametrize("explicit_backend", [False, True])
-def test_analysis_dispatches_only_cookie_actor_route_project_snapshot_and_question(tmp_path, explicit_backend):
+@pytest.mark.parametrize("backend", [None, "local_evidence", "historical_state"])
+def test_analysis_dispatches_scoped_backend_and_question(tmp_path, backend):
     app, headers, calls = _case(tmp_path)
-    body = BODY if explicit_backend else {key: value for key, value in BODY.items() if key != "backend"}
+    body = {key: value for key, value in BODY.items() if key != "backend"}
+    if backend is not None:
+        body["backend"] = backend
+    assert Draft202012Validator(AnalysisRequest.model_json_schema()).is_valid(body)
     status, response_headers, raw = _request(app, headers, method="POST", path=ROUTE, body=json.dumps(body).encode())
     assert status == 202 and len(calls) == 1
-    assert set(calls[0]) == {"credential_digest", "workspace_id", "project_id", "snapshot_id", "question", "request_key"}
+    assert set(calls[0]) == {"credential_digest", "workspace_id", "project_id", "snapshot_id", "question", "request_key", "backend"}
+    assert calls[0]["backend"] == (backend or "local_evidence")
     assert calls[0]["project_id"] == "p3-project-" + "a" * 64 and calls[0]["workspace_id"] == "ws_boundary"
     assert calls[0]["snapshot_id"] == BODY["snapshot_id"] and calls[0]["question"] == BODY["question"]
     assert json.loads(raw)["status"] == "queued" and response_headers[b"cache-control"] == b"no-store"

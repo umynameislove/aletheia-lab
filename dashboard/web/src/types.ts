@@ -50,6 +50,25 @@ export interface ReproductionRef {
   record_kind: "snapshot" | "snapshot_comparison" | "regression_event";
 }
 
+export interface HistoricalState { namespace: string; generation: string; state_sha256: string }
+export interface HistoricalStateEvidence {
+  verdict: "allowed" | "denied" | "unknown" | "underdefined" | "unsupported";
+  reason: string;
+  operation_id: string;
+  request_id: string;
+  consumer_id: string;
+  execution_mode: "fresh" | "replay";
+  producer_version: string;
+  source_receipt_sha256: string;
+  receipt_sha256: string;
+  contract_sha256: string | null;
+  graph_sha256: string | null;
+  observed_state: HistoricalState | null;
+  allowed_state: HistoricalState | null;
+  output: [number, number] | null;
+  current_alias: string | null;
+}
+
 export interface Evidence {
   id: string;
   kind: string;
@@ -59,6 +78,7 @@ export interface Evidence {
   source_sha256: string;
   visibility: Visibility | string;
   redacted: boolean;
+  historical_state?: HistoricalStateEvidence | null;
 }
 
 export interface GraphNode { id: string; kind: string; source_id: string; visibility: string }

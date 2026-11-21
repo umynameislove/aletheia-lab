@@ -10,12 +10,13 @@ import json
 from dataclasses import dataclass, field
 from typing import Literal, TypeAlias, cast
 
-from pydantic import BaseModel, SecretStr
+from pydantic import SecretStr, TypeAdapter
 
 from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_auth.postgres_sessions import Connection
 from aletheia_lab.hosted_auth.postgres_sessions import _operator_namespace as _owned_namespace
 from aletheia_lab.product.view import (
+    AnyProductEvidence,
     AnyProductView,
     ProductClaim,
     ProductEvidence,
@@ -45,8 +46,11 @@ PROJECTION_VERSION = 1
 PAGE_PAYLOAD_BYTES = 256 * 1024
 Kind: TypeAlias = Literal['claim', 'evidence', 'node', 'edge']
 Item: TypeAlias = ProductClaim | ProductEvidence | ProductGraphNode | ProductGraphEdge
-_MODELS: dict[str, type[BaseModel]] = {
-    'claim': ProductClaim, 'evidence': ProductEvidence, 'node': ProductGraphNode, 'edge': ProductGraphEdge,
+_MODELS: dict[str, TypeAdapter[Item]] = {
+    'claim': TypeAdapter(ProductClaim),
+    'evidence': TypeAdapter(AnyProductEvidence),
+    'node': TypeAdapter(ProductGraphNode),
+    'edge': TypeAdapter(ProductGraphEdge),
 }
 
 
@@ -174,7 +178,7 @@ def _item(kind: str, row: tuple[object, ...]) -> Item:
     identity, payload, digest = cast(tuple[str, str, str], row)
     if content_hasher(payload.encode()).hexdigest() != digest:
         raise CatalogIntegrityError()
-    model = cast(Item, _MODELS[kind].model_validate_json(payload))
+    model = _MODELS[kind].validate_json(payload)
     if model.id != identity:
         raise CatalogIntegrityError()
     return model

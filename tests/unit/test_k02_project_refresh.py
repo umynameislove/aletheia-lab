@@ -13,10 +13,15 @@ from types import SimpleNamespace
 import pytest
 from pydantic import SecretStr
 
+from aletheia_lab.hosted.historical_state_evidence import HistoricalStateInput
 from aletheia_lab.hosted.postgres_jobs import JobClaim
 from aletheia_lab.hosted.postgres_sources import SourceNotFound
 from aletheia_lab.hosted.project_operations import CanonicalProjectOperations
-from aletheia_lab.hosted.project_refresh import PreparedRefresh, refresh_uploaded_project
+from aletheia_lab.hosted.project_refresh import (
+    PreparedHistoricalRefresh,
+    PreparedRefresh,
+    refresh_uploaded_project,
+)
 from aletheia_lab.hosted.source_bundle import SourceRejected
 from aletheia_lab.hosted.upload_project import UploadProject
 from aletheia_lab.hosted.upload_snapshot import build_upload_snapshot
@@ -116,7 +121,7 @@ def test_refresh_rejects_other_origin_parent_bytes_and_budget_without_leaking_pa
     assert list(case.root.iterdir()) == []
 
 
-def _orchestration(case, failure):
+def _orchestration(case, failure, *, historical_state=None):
     new = _zip("0.9")
     reads = []
     finished = False
@@ -151,16 +156,21 @@ def _orchestration(case, failure):
             finished = True
             if failure == "worker_invalid":
                 return b'{"private_metadata":"denied"}'
-            if failure == "worker_scope":
-                other = build_upload_snapshot(workspace_id="ws_other", source_id="src_refresh",
+            if failure in {"worker_scope", "worker_historical_state"}:
+                workspace = "ws_other" if failure == "worker_scope" else case.parent.workspace_id
+                other = build_upload_snapshot(workspace_id=workspace, source_id="src_refresh",
                     source_sha256=value.snapshot.source_sha256, mapping=value.snapshot.mapping,
-                    mapping_result=value.snapshot.mapping_result, captured_at=CAPTURED)
-                value = PreparedRefresh(status="new_snapshot", parent_snapshot_id=case.parent.snapshot_id,
-                                        snapshot=other)
-                return value.model_dump_json().encode()
+                    mapping_result=value.snapshot.mapping_result, captured_at=CAPTURED, historical_state=historical_state)
+                model = PreparedHistoricalRefresh if failure == "worker_historical_state" else PreparedRefresh
+                return model(status="new_snapshot", parent_snapshot_id=case.parent.snapshot_id,
+                             snapshot=other).model_dump_json().encode()
             return value.model_dump_json().encode()
 
-    operations = CanonicalProjectOperations(Sources(), Worker(), Parents(), private_root=case.root)
+    registrations = None
+    if historical_state is not None and failure != "worker_historical_state":
+        registrations = {(case.parent.workspace_id, case.parent.mapping.project_id, hashlib.sha256(new).hexdigest()): historical_state}
+    operations = CanonicalProjectOperations(Sources(), Worker(), Parents(), private_root=case.root,
+                                            historical_state_inputs=registrations)
     return operations, claim, reads, sentinel
 
 
@@ -180,3 +190,30 @@ def test_refresh_orchestration_rechecks_both_sources_and_parent_and_cleans_only_
     assert sentinel.read_text() == "unrelated" and not list((case.root / "inputs").iterdir())
     if failure is None:
         assert reads == [("src_original", False), ("src_refresh", False), ("src_original", True), ("src_refresh", True)]
+
+
+@pytest.mark.parametrize("worker_supplied", [False, True])
+def test_changed_refresh_binds_registered_evidence_only(refresh_case, worker_supplied):
+    case = refresh_case
+    fixture = Path(__file__).resolve().parents[2] / "fixtures/historical-state/v1/replay.json"
+    data = json.loads(fixture.read_text(encoding="utf-8"))
+    historical_state = HistoricalStateInput.model_validate_json(json.dumps({"receipt": data["cases"]["B-authorized"],
+                                                        "contract": data["contract"]}))
+    old = case.parent.model_dump_json()
+    operations, claim, _, _ = _orchestration(case, "worker_historical_state" if worker_supplied else None, historical_state=historical_state)
+    if worker_supplied:
+        with pytest.raises(ValueError, match="Invalid worker refresh scope"):
+            asyncio.run(operations.prepare_refresh(claim))
+    else:
+        result = asyncio.run(operations.prepare_refresh(claim))
+        assert isinstance(result, PreparedHistoricalRefresh)
+        assert result.status == "new_snapshot"
+        assert result.snapshot.historical_state == historical_state
+        assert result.snapshot.mapping.project_id == case.parent.mapping.project_id
+        assert result.snapshot.snapshot_id != case.parent.snapshot_id
+        new = _zip("0.9")
+        unchanged = _refresh(case, new, parent=result.snapshot, before=new)
+        assert isinstance(unchanged, PreparedHistoricalRefresh)
+        assert unchanged.status == "unchanged"
+        assert unchanged.snapshot.model_dump_json() == result.snapshot.model_dump_json()
+    assert case.parent.model_dump_json() == old

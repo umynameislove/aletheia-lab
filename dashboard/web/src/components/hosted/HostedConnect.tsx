@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { createHostedClient, HostedAnalysisResult, HostedPreview, HostedSource, HostedSubmission, HostedUploadResume, OutputExpectation } from "../../service/hosted-client";
+import type { createHostedClient, HostedAnalysisResult, HostedOutput, HostedPreview, HostedSource, HostedSubmission, HostedUploadResume, OutputExpectation } from "../../service/hosted-client";
 import { HostedRequestDiscarded } from "../../service/hosted-client";
 import { questionLimit, type HostedCapabilities, type HostedSession, type JobReceipt } from "../../service/hosted";
 import { ProductError } from "../../service/port";
@@ -38,7 +38,8 @@ function ConnectForm(props: Props) {
   const [source, setSource] = useState<HostedSource | null>(null);
   const [preview, setPreview] = useState<HostedPreview | null>(null);
   const [mapping, setMapping] = useState<Mapping | null>(null);
-  const [snapshot, setSnapshot] = useState<string | null>(null);
+  const [confirmed, setConfirmed] = useState<Extract<HostedOutput, { operation: "confirm" }>["result"] | null>(null);
+  const snapshot = confirmed?.snapshot_id, historicalStateProject = confirmed?.historical_state_project_id;
   const [question, setQuestion] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [failure, setFailure] = useState<ProductError | null>(null);
@@ -146,7 +147,7 @@ function ConnectForm(props: Props) {
         setPreview(output.result);
         setMapping(defaultMapping(output.result.mapping_candidates, granted.features["mapping.class_unit_v2"] === true));
       } else if (output.operation === "confirm") {
-        setSnapshot(output.result.snapshot_id);
+        setConfirmed(output.result);
       } else if (output.operation === "analyze") {
         latest.current.onView(output.result, output.job_id);
       }
@@ -215,16 +216,19 @@ function ConnectForm(props: Props) {
     if (input.current) { input.current.value = ""; input.current.focus(); }
   }
 
-  function analyze() {
-    if (!current() || running.current || pending.current || !snapshot || !canAnalyze) return;
+  function analyze(historicalState = false) {
+    if (!current() || running.current || pending.current || !snapshot || !canAnalyze || (historicalState && !historicalStateProject)) return;
     const text = question.trim();
     if (!text || [...text].length > questionMax) {
       setFailure(new ProductError("invalid_question", `Enter a question of 1 to ${questionMax} characters.`));
       document.getElementById("hosted-first-question")?.focus();
       return;
     }
-    pending.current = { operation: "job", submission: { operation: "analyze", snapshot_id: snapshot, question: text },
-      expected: { operation: "analyze", snapshotId: snapshot }, key: crypto.randomUUID(), receipt: null };
+    const historicalStateProjectId = historicalState ? historicalStateProject : undefined;
+    pending.current = { operation: "job", submission: { operation: "analyze", snapshot_id: snapshot, question: text,
+        ...(historicalStateProjectId ? { historical_state_project_id: historicalStateProjectId } : {}) },
+      expected: { operation: "analyze", snapshotId: snapshot, ...(historicalStateProjectId ? { projectId: historicalStateProjectId, historicalState: true } : {}) },
+      key: crypto.randomUUID(), receipt: null };
     void continueAttempt();
   }
 
@@ -240,7 +244,9 @@ function ConnectForm(props: Props) {
   return <div className="stack-lg">
     <div className="sec-head"><span className="eyebrow">Connect a project</span><button type="button" className="btn btn--ghost" onClick={back}>Back</button></div>
     <h1 ref={heading} tabIndex={-1}>{snapshot ? "Snapshot saved. Ask your first question." : preview ? "Tell Aletheia what your files mean" : "Upload a project ZIP"}</h1>
-    <p className="lede">{snapshot ? "This first answer observes the saved snapshot. It does not compare snapshots or establish a cause." : "The ZIP is sent to your workspace. Review its mapping before creating a snapshot."}</p>
+    <p className="lede">{historicalStateProject ? "Choose metrics or check the historical state receipt saved with this snapshot."
+      : snapshot ? "This first answer observes the saved snapshot. It does not compare snapshots or establish a cause."
+      : "The ZIP is sent to your workspace. Review its mapping before creating a snapshot."}</p>
     {!canImport ? <p role="status">Your current workspace access does not permit ZIP imports.</p> : <>
       <section className="panel">
         <label className="fld-label" htmlFor="hosted-project-zip">Project ZIP</label>
@@ -325,7 +331,10 @@ function ConnectForm(props: Props) {
         {canAnalyze ? <><label className="fld-label" htmlFor="hosted-first-question">Your question</label>
           <textarea id="hosted-first-question" className="input" rows={3} value={question} disabled={locked} aria-describedby="hosted-question-limit" onChange={event => setQuestion(event.target.value)} />
           <p className="fld-note" id="hosted-question-limit">{[...question].length} / {questionMax} characters</p>
-          <button type="button" className="btn btn--primary" disabled={locked} onClick={analyze}>Analyze saved snapshot</button>
+          <div className={historicalStateProject ? "actions" : undefined}>
+            <button type="button" className="btn btn--primary" disabled={locked} onClick={() => analyze()}>Analyze saved snapshot</button>
+            {historicalStateProject && <button type="button" className="btn" disabled={locked} onClick={() => analyze(true)}>Check state authorization</button>}
+          </div>
         </> : <p role="status">Your current access does not permit analysis.</p>}
       </section>}
     </>}

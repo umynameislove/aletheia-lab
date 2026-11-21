@@ -13,6 +13,9 @@ from aletheia_lab.product.boundary import ProductError
 from aletheia_lab.product.view import (
     AnyProductMetricObservation,
     AnyProductView,
+    ProductHistoricalState,
+    ProductHistoricalStateEvidence,
+    ProductHistoricalStateEvidenceItem,
     ProductMetricDefinitionV2,
     ProductMetricObservationV2,
 )
@@ -191,6 +194,44 @@ def _append_evidence(lines: list[str], view: AnyProductView) -> None:
                 "",
             ]
         )
+        if isinstance(evidence, ProductHistoricalStateEvidenceItem):
+            _append_historical_state(lines, evidence.historical_state)
+
+
+def _append_historical_state(lines: list[str], evidence: ProductHistoricalStateEvidence) -> None:
+    lines.extend([
+        "#### Historical state evidence",
+        "",
+        f"- Contract verdict: {_code(evidence.verdict)}",
+        f"- Reason: {_text(evidence.reason)}",
+        f"- Original operation ID: {_code(evidence.operation_id)}",
+        f"- Original request ID: {_code(evidence.request_id)}",
+        f"- Consumer ID: {_code(evidence.consumer_id)}",
+        f"- Execution mode: {_code(evidence.execution_mode)}",
+        f"- Producer version: {_code(evidence.producer_version)}",
+        "- Source receipt SHA-256:",
+        f"  {_code(evidence.source_receipt_sha256)}",
+        f"- Receipt SHA-256: {_code(evidence.receipt_sha256)}",
+        f"- Contract SHA-256: {_nullable(evidence.contract_sha256)}",
+        f"- Graph SHA-256: {_nullable(evidence.graph_sha256)}",
+        f"- Reported output: {_nullable(evidence.output)}",
+        f"- Current alias (context): {_nullable(evidence.current_alias)}",
+    ])
+    for label, state in (("Observed state", evidence.observed_state), ("Allowed state", evidence.allowed_state)):
+        _append_state_value(lines, label, state)
+    lines.append("")
+
+
+def _append_state_value(lines: list[str], label: str, state: ProductHistoricalState | None) -> None:
+    if state is None:
+        lines.append(f"- {label}: {_nullable(None)}")
+        return
+    lines.extend([
+        f"- {label}",
+        f"  - Namespace: {_code(state.namespace)}",
+        f"  - Generation: {_code(state.generation)}",
+        f"  - State SHA-256: {_code(state.state_sha256)}",
+    ])
 
 
 def _append_graph(lines: list[str], view: AnyProductView) -> None:

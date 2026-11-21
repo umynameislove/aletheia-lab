@@ -419,6 +419,21 @@ test("a result link pasted in the workspace directory opens its workspace in the
   assert.equal(calls.some(call => call.path.startsWith("/v1/workspaces/unavailable/results/")), false);
 });
 
+test("Start refresh keeps the saved hosted result link while offering a question on the new snapshot", async () => {
+  reset(); bindings = "on";
+  const link = "#/start?" + resultQuery();
+  await page.open(base + link);
+  await page.until(`[...document.querySelectorAll('button')].some(b => b.textContent === 'Refresh from ZIP' && !b.disabled)`);
+  const doc = await page.send("DOM.getDocument");
+  const picker = await page.send("DOM.querySelector", { nodeId: doc.result.root.nodeId, selector: 'input[type=file][accept=".zip,application/zip"]' });
+  await page.send("DOM.setFileInputFiles", { nodeId: picker.result.nodeId, files: [resolve(fixtures, "source.zip")] });
+  await page.until(`document.body.innerText.includes('New snapshot') || !new URLSearchParams(location.hash.split('?')[1]).has('result')`, 6000);
+  assert.equal(await page.eval("location.hash"), link);
+  assert.match(await page.eval("document.body.innerText"), /New snapshot/);
+  assert.ok(await page.eval(`document.querySelector('.body-copy [title="${NEW_SNAPSHOT}"]') !== null`));
+  assert.equal(await page.eval(`!!document.querySelector('input[aria-label="First question"]')`), true);
+});
+
 test("Chrome runs the four hosted bindings: ZIP refresh, follow-up, export and logical delete, each on its server CAS", async () => {
   reset(); bindings = "on";
   await page.send("Page.setDownloadBehavior", { behavior: "deny" });

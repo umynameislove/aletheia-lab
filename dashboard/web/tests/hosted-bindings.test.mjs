@@ -62,6 +62,75 @@ function setup(routes, { over = {}, isCurrent = () => true, view = PARENT } = {}
 }
 const B = `/v1/workspaces/${WS}`;
 
+function historicalStateView() {
+  const view = structuredClone(PARENT);
+  view.runtime = { provider: "local_evidence", model: "historical-state-evidence/v1", external_call: false };
+  for (const turn of view.conversation.turns) turn.runtime = view.runtime;
+  view.snapshot.id = NEW_SNAPSHOT;
+  const evidence = view.evidence[0];
+  evidence.kind = "historical_state";
+  evidence.reproduction_ref = { record_kind: "snapshot", record_id: NEW_SNAPSHOT };
+  evidence.historical_state = {
+    verdict: "denied", reason: "Observed state differs from the original contract.",
+    operation_id: "operation/A", request_id: "original-request", consumer_id: "state-authorization-reader",
+    execution_mode: "replay", producer_version: "receipt/v1", source_receipt_sha256: "a".repeat(64),
+    receipt_sha256: "b".repeat(64), contract_sha256: "c".repeat(64), graph_sha256: null,
+    observed_state: { namespace: "left", generation: "A", state_sha256: "a".repeat(64) },
+    allowed_state: { namespace: "left", generation: "B", state_sha256: "b".repeat(64) },
+    output: [4, 3], current_alias: "B",
+  };
+  return view;
+}
+
+test("explicit historical state analysis uses the scoped endpoint and reconciles a lost accept with the same key", async () => {
+  const confirmed = { snapshot_id: NEW_SNAPSHOT, historical_state_project_id: PROJECT };
+  const view = historicalStateView();
+  const { port, calls } = setup({
+    [`POST ${B}/projects/${PROJECT}/analyses`]: [() => { throw new TypeError("lost synthetic accept"); }, json(receipt("job_a"), 202)],
+    [`GET ${B}/jobs/job_a`]: [json(done("job_a"))],
+    [`GET ${B}/jobs/job_a/output`]: [json({ schema_version: VERSION, workspace_id: WS, job_id: "job_a", operation: "analyze", result: view })],
+  });
+  await assert.rejects(port.analyzeHistoricalState(confirmed.historical_state_project_id, confirmed.snapshot_id, "Original contract?"), { code: "outcome_unknown" });
+  const value = await port.analyzeHistoricalState(PROJECT, NEW_SNAPSHOT, "Original contract?");
+  assert.equal(value.evidence[0].historical_state.verdict, "denied");
+  assert.equal(calls.filter(call => call.method === "POST").length, 2);
+  assert.equal(calls[0].headers["Idempotency-Key"], calls[1].headers["Idempotency-Key"]);
+  assert.deepEqual(JSON.parse(calls[0].body), {
+    schema_version: VERSION, snapshot_id: NEW_SNAPSHOT, question: "Original contract?", backend: "historical_state",
+  });
+  assert.deepEqual(calls[0].body, calls[1].body);
+});
+
+test("confirmed IDs advertise historical state analysis and bind the answer to its source", async () => {
+  const from = (operation, result) => createHostedClient({
+    session, isCurrent: () => true, fetch: async () => json({
+      schema_version: VERSION, workspace_id: WS, job_id: "job_a", operation, result,
+    }),
+  });
+  const confirmed = await from("confirm", { snapshot_id: NEW_SNAPSHOT, historical_state_project_id: PROJECT })
+    .loadOutput(WS, "job_a", { operation: "confirm" });
+  assert.equal(confirmed.result.historical_state_project_id, PROJECT);
+  await assert.rejects(from("confirm", { snapshot_id: NEW_SNAPSHOT, historical_state_project_id: "wrong" })
+    .loadOutput(WS, "job_a", { operation: "confirm" }), { code: "response_invalid" });
+
+  const refresh = from("refresh", { project_id: PROJECT, snapshot_id: NEW_SNAPSHOT,
+    previous_snapshot_id: SNAPSHOT, status: "new_snapshot", revision: 4, historical_state_available: true });
+  assert.equal((await refresh.loadOutput(WS, "job_a", { operation: "refresh", projectId: PROJECT })).result.historical_state_available, true);
+  const expected = { operation: "analyze", snapshotId: NEW_SNAPSHOT, projectId: PROJECT, historicalState: true };
+  await assert.rejects(from("analyze", { ...PARENT, snapshot: { ...PARENT.snapshot, id: NEW_SNAPSHOT } })
+    .loadOutput(WS, "job_a", expected), { code: "response_out_of_scope" });
+  for (const change of [
+    view => { view.evidence[0].reproduction_ref.record_id = SNAPSHOT; },
+    view => { view.evidence[0].historical_state.observed_state.state_sha256 = "invalid"; },
+    view => { view.evidence[0].historical_state.execution_mode = "live"; },
+    view => { view.evidence[0].historical_state.verdict = "permitted"; },
+  ]) {
+    const answer = historicalStateView();
+    change(answer);
+    await assert.rejects(from("analyze", answer).loadOutput(WS, "job_a", expected), { code: "response_invalid" });
+  }
+});
+
 test("each binding is offered only by its workspace feature and the role's actions", () => {
   assert.equal(bindingOff(null, "refresh"), "Open a workspace first.");
   for (const binding of ["refresh", "follow_up", "export", "delete"]) assert.equal(bindingOff(caps(), binding), null, binding);

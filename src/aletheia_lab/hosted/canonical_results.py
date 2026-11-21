@@ -34,9 +34,8 @@ from .postgres_catalog import CatalogIntegrityError, RecordIndex, _all, _index
 from .postgres_objects import PostgresObjects, StagedObject
 from .result_views import PreparedProjection, prepare_projection, publish_projection
 from .upload_snapshot import (
+    UPLOAD_SNAPSHOT_TYPES,
     AnyUploadSnapshot,
-    UploadSnapshot,
-    UploadSnapshotV2,
     parse_upload_snapshot,
 )
 from .workspace_management import WorkspaceConflict, _revision
@@ -93,7 +92,7 @@ def _record_index(record: RecordModel, descriptor: ObjectDescriptor) -> RecordIn
     return RecordIndex(identity, project, kind, schema, canonical, descriptor.sha256,
                        record.snapshot_id if isinstance(record, (UploadResultRecord, UploadResultRecordV2)) else None,
                        record.parent_result_id if isinstance(record, (UploadResultRecord, UploadResultRecordV2)) else None,
-                       source_id=record.source_id if isinstance(record, (UploadSnapshot, UploadSnapshotV2)) else None)
+                       source_id=record.source_id if isinstance(record, UPLOAD_SNAPSHOT_TYPES) else None)
 
 
 async def _stored(conn: Connection, workspace: str, record_id: str) -> tuple[object, ...] | None:
@@ -192,7 +191,7 @@ class CanonicalResults:
     def _validated_initial(workspace_id: str, snapshot: AnyUploadSnapshot,
                            record: AnyUploadResultRecord) -> tuple[AnyUploadSnapshot, AnyUploadResultRecord]:
         try:
-            if not isinstance(snapshot, (UploadSnapshot, UploadSnapshotV2)) or not isinstance(record, (UploadResultRecord, UploadResultRecordV2)):
+            if not isinstance(snapshot, UPLOAD_SNAPSHOT_TYPES) or not isinstance(record, (UploadResultRecord, UploadResultRecordV2)):
                 raise ValueError
             snapshot = parse_upload_snapshot(snapshot.model_dump(mode="python"))
             record = parse_upload_result_record(record.model_dump(mode="python"))

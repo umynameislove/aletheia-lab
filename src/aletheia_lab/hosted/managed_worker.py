@@ -81,6 +81,12 @@ async def run_worker(environment: Mapping[str, str], stop: asyncio.Event) -> Non
     audit_enabled = _audit_enabled(environment, settings)
     policy = load_auth_policy(Path(environment["ALETHEIA_HOSTED_AUTH_POLICY"]))
     policy.require_runtime(settings)
+    registration = settings.worker.historical_state
+    historical_state_inputs = None
+    if registration is not None:
+        from .historical_state_registration import load_historical_state_inputs
+
+        historical_state_inputs = load_historical_state_inputs(Path(registration.manifest_path), registration.manifest_sha256)
     root = Path(settings.storage.object_root)
     if not root.is_dir():
         raise ValueError("private root must already exist")
@@ -101,6 +107,8 @@ async def run_worker(environment: Mapping[str, str], stop: asyncio.Event) -> Non
             leases = PreviewLeases(sources)
             leased_imports = await upload_profile(sources, leases)
             canonical_ready = catalog is not None and await jobs.follow_up_ready()
+            if historical_state_inputs is not None and not canonical_ready:
+                raise RuntimeError("Historical state requires the canonical upload pipeline.")
 
             clock = partial(_worker_clock, settings, policy, pool, sources, leases, leased_imports,
                             audit_enabled, canonical_ready, jobs)
@@ -112,7 +120,7 @@ async def run_worker(environment: Mapping[str, str], stop: asyncio.Event) -> Non
                                  timeout_seconds=90)
         stack.push_async_callback(supervisor.aclose)
         operations = (CanonicalProjectOperations(sources, supervisor, jobs,
-            leases=leases if leased_imports else None, private_root=root) if canonical_ready else
+            leases=leases if leased_imports else None, private_root=root, historical_state_inputs=historical_state_inputs) if canonical_ready else
             UploadOperations(sources, supervisor, leases=leases if leased_imports else None, private_root=root))
         failures = ImportFailures(pool) if leased_imports else None
         task = asyncio.create_task(run_upload_scheduler(

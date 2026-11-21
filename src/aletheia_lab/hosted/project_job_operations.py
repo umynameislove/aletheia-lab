@@ -9,6 +9,8 @@ from pydantic import SecretStr
 from aletheia_lab.hosted.content_hashing import content_hasher
 from aletheia_lab.hosted_auth.postgres_sessions import Connection, _digest
 from aletheia_lab.hosted_contract.job_page import JobReceipt
+from aletheia_lab.hosted_contract.project_analysis import AnalysisBackend
+from aletheia_lab.product.view import HISTORICAL_STATE_MODEL
 from aletheia_lab.project.identity import (
     granted_root_fingerprint,
     project_id_for_root,
@@ -16,7 +18,7 @@ from aletheia_lab.project.identity import (
 
 from .authorization import Authorization
 from .postgres_sources import SourceConflict, SourceNotFound
-from .upload_snapshot import AnyUploadSnapshot, UploadSnapshot, UploadSnapshotV2
+from .upload_snapshot import UPLOAD_SNAPSHOT_TYPES, AnyUploadSnapshot, HistoricalStateUploadSnapshot
 from .workspace_management import WorkspaceConflict, _revision
 
 if TYPE_CHECKING:
@@ -104,14 +106,14 @@ async def refresh_parent(jobs: PostgresJobs, *, claim: JobClaim) -> tuple[AnyUpl
             raise WorkspaceConflict()
     record = await jobs._catalog.read_record(credential_digest=claim.credential_digest, workspace_id=claim.workspace_id,
         project_id=cast(str, request["project_id"]), record_id=cast(str, request["parent_snapshot_id"]))
-    if not isinstance(record, (UploadSnapshot, UploadSnapshotV2)):
+    if not isinstance(record, UPLOAD_SNAPSHOT_TYPES):
         raise SourceNotFound()
     return record, cast(str, request["origin_source_sha256"])
 
 
 async def enqueue_analysis(jobs: PostgresJobs, *, credential_digest: SecretStr, workspace_id: str,
                            project_id: str, snapshot_id: str, question: str,
-                           request_key: SecretStr) -> JobReceipt:
+                           request_key: SecretStr, backend: AnalysisBackend = "local_evidence") -> JobReceipt:
     if jobs._catalog is None:
         raise TimeoutError("Canonical project storage is unavailable.")
     # Admission persists an authorized immutable reference. The worker verifies
@@ -122,5 +124,14 @@ async def enqueue_analysis(jobs: PostgresJobs, *, credential_digest: SecretStr, 
             project_id, snapshot_id, 'analyze')
         if kind != 'upload_snapshot':
             raise SourceNotFound()
+    request: dict[str, object] = {"snapshot_id": snapshot_id, "question": question}
+    if backend == "historical_state":
+        # Read the checked immutable snapshot only for explicit historical state requests.
+        # Queue admission rechecks current source/project authorization again.
+        snapshot = await jobs._access.snapshot(credential_digest=credential_digest,
+            workspace_id=workspace_id, snapshot_id=snapshot_id)
+        if snapshot.mapping.project_id != project_id or not isinstance(snapshot, HistoricalStateUploadSnapshot):
+            raise SourceNotFound()
+        request["analysis_model"] = HISTORICAL_STATE_MODEL
     return await jobs.enqueue(credential_digest=credential_digest, workspace_id=workspace_id, operation="analyze",
-        request_key=request_key, request={"snapshot_id": snapshot_id, "question": question})
+        request_key=request_key, request=request)

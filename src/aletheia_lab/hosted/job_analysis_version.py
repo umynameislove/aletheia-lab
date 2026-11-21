@@ -38,3 +38,8 @@ WINDOW_ANALYSIS_VERSION_DDL = ANALYSIS_VERSION_DDL.replace(
     "'upload-snapshot-metric-observation/v2'",
     "'upload-snapshot-metric-observation/v2','upload-snapshot-windowed-metric-observation/v3'",
 )
+
+HISTORICAL_STATE_ANALYSIS_VERSION_DDL = WINDOW_ANALYSIS_VERSION_DDL.replace(
+    "'upload-snapshot-windowed-metric-observation/v3'",
+    "'upload-snapshot-windowed-metric-observation/v3','historical-state-evidence/v1'",
+)

@@ -40,6 +40,7 @@ from .upload_project import (
 )
 from .upload_snapshot import (
     AnyUploadSnapshot,
+    HistoricalStateUploadSnapshot,
     UploadSnapshot,
     UploadSnapshotV2,
     build_upload_snapshot,
@@ -47,7 +48,7 @@ from .upload_snapshot import (
 )
 from .worker_limits import MAX_UPLOAD_OUTPUT_BYTES
 
-_SnapshotT = TypeVar('_SnapshotT', UploadSnapshot, UploadSnapshotV2)
+_SnapshotT = TypeVar('_SnapshotT', UploadSnapshot, UploadSnapshotV2, HistoricalStateUploadSnapshot)
 
 
 class _PreparedRefreshBase(BaseModel, Generic[_SnapshotT]):
@@ -73,7 +74,11 @@ class PreparedRefreshV2(_PreparedRefreshBase[UploadSnapshotV2]):
     schema_version: Literal['hosted-refresh-computation/v2'] = 'hosted-refresh-computation/v2'
 
 
-AnyPreparedRefresh: TypeAlias = PreparedRefresh | PreparedRefreshV2
+class PreparedHistoricalRefresh(_PreparedRefreshBase[HistoricalStateUploadSnapshot]):
+    schema_version: Literal['hosted-refresh-computation/v3'] = 'hosted-refresh-computation/v3'
+
+
+AnyPreparedRefresh: TypeAlias = PreparedRefresh | PreparedRefreshV2 | PreparedHistoricalRefresh
 
 
 class _RefreshOutput(RootModel[Annotated[AnyPreparedRefresh, Field(discriminator="schema_version")]]):
@@ -82,6 +87,8 @@ class _RefreshOutput(RootModel[Annotated[AnyPreparedRefresh, Field(discriminator
 
 def _prepared(snapshot: AnyUploadSnapshot, *, status: Literal['unchanged', 'new_snapshot'],
               parent_snapshot_id: str) -> AnyPreparedRefresh:
+    if isinstance(snapshot, HistoricalStateUploadSnapshot):
+        return PreparedHistoricalRefresh(status=status, parent_snapshot_id=parent_snapshot_id, snapshot=snapshot)
     if isinstance(snapshot, UploadSnapshotV2):
         return PreparedRefreshV2(status=status, parent_snapshot_id=parent_snapshot_id, snapshot=snapshot)
     return PreparedRefresh(status=status, parent_snapshot_id=parent_snapshot_id, snapshot=snapshot)
@@ -194,11 +201,19 @@ async def prepare_refresh(operations: UploadOperations, parents: RefreshParents,
         raise SourceNotFound()
     value = (await run_blocking(decode_json_model, raw, _RefreshOutput,
              maximum_bytes=MAX_UPLOAD_OUTPUT_BYTES)).root
+    return await _bind_refresh_output(operations, value, parent, source_id, new)
+
+
+async def _bind_refresh_output(operations: UploadOperations, value: AnyPreparedRefresh,
+                               parent: AnyUploadSnapshot, source_id: str, payload: bytes) -> AnyPreparedRefresh:
     snapshot = value.snapshot
     if (value.parent_snapshot_id != parent.snapshot_id or snapshot.workspace_id != parent.workspace_id
             or snapshot.mapping.project_id != parent.mapping.project_id
             or (value.status == "unchanged" and snapshot != parent)
-            or (value.status == "new_snapshot" and (snapshot.source_id != source_id
-                or snapshot.source_sha256 != content_hasher(new).hexdigest()))):
+            or (value.status == "new_snapshot" and (isinstance(snapshot, HistoricalStateUploadSnapshot) or snapshot.source_id != source_id
+                or snapshot.source_sha256 != content_hasher(payload).hexdigest()))):
         raise ValueError("Invalid worker refresh scope.")
+    if value.status == "new_snapshot":
+        bound = await operations._attach_historical_state(snapshot)
+        return _prepared(bound, status="new_snapshot", parent_snapshot_id=parent.snapshot_id)
     return value

@@ -49,6 +49,7 @@ export interface RefreshResult {
   status: "new_snapshot" | "unchanged";
   previous_snapshot_id?: string;
   revision?: number;
+  historical_state_available?: true;
 }
 
 /** Hosted refresh reads a replacement ZIP the person chose, uploaded first; never the old source again. */

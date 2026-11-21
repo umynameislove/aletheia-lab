@@ -35,6 +35,7 @@ export function LineagePanel({ v, selectedClaim, selectedEvidence, selectedNode,
   const nodes = path?.nodes ?? v.graph.nodes;
   const edges = path?.edges ?? v.graph.edges;
   const layout = useMemo(() => lineageLayout(nodes, edges), [nodes, edges]);
+  const historicalStateIds = useMemo(() => new Set(v.evidence.filter(e => e.historical_state).map(e => e.id)), [v.evidence]);
 
   // a dangling edge or a reused node ID means the projection is not trustworthy: draw nothing
   // rather than a partial graph. The claim list stays complete without it.
@@ -64,9 +65,9 @@ export function LineagePanel({ v, selectedClaim, selectedEvidence, selectedNode,
       )}
       {/* a new result starts at 100%: the level belongs to the drawing it was set on */}
       <ZoomableDrawing key={v.result.id}>
-        {zoom => <Drawing v={v} layout={layout} selectedClaim={selectedClaim} selectedEvidence={selectedEvidence} selectedNode={selectedNode} shownIds={shownIds} onNode={onNode} zoom={zoom} />}
+        {zoom => <Drawing v={v} layout={layout} selectedClaim={selectedClaim} selectedEvidence={selectedEvidence} selectedNode={selectedNode} shownIds={shownIds} onNode={onNode} zoom={zoom} historicalStateIds={historicalStateIds} />}
       </ZoomableDrawing>
-      <EdgeTable nodes={nodes} edges={layout.edges} selectedNode={selectedNode} onNode={onNode} />
+      <EdgeTable nodes={nodes} edges={layout.edges} selectedNode={selectedNode} onNode={onNode} historicalStateIds={historicalStateIds} />
     </div>
   );
 }
@@ -173,9 +174,9 @@ function PanButtons({ left, right, off, pan, onGone }: {
   );
 }
 
-function Drawing({ v, layout, selectedClaim, selectedEvidence, selectedNode, shownIds, onNode, zoom }: {
+function Drawing({ v, layout, selectedClaim, selectedEvidence, selectedNode, shownIds, onNode, zoom, historicalStateIds }: {
   v: ProductView; layout: ReturnType<typeof lineageLayout>; selectedClaim: string | null; selectedEvidence: string | null; selectedNode: string | null;
-  shownIds: Set<string>; onNode: (n: GraphNode) => void; zoom: number;
+  shownIds: Set<string>; onNode: (n: GraphNode) => void; zoom: number; historicalStateIds: ReadonlySet<string>;
 }) {
   // OBSERVED_IN is emitted only for evidence observed in the analyzed snapshot, so the first link
   // says how many evidence items it actually joins instead of implying all of them
@@ -205,11 +206,12 @@ function Drawing({ v, layout, selectedClaim, selectedEvidence, selectedNode, sho
                   const dim = n.kind === "AtomicClaim" && !shownIds.has(n.source_id);
                   const on = n.id === selectedNode || (!selectedNode && (n.source_id === selectedClaim || n.source_id === selectedEvidence));
                   const unobserved = n.kind === "EvidenceItem" && !observed.has(n.source_id);
+                  const historicalState = n.kind === "EvidenceItem" && historicalStateIds.has(n.source_id);
                   return (
                     <button key={n.id} ref={n.id === reveal.current ? focusRevealed : undefined} className={`lg-node${dim ? " faded" : ""}${unobserved ? " off" : ""}`} aria-pressed={on} onClick={() => onNode(n)}
-                      aria-label={`${l.h} ${shortId(n.source_id)}${dim ? ", hidden by the current filter" : ""}${unobserved ? ", not observed in the analyzed snapshot" : ""}`}
+                      aria-label={`${historicalState ? "Historical state evidence" : l.h} ${shortId(n.source_id)}${dim ? ", hidden by the current filter" : ""}${unobserved ? ", not observed in the analyzed snapshot" : ""}`}
                       title={dim ? "hidden by the current filter" : unobserved ? "no OBSERVED_IN edge to the analyzed snapshot" : n.id}>
-                      <span className="i">{breakable(shortId(n.source_id), "-")}{n.kind === "Disposition" && n.source_id === v.result.id && <b className="lg-disp">{v.result.disposition ?? "null"}</b>}</span>
+                      <span className="i">{breakable(shortId(n.source_id), "-")}{historicalState && <b className="lg-disp">Historical state evidence</b>}{n.kind === "Disposition" && n.source_id === v.result.id && <b className="lg-disp">{v.result.disposition ?? "null"}</b>}</span>
                     </button>
                   );
                 }) : <div className="lg-node none"><Mark hollow /><span className="i">none</span></div>}
@@ -232,14 +234,15 @@ function Drawing({ v, layout, selectedClaim, selectedEvidence, selectedNode, sho
 }
 
 /* The drawing in words, paged. Every endpoint opens the same selection the drawing does. */
-function EdgeTable({ nodes, edges, selectedNode, onNode }: { nodes: readonly GraphNode[]; edges: GraphEdge[]; selectedNode: string | null; onNode: (n: GraphNode) => void }) {
+function EdgeTable({ nodes, edges, selectedNode, onNode, historicalStateIds }: { nodes: readonly GraphNode[]; edges: GraphEdge[]; selectedNode: string | null; onNode: (n: GraphNode) => void; historicalStateIds: ReadonlySet<string> }) {
   const byId = useMemo(() => new Map(nodes.map(n => [n.id, n])), [nodes]);
   const [requested, setRequested] = useState(1);
   const page = pageOf(edges, requested);
   const end = (id: string) => {
     const n = byId.get(id);
     if (!n) return <span className="dim">{shortId(id)}</span>;
-    return <button className="link-btn" aria-pressed={n.id === selectedNode} onClick={() => onNode(n)} title={n.source_id}><span className="nowrap">{n.kind}</span> <span className="mono-s">{shortId(n.source_id)}</span></button>;
+    const label = n.kind === "EvidenceItem" && historicalStateIds.has(n.source_id) ? "Historical state evidence" : n.kind;
+    return <button className="link-btn" aria-pressed={n.id === selectedNode} onClick={() => onNode(n)} title={n.source_id}><span className="nowrap">{label}</span> <span className="mono-s">{shortId(n.source_id)}</span></button>;
   };
   return (
     <div className="lg-foot">

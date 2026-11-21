@@ -28,9 +28,8 @@ from .postgres_sources import SourceNotFound
 from .transactions import run_transaction
 from .upload_publication import PublishedUploadSnapshot
 from .upload_snapshot import (
+    UPLOAD_SNAPSHOT_TYPES,
     AnyUploadSnapshot,
-    UploadSnapshot,
-    UploadSnapshotV2,
     parse_upload_snapshot,
 )
 from .workspace_management import _revision
@@ -187,7 +186,7 @@ async def _complete_canonical_snapshot(self: PostgresJobs, *, claim: JobClaim, l
                 reconciled = await catalog.read_record(credential_digest=claim.credential_digest,
                     workspace_id=claim.workspace_id, project_id=snapshot.mapping.project_id,
                     record_id=error.snapshot_id)
-                if not isinstance(reconciled, (UploadSnapshot, UploadSnapshotV2)):
+                if not isinstance(reconciled, UPLOAD_SNAPSHOT_TYPES):
                     raise CatalogIntegrityError() from None
                 prepared = await publication.prepare_snapshot(snapshot, existing=reconciled,
                     parent=parent if claim.operation == "refresh" and self.execution else None)
@@ -252,7 +251,7 @@ async def _reuse_confirm_snapshot(self: PostgresJobs, claim: JobClaim, digest: s
         if current is not None and current[0] != snapshot.snapshot_id:
             original = await catalog.read_record(credential_digest=claim.credential_digest,
                 workspace_id=claim.workspace_id, project_id=snapshot.mapping.project_id, record_id=cast(str, current[0]))
-            if isinstance(original, (UploadSnapshot, UploadSnapshotV2)):
+            if isinstance(original, UPLOAD_SNAPSHOT_TYPES):
                 # A new upload intent can name identical content; retain its first authorized capture.
                 before, after = original.state_payload(), snapshot.state_payload()
                 before.pop('source_id')
@@ -275,13 +274,13 @@ async def _existing_snapshot(claim: JobClaim, snapshot: AnyUploadSnapshot, catal
                 raise CatalogIntegrityError()
             canonical = await catalog.read_record(credential_digest=claim.credential_digest,
                 workspace_id=claim.workspace_id, project_id=snapshot.mapping.project_id, record_id=snapshot.snapshot_id)
-            if not isinstance(canonical, (UploadSnapshot, UploadSnapshotV2)):
+            if not isinstance(canonical, UPLOAD_SNAPSHOT_TYPES):
                 raise CatalogIntegrityError()
             existing = canonical
     elif canonical_exists is not None:
         canonical = await catalog.read_record(credential_digest=claim.credential_digest,
             workspace_id=claim.workspace_id, project_id=snapshot.mapping.project_id, record_id=snapshot.snapshot_id)
-        if not isinstance(canonical, (UploadSnapshot, UploadSnapshotV2)):
+        if not isinstance(canonical, UPLOAD_SNAPSHOT_TYPES):
             raise CatalogIntegrityError()
         existing = canonical
     return existing
