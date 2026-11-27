@@ -130,3 +130,18 @@
   --d-fast: 120ms;
   --d-med: 200ms;
 }
+
+/* The hosted dark appearance shares the approved investigation colors. Keep saved light preferences. */
+:root[data-deployment="hosted"][data-theme="dark"] {
+  --bg-app: #121a28;
+  --bg-rail: #101624;
+  --bg-1: #192332;
+  --bg-2: #202a3b;
+  --bg-3: #2a3649;
+  --bg-input: #192332;
+  --bg-hover: #253144;
+  --bg-insp: #192539;
+  --line: #28364b;
+  --line-2: #3b4a60;
+  --line-3: #63748c;
+}

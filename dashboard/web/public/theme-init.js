@@ -5,7 +5,7 @@ try {
   var root = document.documentElement;
   var t = localStorage.getItem("p6-theme");
   if (t === "light" || t === "dark") root.dataset.theme = t;
-  else if (window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches) root.dataset.theme = "light";
+  else if (root.dataset.deployment !== "hosted" && window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches) root.dataset.theme = "light";
   if (localStorage.getItem("p6-terms") === "show") root.dataset.terms = "show";
   if (localStorage.getItem("p6-density") === "compact") root.dataset.density = "compact";
 } catch (e) {}

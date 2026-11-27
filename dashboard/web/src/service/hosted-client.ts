@@ -487,10 +487,14 @@ export function createHostedClient(options: HostedClientOptions) {
     /** ProductView check, for the hosted port: carried here so the main chunk need not load the contract. */
     checkView: checkHostedView,
     loginUrl: () => "/v1/auth/start",
-    loadSession: () => request("/v1/session", "GET", (value, status) => { need(status === 200); return readSession(value); }),
-    loadCaps: (workspace: string) => {
+    loadSession: (extraSignal?: AbortSignal) => request("/v1/session", "GET", (value, status) => {
+      need(status === 200); return readSession(value);
+    }, undefined, undefined, undefined, extraSignal),
+    loadCaps: (workspace: string, extraSignal?: AbortSignal) => {
       authenticated();
-      return request(base(workspace) + "/capabilities", "GET", (value, status) => { need(status === 200); return readCapabilities(value, workspace); });
+      return request(base(workspace) + "/capabilities", "GET", (value, status) => {
+        need(status === 200); return readCapabilities(value, workspace);
+      }, undefined, undefined, undefined, extraSignal);
     },
     renew: () => {
       authenticated();
@@ -728,6 +732,35 @@ export function createHostedClient(options: HostedClientOptions) {
           pending_objects: x.pending_objects as number, shared_objects_retained: x.shared_objects_retained as number,
           raw_source_policy: "workspace_sources_retained", backup_policy: "operator_managed_not_erased_here" };
       }, undefined, undefined, undefined, extraSignal);
+    },
+    listProjects: (workspace: string, caps: HostedCapabilities, cursor?: string, signal?: AbortSignal) => {
+      feature(workspace, caps, "catalog.read");
+      const limit = Math.min(12, caps.page_max);
+      const query = new URLSearchParams({ limit: String(limit), ...(cursor ? { cursor } : {}) });
+      return request(`${base(workspace)}/projects?${query}`, "GET", (value, status) => {
+        need(status === 200);
+        const page = readPage<Obj>(value, workspace, limit);
+        const items = page.items.map(row => {
+          need(id(row.project_id));
+          return row.project_id;
+        });
+        return { items, next: page.next_cursor };
+      }, undefined, undefined, undefined, signal);
+    },
+    listResults: (workspace: string, caps: HostedCapabilities, cursor?: string, signal?: AbortSignal) => {
+      feature(workspace, caps, "catalog.read");
+      const limit = Math.min(8, caps.page_max);
+      const query = new URLSearchParams({ limit: String(limit), ...(cursor ? { cursor } : {}) });
+      return request(`${base(workspace)}/results?${query}`, "GET", (value, status) => {
+        need(status === 200);
+        const page = readPage<Obj>(value, workspace, limit);
+        const items = page.items.map((row): HostedResultScope => {
+          need(matches(RESULT, row.record_id) && id(row.project_id) && id(row.snapshot_id)
+            && (row.record_type === "result" || row.record_type === "upload_result"));
+          return { projectId: row.project_id, snapshotId: row.snapshot_id, resultId: row.record_id as string };
+        });
+        return { items, next: page.next_cursor };
+      }, undefined, undefined, undefined, signal);
     },
     /** GET results/{id}/header: the bounded summary and exact counts, without metric arrays or turns. */
     loadResultHeader: (workspace: string, caps: HostedCapabilities, scope: HostedResultScope, extraSignal?: AbortSignal) => {

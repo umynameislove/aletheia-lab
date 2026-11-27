@@ -3,7 +3,8 @@ import { Info, X } from "lucide-react";
 import { demoPort, port, useResultSwitch, useView } from "./service";
 import { warnBeforeUnload } from "./service/unsaved";
 import { NOT_FOUND, useRoute, useStore } from "./store";
-import { Rail } from "./components/Rail";
+import { DashboardFrame } from "./components/DashboardFrame";
+import { Rail, type HostedAccountActions } from "./components/Rail";
 import { CRUMB, Topbar } from "./components/Topbar";
 import { Start } from "./components/Start";
 import { Counterfactual, NotFound, Prospective, ProjectDeleted } from "./components/Gated";
@@ -34,7 +35,7 @@ function Loading() {
   return <div className="page" id="main" tabIndex={-1} ref={ref}><p className="page-loading" role="status">Loading…</p></div>;
 }
 
-export function App() {
+export function App({ hostedAccount }: { hostedAccount?: HostedAccountActions } = {}) {
   const VIEW = useView();
   const { name, go } = useRoute();
   const { toasts, dismissToast, holdToasts, s, dispatch, toast, letterKeys, toggleLetterKeys } = useStore();
@@ -71,25 +72,20 @@ export function App() {
 
   return (
     <>
-      <a className="skip" href="#main" onClick={e => { e.preventDefault(); document.getElementById("main")?.focus(); }}>Skip to content</a>
-      <div className="app">
-        <Rail open={railOpen} onClose={() => setRailOpen(false)} onOpenProject={() => setModal("project")} onResetDemo={() => setModal("reset")} />
-        <div className="shell">
-          <Topbar onMenu={() => setRailOpen(true)} onShortcuts={() => setModal("shortcuts")} />
-          <main className="content">
-            <ScreenBoundary key={name}>
-              <Suspense fallback={<Loading />}>
-                {name === NOT_FOUND ? <NotFound /> : s.deletedProject && (name === "project" || name === "investigation" || name === "results")
-                  ? <ProjectDeleted />
-                  : {
-                    start: <Start />, connect: <Connect />, project: <Project />, investigation: <Investigation />,
-                    results: <Results />, retention: <Retention />, counterfactual: <Counterfactual />, prospective: <Prospective />,
-                  }[name]}
-              </Suspense>
-            </ScreenBoundary>
-          </main>
-        </div>
-      </div>
+      <DashboardFrame
+        rail={<Rail open={railOpen} onClose={() => setRailOpen(false)} onOpenProject={() => setModal("project")} onResetDemo={() => setModal("reset")} hosted={hostedAccount} />}
+        topbar={<Topbar onMenu={() => setRailOpen(true)} onShortcuts={() => setModal("shortcuts")} />}>
+        <ScreenBoundary key={name}>
+          <Suspense fallback={<Loading />}>
+            {name === NOT_FOUND ? <NotFound /> : s.deletedProject && (name === "project" || name === "investigation" || name === "results")
+              ? <ProjectDeleted />
+              : {
+                start: <Start />, connect: <Connect />, project: <Project />, investigation: <Investigation />,
+                results: <Results />, retention: <Retention />, counterfactual: <Counterfactual />, prospective: <Prospective />,
+              }[name]}
+          </Suspense>
+        </ScreenBoundary>
+      </DashboardFrame>
 
       <div className="toasts" aria-live="polite" onMouseEnter={() => holdToasts(true)} onMouseLeave={() => holdToasts(false)} onFocus={() => holdToasts(true)} onBlur={() => holdToasts(false)}>
         {toasts.map(t => (

@@ -122,71 +122,77 @@ export function createHostedBootstrap(options: {
     } else if (JSON.stringify(previous) !== JSON.stringify(next)) publish({ session: next });
     return next;
   }
-  async function refreshSession(): Promise<HostedSession> {
+  async function refreshSession(signal?: AbortSignal): Promise<HostedSession> {
     requireSession();
-    if (checking) return checking;
+    if (!signal && checking) return checking;
     const generation = state.generation;
-    const request = client.loadSession().then(next => {
-      if (!current(generation)) throw new HostedRequestDiscarded();
+    const request = client.loadSession(signal).then(next => {
+      if (signal?.aborted || !current(generation)) throw new HostedRequestDiscarded();
       return applySession(next);
     });
+    // An interruptible authorization read must not cancel or reuse an independent session refresh.
+    if (signal) return request;
     checking = request;
     try { return await request; }
     finally { if (checking === request) checking = null; }
   }
   /* One read in this scope. 403/404 means the scope is gone: everything held for it is dropped. */
-  async function scoped(session: HostedSession, generation: number, read: (probe: ReturnType<typeof createHostedClient>) => Promise<unknown>) {
+  async function scoped(session: HostedSession, generation: number, signal: AbortSignal,
+                        read: (probe: ReturnType<typeof createHostedClient>) => Promise<unknown>) {
     let denial: "membership_revoked" | "permission_denied" | undefined;
     const probe = createHostedClient({ fetch: fetchForSession(generation), session, signal: controller.signal,
-      isCurrent: () => current(generation), onAnswer: (status, code) => {
+      isCurrent: () => !signal.aborted && current(generation), onAnswer: (status, code) => {
         if (status === 403 || status === 404) denial = code === "membership_revoked" ? code : "permission_denied";
         if (status >= 300 && code !== "membership_revoked") guard?.noteResponse(status, code);
       } });
     try { await read(probe); }
     catch (error) {
-      if (!denial || !current(generation)) throw error;
+      if (!denial || signal.aborted || !current(generation)) throw error;
       dropWorkspace(denial);
     }
   }
   /* The result on screen is confirmed by its own bounded header (Kiên, 13/11). A server without it is never
      read in full on a timer: the result is not shown there at all (HostedApp), and nothing is assumed here. */
-  function readShown(probe: ReturnType<typeof createHostedClient>, workspace: string, caps: HostedCapabilities, shown: HostedResultScope) {
-    if (caps.features?.["catalog.paged_read"] === true) return probe.loadResultHeader(workspace, caps, shown);
+  function readShown(probe: ReturnType<typeof createHostedClient>, workspace: string, caps: HostedCapabilities,
+                     shown: HostedResultScope, signal: AbortSignal) {
+    if (caps.features?.["catalog.paged_read"] === true) return probe.loadResultHeader(workspace, caps, shown, signal);
     throw new ProductError("feature_unavailable", "Access to this result cannot be confirmed here.");
   }
   function installGuard(session: HostedSession) {
     lastAsked = -Infinity; lastFull = -Infinity;
     guard = createSessionGuard({ contextId: session.context_id, now, tell: options.tell, authorizationLeaseMs: LEASE_MS,
       onWipe: () => clear(),
-      check: async (): Promise<SessionAnswer> => {
+      check: async (signal, returned): Promise<SessionAnswer> => {
         const asked = now(), previous = lastAsked;
         lastAsked = asked;
         try {
           const workspace = state.workspace?.workspace_id;
           const full = !workspace || asked - lastFull >= FULL_CHECK_MS;
-          const next = full ? await refreshSession() : requireSession();
-          if (full && workspace) await refreshCapabilities(workspace);
+          const next = full ? await refreshSession(signal) : requireSession();
+          if (full && workspace) await refreshCapabilities(workspace, signal);
           const job = watchedJob, shown = watchedResult, caps = state.workspace;
           // A job this tab is already polling was read by that polling: its newest read counts, from when it was sent.
           // Only a read made since the previous check is new: reusing an older one would date this confirmation back
           // and make the next check due at once (FL-125).
-          const polled = job && jobReadAt?.job === job && now() - jobReadAt.at < LEASE_MS && jobReadAt.at > previous ? jobReadAt.at : null;
+          const polled = !returned && job && jobReadAt?.job === job && now() - jobReadAt.at < LEASE_MS
+            && jobReadAt.at > previous ? jobReadAt.at : null;
           if (workspace && caps && (job || shown)) {
             // a job being waited on and the result on screen are separate scopes: both must still be allowed
             const generation = state.generation;
-            const settled = await Promise.allSettled([job && polled === null && scoped(next, generation, async probe => {
-                const read = await probe.loadJob(workspace, job);
+            const settled = await Promise.allSettled([job && polled === null && scoped(next, generation, signal, async probe => {
+                const read = await probe.loadJob(workspace, job, signal);
                 // a finished job cannot change any more: nothing of it on screen needs its own read again
                 if (TERMINAL.has(read.status) && watchedJob === job) watchedJob = null;
               }),
-              shown && scoped(next, generation, probe => readShown(probe, workspace, caps, shown))]);
+              shown && scoped(next, generation, signal, probe => readShown(probe, workspace, caps, shown, signal))]);
             const failed = settled.find(outcome => outcome.status === "rejected");
             // once a denial has dropped the workspace, nothing of the old scope is on screen to confirm
             if (failed && current(generation)) throw failed.reason;
           } else if (!full && workspace) {
             // nothing else of the workspace is on screen: the workspace itself is the scope to read
-            await refreshCapabilities(workspace);
+            await refreshCapabilities(workspace, signal);
           }
+          if (signal.aborted) throw new HostedRequestDiscarded();
           if (full) lastFull = asked;
           return { status: "ok", context_id: next.context_id, ...(polled !== null ? { since: polled } : {}) };
         } catch (error) {
@@ -213,7 +219,9 @@ export function createHostedBootstrap(options: {
       installGuard(session); client = makeClient(); publish({});
     } catch (error) {
       if (!current(generation) || error instanceof HostedRequestDiscarded) return;
-      publish({ status: unauthorized ? "signed_out" : "error", error: unauthorized ? null :
+      const absent = unauthorized && error instanceof ProductError && error.code === "session_expired";
+      const revoked = unauthorized && error instanceof ProductError && error.code === "session_revoked";
+      publish({ status: absent || revoked ? "signed_out" : "error", error: absent ? null :
         error instanceof ProductError ? error : new ProductError("unavailable", "Access could not be confirmed. Try again.") });
     }
   }
@@ -235,10 +243,10 @@ export function createHostedBootstrap(options: {
       }
     }
   }
-  async function refreshCapabilities(workspaceId: string) {
+  async function refreshCapabilities(workspaceId: string, signal?: AbortSignal) {
     requireSession(); const generation = state.generation;
-    const next = await client.loadCaps(workspaceId);
-    if (!current(generation)) throw new HostedRequestDiscarded();
+    const next = await client.loadCaps(workspaceId, signal);
+    if (signal?.aborted || !current(generation)) throw new HostedRequestDiscarded();
     const previous = state.workspace;
     if (previous?.workspace_id !== workspaceId) return;
     if (JSON.stringify(previous) !== JSON.stringify(next)) {

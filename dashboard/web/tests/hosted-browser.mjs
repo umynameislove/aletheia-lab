@@ -260,9 +260,11 @@ async function fillMapping(v2) {
 }
 
 test("hosted build starts from the real session endpoint and leaves sign-in with the server", async () => {
-  reset(); signedIn = false; await page.open(base + "#/workspaces");
-  await page.until(`document.body.innerText.includes("Sign in to Aletheia")`);
-  assert.equal(await page.eval(`document.querySelector('a[href="/v1/auth/start"]').textContent`), "Sign in");
+  reset(); signedIn = false; await page.send("Page.navigate", { url: base + "?direct" });
+  await page.until(`location.pathname === "/v1/auth/start"`);
+  const startup = calls.filter(call => call.path === "/v1/session" || call.path === "/v1/auth/start");
+  assert.deepEqual(startup.map(call => [call.method, call.path]), [["GET", "/v1/session"], ["GET", "/v1/auth/start"]]);
+  assert.equal(startup[1].headers["sec-fetch-site"], "same-origin");
   assert.equal(await page.eval(`document.querySelectorAll('input[type=password]').length`), 0);
   assert.deepEqual(calls.filter(call => call.method === "POST"), []);
 });

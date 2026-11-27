@@ -30,6 +30,17 @@ test("hosted startup trusts only the server session; an unauthenticated account 
   h.boot.stop();
 });
 
+test("a revoked session is distinct from a new session and an untrusted refusal is a startup error", async () => {
+  const revoked = system(() => problem("session_revoked", 401));
+  await revoked.boot.start();
+  assert.equal(revoked.boot.snapshot().status, "signed_out");
+  assert.equal(revoked.boot.snapshot().error.code, "session_revoked");
+  revoked.boot.stop();
+  const untrusted = system(() => new Response("upstream refused", { status: 401 }));
+  await untrusted.boot.start();
+  assert.equal(untrusted.boot.snapshot().status, "error");
+  untrusted.boot.stop();
+});
 test("a real session precedes workspace scope; substituted capabilities never become current", async () => {
   const h = system(url => json(url === "/v1/session" ? session() : caps("another")));
   await h.boot.start();
@@ -263,6 +274,27 @@ test("W1 the result on screen is confirmed by its own header, held to the shown 
   h.boot.stop();
 });
 
+test("resuming cancels an old result read and rechecks only the shown scope", async () => {
+  let held;
+  const h = await watching({ "catalog.paged_read": true }, url => url === HEADER && !held
+    ? new Promise(resolve => { held = resolve; })
+    : json(header()));
+  const guard = h.boot.guard();
+  const waiting = guard.check(false);
+  while (!held) await new Promise(resolve => setImmediate(resolve));
+  const old = h.calls.find(call => call.url === HEADER);
+  guard.onBackground();
+  assert.equal(old.init.signal.aborted, true);
+  assert.equal(guard.state(), "confirming");
+  await guard.onFocused();
+  held(problem("membership_revoked", 403));
+  await waiting;
+  assert.equal(guard.state(), "active");
+  assert.equal(h.boot.snapshot().workspace.workspace_id, "w");
+  assert.equal(h.calls.filter(call => call.url === HEADER).length, 2);
+  assert.ok(h.calls.every(call => call.init.method === "GET"), "resuming cannot submit or recreate an export");
+  h.boot.stop();
+});
 test("W2 a refused header (404) drops the workspace scope; the signed-in account stays", async () => {
   const h = await watching({ "catalog.paged_read": true }, () => problem("record_not_found", 404));
   const generation = h.boot.snapshot().generation;
