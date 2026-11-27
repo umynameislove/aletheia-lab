@@ -19,6 +19,7 @@ const workspace = { schema_version: VERSION, workspace_id: "a", workspace_name: 
 let signedIn, metadata, deniedJob, holdSession, calls, submissions, output, resumable, expireUploadOnce, expireConfirmOnce;
 let uploadNumber, manifest, uploadedParts, leaseNumber, previewResults, holdPartOnce, releasePart;
 let bindings, projectRevision, pdfOffered, large, expireCursorOnce, deletionStages, missingChunk, graphFaults, jobControls, jobScript, paged;
+let analysisReadFaults;
 // K10: a result too large to open whole, read as header, claim pages and per-claim evidence.
 const LARGE = "p6-result-" + "9".repeat(64), LARGE_EVIDENCE = "p3-evidence-" + "8".repeat(64);
 const largeClaim = (n, text) => ({ id: "p6-claim-" + String(n).repeat(64), turn_id: "p6-turn-" + "7".repeat(64), text, claim_type: "evidence_statement",
@@ -35,7 +36,7 @@ const BINDING_FEATURES = { "projects.refresh": true, "projects.follow_up": true,
 let server, browser, page, base;
 const reset = () => { signedIn = true; metadata = true; deniedJob = false; holdSession = false; calls = []; submissions = []; output = analysis;
   resumable = false; expireUploadOnce = false; expireConfirmOnce = false; uploadNumber = 0; uploadedParts = new Map(); leaseNumber = 0; previewResults = new Map(); holdPartOnce = false; releasePart = null;
-  bindings = null; projectRevision = 1; pdfOffered = false; large = false; expireCursorOnce = false; deletionStages = null; missingChunk = null; graphFaults = []; jobControls = false; jobScript = new Map(); paged = true; };
+  bindings = null; projectRevision = 1; pdfOffered = false; large = false; expireCursorOnce = false; deletionStages = null; missingChunk = null; graphFaults = []; jobControls = false; jobScript = new Map(); paged = true; analysisReadFaults = new Map(); };
 const session = () => ({ schema_version: VERSION,
   actor: { user_id: "synthetic_actor", display_name: "Synthetic account", email: "test@example.invalid", email_verified: true },
   session: { context_id: "synthetic_context", expires_at: "2030-01-01T00:00:00Z" }, csrf_token: "synthetic-csrf-only",
@@ -61,6 +62,11 @@ before(async () => {
   server = createServer(async (request, response) => {
     const path = new URL(request.url, "http://localhost").pathname;
     const json = (value, status = 200) => { response.writeHead(status, { "Content-Type": "application/json", "Cache-Control": "no-store" }); response.end(JSON.stringify(value)); };
+    // The browser harness clears storage here before opening the app. Do not start a second session.
+    if (request.url === "/?blank") {
+      response.writeHead(200, { "Content-Type": "text/html", "Cache-Control": "no-store" }).end("<!doctype html><title>Reset test storage</title>");
+      return;
+    }
     if (!path.startsWith("/v1/")) {
       const filename = resolve(root, path === "/" ? "index.html" : "." + path);
       if (!filename.startsWith(root + sep) && filename !== resolve(root, "index.html")) { response.writeHead(404).end(); return; }
@@ -70,8 +76,12 @@ before(async () => {
         return;
       }
       const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".woff2": "font/woff2" };
-      try { response.writeHead(200, { "Content-Type": types[extname(filename)] ?? "application/octet-stream", "Cache-Control": "no-store" }); response.end(readFileSync(filename)); }
-      catch { response.writeHead(404).end(); }
+      try {
+        const bytes = readFileSync(filename);
+        response.writeHead(200, { "Content-Type": types[extname(filename)] ?? "application/octet-stream", "Cache-Control": "no-store" }).end(bytes);
+      } catch {
+        if (!response.headersSent) response.writeHead(404).end();
+      }
       return;
     }
     const bytes = await body(request); calls.push({ method: request.method, path, headers: request.headers, text: bytes.toString("utf8"), at: performance.now() });
@@ -199,6 +209,14 @@ before(async () => {
     if (match) {
       const job = match[1], script = jobScript.get(job);
       if (deniedJob) return json(problem("record_not_found", 404), 404);
+      if (job === analysis.job_id && request.method === "GET") {
+        const status = analysisReadFaults.get(path);
+        if (status) {
+          analysisReadFaults.delete(path);
+          response.writeHead(status, { "Content-Type": "text/html" }).end("<p>Upstream restarting</p>");
+          return;
+        }
+      }
       // K09: a scripted job walks through its states; cancel and retry change only what the service reports
       if (match[2] === "/cancel") { jobScript.set(job, { states: ["cancel_requested", "cancelled"], at: 0, retryable: false });
         return json({ schema_version: VERSION, workspace_id: "a", job_id: job, status: "cancel_requested", progress: null }); }
@@ -240,8 +258,8 @@ async function connect(expectPreview = true) {
   await page.open(base + "#/workspaces");
   await page.until(`document.body.innerText.includes("Synthetic workspace")`);
   await page.clickText("Open workspace");
-  await page.until(`[...document.querySelectorAll('button')].some(b => b.textContent === 'Connect project')`);
-  await page.clickText("Connect project");
+  await page.until(`document.querySelector('#main a[href="#/connect"]')`);
+  await page.click('#main a[href="#/connect"]');
   await page.until(`document.querySelector('#hosted-project-zip')`);
   const document = await page.send("DOM.getDocument");
   const input = await page.send("DOM.querySelector", { nodeId: document.result.root.nodeId, selector: "#hosted-project-zip" });
@@ -260,9 +278,11 @@ async function fillMapping(v2) {
 }
 
 test("hosted build starts from the real session endpoint and leaves sign-in with the server", async () => {
-  reset(); signedIn = false; await page.open(base + "#/workspaces");
-  await page.until(`document.body.innerText.includes("Sign in to Aletheia")`);
-  assert.equal(await page.eval(`document.querySelector('a[href="/v1/auth/start"]').textContent`), "Sign in");
+  reset(); signedIn = false; await page.send("Page.navigate", { url: base + "?direct" });
+  await page.until(`location.pathname === "/v1/auth/start"`);
+  const startup = calls.filter(call => call.path === "/v1/session" || call.path === "/v1/auth/start");
+  assert.deepEqual(startup.map(call => [call.method, call.path]), [["GET", "/v1/session"], ["GET", "/v1/auth/start"]]);
+  assert.equal(startup[1].headers["sec-fetch-site"], "same-origin");
   assert.equal(await page.eval(`document.querySelectorAll('input[type=password]').length`), 0);
   assert.deepEqual(calls.filter(call => call.method === "POST"), []);
 });
@@ -291,14 +311,17 @@ test("Chrome completes the hosted v2 mapping with exact producer payload, opens 
   await page.send("Page.reload");
   await page.until(`document.querySelector('#main summary')?.textContent === "Declared metric definitions"`);
   assert.ok(calls.some(call => call.path === `/v1/workspaces/a/jobs/${analysis.job_id}/output`));
+  await page.click("button.acct");
   await page.clickText("Renew session");
-  await page.until(`!document.querySelector('button[disabled]') || [...document.querySelectorAll('button')].find(b=>b.textContent === 'Renew session')?.disabled === false`);
+  for (let i = 0; i < 100 && !calls.some(call => call.path === "/v1/auth/renew"); i++) {
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
   assert.equal(calls.filter(call => call.path === "/v1/auth/renew").length, 1);
   const mutation = calls.find(call => call.path === "/v1/auth/renew");
   assert.equal(mutation.headers["x-csrf-token"], "synthetic-csrf-only");
   deniedJob = true;
   await page.until(`document.body.innerText.includes("This work is no longer available")`, 5500);
-  assert.equal(await page.eval(`!!document.querySelector('.verdict, #metric-definitions, .app')`), false, "denied result leaves the DOM");
+  assert.equal(await page.eval(`!!document.querySelector('.verdict, #metric-definitions')`), false, "denied result leaves the DOM");
   assert.equal(await page.eval(`document.body.innerText.includes('Synthetic account')`), true, "project denial does not fabricate a logout");
 });
 
@@ -325,6 +348,7 @@ test("an older hosted server never receives v2 mapping fields", async () => {
   const mapping = submissions.find(value => value.operation === "confirm").mapping;
   assert.deepEqual(Object.keys(mapping).sort(), ["target", "metric_sources", "runs", "baseline_run_id", "metric_definitions"].sort());
   assert.equal("unit" in mapping.metric_definitions[0], false); assert.equal("class_field" in mapping.metric_sources[0], false);
+  await page.click("button.acct");
   await page.clickText("Sign out all sessions");
   await page.until(`document.body.innerText.includes('Sign in to Aletheia')`);
   assert.equal(calls.filter(call => call.path === "/v1/auth/logout-all").length, 1);
@@ -372,7 +396,7 @@ test("Back abandons an in-flight accepted part without completing or previewing 
   while (!releasePart && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 10));
   assert.ok(releasePart, "the server accepted the part while its response is held");
   await page.clickText("Back");
-  await page.until(`!document.querySelector('#hosted-project-zip') && document.body.innerText.includes('Workspace access')`);
+  await page.until(`!document.querySelector('#hosted-project-zip') && !!document.querySelector('#main a[href="#/connect"]')`);
   releasePart(); await new Promise(resolve => setTimeout(resolve, 250));
   assert.equal(calls.filter(call => call.method === "POST" && call.path.endsWith("/uploads")).length, 1);
   assert.equal(calls.filter(call => call.method === "PUT").length, 1);
@@ -400,9 +424,9 @@ const mutations = () => calls.filter(call => call.method !== "GET" && !call.path
 
 test("a result link pasted in the workspace directory opens its workspace in the same document", async () => {
   reset(); bindings = "on";
-  await page.open(base);
+  await page.open(base + "#/workspaces");
   await page.until(`document.body.innerText.includes('Workspace access') && document.body.innerText.includes('Open workspace')`);
-  assert.equal(await page.eval("location.hash"), "");
+  assert.equal(await page.eval("location.hash"), "#/workspaces");
   await page.eval("window.sameDocument = true");
   await page.send("Page.navigate", { url: base + "#/investigation?" + resultQuery() });
   await page.until(`document.querySelector('.investigation .verdict, .content .verdict')`);
@@ -528,7 +552,7 @@ test("Chrome opens the completed window analysis directly in the paged reader", 
   await page.until("document.querySelector('#hosted-first-question')");
   await page.eval(`(() => { const e = document.querySelector('#hosted-first-question'); Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(e, 'What is observed?'); e.dispatchEvent(new Event('input', { bubbles: true })); })()`);
   await page.clickText("Analyze saved snapshot");
-  await page.until(`document.body?.innerText.includes('Large result, read in pages')`);
+  await page.until(`document.body?.innerText.includes('Claims and lineage load a page at a time')`);
   assert.ok(calls.some(call => call.path === `${B}/results/${LARGE}/header`));
   assert.equal(calls.some(call => call.path === `${B}/results/${LARGE}`), false);
   await page.send("Page.reload");
@@ -548,12 +572,49 @@ test("Chrome opens the completed window analysis directly in the paged reader", 
   assert.ok(calls.some(call => call.path.startsWith(`${B}/exports/ex_json_${LARGE}_`) && call.path.endsWith("/download")));
 });
 
+test("Chrome confirms the same reader after a native download interrupts one access check", async () => {
+  reset(); bindings = "on"; large = true;
+  output = { ...analysis, result: { kind: "result_reference", project_id: parentView.project.id,
+    snapshot_id: parentView.snapshot.id, result_id: LARGE } };
+  await page.open(base + "#/investigation?" + resultQuery(LARGE) + "&paged=1");
+  await page.until("document.body.innerText.includes('Showing 2 of 120,000.')");
+  const link = await page.eval("location.hash");
+  await page.eval("(" + (() => {
+    const click = HTMLAnchorElement.prototype.click;
+    window.savedReports = 0;
+    HTMLAnchorElement.prototype.click = function() {
+      if (this.download) { window.savedReports++; return; }
+      click.call(this);
+    };
+  }).toString() + ")()");
+  await page.clickText("Export JSON");
+  await page.until("window.savedReports === 1");
+  await page.eval("(" + (() => {
+    const fetchNormally = window.fetch;
+    window.headerInterrupted = false;
+    window.fetch = (path, options) => {
+      if (!window.headerInterrupted && String(path).endsWith("/header")) {
+        window.headerInterrupted = true;
+        return Promise.reject(new TypeError("Synthetic interruption when returning from a download"));
+      }
+      return fetchNormally(path, options);
+    };
+    window.dispatchEvent(new Event("blur"));
+    window.dispatchEvent(new Event("focus"));
+  }).toString() + ")()");
+  await page.until("window.headerInterrupted && !!document.querySelector('.session-app[hidden][inert]')");
+  await page.until("!document.querySelector('.session-cover') && document.body.innerText.includes('Showing 2 of 120,000.')", 5000);
+  assert.equal(await page.eval("location.hash"), link);
+  assert.equal(await page.eval("window.savedReports"), 1);
+  assert.equal(mutations().filter(call => call.method === "POST" && call.path.endsWith("/exports")).length, 1);
+});
+
 test("Chrome reads a result too large to open whole in pages (K10): exact counts, a cursor restart, search and one claim's evidence", async () => {
   reset(); bindings = "on"; large = true; expireCursorOnce = true;
   const text = () => page.eval("document.body.innerText");
   await page.open(base + "#/investigation?" + resultQuery(LARGE));
   await page.until(`document.body.innerText.includes('Showing 2 of 120,000.')`, 6000);
-  assert.match(await text(), /Large result, read in pages/);
+  assert.match(await text(), /Claims and lineage load a page at a time/);
   assert.match(await text(), /Metric observation summary/, "the pinned v2 analysis is named, not just its provider");
   assert.match(await text(), /22 nodes, 30 edges/);
   assert.equal(calls.some(call => call.path.endsWith("/graph")), false, "the lineage is read only when asked for");
@@ -618,7 +679,7 @@ test("Chrome shows how far a delete has gone (K13), never more than the service 
 const FAILED = "This screen could not be shown";
 const rootState = () => page.eval(`({ children: document.getElementById('root').childElementCount,
   text: document.body.innerText, alert: !!document.querySelector('[role=alert] h1'),
-  header: !!document.querySelector('[aria-label="Account and workspace"]'), gate: !!document.querySelector('.session-app') })`);
+  header: !!document.querySelector('aside[aria-label="Sections"] .acct'), gate: !!document.querySelector('.session-app') })`);
 for (const [name, offline] of [["HostedApp", false], ["WorkspaceManager", false], ["WorkspaceManager", true], ["HostedConnect", false], ["LargeResult", true]]) {
   test(`Chrome recovers from a missing ${name} chunk (${offline ? "offline" : "404"}) without a blank root`, async () => {
     reset(); missingChunk = { name, offline };
@@ -627,8 +688,8 @@ for (const [name, offline] of [["HostedApp", false], ["WorkspaceManager", false]
     if (name === "HostedConnect") {
       await page.until(`document.body.innerText.includes("Synthetic workspace")`);
       await page.clickText("Open workspace");
-      await page.until(`[...document.querySelectorAll('button')].some(b => b.textContent === 'Connect project')`);
-      await page.clickText("Connect project");
+      await page.until(`document.querySelector('#main a[href="#/connect"]')`);
+      await page.click('#main a[href="#/connect"]');
     }
     await page.until(`document.body.innerText.includes(${JSON.stringify(FAILED)})`, 6000);
     const failed = await rootState();
@@ -641,7 +702,7 @@ for (const [name, offline] of [["HostedApp", false], ["WorkspaceManager", false]
     missingChunk = null;
     if (name === "HostedConnect") {
       // leaving the screen clears its failure; nothing else had failed
-      await page.clickText("Workspaces");
+      await page.click('a[aria-label="Workspaces"]');
       await page.until(`document.body.innerText.includes('Workspace access') && !document.body.innerText.includes(${JSON.stringify(FAILED)})`);
       return;
     }
@@ -696,6 +757,23 @@ async function analyzeFrom(question = "What is observed?") {
   await page.eval(`(() => { const e = document.querySelector('#hosted-first-question'); Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(e, ${JSON.stringify(question)}); e.dispatchEvent(new Event('input', { bubbles: true })); })()`);
   await page.clickText("Analyze saved snapshot");
 }
+test("Chrome opens the accepted result in the same tab after a gateway outage", async () => {
+  reset();
+  const job = `/v1/workspaces/a/jobs/${analysis.job_id}`;
+  analysisReadFaults.set(job, 502);
+  analysisReadFaults.set(job + "/output", 504);
+  await analyzeFrom();
+  await page.until(`document.querySelector('.verdict') && !document.querySelector('.session-cover')`, 8000);
+  const hash = new URLSearchParams((await page.eval("location.hash")).split("?")[1]);
+  assert.equal(hash.get("job"), analysis.job_id);
+  assert.equal(hash.get("result"), analysis.result.result.id);
+  assert.equal(hash.get("snapshot"), snapshot.snapshot_id);
+  assert.equal(analysisReadFaults.size, 0, "both reads encountered the injected outage");
+  assert.equal(submissions.filter(value => value.operation === "analyze").length, 1);
+  assert.equal(calls.filter(call => call.path === job + "/output" && call.method === "GET").length, 2);
+  assert.equal(calls.some(call => call.path.endsWith("/retry")), false);
+});
+
 test("Chrome K09: a failed analysis shows its attempts and is retried, because the service allows it, as one new linked job whose result opens", async () => {
   reset(); jobControls = true; jobScript.set(analysis.job_id, { states: ["running", "failed"], at: 0, retryable: true });
   await analyzeFrom();
@@ -829,9 +907,8 @@ test("waterfall: the workspace screen, open and idle, sends reads only (measured
   reset();
   await page.open(base + "#/workspaces");
   await page.until(`document.body.innerText.includes("Synthetic workspace")`);
-  const clicked = performance.now();
   await page.clickText("Open workspace");
-  await page.until(`[...document.querySelectorAll('button')].some(b => b.textContent === 'Connect project')`);
+  await page.until(`document.querySelector('#main a[href="#/connect"]')`);
   await idle(1000);
   const from = performance.now(); await idle(12_000); const to = performance.now();
   const w = waterfall("workspace-idle-12s", from, to);
@@ -839,6 +916,6 @@ test("waterfall: the workspace screen, open and idle, sends reads only (measured
   // FL-118: the screen runs no timer of its own; only the guard's check (session + capabilities, every 2.4–3.6 s) reads
   assert.deepEqual(Object.keys(w.by_route).sort(), ["capabilities", "session"]);
   assert.ok(w.requests <= 2 * Math.ceil(12 / 2.4), `idle reads stay within the guard's own checks (${w.requests})`);
-  const opened = calls.filter(call => call.at >= clicked && call.at < from);
-  assert.equal(opened.filter(call => call.path === "/v1/workspaces").length, 1, "opening a workspace reads the workspace list once");
+  const opened = calls.filter(call => call.at < from);
+  assert.equal(opened.filter(call => call.path === "/v1/workspaces").length, 1, "the directory loads once before entering the workspace");
 });

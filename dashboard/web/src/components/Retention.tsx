@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ChevronRight, Download, Lock, Trash2 } from "lucide-react";
 import { projectView } from "../data/view";
-import { AFTER_DELETE, capabilities, fence, hostedMode, hostedOff, port, scoped, useView } from "../service";
+import { AFTER_DELETE, capabilities, fence, hostedMode, hostedOff, port, scoped, sessionGuard, useView } from "../service";
 import { isTombstone } from "../service/port";
 import { forgetProject } from "../service/opened";
 import { downloadReview, reportName, saveReport, type ReportKind } from "../export";
@@ -45,6 +45,7 @@ export function Retention() {
     void scoped("export", () => port.export_report(v.result.id, kind), {
       key: `export:${v.result.id}:${kind}`,
       done: bytes => {
+        sessionGuard?.onDownload();
         saveReport(v, kind, bytes);
         setExporting(x => ({ ...x, [kind]: { status: "saved", name: reportName(v, kind) } }));
         toast("Download started", reportName(v, kind));

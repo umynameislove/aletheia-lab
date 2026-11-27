@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import {
   ChevronDown, ChevronRight, ChevronsUpDown, FileCheck2, FlaskConical, FolderInput, Gauge, Home, LayoutList, RotateCcw, ShieldCheck, TriangleAlert, X,
 } from "lucide-react";
@@ -7,6 +7,7 @@ import { AFTER_DELETE, capabilities, hostedPort, port, previewSession, useView }
 import { FEATURES, modeWords } from "../service/capabilities";
 import { openedProject } from "../service/opened";
 import { useRoute, useStore, type RouteName } from "../store";
+import aletheiaMark from "../assets/aletheia-mark.svg";
 import { plainClick, useNarrow } from "./primitives";
 
 /** Two-letter avatar from the project's own name, never hard-coded. */
@@ -28,11 +29,9 @@ const GATED: NavItem[] = [
   { id: "prospective", label: "Prospective quality", icon: FlaskConical, gate: FEATURES.prospective.label },
 ];
 
-export function Rail({ open, onClose, onOpenProject, onResetDemo }: { open: boolean; onClose: () => void; onOpenProject: () => void; onResetDemo: () => void }) {
-  const VIEW = useView();
-  const { name, go, hrefFor } = useRoute();
-  const { s } = useStore();
-  const sample = VIEW.demo_only;
+export function RailFrame({ open, onClose, children, account }: {
+  open: boolean; onClose: () => void; children: ReactNode; account: ReactNode;
+}) {
   const drawer = useNarrow(900);
   const shut = drawer && !open;
   const ref = useRef<HTMLElement>(null);
@@ -52,7 +51,33 @@ export function Rail({ open, onClose, onOpenProject, onResetDemo }: { open: bool
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   };
+  return <>
+    {open && <div className="rail-scrim" onClick={onClose} aria-hidden="true" />}
+    <aside ref={ref} className={`rail${open ? " open" : ""}`} aria-label="Sections" onKeyDown={onTrap} {...(shut ? { inert: "" } : {})}>
+      <div className="rail-head">
+        <div className="brand">{import.meta.env.MODE === "hosted"
+          ? <img className="brand-mark" src={aletheiaMark} alt="" />
+          : <span className="brand-mark" aria-hidden="true"><span className="bm-a" /><span className="bm-b" /></span>}Aletheia</div>
+        <button className="icon-btn rail-x" onClick={onClose} aria-label="Close navigation"><X size={16} /></button>
+      </div>
+      {children}
+      <div className="rail-foot">{account}</div>
+    </aside>
+  </>;
+}
 
+export interface HostedAccountActions {
+  displayName: string;
+  pending: boolean;
+  renew: () => void;
+  signOut: (all: boolean) => void;
+}
+
+export function Rail({ open, onClose, onOpenProject, onResetDemo, hosted }: { open: boolean; onClose: () => void; onOpenProject: () => void; onResetDemo: () => void; hosted?: HostedAccountActions }) {
+  const VIEW = useView();
+  const { name, go, hrefFor } = useRoute();
+  const { s } = useStore();
+  const sample = VIEW.demo_only;
   // a deleted project closes the screens that belong to it; gated screens stay reachable on purpose
   const dead = (id: RouteName) => s.deletedProject && (id === "project" || id === "investigation" || id === "results");
   const link = (n: NavItem) => dead(n.id) ? (
@@ -62,10 +87,10 @@ export function Rail({ open, onClose, onOpenProject, onResetDemo }: { open: bool
   ) : (
     <a
       key={n.id}
-      href={hrefFor(n.id)}
+      href={hosted && (n.id === "start" || n.id === "connect") ? "#/" + n.id : hrefFor(n.id)}
       className={`nav-link${n.gate ? " gated" : ""}`}
       aria-current={name === n.id ? "page" : undefined}
-      onClick={e => { if (!plainClick(e)) return; e.preventDefault(); go(n.id); onClose(); }}
+      onClick={e => { if (!plainClick(e)) return; e.preventDefault(); if (hosted && (n.id === "start" || n.id === "connect")) location.hash = "#/" + n.id; else go(n.id); onClose(); }}
     >
       {name === n.id && <span className="nav-ind" aria-hidden="true" />}
       <n.icon size={16} strokeWidth={1.75} aria-hidden="true" />
@@ -76,14 +101,7 @@ export function Rail({ open, onClose, onOpenProject, onResetDemo }: { open: bool
   );
 
   return (
-    <>
-      {open && <div className="rail-scrim" onClick={onClose} aria-hidden="true" />}
-      <aside ref={ref} className={`rail${open ? " open" : ""}`} aria-label="Sections" onKeyDown={onTrap} {...(shut ? { inert: "" } : {})}>
-        <div className="rail-head">
-          <div className="brand"><span className="brand-mark" aria-hidden="true"><span className="bm-a" /><span className="bm-b" /></span>Aletheia</div>
-          <button className="icon-btn rail-x" onClick={onClose} aria-label="Close navigation"><X size={16} /></button>
-        </div>
-
+    <RailFrame open={open} onClose={onClose} account={<Account onResetDemo={onResetDemo} hosted={hosted} />}>
         {s.deletedProject ? (
           <p className="proj-empty">No project open. {AFTER_DELETE}</p>
         ) : sample && port.kind === "live" ? (
@@ -108,17 +126,13 @@ export function Rail({ open, onClose, onOpenProject, onResetDemo }: { open: bool
           </details>
         </nav>
 
-        <div className="rail-foot">
-          <Account onResetDemo={onResetDemo} />
-        </div>
-      </aside>
-    </>
+    </RailFrame>
   );
 }
 
 /* The local app has no accounts: this row says so instead of naming a person. A hosted session (K-03)
    replaces it with the signed-in identity from the server. */
-function Account({ onResetDemo }: { onResetDemo: () => void }) {
+export function Account({ onResetDemo = () => {}, hosted }: { onResetDemo?: () => void; hosted?: HostedAccountActions }) {
   const { s, dispatch, toast, terms, toggleTerms } = useStore();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -135,23 +149,30 @@ function Account({ onResetDemo }: { onResetDemo: () => void }) {
   // handled here, not on document: one Esc closes this, not also the drawer around it (App listens on window)
   const onKey = (e: ReactKeyboardEvent) => { if (e.key === "Escape" && open) { e.stopPropagation(); close(); } };
   const mode = modeWords(capabilities.deployment_mode);
-  const account = hostedPort?.context()?.session;
+  const displayName = hosted?.displayName ?? hostedPort?.context()?.session.display_name;
 
   /* A disclosure, not a menu: the panel follows its button, so Tab goes from the button into it */
   return (
     <div className="acct-wrap" ref={ref} onKeyDown={onKey}>
       <button ref={btn} className="acct" aria-expanded={open} aria-controls={open ? panel : undefined} onClick={() => setOpen(o => !o)}>
-        <span className="acct-name" title={account?.display_name}>{account?.display_name ?? mode}</span>
-        <span className="acct-plan">{account ? "Hosted" : "no account"}</span>
+        <span className="acct-name" title={displayName}>{displayName ?? mode}</span>
+        <span className="acct-plan">{displayName ? "Hosted" : "no account"}</span>
         <ChevronDown size={16} className="acct-chev" aria-hidden="true" />
       </button>
       {open && (
         <div className="acct-menu" id={panel} role="group" aria-label="Settings on this device">
-          <div className="acct-local"><span className="pulse" aria-hidden="true" />{account ? "Signed in to your hosted workspace." : "No account. Nothing leaves this machine."}</div>
+          <div className="acct-local"><span className="pulse" aria-hidden="true" />{displayName ? "Signed in to your hosted workspace." : "No account. Nothing leaves this machine."}</div>
           <button className="demo-btn" role="switch" aria-checked={terms} onClick={toggleTerms}>
             Show contract terms
             <span className={`switch${terms ? " on" : ""}`} aria-hidden="true"><span className="knob" /></span>
           </button>
+          {hosted && <>
+            <a className="demo-btn" href="#/workspaces" onClick={close}>Manage workspaces</a>
+            <a className="demo-btn" href="/v1/auth/start?mode=switch" onClick={close}>Switch account</a>
+            <button className="demo-btn" disabled={hosted.pending} onClick={() => { close(); hosted.renew(); }}>Renew session</button>
+            <button className="demo-btn" disabled={hosted.pending} onClick={() => { close(); hosted.signOut(false); }}>Sign out</button>
+            <button className="demo-btn" disabled={hosted.pending} onClick={() => { close(); hosted.signOut(true); }}>Sign out all sessions</button>
+          </>}
           {/* demo controls change in-memory demo state only; a Live store is never reset from here */}
           {port.kind === "demo" && <>
           <button

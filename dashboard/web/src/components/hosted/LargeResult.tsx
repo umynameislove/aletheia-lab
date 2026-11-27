@@ -4,6 +4,7 @@ import { HostedRequestDiscarded, type createHostedClient, type HostedClaim, type
   type HostedGraphNode, type HostedResultHeader, type HostedResultScope } from "../../service/hosted-client";
 import type { HostedCapabilities } from "../../service/hosted";
 import { isProductError } from "../../service/port";
+import { sessionGuard } from "../../service";
 import { TERM } from "../../vocab";
 import { saveReport, type ReportKind } from "../../export";
 import { Id, Term } from "../primitives";
@@ -38,12 +39,13 @@ export function LargeResult(reader: Reader) {
   const { result, runtime, counts } = header;
   const windowed = runtime.model === "upload-snapshot-windowed-metric-observation/v3";
   return (
-    <main className="page" id="main"><div className="page-inner large-result">
-      <header>
+    <div className="page" id="main" tabIndex={-1}><div className="page-inner large-result">
+      <header className="page-head">
         <p className="eyebrow">{header.display_name}</p>
-        <h1>Large result, read in pages</h1>
-        <p className="dim">Too large to open whole, so its claims and lineage load a page at a time. Metric details are not shown here, and the lineage is listed, not drawn.</p>
+        <h1>Investigation</h1>
+        <p className="dim">Claims and lineage load a page at a time.</p>
       </header>
+      <div className="paged-summary stack-lg">
       <section className="verdict" aria-label="What this result says">
         <p className="verdict-answer">{result.summary}</p>
         <div className="verdict-facts">
@@ -63,9 +65,10 @@ export function LargeResult(reader: Reader) {
       </dl>
       {windowed && caps.features?.["exports.download"] === true
         && caps.allowed_actions.includes("export") && <WindowExports reader={reader} header={header} />}
-      <Claims reader={reader} total={counts.claims} />
       <Graph reader={reader} nodes={counts.nodes} edges={counts.edges} pageAtATime={windowed} />
-    </div></main>
+      </div>
+      <div className="paged-claims"><Claims reader={reader} total={counts.claims} /></div>
+    </div></div>
   );
 }
 
@@ -86,6 +89,7 @@ function WindowExports({ reader, header }: { reader: Reader; header: HostedResul
       if (descriptor.project_id !== scope.projectId) throw new Error("The export belongs to another project.");
       const bytes = await client.downloadExport(caps.workspace_id, descriptor, stop.signal);
       if (!stop.signal.aborted && isCurrent()) {
+        sessionGuard?.onDownload();
         saveReport({ project: { display_name: header.display_name }, result: { id: scope.resultId } }, format, bytes);
         delete keys.current[format];
       }

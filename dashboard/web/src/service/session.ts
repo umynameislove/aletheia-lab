@@ -29,7 +29,7 @@ export type SessionAnswer =
   | { status: "ok"; context_id: string; since?: number }
   | { status: "expired" }
   | { status: "revoked" }
-  | { status: "unreachable" };
+  | { status: "unreachable"; retryable?: boolean };
 
 /** What tabs tell each other. An opaque ID at most: never content, never a credential. */
 export type PeerMessage =
@@ -51,7 +51,7 @@ export const SESSION_TIMING = {
 } as const;
 
 export function createSessionGuard(options: {
-  check: () => Promise<SessionAnswer>;
+  check: (signal: AbortSignal, returned: boolean) => Promise<SessionAnswer>;
   contextId: string;
   now: () => number;
   random?: () => number;
@@ -69,7 +69,11 @@ export function createSessionGuard(options: {
   let contextId = options.contextId;
   let lastConfirmed = options.now();
   let failures = 0;
-  let inFlight: Promise<void> | null = null;
+  let lastFailure = 0;
+  let paused = false;
+  let downloadRetryUntil = -Infinity;
+  let downloadRetryScheduled = false;
+  let inFlight: { controller: AbortController; promise: Promise<void> } | null = null;
   /** bumped when the object on screen changes: an answer about the previous object confirms nothing */
   let shownRevision = 0;
   const listeners = new Set<() => void>();
@@ -85,10 +89,16 @@ export function createSessionGuard(options: {
     listeners.forEach(l => l());
   };
   const terminal = () => state === "revoked" || state === "switched";
+  const stopCheck = () => {
+    const previous = inFlight;
+    inFlight = null;
+    previous?.controller.abort();
+  };
   /** A confirmation counts from when its request was sent, never from when the answer arrived (K15). */
   const confirmedAt = (sentAt: number) => {
     lastConfirmed = Math.max(lastConfirmed, sentAt);
     failures = 0;
+    downloadRetryScheduled = false;
     interval = spread(nextInterval());
     if (lease !== Infinity) {
       // Start early enough for another check of comparable duration, with room for timer jitter.
@@ -100,6 +110,7 @@ export function createSessionGuard(options: {
   /** Wiping happens once, before anything else can render or read. */
   const end = (next: "revoked" | "switched") => {
     if (terminal()) return;
+    stopCheck();
     options.onWipe();
     set(next);
   };
@@ -121,6 +132,7 @@ export function createSessionGuard(options: {
         set("active");
         return;
       case "expired":
+        stopCheck();
         options.tell?.({ type: "expired" });
         set("expired");
         return;
@@ -130,23 +142,37 @@ export function createSessionGuard(options: {
         return;
       case "unreachable":
         failures += 1;
-        interval = spread(nextInterval());
-        // what was covered stays covered: not knowing is not the same as being allowed
-        if (state === "confirming") set("unreachable");
+        lastFailure = options.now();
+        downloadRetryScheduled = answer.retryable === true && lastFailure < downloadRetryUntil;
+        if (downloadRetryScheduled) downloadRetryUntil = -Infinity;
+        interval = spread(downloadRetryScheduled ? 750 : nextInterval());
+        // A retry is another check of the same scope. Covered content stays hidden while waiting.
+        if (state === "confirming" && !downloadRetryScheduled) set("unreachable");
     }
   };
 
-  const check = (cover: boolean): Promise<void> => {
-    if (terminal() || state === "expired") return Promise.resolve();
+  const check = (cover: boolean, returned = false): Promise<void> => {
+    if (paused || terminal() || state === "expired") return Promise.resolve();
     if (cover) set("confirming");
     if (!inFlight) {
       const sentAt = options.now(), asked = shownRevision;
-      inFlight = options.check()
+      const controller = new AbortController();
+      const promise = options.check(controller.signal, returned)
         .catch((): SessionAnswer => ({ status: "unreachable" }))
-        .then(answer => { if (asked === shownRevision) settle(answer, sentAt); })
-        .finally(() => { inFlight = null; if (asked !== shownRevision && !terminal()) void check(true); });
+        .then(answer => { if (!controller.signal.aborted && asked === shownRevision) settle(answer, sentAt); })
+        .finally(() => {
+          if (inFlight?.controller !== controller) return;
+          inFlight = null;
+          if (asked !== shownRevision) void check(true, returned);
+        });
+      inFlight = { controller, promise };
     }
-    return inFlight;
+    return inFlight.promise;
+  };
+  const foreground = (cover: boolean) => {
+    const returned = paused;
+    paused = false;
+    return check(cover, returned);
   };
 
   return {
@@ -161,14 +187,43 @@ export function createSessionGuard(options: {
     invalidate() {
       if (terminal() || state === "expired") return;
       shownRevision++; lastConfirmed = -Infinity;
+      downloadRetryUntil = -Infinity;
+      downloadRetryScheduled = false;
       void check(true);
     },
 
-    /** The tab became visible again after this many milliseconds. */
-    onVisible(hiddenMs: number) { return check(lease !== Infinity || hiddenMs >= SESSION_TIMING.hiddenCoverMs); },
+    /** A native download can interrupt a read without a reliable visibility or network event.
+        Allow one short read retry for this scope, with the usual authorization lease. */
+    onDownload() {
+      if (lease !== Infinity && (state === "active" || state === "confirming")) {
+        downloadRetryUntil = options.now() + 30_000;
+      }
+    },
+
+    /** Safari can interrupt reads when the download sheet opens, even if the document stays visible. */
+    onBackground() {
+      if (lease === Infinity || paused || terminal() || state === "expired") return;
+      paused = true;
+      stopCheck();
+      set("confirming");
+    },
+
+    onVisible(hiddenMs: number) { return foreground(lease !== Infinity || hiddenMs >= SESSION_TIMING.hiddenCoverMs); },
+
+    onFocused() {
+      if (lease !== Infinity && (paused || state === "unreachable")) return foreground(true);
+      return Promise.resolve();
+    },
 
     /** The page came back from the back/forward cache: it may be from before a logout. */
-    onRestored() { return check(true); },
+    onRestored() { return foreground(true); },
+
+    onOffline() {
+      if (lease === Infinity || paused || terminal() || state === "expired") return;
+      stopCheck();
+      set("confirming");
+      settle({ status: "unreachable" });
+    },
 
     onOnline() { return check(state === "unreachable"); },
 
@@ -180,11 +235,14 @@ export function createSessionGuard(options: {
 
     /** Whether the idle check is due. Hidden tabs answer false: they receive nothing new anyway. */
     due(visible: boolean) {
-      return visible && !terminal() && state !== "expired" && !inFlight && options.now() - lastConfirmed >= interval;
+      return visible && !paused && !terminal() && state !== "expired" && !inFlight
+        && options.now() - (failures ? lastFailure : lastConfirmed) >= interval;
     },
     tickMs: () => lease === Infinity ? IDLE_TICK_MS : 250,
     onTick(visible: boolean) {
-      if (visible && state === "active" && options.now() - lastConfirmed >= lease) set(failures ? "unreachable" : "confirming");
+      if (visible && state === "active" && options.now() - lastConfirmed >= lease) {
+        set(failures && !downloadRetryScheduled ? "unreachable" : "confirming");
+      }
     },
 
     /** Every answer from the service says something: success is a confirmation, 401 and 403 may end the
@@ -207,7 +265,7 @@ export function createSessionGuard(options: {
     onPeer(message: PeerMessage) {
       if (terminal()) return;
       if (message.type === "revoked") end("revoked");
-      else if (message.type === "expired") set("expired");
+      else if (message.type === "expired") { stopCheck(); set("expired"); }
       else if (message.context_id !== contextId) { contextId = message.context_id; end("switched"); }
       else if (message.type === "confirmed") {
         // A different tab may have checked another workspace or project.
@@ -235,18 +293,27 @@ const LOCK = "aletheia-session-check";
 /* Connects a guard to the browser. Returns the way to disconnect it. */
 export function attachSessionGuard(guard: SessionGuard, now: () => number = Date.now): () => void {
   let hiddenSince = document.visibilityState === "hidden" ? now() : null;
+  if (hiddenSince !== null) guard.onBackground();
   const onVisibility = () => {
-    if (document.visibilityState === "hidden") { hiddenSince = now(); return; }
-    const away = hiddenSince === null ? 0 : now() - hiddenSince;
+    if (document.visibilityState === "hidden") { hiddenSince = now(); guard.onBackground(); return; }
+    if (hiddenSince === null) { void guard.onFocused(); return; }
+    const away = now() - hiddenSince;
     hiddenSince = null;
     void guard.onVisible(away);
   };
-  const onPageShow = (e: PageTransitionEvent) => { if (e.persisted) void guard.onRestored(); };
+  const onBackground = () => { guard.onBackground(); };
+  const onFocus = () => { if (document.visibilityState === "visible") onVisibility(); };
+  const onPageShow = (e: PageTransitionEvent) => { if (e.persisted && document.visibilityState === "visible") void guard.onRestored(); };
+  const onOffline = () => { guard.onOffline(); };
   const onOnline = () => { void guard.onOnline(); };
   const onAct = () => { void guard.onInteraction(); };
 
   document.addEventListener("visibilitychange", onVisibility);
+  window.addEventListener("blur", onBackground);
+  window.addEventListener("focus", onFocus);
+  window.addEventListener("pagehide", onBackground);
   window.addEventListener("pageshow", onPageShow);
+  window.addEventListener("offline", onOffline);
   window.addEventListener("online", onOnline);
   document.addEventListener("pointerdown", onAct, true);
   document.addEventListener("keydown", onAct, true);
@@ -263,7 +330,11 @@ export function attachSessionGuard(guard: SessionGuard, now: () => number = Date
 
   return () => {
     document.removeEventListener("visibilitychange", onVisibility);
+    window.removeEventListener("blur", onBackground);
+    window.removeEventListener("focus", onFocus);
+    window.removeEventListener("pagehide", onBackground);
     window.removeEventListener("pageshow", onPageShow);
+    window.removeEventListener("offline", onOffline);
     window.removeEventListener("online", onOnline);
     document.removeEventListener("pointerdown", onAct, true);
     document.removeEventListener("keydown", onAct, true);

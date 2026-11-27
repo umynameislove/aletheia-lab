@@ -4,10 +4,11 @@
 
 import { readFileSync, readdirSync } from "node:fs";
 import { gzipSync } from "node:zlib";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "dist", "assets");
+const dist = process.argv[2] ? resolve(process.argv[2]) : join(dirname(fileURLToPath(import.meta.url)), "..", "dist");
+const ROOT = join(dist, "assets");
 const KB = 1000;
 const LIMITS = { mainJs: 80 * KB, anyChunk: 25 * KB, css: 22 * KB };
 

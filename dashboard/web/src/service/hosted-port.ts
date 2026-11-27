@@ -242,7 +242,7 @@ export function createHostedPort(): HostedProductPort {
       // a result is immutable: the one on screen is not read again just because a screen opened it
       if (currentView?.result.id === resultId) { const view = storedView(context, currentView); check(); return view; }
       const held = pointers.get(resultId);
-      const pointer = held ?? (context.initialJobId && context.initialProjectId && context.initialSnapshotId
+      const pointer = held ?? (context.initialProjectId && context.initialSnapshotId
         ? { job: context.initialJobId, project: context.initialProjectId, snapshot: context.initialSnapshotId } : undefined);
       if (!pointer) throw noResult();
       // A follow-up child has no analysis output of its own; a reopened link may name either kind of job.

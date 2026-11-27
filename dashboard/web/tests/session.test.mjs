@@ -291,6 +291,88 @@ test("K3 under a lease a successful API answer is not a confirmation: when it wa
   assert.equal(guard.state(), "confirming");
 });
 
+test("a backgrounded hosted check is discarded and focus and visibility share one fresh check", async () => {
+  const pending = [];
+  const guard = createSessionGuard({ contextId: "ctx-a", now: () => 0, onWipe() {}, authorizationLeaseMs: 4_000,
+    check: (signal, returned) => new Promise((resolve, reject) => pending.push({ signal, returned, resolve, reject })) });
+  const old = guard.check(false);
+  guard.onBackground();
+  assert.equal(guard.state(), "confirming");
+  assert.equal(pending[0].signal.aborted, true);
+  assert.equal(guard.due(true), false);
+  await guard.onOnline();
+  assert.equal(pending.length, 1);
+  const current = guard.onVisible(300);
+  void guard.onFocused();
+  void guard.onOnline();
+  assert.equal(pending.length, 2);
+  assert.equal(pending[1].returned, true);
+  pending[0].reject(new TypeError("cancelled while the tab was away"));
+  await old;
+  assert.equal(guard.state(), "confirming", "the cancelled read cannot show an error or reveal the result");
+  pending[1].resolve({ status: "ok", context_id: "ctx-a" });
+  await current;
+  assert.equal(guard.state(), "active");
+});
+
+test("a failed foreground check stays covered and can retry when the network returns", async () => {
+  let ok = false, time = 0;
+  const guard = createSessionGuard({ contextId: "ctx-a", now: () => time, onWipe() {}, authorizationLeaseMs: 4_000,
+    check: async () => ok ? { status: "ok", context_id: "ctx-a" } : { status: "unreachable" } });
+  guard.onBackground();
+  time = 600_000;
+  await guard.onFocused();
+  assert.equal(guard.state(), "unreachable");
+  assert.equal(guard.due(true), false, "a long absence cannot trigger a loop of failed retries");
+  ok = true;
+  await guard.onOnline();
+  assert.equal(guard.state(), "active");
+});
+test("a native download interrupted verification gets one fresh read while the result stays covered", async () => {
+  let time = 0, reads = 0;
+  const guard = createSessionGuard({ contextId: "ctx-a", now: () => time, random: () => 0.5,
+    onWipe() {}, authorizationLeaseMs: 4_000,
+    check: async () => ++reads === 1 ? { status: "unreachable", retryable: true }
+      : { status: "ok", context_id: "ctx-a" } });
+  guard.onDownload();
+  time = 4_000;
+  guard.onTick(true);
+  await guard.check(true);
+  assert.equal(guard.state(), "confirming");
+  assert.equal(guard.due(true), false);
+  time += 750;
+  assert.equal(guard.due(false), false, "no request while away");
+  assert.equal(guard.due(true), true);
+  await guard.check(false);
+  assert.equal(guard.state(), "active");
+  assert.equal(reads, 2);
+});
+
+test("continued download failures back off and a different scope gets no download retry", async () => {
+  let time = 0, reads = 0;
+  const guard = createSessionGuard({ contextId: "ctx-a", now: () => time, random: () => 0.5,
+    onWipe() {}, authorizationLeaseMs: 4_000,
+    check: async () => { reads++; return { status: "unreachable", retryable: true }; } });
+  guard.onDownload();
+  await guard.check(true);
+  time += 750;
+  assert.equal(guard.due(true), true);
+  await guard.check(false);
+  assert.equal(guard.state(), "unreachable");
+  assert.equal(reads, 2);
+  time += 750;
+  assert.equal(guard.due(true), false);
+
+  const another = createSessionGuard({ contextId: "ctx-a", now: () => time, random: () => 0.5,
+    onWipe() {}, authorizationLeaseMs: 4_000, check: async () => ({ status: "unreachable", retryable: true }) });
+  another.onDownload();
+  another.invalidate();
+  await another.check(true);
+  assert.equal(another.state(), "unreachable");
+  time += 750;
+  assert.equal(another.due(true), false);
+});
+
 test("K1 under a lease the next check starts before the lease runs out, so a steady tab is never covered (staging fix, J01)", async () => {
   let clock = 0;
   const guard = createSessionGuard({ check: async () => ({ status: "ok", context_id: "c" }), contextId: "c", now: () => clock,

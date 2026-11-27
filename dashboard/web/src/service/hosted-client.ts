@@ -223,6 +223,17 @@ function shown(signal?: AbortSignal): Promise<number> {
   });
 }
 
+function jobReadRetry(error: unknown, status: number) {
+  if (!(error instanceof ProductError) || (status >= 400 && status < 500 && status !== 429)) return false;
+  return status === 429 || status === 502 || status === 503 || status === 504
+    || error.code === "unavailable" || error.code === "deadline_exceeded" || error.code === "service_unavailable";
+}
+
+function jobReadBackoff(failures: number, retryAfterMs: number) {
+  const ceiling = Math.min(1000 * 2 ** (failures - 1), 30_000);
+  return Math.max(retryAfterMs, ceiling / 2) + Math.random() * ceiling / 2;
+}
+
 export function createHostedClient(options: HostedClientOptions) {
   const { fetch: requestFetch, session, signal, isCurrent, onAnswer } = options;
   const timeout = options.timeoutMs ?? 15_000, maximum = options.maximumResponseBytes ?? 1_048_576;
@@ -388,11 +399,28 @@ export function createHostedClient(options: HostedClientOptions) {
     }
   }
 
-  const loadJob = (workspace: string, jobId: string, extraSignal?: AbortSignal, budget?: number) => {
+  function waitForJobRead(resumeAt: number, extraSignal?: AbortSignal) {
+    return new Promise<void>((resolve, reject) => {
+      const stop = () => { clearTimeout(timer); cleanup(); reject(new HostedRequestDiscarded()); };
+      const cleanup = () => { signal?.removeEventListener("abort", stop); extraSignal?.removeEventListener("abort", stop); };
+      let timer: ReturnType<typeof setTimeout>;
+      const ready = () => {
+        const wait = resumeAt - performance.now();
+        if (wait > 0) { timer = setTimeout(ready, Math.ceil(wait)); return; }
+        cleanup(); resolve();
+      };
+      timer = setTimeout(ready, Math.max(0, Math.ceil(resumeAt - performance.now())));
+      signal?.addEventListener("abort", stop, { once: true }); extraSignal?.addEventListener("abort", stop, { once: true });
+      if (signal?.aborted || extraSignal?.aborted) stop();
+    });
+  }
+
+  const loadJob = (workspace: string, jobId: string, extraSignal?: AbortSignal, budget?: number,
+                   onStatus?: (status: number, retryAfterMs: number | null) => void) => {
     authenticated(); input(id(jobId));
     return request(`${base(workspace)}/jobs/${jobId}`, "GET", (value, status) => {
       need(status === 200); return readJob(value, workspace, jobId);
-    }, undefined, undefined, undefined, extraSignal, budget);
+    }, undefined, undefined, undefined, extraSignal, budget, { onStatus });
   };
   const reviewPath = (workspace: string, scope: ClaimReviewScope) => {
     input(matches(RESULT, scope.resultId) && matches(PROJECT, scope.projectId)
@@ -487,10 +515,14 @@ export function createHostedClient(options: HostedClientOptions) {
     /** ProductView check, for the hosted port: carried here so the main chunk need not load the contract. */
     checkView: checkHostedView,
     loginUrl: () => "/v1/auth/start",
-    loadSession: () => request("/v1/session", "GET", (value, status) => { need(status === 200); return readSession(value); }),
-    loadCaps: (workspace: string) => {
+    loadSession: (extraSignal?: AbortSignal) => request("/v1/session", "GET", (value, status) => {
+      need(status === 200); return readSession(value);
+    }, undefined, undefined, undefined, extraSignal),
+    loadCaps: (workspace: string, extraSignal?: AbortSignal) => {
       authenticated();
-      return request(base(workspace) + "/capabilities", "GET", (value, status) => { need(status === 200); return readCapabilities(value, workspace); });
+      return request(base(workspace) + "/capabilities", "GET", (value, status) => {
+        need(status === 200); return readCapabilities(value, workspace);
+      }, undefined, undefined, undefined, extraSignal);
     },
     renew: () => {
       authenticated();
@@ -590,7 +622,7 @@ export function createHostedClient(options: HostedClientOptions) {
         workspace, scope, reviewId);
       return { bytes, filename: `aletheia-review-${receiptSha256.slice(0, 16)}.${format === "markdown" ? "md" : format}`, media };
     },
-    loadOutput: (workspace: string, jobId: string, expected: OutputExpectation, extraSignal?: AbortSignal, windowed = false) => {
+    loadOutput: async (workspace: string, jobId: string, expected: OutputExpectation, extraSignal?: AbortSignal, windowed = false) => {
       authenticated(); input(id(jobId));
       input(expected.operation === "preview" ? hash(expected.sourceSha256) && (expected.leaseSourceId === undefined || id(expected.leaseSourceId))
         : expected.operation === "refresh" ? id(expected.projectId)
@@ -598,7 +630,7 @@ export function createHostedClient(options: HostedClientOptions) {
         : expected.operation === "confirm" || (expected.operation === "analyze" && id(expected.snapshotId)
           && (expected.projectId === undefined || id(expected.projectId))
           && (!expected.historicalState || matches(PROJECT, expected.projectId) && matches(UPLOAD_SNAPSHOT, expected.snapshotId))));
-      return request(`${base(workspace)}/jobs/${jobId}/output`, "GET", (value, status): HostedOutput => {
+      const decode = (value: unknown, status: number): HostedOutput => {
         need(status === 200); const x = envelope(value, workspace);
         if (x.job_id !== jobId || x.operation !== expected.operation) throw new ProductError("response_out_of_scope", "The service answered about another job.");
         const scope = { workspace_id: workspace, job_id: jobId };
@@ -647,8 +679,22 @@ export function createHostedClient(options: HostedClientOptions) {
         }
         if ((view.runtime.model === HISTORICAL_STATE_MODEL) !== (expected.historicalState === true)) throw outOfScope("analysis mode");
         return { ...scope, operation: "analyze", result: view };
-      }, undefined, undefined, undefined, extraSignal, undefined,
-      { timeoutOverrideMs: windowed && expected.operation === "confirm" ? 65_000 : undefined });
+      };
+      // Recover a completed analysis within the original read budget. Other output consumers own their retry flow.
+      const deadline = performance.now() + (windowed && expected.operation === "confirm" ? 65_000 : timeout);
+      const path = `${base(workspace)}/jobs/${jobId}/output`;
+      for (let failures = 0;;) {
+        const remaining = deadline - performance.now();
+        if (remaining <= 0) throw new ProductError("deadline_exceeded", "The service did not answer in time.");
+        let status = 0, retryAfterMs = 0;
+        try {
+          return await request(path, "GET", decode, undefined, undefined, undefined, extraSignal, undefined,
+            { timeoutOverrideMs: remaining, onStatus: (code, pause) => { status = code; retryAfterMs = pause ?? 0; } });
+        } catch (error) {
+          if (expected.operation !== "analyze" || !jobReadRetry(error, status)) throw error;
+          await waitForJobRead(Math.min(deadline, performance.now() + jobReadBackoff(++failures, retryAfterMs)), extraSignal);
+        }
+      }
     },
     /** The PROJECT revision for CAS: ProjectDetails when the management route is on, else the project's
         ProjectPage entry. A deleting project is not offered for another change. */
@@ -728,6 +774,35 @@ export function createHostedClient(options: HostedClientOptions) {
           pending_objects: x.pending_objects as number, shared_objects_retained: x.shared_objects_retained as number,
           raw_source_policy: "workspace_sources_retained", backup_policy: "operator_managed_not_erased_here" };
       }, undefined, undefined, undefined, extraSignal);
+    },
+    listProjects: (workspace: string, caps: HostedCapabilities, cursor?: string, signal?: AbortSignal) => {
+      feature(workspace, caps, "catalog.read");
+      const limit = Math.min(12, caps.page_max);
+      const query = new URLSearchParams({ limit: String(limit), ...(cursor ? { cursor } : {}) });
+      return request(`${base(workspace)}/projects?${query}`, "GET", (value, status) => {
+        need(status === 200);
+        const page = readPage<Obj>(value, workspace, limit);
+        const items = page.items.map(row => {
+          need(id(row.project_id));
+          return row.project_id;
+        });
+        return { items, next: page.next_cursor };
+      }, undefined, undefined, undefined, signal);
+    },
+    listResults: (workspace: string, caps: HostedCapabilities, cursor?: string, signal?: AbortSignal) => {
+      feature(workspace, caps, "catalog.read");
+      const limit = Math.min(8, caps.page_max);
+      const query = new URLSearchParams({ limit: String(limit), ...(cursor ? { cursor } : {}) });
+      return request(`${base(workspace)}/results?${query}`, "GET", (value, status) => {
+        need(status === 200);
+        const page = readPage<Obj>(value, workspace, limit);
+        const items = page.items.map((row): HostedResultScope => {
+          need(matches(RESULT, row.record_id) && id(row.project_id) && id(row.snapshot_id)
+            && (row.record_type === "result" || row.record_type === "upload_result"));
+          return { projectId: row.project_id, snapshotId: row.snapshot_id, resultId: row.record_id as string };
+        });
+        return { items, next: page.next_cursor };
+      }, undefined, undefined, undefined, signal);
     },
     /** GET results/{id}/header: the bounded summary and exact counts, without metric arrays or turns. */
     loadResultHeader: (workspace: string, caps: HostedCapabilities, scope: HostedResultScope, extraSignal?: AbortSignal) => {
@@ -947,15 +1022,17 @@ export function createHostedClient(options: HostedClientOptions) {
           const remaining = deadline - performance.now();
           if (remaining <= 0) throw new ProductError("deadline_exceeded", "The job is still pending. Check its state later.");
           let pause: number;
-          if (!updates) {
-            const job = await loadJob(workspace, jobId, poll.signal, remaining);
-            if (terminal(job)) return job;
-            pause = caps.job_poll_min_ms;
-          } else {
-            let answered: { status: number; retryAfterMs: number | null } | null = null;
-            const sentAt = performance.now(), asked = cursor;
-            try {
-              const update = await loadJobUpdate(workspace, jobId, cursor, poll.signal, remaining, (status, retryAfterMs) => { answered = { status, retryAfterMs }; });
+          let status = 0, retryAfterMs = 0;
+          const onStatus = (code: number, wait: number | null) => { status = code; retryAfterMs = wait ?? 0; };
+          try {
+            if (!updates) {
+              const job = await loadJob(workspace, jobId, poll.signal, remaining, onStatus);
+              if (terminal(job)) return job;
+              failures = 0;
+              pause = caps.job_poll_min_ms;
+            } else {
+              const sentAt = performance.now(), asked = cursor;
+              const update = await loadJobUpdate(workspace, jobId, cursor, poll.signal, remaining, onStatus);
               // an answer that arrives after its own authorization window says nothing current
               if (performance.now() - sentAt > update.valid_for_ms) throw new ProductError("unavailable", "The job update arrived too late to use.");
               failures = 0; cursor = update.cursor;
@@ -965,35 +1042,17 @@ export function createHostedClient(options: HostedClientOptions) {
               if (terminal(held)) return held;
               // a stale update that was not taken may carry a terminal null; the job held is still pending
               pause = Math.max(update.poll_after_ms ?? 2000, caps.job_poll_min_ms);
-            } catch (error) {
-              if (error instanceof HostedRequestDiscarded) throw error;
-              const code = error instanceof ProductError ? error.code : null;
-              const status = (answered as { status: number } | null)?.status ?? null;
-              if ((code === "cursor_invalid" || code === "cursor_expired") && cursor !== null) {
-                // a continuation the service no longer honours: drop it and read one fresh snapshot
-                cursor = null; heldRevision = 0; continue;
-              }
-              if (!(code === "unavailable" || code === "deadline_exceeded" || code === "service_unavailable" || status === 429 || status === 503)) throw error;
-              // equal-jitter backoff, 1 s doubling to 30 s, never sooner than the service asked
-              failures += 1;
-              const ceiling = Math.min(1000 * 2 ** (failures - 1), 30_000);
-              pause = Math.max((answered as { retryAfterMs: number | null } | null)?.retryAfterMs ?? 0, ceiling / 2) + Math.random() * ceiling / 2;
             }
+          } catch (error) {
+            if (cursor !== null && error instanceof ProductError && (error.code === "cursor_invalid" || error.code === "cursor_expired")) {
+              // a continuation the service no longer honours: drop it and read one fresh snapshot
+              cursor = null; heldRevision = 0; continue;
+            }
+            if (!jobReadRetry(error, status)) throw error;
+            // equal-jitter backoff, never sooner than the service asked
+            pause = jobReadBackoff(++failures, retryAfterMs);
           }
-          const resumeAt = Math.min(deadline, performance.now() + pause);
-          await new Promise<void>((resolve, reject) => {
-            const stop = () => { clearTimeout(timer); cleanup(); reject(new HostedRequestDiscarded()); };
-            const cleanup = () => { signal?.removeEventListener("abort", stop); poll.signal?.removeEventListener("abort", stop); };
-            let timer: ReturnType<typeof setTimeout>;
-            const ready = () => {
-              const wait = resumeAt - performance.now();
-              if (wait > 0) { timer = setTimeout(ready, Math.ceil(wait)); return; }
-              cleanup(); resolve();
-            };
-            timer = setTimeout(ready, Math.max(0, Math.ceil(resumeAt - performance.now())));
-            signal?.addEventListener("abort", stop, { once: true }); poll.signal?.addEventListener("abort", stop, { once: true });
-            if (signal?.aborted || poll.signal?.aborted) stop();
-          });
+          await waitForJobRead(Math.min(deadline, performance.now() + pause), poll.signal);
         }
       } finally { polling.delete(pollingKey); }
     },

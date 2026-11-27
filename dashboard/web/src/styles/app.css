@@ -427,7 +427,10 @@ textarea.input { height: auto; padding: 9px 11px; resize: vertical; line-height:
 
 /* key/value */
 /* a result too large to open whole, read in pages (hosted K10): a ruled list, evidence indented under its claim */
-.large-result { display: grid; gap: var(--s6); }
+.large-result { display: grid; gap: var(--s6); grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; }
+.large-result > header { grid-column: 1 / -1; }
+.paged-claims { min-width: 0; padding: var(--s4); border: 1px solid var(--line-2); border-radius: var(--r-3); background: var(--bg-insp); }
+@media (max-width: 1100px) { .large-result { grid-template-columns: minmax(0, 1fr); } }
 .large-result > header { display: grid; gap: var(--s2); }
 .large-result > header :is(h1, p) { margin: 0; }
 .large-result > header h1 { line-height: 1.15; text-wrap: balance; }
@@ -1016,3 +1019,13 @@ a.btn { text-decoration: none; }
 .session-card h1 { margin-top: var(--s3); font: var(--t-title); }
 .session-card h1:focus { outline: none; }
 .session-card p { margin-top: var(--s2); font: var(--t-body); color: var(--ink-2); }
+
+/* Hosted workspace status above the scrollable dashboard. */
+.hosted-notice { position: relative; z-index: 1; padding: var(--s2) var(--s5); background: var(--bg-app); }
+.content:has(> .hosted-notice) { display: flex; flex-direction: column; }
+.content:has(> .hosted-notice) > .page { height: auto; min-height: 0; flex: 1; }
+a.demo-btn, a.proj { text-decoration: none; }
+[data-deployment="hosted"] .rail .brand { font: 500 18px/1.2 Georgia, serif; }
+[data-deployment="hosted"] .rail img.brand-mark { width: 22px; height: 22px; object-fit: contain; }
+.hosted-result-list li { grid-template-columns: minmax(0, 1fr) auto; }
+.hosted-catalog .actions:empty { display: none; }

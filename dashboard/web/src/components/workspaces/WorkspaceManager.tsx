@@ -186,7 +186,7 @@ function WorkspaceScreen(props: WorkspaceManagerProps & { currentContext: () => 
     });
   };
 
-  return <div className="page" aria-busy={busy !== null || checking}>
+  return <div className="page" id="main" tabIndex={-1} aria-busy={busy !== null || checking}>
     <div className="page-inner page-inner--narrow">
       <header className="page-head"><h1 ref={heading} tabIndex={-1}>Workspace access</h1>
         <p className="lede">{lost ? "Your workspace access changed. Choose a workspace or sign in again." : "Create a workspace, accept an invitation, or manage access."}</p></header>

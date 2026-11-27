@@ -44,7 +44,7 @@ test("A5 motion is off when the system asks, and focus stays visible", () => {
   const css = read("src/styles/app.css");
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\*, \*::before, \*::after \{ transition: none !important; animation: none !important; \}/);
   assert.match(css, /:focus-visible \{ outline: 2px solid var\(--accent\)/);
-  assert.match(read("src/App.tsx"), /className="skip" href="#main"/);
+  assert.match(read("src/components/DashboardFrame.tsx"), /className="skip" href="#main"/);
 });
 
 test("A6 opening another result is a link: new tab and copy work, and a click adds one history step", () => {
