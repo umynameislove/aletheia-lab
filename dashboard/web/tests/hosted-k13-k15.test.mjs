@@ -14,9 +14,9 @@ const json = (value, status = 200, headers = {}) => new Response(JSON.stringify(
   { status, headers: { "Content-Type": status >= 400 ? "application/problem+json" : "application/json", ...headers } });
 const problem = (code, status, headers) => json({ schema_version: VERSION, type: "urn:test:" + code, title: "Refused", status, code,
   detail: "Safe synthetic refusal.", request_id: "req1" }, status, headers);
-function harness(answers) {
+function harness(answers, timeoutMs) {
   const calls = [];
-  const client = createHostedClient({ session, isCurrent: () => true, fetch: async (url, init) => {
+  const client = createHostedClient({ session, timeoutMs, isCurrent: () => true, fetch: async (url, init) => {
     calls.push({ url, method: init.method, at: performance.now() });
     const answer = answers.length > 1 ? answers.shift() : answers[0];
     return typeof answer === "function" ? answer(url) : answer.clone();
@@ -72,6 +72,51 @@ const update = (disposition, revision, status = "running", over = {}) => ({ sche
   disposition, job: disposition === "unchanged" ? null : job(status), cursor: "opaque-" + revision,
   poll_after_ms: ["succeeded", "failed", "cancelled", "expired"].includes(status) ? null : 2000, authorization_valid_for_ms: 4000, ...over });
 const cursorOf = url => new URL(url, "https://x.invalid").searchParams.get("cursor");
+
+for (const status of [502, 504]) {
+  test(`a temporary gateway ${status} keeps polling the same accepted job and cursor`, async () => {
+    const gateway = new Response("<html>Gateway unavailable</html>", {
+      status, headers: { "Content-Type": "text/html" },
+    });
+    const { client, calls } = harness([
+      json(update("snapshot", 2)), gateway, json(update("snapshot", 3, "succeeded")),
+    ]);
+    const done = await client.pollJob(WS, JOB, caps(POLLING), { timeoutMs: 10_000 });
+    assert.equal(done.job_id, JOB);
+    assert.equal(done.status, "succeeded");
+    assert.deepEqual(calls.map(call => call.method), ["GET", "GET", "GET"]);
+    assert.deepEqual(calls.map(call => cursorOf(call.url)), [null, "opaque-2", "opaque-2"]);
+    assert.ok(calls.every(call => call.url.split("?")[0] === `/v1/workspaces/${WS}/jobs/${JOB}/updates`));
+  });
+}
+
+test("reading a completed analysis retries a closed connection only within its read budget", async () => {
+  const expected = { operation: "analyze", snapshotId: "upload-snapshot-" + "b".repeat(64) };
+  const answer = { schema_version: VERSION, workspace_id: WS, job_id: JOB, operation: "analyze",
+    result: { kind: "result_reference", project_id: PROJECT, snapshot_id: expected.snapshotId, result_id: "p6-result-" + "c".repeat(64) } };
+  const disconnected = () => { throw new TypeError("Connection closed"); };
+  const restored = harness([disconnected, json(answer)]);
+  assert.deepEqual((await restored.client.loadOutput(WS, JOB, expected)).result, answer.result);
+  assert.deepEqual(restored.calls.map(({ url, method }) => [url, method]),
+    Array(2).fill([`/v1/workspaces/${WS}/jobs/${JOB}/output`, "GET"]));
+
+  for (const [failure, code] of [[problem("not_found", 404), "not_found"], [new Response("broken JSON", { headers: { "Content-Type": "application/json" } }), "response_invalid"]]) {
+    const refused = harness([failure, json(answer)]);
+    await assert.rejects(refused.client.loadOutput(WS, JOB, expected), { code });
+    assert.equal(refused.calls.length, 1);
+  }
+
+  const expired = harness([disconnected, json(answer)], 25);
+  await assert.rejects(expired.client.loadOutput(WS, JOB, expected), { code: "deadline_exceeded" });
+  assert.equal(expired.calls.length, 1);
+
+  const stop = new AbortController();
+  const aborted = harness([disconnected, json(answer)]);
+  const reading = aborted.client.loadOutput(WS, JOB, expected, stop.signal);
+  setTimeout(() => stop.abort(), 25);
+  await assert.rejects(reading, { name: "HostedRequestDiscarded" });
+  assert.equal(aborted.calls.length, 1);
+});
 
 test("U the update route keeps its cursor and the service's pacing, and recovers only what it may", { concurrency: true }, async t => {
   const cases = [];

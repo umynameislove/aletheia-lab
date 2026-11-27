@@ -19,6 +19,7 @@ const workspace = { schema_version: VERSION, workspace_id: "a", workspace_name: 
 let signedIn, metadata, deniedJob, holdSession, calls, submissions, output, resumable, expireUploadOnce, expireConfirmOnce;
 let uploadNumber, manifest, uploadedParts, leaseNumber, previewResults, holdPartOnce, releasePart;
 let bindings, projectRevision, pdfOffered, large, expireCursorOnce, deletionStages, missingChunk, graphFaults, jobControls, jobScript, paged;
+let analysisReadFaults;
 // K10: a result too large to open whole, read as header, claim pages and per-claim evidence.
 const LARGE = "p6-result-" + "9".repeat(64), LARGE_EVIDENCE = "p3-evidence-" + "8".repeat(64);
 const largeClaim = (n, text) => ({ id: "p6-claim-" + String(n).repeat(64), turn_id: "p6-turn-" + "7".repeat(64), text, claim_type: "evidence_statement",
@@ -35,7 +36,7 @@ const BINDING_FEATURES = { "projects.refresh": true, "projects.follow_up": true,
 let server, browser, page, base;
 const reset = () => { signedIn = true; metadata = true; deniedJob = false; holdSession = false; calls = []; submissions = []; output = analysis;
   resumable = false; expireUploadOnce = false; expireConfirmOnce = false; uploadNumber = 0; uploadedParts = new Map(); leaseNumber = 0; previewResults = new Map(); holdPartOnce = false; releasePart = null;
-  bindings = null; projectRevision = 1; pdfOffered = false; large = false; expireCursorOnce = false; deletionStages = null; missingChunk = null; graphFaults = []; jobControls = false; jobScript = new Map(); paged = true; };
+  bindings = null; projectRevision = 1; pdfOffered = false; large = false; expireCursorOnce = false; deletionStages = null; missingChunk = null; graphFaults = []; jobControls = false; jobScript = new Map(); paged = true; analysisReadFaults = new Map(); };
 const session = () => ({ schema_version: VERSION,
   actor: { user_id: "synthetic_actor", display_name: "Synthetic account", email: "test@example.invalid", email_verified: true },
   session: { context_id: "synthetic_context", expires_at: "2030-01-01T00:00:00Z" }, csrf_token: "synthetic-csrf-only",
@@ -208,6 +209,14 @@ before(async () => {
     if (match) {
       const job = match[1], script = jobScript.get(job);
       if (deniedJob) return json(problem("record_not_found", 404), 404);
+      if (job === analysis.job_id && request.method === "GET") {
+        const status = analysisReadFaults.get(path);
+        if (status) {
+          analysisReadFaults.delete(path);
+          response.writeHead(status, { "Content-Type": "text/html" }).end("<p>Upstream restarting</p>");
+          return;
+        }
+      }
       // K09: a scripted job walks through its states; cancel and retry change only what the service reports
       if (match[2] === "/cancel") { jobScript.set(job, { states: ["cancel_requested", "cancelled"], at: 0, retryable: false });
         return json({ schema_version: VERSION, workspace_id: "a", job_id: job, status: "cancel_requested", progress: null }); }
@@ -748,6 +757,23 @@ async function analyzeFrom(question = "What is observed?") {
   await page.eval(`(() => { const e = document.querySelector('#hosted-first-question'); Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(e, ${JSON.stringify(question)}); e.dispatchEvent(new Event('input', { bubbles: true })); })()`);
   await page.clickText("Analyze saved snapshot");
 }
+test("Chrome opens the accepted result in the same tab after a gateway outage", async () => {
+  reset();
+  const job = `/v1/workspaces/a/jobs/${analysis.job_id}`;
+  analysisReadFaults.set(job, 502);
+  analysisReadFaults.set(job + "/output", 504);
+  await analyzeFrom();
+  await page.until(`document.querySelector('.verdict') && !document.querySelector('.session-cover')`, 8000);
+  const hash = new URLSearchParams((await page.eval("location.hash")).split("?")[1]);
+  assert.equal(hash.get("job"), analysis.job_id);
+  assert.equal(hash.get("result"), analysis.result.result.id);
+  assert.equal(hash.get("snapshot"), snapshot.snapshot_id);
+  assert.equal(analysisReadFaults.size, 0, "both reads encountered the injected outage");
+  assert.equal(submissions.filter(value => value.operation === "analyze").length, 1);
+  assert.equal(calls.filter(call => call.path === job + "/output" && call.method === "GET").length, 2);
+  assert.equal(calls.some(call => call.path.endsWith("/retry")), false);
+});
+
 test("Chrome K09: a failed analysis shows its attempts and is retried, because the service allows it, as one new linked job whose result opens", async () => {
   reset(); jobControls = true; jobScript.set(analysis.job_id, { states: ["running", "failed"], at: 0, retryable: true });
   await analyzeFrom();
