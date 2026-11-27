@@ -121,8 +121,7 @@ def test_refresh_rejects_other_origin_parent_bytes_and_budget_without_leaking_pa
     assert list(case.root.iterdir()) == []
 
 
-def _orchestration(case, failure, *, historical_state=None):
-    new = _zip("0.9")
+def _orchestration(case, failure, *, new, historical_state=None):
     reads = []
     finished = False
     sentinel = case.root / "keep.txt"
@@ -177,7 +176,7 @@ def _orchestration(case, failure, *, historical_state=None):
 @pytest.mark.parametrize("failure", [None, "revoke", "source_changed", "parent_changed", "worker_scope", "worker_invalid"])
 def test_refresh_orchestration_rechecks_both_sources_and_parent_and_cleans_only_owned_inputs(refresh_case, failure):
     case = refresh_case
-    operations, claim, reads, sentinel = _orchestration(case, failure)
+    operations, claim, reads, sentinel = _orchestration(case, failure, new=_zip("0.9"))
     if failure in {"revoke", "source_changed", "parent_changed"}:
         with pytest.raises(SourceNotFound):
             asyncio.run(operations.prepare_refresh(claim))
@@ -200,7 +199,9 @@ def test_changed_refresh_binds_registered_evidence_only(refresh_case, worker_sup
     historical_state = HistoricalStateInput.model_validate_json(json.dumps({"receipt": data["cases"]["B-authorized"],
                                                         "contract": data["contract"]}))
     old = case.parent.model_dump_json()
-    operations, claim, _, _ = _orchestration(case, "worker_historical_state" if worker_supplied else None, historical_state=historical_state)
+    new = _zip("0.9")
+    operations, claim, _, _ = _orchestration(case, "worker_historical_state" if worker_supplied else None,
+                                           new=new, historical_state=historical_state)
     if worker_supplied:
         with pytest.raises(ValueError, match="Invalid worker refresh scope"):
             asyncio.run(operations.prepare_refresh(claim))
@@ -211,7 +212,6 @@ def test_changed_refresh_binds_registered_evidence_only(refresh_case, worker_sup
         assert result.snapshot.historical_state == historical_state
         assert result.snapshot.mapping.project_id == case.parent.mapping.project_id
         assert result.snapshot.snapshot_id != case.parent.snapshot_id
-        new = _zip("0.9")
         unchanged = _refresh(case, new, parent=result.snapshot, before=new)
         assert isinstance(unchanged, PreparedHistoricalRefresh)
         assert unchanged.status == "unchanged"
