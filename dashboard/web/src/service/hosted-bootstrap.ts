@@ -202,7 +202,9 @@ export function createHostedBootstrap(options: {
           }
           if (error instanceof ProductError && error.code === "session_expired") return { status: "expired" };
           if (error instanceof ProductError && ["session_revoked", "membership_revoked"].includes(error.code)) return { status: "revoked" };
-          return { status: "unreachable" };
+          const retryable = error instanceof ProductError
+            && (error.code === "unavailable" || error.code === "deadline_exceeded");
+          return { status: "unreachable", retryable };
         }
       } });
   }

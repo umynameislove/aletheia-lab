@@ -7,7 +7,6 @@ import { DashboardFrame } from "./components/DashboardFrame";
 import { Rail, type HostedAccountActions } from "./components/Rail";
 import { CRUMB, Topbar } from "./components/Topbar";
 import { Start } from "./components/Start";
-import { Counterfactual, NotFound, Prospective, ProjectDeleted } from "./components/Gated";
 import { Kbd, ScreenBoundary } from "./components/primitives";
 import { ConfirmDialog, Modal } from "./components/Modal";
 
@@ -18,6 +17,10 @@ const Connect = lazy(() => import("./components/Connect").then(m => ({ default: 
 const Project = lazy(() => import("./components/Project").then(m => ({ default: m.Project })));
 const Results = lazy(() => import("./components/Results").then(m => ({ default: m.Results })));
 const Retention = lazy(() => import("./components/Retention").then(m => ({ default: m.Retention })));
+const Counterfactual = lazy(() => import("./components/Gated").then(m => ({ default: m.Counterfactual })));
+const NotFound = lazy(() => import("./components/Gated").then(m => ({ default: m.NotFound })));
+const Prospective = lazy(() => import("./components/Gated").then(m => ({ default: m.Prospective })));
+const ProjectDeleted = lazy(() => import("./components/Gated").then(m => ({ default: m.ProjectDeleted })));
 
 type ModalKind = "shortcuts" | "project" | "reset" | null;
 

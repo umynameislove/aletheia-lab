@@ -368,7 +368,9 @@ function ShownResult({ boot, state, link, view, account }: {
    when this workspace offers that; otherwise its refusal says so. */
 function ResultFallback({ boot, reader }: { boot: Boot; reader: Parameters<typeof LargeResultView>[0] }) {
   if (boot.status !== "error") return <div className="boot" role="status">Loading result…</div>;
-  if (boot.error.code === "response_too_large" && reader.caps.features?.["catalog.paged_read"] === true) return <Suspense fallback={opening}><LargeResult {...reader} /></Suspense>;
+  if (boot.error.code === "response_too_large" && reader.caps.features?.["catalog.paged_read"] === true) {
+    return <ScreenBoundary key={reader.scope.resultId}><Suspense fallback={opening}><LargeResult {...reader} /></Suspense></ScreenBoundary>;
+  }
   return <div className="boot"><div><b>This result could not be opened</b>
     <RefusalNote refusal={{ code: boot.error.code, message: boot.error.safe_message }} />
     <div className="actions">

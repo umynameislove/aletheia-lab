@@ -4,6 +4,7 @@ import { HostedRequestDiscarded, type createHostedClient, type HostedClaim, type
   type HostedGraphNode, type HostedResultHeader, type HostedResultScope } from "../../service/hosted-client";
 import type { HostedCapabilities } from "../../service/hosted";
 import { isProductError } from "../../service/port";
+import { sessionGuard } from "../../service";
 import { TERM } from "../../vocab";
 import { saveReport, type ReportKind } from "../../export";
 import { Id, Term } from "../primitives";
@@ -88,6 +89,7 @@ function WindowExports({ reader, header }: { reader: Reader; header: HostedResul
       if (descriptor.project_id !== scope.projectId) throw new Error("The export belongs to another project.");
       const bytes = await client.downloadExport(caps.workspace_id, descriptor, stop.signal);
       if (!stop.signal.aborted && isCurrent()) {
+        sessionGuard?.onDownload();
         saveReport({ project: { display_name: header.display_name }, result: { id: scope.resultId } }, format, bytes);
         delete keys.current[format];
       }

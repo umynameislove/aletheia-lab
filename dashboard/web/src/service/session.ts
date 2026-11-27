@@ -29,7 +29,7 @@ export type SessionAnswer =
   | { status: "ok"; context_id: string; since?: number }
   | { status: "expired" }
   | { status: "revoked" }
-  | { status: "unreachable" };
+  | { status: "unreachable"; retryable?: boolean };
 
 /** What tabs tell each other. An opaque ID at most: never content, never a credential. */
 export type PeerMessage =
@@ -71,6 +71,8 @@ export function createSessionGuard(options: {
   let failures = 0;
   let lastFailure = 0;
   let paused = false;
+  let downloadRetryUntil = -Infinity;
+  let downloadRetryScheduled = false;
   let inFlight: { controller: AbortController; promise: Promise<void> } | null = null;
   /** bumped when the object on screen changes: an answer about the previous object confirms nothing */
   let shownRevision = 0;
@@ -96,6 +98,7 @@ export function createSessionGuard(options: {
   const confirmedAt = (sentAt: number) => {
     lastConfirmed = Math.max(lastConfirmed, sentAt);
     failures = 0;
+    downloadRetryScheduled = false;
     interval = spread(nextInterval());
     if (lease !== Infinity) {
       // Start early enough for another check of comparable duration, with room for timer jitter.
@@ -140,9 +143,11 @@ export function createSessionGuard(options: {
       case "unreachable":
         failures += 1;
         lastFailure = options.now();
-        interval = spread(nextInterval());
-        // what was covered stays covered: not knowing is not the same as being allowed
-        if (state === "confirming") set("unreachable");
+        downloadRetryScheduled = answer.retryable === true && lastFailure < downloadRetryUntil;
+        if (downloadRetryScheduled) downloadRetryUntil = -Infinity;
+        interval = spread(downloadRetryScheduled ? 750 : nextInterval());
+        // A retry is another check of the same scope. Covered content stays hidden while waiting.
+        if (state === "confirming" && !downloadRetryScheduled) set("unreachable");
     }
   };
 
@@ -182,7 +187,17 @@ export function createSessionGuard(options: {
     invalidate() {
       if (terminal() || state === "expired") return;
       shownRevision++; lastConfirmed = -Infinity;
+      downloadRetryUntil = -Infinity;
+      downloadRetryScheduled = false;
       void check(true);
+    },
+
+    /** A native download can interrupt a read without a reliable visibility or network event.
+        Allow one short read retry for this scope, with the usual authorization lease. */
+    onDownload() {
+      if (lease !== Infinity && (state === "active" || state === "confirming")) {
+        downloadRetryUntil = options.now() + 30_000;
+      }
     },
 
     /** Safari can interrupt reads when the download sheet opens, even if the document stays visible. */
@@ -225,7 +240,9 @@ export function createSessionGuard(options: {
     },
     tickMs: () => lease === Infinity ? IDLE_TICK_MS : 250,
     onTick(visible: boolean) {
-      if (visible && state === "active" && options.now() - lastConfirmed >= lease) set(failures ? "unreachable" : "confirming");
+      if (visible && state === "active" && options.now() - lastConfirmed >= lease) {
+        set(failures && !downloadRetryScheduled ? "unreachable" : "confirming");
+      }
     },
 
     /** Every answer from the service says something: success is a confirmation, 401 and 403 may end the

@@ -328,6 +328,51 @@ test("a failed foreground check stays covered and can retry when the network ret
   await guard.onOnline();
   assert.equal(guard.state(), "active");
 });
+test("a native download interrupted verification gets one fresh read while the result stays covered", async () => {
+  let time = 0, reads = 0;
+  const guard = createSessionGuard({ contextId: "ctx-a", now: () => time, random: () => 0.5,
+    onWipe() {}, authorizationLeaseMs: 4_000,
+    check: async () => ++reads === 1 ? { status: "unreachable", retryable: true }
+      : { status: "ok", context_id: "ctx-a" } });
+  guard.onDownload();
+  time = 4_000;
+  guard.onTick(true);
+  await guard.check(true);
+  assert.equal(guard.state(), "confirming");
+  assert.equal(guard.due(true), false);
+  time += 750;
+  assert.equal(guard.due(false), false, "no request while away");
+  assert.equal(guard.due(true), true);
+  await guard.check(false);
+  assert.equal(guard.state(), "active");
+  assert.equal(reads, 2);
+});
+
+test("continued download failures back off and a different scope gets no download retry", async () => {
+  let time = 0, reads = 0;
+  const guard = createSessionGuard({ contextId: "ctx-a", now: () => time, random: () => 0.5,
+    onWipe() {}, authorizationLeaseMs: 4_000,
+    check: async () => { reads++; return { status: "unreachable", retryable: true }; } });
+  guard.onDownload();
+  await guard.check(true);
+  time += 750;
+  assert.equal(guard.due(true), true);
+  await guard.check(false);
+  assert.equal(guard.state(), "unreachable");
+  assert.equal(reads, 2);
+  time += 750;
+  assert.equal(guard.due(true), false);
+
+  const another = createSessionGuard({ contextId: "ctx-a", now: () => time, random: () => 0.5,
+    onWipe() {}, authorizationLeaseMs: 4_000, check: async () => ({ status: "unreachable", retryable: true }) });
+  another.onDownload();
+  another.invalidate();
+  await another.check(true);
+  assert.equal(another.state(), "unreachable");
+  time += 750;
+  assert.equal(another.due(true), false);
+});
+
 test("K1 under a lease the next check starts before the lease runs out, so a steady tab is never covered (staging fix, J01)", async () => {
   let clock = 0;
   const guard = createSessionGuard({ check: async () => ({ status: "ok", context_id: "c" }), contextId: "c", now: () => clock,

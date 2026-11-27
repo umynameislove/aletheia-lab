@@ -202,23 +202,47 @@ test("abort and late contexts discard answers before the session guard or caller
   await assert.rejects(guard.client.loadJob("ws1", "job1"), HostedRequestDiscarded);
 });
 
-test("polling is serial, deduplicated, capability paced, bounded and cancellable", async () => {
+test("polling is serial, deduplicated, capability paced, bounded and cancellable", async t => {
+  t.mock.timers.enable({ apis: ["Date", "setTimeout"] });
+  const origin = Date.now();
+  t.mock.method(performance, "now", () => Date.now() - origin);
+  const settle = () => new Promise(resolve => setImmediate(resolve));
+  const advance = async ms => { t.mock.timers.tick(ms); await settle(); };
   const times = []; let count = 0, active = 0, peak = 0;
   const h = harness(async () => {
-    times.push(Date.now()); active++; peak = Math.max(active, peak);
+    times.push(performance.now()); active++; peak = Math.max(active, peak);
     await new Promise(resolve => setTimeout(resolve, 1)); active--;
     return json(job(++count === 2 ? "succeeded" : "running"));
   });
   const pending = h.client.pollJob("ws1", "job1", { ...caps, job_poll_min_ms: 15 }, { timeoutMs: 100 });
+  // Wait until the first request is in flight, then advance only the simulated clock.
+  await settle();
+  assert.deepEqual(times, [0]);
   await assert.rejects(h.client.pollJob("ws1", "job1", caps), { code: "invalid_request" });
-  assert.equal((await pending).status, "succeeded"); assert.equal(peak, 1); assert.ok(times[1] - times[0] >= 15);
+  await advance(1);
+  await advance(14);
+  assert.deepEqual(times, [0]);
+  await advance(1);
+  assert.deepEqual(times, [0, 16]);
+  await advance(1);
+  assert.equal((await pending).status, "succeeded"); assert.equal(peak, 1);
+
   const bounded = harness(job("running"));
-  await assert.rejects(bounded.client.pollJob("ws1", "job1", { ...caps, job_poll_min_ms: 2000 }, { timeoutMs: 5 }), { code: "deadline_exceeded" });
+  const deadline = assert.rejects(bounded.client.pollJob("ws1", "job1",
+    { ...caps, job_poll_min_ms: 2000 }, { timeoutMs: 5 }), { code: "deadline_exceeded" });
+  await settle();
+  await advance(5);
+  await deadline;
   assert.equal(bounded.calls.length, 1);
+
   const controller = new AbortController(), stopped = harness(job("running"));
-  const watch = stopped.client.pollJob("ws1", "job1", { ...caps, job_poll_min_ms: 2000 }, { signal: controller.signal });
-  await new Promise(resolve => setTimeout(resolve, 2)); controller.abort();
-  await assert.rejects(watch, HostedRequestDiscarded); assert.equal(stopped.calls.length, 1);
+  const watch = assert.rejects(stopped.client.pollJob("ws1", "job1",
+    { ...caps, job_poll_min_ms: 2000 }, { signal: controller.signal }), HostedRequestDiscarded);
+  await settle();
+  controller.abort();
+  await watch;
+  await advance(2000);
+  assert.equal(stopped.calls.length, 1);
 });
 
 test("logout keeps null/204 local-only and only returns handoffs at the pinned identity origin", async () => {
